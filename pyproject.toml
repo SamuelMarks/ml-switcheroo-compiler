@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ml-switcheroo-compiler"
+version = "0.1.0"
+description = "Abstract ML Machine Compiler for Reverse-Mode AD, Optimization, and Graph Functionalization."
+authors = [{ name = "Samuel Marks" }]
+requires-python = ">=3.9"
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
