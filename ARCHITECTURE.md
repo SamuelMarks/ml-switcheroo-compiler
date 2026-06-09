@@ -75,23 +75,128 @@ graph TD
 The universal, canonical dialect. Defines `LogicalNode` and `LogicalGraph`. Contains the schema validator enforcing ONNX spec compliance without requiring the heavy `onnx` pip package.
 
 ### 2. `ml-switcheroo-compiler` (Tier 2)
-The computational heart. Implements:
-* **TracerTape**: Uses `threading.local` for concurrent, thread-safe AOT tracing.
-* **ProxyTensors**: Overloads Python math dunders to capture eager operations.
-* **AD Engine (`compiler.grad`)**: Reverse-mode automatic differentiation, topological sorting, gradient accumulation, and exact mathematical VJPs.
-* **Optimizations**: Static Shape Inference (matching Numpy broadcast logic), Dead Code Elimination (DCE), and Common Subexpression Elimination (CSE).
+The computational heart of the ecosystem. See [Compiler Architecture Deep Dive](#compiler-architecture-deep-dive) below.
 
 ### 3. Frontends (`zero-*`) (Tiers 3 & 4)
+**Crucial Architecture Note regarding `zero-*` repositories:** The existing `zero-*` codebases will be retained as independent, lightweight frontend API shells. Every `zero-*` repository depends on `ml-switcheroo-compiler` as its core backend dependency. All mathematical implementations, array allocations, and computation graph logic inside the `zero-*` repos are replaced with delegations to the compiler. The `zero-*` repos purely handle framework-specific API routing, argument parsing (handling kwargs like `dim` vs `axis`), and syntactic sugar.
+
 * **`zero-jax`**: Mimics the JAX API (`jnp`, `lax`, `jit`, `grad`, `vmap`). Uses Pytree flattening to route state safely into the compiler tape.
-* **`zero-chex`**: Typing and shape assertions (deeply integrated with `zero-optax` and `zero-jax`).
-* **`zero-grain`**: Deterministic data loading and transformations.
-* **`zero-orbax`**: Checkpoint loading (`.msgpack`/`tensorstore`) for PyTrees.
-* **`zero-optax`**: Provides standard optimization schedules and gradient transformations matching Google's `optax`.
-* **`zero-flax`**: Builds upon `zero-jax` to provide Neural Network layers (`Dense`, `Conv`, `Attention`) and `nnx` state functionalization.
 * **`zero-pytorch`, `zero-keras`, `zero-tensorflow`, `zero-mlx`**: Mimic eager, object-oriented, and stateful semantics. They dynamically lift mutable states (like `nn.Parameter` or `tf.Variable`) into purely functional graph inputs/outputs via the compiler's internal `lift_state` pass.
 
 ### 4. `zero-zoo` (Tier 5)
 The proving grounds. Contains identical architectural definitions (MLP, CNN, Micro-Transformer/NanoGPT) written across all frontends. Headless CI pipelines train these deterministically for 10 steps to assert `.allclose()` float-for-float equivalence ("Golden Seed" testing) across all simulated frameworks and final backend compilations.
+
+---
+
+# Compiler Architecture Deep Dive
+
+The `ml-switcheroo-compiler` repository defines the core architecture mapping frontends to backends.
+
+## 1. API Boundaries & Core Structures
+
+### The Universal Tensor Interface
+The base class `switcheroo.Tensor` serves as the unified backend array. 
+- `zero_torch.tensor.Tensor` holds a `switcheroo.Tensor` as its `.data` payload.
+- `zero_jax.numpy.ndarray` subclasses or wraps `switcheroo.Tensor`.
+
+The tensor interface implements essential properties like `shape`, `dtype`, `device`, and `requires_grad`, enabling cross-framework compatibility natively.
+
+### Configuration & State Management
+A `switcheroo.config` singleton controls the execution flow, tracking states like `eager_mode`, `default_float_dtype`, and `default_device`. The frameworks read this scoped context (also accessible via environment variables like `SWITCHEROO_EAGER_MODE=1`) to determine whether to execute operations eagerly or trace an IR graph.
+
+### Error Handling Hierarchy
+Specific error types such as `TracingError`, `CompilationError`, `ShapeMismatchError`, `DTypePromotionError`, `BackendNotSupportedError`, and `UnimplementedMathError` provide distinct traces depending on where execution fails during the pipeline.
+
+## 2. Core Execution Engine Modes
+
+### Eager Mode Engine
+The immediate-execution path dispatches mathematical operations directly to NumPy or SciPy (the `switcheroo.numpy_backend`). This mode uses a zero-copy `numpy.ndarray` wrapper to immediately evaluate operations, throwing `UnimplementedMathError` only when there is no direct mathematical equivalent.
+
+### Graph Tracing Engine
+Constructs the Intermediate Representation by tracking operations on proxy variables (`switcheroo.tracing.ProxyTensor`). Proxy tensors overload all Python magic methods.
+- Execution happens within a `GraphContext` (Thread-Local Storage) that records the execution tape.
+- Frame inspection captures source-code line numbers for precise tracebacks.
+
+### Automatic Differentiation (AD)
+The tracing engine includes a comprehensive AutoDiff system:
+- Forward-mode and Reverse-mode AD tapes.
+- VJP and JVP registries for mathematical primitives.
+- Mapped transparently to `zero_torch.autograd.backward` and `zero_jax.grad`.
+
+### Higher-Order Control Flow
+Implements `switcheroo.control_flow` primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`), mapping seamlessly to JAX `lax` constructs and PyTorch looping logic without Python runtime unrolling penalties.
+
+## 3. Unified Intermediate Representation (IR) Schema
+
+### Base Structures
+- **IRGraph**: Represents the complete computation module, encapsulating Inputs, Outputs, and internal `IRNode`s.
+- **IRNode**: Tracks individual operations with fields for `id`, `opcode`, `inputs`, `outputs`, `attributes`, and `metadata`.
+- **IRBlock**: Defines nested scopes for complex control flow.
+- **TensorSpec**: Maintains `shape`, `dtype`, and `sparsity`.
+
+### Type & Shape System
+Implements standard static types alongside dynamic typing through a `ShapeTracker`. A `SymInt` (Symbolic Integer) tracks dynamic dimensions like `batch_size`, and a Symbolic Expression Solver validates shape consistency mathematically before any actual data flows through.
+
+### State Mutation & Aliasing
+Because the backend operates functionally, `ReadVariable`, `AssignVariable`, and `ScatterUpdate` nodes represent mutations. For PyTorch, `nn.Parameter` assignments generate `AssignVariable` nodes, perfectly bridging PyTorch's OOP state mutations into JAX-compatible functional purity.
+
+## 4. Middle-End Transformations (Pass Manager)
+
+Before lowering to source code or executable backends, an internal `PassManager` applies topological sorting and runs iterative passes on the IR DAG until fixpoint convergence.
+
+```mermaid
+flowchart TD
+    InputIR[Raw Unified IR] --> Canonical[Canonicalization Passes]
+    Canonical --> TargetAgnostic[Target-Agnostic Optimizations]
+    TargetAgnostic --> TargetSpecific[Low-Level / Edge Passes]
+    TargetSpecific --> OutputIR[Optimized IR to Emitter]
+
+    subgraph Canonicalization Passes
+        SL[State Lifting/Lowering]
+        DP[DType Promotion]
+        BE[Broadcast Explicitizer]
+        SL --> DP --> BE
+    end
+
+    subgraph Target-Agnostic Optimizations
+        CF[Constant Folding]
+        CSE[Common Subexpression Elimination]
+        DCE[Dead Code Elimination]
+        CF --> CSE --> DCE
+    end
+
+    subgraph Low-Level / Edge Passes
+        KF[Kernel Fusion]
+        BA[Buffer Allocation]
+        LU[Loop Unrolling]
+        KF --> BA --> LU
+    end
+```
+
+### Canonicalization Passes
+- **StateLiftingPass/StateLoweringPass:** Converts explicit state assignments into functional I/O bounds.
+- **AxisTranslationPass:** Globally injects `Transpose` nodes to convert between formats like NCHW and NHWC based on the target backend constraints.
+- **DTypePromotionPass / BroadcastExplicitizerPass:** Eliminates all implicit casting and broadcasting by injecting explicit `Cast` and `BroadcastTo` nodes, simplifying the backend emitter's logic.
+
+### Target-Agnostic Optimizations
+Standard compiler passes such as Constant Folding, Dead Code Elimination (DCE), Common Subexpression Elimination (CSE), Algebraic Simplification, Mixed Precision casting, and BatchNorm folding.
+
+### Low-Level Edge Passes
+Advanced passes prep the graph for hardware execution: Elementwise Kernel Fusion, Scaled Dot-Product Attention matching, Buffer Allocation mapping for WebGPU/WASM linear memory arrays, and Loop Unrolling.
+
+## 5. Emission Backends
+
+### Python Source-to-Source (AST Generation)
+Generates native Python scripts allowing one to "export" a trained JAX model explicitly as PyTorch code:
+- **PyTorch:** Emits `torch.nn.Module` classes with `forward` topologies.
+- **JAX/Flax:** Emits purely functional `apply_model(params, x)` functions with JAX PyTrees.
+- **Keras / TensorFlow / MLX:** Emits functional topologies tailored to those libraries.
+
+### Edge & Web Native Backends
+- **WebGPU:** Translates the IR directly into Jinja2-templated WGSL shaders (calculating workgroup layouts, buffer bindings, and memory allocations) alongside a JS Orchestrator script.
+- **WebGL 2.0:** A fallback mapping 2D fragment textures to computation matrices.
+- **WASM SIMD:** Emits C++ standard headers implementing operations via hardware intrinsics (`wasm_f32x4_*`), compiled silently using `emcc` into executable modules.
+- **ONNX:** Native mapping from the IR schema to ONNX opset `.proto` configurations.
 
 ---
 
@@ -104,7 +209,7 @@ sequenceDiagram
     participant User as zero-* Frontend API
     participant Compiler as ml-switcheroo-compiler
     participant IR as ml-switcheroo-ir
-    participant Backend as onnx9000 (Export)
+    participant Backend as WebGPU / Python Emit
 
     User->>Compiler: Execute math (e.g., zero_torch.add)
     activate Compiler
@@ -122,11 +227,11 @@ sequenceDiagram
     Compiler->>IR: Construct LogicalGraph & LogicalNodes
     deactivate Compiler
     
-    IR->>Backend: Provide strict JSON Graph
+    IR->>Backend: Consume Graph
     activate Backend
-    Backend->>Backend: Static Arena Allocation (Memory Offsets)
-    Backend->>Backend: Generate LEB128 WASM / WGSL Shaders
-    Backend-->>User: Executable Browser Payload
+    Backend->>Backend: Pass Manager Optimizations
+    Backend->>Backend: Emitter Generates Code (WGSL/PyTorch/JAX)
+    Backend-->>User: Executable Artifact
     deactivate Backend
 ```
 

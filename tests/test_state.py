@@ -64,3 +64,16 @@ def test_lift_state_assign_non_state():
 
     assert "update1" not in func_g.nodes
     assert func_g.outputs == ["n1", "s1"]
+
+
+def test_lift_state_assign_not_in_env():
+    """Docstring."""
+    g = LogicalGraph()
+    g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
+    g.nodes["a"] = LogicalNode(id="a", op_type="Assign", inputs=["n1", "n1"])
+    g.outputs = ["a"]
+    print("OUTPUTS", g.outputs)
+
+    out_g = lift_state(g, state_vars=[])
+    # The Assign node should be dropped and target not in env
+    assert "a" not in out_g.nodes

@@ -37,26 +37,25 @@ def lift_state(graph: LogicalGraph, state_vars: List[str]) -> LogicalGraph:
             # (assuming simple direct updates for now)
             if target in state_env:
                 state_env[target] = new_val
-            continue
+        else:
+            # For all other nodes, rewrite inputs using latest state
+            new_inputs = []
+            for inp in node.inputs:
+                # If input is a state variable, use its latest version
+                # (Note: standard read of a state var gets mapped here)
+                new_inputs.append(state_env.get(inp, inp))
 
-        # For all other nodes, rewrite inputs using latest state
-        new_inputs = []
-        for inp in node.inputs:
-            # If input is a state variable, use its latest version
-            # (Note: standard read of a state var gets mapped here)
-            new_inputs.append(state_env.get(inp, inp))
-
-        new_graph.nodes[node.id] = LogicalNode(
-            id=node.id,
-            op_type=node.op_type,
-            domain=node.domain,
-            version=node.version,
-            attributes=dict(node.attributes),
-            inputs=new_inputs,
-            shape_metadata=node.shape_metadata,
-            source_ast_ref=node.source_ast_ref,
-            sharding=node.sharding,
-        )
+            new_graph.nodes[node.id] = LogicalNode(
+                id=node.id,
+                op_type=node.op_type,
+                domain=node.domain,
+                version=node.version,
+                attributes=dict(node.attributes),
+                inputs=new_inputs,
+                shape_metadata=node.shape_metadata,
+                source_ast_ref=node.source_ast_ref,
+                sharding=node.sharding,
+            )
 
     # The new outputs are the original outputs + the updated state variables
     functional_outputs = list(graph.outputs)

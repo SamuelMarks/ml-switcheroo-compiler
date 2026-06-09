@@ -229,3 +229,27 @@ def test_vjp_returns_none():
     grad_g = grad(g, ["w"], "out")
     assert grad_g.nodes[grad_g.outputs[0]].op_type == "Constant"
     assert grad_g.nodes[grad_g.outputs[0]].attributes["value"] == 0.0
+
+
+def test_grad_output_is_input():
+    """Docstring."""
+    g = LogicalGraph()
+    g.nodes["w"] = LogicalNode(id="w", op_type="Input")
+    g.outputs = ["w"]
+    grad_g = grad(g, ["w"], "w")
+    assert len(grad_g.outputs) == 1
+
+
+def test_grad_unreachable_node():
+    """Docstring."""
+    g = LogicalGraph()
+    g.nodes["w"] = LogicalNode(id="w", op_type="Input")
+    g.nodes["a"] = LogicalNode(id="a", op_type="Add", inputs=["w", "w"])
+    g.nodes["b"] = LogicalNode(id="b", op_type="Mul", inputs=["w", "w"])
+    g.nodes["out"] = LogicalNode(id="out", op_type="Add", inputs=["a", "a"])
+    # Both 'out' and 'b' are graph outputs, so topological_sort includes 'b'
+    g.outputs = ["out", "b"]
+
+    # We only take gradient wrt 'out'
+    grad_g = grad(g, ["w"], "out")
+    assert len(grad_g.outputs) == 1

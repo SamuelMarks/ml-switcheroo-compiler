@@ -69,3 +69,13 @@ def test_proxy_tensor_outside_context():
 
     with pytest.raises(RuntimeError):
         _ = a @ b
+
+
+def test_tracer_add_node_with_ast_ref():
+    """Docstring."""
+    tape = TracerTape()
+    tape.start_tracing("Test")
+    n = LogicalNode(id="n1", op_type="Input", source_ast_ref="test:1")
+    tape.add_node(n)
+    out_graph = tape.stop_tracing()
+    assert out_graph.nodes["n1"].source_ast_ref == "test:1"

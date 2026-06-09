@@ -26,3 +26,14 @@ def test_shape_aware_rewrite_casts():
 
     rg = shape_aware_rewrite(g)
     assert rg.nodes["n3"].attributes.get("requires_strict_cast") is True
+
+
+def test_shape_aware_rewrite_reshape_no_metadata():
+    """Docstring."""
+    g = LogicalGraph(outputs=["n2"])
+    g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
+    g.nodes["n2"] = LogicalNode(
+        id="n2", op_type="Reshape", inputs=["n1"], shape_metadata=None
+    )
+    rg = shape_aware_rewrite(g)
+    assert "explicit_shape" not in rg.nodes["n2"].attributes

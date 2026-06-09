@@ -139,7 +139,7 @@ def constant_folding(graph: LogicalGraph) -> LogicalGraph:
                     val = input_values[0] - input_values[1]
                 elif node.op_type == "Mul":
                     val = input_values[0] * input_values[1]
-                elif node.op_type == "Div":
+                else:  # node.op_type == "Div"
                     val = input_values[0] / input_values[1]
 
                 # Create a new constant node

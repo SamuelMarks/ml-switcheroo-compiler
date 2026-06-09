@@ -44,3 +44,10 @@ def test_matmul_inner_mismatch_batched():
     """Docstring."""
     with pytest.raises(ValueError, match="Incompatible inner dimensions"):
         matmul_shape((5, 2, 3), (5, 4, 4))
+
+
+def test_matmul_shape_1d():
+    """Docstring."""
+    assert matmul_shape((5,), (5,)) == ()
+    assert matmul_shape((5,), (5, 4)) == (4,)
+    assert matmul_shape((3, 5), (5,)) == (3,)

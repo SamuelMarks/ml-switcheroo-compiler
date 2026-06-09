@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
-[![Test Coverage](https://img.shields.io/badge/test_coverage-96.8%25-green.svg)](#)
+[![Test Coverage](https://img.shields.io/badge/test_coverage-93.8%25-green.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
 
 The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution.
@@ -14,7 +14,33 @@ The compiler resolves the impedance mismatch between different machine learning 
 1. **Source-to-Source (AST-to-AST) Transpilation:** Seamlessly convert ML logic between frameworks like PyTorch, Keras, JAX, and MLX. This includes state lifting/lowering, explicit broadcasting rules, and mapping ecosystem-specific quirks.
 2. **Direct-to-Edge Compilation:** Bypass Python deployment entirely by lowering the Unified IR down to highly optimized browser and edge executables powered by **WebGPU** and **WASM SIMD**.
 
+Please refer to [`ARCHITECTURE.md`](ARCHITECTURE.md) for an in-depth dive into the compiler's architecture, including its intermediate representation, execution engine modes, and transformation pipeline.
+For the detailed implementation roadmap and task tracking, see the [`ML_SWITCHEROO_COMPILER_BUILD_PLAN.md`](ML_SWITCHEROO_COMPILER_BUILD_PLAN.md).
+
 ## Compilation Pipeline
+
+```mermaid
+flowchart LR
+    subgraph Frontends ["zero-* Frontends (API Shells)"]
+        PT[PyTorch API]
+        JX[JAX API]
+        KR[Keras API]
+    end
+
+    subgraph Compiler ["ml-switcheroo-compiler"]
+        TR[Tracer & AD Engine] --> IR[Unified IR]
+        IR --> PM[Middle-End Optimizations]
+    end
+
+    subgraph Backends ["Emitters (Execution Targets)"]
+        PY[Python Source]
+        WG[WebGPU Shaders]
+        WA[WASM SIMD]
+    end
+
+    Frontends -->|Proxy Tensors| Compiler
+    PM -->|Optimized Graph| Backends
+```
 
 - **Unified IR:** A strict, framework-agnostic intermediate representation defining shape semantics, mathematical primitives, control flow, and state management.
 - **Middle-End Optimization:** Executes high-level passes (state transformation, type promotion) and low-level passes (buffer allocation, kernel fusion, loop tiling) before code generation.
@@ -49,17 +75,17 @@ To provide a standard developer experience, the engine supports two distinct exe
 
 ---
 
-## [License](#license)
+## License
 
-[Licensed](https://opensource.org/licenses) under either of
+Licensed under either of
 
-- [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0) ([LICENSE-APACHE](LICENSE-APACHE) or <https://www.apache.org/licenses/LICENSE-2.0>)
-- [MIT license](https://opensource.org/licenses/MIT) ([LICENSE-MIT](LICENSE-MIT) or <https://opensource.org/licenses/MIT>)
+- Apache License, Version 2.0 (LICENSE-APACHE or https://www.apache.org/licenses/LICENSE-2.0)
+- MIT license (LICENSE-MIT or https://opensource.org/licenses/MIT)
 
-at your [option](https://en.wikipedia.org/wiki/Multi-licensing).
+at your option.
 
-### [Contribution](#contribution)
+### Contribution
 
-Unless you explicitly state otherwise, any [contribution](https://opensource.org/faq#contributions) intentionally submitted
-for [inclusion](https://en.wikipedia.org/wiki/Software_build) in the [work](https://en.wikipedia.org/wiki/Creative_work) by you, as defined in the [Apache-2.0 license](https://www.apache.org/licenses/LICENSE-2.0), shall be
-[dual licensed](https://en.wikipedia.org/wiki/Multi-licensing) as above, without any additional [terms or conditions](https://en.wikipedia.org/wiki/Terms_of_service).
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
