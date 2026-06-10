@@ -4,7 +4,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo.rewriter import shape_aware_rewrite
 
 
-def test_shape_aware_rewrite_reshape():
+def test_shape_aware_rewrite_reshape() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["n2"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
@@ -17,7 +17,7 @@ def test_shape_aware_rewrite_reshape():
     assert rg.nodes["n2"].attributes["explicit_shape"] == [2, 4]
 
 
-def test_shape_aware_rewrite_casts():
+def test_shape_aware_rewrite_casts() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["n3"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
@@ -28,7 +28,7 @@ def test_shape_aware_rewrite_casts():
     assert rg.nodes["n3"].attributes.get("requires_strict_cast") is True
 
 
-def test_shape_aware_rewrite_reshape_no_metadata():
+def test_shape_aware_rewrite_reshape_no_metadata() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["n2"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")

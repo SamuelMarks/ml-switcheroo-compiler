@@ -5,15 +5,10 @@ const path = require('path');
 
 const jsCode = fs.readFileSync(path.join(__dirname, '../docs/_static/wasm_runner.js'), 'utf8');
 
-let wasmModule;
-try {
-    const fn = new Function('module', 'exports', jsCode);
-    const m = { exports: {} };
-    fn(m, m.exports);
-    wasmModule = m.exports;
-} catch (e) {
-    console.error("Error loading wasm module:", e);
-}
+const fn = new Function('module', 'exports', jsCode);
+const m = { exports: {} };
+fn(m, m.exports);
+const wasmModule = m.exports;
 
 test('validateMemoryBounds throws on invalid', () => {
     const memory = { buffer: new ArrayBuffer(16) }; // 16 bytes
@@ -21,10 +16,37 @@ test('validateMemoryBounds throws on invalid', () => {
     assert.throws(() => wasmModule.validateMemoryBounds(memory, -1, 10), /bounds violation/);
 });
 
-test('validateMemoryBounds passes on valid', () => {
+test('validateMemoryBounds checks exactly on bounds', () => {
     const memory = { buffer: new ArrayBuffer(16) }; // 16 bytes
-    assert.doesNotThrow(() => wasmModule.validateMemoryBounds(memory, 0, 16));
-    assert.doesNotThrow(() => wasmModule.validateMemoryBounds(memory, 4, 12));
+    assert.throws(() => wasmModule.validateMemoryBounds(memory, 10, 10), /bounds violation/);
+    assert.doesNotThrow(() => wasmModule.validateMemoryBounds(memory, 10, 6)); // Exactly fits
+});
+
+test('runWasmCompute throws if WebAssembly unsupported', async () => {
+    // Hide global WebAssembly
+    const orig = global.WebAssembly;
+    global.WebAssembly = undefined;
+    
+    await assert.rejects(
+        () => wasmModule.runWasmCompute(new Uint8Array(), new Float32Array(1), 1),
+        /WebAssembly is not supported/
+    );
+    
+    global.WebAssembly = orig;
+});
+
+test('runWasmCompute throws if instantiation fails', async () => {
+    const orig = global.WebAssembly.instantiate;
+    global.WebAssembly.instantiate = async () => {
+        throw new Error('Fake instantiation error');
+    };
+    
+    await assert.rejects(
+        () => wasmModule.runWasmCompute(new Uint8Array(), new Float32Array(1), 1),
+        /Failed to instantiate WASM module/
+    );
+    
+    global.WebAssembly.instantiate = orig;
 });
 
 test('runWasmCompute runs correctly', async () => {

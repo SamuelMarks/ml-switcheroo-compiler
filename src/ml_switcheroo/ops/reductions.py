@@ -1,7 +1,8 @@
 """Reduction Operations."""
 
 import uuid
-from typing import Sequence, Union, Optional
+from typing import Union, Optional
+from collections.abc import Sequence
 import numpy as np
 from ml_switcheroo.core.tensor import Tensor
 from ml_switcheroo.core.dtype import DType

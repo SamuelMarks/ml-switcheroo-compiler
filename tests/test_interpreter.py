@@ -6,7 +6,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo.interpreter import evaluate_graph
 
 
-def test_evaluate_graph():
+def test_evaluate_graph() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -21,7 +21,7 @@ def test_evaluate_graph():
     np.testing.assert_allclose(outputs["out"], np.array([0.0, 3.0]))
 
 
-def test_missing_input():
+def test_missing_input() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["in"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -30,7 +30,7 @@ def test_missing_input():
         evaluate_graph(g, {})
 
 
-def test_not_implemented():
+def test_not_implemented() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -40,7 +40,7 @@ def test_not_implemented():
         evaluate_graph(g, {"in": np.array([1.0])})
 
 
-def test_missing_output():
+def test_missing_output() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
@@ -49,7 +49,7 @@ def test_missing_output():
         evaluate_graph(g, {"in": np.array([1.0])})
 
 
-def test_all_ops():
+def test_all_ops() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["out"])
     g.nodes["in1"] = LogicalNode(id="in1", op_type="Input")

@@ -1,9 +1,13 @@
+"""Docstring module."""
+
+from typing import Any
+
 # ruff: noqa: F403, F405
 """Tests for Unary and Binary operations."""
 
-import pytest
-import numpy as np
-from ml_switcheroo.core import (
+import pytest  # noqa: E402
+import numpy as np  # noqa: E402
+from ml_switcheroo.core import (  # noqa: E402
     ConfigContext,
     DType,
     Tensor,
@@ -11,8 +15,8 @@ from ml_switcheroo.core import (
     DeviceType,
     UnimplementedMathError,
 )
-from ml_switcheroo.tracing import _tracer, ProxyTensor
-from ml_switcheroo.ops import *
+from ml_switcheroo.tracing import _tracer, ProxyTensor  # noqa: E402
+from ml_switcheroo.ops import *  # noqa: E402
 
 UNARY_OPS = [
     "abs",
@@ -107,7 +111,7 @@ BINARY_OPS = [
 UNIMPLEMENTED_UNARY = ["erfc", "erfinv", "lgamma", "digamma"]
 
 
-def _make_tensor(data_list, dtype):
+def _make_tensor(data_list: Any, dtype: Any) -> Any:
     return Tensor(
         np.array(data_list, dtype=dtype.value),
         (len(data_list),),
@@ -116,13 +120,14 @@ def _make_tensor(data_list, dtype):
     )
 
 
-def _make_proxy(shape, dtype):
+def _make_proxy(shape: Any, dtype: Any) -> Any:
     return Tensor(
         ProxyTensor("a", shape, dtype.value), shape, dtype, Device(DeviceType.CPU)
     )
 
 
-def test_unary_eager():
+def test_unary_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t_float = _make_tensor([0.5, 0.2], DType.Float32)
         t_int = _make_tensor([1, 2], DType.Int32)
@@ -163,7 +168,8 @@ def test_unary_eager():
         assert res.dtype == DType.Float32
 
 
-def test_binary_eager():
+def test_binary_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t_float = _make_tensor([0.5, 0.2], DType.Float32)
         t_int = _make_tensor([1, 2], DType.Int32)
@@ -199,7 +205,8 @@ def test_binary_eager():
         assert res is True
 
 
-def test_unary_tracing():
+def test_unary_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t_float = _make_proxy((2,), DType.Float32)
 
@@ -232,7 +239,8 @@ def test_unary_tracing():
             _tracer.stop_tracing()
 
 
-def test_binary_tracing():
+def test_binary_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t_float = _make_proxy((2,), DType.Float32)
 

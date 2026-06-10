@@ -5,15 +5,10 @@ const path = require('path');
 
 const jsCode = fs.readFileSync(path.join(__dirname, '../docs/_static/webgpu_runner.js'), 'utf8');
 
-let webgpuModule;
-try {
-    const fn = new Function('module', 'exports', jsCode);
-    const m = { exports: {} };
-    fn(m, m.exports);
-    webgpuModule = m.exports;
-} catch (e) {
-    console.error("Error loading webgpu module:", e);
-}
+const fn = new Function('module', 'exports', jsCode);
+const m = { exports: {} };
+fn(m, m.exports);
+const webgpuModule = m.exports;
 
 test('initWebGPU throws if not supported', async () => {
     const nav = {}; // no gpu

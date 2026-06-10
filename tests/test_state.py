@@ -4,7 +4,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo.state import lift_state
 
 
-def test_lift_state():
+def test_lift_state() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["update2"])
 
@@ -39,7 +39,7 @@ def test_lift_state():
     assert func_g.outputs == ["update2", "n1"]
 
 
-def test_lift_state_no_update():
+def test_lift_state_no_update() -> None:
     """Docstring."""
     g = LogicalGraph(outputs=["n1"])
     g.nodes["s1"] = LogicalNode(id="s1", op_type="Input")
@@ -50,7 +50,8 @@ def test_lift_state_no_update():
     assert func_g.outputs == ["n1", "s1"]
 
 
-def test_lift_state_assign_non_state():
+def test_lift_state_assign_non_state() -> None:
+    """Docstring."""
     # If assign targets a non-state variable, it's ignored or passed through
     """Docstring."""
     g = LogicalGraph(outputs=["n1"])
@@ -66,7 +67,7 @@ def test_lift_state_assign_non_state():
     assert func_g.outputs == ["n1", "s1"]
 
 
-def test_lift_state_assign_not_in_env():
+def test_lift_state_assign_not_in_env() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")

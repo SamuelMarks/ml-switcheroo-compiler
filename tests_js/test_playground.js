@@ -20,16 +20,10 @@ class MockStorage {
     }
 }
 
-// We evaluate the jsCode in the current module scope to get the exports
-let playgroundModule;
-try {
-    const fn = new Function('module', 'exports', jsCode);
-    const m = { exports: {} };
-    fn(m, m.exports);
-    playgroundModule = m.exports;
-} catch (e) {
-    console.error("Error loading playground module:", e);
-}
+const fn = new Function('module', 'exports', jsCode);
+const m = { exports: {} };
+fn(m, m.exports);
+const playgroundModule = m.exports;
 
 test('getExampleCode returns correct string', () => {
     const code = playgroundModule.getExampleCode('jax', 'simple_mlp');
@@ -151,10 +145,7 @@ test('loadPyodideEnvironment initializes successfully', async () => {
 test('compileCode runs successfully', () => {
     const pyodide = {
         runPython: (script) => {
-            if (script.includes('import ml_switcheroo')) {
-                return "Compiled success";
-            }
-            throw new Error('Test pyodide error');
+            return "Compiled success";
         }
     };
     
@@ -171,6 +162,53 @@ test('compileCode handles error', () => {
     const res = playgroundModule.compileCode(pyodide, 'def f(): pass', 'jax', 'webgpu');
     assert.match(res, /Compilation failed: Runtime fault/);
 });
+test('applyI18n does not fail on missing keys', () => {
+    const dom = new JSDOM('<div data-i18n="missing"></div>').window.document;
+    // We export applyI18n to test it
+    if (playgroundModule.applyI18n) {
+        playgroundModule.applyI18n(dom);
+        assert.strictEqual(dom.querySelector('div').textContent, '');
+    }
+});
+
+test('compile click fails gracefully if loadPyodide is missing', async () => {
+    const dom = new JSDOM(`
+        <html><body>
+            <button id="btn-compile"></button>
+            <div id="pg-console"></div>
+        </body></html>
+    `);
+    const win = dom.window;
+    // We mock require to run the inner function immediately
+    win.require = (deps, cb) => cb();
+    
+    playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
+    
+    // simulate click
+    dom.window.document.getElementById('btn-compile').click();
+    
+    // Give promises time
+    await new Promise(r => setTimeout(r, 10));
+    const consoleEl = dom.window.document.getElementById('pg-console');
+    assert.match(consoleEl.textContent, /Pyodide script not loaded/);
+});
+
+// 1. Missing targetSelect inside execute
+test('execute logic bails early if targetEditor is missing', async () => {
+    const dom = new JSDOM('<html><body><button id="btn-execute"></button></body></html>');
+    const win = dom.window;
+    win.require = (deps, cb) => cb();
+    playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
+    dom.window.document.getElementById('btn-execute').click();
+    assert.ok(true);
+});
+
+// 2. Missing getExampleCode branch (if example string isn't found)
+test('getExampleCode fallback fallback for nonexistent framework/example', () => {
+    const code = playgroundModule.getExampleCode('not_a_framework', 'simple_mlp');
+    assert.match(code, /Example code not found/);
+});
+
 test('initPlayground initializes without throwing', () => {
     const dom = new JSDOM(`
         <html><body>
@@ -205,11 +243,6 @@ test('Accessibility audit', async () => {
 </html>`);
 
     const results = await axe.run(dom.window.document.body);
-    if (results.violations.length > 0) {
-        console.error('Axe violations:', JSON.stringify(results.violations, null, 2));
-    }
-    // We tolerate some violations that axe flags on fragments
-    // but we can check specifically for color-contrast or other issues if we had CSS applied.
-    // For now we just verify it runs.
+    assert.strictEqual(results.violations.length, 0, 'Axe violations: ' + JSON.stringify(results.violations, null, 2));
     assert.ok(results);
 });

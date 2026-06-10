@@ -1,7 +1,8 @@
 """Shape, Memory, and Movement Ops."""
 
 import uuid
-from typing import Sequence, Union, Optional
+from typing import Union, Optional
+from collections.abc import Sequence
 import numpy as np
 from ml_switcheroo.core.tensor import Tensor
 from ml_switcheroo.core.dtype import DType
@@ -33,7 +34,7 @@ def _emit_shape_node(
 
 
 def reshape(input: Tensor, shape: Sequence[int]) -> Tensor:
-    """reshape"""
+    """Reshape."""
     if config.eager_mode:
         data = np.reshape(input.data, shape)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -51,7 +52,7 @@ def reshape(input: Tensor, shape: Sequence[int]) -> Tensor:
 
 
 def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
-    """flatten"""
+    """Flatten."""
     if config.eager_mode:
         data = np.reshape(input.data, -1)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -69,7 +70,7 @@ def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
 
 
 def squeeze(input: Tensor, dim: Optional[Union[int, Sequence[int]]] = None) -> Tensor:
-    """squeeze"""
+    """Squeeze."""
     if config.eager_mode:
         data = np.squeeze(input.data, axis=dim)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -92,7 +93,7 @@ def squeeze(input: Tensor, dim: Optional[Union[int, Sequence[int]]] = None) -> T
 
 
 def unsqueeze(input: Tensor, dim: int) -> Tensor:
-    """unsqueeze"""
+    """Unsqueeze."""
     if config.eager_mode:
         data = np.expand_dims(input.data, axis=dim)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -110,7 +111,7 @@ def unsqueeze(input: Tensor, dim: int) -> Tensor:
 
 
 def expand(input: Tensor, size: Sequence[int]) -> Tensor:
-    """expand"""
+    """Expand."""
     if config.eager_mode:
         data = np.broadcast_to(input.data, size)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -128,7 +129,7 @@ def expand(input: Tensor, size: Sequence[int]) -> Tensor:
 
 
 def broadcast_to(input: Tensor, size: Sequence[int]) -> Tensor:
-    """broadcast_to"""
+    """broadcast_to."""
     if config.eager_mode:
         data = np.broadcast_to(input.data, size)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -146,7 +147,7 @@ def broadcast_to(input: Tensor, size: Sequence[int]) -> Tensor:
 
 
 def transpose(input: Tensor, dim0: int, dim1: int) -> Tensor:
-    """transpose"""
+    """Transpose."""
     if config.eager_mode:
         data = np.swapaxes(input.data, dim0, dim1)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -164,7 +165,7 @@ def transpose(input: Tensor, dim0: int, dim1: int) -> Tensor:
 
 
 def permute(input: Tensor, dims: Sequence[int]) -> Tensor:
-    """permute"""
+    """Permute."""
     if config.eager_mode:
         data = np.transpose(input.data, dims)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -182,7 +183,7 @@ def permute(input: Tensor, dims: Sequence[int]) -> Tensor:
 
 
 def swapaxes(input: Tensor, axis1: int, axis2: int) -> Tensor:
-    """swapaxes"""
+    """Swapaxes."""
     if config.eager_mode:
         data = np.swapaxes(input.data, axis1, axis2)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -204,7 +205,7 @@ def moveaxis(
     source: Union[int, Sequence[int]],
     destination: Union[int, Sequence[int]],
 ) -> Tensor:
-    """moveaxis"""
+    """Moveaxis."""
     if config.eager_mode:
         data = np.moveaxis(input.data, source, destination)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -226,7 +227,7 @@ def roll(
     shifts: Union[int, Sequence[int]],
     dims: Optional[Union[int, Sequence[int]]] = None,
 ) -> Tensor:
-    """roll"""
+    """Roll."""
     if config.eager_mode:
         data = np.roll(input.data, shifts, axis=dims)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -250,7 +251,7 @@ def slice(
     end: Optional[int] = None,
     step: int = 1,
 ) -> Tensor:
-    """slice"""
+    """Slice."""
     if config.eager_mode:
         import builtins
 
@@ -274,7 +275,7 @@ def slice(
 def dynamic_slice(
     input: Tensor, start_indices: Sequence[Tensor], slice_sizes: Sequence[int]
 ) -> Tensor:
-    """dynamic_slice"""
+    """dynamic_slice."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for dynamic_slice")
     else:
@@ -291,7 +292,7 @@ def dynamic_slice(
 
 
 def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> Tensor:
-    """update_slice"""
+    """update_slice."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for update_slice")
     else:
@@ -310,7 +311,7 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
 def strided_slice(
     input: Tensor, begin: Sequence[int], end: Sequence[int], strides: Sequence[int]
 ) -> Tensor:
-    """strided_slice"""
+    """strided_slice."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for strided_slice")
     else:
@@ -327,7 +328,7 @@ def strided_slice(
 
 
 def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
-    """concatenate"""
+    """Concatenate."""
     if config.eager_mode:
         data = np.concatenate([t.data for t in tensors], axis=dim)
         return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
@@ -348,7 +349,7 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
 
 
 def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
-    """stack"""
+    """Stack."""
     if config.eager_mode:
         data = np.stack([t.data for t in tensors], axis=dim)
         return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
@@ -368,7 +369,7 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
 def split(
     input: Tensor, split_size_or_sections: Union[int, Sequence[int]], dim: int = 0
 ) -> Sequence[Tensor]:
-    """split"""
+    """Split."""
     if config.eager_mode:
         datas = np.split(input.data, split_size_or_sections, axis=dim)
         return tuple(Tensor(d, d.shape, input.dtype, input.device) for d in datas)
@@ -388,7 +389,7 @@ def split(
 
 
 def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
-    """unstack"""
+    """Unstack."""
     if config.eager_mode:
         datas = (
             np.unstack(input.data, axis=dim)
@@ -412,7 +413,7 @@ def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
 
 
 def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
-    """tile"""
+    """Tile."""
     if config.eager_mode:
         data = np.tile(input.data, reps)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -432,7 +433,7 @@ def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
 def repeat(
     input: Tensor, repeats: Union[int, Sequence[int]], dim: Optional[int] = None
 ) -> Tensor:
-    """repeat"""
+    """Repeat."""
     if config.eager_mode:
         data = np.repeat(input.data, repeats, axis=dim)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -450,7 +451,7 @@ def repeat(
 
 
 def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
-    """gather"""
+    """Gather."""
     if config.eager_mode:
         data = np.take_along_axis(input.data, index.data, axis=dim)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -468,7 +469,7 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
 
 
 def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
-    """gather_nd"""
+    """gather_nd."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for gather_nd")
     else:
@@ -485,7 +486,7 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
 
 
 def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
-    """scatter"""
+    """Scatter."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for scatter")
     else:
@@ -502,7 +503,7 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
 
 
 def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor:
-    """scatter_nd"""
+    """scatter_nd."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for scatter_nd")
     else:
@@ -519,7 +520,7 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
 
 
 def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
-    """scatter_add"""
+    """scatter_add."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for scatter_add")
     else:
@@ -536,7 +537,7 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
 
 
 def take(input: Tensor, indices: Tensor) -> Tensor:
-    """take"""
+    """Take."""
     if config.eager_mode:
         data = np.take(input.data, indices.data)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -554,7 +555,7 @@ def take(input: Tensor, indices: Tensor) -> Tensor:
 
 
 def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
-    """where"""
+    """Where."""
     if config.eager_mode:
         data = np.where(condition.data, input.data, other.data)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -572,7 +573,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
 
 
 def triu(input: Tensor, diagonal: int = 0) -> Tensor:
-    """triu"""
+    """Triu."""
     if config.eager_mode:
         data = np.triu(input.data, k=diagonal)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -590,7 +591,7 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
 
 
 def tril(input: Tensor, diagonal: int = 0) -> Tensor:
-    """tril"""
+    """Tril."""
     if config.eager_mode:
         data = np.tril(input.data, k=diagonal)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -608,7 +609,7 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
 
 
 def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
-    """meshgrid"""
+    """Meshgrid."""
     if config.eager_mode:
         datas = np.meshgrid(*[t.data for t in tensors], indexing=indexing)
         return tuple(

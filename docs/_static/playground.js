@@ -430,6 +430,7 @@ function initPlayground(doc, storage, win) {
 // Export for testing
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
+        applyI18n,
         initTheme,
         updateEditorTheme,
         getExampleCode,

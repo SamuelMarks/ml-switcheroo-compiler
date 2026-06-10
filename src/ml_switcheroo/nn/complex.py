@@ -1,7 +1,8 @@
 """Complex NN Operations."""
 
 import uuid
-from typing import Optional, Union, Tuple, Sequence
+from typing import Optional, Union
+from collections.abc import Sequence
 from ml_switcheroo.core.tensor import Tensor
 from ml_switcheroo.core.config import config
 from ml_switcheroo.core.errors import UnimplementedMathError
@@ -19,14 +20,14 @@ def conv1d(
     dilation: int = 1,
     groups: int = 1,
 ) -> Tensor:
-    """conv1d"""
+    """conv1d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for conv1d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("Conv1D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -41,14 +42,14 @@ def conv2d(
     dilation: Union[int, tuple] = 1,
     groups: int = 1,
 ) -> Tensor:
-    """conv2d"""
+    """conv2d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for conv2d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("Conv2D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -63,14 +64,14 @@ def conv3d(
     dilation: Union[int, tuple] = 1,
     groups: int = 1,
 ) -> Tensor:
-    """conv3d"""
+    """conv3d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for conv3d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("Conv3D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -86,14 +87,14 @@ def conv_transpose1d(
     groups: int = 1,
     dilation: int = 1,
 ) -> Tensor:
-    """conv_transpose1d"""
+    """conv_transpose1d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for conv_transpose1d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -111,14 +112,14 @@ def conv_transpose2d(
     groups: int = 1,
     dilation: Union[int, tuple] = 1,
 ) -> Tensor:
-    """conv_transpose2d"""
+    """conv_transpose2d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for conv_transpose2d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -136,14 +137,14 @@ def conv_transpose3d(
     groups: int = 1,
     dilation: Union[int, tuple] = 1,
 ) -> Tensor:
-    """conv_transpose3d"""
+    """conv_transpose3d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for conv_transpose3d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -159,14 +160,14 @@ def max_pool1d(
     dilation: int = 1,
     ceil_mode: bool = False,
 ) -> Tensor:
-    """max_pool1d"""
+    """max_pool1d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for max_pool1d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("MaxPool1D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -180,14 +181,14 @@ def max_pool2d(
     dilation: Union[int, tuple] = 1,
     ceil_mode: bool = False,
 ) -> Tensor:
-    """max_pool2d"""
+    """max_pool2d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for max_pool2d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("MaxPool2D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -201,14 +202,14 @@ def max_pool3d(
     dilation: Union[int, tuple] = 1,
     ceil_mode: bool = False,
 ) -> Tensor:
-    """max_pool3d"""
+    """max_pool3d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for max_pool3d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("MaxPool3D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -222,14 +223,14 @@ def avg_pool1d(
     ceil_mode: bool = False,
     count_include_pad: bool = True,
 ) -> Tensor:
-    """avg_pool1d"""
+    """avg_pool1d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for avg_pool1d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("AvgPool1D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -243,14 +244,14 @@ def avg_pool2d(
     ceil_mode: bool = False,
     count_include_pad: bool = True,
 ) -> Tensor:
-    """avg_pool2d"""
+    """avg_pool2d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for avg_pool2d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("AvgPool2D", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -264,21 +265,21 @@ def avg_pool3d(
     ceil_mode: bool = False,
     count_include_pad: bool = True,
 ) -> Tensor:
-    """avg_pool3d"""
+    """avg_pool3d."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for avg_pool3d.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("AvgPool3D", inputs, {}, inputs[0].shape, inputs[0].dtype)
 
 
 def adaptive_avg_pool2d(input: Tensor, output_size: Union[int, tuple]) -> Tensor:
-    """adaptive_avg_pool2d"""
+    """adaptive_avg_pool2d."""
     if config.eager_mode:
         raise UnimplementedMathError(
             "No direct NumPy equivalent for adaptive_avg_pool2d."
@@ -287,7 +288,7 @@ def adaptive_avg_pool2d(input: Tensor, output_size: Union[int, tuple]) -> Tensor
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -301,7 +302,7 @@ def fractional_max_pool2d(
     output_size: Optional[Union[int, tuple]] = None,
     output_ratio: Optional[Union[float, tuple]] = None,
 ) -> Tensor:
-    """fractional_max_pool2d"""
+    """fractional_max_pool2d."""
     if config.eager_mode:
         raise UnimplementedMathError(
             "No direct NumPy equivalent for fractional_max_pool2d."
@@ -310,7 +311,7 @@ def fractional_max_pool2d(
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -325,14 +326,14 @@ def layer_norm(
     bias: Optional[Tensor] = None,
     eps: float = 1e-05,
 ) -> Tensor:
-    """layer_norm"""
+    """layer_norm."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for layer_norm.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("LayerNorm", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -348,14 +349,14 @@ def batch_norm(
     momentum: float = 0.1,
     eps: float = 1e-05,
 ) -> Tensor:
-    """batch_norm"""
+    """batch_norm."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for batch_norm.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("BatchNorm", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -368,14 +369,14 @@ def group_norm(
     bias: Optional[Tensor] = None,
     eps: float = 1e-05,
 ) -> Tensor:
-    """group_norm"""
+    """group_norm."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for group_norm.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("GroupNorm", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -387,14 +388,14 @@ def rms_norm(
     weight: Optional[Tensor] = None,
     eps: float = 1e-08,
 ) -> Tensor:
-    """rms_norm"""
+    """rms_norm."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for rms_norm.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("RmsNorm", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -410,14 +411,14 @@ def instance_norm(
     momentum: float = 0.1,
     eps: float = 1e-05,
 ) -> Tensor:
-    """instance_norm"""
+    """instance_norm."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for instance_norm.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -426,28 +427,28 @@ def instance_norm(
 
 
 def dropout(input: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
-    """dropout"""
+    """Dropout."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for dropout.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("Dropout", inputs, {}, inputs[0].shape, inputs[0].dtype)
 
 
 def alpha_dropout(input: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
-    """alpha_dropout"""
+    """alpha_dropout."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for alpha_dropout.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -458,7 +459,7 @@ def alpha_dropout(input: Tensor, p: float = 0.5, training: bool = True) -> Tenso
 def feature_alpha_dropout(
     input: Tensor, p: float = 0.5, training: bool = True
 ) -> Tensor:
-    """feature_alpha_dropout"""
+    """feature_alpha_dropout."""
     if config.eager_mode:
         raise UnimplementedMathError(
             "No direct NumPy equivalent for feature_alpha_dropout."
@@ -467,7 +468,7 @@ def feature_alpha_dropout(
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -476,14 +477,14 @@ def feature_alpha_dropout(
 
 
 def spatial_dropout(input: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
-    """spatial_dropout"""
+    """spatial_dropout."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for spatial_dropout.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -500,14 +501,14 @@ def embedding(
     scale_grad_by_freq: bool = False,
     sparse: bool = False,
 ) -> Tensor:
-    """embedding"""
+    """Embedding."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for embedding.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("Embedding", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -516,14 +517,14 @@ def embedding(
 def pad(
     input: Tensor, pad: Sequence[int], mode: str = "constant", value: float = 0.0
 ) -> Tensor:
-    """pad"""
+    """Pad."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for pad.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("Pad", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -534,7 +535,7 @@ def upsample_bilinear(
     size: Optional[Union[int, tuple]] = None,
     scale_factor: Optional[Union[float, tuple]] = None,
 ) -> Tensor:
-    """upsample_bilinear"""
+    """upsample_bilinear."""
     if config.eager_mode:
         raise UnimplementedMathError(
             "No direct NumPy equivalent for upsample_bilinear."
@@ -543,7 +544,7 @@ def upsample_bilinear(
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -556,14 +557,14 @@ def upsample_nearest(
     size: Optional[Union[int, tuple]] = None,
     scale_factor: Optional[Union[float, tuple]] = None,
 ) -> Tensor:
-    """upsample_nearest"""
+    """upsample_nearest."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for upsample_nearest.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -579,7 +580,7 @@ def scaled_dot_product_attention(
     dropout_p: float = 0.0,
     is_causal: bool = False,
 ) -> Tensor:
-    """scaled_dot_product_attention"""
+    """scaled_dot_product_attention."""
     if config.eager_mode:
         raise UnimplementedMathError(
             "No direct NumPy equivalent for scaled_dot_product_attention."
@@ -588,7 +589,7 @@ def scaled_dot_product_attention(
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node(
@@ -604,14 +605,14 @@ def rnn_cell(
     bias_ih: Optional[Tensor] = None,
     bias_hh: Optional[Tensor] = None,
 ) -> Tensor:
-    """rnn_cell"""
+    """rnn_cell."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for rnn_cell.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("RnnCell", inputs, {}, inputs[0].shape, inputs[0].dtype)
@@ -619,13 +620,13 @@ def rnn_cell(
 
 def lstm_cell(
     input: Tensor,
-    hx: Tuple[Tensor, Tensor],
+    hx: tuple[Tensor, Tensor],
     weight_ih: Tensor,
     weight_hh: Tensor,
     bias_ih: Optional[Tensor] = None,
     bias_hh: Optional[Tensor] = None,
-) -> Tuple[Tensor, Tensor]:
-    """lstm_cell"""
+) -> tuple[Tensor, Tensor]:
+    """lstm_cell."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for lstm_cell.")
     else:
@@ -670,14 +671,14 @@ def gru_cell(
     bias_ih: Optional[Tensor] = None,
     bias_hh: Optional[Tensor] = None,
 ) -> Tensor:
-    """gru_cell"""
+    """gru_cell."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct NumPy equivalent for gru_cell.")
     else:
         # Simplification: we gather all Tensor args as inputs
         inputs = []
         locs = locals()
-        for k, v in locs.items():
+        for _k, v in locs.items():
             if isinstance(v, Tensor):
                 inputs.append(v)
         return _emit_nn_node("GruCell", inputs, {}, inputs[0].shape, inputs[0].dtype)

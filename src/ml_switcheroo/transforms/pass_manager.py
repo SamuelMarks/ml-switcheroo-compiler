@@ -1,6 +1,6 @@
 """Pass Manager Infrastructure for Middle-End Transformations."""
 
-from typing import List, Callable, Set
+from typing import Callable
 import hashlib
 import json
 
@@ -12,11 +12,11 @@ class DAGTopologicalSorter:
     """Topological Sorter for IR graphs."""
 
     @staticmethod
-    def sort(graph: IRGraph) -> List[IRNode]:
+    def sort(graph: IRGraph) -> list[IRNode]:
         """Perform topological sort on the graph nodes."""
-        visited: Set[str] = set()
-        temp_mark: Set[str] = set()
-        sorted_nodes: List[IRNode] = []
+        visited: set[str] = set()
+        temp_mark: set[str] = set()
+        sorted_nodes: list[IRNode] = []
 
         def visit(node_id: str) -> None:
             if node_id in temp_mark:
@@ -53,7 +53,7 @@ class IRValidator:
         """Validate shape consistency."""
         # Simple validator: ensure every node has shape metadata
         for node_id, node in graph.nodes.items():
-            if not hasattr(node, "shape_metadata"):
+            if getattr(node, "shape_metadata", None) is None:
                 raise CompilationError(f"Node {node_id} is missing shape_metadata.")
 
 
@@ -74,8 +74,8 @@ class PassManager:
 
     def __init__(self) -> None:
         """Initialize the PassManager."""
-        self.passes: List[Callable[[IRGraph], bool]] = []
-        self.validators: List[Callable[[IRGraph], None]] = [
+        self.passes: list[Callable[[IRGraph], bool]] = []
+        self.validators: list[Callable[[IRGraph], None]] = [
             IRValidator.check_cycles,
             IRValidator.check_shapes,
         ]

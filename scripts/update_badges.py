@@ -27,7 +27,7 @@ def format_cov(cov):
 def get_test_coverage():
     try:
         subprocess.run(["coverage", "json", "-o", "coverage.json"], check=False)
-        with open("coverage.json", "r") as f:
+        with open("coverage.json") as f:
             data = json.load(f)
             return data["totals"]["percent_covered"]
     except Exception:
@@ -52,7 +52,7 @@ def update_readme():
     test_color = get_color(test_cov)
     doc_color = get_color(doc_cov)
 
-    with open("README.md", "r") as f:
+    with open("README.md") as f:
         content = f.read()
 
     # Generic replacements that handle both the cdd-go markdown format with the `#` anchor and the older ml-switcheroo format

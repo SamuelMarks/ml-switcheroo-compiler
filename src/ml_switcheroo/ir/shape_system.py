@@ -1,6 +1,6 @@
 """Type & Shape System for IR."""
 
-from typing import Any, Union, Tuple, List
+from typing import Any, Union
 
 
 from ml_switcheroo.ir.core import TensorSpec
@@ -10,46 +10,56 @@ from ml_switcheroo.shape import broadcast_shapes, matmul_shape
 class SymInt:
     """Symbolic Integer to trace graphs with dynamic dimensions."""
 
-    def __init__(self, name_or_expr: str):
+    def __init__(self, name_or_expr: str) -> None:
         """Initialize SymInt."""
         self.expr = str(name_or_expr)
 
     def __add__(self, other: Union["SymInt", int]) -> "SymInt":
+        """Docstring."""
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} + {other.expr})")
         return SymInt(f"({self.expr} + {other})")
 
     def __radd__(self, other: int) -> "SymInt":
+        """Docstring."""
         return SymInt(f"({other} + {self.expr})")
 
     def __sub__(self, other: Union["SymInt", int]) -> "SymInt":
+        """Docstring."""
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} - {other.expr})")
         return SymInt(f"({self.expr} - {other})")
 
     def __rsub__(self, other: int) -> "SymInt":
+        """Docstring."""
         return SymInt(f"({other} - {self.expr})")
 
     def __mul__(self, other: Union["SymInt", int]) -> "SymInt":
+        """Docstring."""
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} * {other.expr})")
         return SymInt(f"({self.expr} * {other})")
 
     def __rmul__(self, other: int) -> "SymInt":
+        """Docstring."""
         return SymInt(f"({other} * {self.expr})")
 
     def __floordiv__(self, other: Union["SymInt", int]) -> "SymInt":
+        """Docstring."""
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} // {other.expr})")
         return SymInt(f"({self.expr} // {other})")
 
     def __str__(self) -> str:
+        """Docstring."""
         return str(self.expr)
 
     def __repr__(self) -> str:
+        """Docstring."""
         return f"SymInt({self.expr})"
 
     def __eq__(self, other: Any) -> bool:
+        """Docstring."""
         if isinstance(other, SymInt):
             return self.expr == other.expr
         return False
@@ -75,7 +85,7 @@ class ShapeTracker:
     """Calculates exact output shapes given input TensorSpecs."""
 
     @staticmethod
-    def infer_elementwise(inputs: List[TensorSpec]) -> Tuple[Union[int, SymInt], ...]:
+    def infer_elementwise(inputs: list[TensorSpec]) -> tuple[Union[int, SymInt], ...]:
         """Infer shape for elementwise operations requiring broadcasting."""
         if not inputs:
             return ()
@@ -97,7 +107,7 @@ class ShapeTracker:
     @staticmethod
     def infer_matmul(
         input1: TensorSpec, input2: TensorSpec
-    ) -> Tuple[Union[int, SymInt], ...]:
+    ) -> tuple[Union[int, SymInt], ...]:
         """Infer shape for matrix multiplication."""
         s1 = tuple(str(x) if isinstance(x, SymInt) else x for x in input1.shape)
         s2 = tuple(str(x) if isinstance(x, SymInt) else x for x in input2.shape)

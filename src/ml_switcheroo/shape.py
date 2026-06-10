@@ -1,8 +1,8 @@
 """Shape inference utilities mimicking numpy broadcasting rules."""
 
-from typing import Tuple, Union
+from typing import Union
 
-ShapeType = Tuple[Union[int, str], ...]
+ShapeType = tuple[Union[int, str], ...]
 
 
 def broadcast_shapes(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
@@ -100,8 +100,8 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 
 
 def normalize_axis(
-    axis: Union[int, Tuple[int, ...]], ndim: int
-) -> Union[int, Tuple[int, ...]]:
+    axis: Union[int, tuple[int, ...]], ndim: int
+) -> Union[int, tuple[int, ...]]:
     """Normalize a negative axis or tuple of axes to be positive.
 
     Args:

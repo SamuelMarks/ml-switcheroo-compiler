@@ -1,10 +1,13 @@
+"""Docstring module."""
+
+from typing import Any
 # ruff: noqa: F403, F405
 
 """Tests for Shape operations."""
 
-import pytest
-import numpy as np
-from ml_switcheroo.core import (
+import pytest  # noqa: E402
+import numpy as np  # noqa: E402
+from ml_switcheroo.core import (  # noqa: E402
     ConfigContext,
     DType,
     Tensor,
@@ -12,8 +15,8 @@ from ml_switcheroo.core import (
     DeviceType,
     UnimplementedMathError,
 )
-from ml_switcheroo.tracing import _tracer, ProxyTensor
-from ml_switcheroo.ops import *
+from ml_switcheroo.tracing import _tracer, ProxyTensor  # noqa: E402
+from ml_switcheroo.ops import *  # noqa: E402
 
 SHAPE_OPS = [
     "reshape",
@@ -50,7 +53,7 @@ SHAPE_OPS = [
 ]
 
 
-def _make_tensor(data_list, dtype, shape=None):
+def _make_tensor(data_list: Any, dtype: Any, shape: Any = None) -> Any:
     if shape is None:
         shape = (len(data_list),)
     return Tensor(
@@ -61,13 +64,14 @@ def _make_tensor(data_list, dtype, shape=None):
     )
 
 
-def _make_proxy(shape, dtype):
+def _make_proxy(shape: Any, dtype: Any) -> Any:
     return Tensor(
         ProxyTensor("a", shape, dtype.value), shape, dtype, Device(DeviceType.CPU)
     )
 
 
-def test_shape_eager():
+def test_shape_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t = _make_tensor([1.0, 2.0, 3.0, 4.0], DType.Float32, (2, 2))
         t1d = _make_tensor([1.0, 2.0], DType.Float32, (2,))
@@ -155,7 +159,8 @@ def test_shape_eager():
                     raise e
 
 
-def test_shape_tracing():
+def test_shape_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t = _make_proxy((2, 2), DType.Float32)
         idx = _make_proxy((2,), DType.Int32)

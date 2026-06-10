@@ -1,10 +1,13 @@
+"""Docstring module."""
+
 import pytest
 from ml_switcheroo.core.dtype import DType
 from ml_switcheroo.core.errors import DTypePromotionError
 from ml_switcheroo.core.type_promotion import promote_types
 
 
-def test_promote_types():
+def test_promote_types() -> None:
+    """Docstring."""
     assert promote_types(DType.Float32, DType.Float32) == DType.Float32
     assert promote_types(DType.Int32, DType.Float32) == DType.Float32
     assert promote_types(DType.Float16, DType.Float32) == DType.Float32

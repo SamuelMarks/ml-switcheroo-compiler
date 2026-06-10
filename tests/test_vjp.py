@@ -1,11 +1,15 @@
+"""Docstring."""
+
+from typing import Any
+
 """Tests for VJP (Reverse-Mode AD) implementations."""
 
-import pytest
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo.grad import grad
+import pytest  # noqa: E402
+from ml_switcheroo_ir import LogicalGraph, LogicalNode  # noqa: E402
+from ml_switcheroo.grad import grad  # noqa: E402
 
 
-def _setup_graph(op_type, inputs_count):
+def _setup_graph(op_type: Any, inputs_count: Any) -> Any:
     """Docstring."""
     g = LogicalGraph()
     inputs = []
@@ -20,21 +24,21 @@ def _setup_graph(op_type, inputs_count):
     return g, inputs, "out"
 
 
-def test_grad_missing_output():
+def test_grad_missing_output() -> None:
     """Docstring."""
     g = LogicalGraph()
     with pytest.raises(ValueError, match="not found in graph"):
         grad(g, ["w"], "out")
 
 
-def test_grad_missing_wrt():
+def test_grad_missing_wrt() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Add", 2)
     with pytest.raises(ValueError, match="not found in graph"):
         grad(g, ["w"], out)
 
 
-def test_vjp_add():
+def test_vjp_add() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Add", 2)
     grad_g = grad(g, inputs, out)
@@ -48,119 +52,120 @@ def test_vjp_add():
     )
 
 
-def test_vjp_sub():
+def test_vjp_sub() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Sub", 2)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 2
 
 
-def test_vjp_mul():
+def test_vjp_mul() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Mul", 2)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 2
 
 
-def test_vjp_div():
+def test_vjp_div() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Div", 2)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 2
 
 
-def test_vjp_exp():
+def test_vjp_exp() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Exp", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_log():
+def test_vjp_log() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Log", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_sum():
+def test_vjp_sum() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Sum", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_mean():
+def test_vjp_mean() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Mean", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_max():
+def test_vjp_max() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Max", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_min():
+def test_vjp_min() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Min", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_matmul():
+def test_vjp_matmul() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("MatMul", 2)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 2
 
 
-def test_vjp_gemm():
+def test_vjp_gemm() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Gemm", 3)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 3
 
 
-def test_vjp_transpose():
+def test_vjp_transpose() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Transpose", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_conv():
+def test_vjp_conv() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Conv", 2)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 2
 
 
-def test_vjp_maxpool():
+def test_vjp_maxpool() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("MaxPool", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_relu():
+def test_vjp_relu() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Relu", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_vjp_softmax():
+def test_vjp_softmax() -> None:
     """Docstring."""
     g, inputs, out = _setup_graph("Softmax", 1)
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 1
 
 
-def test_grad_accumulation():
+def test_grad_accumulation() -> None:
+    """Docstring."""
     # Test gradient accumulation
     """Docstring."""
     g = LogicalGraph()
@@ -174,7 +179,7 @@ def test_grad_accumulation():
     assert len(grad_g.outputs) == 1
 
 
-def test_stop_gradient():
+def test_stop_gradient() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
@@ -186,7 +191,7 @@ def test_stop_gradient():
     assert grad_g.nodes[grad_g.outputs[0]].attributes["value"] == 0.0
 
 
-def test_missing_vjp():
+def test_missing_vjp() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
@@ -196,7 +201,7 @@ def test_missing_vjp():
         grad(g, ["w"], "out")
 
 
-def test_vjp_returns_wrong_number_of_adjoints():
+def test_vjp_returns_wrong_number_of_adjoints() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
@@ -205,7 +210,7 @@ def test_vjp_returns_wrong_number_of_adjoints():
     from ml_switcheroo.grad import register_vjp
 
     @register_vjp("TestOp")
-    def bad_vjp(graph, node, adj):
+    def bad_vjp(graph: Any, node: Any, adj: Any) -> Any:
         """Docstring."""
         return [adj]  # Returns 1 instead of 2
 
@@ -213,7 +218,7 @@ def test_vjp_returns_wrong_number_of_adjoints():
         grad(g, ["w"], "out")
 
 
-def test_vjp_returns_none():
+def test_vjp_returns_none() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
@@ -222,7 +227,7 @@ def test_vjp_returns_none():
     from ml_switcheroo.grad import register_vjp
 
     @register_vjp("TestNoneOp")
-    def none_vjp(graph, node, adj):
+    def none_vjp(graph: Any, node: Any, adj: Any) -> Any:
         """Docstring."""
         return [None]
 
@@ -231,7 +236,7 @@ def test_vjp_returns_none():
     assert grad_g.nodes[grad_g.outputs[0]].attributes["value"] == 0.0
 
 
-def test_grad_output_is_input():
+def test_grad_output_is_input() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
@@ -240,7 +245,7 @@ def test_grad_output_is_input():
     assert len(grad_g.outputs) == 1
 
 
-def test_grad_unreachable_node():
+def test_grad_unreachable_node() -> None:
     """Docstring."""
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")

@@ -1,6 +1,7 @@
 """Random Operations (Functional & Stateful)."""
 
-from typing import Sequence, Optional, Union
+from typing import Optional, Union
+from collections.abc import Sequence
 import uuid
 import numpy as np
 from ml_switcheroo.core.tensor import Tensor

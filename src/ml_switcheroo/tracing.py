@@ -2,7 +2,7 @@
 
 import threading
 from ml_switcheroo.shape import broadcast_shapes
-from typing import Any, Optional, Tuple, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 import uuid
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -76,7 +76,7 @@ class ProxyTensor:
     """
 
     def __init__(
-        self, id: str, shape: Tuple[Union[int, str], ...], dtype: str = "float32"
+        self, id: str, shape: tuple[Union[int, str], ...], dtype: str = "float32"
     ) -> None:
         """Initialize a ProxyTensor.
 
@@ -171,45 +171,59 @@ class ProxyTensor:
         return self._binary_op(other, "Pow")
 
     def __floordiv__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "FloorDiv")
 
     def __rfloordiv__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "FloorDiv")
 
     def __mod__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "Mod")
 
     def __rmod__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "Mod")
 
     def __and__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitwiseAnd")
 
     def __rand__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitwiseAnd")
 
     def __or__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitwiseOr")
 
     def __ror__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitwiseOr")
 
     def __xor__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitwiseXor")
 
     def __rxor__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitwiseXor")
 
     def __lshift__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitShiftLeft")
 
     def __rlshift__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitShiftLeft")
 
     def __rshift__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitShiftRight")
 
     def __rrshift__(self, other: Any) -> "ProxyTensor":
+        """Docstring."""
         return self._binary_op(other, "BitShiftRight")
 
     def _unary_op(self, op_type: str) -> "ProxyTensor":
@@ -229,18 +243,23 @@ class ProxyTensor:
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
     def __neg__(self) -> "ProxyTensor":
+        """Docstring."""
         return self._unary_op("Neg")
 
     def __pos__(self) -> "ProxyTensor":
+        """Docstring."""
         return self
 
     def __abs__(self) -> "ProxyTensor":
+        """Docstring."""
         return self._unary_op("Abs")
 
     def __invert__(self) -> "ProxyTensor":
+        """Docstring."""
         return self._unary_op("BitwiseNot")
 
     def __getitem__(self, key: Any) -> "ProxyTensor":
+        """Docstring."""
         if not _tracer.is_tracing:
             raise RuntimeError("Cannot perform Slice outside of a tracing context.")
 

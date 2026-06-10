@@ -1,9 +1,13 @@
+"""Docstring module."""
+
+from typing import Any
+
 # ruff: noqa: F403, F405
 """Tests for Neural Network primitives."""
 
-import pytest
-import numpy as np
-from ml_switcheroo.core import (
+import pytest  # noqa: E402
+import numpy as np  # noqa: E402
+from ml_switcheroo.core import (  # noqa: E402
     ConfigContext,
     DType,
     Tensor,
@@ -11,11 +15,11 @@ from ml_switcheroo.core import (
     DeviceType,
     UnimplementedMathError,
 )
-from ml_switcheroo.tracing import _tracer, ProxyTensor
-from ml_switcheroo.nn import *
+from ml_switcheroo.tracing import _tracer, ProxyTensor  # noqa: E402
+from ml_switcheroo.nn import *  # noqa: E402
 
 
-def _make_tensor(data_list, dtype, shape=None):
+def _make_tensor(data_list: Any, dtype: Any, shape: Any = None) -> Any:
     if shape is None:
         shape = (len(data_list),)
     return Tensor(
@@ -26,13 +30,14 @@ def _make_tensor(data_list, dtype, shape=None):
     )
 
 
-def _make_proxy(shape, dtype):
+def _make_proxy(shape: Any, dtype: Any) -> Any:
     return Tensor(
         ProxyTensor("a", shape, dtype.value), shape, dtype, Device(DeviceType.CPU)
     )
 
 
-def test_activations_eager():
+def test_activations_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t = _make_tensor([1.0, -1.0], DType.Float32, (2,))
 
@@ -54,7 +59,8 @@ def test_activations_eager():
                 globals()[op](t)
 
 
-def test_activations_tracing():
+def test_activations_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t = _make_proxy((2,), DType.Float32)
 
@@ -86,7 +92,8 @@ def test_activations_tracing():
             _tracer.stop_tracing()
 
 
-def test_complex_eager():
+def test_complex_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t = _make_tensor([1.0, -1.0], DType.Float32, (2,))
         for op in [
@@ -153,7 +160,8 @@ def test_complex_eager():
             lstm_cell(t, (t, t), t, t)
 
 
-def test_complex_tracing():
+def test_complex_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t = _make_proxy((2,), DType.Float32)
 

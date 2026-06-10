@@ -1,6 +1,7 @@
 """Unified Intermediate Representation (IR) Schema."""
 
-from typing import Dict, List, Any, Optional, Sequence, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from ml_switcheroo_ir import LogicalNode, LogicalGraph
 from ml_switcheroo.core.dtype import DType
@@ -22,7 +23,7 @@ class TensorSpec:
 
     shape: Sequence[Union[int, str]]
     dtype: DType
-    sparsity: Optional[Dict[str, Any]] = None
+    sparsity: Optional[dict[str, Any]] = None
 
 
 @dataclass
@@ -37,6 +38,6 @@ class IRBlock:
     """
 
     id: str
-    nodes: List[IRNode] = field(default_factory=list)
-    inputs: List[str] = field(default_factory=list)
-    outputs: List[str] = field(default_factory=list)
+    nodes: list[IRNode] = field(default_factory=list)
+    inputs: list[str] = field(default_factory=list)
+    outputs: list[str] = field(default_factory=list)

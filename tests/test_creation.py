@@ -19,7 +19,8 @@ from ml_switcheroo.ops import (
 )
 
 
-def test_creation_eager():
+def test_creation_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         z = zeros((2, 2))
         assert np.array_equal(z.data, np.zeros((2, 2)))
@@ -67,7 +68,8 @@ def test_creation_eager():
         assert em.shape == (2, 2)
 
 
-def test_creation_tracing():
+def test_creation_tracing() -> None:
+    """Docstring."""
     from ml_switcheroo.tracing import _tracer
 
     with ConfigContext(eager_mode=False):

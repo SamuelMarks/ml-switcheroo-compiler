@@ -2,7 +2,8 @@
 
 import os
 from contextlib import contextmanager
-from typing import Iterator, Any
+from typing import Any
+from collections.abc import Iterator
 from ml_switcheroo.core.dtype import DType
 from ml_switcheroo.core.device import Device, DeviceType
 
@@ -19,6 +20,7 @@ class Config:
 
     @property
     def eager_mode(self) -> bool:
+        """Docstring."""
         from ml_switcheroo.tracing import _tracer
 
         if _tracer.is_tracing:
@@ -26,7 +28,7 @@ class Config:
         return self._eager_mode
 
     @eager_mode.setter
-    def eager_mode(self, value: bool):
+    def eager_mode(self, value: bool) -> None:
         self._eager_mode = value
 
     def clone(self) -> "Config":

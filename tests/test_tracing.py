@@ -5,7 +5,7 @@ from ml_switcheroo.tracing import TracerTape, ProxyTensor, _tracer
 from ml_switcheroo_ir import LogicalNode
 
 
-def test_tracer_tape():
+def test_tracer_tape() -> None:
     """Docstring."""
     tape = TracerTape()
     assert not tape.is_tracing
@@ -26,7 +26,7 @@ def test_tracer_tape():
     assert out_graph.nodes["n1"] == n
 
 
-def test_proxy_tensor_math():
+def test_proxy_tensor_math() -> None:
     """Docstring."""
     _tracer.start_tracing()
 
@@ -59,7 +59,7 @@ def test_proxy_tensor_math():
     assert len(graph.nodes) > 0
 
 
-def test_proxy_tensor_outside_context():
+def test_proxy_tensor_outside_context() -> None:
     """Docstring."""
     a = ProxyTensor(id="a", shape=(2, 3))
     b = ProxyTensor(id="b", shape=(2, 3))
@@ -71,7 +71,7 @@ def test_proxy_tensor_outside_context():
         _ = a @ b
 
 
-def test_tracer_add_node_with_ast_ref():
+def test_tracer_add_node_with_ast_ref() -> None:
     """Docstring."""
     tape = TracerTape()
     tape.start_tracing("Test")

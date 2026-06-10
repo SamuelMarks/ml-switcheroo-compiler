@@ -1,7 +1,7 @@
 """Test stubs for dynamic numpy-backed shape resolution."""
 
 
-def test_shape_inference_broadcasting():
+def test_shape_inference_broadcasting() -> None:
     """Test verifying dynamic numpy-backed shape resolution for broadcasting."""
     import numpy as np
     from ml_switcheroo_ir import LogicalGraph, LogicalNode

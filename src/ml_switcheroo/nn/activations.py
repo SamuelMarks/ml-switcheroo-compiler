@@ -30,7 +30,7 @@ def _emit_nn_node(
 
 
 def relu(input: Tensor) -> Tensor:
-    """relu"""
+    """Relu."""
     if config.eager_mode:
         data = np.maximum(0, input.data)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -39,7 +39,7 @@ def relu(input: Tensor) -> Tensor:
 
 
 def leaky_relu(input: Tensor, negative_slope: float = 0.01) -> Tensor:
-    """leaky_relu"""
+    """leaky_relu."""
     if config.eager_mode:
         data = np.where(input.data > 0, input.data, input.data * negative_slope)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -54,7 +54,7 @@ def leaky_relu(input: Tensor, negative_slope: float = 0.01) -> Tensor:
 
 
 def gelu(input: Tensor, approximate: str = "none") -> Tensor:
-    """gelu"""
+    """Gelu."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for gelu")
 
@@ -65,7 +65,7 @@ def gelu(input: Tensor, approximate: str = "none") -> Tensor:
 
 
 def swish(input: Tensor) -> Tensor:
-    """swish"""
+    """Swish."""
     if config.eager_mode:
         data = input.data / (1 + np.exp(-input.data))
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -74,7 +74,7 @@ def swish(input: Tensor) -> Tensor:
 
 
 def sigmoid(input: Tensor) -> Tensor:
-    """sigmoid"""
+    """Sigmoid."""
     if config.eager_mode:
         data = 1 / (1 + np.exp(-input.data))
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -83,7 +83,7 @@ def sigmoid(input: Tensor) -> Tensor:
 
 
 def tanh(input: Tensor) -> Tensor:
-    """tanh"""
+    """Tanh."""
     if config.eager_mode:
         data = np.tanh(input.data)
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -92,7 +92,7 @@ def tanh(input: Tensor) -> Tensor:
 
 
 def softplus(input: Tensor, beta: float = 1, threshold: float = 20) -> Tensor:
-    """softplus"""
+    """Softplus."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for softplus")
 
@@ -107,7 +107,7 @@ def softplus(input: Tensor, beta: float = 1, threshold: float = 20) -> Tensor:
 
 
 def elu(input: Tensor, alpha: float = 1.0) -> Tensor:
-    """elu"""
+    """Elu."""
     if config.eager_mode:
         data = np.where(input.data > 0, input.data, alpha * (np.exp(input.data) - 1))
         return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
@@ -116,7 +116,7 @@ def elu(input: Tensor, alpha: float = 1.0) -> Tensor:
 
 
 def selu(input: Tensor) -> Tensor:
-    """selu"""
+    """Selu."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for selu")
 
@@ -125,7 +125,7 @@ def selu(input: Tensor) -> Tensor:
 
 
 def celu(input: Tensor, alpha: float = 1.0) -> Tensor:
-    """celu"""
+    """Celu."""
     if config.eager_mode:
         data = np.maximum(0, input.data) + np.minimum(
             0, alpha * (np.exp(input.data / alpha) - 1)
@@ -138,7 +138,7 @@ def celu(input: Tensor, alpha: float = 1.0) -> Tensor:
 
 
 def glu(input: Tensor, dim: int = -1) -> Tensor:
-    """glu"""
+    """Glu."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for glu")
 
@@ -147,7 +147,7 @@ def glu(input: Tensor, dim: int = -1) -> Tensor:
 
 
 def mish(input: Tensor) -> Tensor:
-    """mish"""
+    """Mish."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for mish")
 
@@ -156,7 +156,7 @@ def mish(input: Tensor) -> Tensor:
 
 
 def hardswish(input: Tensor) -> Tensor:
-    """hardswish"""
+    """Hardswish."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for hardswish")
 
@@ -165,7 +165,7 @@ def hardswish(input: Tensor) -> Tensor:
 
 
 def softmax(input: Tensor, dim: Optional[int] = None) -> Tensor:
-    """softmax"""
+    """Softmax."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for softmax")
 
@@ -174,7 +174,7 @@ def softmax(input: Tensor, dim: Optional[int] = None) -> Tensor:
 
 
 def log_softmax(input: Tensor, dim: Optional[int] = None) -> Tensor:
-    """log_softmax"""
+    """log_softmax."""
     if config.eager_mode:
         raise UnimplementedMathError("No direct numpy for log_softmax")
 

@@ -1,6 +1,7 @@
 """Constants & Creation Operations."""
 
-from typing import Union, Sequence, Optional
+from typing import Union, Optional
+from collections.abc import Sequence
 import uuid
 import numpy as np
 from ml_switcheroo.core.tensor import Tensor
@@ -89,7 +90,7 @@ def full(
 def zeros_like(
     input: Tensor, dtype: Optional[DType] = None, device: Optional[Device] = None
 ) -> Tensor:
-    """Returns a tensor filled with the scalar value 0, with the same size as `input`."""
+    """Returns a tensor filled with the scalar value 0, with the same size as `input`."""  # noqa: E501
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
@@ -102,7 +103,7 @@ def zeros_like(
 def ones_like(
     input: Tensor, dtype: Optional[DType] = None, device: Optional[Device] = None
 ) -> Tensor:
-    """Returns a tensor filled with the scalar value 1, with the same size as `input`."""
+    """Returns a tensor filled with the scalar value 1, with the same size as `input`."""  # noqa: E501
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
@@ -164,7 +165,7 @@ def linspace(
     dtype: Optional[DType] = None,
     device: Optional[Device] = None,
 ) -> Tensor:
-    """Creates a one-dimensional tensor of size `steps` whose values are evenly spaced from `start` to `stop`."""
+    """Creates a one-dimensional tensor of size `steps` whose values are evenly spaced from `start` to `stop`."""  # noqa: E501
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
     shape = (steps,)
@@ -205,7 +206,7 @@ def identity(
 
 
 def diag(input: Tensor, diagonal: int = 0) -> Tensor:
-    """Returns a 2-D square tensor with elements of `input` as diagonal, or extracts diagonal from a 2-D tensor."""
+    """Returns a 2-D square tensor with elements of `input` as diagonal, or extracts diagonal from a 2-D tensor."""  # noqa: E501
     device = input.device
     dtype = input.dtype
 

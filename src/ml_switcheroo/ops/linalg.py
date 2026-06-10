@@ -1,7 +1,8 @@
 """Linear Algebra Operations."""
 
 import uuid
-from typing import Sequence, Union, Tuple
+from typing import Union
+from collections.abc import Sequence
 import numpy as np
 from ml_switcheroo.core.tensor import Tensor
 from ml_switcheroo.core.dtype import DType
@@ -16,7 +17,7 @@ def _emit_linalg_node(
     attrs: dict,
     out_shapes: Sequence[Sequence[int]],
     out_dtypes: Sequence[DType],
-) -> Union[Tensor, Tuple[Tensor, ...]]:
+) -> Union[Tensor, tuple[Tensor, ...]]:
     """Emit a linear algebra node to the IR graph."""
     if not _tracer.is_tracing:
         raise RuntimeError(f"Cannot emit {op_type} node outside of a tracing context.")
@@ -39,7 +40,7 @@ def _emit_linalg_node(
     _tracer.add_node(node)
 
     tensors = []
-    for i, (out_id, shape, dtype) in enumerate(zip(out_ids, out_shapes, out_dtypes)):
+    for _i, (out_id, shape, dtype) in enumerate(zip(out_ids, out_shapes, out_dtypes)):
         proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value)
         tensors.append(
             Tensor(data=proxy, shape=tuple(shape), dtype=dtype, device=inputs[0].device)
@@ -67,7 +68,7 @@ def dot(input: Tensor, other: Tensor) -> Tensor:
 
 
 def tensordot(
-    a: Tensor, b: Tensor, axes: Union[int, Tuple[Sequence[int], Sequence[int]]] = 2
+    a: Tensor, b: Tensor, axes: Union[int, tuple[Sequence[int], Sequence[int]]] = 2
 ) -> Tensor:
     """Computes tensordot."""
     if config.eager_mode:
@@ -126,7 +127,7 @@ def cholesky(input: Tensor) -> Tensor:
 
 def svd(
     input: Tensor, full_matrices: bool = True, compute_uv: bool = True
-) -> Tuple[Tensor, Tensor, Tensor]:
+) -> tuple[Tensor, Tensor, Tensor]:
     """Computes svd."""
     if config.eager_mode:
         u, s, vh = np.linalg.svd(
@@ -147,7 +148,7 @@ def svd(
         )
 
 
-def qr(input: Tensor, mode: str = "reduced") -> Tuple[Tensor, Tensor]:
+def qr(input: Tensor, mode: str = "reduced") -> tuple[Tensor, Tensor]:
     """Computes qr."""
     if config.eager_mode:
         q, r = np.linalg.qr(input.data, mode=mode)
@@ -188,7 +189,7 @@ def det(input: Tensor) -> Tensor:
         return _emit_linalg_node("Det", [input], {}, [()], [input.dtype])
 
 
-def slogdet(input: Tensor) -> Tuple[Tensor, Tensor]:
+def slogdet(input: Tensor) -> tuple[Tensor, Tensor]:
     """Computes slogdet."""
     if config.eager_mode:
         sign, logdet = np.linalg.slogdet(input.data)
@@ -200,7 +201,7 @@ def slogdet(input: Tensor) -> Tuple[Tensor, Tensor]:
         return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [input.dtype] * 2)
 
 
-def eigh(input: Tensor, UPLO: str = "L") -> Tuple[Tensor, Tensor]:
+def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
     """Computes eigh."""
     if config.eager_mode:
         w, v = np.linalg.eigh(input.data, UPLO=UPLO)

@@ -24,3 +24,10 @@ files = ["requirements.txt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ml_switcheroo"]
+
+[tool.ruff]
+lint.select = ["E", "F", "D", "ANN", "UP", "B"]
+lint.ignore = ["ANN101", "ANN102", "D203", "D213", "ANN401"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -1,6 +1,7 @@
 """Unified backend array base class for ml-switcheroo."""
 
-from typing import Sequence, Any
+from typing import Any
+from collections.abc import Sequence
 from ml_switcheroo.core.dtype import DType
 from ml_switcheroo.core.device import Device
 

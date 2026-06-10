@@ -1,10 +1,13 @@
+"""Docstring module."""
+
+from typing import Any
 # ruff: noqa: F403, F405
 
 """Tests for Reductions and Linear Algebra operations."""
 
-import pytest
-import numpy as np
-from ml_switcheroo.core import (
+import pytest  # noqa: E402
+import numpy as np  # noqa: E402
+from ml_switcheroo.core import (  # noqa: E402
     ConfigContext,
     DType,
     Tensor,
@@ -12,8 +15,8 @@ from ml_switcheroo.core import (
     DeviceType,
     UnimplementedMathError,
 )
-from ml_switcheroo.tracing import _tracer, ProxyTensor
-from ml_switcheroo.ops import *
+from ml_switcheroo.tracing import _tracer, ProxyTensor  # noqa: E402
+from ml_switcheroo.ops import *  # noqa: E402
 
 REDUCTIONS = [
     "sum",
@@ -53,7 +56,7 @@ LINALG = [
 ]
 
 
-def _make_tensor(data_list, dtype, shape=None):
+def _make_tensor(data_list: Any, dtype: Any, shape: Any = None) -> Any:
     if shape is None:
         shape = (len(data_list),)
     return Tensor(
@@ -64,13 +67,14 @@ def _make_tensor(data_list, dtype, shape=None):
     )
 
 
-def _make_proxy(shape, dtype):
+def _make_proxy(shape: Any, dtype: Any) -> Any:
     return Tensor(
         ProxyTensor("a", shape, dtype.value), shape, dtype, Device(DeviceType.CPU)
     )
 
 
-def test_reductions_eager():
+def test_reductions_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t_float = _make_tensor([0.5, 0.2, 1.0, 2.0], DType.Float32, (2, 2))
 
@@ -84,7 +88,8 @@ def test_reductions_eager():
                 assert isinstance(res, Tensor)
 
 
-def test_reductions_tracing():
+def test_reductions_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t_float = _make_proxy((2, 2), DType.Float32)
 
@@ -107,7 +112,8 @@ def test_reductions_tracing():
             _tracer.stop_tracing()
 
 
-def test_linalg_eager():
+def test_linalg_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         t2 = _make_tensor([[2.0, 0.0], [0.0, 2.0]], DType.Float32, (2, 2))
         t1 = _make_tensor([1.0, 2.0], DType.Float32, (2,))
@@ -135,7 +141,8 @@ def test_linalg_eager():
                 assert isinstance(res, Tensor)
 
 
-def test_linalg_tracing():
+def test_linalg_tracing() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=False):
         t2 = _make_proxy((2, 2), DType.Float32)
 

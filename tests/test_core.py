@@ -1,5 +1,7 @@
 """Tests for the core module."""
 
+from typing import Any
+
 import pytest
 from ml_switcheroo.core import (
     DType,
@@ -19,13 +21,13 @@ from ml_switcheroo.core import (
 )
 
 
-def test_dtype_enums():
+def test_dtype_enums() -> None:
     """Test DType and QuantDType."""
     assert DType.Float32.value == "float32"
     assert QuantDType.QInt8.value == "qint8"
 
 
-def test_device():
+def test_device() -> None:
     """Test Device and DeviceType."""
     d1 = Device(DeviceType.CPU, 0)
     d2 = Device(DeviceType.CPU, 0)
@@ -40,7 +42,7 @@ def test_device():
     assert repr(d1) == "Device(cpu:0)"
 
 
-def test_errors():
+def test_errors() -> None:
     """Test exception hierarchy."""
     assert issubclass(TracingError, SwitcherooError)
     assert issubclass(CompilationError, SwitcherooError)
@@ -50,7 +52,7 @@ def test_errors():
     assert issubclass(UnimplementedMathError, SwitcherooError)
 
 
-def test_config():
+def test_config() -> None:
     """Test Config and ConfigContext."""
     orig_mode = config.eager_mode
     with ConfigContext(eager_mode=not orig_mode):
@@ -62,7 +64,7 @@ def test_config():
             pass
 
 
-def test_config_env_var(monkeypatch):
+def test_config_env_var(monkeypatch: Any) -> None:
     """Test that config parses env vars."""
     from ml_switcheroo.core.config import Config
 
@@ -71,7 +73,7 @@ def test_config_env_var(monkeypatch):
     assert new_cfg.eager_mode is True
 
 
-def test_tensor():
+def test_tensor() -> None:
     """Test Tensor class and properties."""
     device = Device(DeviceType.CPU, 0)
     t = Tensor(

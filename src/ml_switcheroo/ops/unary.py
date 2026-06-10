@@ -1,7 +1,6 @@
 """Unary Operations."""
 
 import uuid
-from typing import Tuple
 import numpy as np
 from ml_switcheroo.core.tensor import Tensor
 from ml_switcheroo.core.dtype import DType
@@ -37,8 +36,6 @@ def abs(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.abs(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "abs" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Abs", input.dtype)
@@ -49,8 +46,6 @@ def acos(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.acos(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "acos" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Acos", input.dtype)
@@ -61,8 +56,6 @@ def acosh(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.acosh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "acosh" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Acosh", input.dtype)
@@ -73,8 +66,6 @@ def asin(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.asin(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "asin" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Asin", input.dtype)
@@ -85,8 +76,6 @@ def asinh(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.asinh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "asinh" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Asinh", input.dtype)
@@ -97,8 +86,6 @@ def atan(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.atan(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "atan" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Atan", input.dtype)
@@ -109,8 +96,6 @@ def atanh(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.atanh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "atanh" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Atanh", input.dtype)
@@ -121,8 +106,6 @@ def bitwise_not(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.bitwise_not(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "bitwise_not" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "BitwiseNot", input.dtype)
@@ -133,8 +116,6 @@ def cbrt(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.cbrt(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "cbrt" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Cbrt", input.dtype)
@@ -145,8 +126,6 @@ def ceil(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.ceil(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "ceil" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Ceil", input.dtype)
@@ -157,8 +136,6 @@ def conj(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.conj(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "conj" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Conj", input.dtype)
@@ -169,8 +146,6 @@ def cos(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.cos(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "cos" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Cos", input.dtype)
@@ -181,8 +156,6 @@ def cosh(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.cosh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "cosh" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Cosh", input.dtype)
@@ -193,8 +166,6 @@ def deg2rad(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.deg2rad(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "deg2rad" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Deg2Rad", input.dtype)
@@ -238,8 +209,6 @@ def exp(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.exp(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "exp" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Exp", input.dtype)
@@ -250,8 +219,6 @@ def exp2(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.exp2(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "exp2" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Exp2", input.dtype)
@@ -262,8 +229,6 @@ def expm1(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.expm1(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "expm1" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Expm1", input.dtype)
@@ -274,8 +239,6 @@ def fix(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.fix(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "fix" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Fix", input.dtype)
@@ -286,8 +249,6 @@ def floor(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.floor(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "floor" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Floor", input.dtype)
@@ -298,8 +259,6 @@ def imag(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.imag(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "imag" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Imag", input.dtype)
@@ -310,8 +269,7 @@ def isfinite(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.isfinite(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "isfinite" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
+        return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Isfinite", DType.Bool)
@@ -322,8 +280,7 @@ def isinf(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.isinf(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "isinf" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
+        return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Isinf", DType.Bool)
@@ -334,8 +291,7 @@ def isnan(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.isnan(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "isnan" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
+        return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Isnan", DType.Bool)
@@ -356,8 +312,6 @@ def log(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.log(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "log" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Log", input.dtype)
@@ -368,8 +322,6 @@ def log10(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.log10(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "log10" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Log10", input.dtype)
@@ -380,8 +332,6 @@ def log1p(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.log1p(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "log1p" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Log1P", input.dtype)
@@ -392,8 +342,6 @@ def log2(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.log2(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "log2" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Log2", input.dtype)
@@ -404,8 +352,7 @@ def logical_not(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.logical_not(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "logical_not" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
+        return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "LogicalNot", DType.Bool)
@@ -416,8 +363,6 @@ def negative(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.negative(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "negative" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Negative", input.dtype)
@@ -428,8 +373,6 @@ def positive(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.positive(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "positive" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Positive", input.dtype)
@@ -440,8 +383,6 @@ def rad2deg(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.rad2deg(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "rad2deg" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Rad2Deg", input.dtype)
@@ -452,8 +393,6 @@ def real(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.real(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "real" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Real", input.dtype)
@@ -464,8 +403,6 @@ def reciprocal(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.reciprocal(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "reciprocal" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Reciprocal", input.dtype)
@@ -476,8 +413,6 @@ def round(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.round(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "round" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Round", input.dtype)
@@ -488,8 +423,6 @@ def sign(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.sign(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "sign" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Sign", input.dtype)
@@ -500,8 +433,6 @@ def sin(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.sin(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "sin" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Sin", input.dtype)
@@ -512,8 +443,6 @@ def sinc(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.sinc(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "sinc" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Sinc", input.dtype)
@@ -524,8 +453,6 @@ def sinh(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.sinh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "sinh" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Sinh", input.dtype)
@@ -536,8 +463,6 @@ def sqrt(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.sqrt(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "sqrt" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Sqrt", input.dtype)
@@ -548,8 +473,6 @@ def square(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.square(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "square" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Square", input.dtype)
@@ -560,8 +483,6 @@ def tan(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.tan(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "tan" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Tan", input.dtype)
@@ -572,8 +493,6 @@ def tanh(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.tanh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "tanh" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Tanh", input.dtype)
@@ -584,8 +503,6 @@ def trunc(input: Tensor) -> Tensor:
     if config.eager_mode:
         data = np.trunc(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
-        if "trunc" in ["isfinite", "isinf", "isnan", "logical_not"]:
-            return Tensor(data, input.shape, DType.Bool, input.device)
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
         return _emit_unary_node(input, "Trunc", input.dtype)
@@ -635,7 +552,7 @@ def atan2(input: Tensor, other: Tensor) -> Tensor:
         )
 
 
-def frexp(input: Tensor) -> Tuple[Tensor, Tensor]:
+def frexp(input: Tensor) -> tuple[Tensor, Tensor]:
     """Decomposes a floating-point tensor into its mantissa and exponent components."""
     if config.eager_mode:
         mantissa, exponent = np.frexp(input.data)
@@ -693,7 +610,7 @@ def cast(input: Tensor, dtype: DType) -> Tensor:
 
 
 def bitcast(input: Tensor, dtype: DType) -> Tensor:
-    """Bitcasts a tensor to a specified data type without changing the underlying bits."""
+    """Bitcasts a tensor to a specified data type without changing the underlying bits."""  # noqa: E501
     if config.eager_mode:
         data = input.data.view(dtype.value)
         return Tensor(data, input.shape, dtype, input.device)

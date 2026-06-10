@@ -1,8 +1,8 @@
 """Optimization passes for LogicalGraph."""
 
-from typing import Dict, Set
-
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
+import numpy as np
+from ml_switcheroo.interpreter import evaluate_graph
 
 
 def dce(graph: LogicalGraph) -> LogicalGraph:
@@ -16,7 +16,7 @@ def dce(graph: LogicalGraph) -> LogicalGraph:
     Returns:
         LogicalGraph: The optimized graph.
     """
-    reachable: Set[str] = set(graph.outputs)
+    reachable: set[str] = set(graph.outputs)
 
     # Simple backward reachability
     sorted_nodes = topological_sort(graph)
@@ -60,8 +60,8 @@ def cse(graph: LogicalGraph) -> LogicalGraph:
     new_graph = LogicalGraph(name=f"{graph.name}_cse", mesh=graph.mesh)
 
     # Hash of node signature -> canonical node id
-    seen_expressions: Dict[str, str] = {}
-    id_map: Dict[str, str] = {}
+    seen_expressions: dict[str, str] = {}
+    id_map: dict[str, str] = {}
 
     sorted_nodes = topological_sort(graph)
 
@@ -100,8 +100,7 @@ def cse(graph: LogicalGraph) -> LogicalGraph:
 def constant_folding(graph: LogicalGraph) -> LogicalGraph:
     """Constant Folding.
 
-    Evaluates pure operations on constant inputs eagerly.
-    (Currently a simplified placeholder for pure-Python fallback evaluation).
+    Evaluates pure operations on constant inputs eagerly using the standard interpreter.
 
     Args:
         graph (LogicalGraph): The input graph.
@@ -112,37 +111,40 @@ def constant_folding(graph: LogicalGraph) -> LogicalGraph:
     new_graph = LogicalGraph(name=f"{graph.name}_fold", mesh=graph.mesh)
     sorted_nodes = topological_sort(graph)
 
-    id_map: Dict[str, str] = {}
+    id_map: dict[str, str] = {}
 
     for node in sorted_nodes:
         canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
 
         # Check if all inputs are constant
         all_const = True
-        input_values = []
         for inp in canonical_inputs:
             if inp not in new_graph.nodes or new_graph.nodes[inp].op_type != "Constant":
                 all_const = False
                 break
-            input_values.append(new_graph.nodes[inp].attributes.get("value"))
 
-        if (
-            all_const
-            and len(canonical_inputs) > 0
-            and node.op_type in ["Add", "Sub", "Mul", "Div"]
-        ):
-            # Evaluate using standard python ops for scalars as placeholder
+        if all_const and len(canonical_inputs) > 0:
+            # Reconstruct subgraph for just this node
+            subgraph = LogicalGraph(outputs=[node.id])
+            for inp in canonical_inputs:
+                subgraph.nodes[inp] = new_graph.nodes[inp]
+            subgraph.nodes[node.id] = LogicalNode(
+                id=node.id,
+                op_type=node.op_type,
+                attributes=dict(node.attributes),
+                inputs=list(canonical_inputs),
+                shape_metadata=node.shape_metadata,
+            )
+
             try:
-                if node.op_type == "Add":
-                    val = input_values[0] + input_values[1]
-                elif node.op_type == "Sub":
-                    val = input_values[0] - input_values[1]
-                elif node.op_type == "Mul":
-                    val = input_values[0] * input_values[1]
-                else:  # node.op_type == "Div"
-                    val = input_values[0] / input_values[1]
+                # Try evaluating the subgraph
+                outputs = evaluate_graph(subgraph, {})
+                val = outputs[node.id]
 
-                # Create a new constant node
+                # Convert single-element arrays to scalar to preserve legacy testing format  # noqa: E501
+                if isinstance(val, np.ndarray) and val.size == 1:
+                    val = val.item()
+
                 new_graph.nodes[node.id] = LogicalNode(
                     id=node.id,
                     op_type="Constant",

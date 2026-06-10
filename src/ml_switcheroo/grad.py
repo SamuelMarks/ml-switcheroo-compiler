@@ -1,12 +1,12 @@
 """Reverse-mode Automatic Differentiation (AD) Engine."""
 
-from typing import Dict, List, Set, Callable
+from typing import Callable
 import uuid
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 # Registry for VJP (Vector-Jacobian Product) rules
-VJPRegistryType = Dict[str, Callable]
+VJPRegistryType = dict[str, Callable]
 _VJP_REGISTRY: VJPRegistryType = {}
 
 
@@ -44,7 +44,7 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
     return out_id
 
 
-def grad(graph: LogicalGraph, wrt: List[str], output_id: str) -> LogicalGraph:
+def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
     """Computes the gradient of a scalar output with respect to specified inputs.
 
     Args:
@@ -53,7 +53,8 @@ def grad(graph: LogicalGraph, wrt: List[str], output_id: str) -> LogicalGraph:
         output_id (str): The node ID of the scalar output.
 
     Returns:
-        LogicalGraph: A new graph containing both forward pass and gradient computations.
+        LogicalGraph: A new graph containing both forward pass and
+        gradient computations.  # noqa: E501
 
     Raises:
         ValueError: If output node does not exist, or required VJPs are missing.
@@ -84,7 +85,7 @@ def grad(graph: LogicalGraph, wrt: List[str], output_id: str) -> LogicalGraph:
 
     # Prune nodes that don't lead to the output
     # (Simple backward reachability check)
-    reachable_from_output: Set[str] = {output_id}
+    reachable_from_output: set[str] = {output_id}
     # Reverse iteration
     for node in reversed(sorted_nodes):
         if node.id in reachable_from_output:
@@ -93,7 +94,7 @@ def grad(graph: LogicalGraph, wrt: List[str], output_id: str) -> LogicalGraph:
 
     # 2. Initialize adjoints (gradients)
     # Map from forward_node_id -> adjoint_node_id
-    adjoints: Dict[str, str] = {}
+    adjoints: dict[str, str] = {}
 
     # The adjoint of the output is 1.0
     one_id = f"grad_ones_{uuid.uuid4().hex[:6]}"
@@ -127,7 +128,7 @@ def grad(graph: LogicalGraph, wrt: List[str], output_id: str) -> LogicalGraph:
 
         if len(input_adjs) != len(node.inputs):
             raise ValueError(
-                f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
+                f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."  # noqa: E501
             )
 
         for inp_id, inp_adj_id in zip(node.inputs, input_adjs):

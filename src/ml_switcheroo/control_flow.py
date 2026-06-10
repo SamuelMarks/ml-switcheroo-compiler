@@ -1,6 +1,6 @@
 """Higher-Order Control Flow Primitives."""
 
-from typing import Callable, Any, Tuple, Union
+from typing import Callable, Any, Union
 import uuid
 import numpy as np
 
@@ -12,7 +12,7 @@ from ml_switcheroo_ir import LogicalNode, LogicalGraph
 
 
 def _trace_function(
-    func: Callable, args: Tuple[Tensor, ...], name: str
+    func: Callable, args: tuple[Tensor, ...], name: str
 ) -> LogicalGraph:
     """Trace a Python function into a LogicalGraph."""
     prev_graph = _tracer.active_graph
@@ -22,7 +22,7 @@ def _trace_function(
 
     # Re-wrap input args as proxy tensors in the subgraph context
     proxy_args = []
-    for i, arg in enumerate(args):
+    for _i, arg in enumerate(args):
         in_id = str(uuid.uuid4())
         node = LogicalNode(
             id=in_id,
@@ -88,7 +88,7 @@ def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) 
         true_graph = _trace_function(true_fn, (), "true_branch")
         false_graph = _trace_function(false_fn, (), "false_branch")
 
-        # For tracing shapes, execute true_fn once eagerly? No, trace function provides it.
+        # For tracing shapes, execute true_fn once eagerly? No, trace function provides it.  # noqa: E501
         # We need the output shapes.
         # Actually in JAX/Switcheroo, output shapes/dtypes must match.
         # We get output nodes from true_graph.
@@ -173,8 +173,8 @@ def while_loop(
 
 
 def scan(
-    f: Callable[[Any, Any], Tuple[Any, Any]], init: Any, xs: Any
-) -> Tuple[Any, Any]:
+    f: Callable[[Any, Any], tuple[Any, Any]], init: Any, xs: Any
+) -> tuple[Any, Any]:
     """Scan a function over a sequence.
 
     Args:
@@ -228,8 +228,8 @@ def scan(
 
 def vmap(
     func: Callable,
-    in_axes: Union[int, Tuple[int, ...]] = 0,
-    out_axes: Union[int, Tuple[int, ...]] = 0,
+    in_axes: Union[int, tuple[int, ...]] = 0,
+    out_axes: Union[int, tuple[int, ...]] = 0,
 ) -> Callable:
     """Vectorizing map.
 

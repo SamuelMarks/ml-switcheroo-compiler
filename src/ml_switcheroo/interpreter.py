@@ -1,13 +1,13 @@
 """Reference Interpreter for executing LogicalGraphs using pure numpy."""
 
 import numpy as np
-from typing import Dict, Any
+from typing import Any
 from ml_switcheroo_ir import LogicalGraph, topological_sort
 
 
 def evaluate_graph(
-    graph: LogicalGraph, inputs: Dict[str, np.ndarray]
-) -> Dict[str, np.ndarray]:
+    graph: LogicalGraph, inputs: dict[str, np.ndarray]
+) -> dict[str, np.ndarray]:
     """Evaluates a LogicalGraph eagerly using numpy.
 
     Args:
@@ -17,7 +17,7 @@ def evaluate_graph(
     Returns:
         Dict[str, np.ndarray]: A mapping of output IDs to their computed values.
     """
-    env: Dict[str, Any] = {}
+    env: dict[str, Any] = {}
 
     # Initialize inputs
     for k, v in inputs.items():
@@ -38,49 +38,29 @@ def evaluate_graph(
         # Get evaluated inputs
         in_vals = [env[inp] for inp in node.inputs]
 
-        # Execute ops
-        if node.op_type == "Add":
-            env[node.id] = in_vals[0] + in_vals[1]
-        elif node.op_type == "Sub":
-            env[node.id] = in_vals[0] - in_vals[1]
-        elif node.op_type == "Mul":
-            env[node.id] = in_vals[0] * in_vals[1]
-        elif node.op_type == "Div":
-            env[node.id] = in_vals[0] / in_vals[1]
-        elif node.op_type == "Neg":
-            env[node.id] = -in_vals[0]
-        elif node.op_type == "Exp":
-            env[node.id] = np.exp(in_vals[0])
-        elif node.op_type == "Log":
-            env[node.id] = np.log(in_vals[0])
-        elif node.op_type == "Pow":
-            env[node.id] = np.power(in_vals[0], in_vals[1])
-        elif node.op_type == "Sum":
-            env[node.id] = np.sum(in_vals[0])
-        elif node.op_type == "Mean":
-            env[node.id] = np.mean(in_vals[0])
-        elif node.op_type == "Max":
-            env[node.id] = np.max(in_vals[0])
-        elif node.op_type == "Min":
-            env[node.id] = np.min(in_vals[0])
-        elif node.op_type == "MatMul":
-            env[node.id] = np.matmul(in_vals[0], in_vals[1])
-        elif node.op_type == "Dot":
-            env[node.id] = np.dot(in_vals[0], in_vals[1])
-        elif node.op_type == "Transpose":
-            env[node.id] = np.transpose(in_vals[0])
-        elif node.op_type == "Relu":
+        op_lower = node.op_type.lower()
+        op_map = {
+            "sub": "subtract",
+            "mul": "multiply",
+            "div": "divide",
+            "neg": "negative",
+            "pow": "power",
+        }
+
+        np_func_name = op_map.get(op_lower, op_lower)
+
+        # Custom / special mapping implementations
+        if node.op_type == "Relu":
             env[node.id] = np.maximum(in_vals[0], 0.0)
-        elif node.op_type == "Greater":
-            env[node.id] = in_vals[0] > in_vals[1]
-        elif node.op_type == "Where":
-            env[node.id] = np.where(in_vals[0], in_vals[1], in_vals[2])
         elif node.op_type == "Expand":
             env[node.id] = (
                 np.broadcast_to(in_vals[0], node.shape_metadata)
                 if node.shape_metadata
                 else in_vals[0]
             )
+        elif hasattr(np, np_func_name):
+            np_func = getattr(np, np_func_name)
+            env[node.id] = np_func(*in_vals)
         else:
             raise NotImplementedError(
                 f"Interpreter missing implementation for: {node.op_type}"

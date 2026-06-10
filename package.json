@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "node --test tests_js/*.js"
+    "test": "node --test tests_js/*.js",
+    "docs:js": "jsdoc docs/_static/*.js -d docs/_build/jsdoc"
   },
   "dependencies": {
     "axe-core": "^4.12.0",

@@ -15,7 +15,8 @@ from ml_switcheroo.random import (
 )
 
 
-def test_random_eager():
+def test_random_eager() -> None:
+    """Docstring."""
     with ConfigContext(eager_mode=True):
         seed(42)
         key = PRNGKey(42)
@@ -46,7 +47,8 @@ def test_random_eager():
         assert ri.shape == (5,)
 
 
-def test_random_tracing():
+def test_random_tracing() -> None:
+    """Docstring."""
     from ml_switcheroo.tracing import _tracer
 
     with ConfigContext(eager_mode=False):
