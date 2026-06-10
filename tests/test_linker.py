@@ -1,6 +1,6 @@
 """Module docstring."""
 
-from ml_switcheroo_compiler.linker import get_source_ast_ref
+from ml_switcheroo.linker import get_source_ast_ref
 
 
 def my_caller():

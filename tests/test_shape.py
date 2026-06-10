@@ -1,7 +1,7 @@
 """Module docstring."""
 
 import pytest
-from ml_switcheroo_compiler.shape import broadcast_shapes, matmul_shape
+from ml_switcheroo.shape import broadcast_shapes, matmul_shape
 
 
 def test_broadcast_shapes():

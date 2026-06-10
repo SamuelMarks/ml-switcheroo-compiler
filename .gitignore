@@ -136,3 +136,4 @@ cython_debug/
 *.swo
 *~
 .DS_Store
+node_modules/\npackage-lock.json\ndocs/_build/

@@ -1,7 +1,7 @@
 """Module docstring."""
 
 import pytest
-from ml_switcheroo_compiler.tracing import TracerTape, ProxyTensor, _tracer
+from ml_switcheroo.tracing import TracerTape, ProxyTensor, _tracer
 from ml_switcheroo_ir import LogicalNode
 
 

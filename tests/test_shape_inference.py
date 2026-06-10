@@ -5,7 +5,7 @@ def test_shape_inference_broadcasting():
     """Test verifying dynamic numpy-backed shape resolution for broadcasting."""
     import numpy as np
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
-    from ml_switcheroo_compiler.interpreter import evaluate_graph
+    from ml_switcheroo.interpreter import evaluate_graph
 
     g = LogicalGraph(outputs=["exp"])
     g.nodes["x"] = LogicalNode(id="x", op_type="Input")

@@ -1,7 +1,7 @@
 """Tests for state functionalization."""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo_compiler.state import lift_state
+from ml_switcheroo.state import lift_state
 
 
 def test_lift_state():

@@ -1,0 +1,28 @@
+"""DType enums for the ml-switcheroo compiler."""
+
+from enum import Enum
+
+
+class DType(Enum):
+    """Standard data types supported by the compiler."""
+
+    Float64 = "float64"
+    Float32 = "float32"
+    Float16 = "float16"
+    BFloat16 = "bfloat16"
+    Complex64 = "complex64"
+    Complex128 = "complex128"
+    Int64 = "int64"
+    Int32 = "int32"
+    Int16 = "int16"
+    Int8 = "int8"
+    UInt8 = "uint8"
+    Bool = "bool"
+
+
+class QuantDType(Enum):
+    """Quantized data types supported by the compiler."""
+
+    QInt8 = "qint8"
+    QUInt8 = "quint8"
+    QInt4 = "qint4"

@@ -2,7 +2,7 @@
 
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo_compiler.grad import grad
+from ml_switcheroo.grad import grad
 
 
 def _setup_graph(op_type, inputs_count):
@@ -202,7 +202,7 @@ def test_vjp_returns_wrong_number_of_adjoints():
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="TestOp", inputs=["w", "w"])
 
-    from ml_switcheroo_compiler.grad import register_vjp
+    from ml_switcheroo.grad import register_vjp
 
     @register_vjp("TestOp")
     def bad_vjp(graph, node, adj):
@@ -219,7 +219,7 @@ def test_vjp_returns_none():
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="TestNoneOp", inputs=["w"])
 
-    from ml_switcheroo_compiler.grad import register_vjp
+    from ml_switcheroo.grad import register_vjp
 
     @register_vjp("TestNoneOp")
     def none_vjp(graph, node, adj):

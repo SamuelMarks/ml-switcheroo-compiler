@@ -21,3 +21,6 @@ allow-direct-references = true
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["requirements.txt"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ml_switcheroo"]

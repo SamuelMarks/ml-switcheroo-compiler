@@ -1,7 +1,7 @@
 """Module docstring."""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo_compiler.rewriter import shape_aware_rewrite
+from ml_switcheroo.rewriter import shape_aware_rewrite
 
 
 def test_shape_aware_rewrite_reshape():

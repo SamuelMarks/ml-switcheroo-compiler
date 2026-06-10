@@ -1,7 +1,7 @@
 """Tests for optimization scenarios."""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo_compiler.optimization import dce, cse, constant_folding
+from ml_switcheroo.optimization import dce, cse, constant_folding
 
 
 def test_dce():
