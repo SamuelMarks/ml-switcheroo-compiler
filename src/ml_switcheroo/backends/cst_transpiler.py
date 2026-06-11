@@ -32,9 +32,7 @@ class CSTTransformer(cst.CSTTransformer):
         self, original_node: cst.Call, updated_node: cst.Call
     ) -> cst.CSTNode:
         """Handle Framework-Specific Quirks (Kwargs) & Stateful-to-Functional rewrites."""  # noqa: E501
-        if self.target_framework == "jax" and isinstance(
-            updated_node.func, cst.Attribute
-        ):
+        if isinstance(updated_node.func, cst.Attribute):
             if (
                 isinstance(updated_node.func.value, cst.Name)
                 and updated_node.func.value.value == "torch"

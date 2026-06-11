@@ -233,3 +233,17 @@ def test_shape_tracing() -> None:
                 assert res is not None
         finally:
             _tracer.stop_tracing()
+
+
+def test_pad_take_along_axis():
+    from ml_switcheroo.ops.shape import pad, take_along_axis
+    import numpy as np
+
+    x = np.array([1, 2, 3])
+    res_pad = pad(x, (1, 1), mode="constant")
+    assert np.array_equal(res_pad, [0, 1, 2, 3, 0])
+
+    x2 = np.array([[10, 30, 20], [60, 40, 50]])
+    indices = np.array([[1], [2]])
+    res_take = take_along_axis(x2, indices, axis=1)
+    assert np.array_equal(res_take, [[30], [50]])

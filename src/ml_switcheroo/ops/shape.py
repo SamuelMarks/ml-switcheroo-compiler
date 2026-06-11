@@ -643,4 +643,8 @@ def pad(array: Any, pad_width: Any, mode: str = "constant", **kwargs) -> Any:
 def take_along_axis(arr: Any, indices: Any, axis: int) -> Any:
     import numpy as np
 
-    return np.take_along_axis(arr, indices, axis=axis)
+    return np.take_along_axis(
+        (arr.data if hasattr(arr, "device") else arr),
+        (indices.data if hasattr(indices, "device") else indices),
+        axis=axis,
+    )

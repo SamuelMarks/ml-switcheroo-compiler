@@ -1,3 +1,5 @@
+import ml_switcheroo.core.dtype as DTypeMod
+
 """Docstring module."""
 
 from typing import Any
@@ -170,3 +172,82 @@ def test_linalg_tracing() -> None:
                     assert isinstance(res, Tensor)
         finally:
             _tracer.stop_tracing()
+
+
+def test_cumsum():
+    from ml_switcheroo.ops.reductions import cumsum
+    import numpy as np
+
+    x = np.array([1, 2, 3])
+    res = cumsum(x)
+    assert np.array_equal(res.data if hasattr(res, "data") else res, [1, 3, 6])
+
+
+def test_linalg_extras():
+    from ml_switcheroo.ops.linalg import (
+        cholesky,
+        svd,
+        qr,
+        inv,
+        pinv,
+        det,
+        slogdet,
+        eigh,
+        eigvalsh,
+        solve,
+        cross,
+        vdot,
+        outer,
+        solve_triangular,
+        lu,
+        lu_factor,
+    )
+    from ml_switcheroo.core.tensor import Tensor
+    from ml_switcheroo.core.config import config
+    from ml_switcheroo.tracing import _tracer, ProxyTensor
+    import numpy as np
+
+    # Data for eager
+    t2x2 = Tensor(
+        np.array([[2.0, 0.0], [0.0, 2.0]]), (2, 2), DTypeMod.DType.Float32, None
+    )
+    t1d = Tensor(np.array([1.0, 0.0, 0.0]), (3,), DTypeMod.DType.Float32, None)
+
+    config.eager_mode = True
+    cholesky(t2x2)
+    svd(t2x2)
+    qr(t2x2)
+    inv(t2x2)
+    pinv(t2x2)
+    det(t2x2)
+    slogdet(t2x2)
+    eigh(t2x2)
+    eigvalsh(t2x2)
+
+    config.eager_mode = False
+    _tracer.start_tracing()
+    try:
+        t_proxy = Tensor(
+            ProxyTensor("a", (2, 2), "float32"), (2, 2), DTypeMod.DType.Float32, None
+        )
+        cholesky(t_proxy)
+        svd(t_proxy)
+        qr(t_proxy)
+        inv(t_proxy)
+        pinv(t_proxy)
+        det(t_proxy)
+        slogdet(t_proxy)
+        eigh(t_proxy)
+        eigvalsh(t_proxy)
+    finally:
+        _tracer.stop_tracing()
+        config.eager_mode = True
+
+    a_arr = np.array([[2.0, 0.0], [0.0, 2.0]])
+    solve(a_arr, a_arr)
+    cross(np.array([1, 0, 0]), np.array([0, 1, 0]))
+    vdot(t1d, t1d)
+    outer(t1d, t1d)
+    solve_triangular(a_arr, a_arr)
+    lu(a_arr)
+    lu_factor(a_arr)

@@ -249,7 +249,9 @@ def cross(
 def solve(a: Any, b: Any) -> Any:
     import numpy as np
 
-    return np.linalg.solve(a, b)
+    return np.linalg.solve(
+        (a.data if hasattr(a, "device") else a), (b.data if hasattr(b, "device") else b)
+    )
 
 
 def solve_triangular(
@@ -259,7 +261,6 @@ def solve_triangular(
     lower: bool = False,
     unit_diagonal: bool = False,
     overwrite_b: bool = False,
-    debug: bool = None,
     check_finite: bool = True,
 ) -> Any:
     import scipy.linalg as spla
@@ -271,7 +272,6 @@ def solve_triangular(
         lower=lower,
         unit_diagonal=unit_diagonal,
         overwrite_b=overwrite_b,
-        debug=debug,
         check_finite=check_finite,
     )
 

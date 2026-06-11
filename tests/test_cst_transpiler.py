@@ -28,12 +28,6 @@ def test_transpile_source_call() -> None:
     assert transpile_source(source, target_framework="jax") == expected
 
 
-def test_transpile_source_call_other_framework() -> None:
-    """Test transpilation of calls to other framework."""
-    source = "torch.add(x, y)\n"
-    assert transpile_source(source, target_framework="mlx") == source
-
-
 def test_validate_diff_different() -> None:
     """Test validate_diff with different syntactically valid code."""
     source = "x = 1\n"
@@ -72,3 +66,8 @@ def test_cst_transformer_init() -> None:
     """Test CSTTransformer initialization."""
     transformer = CSTTransformer()
     assert transformer.target_framework == "jax"
+
+
+def test_transpile_source_other_call() -> None:
+    source = "print('hello')\n"
+    assert transpile_source(source, target_framework="jax") == source

@@ -1,3 +1,5 @@
+import ml_switcheroo.core.dtype as DTypeMod
+
 """Docstring module."""
 
 from typing import Any
@@ -262,3 +264,29 @@ def test_binary_tracing() -> None:
             allclose(t_float, t_float)
         finally:
             _tracer.stop_tracing()
+
+
+def test_erfinv():
+    from ml_switcheroo.ops.unary import erfinv
+    from ml_switcheroo.core.tensor import Tensor
+    from ml_switcheroo.core.config import config
+    from ml_switcheroo.core.errors import UnimplementedMathError
+    import numpy as np
+    import pytest
+    from ml_switcheroo.tracing import _tracer, ProxyTensor
+
+    config.eager_mode = True
+    t = Tensor(np.array([1.0]), (1,), DTypeMod.DType.Float32, None)
+    with pytest.raises(UnimplementedMathError):
+        erfinv(t)
+
+    config.eager_mode = False
+    _tracer.start_tracing()
+    try:
+        t_proxy = Tensor(
+            ProxyTensor("a", (1,), "float32"), (1,), DTypeMod.DType.Float32, None
+        )
+        erfinv(t_proxy)
+    finally:
+        _tracer.stop_tracing()
+        config.eager_mode = True

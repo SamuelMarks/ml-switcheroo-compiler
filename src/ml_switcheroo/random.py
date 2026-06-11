@@ -221,10 +221,9 @@ def truncated_normal(
             samples = rng.standard_normal(size=needed)
             valid = samples[(samples >= lower) & (samples <= upper)]
             count = len(valid)
-            if count > 0:
-                flat_data[idx : idx + count] = valid
-                idx += count
-                needed -= count
+            flat_data[idx : idx + count] = valid
+            idx += count
+            needed -= count
         return Tensor(data, shape, dtype, key.device)
     else:
         if not _tracer.is_tracing:

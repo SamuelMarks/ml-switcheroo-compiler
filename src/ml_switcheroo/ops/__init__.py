@@ -83,6 +83,7 @@ from ml_switcheroo.ops.reductions import (
     logsumexp,
     count_nonzero,
     norm,
+    cumsum,
 )
 from ml_switcheroo.ops.linalg import (
     matmul,
@@ -129,6 +130,7 @@ from ml_switcheroo.ops.shape import (
     tril,
     meshgrid,
     pad,
+    take_along_axis,
 )
 from ml_switcheroo.ops.binary import (
     add,
@@ -292,6 +294,7 @@ __all__ = [
     "logsumexp",
     "count_nonzero",
     "norm",
+    "cumsum",
     "matmul",
     "dot",
     "tensordot",
@@ -334,4 +337,5 @@ __all__ = [
     "tril",
     "meshgrid",
     "pad",
+    "take_along_axis",
 ]

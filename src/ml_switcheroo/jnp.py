@@ -47,19 +47,16 @@ class ndarray:
     def __array__(self) -> Any:
         """Perform the array operation.
 
-        Args:
-            other (Any): The other operand for the operation.
-
         Returns:
             Any: The result of the array operation.
         """
-        from ml_switcheroo.core import tensor_utils
+        import numpy as np
 
         if hasattr(self._tensor.data, "id"):  # ProxyTensor check
-            return tensor_utils.zeros(
-                self._tensor.shape
-            )  # Return dummy shape for tracing asserts if needed
-        return tensor_utils.to_array(self._tensor.data)
+            return np.zeros(self._tensor.shape)
+        return np.array(
+            self._tensor.data
+        )  # Return dummy shape for tracing asserts if needed
 
     def __repr__(self) -> Any:
         """Perform the repr operation.
@@ -392,9 +389,9 @@ def _to_tensor(x: Any) -> Any:
             device=config.default_device,
         )
 
-    from ml_switcheroo.core import tensor_utils
+    import numpy as np
 
-    arr = tensor_utils.to_array(x)
+    arr = np.array(x)
     if config.eager_mode and not _tracer.is_tracing:
         return ml_switcheroo.Tensor(
             arr, arr.shape, config.default_float_dtype, config.default_device
@@ -848,9 +845,9 @@ def array_equal(a1: Any, a2: Any, equal_nan: Any = False) -> Any:
         Any: The result of the operation.
     """
     res = ops.equal(_to_tensor(a1), _to_tensor(a2))
-    from ml_switcheroo.core import tensor_utils
+    import numpy as np
 
-    return bool(tensor_utils.to_array(res.data).all()) if hasattr(res, "data") else True
+    return bool(np.array(res.data).all()) if hasattr(res, "data") else True
 
 
 def broadcast_shapes(*shapes: Any) -> Any:

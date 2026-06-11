@@ -251,5 +251,7 @@ from typing import Any, Optional
 
 def cumsum(x: Any, axis: Optional[int] = None, dtype: Optional[Any] = None) -> Any:
     import numpy as np
+    from ml_switcheroo.core.tensor import Tensor
 
-    return np.cumsum(x, axis=axis, dtype=dtype)
+    arr = np.cumsum((x.data if hasattr(x, "device") else x), axis=axis, dtype=dtype)
+    return Tensor(arr, arr.shape, x.dtype, getattr(x, "device", None))
