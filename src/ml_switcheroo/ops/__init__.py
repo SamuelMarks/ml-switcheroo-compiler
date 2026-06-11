@@ -83,6 +83,7 @@ from ml_switcheroo.ops.reductions import (
     any,
     logsumexp,
     count_nonzero,
+    cumsum,
     norm,
 )
 from ml_switcheroo.ops.linalg import (
@@ -103,6 +104,11 @@ from ml_switcheroo.ops.linalg import (
     eigh,
     eigvalsh,
     matrix_power,
+    cross,
+    solve,
+    solve_triangular,
+    lu,
+    lu_factor,
 )
 from ml_switcheroo.ops.shape import (
     reshape,
@@ -136,6 +142,8 @@ from ml_switcheroo.ops.shape import (
     triu,
     tril,
     meshgrid,
+    pad,
+    take_along_axis,
 )
 from ml_switcheroo.ops.binary import (
     add,
@@ -299,6 +307,7 @@ __all__ = [
     "any",
     "logsumexp",
     "count_nonzero",
+    "cumsum",
     "norm",
     "matmul",
     "dot",
@@ -317,6 +326,11 @@ __all__ = [
     "eigh",
     "eigvalsh",
     "matrix_power",
+    "cross",
+    "solve",
+    "solve_triangular",
+    "lu",
+    "lu_factor",
     "reshape",
     "flatten",
     "squeeze",
@@ -348,4 +362,6 @@ __all__ = [
     "triu",
     "tril",
     "meshgrid",
+    "pad",
+    "take_along_axis",
 ]
