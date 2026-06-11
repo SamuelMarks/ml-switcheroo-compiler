@@ -44,7 +44,7 @@ def abs(input: Tensor) -> Tensor:
 def acos(input: Tensor) -> Tensor:
     """Computes acos of each element."""
     if config.eager_mode:
-        data = np.acos(input.data)
+        data = np.arccos(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
@@ -54,7 +54,7 @@ def acos(input: Tensor) -> Tensor:
 def acosh(input: Tensor) -> Tensor:
     """Computes acosh of each element."""
     if config.eager_mode:
-        data = np.acosh(input.data)
+        data = np.arccosh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
@@ -64,7 +64,7 @@ def acosh(input: Tensor) -> Tensor:
 def asin(input: Tensor) -> Tensor:
     """Computes asin of each element."""
     if config.eager_mode:
-        data = np.asin(input.data)
+        data = np.arcsin(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
@@ -74,7 +74,7 @@ def asin(input: Tensor) -> Tensor:
 def asinh(input: Tensor) -> Tensor:
     """Computes asinh of each element."""
     if config.eager_mode:
-        data = np.asinh(input.data)
+        data = np.arcsinh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
@@ -84,7 +84,7 @@ def asinh(input: Tensor) -> Tensor:
 def atan(input: Tensor) -> Tensor:
     """Computes atan of each element."""
     if config.eager_mode:
-        data = np.atan(input.data)
+        data = np.arctan(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
         return Tensor(data, input.shape, input.dtype, input.device)
     else:
@@ -94,7 +94,7 @@ def atan(input: Tensor) -> Tensor:
 def atanh(input: Tensor) -> Tensor:
     """Computes atanh of each element."""
     if config.eager_mode:
-        data = np.atanh(input.data)
+        data = np.arctanh(input.data)
         # Re-wrap boolean functions explicitly to ensure correct dtype type mapping
         return Tensor(data, input.shape, input.dtype, input.device)
     else:

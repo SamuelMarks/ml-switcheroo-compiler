@@ -244,3 +244,12 @@ def norm(
         return _emit_reduction_node(
             input, "Norm", axis, keepdims, input.dtype, {ord: ord}
         )
+
+
+from typing import Any, Optional
+
+
+def cumsum(x: Any, axis: Optional[int] = None, dtype: Optional[Any] = None) -> Any:
+    import numpy as np
+
+    return np.cumsum(x, axis=axis, dtype=dtype)

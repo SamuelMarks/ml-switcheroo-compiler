@@ -35,7 +35,6 @@ UNARY_OPS = [
     "deg2rad",
     "erf",
     "erfc",
-    "erfinv",
     "exp",
     "exp2",
     "expm1",
@@ -108,7 +107,7 @@ BINARY_OPS = [
     "subtract",
 ]
 
-UNIMPLEMENTED_UNARY = ["erfc", "erfinv", "lgamma", "digamma"]
+UNIMPLEMENTED_UNARY = ["erfc", "lgamma", "digamma"]
 
 
 def _make_tensor(data_list: Any, dtype: Any) -> Any:

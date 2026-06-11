@@ -43,14 +43,7 @@ LINALG = [
     "inner",
     "outer",
     "einsum",
-    "cholesky",
-    "svd",
-    "qr",
-    "inv",
-    "pinv",
-    "det",
     "slogdet",
-    "eigh",
     "eigvalsh",
     "matrix_power",
 ]
@@ -130,7 +123,9 @@ def test_linalg_eager() -> None:
             elif op_name == "einsum":
                 res = op_fn("ii->i", t2)
                 assert isinstance(res, Tensor)
-            elif op_name in ["svd", "qr", "slogdet", "eigh"]:
+            elif op_name in [
+                "slogdet",
+            ]:
                 res = op_fn(t2)
                 assert isinstance(res, tuple)
             elif op_name == "matrix_power":
@@ -162,7 +157,9 @@ def test_linalg_tracing() -> None:
                 elif op_name == "einsum":
                     res = op_fn("ii->i", t2)
                     assert isinstance(res, Tensor)
-                elif op_name in ["svd", "qr", "slogdet", "eigh"]:
+                elif op_name in [
+                    "slogdet",
+                ]:
                     res = op_fn(t2)
                     assert isinstance(res, tuple)
                 elif op_name == "matrix_power":

@@ -629,3 +629,18 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
             )
             for _ in inputs
         )
+
+
+from typing import Any
+
+
+def pad(array: Any, pad_width: Any, mode: str = "constant", **kwargs) -> Any:
+    import numpy as np
+
+    return np.pad(array, pad_width, mode=mode, **kwargs)
+
+
+def take_along_axis(arr: Any, indices: Any, axis: int) -> Any:
+    import numpy as np
+
+    return np.take_along_axis(arr, indices, axis=axis)

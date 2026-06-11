@@ -49,245 +49,245 @@ Every `zero-*` repository will add `ml-switcheroo-compiler` as its core backend 
 The core ops library (`switcheroo.ops`) must subsume all math logic. The `zero-*` repositories will implement their native APIs (e.g., `zero_torch.sin`) by simply returning `switcheroo.ops.sin(input)`.
 
 ### Constants & Creation Ops
-- [ ] `switcheroo.ops.zeros`
-- [ ] `switcheroo.ops.ones`
-- [ ] `switcheroo.ops.full`
-- [ ] `switcheroo.ops.zeros_like`
-- [ ] `switcheroo.ops.ones_like`
-- [ ] `switcheroo.ops.full_like`
-- [ ] `switcheroo.ops.arange`
-- [ ] `switcheroo.ops.linspace`
-- [ ] `switcheroo.ops.eye`
-- [ ] `switcheroo.ops.identity`
-- [ ] `switcheroo.ops.diag`
-- [ ] `switcheroo.ops.empty` (uninitialized memory)
+- [x] `switcheroo.ops.zeros`
+- [x] `switcheroo.ops.ones`
+- [x] `switcheroo.ops.full`
+- [x] `switcheroo.ops.zeros_like`
+- [x] `switcheroo.ops.ones_like`
+- [x] `switcheroo.ops.full_like`
+- [x] `switcheroo.ops.arange`
+- [x] `switcheroo.ops.linspace`
+- [x] `switcheroo.ops.eye`
+- [x] `switcheroo.ops.identity`
+- [x] `switcheroo.ops.diag`
+- [x] `switcheroo.ops.empty` (uninitialized memory)
 
 ### Random Operations (Functional & Stateful)
-- [ ] `switcheroo.random.PRNGKey` (pure functional state management, mapping to JAX).
-- [ ] `switcheroo.random.split`
-- [ ] `switcheroo.random.fold_in`
-- [ ] `switcheroo.random.uniform`
-- [ ] `switcheroo.random.normal`
-- [ ] `switcheroo.random.bernoulli`
-- [ ] `switcheroo.random.truncated_normal`
-- [ ] `switcheroo.random.randint`
-- [ ] `switcheroo.random.seed` (global stateful fallback for PyTorch/Keras mapping).
+- [x] `switcheroo.random.PRNGKey` (pure functional state management, mapping to JAX).
+- [x] `switcheroo.random.split`
+- [x] `switcheroo.random.fold_in`
+- [x] `switcheroo.random.uniform`
+- [x] `switcheroo.random.normal`
+- [x] `switcheroo.random.bernoulli`
+- [x] `switcheroo.random.truncated_normal`
+- [x] `switcheroo.random.randint`
+- [x] `switcheroo.random.seed` (global stateful fallback for PyTorch/Keras mapping).
 
 ### Unary Operations
-- [ ] `switcheroo.ops.abs`
-- [ ] `switcheroo.ops.acos`
-- [ ] `switcheroo.ops.acosh`
-- [ ] `switcheroo.ops.asin`
-- [ ] `switcheroo.ops.asinh`
-- [ ] `switcheroo.ops.atan`
-- [ ] `switcheroo.ops.atan2`
-- [ ] `switcheroo.ops.atanh`
-- [ ] `switcheroo.ops.bitwise_not`
-- [ ] `switcheroo.ops.cbrt`
-- [ ] `switcheroo.ops.ceil`
-- [ ] `switcheroo.ops.conj`
-- [ ] `switcheroo.ops.cos`
-- [ ] `switcheroo.ops.cosh`
-- [ ] `switcheroo.ops.deg2rad`
-- [ ] `switcheroo.ops.digamma`
-- [ ] `switcheroo.ops.erf`
-- [ ] `switcheroo.ops.erfc`
-- [ ] `switcheroo.ops.erfinv`
-- [ ] `switcheroo.ops.exp`
-- [ ] `switcheroo.ops.exp2`
-- [ ] `switcheroo.ops.expm1`
-- [ ] `switcheroo.ops.fix`
-- [ ] `switcheroo.ops.floor`
-- [ ] `switcheroo.ops.frexp`
-- [ ] `switcheroo.ops.imag`
-- [ ] `switcheroo.ops.isfinite`
-- [ ] `switcheroo.ops.isinf`
-- [ ] `switcheroo.ops.isnan`
-- [ ] `switcheroo.ops.lgamma`
-- [ ] `switcheroo.ops.log`
-- [ ] `switcheroo.ops.log10`
-- [ ] `switcheroo.ops.log1p`
-- [ ] `switcheroo.ops.log2`
-- [ ] `switcheroo.ops.logical_not`
-- [ ] `switcheroo.ops.negative`
-- [ ] `switcheroo.ops.positive`
-- [ ] `switcheroo.ops.rad2deg`
-- [ ] `switcheroo.ops.real`
-- [ ] `switcheroo.ops.reciprocal`
-- [ ] `switcheroo.ops.round`
-- [ ] `switcheroo.ops.rsqrt`
-- [ ] `switcheroo.ops.sign`
-- [ ] `switcheroo.ops.sin`
-- [ ] `switcheroo.ops.sinc`
-- [ ] `switcheroo.ops.sinh`
-- [ ] `switcheroo.ops.sqrt`
-- [ ] `switcheroo.ops.square`
-- [ ] `switcheroo.ops.tan`
-- [ ] `switcheroo.ops.tanh`
-- [ ] `switcheroo.ops.trunc`
-- [ ] `switcheroo.ops.cast` (dtype conversion)
-- [ ] `switcheroo.ops.bitcast`
+- [x] `switcheroo.ops.abs`
+- [x] `switcheroo.ops.acos`
+- [x] `switcheroo.ops.acosh`
+- [x] `switcheroo.ops.asin`
+- [x] `switcheroo.ops.asinh`
+- [x] `switcheroo.ops.atan`
+- [x] `switcheroo.ops.atan2`
+- [x] `switcheroo.ops.atanh`
+- [x] `switcheroo.ops.bitwise_not`
+- [x] `switcheroo.ops.cbrt`
+- [x] `switcheroo.ops.ceil`
+- [x] `switcheroo.ops.conj`
+- [x] `switcheroo.ops.cos`
+- [x] `switcheroo.ops.cosh`
+- [x] `switcheroo.ops.deg2rad`
+- [x] `switcheroo.ops.digamma`
+- [x] `switcheroo.ops.erf`
+- [x] `switcheroo.ops.erfc`
+- [x] `switcheroo.ops.erfinv`
+- [x] `switcheroo.ops.exp`
+- [x] `switcheroo.ops.exp2`
+- [x] `switcheroo.ops.expm1`
+- [x] `switcheroo.ops.fix`
+- [x] `switcheroo.ops.floor`
+- [x] `switcheroo.ops.frexp`
+- [x] `switcheroo.ops.imag`
+- [x] `switcheroo.ops.isfinite`
+- [x] `switcheroo.ops.isinf`
+- [x] `switcheroo.ops.isnan`
+- [x] `switcheroo.ops.lgamma`
+- [x] `switcheroo.ops.log`
+- [x] `switcheroo.ops.log10`
+- [x] `switcheroo.ops.log1p`
+- [x] `switcheroo.ops.log2`
+- [x] `switcheroo.ops.logical_not`
+- [x] `switcheroo.ops.negative`
+- [x] `switcheroo.ops.positive`
+- [x] `switcheroo.ops.rad2deg`
+- [x] `switcheroo.ops.real`
+- [x] `switcheroo.ops.reciprocal`
+- [x] `switcheroo.ops.round`
+- [x] `switcheroo.ops.rsqrt`
+- [x] `switcheroo.ops.sign`
+- [x] `switcheroo.ops.sin`
+- [x] `switcheroo.ops.sinc`
+- [x] `switcheroo.ops.sinh`
+- [x] `switcheroo.ops.sqrt`
+- [x] `switcheroo.ops.square`
+- [x] `switcheroo.ops.tan`
+- [x] `switcheroo.ops.tanh`
+- [x] `switcheroo.ops.trunc`
+- [x] `switcheroo.ops.cast` (dtype conversion)
+- [x] `switcheroo.ops.bitcast`
 
 ### Binary Operations
-- [ ] `switcheroo.ops.add`
-- [ ] `switcheroo.ops.bitwise_and`
-- [ ] `switcheroo.ops.bitwise_or`
-- [ ] `switcheroo.ops.bitwise_xor`
-- [ ] `switcheroo.ops.copysign`
-- [ ] `switcheroo.ops.divide` (true division)
-- [ ] `switcheroo.ops.divmod`
-- [ ] `switcheroo.ops.equal`
-- [ ] `switcheroo.ops.float_power`
-- [ ] `switcheroo.ops.floor_divide`
-- [ ] `switcheroo.ops.fmax`
-- [ ] `switcheroo.ops.fmin`
-- [ ] `switcheroo.ops.fmod`
-- [ ] `switcheroo.ops.gcd`
-- [ ] `switcheroo.ops.greater`
-- [ ] `switcheroo.ops.greater_equal`
-- [ ] `switcheroo.ops.heaviside`
-- [ ] `switcheroo.ops.hypot`
-- [ ] `switcheroo.ops.lcm`
-- [ ] `switcheroo.ops.ldexp`
-- [ ] `switcheroo.ops.left_shift`
-- [ ] `switcheroo.ops.less`
-- [ ] `switcheroo.ops.less_equal`
-- [ ] `switcheroo.ops.logaddexp`
-- [ ] `switcheroo.ops.logaddexp2`
-- [ ] `switcheroo.ops.logical_and`
-- [ ] `switcheroo.ops.logical_or`
-- [ ] `switcheroo.ops.logical_xor`
-- [ ] `switcheroo.ops.maximum`
-- [ ] `switcheroo.ops.minimum`
-- [ ] `switcheroo.ops.mod`
-- [ ] `switcheroo.ops.multiply`
-- [ ] `switcheroo.ops.nextafter`
-- [ ] `switcheroo.ops.not_equal`
-- [ ] `switcheroo.ops.power`
-- [ ] `switcheroo.ops.remainder`
-- [ ] `switcheroo.ops.right_shift`
-- [ ] `switcheroo.ops.subtract`
-- [ ] `switcheroo.ops.allclose`
-- [ ] `switcheroo.ops.isclose`
+- [x] `switcheroo.ops.add`
+- [x] `switcheroo.ops.bitwise_and`
+- [x] `switcheroo.ops.bitwise_or`
+- [x] `switcheroo.ops.bitwise_xor`
+- [x] `switcheroo.ops.copysign`
+- [x] `switcheroo.ops.divide` (true division)
+- [x] `switcheroo.ops.divmod`
+- [x] `switcheroo.ops.equal`
+- [x] `switcheroo.ops.float_power`
+- [x] `switcheroo.ops.floor_divide`
+- [x] `switcheroo.ops.fmax`
+- [x] `switcheroo.ops.fmin`
+- [x] `switcheroo.ops.fmod`
+- [x] `switcheroo.ops.gcd`
+- [x] `switcheroo.ops.greater`
+- [x] `switcheroo.ops.greater_equal`
+- [x] `switcheroo.ops.heaviside`
+- [x] `switcheroo.ops.hypot`
+- [x] `switcheroo.ops.lcm`
+- [x] `switcheroo.ops.ldexp`
+- [x] `switcheroo.ops.left_shift`
+- [x] `switcheroo.ops.less`
+- [x] `switcheroo.ops.less_equal`
+- [x] `switcheroo.ops.logaddexp`
+- [x] `switcheroo.ops.logaddexp2`
+- [x] `switcheroo.ops.logical_and`
+- [x] `switcheroo.ops.logical_or`
+- [x] `switcheroo.ops.logical_xor`
+- [x] `switcheroo.ops.maximum`
+- [x] `switcheroo.ops.minimum`
+- [x] `switcheroo.ops.mod`
+- [x] `switcheroo.ops.multiply`
+- [x] `switcheroo.ops.nextafter`
+- [x] `switcheroo.ops.not_equal`
+- [x] `switcheroo.ops.power`
+- [x] `switcheroo.ops.remainder`
+- [x] `switcheroo.ops.right_shift`
+- [x] `switcheroo.ops.subtract`
+- [x] `switcheroo.ops.allclose`
+- [x] `switcheroo.ops.isclose`
 
 ### Reductions
-- [ ] `switcheroo.ops.sum`
-- [ ] `switcheroo.ops.prod`
-- [ ] `switcheroo.ops.mean`
-- [ ] `switcheroo.ops.variance`
-- [ ] `switcheroo.ops.std`
-- [ ] `switcheroo.ops.max`
-- [ ] `switcheroo.ops.min`
-- [ ] `switcheroo.ops.argmax`
-- [ ] `switcheroo.ops.argmin`
-- [ ] `switcheroo.ops.all`
-- [ ] `switcheroo.ops.any`
-- [ ] `switcheroo.ops.logsumexp`
-- [ ] `switcheroo.ops.count_nonzero`
-- [ ] `switcheroo.ops.norm` (L1, L2, Lp norms)
+- [x] `switcheroo.ops.sum`
+- [x] `switcheroo.ops.prod`
+- [x] `switcheroo.ops.mean`
+- [x] `switcheroo.ops.variance`
+- [x] `switcheroo.ops.std`
+- [x] `switcheroo.ops.max`
+- [x] `switcheroo.ops.min`
+- [x] `switcheroo.ops.argmax`
+- [x] `switcheroo.ops.argmin`
+- [x] `switcheroo.ops.all`
+- [x] `switcheroo.ops.any`
+- [x] `switcheroo.ops.logsumexp`
+- [x] `switcheroo.ops.count_nonzero`
+- [x] `switcheroo.ops.norm` (L1, L2, Lp norms)
 - [ ] *Implementation note:* All reductions must rigorously support `axis` (tuple of ints or int) and `keepdims` (bool).
 
 ### Linear Algebra
-- [ ] `switcheroo.ops.matmul` (vector-matrix, matrix-matrix, batched)
-- [ ] `switcheroo.ops.dot`
-- [ ] `switcheroo.ops.tensordot`
-- [ ] `switcheroo.ops.vdot`
-- [ ] `switcheroo.ops.inner`
-- [ ] `switcheroo.ops.outer`
-- [ ] `switcheroo.ops.einsum`
-- [ ] `switcheroo.ops.cholesky`
-- [ ] `switcheroo.ops.svd`
-- [ ] `switcheroo.ops.qr`
-- [ ] `switcheroo.ops.inv`
-- [ ] `switcheroo.ops.pinv`
-- [ ] `switcheroo.ops.det`
-- [ ] `switcheroo.ops.slogdet`
-- [ ] `switcheroo.ops.eigh`
-- [ ] `switcheroo.ops.eigvalsh`
-- [ ] `switcheroo.ops.matrix_power`
+- [x] `switcheroo.ops.matmul` (vector-matrix, matrix-matrix, batched)
+- [x] `switcheroo.ops.dot`
+- [x] `switcheroo.ops.tensordot`
+- [x] `switcheroo.ops.vdot`
+- [x] `switcheroo.ops.inner`
+- [x] `switcheroo.ops.outer`
+- [x] `switcheroo.ops.einsum`
+- [x] `switcheroo.ops.cholesky`
+- [x] `switcheroo.ops.svd`
+- [x] `switcheroo.ops.qr`
+- [x] `switcheroo.ops.inv`
+- [x] `switcheroo.ops.pinv`
+- [x] `switcheroo.ops.det`
+- [x] `switcheroo.ops.slogdet`
+- [x] `switcheroo.ops.eigh`
+- [x] `switcheroo.ops.eigvalsh`
+- [x] `switcheroo.ops.matrix_power`
 
 ### Neural Network Primitives
-- [ ] `switcheroo.nn.conv1d`
-- [ ] `switcheroo.nn.conv2d`
-- [ ] `switcheroo.nn.conv3d`
-- [ ] `switcheroo.nn.conv_transpose1d`
-- [ ] `switcheroo.nn.conv_transpose2d`
-- [ ] `switcheroo.nn.conv_transpose3d`
-- [ ] `switcheroo.nn.max_pool1d`
-- [ ] `switcheroo.nn.max_pool2d`
-- [ ] `switcheroo.nn.max_pool3d`
-- [ ] `switcheroo.nn.avg_pool1d`
-- [ ] `switcheroo.nn.avg_pool2d`
-- [ ] `switcheroo.nn.avg_pool3d`
-- [ ] `switcheroo.nn.adaptive_avg_pool2d`
-- [ ] `switcheroo.nn.fractional_max_pool2d`
-- [ ] `switcheroo.nn.layer_norm`
-- [ ] `switcheroo.nn.batch_norm`
-- [ ] `switcheroo.nn.group_norm`
-- [ ] `switcheroo.nn.rms_norm`
-- [ ] `switcheroo.nn.instance_norm`
-- [ ] `switcheroo.nn.dropout`
-- [ ] `switcheroo.nn.alpha_dropout`
-- [ ] `switcheroo.nn.feature_alpha_dropout`
-- [ ] `switcheroo.nn.spatial_dropout`
-- [ ] `switcheroo.nn.embedding`
-- [ ] `switcheroo.nn.pad` (constant, reflect, replicate, circular modes)
-- [ ] `switcheroo.nn.upsample_bilinear`
-- [ ] `switcheroo.nn.upsample_nearest`
-- [ ] `switcheroo.nn.scaled_dot_product_attention`
-- [ ] `switcheroo.nn.rnn_cell`
-- [ ] `switcheroo.nn.lstm_cell`
-- [ ] `switcheroo.nn.gru_cell`
+- [x] `switcheroo.nn.conv1d`
+- [x] `switcheroo.nn.conv2d`
+- [x] `switcheroo.nn.conv3d`
+- [x] `switcheroo.nn.conv_transpose1d`
+- [x] `switcheroo.nn.conv_transpose2d`
+- [x] `switcheroo.nn.conv_transpose3d`
+- [x] `switcheroo.nn.max_pool1d`
+- [x] `switcheroo.nn.max_pool2d`
+- [x] `switcheroo.nn.max_pool3d`
+- [x] `switcheroo.nn.avg_pool1d`
+- [x] `switcheroo.nn.avg_pool2d`
+- [x] `switcheroo.nn.avg_pool3d`
+- [x] `switcheroo.nn.adaptive_avg_pool2d`
+- [x] `switcheroo.nn.fractional_max_pool2d`
+- [x] `switcheroo.nn.layer_norm`
+- [x] `switcheroo.nn.batch_norm`
+- [x] `switcheroo.nn.group_norm`
+- [x] `switcheroo.nn.rms_norm`
+- [x] `switcheroo.nn.instance_norm`
+- [x] `switcheroo.nn.dropout`
+- [x] `switcheroo.nn.alpha_dropout`
+- [x] `switcheroo.nn.feature_alpha_dropout`
+- [x] `switcheroo.nn.spatial_dropout`
+- [x] `switcheroo.nn.embedding`
+- [x] `switcheroo.nn.pad` (constant, reflect, replicate, circular modes)
+- [x] `switcheroo.nn.upsample_bilinear`
+- [x] `switcheroo.nn.upsample_nearest`
+- [x] `switcheroo.nn.scaled_dot_product_attention`
+- [x] `switcheroo.nn.rnn_cell`
+- [x] `switcheroo.nn.lstm_cell`
+- [x] `switcheroo.nn.gru_cell`
 
 ### Activations
-- [ ] `switcheroo.nn.relu`
-- [ ] `switcheroo.nn.leaky_relu`
-- [ ] `switcheroo.nn.gelu`
-- [ ] `switcheroo.nn.swish` (silu)
-- [ ] `switcheroo.nn.sigmoid`
-- [ ] `switcheroo.nn.tanh`
-- [ ] `switcheroo.nn.softplus`
-- [ ] `switcheroo.nn.elu`
-- [ ] `switcheroo.nn.selu`
-- [ ] `switcheroo.nn.celu`
-- [ ] `switcheroo.nn.glu`
-- [ ] `switcheroo.nn.mish`
-- [ ] `switcheroo.nn.hardswish`
-- [ ] `switcheroo.nn.softmax`
-- [ ] `switcheroo.nn.log_softmax`
+- [x] `switcheroo.nn.relu`
+- [x] `switcheroo.nn.leaky_relu`
+- [x] `switcheroo.nn.gelu`
+- [x] `switcheroo.nn.swish` (silu)
+- [x] `switcheroo.nn.sigmoid`
+- [x] `switcheroo.nn.tanh`
+- [x] `switcheroo.nn.softplus`
+- [x] `switcheroo.nn.elu`
+- [x] `switcheroo.nn.selu`
+- [x] `switcheroo.nn.celu`
+- [x] `switcheroo.nn.glu`
+- [x] `switcheroo.nn.mish`
+- [x] `switcheroo.nn.hardswish`
+- [x] `switcheroo.nn.softmax`
+- [x] `switcheroo.nn.log_softmax`
 
 ### Shape, Memory, & Movement Ops
-- [ ] `switcheroo.ops.reshape`
-- [ ] `switcheroo.ops.flatten`
-- [ ] `switcheroo.ops.squeeze`
-- [ ] `switcheroo.ops.unsqueeze`
-- [ ] `switcheroo.ops.expand`
-- [ ] `switcheroo.ops.broadcast_to`
-- [ ] `switcheroo.ops.transpose`
-- [ ] `switcheroo.ops.permute`
-- [ ] `switcheroo.ops.swapaxes`
-- [ ] `switcheroo.ops.moveaxis`
-- [ ] `switcheroo.ops.roll`
-- [ ] `switcheroo.ops.slice`
-- [ ] `switcheroo.ops.dynamic_slice`
-- [ ] `switcheroo.ops.update_slice`
-- [ ] `switcheroo.ops.strided_slice`
-- [ ] `switcheroo.ops.concatenate`
-- [ ] `switcheroo.ops.stack`
-- [ ] `switcheroo.ops.split`
-- [ ] `switcheroo.ops.unstack`
-- [ ] `switcheroo.ops.tile`
-- [ ] `switcheroo.ops.repeat`
-- [ ] `switcheroo.ops.gather`
-- [ ] `switcheroo.ops.gather_nd`
-- [ ] `switcheroo.ops.scatter`
-- [ ] `switcheroo.ops.scatter_nd`
-- [ ] `switcheroo.ops.scatter_add`
-- [ ] `switcheroo.ops.take`
-- [ ] `switcheroo.ops.where`
-- [ ] `switcheroo.ops.triu`
-- [ ] `switcheroo.ops.tril`
-- [ ] `switcheroo.ops.meshgrid`
+- [x] `switcheroo.ops.reshape`
+- [x] `switcheroo.ops.flatten`
+- [x] `switcheroo.ops.squeeze`
+- [x] `switcheroo.ops.unsqueeze`
+- [x] `switcheroo.ops.expand`
+- [x] `switcheroo.ops.broadcast_to`
+- [x] `switcheroo.ops.transpose`
+- [x] `switcheroo.ops.permute`
+- [x] `switcheroo.ops.swapaxes`
+- [x] `switcheroo.ops.moveaxis`
+- [x] `switcheroo.ops.roll`
+- [x] `switcheroo.ops.slice`
+- [x] `switcheroo.ops.dynamic_slice`
+- [x] `switcheroo.ops.update_slice`
+- [x] `switcheroo.ops.strided_slice`
+- [x] `switcheroo.ops.concatenate`
+- [x] `switcheroo.ops.stack`
+- [x] `switcheroo.ops.split`
+- [x] `switcheroo.ops.unstack`
+- [x] `switcheroo.ops.tile`
+- [x] `switcheroo.ops.repeat`
+- [x] `switcheroo.ops.gather`
+- [x] `switcheroo.ops.gather_nd`
+- [x] `switcheroo.ops.scatter`
+- [x] `switcheroo.ops.scatter_nd`
+- [x] `switcheroo.ops.scatter_add`
+- [x] `switcheroo.ops.take`
+- [x] `switcheroo.ops.where`
+- [x] `switcheroo.ops.triu`
+- [x] `switcheroo.ops.tril`
+- [x] `switcheroo.ops.meshgrid`
 
 ### Standardized Semantics & Type Promotion
 - [ ] Implement strict NumPy-compliant broadcasting resolver (right-to-left alignment).

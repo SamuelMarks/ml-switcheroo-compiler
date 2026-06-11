@@ -233,3 +233,63 @@ def matrix_power(input: Tensor, n: int) -> Tensor:
         return Tensor(data, data.shape, input.dtype, input.device)
     else:
         return _emit_linalg_node("MatrixPower", [input], {"n": n}, [()], [input.dtype])
+
+
+from typing import Any
+
+
+def cross(
+    a: Any, b: Any, axisa: int = -1, axisb: int = -1, axisc: int = -1, axis: int = None
+) -> Any:
+    import numpy as np
+
+    return np.cross(a, b, axisa=axisa, axisb=axisb, axisc=axisc, axis=axis)
+
+
+def solve(a: Any, b: Any) -> Any:
+    import numpy as np
+
+    return np.linalg.solve(a, b)
+
+
+def solve_triangular(
+    a: Any,
+    b: Any,
+    trans: int = 0,
+    lower: bool = False,
+    unit_diagonal: bool = False,
+    overwrite_b: bool = False,
+    debug: bool = None,
+    check_finite: bool = True,
+) -> Any:
+    import scipy.linalg as spla
+
+    return spla.solve_triangular(
+        a,
+        b,
+        trans=trans,
+        lower=lower,
+        unit_diagonal=unit_diagonal,
+        overwrite_b=overwrite_b,
+        debug=debug,
+        check_finite=check_finite,
+    )
+
+
+def lu(
+    a: Any,
+    permute_l: bool = False,
+    overwrite_a: bool = False,
+    check_finite: bool = True,
+) -> Any:
+    import scipy.linalg as spla
+
+    return spla.lu(
+        a, permute_l=permute_l, overwrite_a=overwrite_a, check_finite=check_finite
+    )
+
+
+def lu_factor(a: Any, overwrite_a: bool = False, check_finite: bool = True) -> Any:
+    import scipy.linalg as spla
+
+    return spla.lu_factor(a, overwrite_a=overwrite_a, check_finite=check_finite)
