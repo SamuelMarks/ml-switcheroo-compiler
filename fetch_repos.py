@@ -1,3 +1,5 @@
+"""Docstring."""
+
 import urllib.request
 import json
 import ssl

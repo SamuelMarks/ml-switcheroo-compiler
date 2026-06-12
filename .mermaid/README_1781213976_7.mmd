@@ -1,0 +1,12 @@
+flowchart TD
+    Keras["Keras 3 Interface"]
+
+    subgraph K_Backends["Supported Backends"]
+        direction TB
+        TF["TensorFlow"]
+        PT["PyTorch"]
+        JAX["JAX"]
+        NP["NumPy"]
+    end
+
+    Keras --> K_Backends

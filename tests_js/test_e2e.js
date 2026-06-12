@@ -16,7 +16,7 @@ test('E2E Combinations', async (t) => {
         headless: "new",
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    
+
     const page = await browser.newPage();
     // Intercept Pyodide network requests to avoid actually downloading it or just let it fail gracefully
     // We mainly want to test UI logic here, not actually compile python for every combination
@@ -152,7 +152,7 @@ test('E2E Combinations', async (t) => {
 </section>`;
             window.initPlayground(document, localStorage, window);
         });
-        
+
         sourceOptions = await page.$$eval('#source-framework option', options => options.map(o => o.value));
         exampleOptions = await page.$$eval('#source-example option', options => options.map(o => o.value));
         targetOptions = await page.$$eval('#target-framework option', options => options.map(o => o.value));
@@ -163,8 +163,8 @@ test('E2E Combinations', async (t) => {
     // Let's just test a subset to prove the logic.
     sourceOptions = sourceOptions.slice(0, 1);
     exampleOptions = exampleOptions.slice(0, 1);
-    targetOptions = targetOptions.slice(0, 2); // Includes webgpu and a normal fw 
-    
+    targetOptions = targetOptions.slice(0, 2); // Includes webgpu and a normal fw
+
     // Explicitly add webgpu and wasm_simd to ensure they are tested
     if (!targetOptions.includes('webgpu')) targetOptions.push('webgpu');
     if (!targetOptions.includes('wasm_simd')) targetOptions.push('wasm_simd');
@@ -178,17 +178,17 @@ test('E2E Combinations', async (t) => {
             for (const target of targetOptions) {
                 count++;
                 console.log(`Testing combination ${count}: ${source} -> ${example} -> ${target}`);
-                
+
                 // Select source
                 await page.select('#source-framework', source);
                 // Select example
                 await page.select('#source-example', example);
                 // Select target
                 await page.select('#target-framework', target);
-                
+
                 // Check if code updated
                 const btnExecuteVisible = await page.$eval('#btn-execute', el => el.style.display !== 'none');
-                
+
                 if (target === 'webgpu' || target === 'wasm_simd') {
                     assert.strictEqual(btnExecuteVisible, true, `Execute button should be visible for ${target}`);
                 } else {
@@ -197,7 +197,7 @@ test('E2E Combinations', async (t) => {
 
                 // Click compile
                 await page.click('#btn-compile');
-                
+
                 // Wait for console to show compilation complete
                 try {
                     await page.waitForFunction(() => {
@@ -208,7 +208,7 @@ test('E2E Combinations', async (t) => {
                     // if it fails in headless mode because of our hacky mock, we log and proceed
                     console.log(`Warning: Compilation did not complete in UI for ${source} -> ${example} -> ${target}`);
                 }
-                
+
                 // Clear console for next run
                 await page.evaluate(() => {
                     document.getElementById('pg-console').textContent = '';

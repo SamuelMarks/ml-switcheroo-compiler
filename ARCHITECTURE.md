@@ -46,7 +46,7 @@ graph TD
     end
 
     COMP -->|Depends On| IR
-    
+
     ZJ -->|Depends On| COMP
     ZO -->|Depends On| ZJ
     ZC -->|Depends On| COMP
@@ -54,7 +54,7 @@ graph TD
     ZOB -->|Depends On| COMP
     ZJ -->|Depends On| ZC
     ZO -->|Depends On| ZC
-    
+
     ZF -->|Depends On| ZJ
     ZF -->|Depends On| ZO
     ZF -->|Depends On| ZOB
@@ -64,7 +64,7 @@ graph TD
     ZT -->|Depends On| COMP
     ZM -->|Depends On| COMP
     ZPX -->|Depends On| COMP
-    
+
     ZZ -.->|Tests| ZF
     ZZ -.->|Tests| ZP
     ZZ -.->|Tests| ZK
@@ -95,7 +95,7 @@ The `ml-switcheroo-compiler` repository defines the core architecture mapping fr
 ## 1. API Boundaries & Core Structures
 
 ### The Universal Tensor Interface
-The base class `switcheroo.Tensor` serves as the unified backend array. 
+The base class `switcheroo.Tensor` serves as the unified backend array.
 - `zero_torch.tensor.Tensor` holds a `switcheroo.Tensor` as its `.data` payload.
 - `zero_jax.numpy.ndarray` subclasses or wraps `switcheroo.Tensor`.
 
@@ -226,7 +226,7 @@ sequenceDiagram
     Compiler->>Compiler: lift_state (Functionalize mutations)
     Compiler->>IR: Construct LogicalGraph & LogicalNodes
     deactivate Compiler
-    
+
     IR->>Backend: Consume Graph
     activate Backend
     Backend->>Backend: Pass Manager Optimizations

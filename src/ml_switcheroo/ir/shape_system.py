@@ -1,6 +1,6 @@
 """Type & Shape System for IR."""
 
-from typing import Any, Union
+from typing import Union
 
 
 from ml_switcheroo.ir.core import TensorSpec
@@ -58,7 +58,7 @@ class SymInt:
         """Docstring."""
         return f"SymInt({self.expr})"
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Docstring."""
         if isinstance(other, SymInt):
             return self.expr == other.expr

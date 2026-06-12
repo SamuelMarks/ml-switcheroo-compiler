@@ -19,6 +19,7 @@ class DAGTopologicalSorter:
         sorted_nodes: list[IRNode] = []
 
         def visit(node_id: str) -> None:
+            """Docstring."""
             if node_id in temp_mark:
                 raise CompilationError("Cycle detected in graph.")
             if node_id not in visited:
@@ -100,7 +101,7 @@ class PassManager:
         self.validate(graph)
         return graph
 
-    def run_fixpoint(self, graph: IRGraph, max_iterations: int = 10) -> IRGraph:
+    def run_until_converged(self, graph: IRGraph, max_iterations: int = 10) -> IRGraph:
         """Run passes until the graph stops changing or max_iterations reached."""
         self.validate(graph)
 

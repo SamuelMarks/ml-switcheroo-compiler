@@ -1,7 +1,6 @@
 """Device and DeviceType classes for the ml-switcheroo compiler."""
 
 from enum import Enum
-from typing import Any
 
 
 class DeviceType(Enum):
@@ -20,7 +19,7 @@ class Device:
         self.device_type = device_type
         self.index = index
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check for equality with another Device."""
         if not isinstance(other, Device):
             return False

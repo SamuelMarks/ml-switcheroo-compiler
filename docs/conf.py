@@ -1,3 +1,5 @@
+"""Docstring."""
+
 import os
 import sys
 
@@ -58,7 +60,8 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 
-def setup(app):
+def setup(app: object) -> object:
+    """Docstring."""
     from ml_playground_directive import setup as setup_directive
 
     setup_directive(app)

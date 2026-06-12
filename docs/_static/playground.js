@@ -84,14 +84,14 @@ function initTheme(doc, storage, win) {
 
     const savedTheme = storage.getItem('ml-playground-theme');
     const prefersDark = win.matchMedia && win.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     let isDark = false;
     if (savedTheme) {
         isDark = savedTheme === 'dark';
     } else {
         isDark = prefersDark;
     }
-    
+
     toggle.checked = isDark;
     doc.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
 
@@ -152,7 +152,7 @@ function updateExecuteButtonVisibility(doc) {
     const targetSelect = doc.getElementById('target-framework');
     const executeBtn = doc.getElementById('btn-execute');
     if (!targetSelect || !executeBtn) return;
-    
+
     const val = targetSelect.value;
     if (val === 'webgpu' || val === 'wasm_simd') {
         executeBtn.style.display = 'inline-block';
@@ -170,11 +170,11 @@ function updateExecuteButtonVisibility(doc) {
 function logToConsole(doc, msg, isError = false) {
     const consoleEl = doc.getElementById('pg-console');
     if (!consoleEl) return;
-    
+
     const span = doc.createElement('span');
     span.textContent = msg + '\n';
     if (isError) span.style.color = 'red';
-    
+
     consoleEl.appendChild(span);
     consoleEl.scrollTop = consoleEl.scrollHeight;
 }
@@ -204,13 +204,13 @@ let pyodideInstance = null;
  */
 async function loadPyodideEnvironment(doc, win) {
     if (pyodideInstance) return pyodideInstance;
-    
+
     logToConsole(doc, t('pyodideInit'));
     try {
         pyodideInstance = await win.loadPyodide();
         await pyodideInstance.loadPackage("micropip");
         const micropip = pyodideInstance.pyimport("micropip");
-        
+
         // Load numpy and our custom wheels
         // Determine the base path for static assets
         let basePath = "./_static/";
@@ -219,13 +219,13 @@ async function loadPyodideEnvironment(doc, win) {
             basePath + "ml_switcheroo_ir-0.1.0-py3-none-any.whl",
             basePath + "ml_switcheroo_compiler-0.1.0-py3-none-any.whl"
         ];
-        
+
         logToConsole(doc, t('depsInstall'));
         await micropip.install("numpy");
         for (const whl of wheels) {
             await micropip.install(whl);
         }
-        
+
         logToConsole(doc, t('pythonReady'));
         return pyodideInstance;
     } catch (err) {
@@ -280,7 +280,7 @@ function initPlayground(doc, storage, win) {
     const sourceSelect = doc.getElementById('source-framework');
     const exampleSelect = doc.getElementById('source-example');
     const targetSelect = doc.getElementById('target-framework');
-    
+
     if (targetSelect) {
         targetSelect.addEventListener('change', () => {
             updateExecuteButtonVisibility(doc);
@@ -294,7 +294,7 @@ function initPlayground(doc, storage, win) {
         win.require(['vs/editor/editor.main'], function () {
             const isDark = doc.documentElement.getAttribute('data-theme') === 'dark';
             const theme = isDark ? 'vs-dark' : 'vs';
-            
+
             const sourceContainer = doc.getElementById('editor-source');
             if (sourceContainer) {
                 sourceEditor = win.monaco.editor.create(sourceContainer, {
@@ -326,13 +326,13 @@ function initPlayground(doc, storage, win) {
                 sourceSelect.addEventListener('change', updateSource);
                 exampleSelect.addEventListener('change', updateSource);
             }
-            
+
             // Wire up compile button
             const compileBtn = doc.getElementById('btn-compile');
             if (compileBtn) {
                 compileBtn.addEventListener('click', async () => {
                     clearConsole(doc);
-                    
+
                     if (!win.loadPyodide) {
                         logToConsole(doc, t('pyodideNotLoaded'), true);
                         return;
@@ -341,13 +341,13 @@ function initPlayground(doc, storage, win) {
                     try {
                         const pyodide = await loadPyodideEnvironment(doc, win);
                         logToConsole(doc, t('compiling'));
-                        
+
                         const sourceCode = sourceEditor ? sourceEditor.getValue() : "";
                         const sourceFw = sourceSelect ? sourceSelect.value : "jax";
                         const targetFw = targetSelect ? targetSelect.value : "wasm_simd";
-                        
+
                         const compiledOutput = compileCode(pyodide, sourceCode, sourceFw, targetFw);
-                        
+
                         if (targetEditor) {
                             targetEditor.setValue(compiledOutput);
                             // Adjust syntax highlighting based on target
@@ -373,7 +373,7 @@ function initPlayground(doc, storage, win) {
                     const targetFw = targetSelect ? targetSelect.value : "";
                     if (!targetEditor) return;
                     const code = targetEditor.getValue();
-                    
+
                     if (targetFw === 'webgpu') {
                         logToConsole(doc, t('initWebgpu'));
                         try {
@@ -383,8 +383,8 @@ function initPlayground(doc, storage, win) {
                             }
                             // Example input
                             const inputData = new Float32Array([1.0, 2.0, 3.0, 4.0]);
-                            const outputSizeInBytes = 4 * Float32Array.BYTES_PER_ELEMENT; 
-                            
+                            const outputSizeInBytes = 4 * Float32Array.BYTES_PER_ELEMENT;
+
                             const result = await runWebGPUCompute(win.navigator, code, inputData, outputSizeInBytes);
                             logToConsole(doc, t('webgpuComplete'));
                             logToConsole(doc, "[" + result.join(", ") + "]");
@@ -398,23 +398,23 @@ function initPlayground(doc, storage, win) {
                                 logToConsole(doc, t('wasmNotLoaded'), true);
                                 return;
                             }
-                            
+
                             // Here we would normally compile the targetEditor code (WAT) to WASM bytes
                             // or fetch the already compiled bytes. For the playground, we simulate it
                             // if we don't have a real wasm compiler in JS available.
                             // We provide a dummy WASM module that just adds 1 to simulate.
-                            
+
                             // A very tiny WASM module binary (magic header + version + empty)
                             // This won't work with runWasmCompute because it lacks exports,
                             // but we mock it for the playground's visual feedback when a real binary isn't available.
                             const dummyWasmBytes = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
-                            
+
                             const inputData = new Float32Array([1.0, 2.0, 3.0, 4.0]);
                             const expectedOutputLength = 4;
-                            
+
                             // Note: We catch and display errors since we don't have a real WASM binary here.
                             await runWasmCompute(dummyWasmBytes, inputData, expectedOutputLength);
-                            
+
                         } catch (e) {
                             // Expected to fail because dummyWasmBytes doesn't export 'memory' and 'compute'
                             logToConsole(doc, t('wasmError') + e.message, true);

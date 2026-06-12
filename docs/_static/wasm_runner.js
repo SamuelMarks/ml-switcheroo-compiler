@@ -41,7 +41,7 @@ async function runWasmCompute(wasmBinary, inputData, expectedOutputLength) {
     }
 
     const exports = wasmModule.exports;
-    
+
     // Ensure the module exported a memory and a compute function
     if (!exports.memory || !(exports.memory instanceof WebAssembly.Memory)) {
         throw new Error("WASM module must export 'memory'.");
@@ -53,11 +53,11 @@ async function runWasmCompute(wasmBinary, inputData, expectedOutputLength) {
     const memory = exports.memory;
     const inputByteLength = inputData.length * Float32Array.BYTES_PER_ELEMENT;
     const outputByteLength = expectedOutputLength * Float32Array.BYTES_PER_ELEMENT;
-    
+
     // For simplicity, input at offset 0, output right after
     const inputOffset = 0;
     const outputOffset = inputByteLength;
-    
+
     // Validate bounds
     validateMemoryBounds(memory, inputOffset, inputByteLength);
     validateMemoryBounds(memory, outputOffset, outputByteLength);
@@ -72,7 +72,7 @@ async function runWasmCompute(wasmBinary, inputData, expectedOutputLength) {
     // Read back output
     const outputData = new Float32Array(expectedOutputLength);
     outputData.set(memFloat32.subarray(
-        outputOffset / Float32Array.BYTES_PER_ELEMENT, 
+        outputOffset / Float32Array.BYTES_PER_ELEMENT,
         (outputOffset + outputByteLength) / Float32Array.BYTES_PER_ELEMENT
     ));
 

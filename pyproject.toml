@@ -27,7 +27,6 @@ packages = ["src/ml_switcheroo"]
 
 [tool.ruff]
 lint.select = ["E", "F", "D", "ANN", "UP", "B"]
-lint.ignore = ["D203", "D213", "ANN401", "E501", "E402", "UP035", "UP006", "D417", "D100", "D101", "D102", "D103", "ANN001", "ANN201", "ANN002", "ANN003"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

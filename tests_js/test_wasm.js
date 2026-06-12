@@ -26,12 +26,12 @@ test('runWasmCompute throws if WebAssembly unsupported', async () => {
     // Hide global WebAssembly
     const orig = global.WebAssembly;
     global.WebAssembly = undefined;
-    
+
     await assert.rejects(
         () => wasmModule.runWasmCompute(new Uint8Array(), new Float32Array(1), 1),
         /WebAssembly is not supported/
     );
-    
+
     global.WebAssembly = orig;
 });
 
@@ -40,21 +40,21 @@ test('runWasmCompute throws if instantiation fails', async () => {
     global.WebAssembly.instantiate = async () => {
         throw new Error('Fake instantiation error');
     };
-    
+
     await assert.rejects(
         () => wasmModule.runWasmCompute(new Uint8Array(), new Float32Array(1), 1),
         /Failed to instantiate WASM module/
     );
-    
+
     global.WebAssembly.instantiate = orig;
 });
 
 test('runWasmCompute runs correctly', async () => {
     const mockMemory = new WebAssembly.Memory({ initial: 1 });
-    
+
     // We mock global WebAssembly.instantiate
     const originalInstantiate = WebAssembly.instantiate;
-    
+
     WebAssembly.instantiate = async () => {
         return {
             instance: {
@@ -72,15 +72,15 @@ test('runWasmCompute runs correctly', async () => {
             }
         };
     };
-    
+
     const inputData = new Float32Array([10, 20, 30]);
     const output = await wasmModule.runWasmCompute(new Uint8Array(), inputData, 3);
-    
+
     assert.strictEqual(output.length, 3);
     assert.strictEqual(output[0], 11);
     assert.strictEqual(output[1], 21);
     assert.strictEqual(output[2], 31);
-    
+
     // restore
     WebAssembly.instantiate = originalInstantiate;
 });
@@ -90,7 +90,7 @@ test('runWasmCompute throws if no memory exported', async () => {
     WebAssembly.instantiate = async () => ({
         instance: { exports: { compute: () => {} } }
     });
-    
+
     await assert.rejects(
         () => wasmModule.runWasmCompute(new Uint8Array(), new Float32Array(1), 1),
         /must export 'memory'/
@@ -103,7 +103,7 @@ test('runWasmCompute throws if no compute exported', async () => {
     WebAssembly.instantiate = async () => ({
         instance: { exports: { memory: new WebAssembly.Memory({initial: 1}) } }
     });
-    
+
     await assert.rejects(
         () => wasmModule.runWasmCompute(new Uint8Array(), new Float32Array(1), 1),
         /must export a 'compute' function/

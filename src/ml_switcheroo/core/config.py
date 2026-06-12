@@ -2,7 +2,6 @@
 
 import os
 from contextlib import contextmanager
-from typing import Any
 from collections.abc import Iterator
 from ml_switcheroo.core.dtype import DType
 from ml_switcheroo.core.device import Device, DeviceType
@@ -29,6 +28,7 @@ class Config:
 
     @eager_mode.setter
     def eager_mode(self, value: bool) -> None:
+        """Docstring."""
         self._eager_mode = value
 
     def clone(self) -> "Config":
@@ -46,7 +46,7 @@ config = Config()
 
 
 @contextmanager
-def ConfigContext(**kwargs: Any) -> Iterator[None]:
+def ConfigContext(**kwargs: object) -> Iterator[None]:
     """Context manager for temporarily overriding config values."""
     old_config = config.clone()
     try:

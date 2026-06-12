@@ -40,7 +40,7 @@ test('initWebGPU succeeds with valid mock', async () => {
             requestAdapter: async () => mockAdapter
         }
     };
-    
+
     const { adapter, device } = await webgpuModule.initWebGPU(nav);
     assert.strictEqual(adapter, mockAdapter);
     assert.strictEqual(device, mockDevice);
@@ -51,7 +51,7 @@ test('createComputePipeline uses correct configuration', () => {
     let capturedCode = null;
     let capturedLayout = null;
     let capturedModule = null;
-    
+
     const mockDevice = {
         createShaderModule: (descriptor) => {
             capturedCode = descriptor.code;
@@ -63,10 +63,10 @@ test('createComputePipeline uses correct configuration', () => {
             return mockPipeline;
         }
     };
-    
+
     const wgsl = 'fn main() {}';
     const pipeline = webgpuModule.createComputePipeline(mockDevice, wgsl);
-    
+
     assert.strictEqual(pipeline, mockPipeline);
     assert.strictEqual(capturedCode, wgsl);
     assert.strictEqual(capturedLayout, 'auto');
@@ -86,7 +86,7 @@ global.GPUMapMode = {
 test('runWebGPUCompute flows correctly', async () => {
     // We mock the entire GPU pipeline
     let buffersDestroyed = 0;
-    
+
     class MockBuffer {
         constructor() {
             this.destroyed = false;
@@ -96,7 +96,7 @@ test('runWebGPUCompute flows correctly', async () => {
         unmap() {}
         destroy() { buffersDestroyed++; }
     }
-    
+
     const mockDevice = {
         createBuffer: () => new MockBuffer(),
         queue: {
@@ -120,7 +120,7 @@ test('runWebGPUCompute flows correctly', async () => {
         }),
         destroy: () => {}
     };
-    
+
     const nav = {
         gpu: {
             requestAdapter: async () => ({
@@ -128,10 +128,10 @@ test('runWebGPUCompute flows correctly', async () => {
             })
         }
     };
-    
+
     const inputData = new Float32Array([1, 2, 3]);
     const result = await webgpuModule.runWebGPUCompute(nav, "wgsl code", inputData, 4);
-    
+
     assert.strictEqual(result.length, 1);
     assert.strictEqual(result[0], 42);
     assert.strictEqual(buffersDestroyed, 3); // input, output, staging

@@ -1,6 +1,5 @@
 """Unified backend array base class for ml-switcheroo."""
 
-from typing import Any
 from collections.abc import Sequence
 from ml_switcheroo.core.dtype import DType
 from ml_switcheroo.core.device import Device
@@ -11,7 +10,7 @@ class Tensor:
 
     def __init__(
         self,
-        data: Any,
+        data: object,
         shape: Sequence[int],
         dtype: DType,
         device: Device,
@@ -45,6 +44,6 @@ class Tensor:
         return self._requires_grad
 
     @property
-    def data(self) -> Any:
+    def data(self) -> object:
         """Get the underlying data payload."""
         return self._data

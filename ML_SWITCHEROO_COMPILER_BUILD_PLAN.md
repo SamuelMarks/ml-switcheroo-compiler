@@ -1,9 +1,9 @@
 # ML Switcheroo Compiler: Exhaustive Build & Implementation Plan
 
-This document serves as the canonical, exhaustive blueprint and task backlog for the `ml-switcheroo-compiler`. It strictly dictates the architecture, components, and milestones required for full implementation. 
+This document serves as the canonical, exhaustive blueprint and task backlog for the `ml-switcheroo-compiler`. It strictly dictates the architecture, components, and milestones required for full implementation.
 
 **Crucial Architecture Note regarding `zero-*` repositories:**
-The existing `zero-*` codebases (e.g., `zero-pytorch`, `zero-jax`, `zero-keras`) will **NOT** be deleted or fully absorbed into this compiler. Instead, they will be **retained as independent, lightweight frontend API shells**. 
+The existing `zero-*` codebases (e.g., `zero-pytorch`, `zero-jax`, `zero-keras`) will **NOT** be deleted or fully absorbed into this compiler. Instead, they will be **retained as independent, lightweight frontend API shells**.
 Every `zero-*` repository will add `ml-switcheroo-compiler` as its core backend dependency. All mathematical implementations, array allocations, and computation graph logic currently residing in the `zero-*` repos will be ripped out and replaced with delegations to the compiler. The `zero-*` repos will purely handle framework-specific API routing, argument parsing (handling kwargs like `dim` vs `axis`), and syntactic sugar.
 
 ---
@@ -378,7 +378,7 @@ The core ops library (`switcheroo.ops`) must subsume all math logic. The `zero-*
 - [ ] `ConstantFoldingPass`: Pre-evaluate purely deterministic mathematical sub-graphs.
 - [ ] `DeadCodeEliminationPass` (DCE): Prune nodes whose outputs do not trace to graph outputs or state updates.
 - [ ] `CommonSubexpressionEliminationPass` (CSE): Identify duplicate sub-graphs and route them to a single node.
-- [ ] `AlgebraicSimplificationPass`: 
+- [ ] `AlgebraicSimplificationPass`:
   - `x * 0 -> 0`
   - `x + 0 -> x`
   - `x * 1 -> x`

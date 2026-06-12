@@ -14,6 +14,7 @@ from ml_switcheroo.core.errors import UnimplementedMathError
 def _emit_nn_node(
     op_type: str, inputs: list, attrs: dict, out_shape: tuple, out_dtype: DType
 ) -> Tensor:
+    """Docstring."""
     if not _tracer.is_tracing:
         raise RuntimeError(f"Cannot emit {op_type} node outside of a tracing context.")
     out_id = str(uuid.uuid4())

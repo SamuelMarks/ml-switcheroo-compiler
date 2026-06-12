@@ -54,7 +54,7 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
 
     Returns:
         LogicalGraph: A new graph containing both forward pass and
-        gradient computations.  # noqa: E501
+        gradient computations.
 
     Raises:
         ValueError: If output node does not exist, or required VJPs are missing.
@@ -128,7 +128,8 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
 
         if len(input_adjs) != len(node.inputs):
             raise ValueError(
-                f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."  # noqa: E501
+                f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, "
+                f"expected {len(node.inputs)}."
             )
 
         for inp_id, inp_adj_id in zip(node.inputs, input_adjs):

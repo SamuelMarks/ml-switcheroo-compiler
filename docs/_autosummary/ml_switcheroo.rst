@@ -2,5 +2,3 @@
 ==============
 
 .. automodule:: ml_switcheroo
-
-   

@@ -1,5 +1,7 @@
 """Operations library for the ml-switcheroo compiler."""
 
+from ml_switcheroo.ops.base import OpDef, register_op, get_op
+
 from ml_switcheroo.ops.creation import (
     zeros,
     ones,
@@ -176,6 +178,9 @@ from ml_switcheroo.ops.binary import (
 )
 
 __all__ = [
+    "OpDef",
+    "register_op",
+    "get_op",
     "zeros",
     "ones",
     "full",
@@ -339,3 +344,5 @@ __all__ = [
     "pad",
     "take_along_axis",
 ]
+
+__all__.extend(["OpDef", "register_op", "get_op"])

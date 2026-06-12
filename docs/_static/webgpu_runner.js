@@ -50,7 +50,7 @@ function createComputePipeline(device, wgslCode) {
  */
 async function runWebGPUCompute(nav, wgslCode, inputData, outputSizeInBytes) {
     const { device } = await initWebGPU(nav);
-    
+
     // Create input buffer
     const inputBuffer = device.createBuffer({
         size: inputData.byteLength,
@@ -63,7 +63,7 @@ async function runWebGPUCompute(nav, wgslCode, inputData, outputSizeInBytes) {
         size: outputSizeInBytes,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
     });
-    
+
     // Create staging buffer (for reading back to CPU)
     const stagingBuffer = device.createBuffer({
         size: outputSizeInBytes,
@@ -71,7 +71,7 @@ async function runWebGPUCompute(nav, wgslCode, inputData, outputSizeInBytes) {
     });
 
     const pipeline = createComputePipeline(device, wgslCode);
-    
+
     const bindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(0),
         entries: [
@@ -84,7 +84,7 @@ async function runWebGPUCompute(nav, wgslCode, inputData, outputSizeInBytes) {
     const pass = encoder.beginComputePass();
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
-    
+
     // Calculate workgroups (assuming 1D workgroup of size 64 for simple examples)
     const workgroupCount = Math.ceil(inputData.length / 64);
     pass.dispatchWorkgroups(workgroupCount);
@@ -100,14 +100,14 @@ async function runWebGPUCompute(nav, wgslCode, inputData, outputSizeInBytes) {
     await stagingBuffer.mapAsync(GPUMapMode.READ);
     const arrayBuffer = stagingBuffer.getMappedRange();
     const result = new Float32Array(arrayBuffer.slice(0)); // Copy out
-    
+
     // Cleanup
     stagingBuffer.unmap();
     inputBuffer.destroy();
     outputBuffer.destroy();
     stagingBuffer.destroy();
     device.destroy();
-    
+
     return result;
 }
 

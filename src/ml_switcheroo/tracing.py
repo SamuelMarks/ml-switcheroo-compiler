@@ -2,7 +2,7 @@
 
 import threading
 from ml_switcheroo.shape import broadcast_shapes
-from typing import Any, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 import uuid
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -89,7 +89,7 @@ class ProxyTensor:
         self.shape = shape
         self.dtype = dtype
 
-    def _binary_op(self, other: Any, op_type: str) -> "ProxyTensor":
+    def _binary_op(self, other: object, op_type: str) -> "ProxyTensor":
         """Internal helper for binary operations.
 
         Args:
@@ -133,100 +133,101 @@ class ProxyTensor:
 
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
-    def __add__(self, other: Any) -> "ProxyTensor":
+    def __add__(self, other: object) -> "ProxyTensor":
         """Addition."""
         return self._binary_op(other, "Add")
 
-    def __radd__(self, other: Any) -> "ProxyTensor":
+    def __radd__(self, other: object) -> "ProxyTensor":
         """Right addition."""
         # Note: In real implementation, Constant is left-hand side.
         return self._binary_op(other, "Add")
 
-    def __sub__(self, other: Any) -> "ProxyTensor":
+    def __sub__(self, other: object) -> "ProxyTensor":
         """Subtraction."""
         return self._binary_op(other, "Sub")
 
-    def __rsub__(self, other: Any) -> "ProxyTensor":
+    def __rsub__(self, other: object) -> "ProxyTensor":
         """Right subtraction."""
         return self._binary_op(other, "Sub")
 
-    def __mul__(self, other: Any) -> "ProxyTensor":
+    def __mul__(self, other: object) -> "ProxyTensor":
         """Multiplication."""
         return self._binary_op(other, "Mul")
 
-    def __rmul__(self, other: Any) -> "ProxyTensor":
+    def __rmul__(self, other: object) -> "ProxyTensor":
         """Right multiplication."""
         return self._binary_op(other, "Mul")
 
-    def __truediv__(self, other: Any) -> "ProxyTensor":
+    def __truediv__(self, other: object) -> "ProxyTensor":
         """Division."""
         return self._binary_op(other, "Div")
 
-    def __rtruediv__(self, other: Any) -> "ProxyTensor":
+    def __rtruediv__(self, other: object) -> "ProxyTensor":
         """Right division."""
         return self._binary_op(other, "Div")
 
-    def __pow__(self, other: Any) -> "ProxyTensor":
+    def __pow__(self, other: object) -> "ProxyTensor":
         """Power."""
         return self._binary_op(other, "Pow")
 
-    def __floordiv__(self, other: Any) -> "ProxyTensor":
+    def __floordiv__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "FloorDiv")
 
-    def __rfloordiv__(self, other: Any) -> "ProxyTensor":
+    def __rfloordiv__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "FloorDiv")
 
-    def __mod__(self, other: Any) -> "ProxyTensor":
+    def __mod__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "Mod")
 
-    def __rmod__(self, other: Any) -> "ProxyTensor":
+    def __rmod__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "Mod")
 
-    def __and__(self, other: Any) -> "ProxyTensor":
+    def __and__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitwiseAnd")
 
-    def __rand__(self, other: Any) -> "ProxyTensor":
+    def __rand__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitwiseAnd")
 
-    def __or__(self, other: Any) -> "ProxyTensor":
+    def __or__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitwiseOr")
 
-    def __ror__(self, other: Any) -> "ProxyTensor":
+    def __ror__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitwiseOr")
 
-    def __xor__(self, other: Any) -> "ProxyTensor":
+    def __xor__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitwiseXor")
 
-    def __rxor__(self, other: Any) -> "ProxyTensor":
+    def __rxor__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitwiseXor")
 
-    def __lshift__(self, other: Any) -> "ProxyTensor":
+    def __lshift__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitShiftLeft")
 
-    def __rlshift__(self, other: Any) -> "ProxyTensor":
+    def __rlshift__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitShiftLeft")
 
-    def __rshift__(self, other: Any) -> "ProxyTensor":
+    def __rshift__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitShiftRight")
 
-    def __rrshift__(self, other: Any) -> "ProxyTensor":
+    def __rrshift__(self, other: object) -> "ProxyTensor":
         """Docstring."""
         return self._binary_op(other, "BitShiftRight")
 
     def _unary_op(self, op_type: str) -> "ProxyTensor":
+        """Docstring."""
         if not _tracer.is_tracing:
             raise RuntimeError(
                 f"Cannot perform {op_type} outside of a tracing context."
@@ -258,7 +259,7 @@ class ProxyTensor:
         """Docstring."""
         return self._unary_op("BitwiseNot")
 
-    def __getitem__(self, key: Any) -> "ProxyTensor":
+    def __getitem__(self, key: object) -> "ProxyTensor":
         """Docstring."""
         if not _tracer.is_tracing:
             raise RuntimeError("Cannot perform Slice outside of a tracing context.")
@@ -276,7 +277,7 @@ class ProxyTensor:
         _tracer.add_node(node)
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
-    def __matmul__(self, other: Any) -> "ProxyTensor":
+    def __matmul__(self, other: object) -> "ProxyTensor":
         """Matrix multiplication."""
         from ml_switcheroo.shape import matmul_shape
 

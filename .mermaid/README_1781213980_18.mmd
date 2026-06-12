@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph Frontends ["zero-* Frontends (API Shells)"]
+        PT[PyTorch API]
+        JX[JAX API]
+        KR[Keras API]
+    end
+
+    subgraph Compiler ["ml-switcheroo-compiler"]
+        TR[Tracer & AD Engine] --> IR[Unified IR]
+        IR --> PM[Middle-End Optimizations]
+    end
+
+    subgraph Backends ["Emitters (Execution Targets)"]
+        PY[Python Source]
+        WG[WebGPU Shaders]
+        WA[WASM SIMD]
+    end
+
+    Frontends -->|Proxy Tensors| Compiler
+    PM -->|Optimized Graph| Backends

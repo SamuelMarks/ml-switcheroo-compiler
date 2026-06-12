@@ -31,7 +31,7 @@ class CSTTransformer(cst.CSTTransformer):
     def leave_Call(
         self, original_node: cst.Call, updated_node: cst.Call
     ) -> cst.CSTNode:
-        """Handle Framework-Specific Quirks (Kwargs) & Stateful-to-Functional rewrites."""  # noqa: E501
+        """Handle Framework-Specific Quirks & Stateful-to-Functional rewrites."""
         if isinstance(updated_node.func, cst.Attribute):
             if (
                 isinstance(updated_node.func.value, cst.Name)

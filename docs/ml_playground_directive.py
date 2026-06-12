@@ -1,11 +1,16 @@
+"""Docstring."""
+
 from docutils import nodes
 from docutils.parsers.rst import Directive
 
 
 class MLPlaygroundDirective(Directive):
+    """Docstring."""
+
     has_content = True
 
-    def run(self):
+    def run(self) -> object:
+        """Docstring."""
         # We output a section with an id that our JS will hydrate
         html = """
 <section id="ml-playground-container" aria-label="ML Switcheroo Playground">
@@ -19,7 +24,10 @@ class MLPlaygroundDirective(Directive):
     <div class="pg-split-pane">
         <section class="pg-left-pane" aria-label="Source Editor">
             <header class="pg-pane-header">
-                <select id="source-framework" aria-label="Source Framework" data-i18n-aria="sourceFw">
+                <select id="source-framework"
+                        aria-label="Source Framework"
+                        data-i18n-aria="sourceFw"
+                >
                     <optgroup label="Base ML Frameworks" data-i18n-label="baseFw">
                         <option value="tensorflow">TensorFlow</option>
                         <option value="keras">Keras</option>
@@ -33,7 +41,9 @@ class MLPlaygroundDirective(Directive):
                         <option value="pax">Pax</option>
                     </optgroup>
                 </select>
-                <select id="source-example" aria-label="Examples" data-i18n-aria="examples">
+                <select id="source-example" aria-label="Examples"
+                    data-i18n-aria="examples"
+                >
                     <option value="simple_mlp">Simple MLP</option>
                     <option value="cnn">CNN</option>
                     <option value="attention">Attention Block</option>
@@ -43,7 +53,10 @@ class MLPlaygroundDirective(Directive):
         </section>
         <section class="pg-right-pane" aria-label="Target Editor and Console">
             <header class="pg-pane-header">
-                <select id="target-framework" aria-label="Target Framework" data-i18n-aria="targetFw">
+                <select id="target-framework"
+                        aria-label="Target Framework"
+                        data-i18n-aria="targetFw"
+                >
                     <optgroup label="Base ML Frameworks" data-i18n-label="baseFw">
                         <option value="tensorflow">TensorFlow</option>
                         <option value="keras">Keras</option>
@@ -62,10 +75,14 @@ class MLPlaygroundDirective(Directive):
                     </optgroup>
                 </select>
                 <button id="btn-compile" data-i18n="compile">Compile</button>
-                <button id="btn-execute" style="display: none;" data-i18n="execute">Execute in browser</button>
+                <button id="btn-execute" style="display: none;" data-i18n="execute">
+                    Execute in browser
+                </button>
             </header>
             <div id="editor-target" class="pg-editor"></div>
-            <div id="pg-console" class="pg-console" aria-live="polite" role="region" aria-label="Compilation Console"></div>
+            <div id="pg-console" class="pg-console" aria-live="polite"
+                 role="region"
+                 aria-label="Compilation Console"></div>
         </section>
     </div>
 </section>
@@ -73,15 +90,22 @@ class MLPlaygroundDirective(Directive):
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
 
 <!-- Monaco Editor Loader -->
-<script>var require = { paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } };</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.nls.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.js"></script>
+<script>
+var require = { paths: { 'vs':
+    'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/" +
+                     "0.45.0/min/vs/loader.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/" +
+                     "0.45.0/min/vs/editor/editor.main.nls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/" +
+                     "0.45.0/min/vs/editor/editor.main.js"></script>
 """
         return [nodes.raw("", html, format="html")]
 
 
-def setup(app):
+def setup(app: object) -> object:
+    """Docstring."""
     app.add_directive("ml-playground", MLPlaygroundDirective)
 
     # We will also add JS and CSS assets here

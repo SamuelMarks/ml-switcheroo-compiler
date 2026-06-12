@@ -65,7 +65,9 @@ def _trace_function(
     return subgraph
 
 
-def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:
+def cond(
+    pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]
+) -> object:
     """Conditionally execute `true_fn` or `false_fn` based on `pred`.
 
     Args:
@@ -88,7 +90,8 @@ def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) 
         true_graph = _trace_function(true_fn, (), "true_branch")
         false_graph = _trace_function(false_fn, (), "false_branch")
 
-        # For tracing shapes, execute true_fn once eagerly? No, trace function provides it.  # noqa: E501
+        # For tracing shapes, execute true_fn once eagerly? No, trace function provides
+        # it.
         # We need the output shapes.
         # Actually in JAX/Switcheroo, output shapes/dtypes must match.
         # We get output nodes from true_graph.
@@ -113,8 +116,8 @@ def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) 
 
 
 def while_loop(
-    cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any
-) -> Any:
+    cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object
+) -> object:
     """Execute `body_fn` while `cond_fn` is true.
 
     Args:
@@ -173,7 +176,7 @@ def while_loop(
 
 
 def scan(
-    f: Callable[[Any, Any], tuple[Any, Any]], init: Any, xs: Any
+    f: Callable[[Any, Any], tuple[Any, Any]], init: object, xs: object
 ) -> tuple[Any, Any]:
     """Scan a function over a sequence.
 
@@ -242,7 +245,8 @@ def vmap(
         Vectorized version of `func`.
     """
 
-    def wrapped(*args: Any) -> Any:
+    def wrapped(*args: object) -> object:
+        """Docstring."""
         if config.eager_mode:
             # Eager vmap uses a Python loop over the batch dimension
             # Simplified implementation for single tensor
@@ -303,7 +307,8 @@ def pmap(func: Callable, axis_name: str = None) -> Callable:
         Parallel mapped version of `func`.
     """
 
-    def wrapped(*args: Any) -> Any:
+    def wrapped(*args: object) -> object:
+        """Docstring."""
         if config.eager_mode:
             # In eager mode, pmap usually falls back to vmap or a loop
             return vmap(func)(*args)

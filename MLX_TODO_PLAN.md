@@ -8,7 +8,7 @@ This document serves as the exhaustive roadmap for everything `ml-switcheroo-com
 Apple MLX differs fundamentally from JAX and PyTorch by natively using a lazy computation graph with implicit evaluation.
 
 - [ ] **Lazy Graph Evaluation:** Ensure `ProxyTensor` correctly delays execution. The IR compiler must support triggering compilation and execution *only* when `.eval()` is explicitly called or when host-data is requested (e.g., printing or converting to numpy).
-- [ ] **Stream Contexts & Device Management:** 
+- [ ] **Stream Contexts & Device Management:**
   - [ ] Implement support for multi-stream execution logic (`mlx.core.StreamContext`, `mlx.core.Stream`, `mlx.core.Device`).
   - [ ] The IR must allow assigning Logical Nodes to specific execution streams or devices (e.g., CPU vs GPU).
 - [ ] **Cache Management:** Expose an API for the memory allocator to safely free unused buffers manually (`mlx.core.clear_cache()`).
@@ -19,7 +19,7 @@ MLX provides a robust set of functional transformations.
 
 - [ ] **Forward-Mode AD (JVP):** Extend `compiler.grad` (which currently supports reverse-mode VJPs) to support Jacobian-Vector Products (`mlx.core.jvp`) and forward-mode sensitivities.
 - [ ] **Value and Grad:** Ensure `value_and_grad` is highly optimized to avoid duplicate forward passes when calculating both the primal and the gradient.
-- [ ] **Custom Vectorization (VMAP):** 
+- [ ] **Custom Vectorization (VMAP):**
   - [ ] Ensure `vmap` handles complex shapes and multi-axis vectorization.
   - [ ] Support vectorization of stateful operations (like random generation or stream-dependent ops).
 - [ ] **Custom Gradients:** Ensure `custom_vjp` and equivalent IR node overrides allow defining custom gradient functions natively inside the trace.

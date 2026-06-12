@@ -1,0 +1,52 @@
+flowchart TD
+    subgraph Z_Interfaces["∅* Interfaces"]
+        direction TB
+        subgraph ZR1[" "]
+            direction LR
+            Z1["∅chex"]
+            Z2["∅flax"]
+            Z3["∅grain"]
+            Z4["∅jax"]
+        end
+        subgraph ZR2[" "]
+            direction LR
+            Z5["∅keras"]
+            Z6["∅mlx"]
+            Z7["∅optax"]
+            Z8["∅orbax"]
+        end
+        subgraph ZR3[" "]
+            direction LR
+            Z9["∅pax"]
+            Z10["∅pytorch"]
+            Z11["∅tensorflow"]
+        end
+    end
+
+    MSC(("ml-switcheroo-compiler"))
+
+    subgraph MSC_Backends["ml-switcheroo-compiler Backends"]
+        direction TB
+        subgraph BR1[" "]
+            direction LR
+            B1["WebGPU"]
+            B2["WASM SIMD"]
+            B3["NumPy"]
+            B4["JAX"]
+        end
+        subgraph BR2[" "]
+            direction LR
+            B5["MLX"]
+            B6["PyTorch"]
+            B7["Dask"]
+        end
+    end
+
+    Z_Interfaces --> MSC
+    MSC --> MSC_Backends
+
+    style ZR1 fill:none,stroke:none
+    style ZR2 fill:none,stroke:none
+    style ZR3 fill:none,stroke:none
+    style BR1 fill:none,stroke:none
+    style BR2 fill:none,stroke:none

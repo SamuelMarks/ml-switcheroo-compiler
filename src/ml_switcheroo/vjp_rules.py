@@ -1,7 +1,5 @@
 """Standard Vector-Jacobian Product (VJP) rules."""
 
-from typing import Any
-
 import uuid
 from typing import Optional
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
@@ -9,7 +7,7 @@ from ml_switcheroo.grad import register_vjp
 
 
 def _emit_node(
-    graph: LogicalGraph, op_type: str, inputs: list[str], shape_metadata: Any = None
+    graph: LogicalGraph, op_type: str, inputs: list[str], shape_metadata: object = None
 ) -> str:
     """Docstring."""
     nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
@@ -79,7 +77,8 @@ def vjp_log(graph: LogicalGraph, node: LogicalNode, adj: str) -> list[Optional[s
 def vjp_sum(graph: LogicalGraph, node: LogicalNode, adj: str) -> list[Optional[str]]:
     """VJP for Sum."""
     x = node.inputs[0]
-    # In a full implementation, Expand/Broadcast is needed based on the 'axes' attribute.  # noqa: E501
+    # In a full implementation, Expand/Broadcast is needed based on the 'axes'
+    # attribute.
     # For now we emit an Expand node placeholder.
     adj_x = _emit_node(graph, "Expand", [adj], graph.nodes[x].shape_metadata)
     return [adj_x]

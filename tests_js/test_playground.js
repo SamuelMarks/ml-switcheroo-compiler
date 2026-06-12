@@ -50,9 +50,9 @@ test('initTheme uses localStorage', () => {
 
     const win = dom.window;
     win.matchMedia = () => ({ matches: false }); // Prefers light
-    
+
     playgroundModule.initTheme(doc, storage, win);
-    
+
     const toggle = doc.getElementById('theme-toggle');
     assert.strictEqual(toggle.checked, true);
     assert.strictEqual(doc.documentElement.getAttribute('data-theme'), 'dark');
@@ -74,9 +74,9 @@ test('initTheme uses matchMedia if no localStorage', () => {
     win.matchMedia = (query) => {
         return { matches: query === '(prefers-color-scheme: dark)' };
     };
-    
+
     playgroundModule.initTheme(doc, storage, win);
-    
+
     const toggle = doc.getElementById('theme-toggle');
     assert.strictEqual(toggle.checked, true);
     assert.strictEqual(doc.documentElement.getAttribute('data-theme'), 'dark');
@@ -110,15 +110,15 @@ test('logToConsole and clearConsole work correctly', () => {
     `);
     const doc = dom.window.document;
     playgroundModule.logToConsole(doc, 'Test msg');
-    
+
     const consoleEl = doc.getElementById('pg-console');
     assert.strictEqual(consoleEl.children.length, 1);
     assert.strictEqual(consoleEl.children[0].textContent, 'Test msg\n');
-    
+
     playgroundModule.logToConsole(doc, 'Error msg', true);
     assert.strictEqual(consoleEl.children.length, 2);
     assert.strictEqual(consoleEl.children[1].style.color, 'red');
-    
+
     playgroundModule.clearConsole(doc);
     assert.strictEqual(consoleEl.children.length, 0);
     assert.strictEqual(consoleEl.textContent, '');
@@ -134,7 +134,7 @@ test('loadPyodideEnvironment initializes successfully', async () => {
             })
         })
     };
-    
+
     const pyodide = await playgroundModule.loadPyodideEnvironment(doc, win);
     assert.ok(pyodide);
     // test singleton
@@ -148,7 +148,7 @@ test('compileCode runs successfully', () => {
             return "Compiled success";
         }
     };
-    
+
     const res = playgroundModule.compileCode(pyodide, 'def f(): pass', 'jax', 'webgpu');
     assert.strictEqual(res, 'Compiled success');
 });
@@ -181,12 +181,12 @@ test('compile click fails gracefully if loadPyodide is missing', async () => {
     const win = dom.window;
     // We mock require to run the inner function immediately
     win.require = (deps, cb) => cb();
-    
+
     playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
-    
+
     // simulate click
     dom.window.document.getElementById('btn-compile').click();
-    
+
     // Give promises time
     await new Promise(r => setTimeout(r, 10));
     const consoleEl = dom.window.document.getElementById('pg-console');
@@ -225,7 +225,7 @@ test('initPlayground initializes without throwing', () => {
     `);
     const win = dom.window;
     win.matchMedia = () => ({ matches: false });
-    
+
     assert.doesNotThrow(() => {
         playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
     });
@@ -235,7 +235,7 @@ test('Accessibility audit', async () => {
     const htmlSnippet = fs.readFileSync(path.join(__dirname, '../docs/ml_playground_directive.py'), 'utf8');
     const match = htmlSnippet.match(/<section id="ml-playground-container" aria-label="ML Switcheroo Playground">[\s\S]*?<\/section>\n<!--/);
     let containerHtml = match ? match[0].replace('<!--', '') : '';
-    
+
     const dom = new JSDOM(`<!DOCTYPE html>
 <html lang="en">
 <head><title>Test</title></head>
