@@ -1,12 +1,29 @@
-"""Module docstring."""
+"""Unit tests for the tracer tape and proxy tensor components of the ML Switcheroo tracing.
+
+system
+
+This module verifies the behavior of tracing contexts, mathematical operations on proxy
+tensors, error handling outside active tracing contexts, and AST reference
+propagation.
+"""
 
 import pytest
-from ml_switcheroo.tracing import TracerTape, ProxyTensor, _tracer
 from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo.tracing.tracer import ProxyTensor, TracerTape, _tracer
 
 
 def test_tracer_tape() -> None:
-    """Docstring."""
+    """Verifies the lifecycle and state transitions of the TracerTape.
+
+    This test ensures that nodes cannot be added when tracing is inactive,
+    that starting tracing initializes a graph with the correct name, that
+    nodes are successfully added to the active graph, and that stopping
+    tracing correctly returns the constructed graph and resets the tracing state
+
+    Returns:
+    None.
+    """
     tape = TracerTape()
     assert not tape.is_tracing
 
@@ -27,7 +44,16 @@ def test_tracer_tape() -> None:
 
 
 def test_proxy_tensor_math() -> None:
-    """Docstring."""
+    """Verifies mathematical and matrix multiplication operations on ProxyTensor objects.
+
+    This test checks element-wise operations (addition, subtraction, multiplication,
+    division, exponentiation), right-side operations with scalars, matrix
+    multiplication shape propagation, and error handling for invalid matrix
+    multiplication operands within an active tracing context
+
+    Returns:
+    None.
+    """
     _tracer.start_tracing()
 
     a = ProxyTensor(id="a", shape=(2, 3))
@@ -60,7 +86,18 @@ def test_proxy_tensor_math() -> None:
 
 
 def test_proxy_tensor_outside_context() -> None:
-    """Docstring."""
+    """Verifies that performing operations on ProxyTensor objects outside an active.
+
+    tracing
+
+    context raises a RuntimeError
+
+    This ensures that tracing operations are strictly bound to active tracer tape
+    sessions
+
+    Returns:
+    None.
+    """
     a = ProxyTensor(id="a", shape=(2, 3))
     b = ProxyTensor(id="b", shape=(2, 3))
 
@@ -72,7 +109,16 @@ def test_proxy_tensor_outside_context() -> None:
 
 
 def test_tracer_add_node_with_ast_ref() -> None:
-    """Docstring."""
+    """Verifies that AST references are correctly preserved when adding logical nodes to.
+
+    the tracer tape
+
+    This test ensures that metadata such as source AST references are successfully
+    propagated through the tracing process and stored in the final logical graph
+
+    Returns:
+    None.
+    """
     tape = TracerTape()
     tape.start_tracing("Test")
     n = LogicalNode(id="n1", op_type="Input", source_ast_ref="test:1")

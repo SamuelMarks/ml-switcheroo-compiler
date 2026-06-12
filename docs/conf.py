@@ -1,4 +1,10 @@
-"""Docstring."""
+"""Sphinx configuration file for the ML Switcheroo documentation.
+
+This script configures the Sphinx documentation builder for the ML Switcheroo project
+and its associated subprojects. It dynamically configures the Python path to include
+target subprojects for autodoc generation, sets up extensions like autosummary and
+myst_parser, and configures the Furo HTML theme.
+"""
 
 import os
 import sys
@@ -27,7 +33,8 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 if not fast_build:
     for p in projects:
         sys.path.insert(
-            0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", p))
+            0,
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", p)),
         )
 
 # -- Project information -----------------------------------------------------
@@ -61,7 +68,18 @@ html_static_path = ["_static"]
 
 
 def setup(app: object) -> object:
-    """Docstring."""
+    """Initializes the Sphinx extension by registering custom directives.
+
+    This function is called by Sphinx when the extension is loaded. It imports and sets
+    up the custom playground directive for the documentation.
+
+    Args:
+    app (object): The Sphinx application instance used to register extensions and
+    directives.
+
+    Returns:
+    object: The result of the directive setup, typically None.
+    """
     from ml_playground_directive import setup as setup_directive
 
     setup_directive(app)

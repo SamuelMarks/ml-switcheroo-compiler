@@ -237,3 +237,8 @@ sequenceDiagram
 
 ### Trace-to-AST Linking
 To provide clear error messages and allow for framework-specific syntactic rewrites, the compiler dynamically links trace operations to the original Python syntax trees. Leveraging `inspect.currentframe()`, every `LogicalNode` emitted into the IR captures a `source_ast_ref` binding it back to the exact file path, line number, and AST ID in the user's source code.
+
+## 6. Rearchitecture 2026: Strict Modularity
+In 2026, the architecture was upgraded to enforce even stricter isolation:
+- **Zero Frontend Leakage**: The compiler repository previously contained `jnp/` and `nn/` submodules. These have been completely eradicated. The compiler now only exposes a universal `ml_switcheroo.ops` mathematical library. All syntactic sugar, OOP constructs, and neural network primitives strictly reside in their respective `zero-*` frontend repositories.
+- **Pluggable Backend Registry**: The compiler backends are fully decoupled via `ml_switcheroo.backends.registry.BackendRegistry`. Backends (like JAX, PyTorch, MLX, WebGPU) are registered dynamically using the `@register_backend("name")` decorator. This $N \times M$ architecture allows adding new target emitters without modifying the core compiler code.

@@ -1,11 +1,24 @@
-"""Tests for DCE."""
+"""Unit tests for the Dead Code Elimination (DCE) transformation pass.
+
+This module contains test cases to verify that the DCE pass correctly identifies and
+removes unused nodes from a logical graph representation.
+"""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
 from ml_switcheroo.transforms.passes.dce import dce_pass
 
 
 def test_dce() -> None:
-    """Docstring."""
+    """Tests that the DCE pass removes disconnected nodes and their unused dependencies.
+
+    This test constructs a logical graph where only one node is marked as an output
+    It verifies that other independent nodes, as well as nodes that depend on them
+    but do not contribute to the output, are successfully pruned from the graph
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["n2"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=[])
     g.nodes["n2"] = LogicalNode(id="n2", op_type="Add", inputs=[])
@@ -17,7 +30,16 @@ def test_dce() -> None:
 
 
 def test_dce_chained() -> None:
-    """Docstring."""
+    """Tests that the DCE pass removes a chain of unused dependent nodes.
+
+    This test constructs a logical graph where an output node has a chain of
+    descendant nodes depending on it, but those descendants do not contribute
+    to any graph outputs. It verifies that the entire unused chain is pruned,
+    leaving only the required output node
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["n1"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
     g.nodes["n2"] = LogicalNode(id="n2", op_type="Add", inputs=["n1"])

@@ -1,33 +1,43 @@
-"""Tests for shape operations."""
+"""Unit tests for shape manipulation and state operations in the ml_switcheroo_compiler library."""
 
 import numpy as np
+
 from ml_switcheroo.ops.shape.basic import (
+    BroadcastTo,
     Reshape,
     Transpose,
-    BroadcastTo,
 )
 
 
 def test_reshape_op() -> None:
-    """Docstring."""
+    """Tests the Reshape operation's shape inference and NumPy evaluation.
+
+    Verifies that the Reshape operation correctly infers the target shape
+    and matches the behavior of np.reshape during evaluation
+
+    Returns:
+    None
+    """
     op = Reshape()
     x = np.array([1, 2, 3, 4])
     newshape = (2, 2)
 
     assert op.infer_shape(x.shape, newshape) == newshape
     assert np.array_equal(op.numpy_eval(x, newshape), np.reshape(x, newshape))
-    assert op.emit_jax("x", "shape") == "jnp.reshape(x, shape)"
-    assert op.emit_pytorch("x", "shape") == "torch.reshape(x, shape)"
-    assert op.emit_mlx("x", "shape") == "mx.reshape(x, shape)"
-    assert op.emit_keras("x", "shape") == "keras.ops.reshape(x, shape)"
-    assert op.emit_tensorflow("x", "shape") == "tf.reshape(x, shape)"
 
-    assert len(op.vjp("dz", "x", "shape")) == 1
-    assert isinstance(op.jvp("dx", "x", "shape"), str)
+
+
 
 
 def test_transpose_op() -> None:
-    """Docstring."""
+    """Tests the Transpose operation's shape inference and NumPy evaluation.
+
+    Verifies that the Transpose operation correctly infers the transposed shape
+    with and without specified axes, and matches np.transpose during evaluation
+
+    Returns:
+    None
+    """
     op = Transpose()
     x = np.random.randn(2, 3)
 
@@ -36,23 +46,21 @@ def test_transpose_op() -> None:
     assert np.array_equal(op.numpy_eval(x), np.transpose(x))
     assert np.array_equal(op.numpy_eval(x, axes=(1, 0)), np.transpose(x, axes=(1, 0)))
 
-    assert op.emit_jax("x") == "jnp.transpose(x)"
-    assert op.emit_jax("x", "(1, 0)") == "jnp.transpose(x, (1, 0))"
-    assert op.emit_pytorch("x") == "x.t()"
-    assert op.emit_pytorch("x", "(1, 0)") == "torch.permute(x, (1, 0))"
-    assert op.emit_tensorflow("x") == "tf.transpose(x)"
-    assert op.emit_tensorflow("x", "(1, 0)") == "tf.transpose(x, perm=(1, 0))"
-    assert op.emit_mlx("x") == "mx.transpose(x)"
-    assert op.emit_keras("x") == "keras.ops.transpose(x)"
 
-    assert len(op.vjp("dz", "x")) == 1
-    assert len(op.vjp("dz", "x", "(1, 0)")) == 1
-    assert isinstance(op.jvp("dx", "x"), str)
-    assert isinstance(op.jvp("dx", "x", "(1, 0)"), str)
+
+
+
 
 
 def test_broadcast_to_op() -> None:
-    """Docstring."""
+    """Tests the BroadcastTo operation's shape inference and NumPy evaluation.
+
+    Verifies that the BroadcastTo operation correctly infers the broadcasted shape
+    and matches np.broadcast_to during evaluation
+
+    Returns:
+    None
+    """
     op = BroadcastTo()
     x = np.array([1, 2])
     shape = (2, 2)
@@ -60,11 +68,32 @@ def test_broadcast_to_op() -> None:
     assert op.infer_shape(x.shape, shape) == shape
     assert np.array_equal(op.numpy_eval(x, shape), np.broadcast_to(x, shape))
 
-    assert op.emit_jax("x", "shape") == "jnp.broadcast_to(x, shape)"
-    assert op.emit_pytorch("x", "shape") == "x.expand(shape)"
-    assert op.emit_mlx("x", "shape") == "mx.broadcast_to(x, shape)"
-    assert op.emit_keras("x", "shape") == "keras.ops.broadcast_to(x, shape)"
-    assert op.emit_tensorflow("x", "shape") == "tf.broadcast_to(x, shape)"
 
-    assert len(op.vjp("dz", "x", "shape")) == 1
-    assert isinstance(op.jvp("dx", "x", "shape"), str)
+
+
+
+def test_state_ops() -> None:
+    """Tests the shape inference and error handling of state operations.
+
+    Verifies that ReadVariable and AssignVariable correctly infer shapes,
+    and raise CompilationError when attempting NumPy evaluation directly
+
+    Returns:
+    None
+    """
+    import pytest
+
+    from ml_switcheroo.core.errors import CompilationError
+    from ml_switcheroo.ops.base import get_op
+
+    r = get_op("ReadVariable")()
+    a = get_op("AssignVariable")()
+
+    assert r.infer_shape(shape=(2,)) == (2,)
+    assert a.infer_shape((2,)) == (2,)
+
+    with pytest.raises(CompilationError):
+        r.numpy_eval()
+
+    with pytest.raises(CompilationError):
+        a.numpy_eval(1)

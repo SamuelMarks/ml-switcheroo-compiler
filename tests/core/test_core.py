@@ -1,32 +1,53 @@
-"""Tests for the core module."""
+"""Unit tests for the core components of the ml_switcheroo_compiler library.
+
+This module contains comprehensive test suites verifying the behavior, integrity, and
+correctness of core data types, device representations, custom exceptions, configuration
+contexts, and the base Tensor class.
+"""
 
 import pytest
+
 from ml_switcheroo.core import (
-    DType,
-    QuantDType,
+    BackendNotSupportedError,
+    CompilationError,
+    ConfigContext,
     Device,
     DeviceType,
-    SwitcherooError,
-    TracingError,
-    CompilationError,
-    ShapeMismatchError,
+    DType,
     DTypePromotionError,
-    BackendNotSupportedError,
+    QuantDType,
+    ShapeMismatchError,
+    SwitcherooError,
+    Tensor,
+    TracingError,
     UnimplementedMathError,
     config,
-    ConfigContext,
-    Tensor,
 )
 
 
 def test_dtype_enums() -> None:
-    """Test DType and QuantDType."""
+    """Verifies the string values of DType and QuantDType enumeration members.
+
+    This test ensures that the enum values match their expected string
+    representations
+    (e.g., 'float32' for DType.Float32 and 'qint8' for QuantDType.QInt8)
+
+    Returns:
+    None
+    """
     assert DType.Float32.value == "float32"
     assert QuantDType.QInt8.value == "qint8"
 
 
 def test_device() -> None:
-    """Test Device and DeviceType."""
+    """Verifies the behavior, equality, hashing, and representation of the Device class.
+
+    This test ensures that Device instances are correctly compared for equality,
+    hash consistently, and produce the expected string representation
+
+    Returns:
+    None
+    """
     d1 = Device(DeviceType.CPU, 0)
     d2 = Device(DeviceType.CPU, 0)
     d3 = Device(DeviceType.GPU, 0)
@@ -41,7 +62,14 @@ def test_device() -> None:
 
 
 def test_errors() -> None:
-    """Test exception hierarchy."""
+    """Verifies the exception hierarchy of the ml_switcheroo_compiler library.
+
+    This test ensures that all custom exceptions inherit from the base
+    SwitcherooError
+
+    Returns:
+    None
+    """
     assert issubclass(TracingError, SwitcherooError)
     assert issubclass(CompilationError, SwitcherooError)
     assert issubclass(ShapeMismatchError, SwitcherooError)
@@ -51,7 +79,14 @@ def test_errors() -> None:
 
 
 def test_config() -> None:
-    """Test Config and ConfigContext."""
+    """Verifies the behavior of the Config and ConfigContext classes.
+
+    This test ensures that configuration options can be temporarily overridden using
+    a context manager and that invalid configuration keys raise a ValueError
+
+    Returns:
+    None
+    """
     orig_mode = config.eager_mode
     with ConfigContext(eager_mode=not orig_mode):
         assert config.eager_mode == (not orig_mode)
@@ -63,7 +98,18 @@ def test_config() -> None:
 
 
 def test_config_env_var(monkeypatch: object) -> None:
-    """Test that config parses env vars."""
+    """Verifies that the Config class correctly parses environment variables.
+
+    This test uses monkeypatch to set an environment variable and asserts that
+    the Config class initializes with the corresponding value
+
+    Args:
+    monkeypatch (pytest.MonkeyPatch): Pytest fixture used to mock environment
+    variables
+
+    Returns:
+    None
+    """
     from ml_switcheroo.core.config import Config
 
     monkeypatch.setenv("SWITCHEROO_EAGER_MODE", "1")
@@ -72,10 +118,21 @@ def test_config_env_var(monkeypatch: object) -> None:
 
 
 def test_tensor() -> None:
-    """Test Tensor class and properties."""
+    """Verifies the initialization and properties of the Tensor class.
+
+    This test ensures that a Tensor instance correctly stores and exposes its shape,
+    data type, device, gradient requirement, and underlying data
+
+    Returns:
+    None
+    """
     device = Device(DeviceType.CPU, 0)
     t = Tensor(
-        data=[1, 2], shape=(2,), dtype=DType.Int32, device=device, requires_grad=True
+        data=[1, 2],
+        shape=(2,),
+        dtype=DType.Int32,
+        device=device,
+        requires_grad=True,
     )
 
     assert t.shape == (2,)

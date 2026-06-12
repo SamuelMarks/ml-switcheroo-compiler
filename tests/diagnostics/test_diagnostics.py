@@ -1,35 +1,57 @@
-"""Tests for the diagnostics module."""
+"""Unit tests for the diagnostics module of the ml_switcheroo_compiler framework.
 
-import pytest
+This module contains comprehensive unit tests verifying the correctness of traceback
+reconstruction, shape debugging, FLOPs estimation, memory profiling, numerical anomaly
+detection, and graph visualization utilities (Graphviz and HTML exports).
+"""
+
+from typing import NoReturn
+
 import numpy as np
+import pytest
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+from ml_switcheroo.core.device import Device, DeviceType
+from ml_switcheroo.core.dtype import DType
+from ml_switcheroo.core.tensor import Tensor
 from ml_switcheroo.diagnostics import (
+    NumericalAnomalyDetector,
     TracebackReconstructor,
     debug_shapes,
     estimate_flops,
     memory_profiler,
-    NumericalAnomalyDetector,
     to_graphviz,
     to_html,
 )
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo.core.tensor import Tensor
-from ml_switcheroo.core.dtype import DType
-from ml_switcheroo.core.device import Device, DeviceType
-from typing import NoReturn
 
 
 def test_traceback_reconstructor() -> None:
-    """Test TracebackReconstructor formatting."""
+    """Verifies that TracebackReconstructor correctly formats exception tracebacks.
+
+    Returns:
+    None
+    """
     exc = ValueError("test error")
     formatted = TracebackReconstructor.format_traceback(exc)
     assert "TracebackReconstructor: test error" in formatted
 
 
 def test_debug_shapes() -> None:
-    """Test debug_shapes function."""
+    """Verifies the shape debugging utility under various model execution scenarios.
+
+    Returns:
+    None
+    """
 
     def dummy_model(x: object) -> object:
-        """Docstring."""
+        """Dummy model.
+
+        Args:
+            x (object): The x parameter
+
+        Returns:
+            object: The resulting output.
+        """
         return x + 1.0
 
     res = debug_shapes(dummy_model, (2, 2))
@@ -37,15 +59,30 @@ def test_debug_shapes() -> None:
     assert "| output | (2, 2) | float64 |" in res
 
     def dummy_model_no_shape(x: object) -> int:
-        """Docstring."""
+        """Dummy model no shape.
+
+        Args:
+            x (object): The x parameter
+
+        Returns:
+            int: The resulting output.
+        """
         return 5
 
     res = debug_shapes(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
     def failing_model(x: object) -> NoReturn:
-        """Docstring."""
-        raise RuntimeError("fail")
+        """Failing model.
+
+        Args:
+            x (object): The x parameter
+
+        Returns:
+            NoReturn: The resulting output.
+        """
+        msg = "fail"
+        raise RuntimeError(msg)
 
     res_fail = debug_shapes(failing_model, (2, 2))
     assert "| Node | Shape | DType |" in res_fail
@@ -53,7 +90,11 @@ def test_debug_shapes() -> None:
 
 
 def test_estimate_flops() -> None:
-    """Test FLOPs estimation."""
+    """Verifies the FLOPs estimation utility for logical graphs.
+
+    Returns:
+    None
+    """
     graph = LogicalGraph(name="test")
     graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
     graph.nodes["n2"] = LogicalNode(id="n2", op_type="MatMul", shape_metadata=(10, 10))
@@ -61,11 +102,16 @@ def test_estimate_flops() -> None:
     graph.nodes["n4"] = LogicalNode(id="n4", op_type="Foo")  # unknown op
 
     class BadShape:
-        """Docstring."""
+        """Bad Shape class."""
 
         def __iter__(self) -> object:
-            """Docstring."""
-            raise TypeError("bad iterator")
+            """Iter.
+
+            Returns:
+                object: The resulting output.
+            """
+            msg = "bad iterator"
+            raise TypeError(msg)
 
     graph.nodes["n5"] = LogicalNode(id="n5", op_type="Add", shape_metadata=BadShape())
 
@@ -79,17 +125,26 @@ def test_estimate_flops() -> None:
 
 
 def test_memory_profiler() -> None:
-    """Test memory usage profiling."""
+    """Verifies the memory profiling utility for logical graphs.
+
+    Returns:
+    None
+    """
     graph = LogicalGraph(name="test")
     graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
     graph.nodes["n2"] = LogicalNode(id="n2", op_type="Add")  # no shape
 
     class BadShape:
-        """Docstring."""
+        """Bad Shape class."""
 
         def __iter__(self) -> object:
-            """Docstring."""
-            raise TypeError("bad iterator")
+            """Iter.
+
+            Returns:
+                object: The resulting output.
+            """
+            msg = "bad iterator"
+            raise TypeError(msg)
 
     graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add", shape_metadata=BadShape())
 
@@ -101,12 +156,19 @@ def test_memory_profiler() -> None:
 
 
 def test_numerical_anomaly_detector() -> None:
-    """Test NaN/Inf checking."""
+    """Verifies the numerical anomaly detector's ability to identify NaNs and Infs.
+
+    Returns:
+    None
+    """
     device = Device(DeviceType.CPU, 0)
 
     # Valid
     t1 = Tensor(
-        data=np.array([1.0, 2.0]), shape=(2,), dtype=DType.Float32, device=device
+        data=np.array([1.0, 2.0]),
+        shape=(2,),
+        dtype=DType.Float32,
+        device=device,
     )
     NumericalAnomalyDetector.check(t1)
 
@@ -116,16 +178,17 @@ def test_numerical_anomaly_detector() -> None:
 
     # NaN
     t2 = Tensor(
-        data=np.array([1.0, np.nan]), shape=(2,), dtype=DType.Float32, device=device
+        data=np.array([1.0, np.nan]),
+        shape=(2,),
+        dtype=DType.Float32,
+        device=device,
     )
     with pytest.raises(ValueError, match="NaN or Inf"):
         NumericalAnomalyDetector.check(t2)
 
     # Non-array-like
     class NonArray:
-        """Docstring."""
-
-        pass
+        """Non Array class."""
 
     t3 = Tensor(data=NonArray(), shape=(2,), dtype=DType.Float32, device=device)
     # Should silently pass or catch TypeError
@@ -133,7 +196,11 @@ def test_numerical_anomaly_detector() -> None:
 
 
 def test_to_graphviz() -> None:
-    """Test Graphviz dot export."""
+    """Verifies the Graphviz DOT export utility for logical graphs.
+
+    Returns:
+    None
+    """
     graph = LogicalGraph(name="test")
     graph.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
     graph.nodes["n2"] = LogicalNode(id="n2", op_type="Relu", inputs=["n1"])
@@ -145,7 +212,11 @@ def test_to_graphviz() -> None:
 
 
 def test_to_html() -> None:
-    """Test HTML export."""
+    """Verifies the HTML export utility for logical graphs.
+
+    Returns:
+    None
+    """
     graph = LogicalGraph(name="test")
     html = to_html(graph)
     assert "<h1>IR Graph</h1>" in html

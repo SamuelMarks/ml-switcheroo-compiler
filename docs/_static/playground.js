@@ -244,7 +244,7 @@ async function loadPyodideEnvironment(doc, win) {
  */
 function compileCode(pyodide, source, sourceFw, targetFw) {
     // We run a small python wrapper to call the compiler.
-    // Assuming ml_switcheroo has an entrypoint or we just return something for now
+    // Assuming ml_switcheroo_compiler has an entrypoint or we just return something for now
     // if the real API is not known, we simulate a compilation.
     const pythonScript = `
 import sys

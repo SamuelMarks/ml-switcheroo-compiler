@@ -1,11 +1,31 @@
-"""Module docstring."""
+"""Unit tests for the shape system utilities in ml_switcheroo_compiler.
+
+This module contains test cases to verify the correctness of shape broadcasting, matrix
+multiplication shape inference, and axis normalization functions, including handling of
+symbolic dimensions and error conditions.
+"""
 
 import pytest
-from ml_switcheroo.shape import broadcast_shapes, matmul_shape
+
+from ml_switcheroo.ir.shape_system import broadcast_shapes, matmul_shape
 
 
 def test_broadcast_shapes() -> None:
-    """Docstring."""
+    """Verifies that `broadcast_shapes` correctly computes the broadcasted shape of two.
+
+    inputs
+
+    This test covers:
+    - Identical shapes
+    - Broadcasting a 1D shape to a 2D shape
+    - Broadcasting with unit dimensions
+    - Broadcasting with empty shapes (scalars)
+    - Incompatible shape broadcasting (raises ValueError)
+    - Symbolic dimension broadcasting and mismatch detection
+
+    Returns:
+    None
+    """
     assert broadcast_shapes((2, 3), (2, 3)) == (2, 3)
     assert broadcast_shapes((3,), (2, 3)) == (2, 3)
     assert broadcast_shapes((2, 1), (1, 3)) == (2, 3)
@@ -21,7 +41,21 @@ def test_broadcast_shapes() -> None:
 
 
 def test_matmul_shape() -> None:
-    """Docstring."""
+    """Verifies that `matmul_shape` correctly computes the output shape of a matrix.
+
+    multiplication
+
+    This test covers:
+    - 1D vector dot products
+    - 2D matrix multiplications
+    - Batched matrix multiplications
+    - Mismatched batch dimensions
+    - Invalid empty shapes
+    - Incompatible inner dimensions
+
+    Returns:
+    None
+    """
     assert matmul_shape((3,), (3,)) == ()
     assert matmul_shape((2, 3), (3, 4)) == (2, 4)
     assert matmul_shape((5, 2, 3), (5, 3, 4)) == (5, 2, 4)
@@ -41,21 +75,52 @@ def test_matmul_shape() -> None:
 
 
 def test_matmul_inner_mismatch_batched() -> None:
-    """Docstring."""
+    """Verifies that `matmul_shape` raises a ValueError when inner dimensions mismatch in.
+
+    batched multiplication
+
+    This test ensures that an explicit error message regarding incompatible inner
+    dimensions is raised when attempting to multiply batched matrices with
+    mismatched
+    contracting dimensions
+
+    Returns:
+    None
+    """
     with pytest.raises(ValueError, match="Incompatible inner dimensions"):
         matmul_shape((5, 2, 3), (5, 4, 4))
 
 
 def test_matmul_shape_1d() -> None:
-    """Docstring."""
+    """Verifies that `matmul_shape` correctly handles 1D vector operands.
+
+    This test covers:
+    - Vector-vector multiplication (resulting in a scalar shape)
+    - Vector-matrix multiplication
+    - Matrix-vector multiplication
+
+    Returns:
+    None
+    """
     assert matmul_shape((5,), (5,)) == ()
     assert matmul_shape((5,), (5, 4)) == (4,)
     assert matmul_shape((3, 5), (5,)) == (3,)
 
 
 def test_normalize_axis() -> None:
-    """Docstring."""
-    from ml_switcheroo.shape import normalize_axis
+    """Verifies that `normalize_axis` correctly normalizes axis indices.
+
+    This test covers:
+    - Single integer axis normalization (both positive and negative indices)
+    - Out-of-bounds integer axis validation (raises ValueError)
+    - Tuple of axes normalization (both positive and negative indices)
+    - Out-of-bounds tuple axis validation (raises ValueError)
+    - Invalid axis type validation (raises TypeError)
+
+    Returns:
+    None
+    """
+    from ml_switcheroo.ir.shape_system import normalize_axis
 
     # int tests
     assert normalize_axis(0, 3) == 0

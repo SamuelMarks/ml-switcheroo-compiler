@@ -1,16 +1,31 @@
-"""Tests for reduction operations."""
+"""Unit tests for basic reduction operations.
+
+This module verifies the correctness of reduction operations such as Sum, Mean, Max, and
+Min by comparing their shape inference and evaluation results against their equivalent
+NumPy implementations.
+"""
 
 import numpy as np
+
 from ml_switcheroo.ops.reductions.basic import (
-    Sum,
-    Mean,
     Max,
+    Mean,
     Min,
+    Sum,
 )
 
 
 def test_reduction_ops() -> None:
-    """Docstring."""
+    """Tests the correctness of basic reduction operations against NumPy equivalents.
+
+    This test validates that the custom reduction operations (Sum, Mean, Max, Min)
+    correctly infer output shapes and produce identical numerical results to their
+    corresponding NumPy functions (np.sum, np.mean, np.max, np.min) under
+    various configurations of axis and keepdims
+
+    Returns:
+    None
+    """
     x = np.array([[1.0, 2.0], [3.0, 4.0]])
 
     ops = [
@@ -21,26 +36,10 @@ def test_reduction_ops() -> None:
     ]
 
     for op, np_func in ops:
-        assert op.infer_shape(x.shape) is None
+        assert op.infer_shape(x.shape) == ()
         assert np.allclose(op.numpy_eval(x), np_func(x))
         assert np.allclose(op.numpy_eval(x, axis=0), np_func(x, axis=0))
         assert np.allclose(
-            op.numpy_eval(x, axis=1, keepdims=True), np_func(x, axis=1, keepdims=True)
+            op.numpy_eval(x, axis=1, keepdims=True),
+            np_func(x, axis=1, keepdims=True),
         )
-
-        assert op.emit_jax("x") == f"jnp.{op.op_name.lower()}(x)"
-        assert op.emit_jax("x", axis=0) == f"jnp.{op.op_name.lower()}(x, axis=0)"
-        assert (
-            op.emit_pytorch("x", axis=0, keepdims=True)
-            == f"torch.{op.op_name.lower()}(x, dim=0, keepdim=True)"
-        )
-        assert (
-            op.emit_tensorflow("x", axis=0)
-            == f"tf.reduce_{op.op_name.lower()}(x, axis=0)"
-        )
-        assert op.emit_keras("x") == f"keras.ops.{op.op_name.lower()}(x)"
-        assert op.emit_mlx("x", axis=0) == f"mx.{op.op_name.lower()}(x, axis=0)"
-
-        vjp_out = op.vjp("dz", "x")
-        assert len(vjp_out) == 1
-        assert isinstance(op.jvp("dx", "x"), str)

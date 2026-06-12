@@ -1,13 +1,28 @@
-"""Module docstring."""
+"""Unit tests for the graph interpreter of the ml_switcheroo_compiler package.
 
-import pytest
+This module contains test cases that verify the correct evaluation of logical graphs,
+handling of missing inputs/outputs, unsupported operations, and various mathematical
+operations.
+"""
+
 import numpy as np
+import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
 from ml_switcheroo.interpreter import evaluate_graph
 
 
 def test_evaluate_graph() -> None:
-    """Docstring."""
+    """Tests the evaluation of a simple logical graph containing Input, Constant, Add, and.
+
+    Relu nodes
+
+    This test constructs a basic graph, provides input values, evaluates the graph,
+    and asserts that the output matches the expected values
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     g.nodes["c"] = LogicalNode(id="c", op_type="Constant", attributes={"value": 2.0})
@@ -22,7 +37,11 @@ def test_evaluate_graph() -> None:
 
 
 def test_missing_input() -> None:
-    """Docstring."""
+    """Verifies that evaluating a graph with missing input values raises a ValueError.
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["in"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
 
@@ -31,7 +50,13 @@ def test_missing_input() -> None:
 
 
 def test_not_implemented() -> None:
-    """Docstring."""
+    """Verifies that evaluating a graph with an unsupported or unknown operation type.
+
+    raises a NotImplementedError
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="UnknownOp", inputs=["in"])
@@ -41,7 +66,13 @@ def test_not_implemented() -> None:
 
 
 def test_missing_output() -> None:
-    """Docstring."""
+    """Verifies that evaluating a graph where a requested output node is never evaluated.
+
+    raises a RuntimeError
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
 
@@ -50,7 +81,16 @@ def test_missing_output() -> None:
 
 
 def test_all_ops() -> None:
-    """Docstring."""
+    """Tests the evaluation of a complex logical graph containing a wide variety of.
+
+    supported operations
+
+    This test ensures that operations like Sub, Mul, Div, Neg, Exp, Log, Pow, Sum,
+    Mean, Max, Min, Transpose, MatMul, Greater, and Expand execute without crashing
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["out"])
     g.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
     g.nodes["in2"] = LogicalNode(id="in2", op_type="Input")
@@ -71,14 +111,21 @@ def test_all_ops() -> None:
     g.nodes["in3"] = LogicalNode(id="in3", op_type="Input")
     g.nodes["trans"] = LogicalNode(id="trans", op_type="Transpose", inputs=["in3"])
     g.nodes["matmul"] = LogicalNode(
-        id="matmul", op_type="MatMul", inputs=["in3", "trans"]
+        id="matmul",
+        op_type="MatMul",
+        inputs=["in3", "trans"],
     )
 
     g.nodes["greater"] = LogicalNode(
-        id="greater", op_type="Greater", inputs=["in1", "in2"]
+        id="greater",
+        op_type="Greater",
+        inputs=["in1", "in2"],
     )
     g.nodes["expand"] = LogicalNode(
-        id="expand", op_type="Expand", inputs=["min"], shape_metadata=(2,)
+        id="expand",
+        op_type="Expand",
+        inputs=["min"],
+        shape_metadata=(2,),
     )
 
     g.nodes["out"] = LogicalNode(id="out", op_type="Add", inputs=["expand", "expand"])

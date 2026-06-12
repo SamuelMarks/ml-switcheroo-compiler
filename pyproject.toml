@@ -23,9 +23,10 @@ allow-direct-references = true
 files = ["requirements.txt"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ml_switcheroo"]
+packages = ["src/ml_switcheroo_compiler"]
 
 [tool.ruff]
+line-length = 100
 lint.select = ["E", "F", "D", "ANN", "UP", "B"]
 
 [tool.ruff.lint.pydocstyle]

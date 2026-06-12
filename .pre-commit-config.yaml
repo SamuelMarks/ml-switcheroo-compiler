@@ -1,22 +1,21 @@
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
+  rev: v6.0.0
   hooks:
   - id: check-yaml
   - id: trailing-whitespace
   - id: end-of-file-fixer
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.2.1
+  rev: v0.15.17
   hooks:
   - id: ruff
     args:
     - --fix
-    - --extend-ignore=ANN101,ANN102,D107,D102,D103,F403,F405,F821,B904,D105
-    files: ^src/ml_switcheroo/
+    files: ^src/ml_switcheroo_compiler/
   - id: ruff-format
-    files: ^src/ml_switcheroo/
+    files: ^src/ml_switcheroo_compiler/
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.8.0
+  rev: v2.1.0
   hooks:
   - id: mypy
     args:
@@ -24,12 +23,12 @@ repos:
     - --follow-imports=skip
     additional_dependencies:
     - types-requests
-    files: ^src/ml_switcheroo/transforms/pass_manager.py
+    files: ^src/ml_switcheroo_compiler/transforms/pass_manager.py
 - repo: local
   hooks:
   - id: detect-leaks
     name: Detect Dependency Leaks
     entry: ./scripts/detect_leaks.py
     language: system
-    files: ^src/ml_switcheroo/
+    files: ^src/ml_switcheroo_compiler/
     pass_filenames: false

@@ -1,11 +1,26 @@
-"""Tests for state functionalization."""
+"""Unit tests for the state lifting functionality and state operations.
+
+This module contains tests for `lift_state` which transforms a stateful logical graph
+into a stateless functional graph by lifting state variables to inputs and outputs. It
+also tests the behavior of state-related operations like ReadVariable and
+AssignVariable.
+"""
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
-from ml_switcheroo.state import lift_state
+
+from ml_switcheroo.core.state_manager import lift_state
 
 
 def test_lift_state() -> None:
-    """Docstring."""
+    """Tests the `lift_state` function with a graph containing state updates.
+
+    This test verifies that state updates (Assign operations) are correctly tracked,
+    that Assign nodes are eliminated from the graph, and that the graph outputs
+    are updated to include the final state values
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["update2"])
 
     # Initial state
@@ -16,12 +31,16 @@ def test_lift_state() -> None:
 
     # State update
     g.nodes["update1"] = LogicalNode(
-        id="update1", op_type="Assign", inputs=["s1", "n1"]
+        id="update1",
+        op_type="Assign",
+        inputs=["s1", "n1"],
     )
 
     # Computation using updated state
     g.nodes["update2"] = LogicalNode(
-        id="update2", op_type="Mul", inputs=["s1", "update1"]
+        id="update2",
+        op_type="Mul",
+        inputs=["s1", "update1"],
     )
 
     func_g = lift_state(g, ["s1"])
@@ -40,7 +59,15 @@ def test_lift_state() -> None:
 
 
 def test_lift_state_no_update() -> None:
-    """Docstring."""
+    """Tests the `lift_state` function when there are no state updates in the graph.
+
+    This test verifies that if a state variable is declared but never updated via
+    an Assign operation, the original state is correctly passed through to the
+    outputs
+
+    Returns:
+    None
+    """
     g = LogicalGraph(outputs=["n1"])
     g.nodes["s1"] = LogicalNode(id="s1", op_type="Input")
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=["s1", "s1"])
@@ -51,14 +78,23 @@ def test_lift_state_no_update() -> None:
 
 
 def test_lift_state_assign_non_state() -> None:
-    """Docstring."""
+    """Tests `lift_state` when an Assign operation targets a non-state variable.
+
+    This test verifies that Assign operations targeting variables not declared as
+    state variables are ignored or eliminated, and do not affect the state lifting
+    process
+
+    Returns:
+    None
+    """
     # If assign targets a non-state variable, it's ignored or passed through
-    """Docstring."""
     g = LogicalGraph(outputs=["n1"])
     g.nodes["s1"] = LogicalNode(id="s1", op_type="Input")
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=["s1", "s1"])
     g.nodes["update1"] = LogicalNode(
-        id="update1", op_type="Assign", inputs=["n1", "s1"]
+        id="update1",
+        op_type="Assign",
+        inputs=["n1", "s1"],
     )
 
     func_g = lift_state(g, ["s1"])
@@ -68,13 +104,49 @@ def test_lift_state_assign_non_state() -> None:
 
 
 def test_lift_state_assign_not_in_env() -> None:
-    """Docstring."""
+    """Tests `lift_state` when an Assign operation targets a variable not in the.
+
+    environment
+
+    This test verifies that Assign nodes targeting variables that are not part of
+    the
+    state variables list are dropped from the resulting graph
+
+    Returns:
+    None
+    """
     g = LogicalGraph()
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
     g.nodes["a"] = LogicalNode(id="a", op_type="Assign", inputs=["n1", "n1"])
     g.outputs = ["a"]
-    print("OUTPUTS", g.outputs)
 
     out_g = lift_state(g, state_vars=[])
     # The Assign node should be dropped and target not in env
     assert "a" not in out_g.nodes
+
+
+def test_state_ops() -> None:
+    """Tests the behavior of state operations like ReadVariable and AssignVariable.
+
+    This test verifies that shape inference works correctly for these operations
+    and that attempting to evaluate them using numpy raises a CompilationError
+
+    Returns:
+    None
+    """
+    import pytest
+
+    from ml_switcheroo.core.errors import CompilationError
+    from ml_switcheroo.ops.base import get_op
+
+    r = get_op("ReadVariable")()
+    a = get_op("AssignVariable")()
+
+    assert r.infer_shape(shape=(2,)) == (2,)
+    assert a.infer_shape((2,)) == (2,)
+
+    with pytest.raises(CompilationError):
+        r.numpy_eval()
+
+    with pytest.raises(CompilationError):
+        a.numpy_eval(1)
