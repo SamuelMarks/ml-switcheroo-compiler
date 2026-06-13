@@ -8,7 +8,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def dtype_inference_pass(graph: IRGraph) -> bool:
-    """In-place dtype inference."""
+    """In-place dtype inference.
+
+    Args:
+        graph (IRGraph): The graph.
+
+    Returns:
+        bool: The computed result.
+    """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
     dtypes = {}

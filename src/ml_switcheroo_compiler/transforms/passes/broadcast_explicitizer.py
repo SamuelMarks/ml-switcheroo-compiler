@@ -11,7 +11,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
-    """In-place pass to explicitly inject BroadcastTo nodes."""
+    """In-place pass to explicitly inject BroadcastTo nodes.
+
+    Args:
+        graph (IRGraph): The graph.
+
+    Returns:
+        bool: The computed result.
+    """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
 

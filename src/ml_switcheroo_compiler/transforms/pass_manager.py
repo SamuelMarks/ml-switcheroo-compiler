@@ -40,7 +40,7 @@ class DAGTopologicalSorter:
             """Visit.
 
             Args:
-                node_id (str): The node_id parameter
+                node_id (str): The node_id to process.
             """
             if node_id in temp_mark:
                 msg = "Cycle detected in graph."
@@ -162,6 +162,10 @@ class PassManager:
 
         Args:
             graph (IRGraph): Argument graph
+
+
+        Returns:
+            IRGraph: The computed result.
         """
         self.validate(graph)
         for ir_pass in self.passes:
@@ -178,6 +182,10 @@ class PassManager:
         Args:
             graph (IRGraph): Argument graph
             max_iterations (int): Argument max_iterations
+
+
+        Returns:
+            IRGraph: The computed result.
         """
         self.validate(graph)
 

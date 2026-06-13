@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import pytest
 
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_infer
 
 
 def test_shape_inference_pass_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     graph = IRGraph()
 
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
@@ -64,7 +64,7 @@ def test_shape_inference_pass_coverage() -> None:
 
 
 def test_shape_inference_pass_coverage_2() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
     n2 = IRNode(

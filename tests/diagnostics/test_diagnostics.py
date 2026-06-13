@@ -47,7 +47,7 @@ def test_debug_shapes() -> None:
         """Dummy model.
 
         Args:
-            x (object): The x parameter
+            x (object): The first input tensor.
 
         Returns:
             object: The resulting output.
@@ -62,7 +62,7 @@ def test_debug_shapes() -> None:
         """Dummy model no shape.
 
         Args:
-            x (object): The x parameter
+            x (object): The first input tensor.
 
         Returns:
             int: The resulting output.
@@ -76,7 +76,7 @@ def test_debug_shapes() -> None:
         """Failing model.
 
         Args:
-            x (object): The x parameter
+            x (object): The first input tensor.
 
         Returns:
             NoReturn: The resulting output.

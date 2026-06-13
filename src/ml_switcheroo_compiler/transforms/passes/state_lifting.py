@@ -4,7 +4,14 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 def state_lifting_pass(graph: IRGraph) -> bool:
-    """In-place pass to lift state to pure functional inputs."""
+    """In-place pass to lift state to pure functional inputs.
+
+    Args:
+        graph (IRGraph): The graph.
+
+    Returns:
+        bool: The computed result.
+    """
     modified = False
 
     # We find all ReadVariable and AssignVariable nodes

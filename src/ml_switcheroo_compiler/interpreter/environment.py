@@ -21,21 +21,21 @@ class Environment:
     """
 
     def __init__(self, inputs: dict[str, Any] | None = None) -> None:
-        """Initialize the instance.
+        """Initializes the object.
 
         Args:
-            inputs (dict[str, Any]): The inputs parameter
+            inputs (dict[str, Any]): The inputs to process.
         """
         self.memory: dict[str, Any] = inputs or {}
 
     def get(self, name: str) -> object:
-        """Get.
+        """Retrieves the value associated with the given name.
 
         Args:
-            name (str): The name parameter
+            name (str): The variable name.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         if name not in self.memory:
             msg = f"Missing input value for node '{name}'"
@@ -43,14 +43,21 @@ class Environment:
         return self.memory[name]
 
     def set(self, name: str, value: object) -> None:
-        """Set.
+        """Sets the value associated with the given name.
 
         Args:
-            name (str): The name parameter
-            value (object): The value parameter
+            name (str): The variable name.
+            value (object): The value to set or add.
         """
         self.memory[name] = value
 
     def __contains__(self, name: str) -> bool:
-        """Check if an item is in the environment."""
+        """Check if an item is in the environment.
+
+        Args:
+            name (str): The name.
+
+        Returns:
+            bool: The computed result.
+        """
         return name in self.memory

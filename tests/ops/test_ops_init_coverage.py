@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.ops import clamp
 from ml_switcheroo_compiler.core.config import config
 
 
 def test_clamp_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     config.eager_mode = True
     clamp(None, 1, 10)
     clamp(0, 1, None)

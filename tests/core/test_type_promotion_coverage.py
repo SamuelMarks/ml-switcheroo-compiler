@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.core.dtype import DType
 
 
 def test_type_promotion_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     # Let's test the `if rank1 > rank2` in Integer promotion
     assert promote_types(DType.Int32, DType.Int8) == DType.Int32
     assert promote_types(DType.Int8, DType.Int32) == DType.Int32

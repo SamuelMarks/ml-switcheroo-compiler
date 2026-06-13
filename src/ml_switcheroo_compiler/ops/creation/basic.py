@@ -22,25 +22,25 @@ class CreationOp(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            shape (object): The shape parameter
-            **kwargs (object): Variable length argument list
+            shape (object): The shape of the tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return shape
 
-    def numpy_eval(self, shape: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            shape (object): The shape parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return getattr(np, self.op_name.lower())(shape, **kwargs)
+        return getattr(np, self.op_name.lower())(args[0], **kwargs)
 
 
 @register_op("Zeros")
@@ -75,12 +75,12 @@ class Full(CreationOp):
         """Infer the output shape of the operation.
 
         Args:
-            shape (object): The shape parameter
-            fill_value (object): The fill_value parameter
-            **kwargs (object): Variable length argument list
+            shape (object): The shape of the tensor.
+            fill_value (object): The fill_value to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return shape
 
@@ -88,12 +88,12 @@ class Full(CreationOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            shape (object): The shape parameter
-            fill_value (object): The fill_value parameter
-            **kwargs (object): Variable length argument list
+            shape (object): The shape of the tensor.
+            fill_value (object): The fill_value to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return np.full(shape, fill_value, **kwargs)
 
@@ -111,11 +111,11 @@ class Arange(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return None  # Dynamic shape depending on values
 
@@ -123,11 +123,11 @@ class Arange(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return np.arange(*args, **kwargs)
 
@@ -142,11 +142,11 @@ class Rand(CreationOp):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         if "size" in kwargs:
             return kwargs["size"]
@@ -158,11 +158,11 @@ class Rand(CreationOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -185,11 +185,11 @@ class Randn(Rand):
         """Evaluate the operation using NumPy.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -211,11 +211,11 @@ class Randint(CreationOp):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         if "size" in kwargs:
             return kwargs["size"]
@@ -227,11 +227,11 @@ class Randint(CreationOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -259,11 +259,11 @@ class ManualSeed(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            seed (object): The seed parameter
-            **kwargs (object): Variable length argument list
+            seed (object): The seed to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return ()
 
@@ -271,13 +271,80 @@ class ManualSeed(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            seed (object): The seed parameter
-            **kwargs (object): Variable length argument list
+            seed (object): The seed to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
         np.random.seed(seed)
         return seed
+
+
+@register_op("ConstantOfShape")
+class ConstantOfShape(OpDef):
+    """ConstantOfShape operator."""
+
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *shapes: Input shapes
+            **kwargs: Extra kwargs
+
+        Returns:
+            The output shape
+        """
+        return shapes[0] if shapes else ()
+
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
+        """Evaluate operation in numpy.
+
+        Args:
+            *args: Input args
+            **kwargs: Extra kwargs
+
+        Returns:
+            The evaluated tensor
+        """
+        import numpy as np
+
+        shape = kwargs.get("shape", args[0] if args else ())
+        if hasattr(shape, "__array__"):
+            shape = tuple(int(x) for x in np.array(shape).flatten())
+        val = kwargs.get("value", 0)
+        return np.full(shape, val)
+
+
+@register_op("Range")
+class Range(OpDef):
+    """Range operator."""
+
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *shapes: Input shapes
+            **kwargs: Extra kwargs
+
+        Returns:
+            The output shape
+        """
+        # This is a bit tricky, but in eager mode we just rely on numpy_eval.
+        return shapes[0] if shapes else ()
+
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
+        """Evaluate operation in numpy.
+
+        Args:
+            *args: Input args
+            **kwargs: Extra kwargs
+
+        Returns:
+            The evaluated tensor
+        """
+        import numpy as np
+
+        return np.arange(*args, **kwargs)

@@ -12,62 +12,62 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Atan2(OpDef):
     """An operation class for computing the element-wise arc tangent of x/y."""
 
-    def infer_shape(self, x: object, y: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *shapes: The input shapes.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return np.broadcast_shapes(x, y) if isinstance(x, tuple) and isinstance(y, tuple) else x
+        if all(isinstance(s, tuple) for s in shapes):
+            return np.broadcast_shapes(*shapes)
+        return shapes[0] if shapes else ()
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return np.arctan2(x, y)
+        return np.arctan2(args[0], args[1])
 
 
 @register_op("Divmod")
 class Divmod(OpDef):
     """An operation class for computing element-wise quotient and remainder."""
 
-    def infer_shape(self, x: object, y: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *shapes: The input shapes.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return np.broadcast_shapes(x, y) if isinstance(x, tuple) and isinstance(y, tuple) else x
+        if all(isinstance(s, tuple) for s in shapes):
+            return np.broadcast_shapes(*shapes)
+        return shapes[0] if shapes else ()
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return np.divmod(x, y)
+        return np.divmod(args[0], args[1])
 
 
 @register_op("Allclose")
@@ -77,65 +77,63 @@ class Allclose(OpDef):
     tolerance
     """
 
-    def infer_shape(self, x: object, y: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *shapes: The input shapes.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return ()
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         rtol = kwargs.get("rtol", 1e-05)
         atol = kwargs.get("atol", 1e-08)
         equal_nan = kwargs.get("equal_nan", False)
-        return np.allclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)
+        return np.allclose(args[0], args[1], rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
 @register_op("Isclose")
 class Isclose(OpDef):
     """An operation class for checking element-wise equality within a tolerance."""
 
-    def infer_shape(self, x: object, y: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *shapes: The input shapes.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return np.broadcast_shapes(x, y) if isinstance(x, tuple) and isinstance(y, tuple) else x
+        if all(isinstance(s, tuple) for s in shapes):
+            return np.broadcast_shapes(*shapes)
+        return shapes[0] if shapes else ()
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         rtol = kwargs.get("rtol", 1e-05)
         atol = kwargs.get("atol", 1e-08)
         equal_nan = kwargs.get("equal_nan", False)
-        return np.isclose(x, y, rtol=rtol, atol=atol, equal_nan=equal_nan)
+        return np.isclose(args[0], args[1], rtol=rtol, atol=atol, equal_nan=equal_nan)

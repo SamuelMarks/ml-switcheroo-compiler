@@ -21,12 +21,12 @@ class Matmul(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The a parameter
-            b (object): The b parameter
-            **kwargs (object): Variable length argument list
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         if isinstance(a, tuple) and isinstance(b, tuple) and len(a) >= 2 and len(b) >= 2:
             # Basic matmul shape inference for 2D+
@@ -37,12 +37,12 @@ class Matmul(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            a (object): The a parameter
-            b (object): The b parameter
-            **kwargs (object): Variable length argument list
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return np.matmul(a, b)
 
@@ -58,12 +58,12 @@ class Dot(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            a (object): The a parameter
-            b (object): The b parameter
-            **kwargs (object): Variable length argument list
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return None
 
@@ -71,12 +71,12 @@ class Dot(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            a (object): The a parameter
-            b (object): The b parameter
-            **kwargs (object): Variable length argument list
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return np.dot(a, b)
 
@@ -97,32 +97,38 @@ class Einsum(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            subscripts (str): The subscripts parameter
-            *operands (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            subscripts (str): The subscripts to process.
+            *operands (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return None
 
-    def numpy_eval(
-        self,
-        subscripts: str,
-        *operands: object,
-        **kwargs: object,
-    ) -> object:
-        """Evaluate the operation using NumPy.
+    def numpy_eval(self, equation: object, *operands: object, **kwargs: object) -> object:
+        """Evaluate with NumPy.
 
         Args:
-            subscripts (str): The subscripts parameter
-            *operands (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            equation (object): The equation.
+            *operands: Additional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            object: The computed result.
         """
-        return np.einsum(subscripts, *operands)
+        import numpy as np
+
+        if hasattr(equation, "item"):
+            equation = str(equation.item())
+        if hasattr(equation, "__array__"):
+            equation = str(np.array(equation).item())
+        # Make sure it's a string, not a proxy tensor
+        if not isinstance(equation, str) and hasattr(equation, "data"):
+            equation = str(equation.data)
+        if not isinstance(equation, str):
+            equation = str(equation)
+        return np.einsum(equation, *operands)
 
 
 @register_op("DotGeneral")
@@ -141,7 +147,17 @@ class DotGeneral(OpDef):
         dimension_numbers: object,
         **kwargs: object,
     ) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            lhs (object): The lhs.
+            rhs (object): The rhs.
+            dimension_numbers (object): The dimension_numbers.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # Simple symbolic bypass if shapes are unavailable
         if not hasattr(lhs, "shape") or not hasattr(rhs, "shape") or not lhs.shape or not rhs.shape:
             return ()
@@ -180,7 +196,17 @@ class DotGeneral(OpDef):
         dimension_numbers: object,
         **kwargs: object,
     ) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            lhs (object): The lhs.
+            rhs (object): The rhs.
+            dimension_numbers (object): The dimension_numbers.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         contracting, batch = dimension_numbers
         lhs_contracting, rhs_contracting = contracting
         lhs_batch, rhs_batch = batch
@@ -244,23 +270,63 @@ class DotGeneral(OpDef):
         return np.einsum(eq, lhs, rhs)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented DotGeneral"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented DotGeneral"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented DotGeneral"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented DotGeneral"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented DotGeneral"
 
 
@@ -281,7 +347,21 @@ class ConvGeneralDilated(OpDef):
         dimension_numbers: object = None,
         **kwargs: object,
     ) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            lhs (object): The lhs.
+            rhs (object): The rhs.
+            window_strides (object): The window_strides.
+            padding (object): The padding.
+            lhs_dilation (object): The lhs_dilation.
+            rhs_dilation (object): The rhs_dilation.
+            dimension_numbers (object): The dimension_numbers.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         if not hasattr(lhs, "shape") or not lhs.shape or not hasattr(rhs, "shape") or not rhs.shape:
             return ()
 
@@ -302,29 +382,83 @@ class ConvGeneralDilated(OpDef):
         dimension_numbers: object = None,
         **kwargs: object,
     ) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            lhs (object): The lhs.
+            rhs (object): The rhs.
+            window_strides (object): The window_strides.
+            padding (object): The padding.
+            lhs_dilation (object): The lhs_dilation.
+            rhs_dilation (object): The rhs_dilation.
+            dimension_numbers (object): The dimension_numbers.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # Simple mock using scipy correlate or just returning zeros of expected shape
         # In a real impl, this would use np.correlate or similar
         return np.zeros((1,), dtype=getattr(lhs, "dtype", float))
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ConvGeneralDilated"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ConvGeneralDilated"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ConvGeneralDilated"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ConvGeneralDilated"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ConvGeneralDilated"
 
 
@@ -341,7 +475,17 @@ class Fft(OpDef):
         axis: object = -1,
         **kwargs: object,
     ) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            a (object): The a.
+            n (object): The n.
+            axis (object): The axis.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         if not hasattr(a, "shape") or not a.shape:
             return ()
         out_shape = list(a.shape)
@@ -356,27 +500,77 @@ class Fft(OpDef):
         axis: object = -1,
         **kwargs: object,
     ) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            a (object): The a.
+            n (object): The n.
+            axis (object): The axis.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return np.fft.fft(a, n=n, axis=axis)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Fft"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Fft"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Fft"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Fft"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Fft"
 
 
@@ -393,7 +587,17 @@ class Rfft(OpDef):
         axis: object = -1,
         **kwargs: object,
     ) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            a (object): The a.
+            n (object): The n.
+            axis (object): The axis.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         if not hasattr(a, "shape") or not a.shape:
             return ()
         out_shape = list(a.shape)
@@ -409,25 +613,75 @@ class Rfft(OpDef):
         axis: object = -1,
         **kwargs: object,
     ) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            a (object): The a.
+            n (object): The n.
+            axis (object): The axis.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return np.fft.rfft(a, n=n, axis=axis)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Rfft"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Rfft"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Rfft"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Rfft"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Rfft"

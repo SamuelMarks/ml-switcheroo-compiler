@@ -30,8 +30,11 @@ def test_grad_coverage() -> None:
 
 def test_nn_coverage() -> None:
     """Tests the NN API."""
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.device import Device
+
     config.eager_mode = True
-    t = Tensor(np.array(1), (), "float32", "cpu")
+    t = Tensor(np.array(1.0), (), DType.Float32, Device("cpu"))
     assert nn.gelu(t) is not None
     assert nn.logsumexp(t) is not None
     assert nn.one_hot(t, 2) is not None

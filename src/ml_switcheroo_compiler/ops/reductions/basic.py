@@ -30,13 +30,13 @@ class ReductionOp(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            keepdims (bool): The keepdims parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            axis (object): The axis to process.
+            keepdims (bool): The keepdims to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return ()  # Symbolic shape inference will handle axis reduction logic
 
@@ -47,30 +47,49 @@ class ReductionOp(OpDef):
         keepdims: bool = False,
         **kwargs: object,
     ) -> object:
-        """Evaluate the operation using NumPy.
+        """Evaluate with NumPy.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            keepdims (bool): The keepdims parameter
-            **kwargs (object): Variable length argument list
+            x (object): The x.
+            axis (object): The axis.
+            keepdims (bool): The keepdims.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            object: The computed result.
         """
+        if hasattr(axis, "__array__"):
+            axis = axis.__array__()
+        if hasattr(axis, "tolist") and getattr(axis, "ndim", 1) > 0:
+            try:
+                axis = tuple(int(dim) for dim in axis.tolist())
+            except Exception:
+                pass
+        elif hasattr(axis, "item") and getattr(axis, "ndim", 1) == 0:
+            try:
+                val = axis.item()
+                axis = int(val) if val is not None else None
+            except Exception:
+                pass
+
+        elif isinstance(axis, int):
+            axis = int(axis)
+
+        if hasattr(keepdims, "__array__") and not isinstance(keepdims, np.ndarray):
+            keepdims = keepdims.__array__()
+        if hasattr(keepdims, "item"):
+            keepdims = bool(keepdims.item())
+
         return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(
-            x,
-            axis=axis,
-            keepdims=keepdims,
-            **kwargs,
+            x, axis=axis, keepdims=keepdims, **kwargs
         )
 
     def _format_args(self, x: str, **kwargs: object) -> str:
         """Format args.
 
         Args:
-            x (str): The x parameter
-            **kwargs (object): Variable length argument list
+            x (str): The first input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
             str: The resulting output
@@ -124,14 +143,32 @@ class Max(ReductionOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            keepdims (bool): The keepdims parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            axis (object): The axis to process.
+            keepdims (bool): The keepdims to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
+        if hasattr(axis, "__array__"):
+            axis = axis.__array__()
+        if hasattr(axis, "tolist") and getattr(axis, "ndim", 1) > 0:
+            try:
+                axis = tuple(int(x) for x in axis.tolist())
+            except Exception:
+                pass
+        elif hasattr(axis, "item") and getattr(axis, "ndim", 1) == 0:
+            try:
+                axis = int(axis.item())
+            except Exception:
+                pass
+
+        if hasattr(keepdims, "__array__") and not isinstance(keepdims, np.ndarray):
+            keepdims = keepdims.__array__()
+        if hasattr(keepdims, "item"):
+            keepdims = bool(keepdims.item())
+
         return np.max(x, axis=axis, keepdims=keepdims, **kwargs)
 
 
@@ -155,14 +192,32 @@ class Min(ReductionOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            keepdims (bool): The keepdims parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            axis (object): The axis to process.
+            keepdims (bool): The keepdims to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
+        if hasattr(axis, "__array__"):
+            axis = axis.__array__()
+        if hasattr(axis, "tolist") and getattr(axis, "ndim", 1) > 0:
+            try:
+                axis = tuple(int(x) for x in axis.tolist())
+            except Exception:
+                pass
+        elif hasattr(axis, "item") and getattr(axis, "ndim", 1) == 0:
+            try:
+                axis = int(axis.item())
+            except Exception:
+                pass
+
+        if hasattr(keepdims, "__array__") and not isinstance(keepdims, np.ndarray):
+            keepdims = keepdims.__array__()
+        if hasattr(keepdims, "item"):
+            keepdims = bool(keepdims.item())
+
         return np.min(x, axis=axis, keepdims=keepdims, **kwargs)
 
 
@@ -258,13 +313,13 @@ class Logsumexp(ReductionOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            keepdims (bool): The keepdims parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            axis (object): The axis to process.
+            keepdims (bool): The keepdims to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -306,13 +361,13 @@ class Norm(ReductionOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            keepdims (bool): The keepdims parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            axis (object): The axis to process.
+            keepdims (bool): The keepdims to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -334,12 +389,12 @@ class Cumsum(ReductionOp):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            axis (object): The axis parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            axis (object): The axis to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         # cumsum does not take keepdims
         import numpy as np
@@ -375,7 +430,17 @@ class SegmentSum(OpDef):
         num_segments: object = None,
         **kwargs: object,
     ) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            data (object): The data.
+            segment_ids (object): The segment_ids.
+            num_segments (object): The num_segments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # Simple heuristic: replace first dimension with num_segments
         # If num_segments is unknown or None, we might return symbolic or ()
         return ()
@@ -387,7 +452,17 @@ class SegmentSum(OpDef):
         num_segments: object = None,
         **kwargs: object,
     ) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            data (object): The data.
+            segment_ids (object): The segment_ids.
+            num_segments (object): The num_segments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         if num_segments is None:
             num_segments = np.max(segment_ids) + 1
         out = np.zeros((num_segments, *data.shape[1:]), dtype=data.dtype)
@@ -395,23 +470,63 @@ class SegmentSum(OpDef):
         return out
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented SegmentSum"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented SegmentSum"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented SegmentSum"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented SegmentSum"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented SegmentSum"
 
 
@@ -436,7 +551,22 @@ class ReduceWindow(ReductionOp):
         window_dilation: object = None,
         **kwargs: object,
     ) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            operand (object): The operand.
+            init_value (object): The init_value.
+            computation (object): The computation.
+            window_dimensions (object): The window_dimensions.
+            window_strides (object): The window_strides.
+            padding (object): The padding.
+            base_dilation (object): The base_dilation.
+            window_dilation (object): The window_dilation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         if not hasattr(operand, "shape") or not operand.shape:
             return ()
 
@@ -485,7 +615,22 @@ class ReduceWindow(ReductionOp):
         window_dilation: object = None,
         **kwargs: object,
     ) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            operand (object): The operand.
+            init_value (object): The init_value.
+            computation (object): The computation.
+            window_dimensions (object): The window_dimensions.
+            window_strides (object): The window_strides.
+            padding (object): The padding.
+            base_dilation (object): The base_dilation.
+            window_dilation (object): The window_dilation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # A full numpy fallback for reduce_window is complex. We'll do a simple mock for tests
         # assuming no dilations and basic valid padding if not specified.
         out_shape = self.infer_shape(
@@ -503,23 +648,63 @@ class ReduceWindow(ReductionOp):
         return np.full(out_shape, init_value, dtype=getattr(operand, "dtype", type(init_value)))
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ReduceWindow"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ReduceWindow"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ReduceWindow"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ReduceWindow"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented ReduceWindow"
 
 
@@ -530,33 +715,91 @@ class Psum(ReductionOp):
     op_name = "Psum"
 
     def infer_shape(self, x: object, axis_name: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            x (object): The x.
+            axis_name (object): The axis_name.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return getattr(x, "shape", ())
 
     def numpy_eval(self, x: object, axis_name: object, **kwargs: object) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            x (object): The x.
+            axis_name (object): The axis_name.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # In a local eager test environment, psum is usually a no-op if there are no replicas
         # or just returns the input scaled by world_size. For mock testing, just return x.
         return np.copy(x) if isinstance(x, np.ndarray) else np.array(x)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Psum"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Psum"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Psum"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Psum"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Psum"
 
 
@@ -567,30 +810,88 @@ class Pmean(ReductionOp):
     op_name = "Pmean"
 
     def infer_shape(self, x: object, axis_name: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            x (object): The x.
+            axis_name (object): The axis_name.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return getattr(x, "shape", ())
 
     def numpy_eval(self, x: object, axis_name: object, **kwargs: object) -> object:
-        """Evaluate with NumPy."""
+        """Evaluate with NumPy.
+
+        Args:
+            x (object): The x.
+            axis_name (object): The axis_name.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # For mock testing, just return x.
         return np.copy(x) if isinstance(x, np.ndarray) else np.array(x)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code."""
+        """Emit jax code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Pmean"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code."""
+        """Emit keras code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Pmean"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code."""
+        """Emit mlx code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Pmean"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code."""
+        """Emit pytorch code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Pmean"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code."""
+        """Emit tensorflow code.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return "Not implemented Pmean"

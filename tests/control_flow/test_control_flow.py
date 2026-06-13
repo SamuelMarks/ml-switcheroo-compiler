@@ -90,7 +90,7 @@ def test_scan_eager() -> None:
 
             Args:
                 carry (object): The carry parameter
-                x (object): The x parameter
+                x (object): The first input tensor.
 
             Returns:
                 object: The resulting output.
@@ -287,7 +287,7 @@ def test_scan_trace() -> None:
 
             Args:
                 carry (object): The carry parameter
-                x (object): The x parameter
+                x (object): The first input tensor.
 
             Returns:
                 object: The resulting output.
@@ -392,7 +392,7 @@ def test_trace_function_type_error() -> None:
         """Bad func.
 
         Args:
-            *args (object): Variable length argument list
+            *args (object): Additional keyword arguments.
 
         Returns:
             int: The resulting output.

@@ -19,33 +19,33 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, x: object, y: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *shapes: The input shapes.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         # Broadcasting logic should ideally happen here, but for now we return x
         # This will be replaced by a proper shape inference pass
-        return np.broadcast_shapes(x, y) if isinstance(x, tuple) and isinstance(y, tuple) else x
+        if all(isinstance(s, tuple) for s in shapes):
+            return np.broadcast_shapes(*shapes)
+        return shapes[0] if shapes else ()
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(x, y)
+        return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(*args)
 
 
 @register_op("Add")
@@ -82,18 +82,17 @@ class TrueDivide(Divide):
 
     op_name = "True_Divide"
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return np.true_divide(x, y)
+        return np.true_divide(args[0], args[1])
 
 
 @register_op("Power")
@@ -383,20 +382,19 @@ class Xlogy(BinaryMathOp):
 
     op_name = "Xlogy"
 
-    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            y (object): The y parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
-        x_arr = np.asarray(x)
-        y_arr = np.asarray(y)
+        x_arr = np.asarray(args[0])
+        y_arr = np.asarray(args[1])
         res = x_arr * np.log(y_arr)
         return np.where(x_arr == 0, np.zeros_like(res), res)

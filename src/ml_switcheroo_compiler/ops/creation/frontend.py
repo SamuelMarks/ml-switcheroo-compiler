@@ -25,7 +25,17 @@ def _emit_creation_node(
     dtype: DType,
     attributes: dict | None = None,
 ) -> Tensor:
-    """Emit a creation node to the IR graph."""
+    """Emit a creation node to the IR graph.
+
+    Args:
+        op_type (str): The op_type.
+        shape (Sequence[int]): The shape.
+        dtype (DType): The dtype.
+        attributes (dict | None): The attributes.
+
+    Returns:
+        Tensor: The computed result.
+    """
     if not _tracer.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."
         raise RuntimeError(msg)
@@ -48,7 +58,15 @@ def _emit_constant_node(
     value: object,
     dtype: DType,
 ) -> Tensor:
-    """Emit a Constant node to the IR graph."""
+    """Emit a Constant node to the IR graph.
+
+    Args:
+        value (object): The value.
+        dtype (DType): The dtype.
+
+    Returns:
+        Tensor: The computed result.
+    """
     if not _tracer.is_tracing:
         msg = "Cannot emit Constant node outside of a tracing context."
         raise RuntimeError(msg)
@@ -79,6 +97,10 @@ def array(
     Args:
         object (Any): Argument object to convert
         dtype (Optional[DType]): The data type
+
+
+    Returns:
+        Tensor: The computed result.
     """
     if dtype is None:
         val_arr = np.array(object)
@@ -105,6 +127,10 @@ def asarray(
     Args:
         a (Any): Argument object to convert
         dtype (Optional[DType]): The data type
+
+
+    Returns:
+        Tensor: The computed result.
     """
     if isinstance(a, Tensor):
         if dtype is not None and a.dtype != dtype:
@@ -123,9 +149,13 @@ def zeros(
     """Return a tensor filled with the scalar value 0.
 
     Args:
-    shape (Union[int, Sequence[int]]): Argument shape
+    shape (Union[int, Sequence[int]]): The shape of the tensor.
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -145,9 +175,13 @@ def ones(
     """Return a tensor filled with the scalar value 1.
 
     Args:
-    shape (Union[int, Sequence[int]]): Argument shape
+    shape (Union[int, Sequence[int]]): The shape of the tensor.
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -168,10 +202,14 @@ def full(
     """Return a tensor filled with `fill_value`.
 
     Args:
-    shape (Union[int, Sequence[int]]): Argument shape
-    fill_value (Union[float, int]): Argument fill_value
+    shape (Union[int, Sequence[int]]): The shape of the tensor.
+    fill_value (Union[float, int]): The value to fill the tensor with.
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -198,7 +236,11 @@ def zeros_like(
     Args:
     input (Tensor): The input tensor
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -218,7 +260,11 @@ def ones_like(
     Args:
     input (Tensor): The input tensor
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -238,9 +284,13 @@ def full_like(
 
     Args:
     input (Tensor): The input tensor
-    fill_value (Union[float, int]): Argument fill_value
+    fill_value (Union[float, int]): The value to fill the tensor with.
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -269,7 +319,11 @@ def arange(
     stop (Optional[Union[float, int]]): Argument stop
     step (Union[float, int]): Argument step
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -306,7 +360,11 @@ def linspace(
     stop (Union[float, int]): Argument stop
     steps (int): Argument steps
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -335,7 +393,11 @@ def eye(
     n (int): Argument n
     m (Optional[int]): Argument m
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -358,7 +420,11 @@ def identity(
     Args:
     n (int): Argument n
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     return eye(n, n, dtype, device)
 
@@ -369,6 +435,10 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     Args:
     input (Tensor): The input tensor
     diagonal (int): Argument diagonal
+
+
+    Returns:
+        Tensor: The computed result.
     """
     device = input.device
     dtype = input.dtype
@@ -410,9 +480,13 @@ def empty(
     """Return a tensor filled with uninitialized data.
 
     Args:
-    shape (Union[int, Sequence[int]]): Argument shape
+    shape (Union[int, Sequence[int]]): The shape of the tensor.
     dtype (Optional[DType]): The data type
-    device (Optional[Device]): Argument device
+    device (Optional[Device]): The device to store the tensor on.
+
+
+    Returns:
+        Tensor: The computed result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -425,7 +499,15 @@ def empty(
 
 
 def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
-    """Return a new array with the same shape and type as a given array."""
+    """Return a new array with the same shape and type as a given array.
+
+    Args:
+        x (Tensor): The x.
+        dtype (DType | None): The dtype.
+
+    Returns:
+        Tensor: The computed result.
+    """
     return empty(x.shape, dtype=dtype if dtype is not None else x.dtype)
 
 
@@ -434,7 +516,16 @@ def rand(
     dtype: DType | None = None,
     device: Device | None = None,
 ) -> Tensor:
-    """Return a tensor filled with random numbers from a uniform distribution."""
+    """Return a tensor filled with random numbers from a uniform distribution.
+
+    Args:
+        *size: Additional arguments.
+        dtype (DType | None): The dtype.
+        device (Device | None): The device.
+
+    Returns:
+        Tensor: The computed result.
+    """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
     shape = tuple(size)
@@ -450,7 +541,16 @@ def randn(
     dtype: DType | None = None,
     device: Device | None = None,
 ) -> Tensor:
-    """Return a tensor filled with random numbers from a standard normal distribution."""
+    """Return a tensor filled with random numbers from a standard normal distribution.
+
+    Args:
+        *size: Additional arguments.
+        dtype (DType | None): The dtype.
+        device (Device | None): The device.
+
+    Returns:
+        Tensor: The computed result.
+    """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
     shape = tuple(size)
@@ -468,7 +568,18 @@ def randint(
     dtype: DType | None = None,
     device: Device | None = None,
 ) -> Tensor:
-    """Return a tensor filled with random integers from [low, high)."""
+    """Return a tensor filled with random integers from [low, high).
+
+    Args:
+        low (int): The low.
+        high (int): The high.
+        size (Sequence[int]): The size.
+        dtype (DType | None): The dtype.
+        device (Device | None): The device.
+
+    Returns:
+        Tensor: The computed result.
+    """
     dtype = dtype or config.default_int_dtype
     device = device or config.default_device
     shape = tuple(size)
@@ -480,7 +591,14 @@ def randint(
 
 
 def manual_seed(seed: int) -> int:
-    """Sets the seed for generating random numbers."""
+    """Sets the seed for generating random numbers.
+
+    Args:
+        seed (int): The seed.
+
+    Returns:
+        int: The computed result.
+    """
     if config.eager_mode:
         np.random.seed(seed)
         return seed

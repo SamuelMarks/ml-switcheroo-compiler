@@ -37,8 +37,8 @@ def test_register_and_get_op() -> None:
                 """Infer the output shape of the operation.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     object: The resulting output.
@@ -48,8 +48,8 @@ def test_register_and_get_op() -> None:
                 """Evaluate the operation using NumPy.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     object: The resulting output.
@@ -65,8 +65,8 @@ def test_register_and_get_op() -> None:
 
                 Args:
                     cotangent (object): The cotangent parameter
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     tuple[object, ...]: The resulting output.
@@ -78,8 +78,8 @@ def test_register_and_get_op() -> None:
 
                 Args:
                     tangent (object): The tangent parameter
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     object: The resulting output.
@@ -89,8 +89,8 @@ def test_register_and_get_op() -> None:
                 """Emit code for the jax backend.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     str: The resulting output.
@@ -101,8 +101,8 @@ def test_register_and_get_op() -> None:
                 """Emit code for the pytorch backend.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     str: The resulting output.
@@ -113,8 +113,8 @@ def test_register_and_get_op() -> None:
                 """Emit code for the mlx backend.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     str: The resulting output.
@@ -125,8 +125,8 @@ def test_register_and_get_op() -> None:
                 """Emit code for the keras backend.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     str: The resulting output.
@@ -137,8 +137,8 @@ def test_register_and_get_op() -> None:
                 """Emit code for the tensorflow backend.
 
                 Args:
-                    *args (object): Variable length argument list
-                    **kwargs (object): Variable length argument list
+                    *args (object): Additional keyword arguments.
+                    **kwargs (object): Additional keyword arguments.
 
                 Returns:
                     str: The resulting output.
@@ -189,11 +189,27 @@ def test_opdef_call_eager() -> None:
             """A mock operation class used for testing eager execution behavior."""
 
             def infer_shape(self, *args: object, **kwargs: object) -> object:
-                """infer_shape function."""
+                """infer_shape function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    object: The computed result.
+                """
                 return ()
 
             def numpy_eval(self, *args: object, **kwargs: object) -> object:
-                """numpy_eval function."""
+                """numpy_eval function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    object: The computed result.
+                """
                 return np.array([1, 2, 3], dtype=np.float32)
 
             def vjp(
@@ -202,31 +218,89 @@ def test_opdef_call_eager() -> None:
                 *args: object,
                 **kwargs: object,
             ) -> tuple[object, ...]:
-                """Vjp function."""
+                """Vjp function.
+
+                Args:
+                    cotangent (object): The cotangent.
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    tuple[object, ...]: The computed result.
+                """
                 return ()
 
             def jvp(self, tangent: object, *args: object, **kwargs: object) -> object:
-                """Jvp function."""
+                """Jvp function.
+
+                Args:
+                    tangent (object): The tangent.
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    object: The computed result.
+                """
                 return tangent
 
             def emit_jax(self, *args: object, **kwargs: object) -> str:
-                """emit_jax function."""
+                """emit_jax function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_pytorch(self, *args: object, **kwargs: object) -> str:
-                """emit_pytorch function."""
+                """emit_pytorch function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_mlx(self, *args: object, **kwargs: object) -> str:
-                """emit_mlx function."""
+                """emit_mlx function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_keras(self, *args: object, **kwargs: object) -> str:
-                """emit_keras function."""
+                """emit_keras function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_tensorflow(self, *args: object, **kwargs: object) -> str:
-                """emit_tensorflow function."""
+                """emit_tensorflow function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
         config.eager_mode = True
@@ -275,11 +349,27 @@ def test_opdef_call_tracing() -> None:
             """A mock operation class used for testing tracing execution behavior."""
 
             def infer_shape(self, *args: object, **kwargs: object) -> object:
-                """infer_shape function."""
+                """infer_shape function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    object: The computed result.
+                """
                 return (3,)
 
             def numpy_eval(self, *args: object, **kwargs: object) -> object:
-                """numpy_eval function."""
+                """numpy_eval function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    object: The computed result.
+                """
                 return np.array([1, 2, 3])
 
             def vjp(
@@ -288,31 +378,89 @@ def test_opdef_call_tracing() -> None:
                 *args: object,
                 **kwargs: object,
             ) -> tuple[object, ...]:
-                """Vjp function."""
+                """Vjp function.
+
+                Args:
+                    cotangent (object): The cotangent.
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    tuple[object, ...]: The computed result.
+                """
                 return ()
 
             def jvp(self, tangent: object, *args: object, **kwargs: object) -> object:
-                """Jvp function."""
+                """Jvp function.
+
+                Args:
+                    tangent (object): The tangent.
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    object: The computed result.
+                """
                 return tangent
 
             def emit_jax(self, *args: object, **kwargs: object) -> str:
-                """emit_jax function."""
+                """emit_jax function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_pytorch(self, *args: object, **kwargs: object) -> str:
-                """emit_pytorch function."""
+                """emit_pytorch function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_mlx(self, *args: object, **kwargs: object) -> str:
-                """emit_mlx function."""
+                """emit_mlx function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_keras(self, *args: object, **kwargs: object) -> str:
-                """emit_keras function."""
+                """emit_keras function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
             def emit_tensorflow(self, *args: object, **kwargs: object) -> str:
-                """emit_tensorflow function."""
+                """emit_tensorflow function.
+
+                Args:
+                    *args: Additional arguments.
+                    **kwargs: Additional keyword arguments.
+
+                Returns:
+                    str: The computed result.
+                """
                 return ""
 
         config.eager_mode = False

@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.nn import one_hot
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -9,7 +9,7 @@ import numpy as np
 
 
 def test_nn_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     config.eager_mode = True
 
     t_empty = Tensor(data=np.array(1), shape=(), dtype=DType.Int32, device=Device("cpu"))

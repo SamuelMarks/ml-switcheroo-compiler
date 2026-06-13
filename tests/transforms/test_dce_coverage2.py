@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_dce_coverage_brute2() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=None)
     g.nodes = {"n1": n1}

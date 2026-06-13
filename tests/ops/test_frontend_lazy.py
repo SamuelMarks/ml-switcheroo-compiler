@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import contextlib
 

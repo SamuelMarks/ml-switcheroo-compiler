@@ -166,7 +166,15 @@ def expand_dims(a: Tensor, axis: int | Sequence[int]) -> Tensor:
 
 
 def unsqueeze(input: Tensor, dim: int) -> Tensor:
-    """Inserts a dimension of size 1 at the specified position."""
+    """Inserts a dimension of size 1 at the specified position.
+
+    Args:
+        input (Tensor): The input.
+        dim (int): The dim.
+
+    Returns:
+        Tensor: The computed result.
+    """
     return expand_dims(input, dim)
 
 
@@ -416,8 +424,18 @@ def dynamic_slice(
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        msg = "No direct numpy for dynamic_slice"
-        raise UnimplementedMathError(msg)
+        import builtins
+
+        starts = []
+        for s in start_indices:
+            if hasattr(s, "data"):
+                starts.append(int(s.data))
+            else:
+                starts.append(int(s))
+        starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
+        idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
+        data = input.data[idx]
+        return Tensor(data, data.shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -448,8 +466,19 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        msg = "No direct numpy for update_slice"
-        raise UnimplementedMathError(msg)
+        import builtins
+
+        starts = []
+        for s in start_indices:
+            if hasattr(s, "data"):
+                starts.append(int(s.data))
+            else:
+                starts.append(int(s))
+        starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, update.shape)]
+        idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, update.shape))
+        data = input.data.copy()
+        data[idx] = update.data
+        return Tensor(data, data.shape, input.dtype, input.device)
     inputs = [input, update]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -483,8 +512,11 @@ def strided_slice(
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        msg = "No direct numpy for strided_slice"
-        raise UnimplementedMathError(msg)
+        import builtins
+
+        idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
+        data = input.data[idx]
+        return Tensor(data, data.shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()

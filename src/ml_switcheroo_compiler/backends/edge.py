@@ -20,7 +20,11 @@ class WebGPUCodeGenerator(BaseGenerator):
         return "wgsl_op"
 
     def generate(self) -> str:
-        """Evaluate generate."""
+        """Evaluate generate.
+
+        Returns:
+            str: The computed result.
+        """
         return "/* WGSL WebGPU Generated Code */"
 
 
@@ -41,7 +45,11 @@ class WebGLCodeGenerator(BaseGenerator):
         return "glsl_op"
 
     def generate(self) -> str:
-        """Evaluate generate."""
+        """Evaluate generate.
+
+        Returns:
+            str: The computed result.
+        """
         return "/* GLSL WebGL Generated Code */"
 
 
@@ -62,7 +70,11 @@ class WasmCodeGenerator(BaseGenerator):
         return "wasm_op"
 
     def generate(self) -> str:
-        """Evaluate generate."""
+        """Evaluate generate.
+
+        Returns:
+            str: The computed result.
+        """
         return "/* WASM SIMD Generated Code */"
 
 
@@ -83,5 +95,9 @@ class ONNXCodeGenerator(BaseGenerator):
         return "onnx_op"
 
     def generate(self) -> str:
-        """Evaluate generate."""
+        """Evaluate generate.
+
+        Returns:
+            str: The computed result.
+        """
         return "/* ONNX Generated Code */"

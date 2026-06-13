@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.transforms.passes.lift_state import (
     flatten_state_dict,
@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_lift_state_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     state_dict = {"a": {"b": 1}, "c": 2}
     flat = flatten_state_dict(state_dict)
     assert flat == {"a.b": 1, "c": 2}

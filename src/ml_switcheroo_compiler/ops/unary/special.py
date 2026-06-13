@@ -15,11 +15,11 @@ class Cast(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return x
 
@@ -27,12 +27,12 @@ class Cast(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            dtype (object): The dtype parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            dtype (object): The dtype to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -50,12 +50,12 @@ class Bitcast(Cast):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            dtype (object): The dtype parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            dtype (object): The dtype to process.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -73,11 +73,11 @@ class Frexp(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return x
 
@@ -85,11 +85,11 @@ class Frexp(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 

@@ -50,6 +50,7 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, Any]) -> dict[str, Any
             "Pow": "Power",
             "MatMul": "Matmul",
             "Expand": "BroadcastTo",
+            "Permute": "Transpose",
         }
 
         target_op = op_alias.get(node.op_type, node.op_type)

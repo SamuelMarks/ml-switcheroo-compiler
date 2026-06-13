@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_backend
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -11,7 +11,7 @@ import pytest
 
 
 def test_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
 
     class FakeGenerator(BaseGenerator):
         pass

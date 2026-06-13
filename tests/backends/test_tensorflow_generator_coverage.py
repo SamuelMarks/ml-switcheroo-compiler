@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.backends.tensorflow import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRNode, IRGraph
 
 
 def test_tensorflow_generator_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
 

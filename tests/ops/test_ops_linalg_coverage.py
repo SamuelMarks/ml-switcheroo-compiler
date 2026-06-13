@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.ops.linalg.basic import Rfft
 from ml_switcheroo_compiler.ir.core import TensorSpec
@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 
 def test_rfft_infer_shape_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     r = Rfft()
 
     spec = TensorSpec(shape=(3, 4), dtype=DType.Float32)

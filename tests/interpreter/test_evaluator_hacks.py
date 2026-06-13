@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import contextlib
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
 
 def test_evaluator_exception() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
     n2 = IRNode(

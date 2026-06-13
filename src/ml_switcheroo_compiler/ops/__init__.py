@@ -440,7 +440,16 @@ expand_dims = unsqueeze
 
 
 def clamp(min_val: object, x: object, max_val: object) -> object:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        min_val (object): The min_val.
+        x (object): The x.
+        max_val (object): The max_val.
+
+    Returns:
+        object: The computed result.
+    """
     if min_val is not None:
         x = maximum(x, min_val)
     if max_val is not None:
@@ -449,12 +458,28 @@ def clamp(min_val: object, x: object, max_val: object) -> object:
 
 
 def clip(a: object, a_min: object = None, a_max: object = None) -> object:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        a (object): The a.
+        a_min (object): The a_min.
+        a_max (object): The a_max.
+
+    Returns:
+        object: The computed result.
+    """
     return clamp(a_min, a, a_max)
 
 
 def broadcast_shapes(*shapes: object) -> object:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        *shapes: Additional arguments.
+
+    Returns:
+        object: The computed result.
+    """
     return np.broadcast_shapes(*shapes)
 
 
@@ -467,7 +492,20 @@ def logspace(
     dtype: object = None,
     axis: object = 0,
 ) -> object:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        start (object): The start.
+        stop (object): The stop.
+        num (object): The num.
+        endpoint (object): The endpoint.
+        base (object): The base.
+        dtype (object): The dtype.
+        axis (object): The axis.
+
+    Returns:
+        object: The computed result.
+    """
     from ml_switcheroo_compiler.ops.binary import power
     from ml_switcheroo_compiler.ops.creation.frontend import linspace
 
@@ -479,14 +517,29 @@ def logspace(
 
 
 def rint(x: object) -> object:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        x (object): The x.
+
+    Returns:
+        object: The computed result.
+    """
     from ml_switcheroo_compiler.ops.unary import round
 
     return round(x)
 
 
 def broadcast(x: object, sizes: object) -> object:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        x (object): The x.
+        sizes (object): The sizes.
+
+    Returns:
+        object: The computed result.
+    """
     from ml_switcheroo_compiler.ops.shape.frontend import broadcast_to
 
     return broadcast_to(x, sizes)

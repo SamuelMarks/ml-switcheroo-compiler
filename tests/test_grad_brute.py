@@ -1,10 +1,10 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.grad import backward, custom_jvp
 
 
 def test_grad_brute_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     backward(None)
 
     def my_fun() -> None:

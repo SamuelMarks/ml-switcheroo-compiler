@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.ops.reductions.frontend import segment_sum
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.core.config import config
 
 
 def test_reductions_frontend_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     config.eager_mode = False
 
     from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor

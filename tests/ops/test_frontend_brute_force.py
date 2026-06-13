@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import numpy as np
 
@@ -9,7 +9,12 @@ from ml_switcheroo_compiler.ops import binary, creation, linalg, reductions, sha
 
 
 def _test_namespace(ns: object, eager: bool) -> None:
-    """Function docstring."""
+    """Execute the requested function.
+
+    Args:
+        ns (object): The ns.
+        eager (bool): The eager.
+    """
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
     config.eager_mode = eager

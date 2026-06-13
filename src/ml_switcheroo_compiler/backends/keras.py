@@ -10,11 +10,11 @@ class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize the instance.
+        """Initializes the object.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
         """
         super().__init__(*args, **kwargs)
         self.keras_input_vars: list[str] = []

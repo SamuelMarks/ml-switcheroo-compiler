@@ -42,7 +42,11 @@ class Config:
 
     @property
     def eager_mode(self) -> bool:
-        """Evaluate eager mode."""
+        """Evaluate eager mode.
+
+        Returns:
+            bool: The computed result.
+        """
         from ml_switcheroo_compiler.tracing import _tracer
 
         if _tracer.is_tracing:
@@ -54,7 +58,7 @@ class Config:
         """Eager mode.
 
         Args:
-            value (bool): The value parameter
+            value (bool): The value to set or add.
         """
         self._eager_mode = value
 
@@ -90,6 +94,10 @@ def ConfigContext(**kwargs: object) -> Iterator[None]:
 
     Raises:
     ValueError: If any of the provided keys do not exist in the configuration
+
+
+    Returns:
+        Iterator[None]: The computed result.
     """
     old_config = config.clone()
     try:
@@ -113,6 +121,10 @@ def EagerMode() -> Iterator[None]:
 
     Yields:
     None: Yields control to the enclosed block with eager mode enabled
+
+
+    Returns:
+        Iterator[None]: The computed result.
     """
     return ConfigContext(eager_mode=True)
 
@@ -125,5 +137,9 @@ def StreamContext(stream_name: str) -> Iterator[None]:
 
     Yields:
     None: Yields control to the enclosed block with the specified stream active
+
+
+    Returns:
+        Iterator[None]: The computed result.
     """
     return ConfigContext(current_stream=stream_name)

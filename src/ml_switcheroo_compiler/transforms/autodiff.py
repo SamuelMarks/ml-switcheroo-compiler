@@ -6,7 +6,16 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
 def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
-    """Emit an Add node for gradient accumulation."""
+    """Emit an Add node for gradient accumulation.
+
+    Args:
+        graph (LogicalGraph): The graph.
+        n1_id (str): The n1_id.
+        n2_id (str): The n2_id.
+
+    Returns:
+        str: The computed result.
+    """
     out_id = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
     n1 = graph.nodes[n1_id]
 

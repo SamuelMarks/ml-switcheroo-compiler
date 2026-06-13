@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import pytest
 from ml_switcheroo_compiler.transforms.autodiff import grad
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import (
 
 
 def test_autodiff_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=None)
     n2 = IRNode(id="n2", op_type="Input", inputs=[], attributes={}, shape_metadata=None)

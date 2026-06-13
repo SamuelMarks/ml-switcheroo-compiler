@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -10,7 +10,7 @@ import numpy as np
 
 
 def test_base_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     config.eager_mode = False
 
     @register_op("TestCoverageOp")

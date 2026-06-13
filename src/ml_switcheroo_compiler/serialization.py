@@ -10,6 +10,10 @@ def graph_to_json(graph: IRGraph) -> str:
 
     Args:
     graph (IRGraph): Argument graph
+
+
+    Returns:
+        str: The computed result.
     """
     data = {"nodes": {}}
     for node_id, node in graph.nodes.items():
@@ -25,6 +29,10 @@ def json_to_graph(json_str: str) -> IRGraph:
 
     Args:
     json_str (str): Argument json_str
+
+
+    Returns:
+        IRGraph: The computed result.
     """
     from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -46,6 +54,10 @@ def graph_to_protobuf(graph: IRGraph) -> bytes:
 
     Args:
     graph (IRGraph): Argument graph
+
+
+    Returns:
+        bytes: The computed result.
     """
     # Dummy implementation
     return b""
@@ -56,6 +68,10 @@ def graph_to_flatbuffers(graph: IRGraph) -> bytes:
 
     Args:
     graph (IRGraph): Argument graph
+
+
+    Returns:
+        bytes: The computed result.
     """
     # Dummy implementation
     return b""

@@ -1,8 +1,8 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 
 def test_tensor_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     import numpy as np
 
     from ml_switcheroo_compiler.core.device import Device

@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.core.device import Device
@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 
 def test_tensor_eval_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     config.eager_mode = False
 
     from ml_switcheroo_compiler.tracing.tracer import _tracer

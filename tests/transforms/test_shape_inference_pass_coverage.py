@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_shape_inference_pass_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
 
     n1 = IRNode(

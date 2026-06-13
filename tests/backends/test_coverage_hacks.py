@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import contextlib
 import pytest
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_backends_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
 
     n1 = IRNode(
@@ -40,7 +40,7 @@ def test_backends_coverage() -> None:
 
 
 def test_registry_coverage() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     with pytest.raises(ValueError):
         registry.BackendRegistry.get("nonexistent")
 

@@ -23,29 +23,29 @@ class UnaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *shapes: The input shapes.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return x  # Unary ops typically preserve shape and dtype
+        return shapes[0] if shapes else ()  # Unary ops typically preserve shape and dtype
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
-        return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(x)
+        return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(args[0])
 
 
 @register_op("Sin")
@@ -234,16 +234,17 @@ class Erf(UnaryMathOp):
     op_name = "Erf"
     np_op_name = "erf"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
+        x = args[0]
         import math
 
         import numpy as np
@@ -258,16 +259,17 @@ class Erfc(UnaryMathOp):
     op_name = "Erfc"
     np_op_name = "erfc"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
+        x = args[0]
         import math
 
         import numpy as np
@@ -282,15 +284,15 @@ class Erfinv(UnaryMathOp):
     op_name = "Erfinv"
     np_op_name = "erfinv"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
@@ -364,16 +366,17 @@ class Lgamma(UnaryMathOp):
     op_name = "Lgamma"
     np_op_name = "lgamma"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
+        x = args[0]
         import math
 
         import numpy as np
@@ -484,15 +487,15 @@ class Digamma(UnaryMathOp):
     op_name = "Digamma"
     np_op_name = "digamma"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
@@ -507,19 +510,19 @@ class Rsqrt(UnaryMathOp):
     op_name = "Rsqrt"
     np_op_name = "rsqrt"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
-        return 1.0 / np.sqrt(x)
+        return 1.0 / np.sqrt(args[0])
 
 
 @register_op("Logit")
@@ -528,18 +531,19 @@ class Logit(UnaryMathOp):
 
     op_name = "Logit"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
+        x = args[0]
         eps = kwargs.get("eps")
         if eps is not None:
             x = np.clip(x, eps, 1.0 - eps)
@@ -553,16 +557,17 @@ class Mvlgamma(UnaryMathOp):
 
     op_name = "Mvlgamma"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
+        x = args[0]
         import math
 
         import numpy as np
@@ -580,18 +585,19 @@ class NanToNum(UnaryMathOp):
 
     op_name = "NanToNum"
 
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            *args: The input arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
+        x = args[0]
         nan = kwargs.get("nan", 0.0)
         posinf = kwargs.get("posinf")
         neginf = kwargs.get("neginf")

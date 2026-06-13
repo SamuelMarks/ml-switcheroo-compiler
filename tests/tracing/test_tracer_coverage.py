@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.tracing.tracer import _tracer
 from ml_switcheroo_compiler.ir.core import IRNode
@@ -12,7 +12,7 @@ class MockNode(IRNode):
 
 
 def test_tracer_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     _tracer.start_tracing()
     config.current_stream = "custom"
 

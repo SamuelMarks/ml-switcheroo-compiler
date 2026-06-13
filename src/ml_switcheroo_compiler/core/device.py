@@ -19,28 +19,43 @@ class Device:
     def __init__(self, device_type: DeviceType, index: int = 0) -> None:
         """Initialize the Device.
 
-        device_type (DeviceType): Argument device_type
+        device_type (DeviceType): The device to store the tensor on._type
             index (int): Argument index
 
         Args:
-            device_type (DeviceType): Argument device_type
+            device_type (DeviceType): The device to store the tensor on._type
             index (int): Argument index
         """
         self.device_type = device_type
         self.index = index
 
     def __eq__(self, other: object) -> bool:
-        """Check for equality with another Device."""
+        """Check for equality with another Device.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            bool: The computed result.
+        """
         if not isinstance(other, Device):
             return False
         return self.device_type == other.device_type and self.index == other.index
 
     def __hash__(self) -> int:
-        """Hash the Device."""
+        """Hash the Device.
+
+        Returns:
+            int: The computed result.
+        """
         return hash((self.device_type, self.index))
 
     def __repr__(self) -> str:
-        """Return the string representation of the Device."""
+        """Return the string representation of the Device.
+
+        Returns:
+            str: The computed result.
+        """
         return f"Device({self.device_type.value}:{self.index})"
 
 
@@ -68,7 +83,11 @@ class StreamContext:
         self.stream = stream
 
     def __enter__(self) -> Self:
-        """Enter context."""
+        """Enter context.
+
+        Returns:
+            Self: The computed result.
+        """
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
@@ -97,7 +116,11 @@ class FunctionExporter:
         """
 
     def __enter__(self) -> Self:
-        """Enter context."""
+        """Enter context.
+
+        Returns:
+            Self: The computed result.
+        """
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:

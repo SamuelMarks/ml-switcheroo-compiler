@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import pytest
 
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.transforms.autodiff import grad
 
 
 def test_real_exception() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
     n2 = IRNode(

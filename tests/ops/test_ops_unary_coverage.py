@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.ops.unary.special import Cast, Bitcast
 import numpy as np
 
 
 def test_unary_special_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     c = Cast()
     bc = Bitcast()
 

@@ -1,11 +1,11 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_constant_folding_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=None)
     n2 = IRNode(id="n2", op_type="Add", inputs=["n1"], attributes={}, shape_metadata=None)

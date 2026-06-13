@@ -230,7 +230,18 @@ def emit_ir_node(
     shape_metadata: object = None,
     attributes: dict | None = None,
 ) -> str:
-    """Emit a new node into the IR graph directly."""
+    """Emit a new node into the IR graph directly.
+
+    Args:
+        graph (object): The graph.
+        op_type (str): The op_type.
+        inputs (list[str]): The inputs.
+        shape_metadata (object): The shape_metadata.
+        attributes (dict | None): The attributes.
+
+    Returns:
+        str: The computed result.
+    """
     import uuid
 
     from ml_switcheroo_ir import LogicalNode

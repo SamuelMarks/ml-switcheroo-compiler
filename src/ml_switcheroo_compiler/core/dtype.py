@@ -14,6 +14,7 @@ class DType(Enum):
     Complex128 = "complex128"
     Int64 = "int64"
     Int32 = "int32"
+    UInt32 = "uint32"
     Int16 = "int16"
     Int8 = "int8"
     UInt8 = "uint8"

@@ -125,7 +125,11 @@ def test_reduce_window_opdef() -> None:
         """Dummy Shape."""
 
         def __init__(self, shape: tuple) -> None:
-            """Init."""
+            """Init.
+
+            Args:
+                shape (tuple): The shape.
+            """
             self.shape = shape
 
     assert op.infer_shape(None, 0, "max", [2, 2]) == ()

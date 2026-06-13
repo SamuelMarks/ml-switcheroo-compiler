@@ -17,11 +17,11 @@ class ReadVariable(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return kwargs.get("shape", ())
 
@@ -29,11 +29,11 @@ class ReadVariable(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            *args (object): Variable length argument list
-            **kwargs (object): Variable length argument list
+            *args (object): Additional keyword arguments.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         from ml_switcheroo_compiler.core.errors import CompilationError
 
@@ -54,11 +54,11 @@ class AssignVariable(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         return x
 
@@ -66,11 +66,11 @@ class AssignVariable(OpDef):
         """Evaluate the operation using NumPy.
 
         Args:
-            x (object): The x parameter
-            **kwargs (object): Variable length argument list
+            x (object): The first input tensor.
+            **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         from ml_switcheroo_compiler.core.errors import CompilationError
 

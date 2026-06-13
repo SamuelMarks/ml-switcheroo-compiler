@@ -111,11 +111,24 @@ def test_generator_attributes_coverage() -> None:
         """A nested dummy generator class used to test IR node attribute coverage."""
 
         def generate(self) -> str:
-            """Generate function."""
+            """Generate function.
+
+            Returns:
+                str: The computed result.
+            """
             return super().generate()
 
         def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-            """_dispatch_op_template function."""
+            """_dispatch_op_template function.
+
+            Args:
+                node (object): The node.
+                input_vars (list[str]): The input_vars.
+                **kwargs: Additional keyword arguments.
+
+            Returns:
+                str: The computed result.
+            """
             return "code"
 
     g = IRGraph("dummy")

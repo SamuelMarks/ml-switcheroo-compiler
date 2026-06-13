@@ -103,7 +103,7 @@ class ProxyTensor:
 
         Args:
             id (str): Argument id
-            shape (tuple[Union[int, str], ...]): Argument shape
+            shape (tuple[Union[int, str], ...]): The shape of the tensor.
             dtype (str): The data type
         """
         self.id = id
@@ -156,40 +156,103 @@ class ProxyTensor:
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
     def __add__(self, other: object) -> ProxyTensor:
-        """Addition."""
+        """Addition.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Add")
 
     def __radd__(self, other: object) -> ProxyTensor:
-        """Right addition."""
+        """Right addition.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         # Note: In real implementation, Constant is left-hand side
         return self._binary_op(other, "Add")
 
     def __sub__(self, other: object) -> ProxyTensor:
-        """Subtraction."""
+        """Subtraction.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Sub")
 
     def __rsub__(self, other: object) -> ProxyTensor:
-        """Right subtraction."""
+        """Right subtraction.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Sub")
 
     def __mul__(self, other: object) -> ProxyTensor:
-        """Multiplication."""
+        """Multiplication.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Mul")
 
     def __rmul__(self, other: object) -> ProxyTensor:
-        """Right multiplication."""
+        """Right multiplication.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Mul")
 
     def __truediv__(self, other: object) -> ProxyTensor:
-        """Division."""
+        """Division.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Div")
 
     def __rtruediv__(self, other: object) -> ProxyTensor:
-        """Right division."""
+        """Right division.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Div")
 
     def __pow__(self, other: object) -> ProxyTensor:
-        """Power."""
+        """Power.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         return self._binary_op(other, "Pow")
 
     def __floordiv__(self, other: object) -> ProxyTensor:
@@ -430,7 +493,14 @@ class ProxyTensor:
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
     def __matmul__(self, other: object) -> ProxyTensor:
-        """Matrix multiplication."""
+        """Matrix multiplication.
+
+        Args:
+            other (object): The other.
+
+        Returns:
+            ProxyTensor: The computed result.
+        """
         from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 
         if not _tracer.is_tracing:

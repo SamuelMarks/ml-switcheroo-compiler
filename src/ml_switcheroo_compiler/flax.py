@@ -12,7 +12,11 @@ class Module:
     """Base class for all neural network modules in NNX."""
 
     def __init__(self, **kwargs: object) -> None:
-        """Initialize the module."""
+        """Initialize the module.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -29,7 +33,12 @@ class Variable:
     """A base class representing a stateful variable in the framework."""
 
     def __init__(self, value: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            value (object): The value.
+            **kwargs: Additional keyword arguments.
+        """
         self.value = value
 
 
@@ -55,7 +64,14 @@ class Dense(Module):
         use_bias: bool = True,
         **kwargs: object,
     ) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            in_features (int): The in_features.
+            out_features (int): The out_features.
+            use_bias (bool): The use_bias.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.in_features = in_features
         self.out_features = out_features
@@ -75,7 +91,13 @@ class LinearGeneral(Module):
         out_features: int | Sequence[int],
         **kwargs: object,
     ) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            in_features (int | Sequence[int]): The in_features.
+            out_features (int | Sequence[int]): The out_features.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.in_features = in_features
         self.out_features = out_features
@@ -85,7 +107,13 @@ class Einsum(Module):
     """A module that performs a linear transformation using an einsum equation."""
 
     def __init__(self, einsum_str: str, kernel_shape: tuple[int, ...], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            einsum_str (str): The einsum_str.
+            kernel_shape (tuple[int, ...]): The kernel_shape.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.einsum_str = einsum_str
         self.kernel_shape = kernel_shape
@@ -99,7 +127,13 @@ class LoRALinear(Module):
     """A pre-configured Linear layer with LoRA adapters."""
 
     def __init__(self, in_features: int, out_features: int, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            in_features (int): The in_features.
+            out_features (int): The out_features.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.in_features = in_features
         self.out_features = out_features
@@ -117,7 +151,16 @@ class Conv(Module):
         padding: str | tuple[tuple[int, int], ...] = "VALID",
         **kwargs: object,
     ) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            in_features (int): The in_features.
+            out_features (int): The out_features.
+            kernel_size (tuple[int, ...]): The kernel_size.
+            strides (tuple[int, ...] | None): The strides.
+            padding (str | tuple[tuple[int, int], ...]): The padding.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.in_features = in_features
         self.out_features = out_features
@@ -136,7 +179,14 @@ class ConvTranspose(Module):
         kernel_size: tuple[int, ...],
         **kwargs: object,
     ) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            in_features (int): The in_features.
+            out_features (int): The out_features.
+            kernel_size (tuple[int, ...]): The kernel_size.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.in_features = in_features
         self.out_features = out_features
@@ -147,7 +197,13 @@ class Embed(Module):
     """A simple lookup table that stores embeddings of a fixed dictionary."""
 
     def __init__(self, num_embeddings: int, features: int, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            num_embeddings (int): The num_embeddings.
+            features (int): The features.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.num_embeddings = num_embeddings
         self.features = features
@@ -157,7 +213,13 @@ class MultiHeadAttention(Module):
     """Standard Multi-Head Attention implementation."""
 
     def __init__(self, num_heads: int, qkv_features: int, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            num_heads (int): The num_heads.
+            qkv_features (int): The qkv_features.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.num_heads = num_heads
         self.qkv_features = qkv_features
@@ -167,7 +229,13 @@ class MultiHeadDotProductAttention(Module):
     """Core attention kernel without projection layers."""
 
     def __init__(self, num_heads: int, qkv_features: int, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            num_heads (int): The num_heads.
+            qkv_features (int): The qkv_features.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.num_heads = num_heads
         self.qkv_features = qkv_features
@@ -182,7 +250,13 @@ class BatchNorm(Module):
         use_running_average: bool = False,
         **kwargs: object,
     ) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            num_features (int): The num_features.
+            use_running_average (bool): The use_running_average.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.num_features = num_features
         self.use_running_average = use_running_average
@@ -192,7 +266,13 @@ class LayerNorm(Module):
     """Layer Normalization layer."""
 
     def __init__(self, num_features: int, reduction_axes: int = -1, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            num_features (int): The num_features.
+            reduction_axes (int): The reduction_axes.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.num_features = num_features
         self.reduction_axes = reduction_axes
@@ -202,7 +282,12 @@ class RMSNorm(Module):
     """Root Mean Square Normalization layer."""
 
     def __init__(self, num_features: int, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            num_features (int): The num_features.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.num_features = num_features
 
@@ -211,7 +296,13 @@ class Dropout(Module):
     """A dropout layer."""
 
     def __init__(self, rate: float, rng_collection: str = "dropout", **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            rate (float): The rate.
+            rng_collection (str): The rng_collection.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.rate = rate
         self.rng_collection = rng_collection
@@ -221,7 +312,12 @@ class Sequential(Module):
     """Applies a sequence of modules sequentially."""
 
     def __init__(self, *layers: Module, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *layers: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.layers = layers
 
@@ -230,7 +326,12 @@ class List(Module):
     """A module that holds a list of sub-modules."""
 
     def __init__(self, modules: Iterable[Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            modules (Iterable[Module]): The modules.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.modules = list(modules)
 
@@ -239,7 +340,12 @@ class Dict(Module):
     """A module that holds a dictionary of sub-modules."""
 
     def __init__(self, modules: dict[str, Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            modules (dict[str, Module]): The modules.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.modules = modules
 
@@ -248,7 +354,12 @@ class Jit(Module):
     """JIT-compiles the execution of a sub-module."""
 
     def __init__(self, module_constructor: Callable[..., Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            module_constructor (Callable[..., Module]): The module_constructor.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.module_constructor = module_constructor
 
@@ -257,7 +368,12 @@ class Vmap(Module):
     """Vectorizes the execution of a sub-module."""
 
     def __init__(self, module_constructor: Callable[..., Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            module_constructor (Callable[..., Module]): The module_constructor.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.module_constructor = module_constructor
 
@@ -266,7 +382,12 @@ class Scan(Module):
     """Loops over a sequence of inputs, maintaining module state."""
 
     def __init__(self, module_constructor: Callable[..., Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            module_constructor (Callable[..., Module]): The module_constructor.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.module_constructor = module_constructor
 
@@ -275,7 +396,12 @@ class Remat(Module):
     """Checkpoints a sub-module to save memory during backprop."""
 
     def __init__(self, module_constructor: Callable[..., Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            module_constructor (Callable[..., Module]): The module_constructor.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.module_constructor = module_constructor
 
@@ -284,6 +410,11 @@ class Pmap(Module):
     """Parallelizes module execution across multiple devices."""
 
     def __init__(self, module_constructor: Callable[..., Module], **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            module_constructor (Callable[..., Module]): The module_constructor.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.module_constructor = module_constructor

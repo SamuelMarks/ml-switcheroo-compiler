@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import contextlib
 from unittest.mock import MagicMock, patch
@@ -13,7 +13,12 @@ from ml_switcheroo_compiler.ops import creation, linalg, shape
 @patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
 def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None:
-    """Test frontend lazy APIs using mocks."""
+    """Test frontend lazy APIs using mocks.
+
+    Args:
+        mock_proxy (object): The mock_proxy.
+        mock_add_node (object): The mock_add_node.
+    """
     config.eager_mode = False
 
     mock_proxy.return_value = MagicMock(id="dummy")

@@ -17,7 +17,15 @@ class MockNode:
         attributes: dict[str, Any],
         shape_metadata: Optional[tuple[int, ...]],
     ) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            id (str): The id.
+            op_type (str): The op_type.
+            inputs (list[str]): The inputs.
+            attributes (dict[str, Any]): The attributes.
+            shape_metadata (Optional[tuple[int, ...]]): The shape_metadata.
+        """
         self.id = id
         self.op_type = op_type
         self.inputs = inputs

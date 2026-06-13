@@ -347,10 +347,10 @@ def vmap(
         """Wrapped.
 
         Args:
-            *args (object): Variable length argument list
+            *args (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         if config.eager_mode:
             # Eager vmap uses a Python loop over the batch dimension
@@ -425,10 +425,10 @@ def pmap(func: Callable, axis_name: str | None = None) -> Callable:
         """Wrapped.
 
         Args:
-            *args (object): Variable length argument list
+            *args (object): Additional keyword arguments.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         if config.eager_mode:
             # In eager mode, pmap usually falls back to vmap or a loop
@@ -460,7 +460,14 @@ def pmap(func: Callable, axis_name: str | None = None) -> Callable:
 
 
 def stop_gradient(x: object) -> object:
-    """Stops the flow of gradients during reverse-mode differentiation."""
+    """Stops the flow of gradients during reverse-mode differentiation.
+
+    Args:
+        x (object): The x.
+
+    Returns:
+        object: The computed result.
+    """
     import uuid
 
     from ml_switcheroo_compiler.core.config import config

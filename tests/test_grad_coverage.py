@@ -22,33 +22,79 @@ class TestUnimplVjp(OpDef):
     """
 
     def vjp(self, graph: object, node: object, cotangent: object) -> None:
-        """Vjp function."""
+        """Vjp function.
+
+        Args:
+            graph (object): The graph.
+            node (object): The node.
+            cotangent (object): The cotangent.
+        """
         msg = "Not implemented"
         raise NotImplementedError(msg)
 
     def jvp(self, *args: object, **kwargs: object) -> None:
-        """Jvp function."""
+        """Jvp function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def infer_shape(self, *args: object, **kwargs: object) -> None:
-        """infer_shape function."""
+        """infer_shape function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def numpy_eval(self, *args: object, **kwargs: object) -> None:
-        """numpy_eval function."""
+        """numpy_eval function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def emit_jax(self, *args: object, **kwargs: object) -> None:
-        """emit_jax function."""
+        """emit_jax function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def emit_keras(self, *args: object, **kwargs: object) -> None:
-        """emit_keras function."""
+        """emit_keras function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def emit_mlx(self, *args: object, **kwargs: object) -> None:
-        """emit_mlx function."""
+        """emit_mlx function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> None:
-        """emit_pytorch function."""
+        """emit_pytorch function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> None:
-        """emit_tensorflow function."""
+        """emit_tensorflow function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
 
 
 def test_grad_unimpl_vjp() -> None:

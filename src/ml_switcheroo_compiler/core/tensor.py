@@ -113,18 +113,18 @@ class Tensor:
     ) -> None:
         """Initialize the Tensor.
 
-        data (object): Argument data
-            shape (Sequence[int]): Argument shape
+        data (object): The actual data payload.
+            shape (Sequence[int]): The shape of the tensor.
             dtype (DType): The data type
-            device (Device): Argument device
-            requires_grad (bool): Argument requires_grad
+            device (Device): The device to store the tensor on.
+            requires_grad (bool): Whether the tensor requires gradients.
 
         Args:
-            data (object): Argument data
-            shape (Sequence[int]): Argument shape
+            data (object): The actual data payload.
+            shape (Sequence[int]): The shape of the tensor.
             dtype (DType): The data type
-            device (Device): Argument device
-            requires_grad (bool): Argument requires_grad
+            device (Device): The device to store the tensor on.
+            requires_grad (bool): Whether the tensor requires gradients.
         """
         self._data = data
         self._shape = tuple(shape)
@@ -144,22 +144,38 @@ class Tensor:
 
     @property
     def dtype(self) -> DType:
-        """Get the data type of the tensor."""
+        """Get the data type of the tensor.
+
+        Returns:
+            DType: The computed result.
+        """
         return self._dtype
 
     @property
     def device(self) -> Device:
-        """Get the device of the tensor."""
+        """Get the device of the tensor.
+
+        Returns:
+            Device: The computed result.
+        """
         return self._device
 
     @property
     def requires_grad(self) -> bool:
-        """Check if the tensor requires gradient computation."""
+        """Check if the tensor requires gradient computation.
+
+        Returns:
+            bool: The computed result.
+        """
         return self._requires_grad
 
     @property
     def data(self) -> object:
-        """Get the underlying data payload."""
+        """Get the underlying data payload.
+
+        Returns:
+            object: The computed result.
+        """
         return self._data
 
     def eval(self) -> "Tensor":
@@ -193,7 +209,7 @@ class Tensor:
         """Add.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -206,7 +222,7 @@ class Tensor:
         """Radd.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -219,7 +235,7 @@ class Tensor:
         """Sub.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -232,7 +248,7 @@ class Tensor:
         """Rsub.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -245,7 +261,7 @@ class Tensor:
         """Mul.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -258,7 +274,7 @@ class Tensor:
         """Rmul.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -271,7 +287,7 @@ class Tensor:
         """Truediv.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -284,7 +300,7 @@ class Tensor:
         """Rtruediv.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -297,7 +313,7 @@ class Tensor:
         """Pow.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -310,7 +326,7 @@ class Tensor:
         """Floordiv.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -323,7 +339,7 @@ class Tensor:
         """Mod.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -336,7 +352,7 @@ class Tensor:
         """And.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -349,7 +365,7 @@ class Tensor:
         """Or.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -362,7 +378,7 @@ class Tensor:
         """Xor.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -375,7 +391,7 @@ class Tensor:
         """Lshift.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -388,7 +404,7 @@ class Tensor:
         """Rshift.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -441,7 +457,7 @@ class Tensor:
         """Lt.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -454,7 +470,7 @@ class Tensor:
         """Gt.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -467,7 +483,7 @@ class Tensor:
         """Le.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -480,7 +496,7 @@ class Tensor:
         """Ge.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -493,7 +509,7 @@ class Tensor:
         """Eq.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -506,7 +522,7 @@ class Tensor:
         """Ne.
 
         Args:
-            other (object): The other parameter
+            other (object): The other to process.
 
         Returns:
             'Tensor': The resulting output
@@ -519,10 +535,10 @@ class Tensor:
         """Array.
 
         Args:
-            dtype (object): The dtype parameter
+            dtype (object): The dtype to process.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         import numpy as np
 
@@ -556,7 +572,7 @@ class Tensor:
         """Iter.
 
         Returns:
-            object: The resulting output
+            The computed shape or evaluation result.
         """
         arr = self.__array__()
         for i in range(getattr(arr, "shape", [0])[0]):
@@ -566,7 +582,7 @@ class Tensor:
         """Getitem.
 
         Args:
-            key (object): The key parameter
+            key (object): The key to process.
 
         Returns:
             'Tensor': The resulting output
@@ -592,8 +608,8 @@ class Tensor:
         """Setitem.
 
         Args:
-            key (object): The key parameter
-            value (object): The value parameter
+            key (object): The key to process.
+            value (object): The value to set or add.
         """
         from ml_switcheroo_compiler.core.config import config
 
@@ -607,13 +623,25 @@ class Tensor:
             )
 
     def backward(self, *args: object, **kwargs: object) -> None:
-        """Triggers the reverse-mode auto-differentiation."""
+        """Triggers the reverse-mode auto-differentiation.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
         from ml_switcheroo_compiler.grad import backward
 
         backward(self, *args, **kwargs)
 
     def view(self, *shape: int) -> "Tensor":
-        """Returns a new tensor with the same data but different size."""
+        """Returns a new tensor with the same data but different size.
+
+        Args:
+            *shape: Additional arguments.
+
+        Returns:
+            'Tensor': The computed result.
+        """
         from ml_switcheroo_compiler.ops.shape import reshape
 
         flat_shape = []
@@ -625,11 +653,19 @@ class Tensor:
         return reshape(self, tuple(flat_shape))
 
     def contiguous(self) -> "Tensor":
-        """Returns a contiguous in memory tensor."""
+        """Returns a contiguous in memory tensor.
+
+        Returns:
+            'Tensor': The computed result.
+        """
         return self
 
     def item(self) -> float:
-        """Returns the value of this tensor as a standard Python number."""
+        """Returns the value of this tensor as a standard Python number.
+
+        Returns:
+            float: The computed result.
+        """
         import numpy as np
 
         if self.eval().__class__.__name__ == "Tensor":
@@ -637,7 +673,11 @@ class Tensor:
         return float(np.asarray(self.eval()).item())
 
     def detach(self) -> "Tensor":
-        """Returns a new Tensor, detached from the current graph."""
+        """Returns a new Tensor, detached from the current graph.
+
+        Returns:
+            'Tensor': The computed result.
+        """
         from ml_switcheroo_compiler.core.device import Device
 
         return Tensor(self.eval().data, self.shape, self.dtype, Device("cpu"))

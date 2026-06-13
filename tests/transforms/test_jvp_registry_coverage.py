@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Provides required module functionality."""
 
 import pytest
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import (
@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import (
 
 
 def test_jvp_registry_coverage_brute() -> None:
-    """Function docstring."""
+    """Execute the requested function."""
     if "fake_op" in _JVP_REGISTRY:
         del _JVP_REGISTRY["fake_op"]
 

@@ -107,11 +107,19 @@ class SymInt:
         return SymInt(f"({self.expr} // {other})")
 
     def __str__(self) -> str:
-        """Evaluate str."""
+        """Evaluate str.
+
+        Returns:
+            str: The computed result.
+        """
         return str(self.expr)
 
     def __repr__(self) -> str:
-        """Evaluate repr."""
+        """Evaluate repr.
+
+        Returns:
+            str: The computed result.
+        """
         return f"SymInt({self.expr})"
 
     def __eq__(self, other: object) -> bool:
@@ -119,6 +127,10 @@ class SymInt:
 
         Args:
             other (object): Argument other
+
+
+        Returns:
+            bool: The computed result.
         """
         if isinstance(other, SymInt):
             return self.expr == other.expr
@@ -138,6 +150,10 @@ class SymbolicSolver:
         Args:
             expr1 (Union[SymInt, int]): Argument expr1
             expr2 (Union[SymInt, int]): Argument expr2
+
+
+        Returns:
+            bool: The computed result.
         """
         if isinstance(expr1, int) and isinstance(expr2, int):
             return expr1 == expr2
@@ -228,8 +244,8 @@ def broadcast_shapes(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     ValueError: If shapes are not compatible for broadcasting
 
     Args:
-    shape_a (ShapeType): Argument shape_a
-    shape_b (ShapeType): Argument shape_b
+    shape_a (ShapeType): The shape of the tensor._a
+    shape_b (ShapeType): The shape of the tensor._b
     """
     out_shape = []
 
@@ -270,8 +286,8 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     ValueError: If shapes are incompatible
 
     Args:
-    shape_a (ShapeType): Argument shape_a
-    shape_b (ShapeType): Argument shape_b
+    shape_a (ShapeType): The shape of the tensor._a
+    shape_b (ShapeType): The shape of the tensor._b
     """
     if len(shape_a) == 0 or len(shape_b) == 0:
         msg = "Scalars cannot be matrix multiplied."

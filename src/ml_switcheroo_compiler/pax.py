@@ -12,12 +12,24 @@ class PaxModule:
     """Base class for all PAX modules."""
 
     def __init__(self, **kwargs: object) -> None:
-        """Initialize the module."""
+        """Initialize the module.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
         for k, v in kwargs.items():
             setattr(self, k, v)
 
     def __call__(self, *args: object, **kwargs: object) -> object:
-        """Forward pass generic backend routing & IR construction."""
+        """Forward pass generic backend routing & IR construction.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return self.forward(*args, **kwargs)
 
     def forward(
@@ -25,7 +37,15 @@ class PaxModule:
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Abstract forward pass method."""
+        """Abstract forward pass method.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         msg = "forward not implemented"
         raise NotImplementedError(msg)
 
@@ -49,7 +69,14 @@ class CubedReLU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.power(numpy.maximum(x, 0.0), 3)
 
 
@@ -57,7 +84,12 @@ class ELU(BaseActivation):
     """ELU activation."""
 
     def __init__(self, alpha: float = 1.0, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            alpha (float): The alpha.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.alpha = alpha
 
@@ -65,7 +97,14 @@ class ELU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.where(x > 0.0, x, self.alpha * (numpy.exp(x) - 1.0))
 
 
@@ -73,7 +112,12 @@ class GELU(BaseActivation):
     """GELU activation."""
 
     def __init__(self, approximate: bool = False, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            approximate (bool): The approximate.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.approximate = approximate
 
@@ -81,7 +125,14 @@ class GELU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         from ml_switcheroo_compiler.nn import gelu
 
         return gelu(x, approximate=self.approximate)
@@ -91,7 +142,12 @@ class LeakyReLU(BaseActivation):
     """Leaky ReLU activation."""
 
     def __init__(self, negative_slope: float = 0.01, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            negative_slope (float): The negative_slope.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(**kwargs)
         self.negative_slope = negative_slope
 
@@ -99,7 +155,14 @@ class LeakyReLU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.where(x > 0.0, x, x * self.negative_slope)
 
 
@@ -110,7 +173,14 @@ class ReLU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.maximum(x, 0.0)
 
 
@@ -121,7 +191,14 @@ class ReLU6(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.clip(x, 0.0, 6.0)
 
 
@@ -132,7 +209,14 @@ class SiLU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return x * (1.0 / (1.0 + numpy.exp(-x)))
 
 
@@ -143,7 +227,14 @@ class Sigmoid(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return 1.0 / (1.0 + numpy.exp(-x))
 
 
@@ -155,7 +246,15 @@ class SigmoidCrossEntropy(PaxModule):
         logits: Tensor,
         labels: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            logits (Tensor): The logits.
+            labels (Tensor): The labels.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return (
             numpy.maximum(logits, 0.0)
             - logits * labels
@@ -170,7 +269,14 @@ class SquaredReLU(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.square(numpy.maximum(x, 0.0))
 
 
@@ -181,7 +287,14 @@ class Swish(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return x * (1.0 / (1.0 + numpy.exp(-x)))
 
 
@@ -192,7 +305,14 @@ class Tanh(BaseActivation):
         self,
         x: Tensor,
     ) -> Tensor:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            x (Tensor): The x.
+
+        Returns:
+            Tensor: The computed result.
+        """
         return numpy.tanh(x)
 
 
@@ -204,7 +324,15 @@ class AttentionProjection(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -216,7 +344,15 @@ class DotProductAttention(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -228,7 +364,15 @@ class DotProductAttentionWithContext(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -240,7 +384,15 @@ class DotProductAttentionWithContextXL(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -252,7 +404,15 @@ class DotProductAttentionXL(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -264,7 +424,15 @@ class GroupedQueryAttention(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -276,7 +444,15 @@ class LocalSelfAttention(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -288,7 +464,15 @@ class LocalSelfAttentionAlibi(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -300,7 +484,15 @@ class LocalSelfAttentionRelativeBias(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -312,7 +504,15 @@ class LocalSelfAttentionXL(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -324,7 +524,15 @@ class PerDimScale(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -336,7 +544,15 @@ class RelativeBias(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -348,7 +564,15 @@ class CausalDepthwiseConv1D(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -360,7 +584,15 @@ class Conv2D(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -372,7 +604,15 @@ class ConvBNAct(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -384,7 +624,15 @@ class ConvBNActWithPadding(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -396,7 +644,15 @@ class DepthwiseConv1D(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -408,7 +664,15 @@ class GlobalPooling(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -420,7 +684,15 @@ class LightConv1D(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -432,7 +704,15 @@ class Pooling(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -444,7 +724,15 @@ class Pooling1D(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -456,7 +744,15 @@ class AutodiffCheckpointType(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -468,7 +764,15 @@ class Bias(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -480,7 +784,15 @@ class Dropout(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -492,7 +804,15 @@ class Einsum(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -504,7 +824,15 @@ class EinsumOp(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -516,7 +844,15 @@ class Identity(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -528,7 +864,15 @@ class LayerwiseShardablePipelined(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -540,7 +884,15 @@ class Linear(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -552,7 +904,15 @@ class MLPBlock(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -564,7 +924,15 @@ class MaskedLmDataAugmenter(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -576,7 +944,15 @@ class MultitaskResidualAdapter(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -588,7 +964,15 @@ class Repeat(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -600,7 +984,15 @@ class Sequential(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -612,7 +1004,15 @@ class SpectrumAugmenter(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -624,7 +1024,15 @@ class StackingOverTime(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -636,7 +1044,15 @@ class StochasticResidual(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -648,7 +1064,15 @@ class VanillaBlock(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -660,7 +1084,15 @@ class VitEntryLayers(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -672,7 +1104,15 @@ class VitExitLayers(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -684,7 +1124,15 @@ class Embedding(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -696,7 +1144,15 @@ class FullSoftmax(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -708,7 +1164,15 @@ class GShardSharedEmbeddingSoftmax(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -720,7 +1184,15 @@ class Ngrammer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -732,7 +1204,15 @@ class PositionalEmbedding(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -744,7 +1224,15 @@ class PositionalEmbedding2D(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -756,7 +1244,15 @@ class RandomVectorQuantizer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -768,7 +1264,15 @@ class SharedEmbeddingSoftmax(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -780,7 +1284,15 @@ class TrainablePositionalEmbedding(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -792,7 +1304,15 @@ class VQNgrammer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -804,7 +1324,15 @@ class VectorQuantization(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -816,7 +1344,15 @@ class VectorQuantizer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -828,7 +1364,15 @@ class BertModel(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -840,7 +1384,15 @@ class BiTemperedLoss(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -852,7 +1404,15 @@ class BregmanPCA(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -864,7 +1424,15 @@ class ClassificationMLPModel(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -876,7 +1444,15 @@ class ClassificationModel(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -888,7 +1464,15 @@ class Conformer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -900,7 +1484,15 @@ class LanguageModel(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -912,7 +1504,15 @@ class LanguageModelContinuousBatching(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -924,7 +1524,15 @@ class LanguageModelDPO(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -936,7 +1544,15 @@ class LanguageModelType(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -948,7 +1564,15 @@ class ResNet(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -960,7 +1584,15 @@ class ResNetBlock(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -972,7 +1604,15 @@ class SequenceModel(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -984,7 +1624,15 @@ class VanillaNet(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -996,7 +1644,15 @@ class BatchNorm(BaseNormalization):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1008,7 +1664,15 @@ class GroupNorm(BaseNormalization):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1020,7 +1684,15 @@ class IdentityNorm(BaseNormalization):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1032,7 +1704,15 @@ class LayerNorm(BaseNormalization):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1044,7 +1724,15 @@ class LayerNormalizedLstmCellSimple(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1056,7 +1744,15 @@ class RmsNorm(BaseNormalization):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1068,7 +1764,15 @@ class RmsNormNoScale(BaseNormalization):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1080,7 +1784,15 @@ class SelfAttentionWithNormAndResidual(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1092,7 +1804,15 @@ class CifgLstmCellSimple(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1104,7 +1824,15 @@ class FRnn(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1116,7 +1844,15 @@ class LstmCellSimple(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1128,7 +1864,15 @@ class LstmFrnn(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1140,7 +1884,15 @@ class SSM(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1152,7 +1904,15 @@ class SSMGated(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1164,7 +1924,15 @@ class StackFrnn(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1176,7 +1944,15 @@ class TemporalShifting(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1188,7 +1964,15 @@ class AdaptedTransformerFeedForward(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1200,7 +1984,15 @@ class FeedForward(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1212,7 +2004,15 @@ class PipelinedTransformer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1224,7 +2024,15 @@ class SSMTransformer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1236,7 +2044,15 @@ class StackedTransformer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1248,7 +2064,15 @@ class StackedTransformerRepeated(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1260,7 +2084,15 @@ class Transformer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1272,7 +2104,15 @@ class TransformerEncoderDecoder(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1284,7 +2124,15 @@ class TransformerFeedForward(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1296,7 +2144,15 @@ class TransformerFeedForwardMoe(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1308,7 +2164,15 @@ class TransformerLm(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None
 
 
@@ -1320,5 +2184,13 @@ class VisionTransformer(PaxModule):
         *args: object,
         **kwargs: object,
     ) -> object:
-        """Forward pass."""
+        """Forward pass.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         return args[0] if args else None

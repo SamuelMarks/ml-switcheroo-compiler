@@ -5,10 +5,26 @@ from collections.abc import Callable, Generator
 
 
 def ir_grad(fun: Callable[..., object], argnums: int = 0) -> Callable[..., object]:
-    """Creates a function that evaluates the gradient of fun."""
+    """Creates a function that evaluates the gradient of fun.
+
+    Args:
+        fun (Callable[..., object]): The fun.
+        argnums (int): The argnums.
+
+    Returns:
+        Callable[..., object]: The computed result.
+    """
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluates the wrapped function."""
+        """Evaluates the wrapped function.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: The computed result.
+        """
         # mock impl
         return fun(*args, **kwargs)
 
@@ -16,15 +32,39 @@ def ir_grad(fun: Callable[..., object], argnums: int = 0) -> Callable[..., objec
 
 
 def grad(fun: Callable[..., object], argnums: int = 0) -> Callable[..., object]:
-    """Creates a function that evaluates the gradient of fun."""
+    """Creates a function that evaluates the gradient of fun.
+
+    Args:
+        fun (Callable[..., object]): The fun.
+        argnums (int): The argnums.
+
+    Returns:
+        Callable[..., object]: The computed result.
+    """
     return ir_grad(fun, argnums=argnums)
 
 
 def value_and_grad(fun: Callable[..., object], argnums: int = 0) -> Callable[..., object]:
-    """Creates a function that evaluates both the value and gradient of fun."""
+    """Creates a function that evaluates both the value and gradient of fun.
+
+    Args:
+        fun (Callable[..., object]): The fun.
+        argnums (int): The argnums.
+
+    Returns:
+        Callable[..., object]: The computed result.
+    """
 
     def wrapped(*args: object, **kwargs: object) -> tuple[object, object]:
-        """Evaluates the wrapped function, returning value and gradient."""
+        """Evaluates the wrapped function, returning value and gradient.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            tuple[object, object]: The computed result.
+        """
         return fun(*args, **kwargs), fun(*args, **kwargs)
 
     return wrapped
@@ -34,23 +74,47 @@ def jit(fun: Callable[..., object]) -> Callable[..., object]:
     """Compiles a function to execute faster.
 
     In our parity layer this currently acts as an eager wrapper.
+
+
+    Args:
+        fun (Callable[..., object]): The fun.
+
+    Returns:
+        Callable[..., object]: The computed result.
     """
     return fun
 
 
 def disable_jit() -> contextlib._GeneratorContextManager[None]:
-    """A context manager to temporarily disable JIT compilation."""
+    """A context manager to temporarily disable JIT compilation.
+
+    Returns:
+        contextlib._GeneratorContextManager[None]: The computed result.
+    """
 
     @contextlib.contextmanager
     def _disable() -> Generator[None, None, None]:
-        """Yields execution to temporarily disable JIT."""
+        """Yields execution to temporarily disable JIT.
+
+        Returns:
+            Generator[None, None, None]: The computed result.
+        """
         yield
 
     return _disable()
 
 
 def eval_shape(fun: Callable[..., object], *args: object, **kwargs: object) -> object:
-    """Evaluates the shape and dtype of the output of fun without computing its values."""
+    """Evaluates the shape and dtype of the output of fun without computing its values.
+
+    Args:
+        fun (Callable[..., object]): The fun.
+        *args: Additional arguments.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        object: The computed result.
+    """
     return fun(*args, **kwargs)
 
 
@@ -108,8 +172,8 @@ def backward(tensor: object, *args: object, **kwargs: object) -> None:
 
     Args:
         tensor (object): The tensor to compute gradients for.
-        *args (object): Variable length argument list
-        **kwargs (object): Variable length argument list
+        *args (object): Additional keyword arguments.
+        **kwargs (object): Additional keyword arguments.
     """
 
 
