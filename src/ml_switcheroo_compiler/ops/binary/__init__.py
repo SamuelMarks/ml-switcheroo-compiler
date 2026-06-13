@@ -48,3 +48,4 @@ subtract = get_op("Subtract")()
 true_divide = get_op("TrueDivide")()
 _ = _math
 _ = _special
+xlogy = get_op("Xlogy")()

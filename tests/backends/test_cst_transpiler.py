@@ -5,7 +5,7 @@ process, including import translation, function call mapping, syntax validation,
 diffing, and dry-run type inference.
 """
 
-from ml_switcheroo.backends.cst_transpiler import (
+from ml_switcheroo_compiler.backends.cst_transpiler import (
     CSTTransformer,
     transpile_source,
     type_infer_dry_run,

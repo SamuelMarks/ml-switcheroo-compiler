@@ -8,7 +8,7 @@ AssignVariable.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.core.state_manager import lift_state
+from ml_switcheroo_compiler.core.state_manager import lift_state
 
 
 def test_lift_state() -> None:
@@ -136,8 +136,8 @@ def test_state_ops() -> None:
     """
     import pytest
 
-    from ml_switcheroo.core.errors import CompilationError
-    from ml_switcheroo.ops.base import get_op
+    from ml_switcheroo_compiler.core.errors import CompilationError
+    from ml_switcheroo_compiler.ops.base import get_op
 
     r = get_op("ReadVariable")()
     a = get_op("AssignVariable")()

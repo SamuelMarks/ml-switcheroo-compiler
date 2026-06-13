@@ -7,10 +7,10 @@ Sine, Cosine, Exponential, and Natural Logarithm, allowing backpropagation and f
 mode differentiation through the computation graph
 """
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
 @register_vjp("Sin")
@@ -46,7 +46,8 @@ def sin_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: Always raised as JVP is not implemented for Sin
     """
-    raise UnimplementedMathError("JVP not implemented for Sin")
+    msg = "JVP not implemented for Sin"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Cos")
@@ -83,7 +84,8 @@ def cos_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: Always raised as JVP is not implemented for Cos
     """
-    raise UnimplementedMathError("JVP not implemented for Cos")
+    msg = "JVP not implemented for Cos"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Exp")
@@ -124,7 +126,8 @@ def exp_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: Always raised as JVP is not implemented for Exp
     """
-    raise UnimplementedMathError("JVP not implemented for Exp")
+    msg = "JVP not implemented for Exp"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Log")
@@ -160,4 +163,5 @@ def log_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: Always raised as JVP is not implemented for Log
     """
-    raise UnimplementedMathError("JVP not implemented for Log")
+    msg = "JVP not implemented for Log"
+    raise UnimplementedMathError(msg)

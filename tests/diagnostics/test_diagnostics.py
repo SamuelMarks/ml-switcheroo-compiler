@@ -11,10 +11,10 @@ import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.core.device import Device, DeviceType
-from ml_switcheroo.core.dtype import DType
-from ml_switcheroo.core.tensor import Tensor
-from ml_switcheroo.diagnostics import (
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.diagnostics import (
     NumericalAnomalyDetector,
     TracebackReconstructor,
     debug_shapes,

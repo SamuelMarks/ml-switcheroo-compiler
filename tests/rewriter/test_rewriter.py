@@ -7,7 +7,7 @@ and strict cast requirements.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.rewriter import shape_aware_rewrite
+from ml_switcheroo_compiler.transforms.rewriter import shape_aware_rewrite
 
 
 def test_shape_aware_rewrite_reshape() -> None:

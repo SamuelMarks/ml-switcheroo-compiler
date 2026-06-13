@@ -8,10 +8,10 @@ This module registers differentiation rules for operations like Reshape, Transpo
 BroadcastTo, allowing the autodiff system to propagate gradients through shape changes
 """
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
 @register_vjp("Reshape")
@@ -133,7 +133,8 @@ def broadcast_to_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: Always raised as VJP is not implemented
     """
-    raise UnimplementedMathError("VJP not implemented for BroadcastTo")
+    msg = "VJP not implemented for BroadcastTo"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("BroadcastTo")

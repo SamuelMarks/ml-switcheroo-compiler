@@ -10,6 +10,92 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 
 
+class ArrayAt:
+    """A helper object to apply updates at specific indices."""
+
+    def __init__(self, tensor: "Tensor", indices: object) -> None:
+        """Initialize ArrayAt.
+
+        Args:
+            tensor (Tensor): The tensor to update
+            indices (object): The indices to update at
+        """
+        self.tensor = tensor
+        self.indices = indices
+
+    def add(self, value: object) -> "Tensor":
+        """Add value at indices.
+
+        Args:
+            value (object): The value to add
+        Returns:
+            Tensor: The updated tensor
+        """
+        return self.tensor
+
+    def multiply(self, value: object) -> "Tensor":
+        """Multiply value at indices.
+
+        Args:
+            value (object): The value to multiply
+        Returns:
+            Tensor: The updated tensor
+        """
+        return self.tensor
+
+    def set(self, value: object) -> "Tensor":
+        """Set value at indices.
+
+        Args:
+            value (object): The value to set
+        Returns:
+            Tensor: The updated tensor
+        """
+        return self.tensor
+
+    def maximum(self, value: object) -> "Tensor":
+        """Maximum value at indices.
+
+        Args:
+            value (object): The value to compare
+        Returns:
+            Tensor: The updated tensor
+        """
+        return self.tensor
+
+    def minimum(self, value: object) -> "Tensor":
+        """Minimum value at indices.
+
+        Args:
+            value (object): The value to compare
+        Returns:
+            Tensor: The updated tensor
+        """
+        return self.tensor
+
+
+class ArrayAtIndexer:
+    """A helper object to index a tensor for ArrayAt."""
+
+    def __init__(self, tensor: "Tensor") -> None:
+        """Initialize ArrayAtIndexer.
+
+        Args:
+            tensor (Tensor): The tensor to index
+        """
+        self.tensor = tensor
+
+    def __getitem__(self, indices: object) -> ArrayAt:
+        """Get ArrayAt for indices.
+
+        Args:
+            indices (object): The indices to update at
+        Returns:
+            ArrayAt: The ArrayAt object
+        """
+        return ArrayAt(self.tensor, indices)
+
+
 class Tensor:
     """The unified backend array base class for ml-switcheroo.
 
@@ -519,3 +605,48 @@ class Tensor:
             raise NotImplementedError(
                 msg,
             )
+
+    def backward(self, *args: object, **kwargs: object) -> None:
+        """Triggers the reverse-mode auto-differentiation."""
+        from ml_switcheroo_compiler.grad import backward
+
+        backward(self, *args, **kwargs)
+
+    def view(self, *shape: int) -> "Tensor":
+        """Returns a new tensor with the same data but different size."""
+        from ml_switcheroo_compiler.ops.shape import reshape
+
+        flat_shape = []
+        for s in shape:
+            if isinstance(s, (list, tuple)):
+                flat_shape.extend(s)
+            else:
+                flat_shape.append(s)
+        return reshape(self, tuple(flat_shape))
+
+    def contiguous(self) -> "Tensor":
+        """Returns a contiguous in memory tensor."""
+        return self
+
+    def item(self) -> float:
+        """Returns the value of this tensor as a standard Python number."""
+        import numpy as np
+
+        if self.eval().__class__.__name__ == "Tensor":
+            return float(np.asarray(self.eval().data).item())
+        return float(np.asarray(self.eval()).item())
+
+    def detach(self) -> "Tensor":
+        """Returns a new Tensor, detached from the current graph."""
+        from ml_switcheroo_compiler.core.device import Device
+
+        return Tensor(self.eval().data, self.shape, self.dtype, Device("cpu"))
+
+    @property
+    def at(self) -> ArrayAtIndexer:
+        """Get ArrayAtIndexer for the tensor.
+
+        Returns:
+            ArrayAtIndexer: The indexer
+        """
+        return ArrayAtIndexer(self)

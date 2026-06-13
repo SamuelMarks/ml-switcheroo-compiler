@@ -44,6 +44,77 @@ def _emit_creation_node(
     return Tensor(data=proxy, shape=shape, dtype=dtype, device=config.default_device)
 
 
+def _emit_constant_node(
+    value: object,
+    dtype: DType,
+) -> Tensor:
+    """Emit a Constant node to the IR graph."""
+    if not _tracer.is_tracing:
+        msg = "Cannot emit Constant node outside of a tracing context."
+        raise RuntimeError(msg)
+
+    out_id = str(uuid.uuid4())
+    val_arr = np.array(value, dtype=dtype.value)
+    shape = tuple(val_arr.shape)
+
+    node = LogicalNode(
+        id=out_id,
+        op_type="Constant",
+        inputs=[],
+        attributes={"value": val_arr.tolist() if val_arr.ndim > 0 else val_arr.item()},
+        shape_metadata=shape,
+    )
+    _tracer.add_node(node)
+
+    proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
+    return Tensor(data=proxy, shape=shape, dtype=dtype, device=config.default_device)
+
+
+def array(
+    object: object,
+    dtype: DType | None = None,
+) -> Tensor:
+    """Creates an array.
+
+    Args:
+        object (Any): Argument object to convert
+        dtype (Optional[DType]): The data type
+    """
+    if dtype is None:
+        val_arr = np.array(object)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        dtype = DType(str(val_arr.dtype))
+    else:
+        val_arr = np.array(object, dtype=dtype.value)
+
+    shape = tuple(val_arr.shape)
+
+    if config.eager_mode:
+        return Tensor(val_arr, shape, dtype, config.default_device)
+
+    return _emit_constant_node(object, dtype)
+
+
+def asarray(
+    a: object,
+    dtype: DType | None = None,
+) -> Tensor:
+    """Converts the input to an array.
+
+    Args:
+        a (Any): Argument object to convert
+        dtype (Optional[DType]): The data type
+    """
+    if isinstance(a, Tensor):
+        if dtype is not None and a.dtype != dtype:
+            from ml_switcheroo_compiler.ops.unary import cast
+
+            return cast(a, dtype)
+        return a
+    return array(a, dtype=dtype)
+
+
 def zeros(
     shape: int | Sequence[int],
     dtype: DType | None = None,
@@ -351,3 +422,67 @@ def empty(
         data = np.empty(shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 0})
+
+
+def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
+    """Return a new array with the same shape and type as a given array."""
+    return empty(x.shape, dtype=dtype if dtype is not None else x.dtype)
+
+
+def rand(
+    *size: int,
+    dtype: DType | None = None,
+    device: Device | None = None,
+) -> Tensor:
+    """Return a tensor filled with random numbers from a uniform distribution."""
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
+    shape = tuple(size)
+
+    if config.eager_mode:
+        data = np.random.rand(*shape).astype(dtype.value)
+        return Tensor(data, shape, dtype, device)
+    return _emit_creation_node("Rand", shape, dtype)
+
+
+def randn(
+    *size: int,
+    dtype: DType | None = None,
+    device: Device | None = None,
+) -> Tensor:
+    """Return a tensor filled with random numbers from a standard normal distribution."""
+    dtype = dtype or config.default_float_dtype
+    device = device or config.default_device
+    shape = tuple(size)
+
+    if config.eager_mode:
+        data = np.random.randn(*shape).astype(dtype.value)
+        return Tensor(data, shape, dtype, device)
+    return _emit_creation_node("Randn", shape, dtype)
+
+
+def randint(
+    low: int,
+    high: int,
+    size: Sequence[int],
+    dtype: DType | None = None,
+    device: Device | None = None,
+) -> Tensor:
+    """Return a tensor filled with random integers from [low, high)."""
+    dtype = dtype or config.default_int_dtype
+    device = device or config.default_device
+    shape = tuple(size)
+
+    if config.eager_mode:
+        data = np.random.randint(low, high, size=shape).astype(dtype.value)
+        return Tensor(data, shape, dtype, device)
+    return _emit_creation_node("Randint", shape, dtype, {"low": low, "high": high})
+
+
+def manual_seed(seed: int) -> int:
+    """Sets the seed for generating random numbers."""
+    if config.eager_mode:
+        np.random.seed(seed)
+        return seed
+    _emit_creation_node("ManualSeed", (), config.default_int_dtype, {"seed": seed})
+    return seed

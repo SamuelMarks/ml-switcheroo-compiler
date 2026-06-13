@@ -109,7 +109,7 @@ for p in projects:
   - **1. Playground & Interactive Sandbox** (The primary landing experience).
   - **2. Compiler Core**: `ml-switcheroo-compiler`, `ml-switcheroo-ir`.
   - **3. Frontend/Backend Ecosystem**: `zero-jax`, `zero-pytorch`, `zero-tf`, `zero-keras`, `zero-mlx`.
-  - **4. High-Level Libraries**: `zero-flax`, `zero-pax`, `zero-optax`, `zero-orbax`, `zero-chex`, `zero-grain`.
+  - **4. High-Level Libraries**: `zero-optax`.
 
 ### Fast Development Workflow (Makefile)
 Because scraping 13 distinct projects via `autosummary` will make iterative frontend development extremely slow, we require optimized `make` targets. The `conf.py` will read environment variables (e.g., `FAST_BUILD=1`) to conditionally bypass scraping sibling projects and only build the core pages and interactive frontend.

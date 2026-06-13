@@ -3,14 +3,6 @@
 Bitcast, and Frexp
 """
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
-
-import numpy as np
-
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -36,15 +28,18 @@ class Cast(OpDef):
 
         Args:
             x (object): The x parameter
+            dtype (object): The dtype parameter
             **kwargs (object): Variable length argument list
 
         Returns:
             object: The resulting output
         """
-        dtype = kwargs.get("dtype")
-        if isinstance(dtype, DType):
-            dtype = dtype.value
-        return np.array(x).astype(dtype)
+        import numpy as np
+
+        dtype_val = kwargs.get("dtype")
+        if isinstance(dtype_val, DType):
+            dtype_val = dtype_val.value
+        return np.array(x).astype(dtype_val)
 
 
 @register_op("Bitcast")
@@ -56,15 +51,18 @@ class Bitcast(Cast):
 
         Args:
             x (object): The x parameter
+            dtype (object): The dtype parameter
             **kwargs (object): Variable length argument list
 
         Returns:
             object: The resulting output
         """
-        dtype = kwargs.get("dtype")
-        if isinstance(dtype, DType):
-            dtype = dtype.value
-        return np.array(x).view(dtype)
+        import numpy as np
+
+        dtype_val = kwargs.get("dtype")
+        if isinstance(dtype_val, DType):
+            dtype_val = dtype_val.value
+        return np.array(x).view(dtype_val)
 
 
 @register_op("Frexp")
@@ -93,4 +91,6 @@ class Frexp(OpDef):
         Returns:
             object: The resulting output
         """
+        import numpy as np
+
         return np.frexp(x)

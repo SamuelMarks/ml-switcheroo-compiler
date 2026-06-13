@@ -457,3 +457,72 @@ class ProxyTensor:
         _tracer.add_node(node)
 
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+
+    def assign(self, value: ProxyTensor) -> ProxyTensor:
+        """Assign a new value to a variable proxy.
+
+        Args:
+            value (ProxyTensor): The new value to assign
+
+        Returns:
+            ProxyTensor: A proxy tensor representing the updated variable
+        """
+        if not _tracer.is_tracing:
+            msg = "Cannot perform assign outside of a tracing context."
+            raise RuntimeError(msg)
+
+        node = _tracer.active_graph.nodes.get(self.id)
+        if node is None or node.op_type not in ("ReadVariable", "AssignVariable"):
+            msg = "assign() can only be called on a variable proxy."
+            raise ValueError(msg)
+
+        var_name = node.attributes.get("variable_name")
+
+        # Constant wrapping if not a proxy tensor
+        value_id = getattr(value, "id", None)
+        value_shape = getattr(value, "shape", ())
+        value_dtype = getattr(value, "dtype", self.dtype)
+
+        if value_id is None:
+            value_id = str(uuid.uuid4())
+            const_node = IRNode(
+                id=value_id,
+                op_type="Constant",
+                attributes={"value": value},
+                shape_metadata=(),
+            )
+            _tracer.add_node(const_node)
+
+        out_id = str(uuid.uuid4())
+        assign_node = IRNode(
+            id=out_id,
+            op_type="AssignVariable",
+            inputs=[value_id],
+            attributes={"variable_name": var_name},
+            shape_metadata=value_shape,
+        )
+        _tracer.add_node(assign_node)
+
+        return ProxyTensor(id=out_id, shape=value_shape, dtype=value_dtype)
+
+    def assign_add(self, value: ProxyTensor) -> ProxyTensor:
+        """Add value to variable proxy and return updated proxy.
+
+        Args:
+            value (ProxyTensor): The value to add
+
+        Returns:
+            ProxyTensor: A proxy tensor representing the updated variable
+        """
+        return self.assign(self + value)
+
+    def assign_sub(self, value: ProxyTensor) -> ProxyTensor:
+        """Subtract value from variable proxy and return updated proxy.
+
+        Args:
+            value (ProxyTensor): The value to subtract
+
+        Returns:
+            ProxyTensor: A proxy tensor representing the updated variable
+        """
+        return self.assign(self - value)

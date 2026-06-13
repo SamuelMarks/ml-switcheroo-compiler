@@ -11,9 +11,7 @@ repos:
   - id: ruff
     args:
     - --fix
-    files: ^src/ml_switcheroo_compiler/
   - id: ruff-format
-    files: ^src/ml_switcheroo_compiler/
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v2.1.0
   hooks:

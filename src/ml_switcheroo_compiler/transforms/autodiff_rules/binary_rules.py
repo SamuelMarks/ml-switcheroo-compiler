@@ -6,10 +6,10 @@ This module registers automatic differentiation rules for common binary operatio
 as addition, subtraction, multiplication, division, and exponentiation
 """
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
 @register_vjp("Add")
@@ -72,7 +72,11 @@ def subtract_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Subtract")
 def subtract_jvp(
-    tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object
+    tangent_x: object,
+    tangent_y: object,
+    x: object,
+    y: object,
+    **kwargs: object,
 ) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the subtraction operation.
 
@@ -115,7 +119,11 @@ def multiply_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Multiply")
 def multiply_jvp(
-    tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object
+    tangent_x: object,
+    tangent_y: object,
+    x: object,
+    y: object,
+    **kwargs: object,
 ) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the multiplication operation.
 
@@ -151,7 +159,8 @@ def divide_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: Always raised as VJP is not implemented for Divide
     """
-    raise UnimplementedMathError("VJP not implemented for Divide")
+    msg = "VJP not implemented for Divide"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("Divide")
@@ -173,7 +182,8 @@ def divide_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwa
     Raises:
     UnimplementedMathError: Always raised as JVP is not implemented for Divide
     """
-    raise UnimplementedMathError("JVP not implemented for Divide")
+    msg = "JVP not implemented for Divide"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Power")
@@ -193,7 +203,8 @@ def power_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: Always raised as VJP is not implemented for Power
     """
-    raise UnimplementedMathError("VJP not implemented for Power")
+    msg = "VJP not implemented for Power"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("Power")
@@ -215,4 +226,5 @@ def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwar
     Raises:
     UnimplementedMathError: Always raised as JVP is not implemented for Power
     """
-    raise UnimplementedMathError("JVP not implemented for Power")
+    msg = "JVP not implemented for Power"
+    raise UnimplementedMathError(msg)

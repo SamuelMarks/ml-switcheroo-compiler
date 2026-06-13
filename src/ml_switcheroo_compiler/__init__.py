@@ -16,3 +16,6 @@ __all__ = [
     "grad",
     "lift_state",
 ]
+from .tree_util import tree_flatten, tree_map, tree_unflatten
+
+__all__ += ["tree_flatten", "tree_map", "tree_unflatten"]

@@ -61,9 +61,6 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, Any]) -> dict[str, Any
             if target_op == "Relu":
                 env.set(node.id, np.maximum(in_vals[0], 0.0))
                 continue
-            if target_op == "Greater":
-                env.set(node.id, in_vals[0] > in_vals[1])
-                continue
             if target_op == "Where":
                 env.set(node.id, np.where(in_vals[0], in_vals[1], in_vals[2]))
                 continue

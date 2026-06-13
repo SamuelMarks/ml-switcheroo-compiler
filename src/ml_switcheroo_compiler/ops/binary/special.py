@@ -3,12 +3,6 @@
 wise trigonometric, division, and comparison operations
 """
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
-
 import numpy as np
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op

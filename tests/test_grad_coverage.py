@@ -8,8 +8,8 @@ operations. It also tests input validation errors during graph evaluation.
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.ops.base import OpDef, register_op
-from ml_switcheroo.transforms.autodiff import grad
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.transforms.autodiff import grad
 
 
 @register_op("TestUnimplVjp")
@@ -78,10 +78,62 @@ def test_evaluator_dict_error() -> None:
     Returns:
     None
     """
-    from ml_switcheroo.interpreter.evaluator import evaluate_graph
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
     # Missing input
     with pytest.raises(ValueError):
         evaluate_graph(g, inputs={})
+
+
+def test_grad_frontend_mocks() -> None:
+    """Test the mock frontend functions in grad.py."""
+    from ml_switcheroo_compiler.grad import (
+        custom_vjp,
+        disable_jit,
+        eval_shape,
+        ir_grad,
+        jit,
+        jvp,
+        value_and_grad,
+        vjp,
+    )
+    from ml_switcheroo_compiler.grad import (
+        grad as frontend_grad,
+    )
+
+    def my_fun(x: int) -> int:
+        return x * 2
+
+    # test ir_grad and grad
+    assert ir_grad(my_fun)(5) == 10
+    assert frontend_grad(my_fun)(5) == 10
+
+    # test value_and_grad
+    val, g = value_and_grad(my_fun)(5)
+    assert val == 10
+    assert g == 10
+
+    # test jit
+    assert jit(my_fun)(5) == 10
+
+    # test disable_jit
+    with disable_jit():
+        assert my_fun(5) == 10
+
+    # test eval_shape
+    assert eval_shape(my_fun, 5) == 10
+
+    # test jvp
+    out_primal, out_tangent = jvp(my_fun, [5], [1])
+    assert out_primal == 10
+    assert out_tangent == [1]
+
+    # test vjp
+    out_primal, vjp_fn = vjp(my_fun, 5)
+    assert out_primal == 10
+    assert vjp_fn(2) == (2,)
+
+    # test custom_vjp
+    assert custom_vjp(my_fun)(5) == 10

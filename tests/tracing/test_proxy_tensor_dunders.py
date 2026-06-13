@@ -9,7 +9,7 @@ of tracing contexts, and verify error handling for invalid operations.
 
 import pytest
 
-from ml_switcheroo.tracing.tracer import ProxyTensor, _tracer
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 
 def test_proxy_tensor_dunders() -> None:

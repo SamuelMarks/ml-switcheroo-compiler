@@ -7,7 +7,7 @@ contexts, and the base Tensor class.
 
 import pytest
 
-from ml_switcheroo.core import (
+from ml_switcheroo_compiler.core import (
     BackendNotSupportedError,
     CompilationError,
     ConfigContext,
@@ -87,14 +87,24 @@ def test_config() -> None:
     Returns:
     None
     """
+    from ml_switcheroo_compiler.core.config import EagerMode, StreamContext
+
     orig_mode = config.eager_mode
     with ConfigContext(eager_mode=not orig_mode):
         assert config.eager_mode == (not orig_mode)
     assert config.eager_mode == orig_mode
 
+    with EagerMode():
+        assert config.eager_mode is True
+
+    orig_stream = config.current_stream
+    with StreamContext("test_stream"):
+        assert config.current_stream == "test_stream"
+    assert config.current_stream == orig_stream
+
     with pytest.raises(ValueError, match="Unknown config key: invalid_key"):
-        with ConfigContext(invalid_key=True):
-            pass
+        # Calling __enter__ directly to avoid pytest-cov generator misses
+        ConfigContext(invalid_key=True).__enter__()
 
 
 def test_config_env_var(monkeypatch: object) -> None:
@@ -110,7 +120,7 @@ def test_config_env_var(monkeypatch: object) -> None:
     Returns:
     None
     """
-    from ml_switcheroo.core.config import Config
+    from ml_switcheroo_compiler.core.config import Config
 
     monkeypatch.setenv("SWITCHEROO_EAGER_MODE", "1")
     new_cfg = Config()

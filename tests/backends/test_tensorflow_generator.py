@@ -7,7 +7,7 @@ for various operations, edge cases, and fallback scenarios.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.backends.tensorflow import TensorFlowCodeGenerator
+from ml_switcheroo_compiler.backends.tensorflow import TensorFlowCodeGenerator
 
 
 def test_tensorflow_generator_basic() -> None:
@@ -105,3 +105,52 @@ def test_tensorflow_generator_no_output() -> None:
     code = generator.generate()
 
     assert "return None" in code
+
+
+def test_tensorflow_generator_ops_map_kwargs() -> None:
+    """Tests kwargs replacement in ops_map operations.
+
+    Verifies that the generator correctly replaces or strips 'axis' and 'keepdims'
+    kwargs for operations defined in ops_map like 'Sum'.
+
+    Returns:
+    None
+    """
+    graph = LogicalGraph(name="test_tf", outputs=["out1", "out2"])
+    graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
+    # Missing keepdims and axis
+    graph.nodes["sum1"] = LogicalNode(id="sum1", op_type="Sum", inputs=["in1"])
+    # With keepdims and axis
+    graph.nodes["sum2"] = LogicalNode(
+        id="sum2", op_type="Sum", inputs=["in1"], attributes={"axis": 0, "keepdims": True}
+    )
+    graph.nodes["out1"] = LogicalNode(id="out1", op_type="Output", inputs=["sum1"])
+    graph.nodes["out2"] = LogicalNode(id="out2", op_type="Output", inputs=["sum2"])
+
+    generator = TensorFlowCodeGenerator(graph)
+    code = generator.generate()
+
+    assert "tf.reduce_sum(input_0)" in code
+    assert "tf.reduce_sum(input_0, axis=0, keepdims=True)" in code
+
+
+def test_tensorflow_generator_generic_kwargs() -> None:
+    """Tests kwargs fallback for generic operations.
+
+    Verifies that 'axis' and 'keepdims' are appended to the argument list
+    for generic operations not defined in ops_map.
+
+    Returns:
+    None
+    """
+    graph = LogicalGraph(name="test_tf", outputs=["out"])
+    graph.nodes["in1"] = LogicalNode(id="in1", op_type="Input")
+    graph.nodes["foo"] = LogicalNode(
+        id="foo", op_type="FooOp", inputs=["in1"], attributes={"axis": 1, "keepdims": True}
+    )
+    graph.nodes["out"] = LogicalNode(id="out", op_type="Output", inputs=["foo"])
+
+    generator = TensorFlowCodeGenerator(graph)
+    code = generator.generate()
+
+    assert "tf.math.fooop(input_0, axis=1, keepdims=True)" in code

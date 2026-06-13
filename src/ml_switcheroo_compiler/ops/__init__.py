@@ -1,5 +1,8 @@
 """Operations library for the ml-switcheroo compiler."""
 
+import numpy as np
+
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.binary import (
     add,
@@ -42,11 +45,13 @@ from ml_switcheroo_compiler.ops.binary import (
     remainder,
     right_shift,
     subtract,
+    true_divide,
 )
 from ml_switcheroo_compiler.ops.creation import (
     arange,
     diag,
     empty,
+    empty_like,
     eye,
     full,
     full_like,
@@ -57,14 +62,19 @@ from ml_switcheroo_compiler.ops.creation import (
     zeros,
     zeros_like,
 )
+from ml_switcheroo_compiler.ops.creation.frontend import array, asarray
 from ml_switcheroo_compiler.ops.linalg import (
+    conv_general_dilated,
     dot,
+    dot_general,
     eigvalsh,
     einsum,
+    fft,
     inner,
     matmul,
     matrix_power,
     outer,
+    rfft,
     slogdet,
     tensordot,
     vdot,
@@ -81,19 +91,31 @@ from ml_switcheroo_compiler.ops.reductions import (
     mean,
     min,
     norm,
+    pmean,
     prod,
+    psum,
+    reduce_window,
+    segment_sum,
     std,
     sum,
     variance,
 )
 from ml_switcheroo_compiler.ops.shape import (
+    array_split,
+    broadcast_in_dim,
     broadcast_to,
     concatenate,
+    dsplit,
+    dstack,
     dynamic_slice,
+    dynamic_update_slice,
     expand,
     flatten,
     gather,
     gather_nd,
+    hsplit,
+    hstack,
+    image_resize,
     meshgrid,
     moveaxis,
     pad,
@@ -104,7 +126,9 @@ from ml_switcheroo_compiler.ops.shape import (
     scatter,
     scatter_add,
     scatter_nd,
+    select,
     slice,
+    sort,
     split,
     squeeze,
     stack,
@@ -113,12 +137,15 @@ from ml_switcheroo_compiler.ops.shape import (
     take,
     take_along_axis,
     tile,
+    top_k,
     transpose,
     tril,
     triu,
     unsqueeze,
     unstack,
     update_slice,
+    vsplit,
+    vstack,
     where,
 )
 from ml_switcheroo_compiler.ops.unary import (
@@ -184,10 +211,23 @@ __all__ = [
     "add",
     "all",
     "allclose",
+    "amax",
+    "amin",
     "any",
     "arange",
+    "arccos",
+    "arccosh",
+    "arcsin",
+    "arcsinh",
+    "arctan",
+    "arctan2",
+    "arctanh",
     "argmax",
     "argmin",
+    "array",
+    "array_equal",
+    "array_split",
+    "asarray",
     "asin",
     "asinh",
     "atan",
@@ -198,12 +238,19 @@ __all__ = [
     "bitwise_not",
     "bitwise_or",
     "bitwise_xor",
+    "broadcast",
+    "broadcast_in_dim",
+    "broadcast_in_dim",
+    "broadcast_shapes",
     "broadcast_to",
     "cast",
     "cbrt",
     "ceil",
+    "clamp",
+    "clip",
     "concatenate",
     "conj",
+    "conv_general_dilated",
     "copysign",
     "cos",
     "cosh",
@@ -215,18 +262,26 @@ __all__ = [
     "divide",
     "divmod",
     "dot",
+    "dot_general",
+    "dsplit",
+    "dstack",
     "dynamic_slice",
+    "dynamic_update_slice",
+    "dynamic_update_slice",
     "eigvalsh",
     "einsum",
     "empty",
+    "empty_like",
     "equal",
     "erf",
     "erfc",
     "exp",
     "exp2",
     "expand",
+    "expand_dims",
     "expm1",
     "eye",
+    "fft",
     "fix",
     "flatten",
     "float_power",
@@ -245,9 +300,13 @@ __all__ = [
     "greater",
     "greater_equal",
     "heaviside",
+    "hsplit",
+    "hstack",
     "hypot",
     "identity",
     "imag",
+    "image_resize",
+    "image_resize",
     "inner",
     "isclose",
     "isfinite",
@@ -270,6 +329,7 @@ __all__ = [
     "logical_not",
     "logical_or",
     "logical_xor",
+    "logspace",
     "logsumexp",
     "matmul",
     "matrix_power",
@@ -291,29 +351,39 @@ __all__ = [
     "outer",
     "pad",
     "permute",
+    "pmean",
     "positive",
     "power",
     "prod",
+    "psum",
     "rad2deg",
     "real",
     "reciprocal",
+    "reduce",
+    "reduce_window",
     "register_op",
     "remainder",
     "repeat",
     "reshape",
+    "rfft",
     "right_shift",
+    "rint",
     "roll",
     "round",
     "rsqrt",
     "scatter",
     "scatter_add",
     "scatter_nd",
+    "segment_sum",
+    "select",
+    "select",
     "sign",
     "sin",
     "sinc",
     "sinh",
     "slice",
     "slogdet",
+    "sort",
     "split",
     "sqrt",
     "square",
@@ -330,15 +400,20 @@ __all__ = [
     "tanh",
     "tensordot",
     "tile",
+    "top_k",
     "transpose",
     "tril",
     "triu",
+    "true_divide",
     "trunc",
     "unsqueeze",
     "unstack",
     "update_slice",
+    "var",
     "variance",
     "vdot",
+    "vsplit",
+    "vstack",
     "where",
     "zeros",
     "zeros_like",
@@ -347,3 +422,75 @@ __all__ = [
 from ml_switcheroo_compiler.ops.state import AssignVariable, ReadVariable
 
 __all__ += ["AssignVariable", "OpDef", "ReadVariable", "get_op", "register_op"]
+__all__.extend(["ndarray", "pi"])
+
+
+# Aliases
+arcsin = asin
+arccos = acos
+arctan = atan
+arctan2 = atan2
+arcsinh = asinh
+arccosh = acosh
+arctanh = atanh
+amin = min
+amax = max
+var = variance
+expand_dims = unsqueeze
+
+
+def clamp(min_val: object, x: object, max_val: object) -> object:
+    """Docstring."""
+    if min_val is not None:
+        x = maximum(x, min_val)
+    if max_val is not None:
+        x = minimum(x, max_val)
+    return x
+
+
+def clip(a: object, a_min: object = None, a_max: object = None) -> object:
+    """Docstring."""
+    return clamp(a_min, a, a_max)
+
+
+def broadcast_shapes(*shapes: object) -> object:
+    """Docstring."""
+    return np.broadcast_shapes(*shapes)
+
+
+def logspace(
+    start: object,
+    stop: object,
+    num: object = 50,
+    endpoint: object = True,
+    base: object = 10.0,
+    dtype: object = None,
+    axis: object = 0,
+) -> object:
+    """Docstring."""
+    from ml_switcheroo_compiler.ops.binary import power
+    from ml_switcheroo_compiler.ops.creation.frontend import linspace
+
+    # 10 ** linspace(...)
+    y = linspace(start, stop, steps=num, dtype=dtype)
+    if base == 10.0:
+        return power(10.0, y)
+    return power(base, y)
+
+
+def rint(x: object) -> object:
+    """Docstring."""
+    from ml_switcheroo_compiler.ops.unary import round
+
+    return round(x)
+
+
+def broadcast(x: object, sizes: object) -> object:
+    """Docstring."""
+    from ml_switcheroo_compiler.ops.shape.frontend import broadcast_to
+
+    return broadcast_to(x, sizes)
+
+
+pi = np.pi
+ndarray = Tensor

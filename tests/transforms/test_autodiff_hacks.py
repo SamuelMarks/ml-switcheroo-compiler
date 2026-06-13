@@ -1,0 +1,28 @@
+"""Module docstring."""
+
+import pytest
+
+from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.transforms.autodiff import grad
+
+
+def test_real_exception() -> None:
+    """Function docstring."""
+    g = IRGraph()
+    n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
+    n2 = IRNode(
+        id="n2",
+        op_type="nonexistent_blah",
+        inputs=["n1"],
+        attributes={},
+        shape_metadata=(2,),
+    )
+
+    for n in [n1, n2]:
+        g.nodes[n.id] = n
+    g.inputs = ["n1"]
+    g.outputs = ["n2"]
+
+    with pytest.raises(UnimplementedMathError):
+        grad(g, ["n1"], "n2")

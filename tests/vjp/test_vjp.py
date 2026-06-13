@@ -1,10 +1,10 @@
 """Module containing related functionality."""
-from ml_switcheroo.transforms.autodiff_rules.vjp_registry import register_vjp
 
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.autodiff import grad
+from ml_switcheroo_compiler.transforms.autodiff import grad
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
 def _setup_graph(op_type: object, inputs_count: object) -> object:
@@ -260,7 +260,7 @@ def test_vjp_returns_wrong_number_of_adjoints() -> None:
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="TestOp", inputs=["w", "w"])
-    from ml_switcheroo.ops.base import OpDef, register_op
+    from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
     try:
 
@@ -288,7 +288,7 @@ def test_vjp_returns_none() -> None:
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="TestNoneOp", inputs=["w"])
-    from ml_switcheroo.ops.base import OpDef, register_op
+    from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
     try:
 

@@ -7,7 +7,7 @@ shape broadcasting, unknown operations, and empty outputs.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.backends.jax import JAXCodeGenerator
+from ml_switcheroo_compiler.backends.jax import JAXCodeGenerator
 
 
 def test_jax_generator_basic() -> None:

@@ -41,6 +41,39 @@ class TensorFlowCodeGenerator(BaseGenerator):
             "Mean": "tf.reduce_mean({0}, axis={axis}, keepdims={keepdims})",
             "Max": "tf.reduce_max({0}, axis={axis}, keepdims={keepdims})",
             "Min": "tf.reduce_min({0}, axis={axis}, keepdims={keepdims})",
+            "Prod": "tf.reduce_prod({0}, axis={axis}, keepdims={keepdims})",
+            "All": "tf.reduce_all({0}, axis={axis}, keepdims={keepdims})",
+            "AnyOp": "tf.reduce_any({0}, axis={axis}, keepdims={keepdims})",
+            "Argmax": "tf.math.argmax({0}, axis={axis})",
+            "Argmin": "tf.math.argmin({0}, axis={axis})",
+            "Cast": "tf.cast({0}, dtype=tf.{dtype})",
+            "Bitcast": "tf.bitcast({0}, type=tf.{dtype})",
+            "Relu": "tf.nn.relu({0})",
+            "Relu6": "tf.nn.relu6({0})",
+            "LeakyRelu": "tf.nn.leaky_relu({0}, alpha={alpha})",
+            "Elu": "tf.nn.elu({0})",
+            "Selu": "tf.nn.selu({0})",
+            "Gelu": "tf.nn.gelu({0}, approximate={approximate})",
+            "Sigmoid": "tf.math.sigmoid({0})",
+            "Softmax": "tf.nn.softmax({0}, axis={axis})",
+            "LogSoftmax": "tf.nn.log_softmax({0}, axis={axis})",
+            "Softplus": "tf.math.softplus({0})",
+            "Softsign": "tf.math.softsign({0})",
+            "Conv1D": "tf.nn.conv1d({0}, {1}, stride={stride}, padding={padding})",
+            "Conv2D": "tf.nn.conv2d({0}, {1}, strides={strides}, padding={padding})",
+            "Conv3D": "tf.nn.conv3d({0}, {1}, strides={strides}, padding={padding})",
+            "MaxPool1D": "tf.nn.max_pool1d({0}, ksize={ksize}, "
+            "strides={strides}, padding={padding})",
+            "MaxPool2D": "tf.nn.max_pool2d({0}, ksize={ksize}, "
+            "strides={strides}, padding={padding})",
+            "MaxPool3D": "tf.nn.max_pool3d({0}, ksize={ksize}, "
+            "strides={strides}, padding={padding})",
+            "AvgPool1D": "tf.nn.avg_pool1d({0}, ksize={ksize}, "
+            "strides={strides}, padding={padding})",
+            "AvgPool2D": "tf.nn.avg_pool2d({0}, ksize={ksize}, "
+            "strides={strides}, padding={padding})",
+            "AvgPool3D": "tf.nn.avg_pool3d({0}, ksize={ksize}, "
+            "strides={strides}, padding={padding})",
         }
 
         if op_type in ops_map:
@@ -49,11 +82,11 @@ class TensorFlowCodeGenerator(BaseGenerator):
             for k, v in kwargs.items():
                 if f"{{{k}}}" in fmt:
                     fmt = fmt.replace(f"{{{k}}}", str(v))
-            # Special cases for axis/keepdims
-            if "keepdims" in fmt and "keepdims" not in kwargs:
-                fmt = fmt.replace(", keepdims={keepdims}", "")
-            if "axis" in fmt and "axis" not in kwargs:
-                fmt = fmt.replace(", axis={axis}", "")
+            # Strip remaining unmatched kwargs in the form `, key={key}`
+            import re
+
+            fmt = re.sub(r", \w+=\{[^\}]+\}", "", fmt)
+
             # Replace args placeholders
             for i, var in enumerate(input_vars):
                 fmt = fmt.replace(f"{{{i}}}", var)

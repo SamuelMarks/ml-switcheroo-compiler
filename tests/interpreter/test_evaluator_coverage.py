@@ -8,7 +8,7 @@ operators and error handling for unsupported ones.
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.interpreter.evaluator import evaluate_graph
+from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
 
 def test_evaluator_not_implemented() -> None:
@@ -36,7 +36,7 @@ def test_evaluator_greater() -> None:
     import numpy as np
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-    from ml_switcheroo.interpreter.evaluator import evaluate_graph
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
@@ -46,6 +46,35 @@ def test_evaluator_greater() -> None:
 
     res = evaluate_graph(g, inputs={"a": np.array([2.0]), "b": np.array([1.0])})
     assert res["c"][0]
+
+
+def test_evaluator_relu() -> None:
+    """Test evaluator relu."""
+    import numpy as np
+
+    g = LogicalGraph()
+    g.nodes["a"] = LogicalNode(id="a", op_type="Input")
+    g.nodes["c"] = LogicalNode(id="c", op_type="Relu", inputs=["a"])
+    g.outputs = ["c"]
+    res = evaluate_graph(g, inputs={"a": np.array([-1.0, 2.0])})
+    np.testing.assert_array_equal(res["c"], np.array([0.0, 2.0]))
+
+
+def test_evaluator_where() -> None:
+    """Test evaluator where."""
+    import numpy as np
+
+    g = LogicalGraph()
+    g.nodes["a"] = LogicalNode(id="a", op_type="Input")
+    g.nodes["b"] = LogicalNode(id="b", op_type="Input")
+    g.nodes["c"] = LogicalNode(id="c", op_type="Input")
+    g.nodes["d"] = LogicalNode(id="d", op_type="Where", inputs=["a", "b", "c"])
+    g.outputs = ["d"]
+    res = evaluate_graph(
+        g,
+        inputs={"a": np.array([True, False]), "b": np.array([1.0, 2.0]), "c": np.array([3.0, 4.0])},
+    )
+    np.testing.assert_array_equal(res["d"], np.array([1.0, 4.0]))
 
 
 def test_evaluator_unimplemented() -> None:
@@ -59,7 +88,7 @@ def test_evaluator_unimplemented() -> None:
     import pytest
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-    from ml_switcheroo.interpreter.evaluator import evaluate_graph
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")

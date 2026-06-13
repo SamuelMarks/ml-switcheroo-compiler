@@ -7,7 +7,7 @@ edge, and error conditions.
 
 from typing import NoReturn
 
-from ml_switcheroo.backends.linker import get_source_ast_ref
+from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
 
 
 def my_caller() -> object:

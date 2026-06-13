@@ -7,7 +7,7 @@ shapes requiring broadcasting.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.passes.broadcast_explicitizer import (
+from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import (
     broadcast_explicitizer_pass,
 )
 
@@ -43,7 +43,7 @@ def test_broadcast_coverage() -> None:
 
     g.nodes["abs1"] = LogicalNode(id="abs1", op_type="Abs", inputs=["b"])
 
-    import ml_switcheroo.transforms.passes.shape_inference as si
+    import ml_switcheroo_compiler.transforms.passes.shape_inference as si
 
     si.shape_inference_pass = lambda g: False
 
@@ -67,7 +67,7 @@ def test_broadcast_coverage_shape2() -> None:
     g.nodes["b"] = LogicalNode(id="b", op_type="Input", shape_metadata=None)
     g.nodes["add1"] = LogicalNode(id="add1", op_type="Add", inputs=["a", "b"])
 
-    import ml_switcheroo.transforms.passes.shape_inference as si
+    import ml_switcheroo_compiler.transforms.passes.shape_inference as si
 
     si.shape_inference_pass = lambda g: False
 
@@ -88,7 +88,7 @@ def test_broadcast_coverage_equal_shapes() -> None:
     g.nodes["b"] = LogicalNode(id="b", op_type="Input", shape_metadata=(2,))
     g.nodes["add1"] = LogicalNode(id="add1", op_type="Add", inputs=["a", "b"])
 
-    import ml_switcheroo.transforms.passes.shape_inference as si
+    import ml_switcheroo_compiler.transforms.passes.shape_inference as si
 
     si.shape_inference_pass = lambda g: False
 
@@ -110,7 +110,7 @@ def test_broadcast_coverage_shape1_needs_broadcast() -> None:
     g.nodes["b"] = LogicalNode(id="b", op_type="Input", shape_metadata=(2,))
     g.nodes["add1"] = LogicalNode(id="add1", op_type="Add", inputs=["a", "b"])
 
-    import ml_switcheroo.transforms.passes.shape_inference as si
+    import ml_switcheroo_compiler.transforms.passes.shape_inference as si
 
     si.shape_inference_pass = lambda g: False
 

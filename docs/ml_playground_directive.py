@@ -2,7 +2,8 @@
 
 This module defines a custom Docutils directive that renders a split-pane code editor
 and execution console. It allows users to write, compile, and run ML code (e.g., JAX,
-PyTorch, TensorFlow) directly in the browser using Pyodide, WebGPU, and WASM."""
+PyTorch, TensorFlow) directly in the browser using Pyodide, WebGPU, and WASM.
+"""
 
 from docutils import nodes
 from docutils.parsers.rst import Directive
@@ -14,9 +15,10 @@ class MLPlaygroundDirective(Directive):
     This directive generates the raw HTML structure required to display the interactive
     playground, including framework selectors, code editors, and execution consoles.
 
-Attributes:
+    Attributes:
     has_content (bool): Indicates whether the directive content block is
-        allowed. Defaults to True."""
+        allowed. Defaults to True.
+    """
 
     has_content = True
 
@@ -113,20 +115,21 @@ var require = { paths: { 'vs':
                      "0.45.0/min/vs/editor/editor.main.js"></script>
 """
 
-return [nodes.raw("", html, format="html")]
+        return [nodes.raw("", html, format="html")]
 
 
-def setup(app: object) -> object:"""Initializes the Sphinx extension.
+def setup(app: object) -> object:
+    """Initializes the Sphinx extension.
 
-Registers the `ml-playground` directive and associates the required
-CSS and JavaScript assets for the playground's interactive features.
+    Registers the `ml-playground` directive and associates the required
+    CSS and JavaScript assets for the playground's interactive features.
 
-Args:
-    app (object): The Sphinx application object.
+    Args:
+        app (object): The Sphinx application object.
 
-Returns:
-    dict: A dictionary containing extension metadata, including the
-        version and parallel read/write safety flags.
+    Returns:
+        dict: A dictionary containing extension metadata, including the
+            version and parallel read/write safety flags.
     """
     app.add_directive("ml-playground", MLPlaygroundDirective)
 

@@ -136,29 +136,38 @@ def squeeze(input: Tensor, dim: int | Sequence[int] | None = None) -> Tensor:
     )
 
 
-def unsqueeze(input: Tensor, dim: int) -> Tensor:
-    """Inserts a dimension of size 1 at the specified position.
+def expand_dims(a: Tensor, axis: int | Sequence[int]) -> Tensor:
+    """Expands the shape of an array.
 
     Args:
-    input (Tensor): The input tensor
-    dim (int): The index at which to insert the singleton dimension
+    a (Tensor): The input tensor
+    axis (Union[int, Sequence[int]]): The position(s) in the expanded axes where the new axis
+        (or axes) is placed.
 
     Returns:
-    Tensor: The unsqueezed tensor with an extra dimension
+    Tensor: The expanded tensor
     """
     if config.eager_mode:
-        data = np.expand_dims(input.data, axis=dim)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
-    inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
-    return _emit_shape_node(
-        "Unsqueeze",
-        inputs,
-        {},
-        out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
+        data = np.expand_dims(a.data, axis=axis)
+        return Tensor(np.array(data), np.array(data).shape, a.dtype, a.device)
+
+    # Calculate new shape
+    axes = (axis,) if isinstance(axis, int) else tuple(axis)
+    out_shape = list(a.shape)
+
+    # Sort axes to handle insertions correctly
+    axes_sorted = sorted([ax if ax >= 0 else ax + len(out_shape) + 1 for ax in axes])
+    for ax in axes_sorted:
+        out_shape.insert(ax, 1)
+
+    out_shape_tup = tuple(out_shape)
+
+    return reshape(a, out_shape_tup)
+
+
+def unsqueeze(input: Tensor, dim: int) -> Tensor:
+    """Inserts a dimension of size 1 at the specified position."""
+    return expand_dims(input, dim)
 
 
 def expand(input: Tensor, size: Sequence[int]) -> Tensor:
@@ -981,3 +990,349 @@ def take_along_axis(arr: object, indices: object, axis: int) -> object:
         (indices.data if hasattr(indices, "device") else indices),
         axis=axis,
     )
+
+
+def array_split(
+    ary: Tensor,
+    indices_or_sections: int | Sequence[int],
+    axis: int = 0,
+) -> Sequence[Tensor]:
+    """Split an array into multiple sub-arrays.
+
+    Args:
+        ary (Tensor): The input tensor to split
+        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
+        sizes for each chunk
+        axis (int): The dimension along which to split. Defaults to 0
+
+    Returns:
+        Sequence[Tensor]: A sequence of sub-tensors
+    """
+    if config.eager_mode:
+        datas = np.array_split(ary.data, indices_or_sections, axis=axis)
+        return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
+    return (
+        _emit_shape_node(
+            "ArraySplit",
+            [ary],
+            {"indices_or_sections": indices_or_sections, "axis": axis},
+            ary.shape,
+            ary.dtype,
+        ),
+    )
+
+
+def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
+    """Split an array into multiple sub-arrays vertically (row-wise).
+
+    Args:
+        ary (Tensor): The input tensor to split
+        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
+        sizes for each chunk
+
+    Returns:
+        Sequence[Tensor]: A sequence of sub-tensors
+    """
+    if config.eager_mode:
+        datas = np.vsplit(ary.data, indices_or_sections)
+        return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
+    return (
+        _emit_shape_node(
+            "Vsplit",
+            [ary],
+            {"indices_or_sections": indices_or_sections},
+            ary.shape,
+            ary.dtype,
+        ),
+    )
+
+
+def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
+    """Split an array into multiple sub-arrays horizontally (column-wise).
+
+    Args:
+        ary (Tensor): The input tensor to split
+        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
+        sizes for each chunk
+
+    Returns:
+        Sequence[Tensor]: A sequence of sub-tensors
+    """
+    if config.eager_mode:
+        datas = np.hsplit(ary.data, indices_or_sections)
+        return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
+    return (
+        _emit_shape_node(
+            "Hsplit",
+            [ary],
+            {"indices_or_sections": indices_or_sections},
+            ary.shape,
+            ary.dtype,
+        ),
+    )
+
+
+def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
+    """Split array into multiple sub-arrays along the 3rd axis (depth).
+
+    Args:
+        ary (Tensor): The input tensor to split
+        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
+        sizes for each chunk
+
+    Returns:
+        Sequence[Tensor]: A sequence of sub-tensors
+    """
+    if config.eager_mode:
+        datas = np.dsplit(ary.data, indices_or_sections)
+        return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
+    return (
+        _emit_shape_node(
+            "Dsplit",
+            [ary],
+            {"indices_or_sections": indices_or_sections},
+            ary.shape,
+            ary.dtype,
+        ),
+    )
+
+
+def vstack(tup: Sequence[Tensor]) -> Tensor:
+    """Stack arrays in sequence vertically (row wise).
+
+    Args:
+        tup (Sequence[Tensor]): The sequence of tensors to stack
+
+    Returns:
+        Tensor: The stacked tensor
+    """
+    if config.eager_mode:
+        data = np.vstack([t.data for t in tup])
+        return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
+    inputs = list(tup)
+    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
+
+
+def hstack(tup: Sequence[Tensor]) -> Tensor:
+    """Stack arrays in sequence horizontally (column wise).
+
+    Args:
+        tup (Sequence[Tensor]): The sequence of tensors to stack
+
+    Returns:
+        Tensor: The stacked tensor
+    """
+    if config.eager_mode:
+        data = np.hstack([t.data for t in tup])
+        return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
+    inputs = list(tup)
+    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
+
+
+def dstack(tup: Sequence[Tensor]) -> Tensor:
+    """Stack arrays in sequence depth wise (along third axis).
+
+    Args:
+        tup (Sequence[Tensor]): The sequence of tensors to stack
+
+    Returns:
+        Tensor: The stacked tensor
+    """
+    if config.eager_mode:
+        data = np.dstack([t.data for t in tup])
+        return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
+    inputs = list(tup)
+    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
+
+
+def dynamic_update_slice(
+    operand: Tensor,
+    update: Tensor,
+    start_indices: Sequence[Tensor],
+) -> Tensor:
+    """Updates a slice of an array at dynamically computed start indices.
+
+    Args:
+    operand (Tensor): The input tensor
+    update (Tensor): The tensor containing the update values
+    start_indices (Sequence[Tensor]): Dynamic start indices for each dimension
+
+    Returns:
+    Tensor: The dynamically updated tensor
+
+    Raises:
+    UnimplementedMathError: If called in eager mode
+    """
+    if config.eager_mode:
+        msg = "No direct numpy for dynamic_update_slice"
+        raise UnimplementedMathError(msg)
+
+    inputs = [operand, update]
+    return _emit_shape_node(
+        "DynamicUpdateSlice",
+        inputs,
+        {},
+        operand.shape,
+        operand.dtype,
+    )
+
+
+def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Tensor:
+    """Selects elements from on_true or on_false based on pred.
+
+    Args:
+    pred (Tensor): Boolean mask
+    on_true (Tensor): Selected when pred is True
+    on_false (Tensor): Selected when pred is False
+
+    Returns:
+    Tensor: Resulting tensor
+    """
+    return where(pred, on_true, on_false)
+
+
+def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
+    """Returns the top k values and their indices along the last dimension.
+
+    Args:
+    operand (Tensor): The input tensor
+    k (int): Number of top elements to look for
+
+    Returns:
+    tuple[Tensor, Tensor]: Top k values and their indices
+
+    Raises:
+    UnimplementedMathError: If called in eager mode
+    """
+    if config.eager_mode:
+        msg = "No direct numpy for top_k"
+        raise UnimplementedMathError(msg)
+
+    out_shape = list(operand.shape) if operand.shape else []
+    if out_shape:
+        out_shape[-1] = k
+    out_shape = tuple(out_shape)
+
+    inputs = [operand]
+    # We cheat a bit by returning two tensors pointing to the same node for now,
+    # as handling multi-output nodes properly requires more IR scaffolding
+    val_node = _emit_shape_node("TopK", inputs, {"k": k}, out_shape, operand.dtype)
+    idx_node = _emit_shape_node("TopK", inputs, {"k": k}, out_shape, DType.Int32)
+    return val_node, idx_node
+
+
+def sort(
+    operand: Tensor,
+    dimension: int = -1,
+    is_stable: bool = True,
+    axis: int | None = None,
+) -> Tensor:
+    """Sorts the elements of an array along a given dimension.
+
+    Args:
+    operand (Tensor): The input tensor
+    dimension (int): The dimension to sort along
+    is_stable (bool): Whether to use a stable sorting algorithm
+    axis (int): Alias for dimension.
+
+    Returns:
+    Tensor: The sorted tensor
+    """
+    if axis is not None:
+        dimension = axis
+    if config.eager_mode:
+        kind = "stable" if is_stable else "quicksort"
+        data = np.sort(operand.data, axis=dimension, kind=kind)
+        return Tensor(np.array(data), np.array(data).shape, operand.dtype, operand.device)
+
+    inputs = [operand]
+    attributes = {"dimension": dimension, "is_stable": is_stable}
+    return _emit_shape_node("Sort", inputs, attributes, operand.shape, operand.dtype)
+
+
+def broadcast_in_dim(
+    operand: Tensor,
+    shape: Sequence[int],
+    broadcast_dimensions: Sequence[int],
+) -> Tensor:
+    """Broadcasts an array to a target shape by matching specified dimensions.
+
+    Args:
+    operand (Tensor): The input tensor
+    shape (Sequence[int]): The target shape
+    broadcast_dimensions (Sequence[int]): The dimensions of the target shape to match
+
+    Returns:
+    Tensor: The broadcasted tensor
+
+    Raises:
+    UnimplementedMathError: If called in eager mode
+    """
+    if config.eager_mode:
+        msg = "No direct numpy for broadcast_in_dim"
+        raise UnimplementedMathError(msg)
+
+    inputs = [operand]
+    attributes = {"shape": shape, "broadcast_dimensions": broadcast_dimensions}
+    return _emit_shape_node("BroadcastInDim", inputs, attributes, tuple(shape), operand.dtype)
+
+
+def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> Tensor:
+    """Resizes an image to the given target shape using interpolation.
+
+    Args:
+    image (Tensor): The input image tensor
+    shape (tuple[int, int]): The target height and width
+    method (str): The interpolation method (e.g. 'bilinear', 'nearest')
+
+    Returns:
+    Tensor: The resized image tensor
+
+    Raises:
+    UnimplementedMathError: If called in eager mode
+    """
+    if config.eager_mode:
+        msg = "No direct numpy for image_resize"
+        raise UnimplementedMathError(msg)
+
+    from ml_switcheroo_compiler.ops.shape.basic import Resize
+
+    op = Resize()
+    out_shape = op.infer_shape(image, shape, method)
+
+    return _emit_shape_node(
+        "Resize",
+        [image],
+        {"shape": shape, "method": method},
+        out_shape,
+        image.dtype,
+    )
+
+
+def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Tensor:
+    """Find indices where elements should be inserted to maintain order.
+
+    Args:
+    a (Tensor): 1-D input array. If side is 'left' or 'right',
+        it must be sorted in ascending order.
+    v (Tensor): Values to insert into a.
+    side (str): If 'left', the index of the first suitable location found is given.
+        If 'right', return the last such index.
+
+    Returns:
+    Tensor: Array of insertion points with the same shape as v.
+    """
+    if config.eager_mode:
+        data = np.searchsorted(a.data, v.data, side=side)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(np.array(data), np.array(data).shape, DType.Int32, a.device)
+
+    inputs = [a, v]
+    attributes = {"side": side}
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    return _emit_shape_node("SearchSorted", inputs, attributes, v.shape, DType.Int32)

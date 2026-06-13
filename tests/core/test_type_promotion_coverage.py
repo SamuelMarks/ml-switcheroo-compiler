@@ -1,0 +1,13 @@
+"""Module docstring."""
+
+from ml_switcheroo_compiler.core.type_promotion import promote_types
+from ml_switcheroo_compiler.core.dtype import DType
+
+
+def test_type_promotion_coverage_brute() -> None:
+    """Function docstring."""
+    # Let's test the `if rank1 > rank2` in Integer promotion
+    assert promote_types(DType.Int32, DType.Int8) == DType.Int32
+    assert promote_types(DType.Int8, DType.Int32) == DType.Int32
+
+    # We will use mock patch for `is_int1 or is_int2`? We can't mock local variables.

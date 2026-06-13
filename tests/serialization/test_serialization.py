@@ -6,8 +6,8 @@ various serialization formats, including JSON, Protobuf, and FlatBuffers.
 
 import json
 
-from ml_switcheroo.ir.core import IRGraph, IRNode
-from ml_switcheroo.serialization import (
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.serialization import (
     graph_to_flatbuffers,
     graph_to_json,
     graph_to_protobuf,

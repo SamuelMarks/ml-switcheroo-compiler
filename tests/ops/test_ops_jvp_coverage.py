@@ -20,7 +20,7 @@ def test_all_ops_coverage() -> None:
     Returns:
     None
     """
-    from ml_switcheroo.ops.base import _OP_REGISTRY
+    from ml_switcheroo_compiler.ops.base import _OP_REGISTRY
 
     g = LogicalGraph()
     n = LogicalNode(id="n", op_type="dummy", inputs=["a", "b"])

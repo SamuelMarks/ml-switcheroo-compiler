@@ -95,14 +95,14 @@ The `ml-switcheroo-compiler` repository defines the core architecture mapping fr
 ## 1. API Boundaries & Core Structures
 
 ### The Universal Tensor Interface
-The base class `switcheroo.Tensor` serves as the unified backend array.
-- `zero_torch.tensor.Tensor` holds a `switcheroo.Tensor` as its `.data` payload.
-- `zero_jax.numpy.ndarray` subclasses or wraps `switcheroo.Tensor`.
+The base class `ml_switcheroo_compiler.Tensor` serves as the unified backend array.
+- `zero_torch.tensor.Tensor` holds a `ml_switcheroo_compiler.Tensor` as its `.data` payload.
+- `zero_jax.numpy.ndarray` subclasses or wraps `ml_switcheroo_compiler.Tensor`.
 
 The tensor interface implements essential properties like `shape`, `dtype`, `device`, and `requires_grad`, enabling cross-framework compatibility natively.
 
 ### Configuration & State Management
-A `switcheroo.config` singleton controls the execution flow, tracking states like `eager_mode`, `default_float_dtype`, and `default_device`. The frameworks read this scoped context (also accessible via environment variables like `SWITCHEROO_EAGER_MODE=1`) to determine whether to execute operations eagerly or trace an IR graph.
+A `ml_switcheroo_compiler.config` singleton controls the execution flow, tracking states like `eager_mode`, `default_float_dtype`, and `default_device`. The frameworks read this scoped context (also accessible via environment variables like `SWITCHEROO_EAGER_MODE=1`) to determine whether to execute operations eagerly or trace an IR graph.
 
 ### Error Handling Hierarchy
 Specific error types such as `TracingError`, `CompilationError`, `ShapeMismatchError`, `DTypePromotionError`, `BackendNotSupportedError`, and `UnimplementedMathError` provide distinct traces depending on where execution fails during the pipeline.
@@ -110,10 +110,10 @@ Specific error types such as `TracingError`, `CompilationError`, `ShapeMismatchE
 ## 2. Core Execution Engine Modes
 
 ### Eager Mode Engine
-The immediate-execution path dispatches mathematical operations directly to NumPy or SciPy (the `switcheroo.numpy_backend`). This mode uses a zero-copy `numpy.ndarray` wrapper to immediately evaluate operations, throwing `UnimplementedMathError` only when there is no direct mathematical equivalent.
+The immediate-execution path dispatches mathematical operations directly to NumPy or SciPy (the `ml_switcheroo_compiler.numpy_backend`). This mode uses a zero-copy `numpy.ndarray` wrapper to immediately evaluate operations, throwing `UnimplementedMathError` only when there is no direct mathematical equivalent.
 
 ### Graph Tracing Engine
-Constructs the Intermediate Representation by tracking operations on proxy variables (`switcheroo.tracing.ProxyTensor`). Proxy tensors overload all Python magic methods.
+Constructs the Intermediate Representation by tracking operations on proxy variables (`ml_switcheroo_compiler.tracing.ProxyTensor`). Proxy tensors overload all Python magic methods.
 - Execution happens within a `GraphContext` (Thread-Local Storage) that records the execution tape.
 - Frame inspection captures source-code line numbers for precise tracebacks.
 
@@ -124,7 +124,7 @@ The tracing engine includes a comprehensive AutoDiff system:
 - Mapped transparently to `zero_torch.autograd.backward` and `zero_jax.grad`.
 
 ### Higher-Order Control Flow
-Implements `switcheroo.control_flow` primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`), mapping seamlessly to JAX `lax` constructs and PyTorch looping logic without Python runtime unrolling penalties.
+Implements `ml_switcheroo_compiler.control_flow` primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`), mapping seamlessly to JAX `lax` constructs and PyTorch looping logic without Python runtime unrolling penalties.
 
 ## 3. Unified Intermediate Representation (IR) Schema
 
@@ -238,7 +238,7 @@ sequenceDiagram
 ### Trace-to-AST Linking
 To provide clear error messages and allow for framework-specific syntactic rewrites, the compiler dynamically links trace operations to the original Python syntax trees. Leveraging `inspect.currentframe()`, every `LogicalNode` emitted into the IR captures a `source_ast_ref` binding it back to the exact file path, line number, and AST ID in the user's source code.
 
-## 6. Rearchitecture 2026: Strict Modularity
-In 2026, the architecture was upgraded to enforce even stricter isolation:
-- **Zero Frontend Leakage**: The compiler repository previously contained `jnp/` and `nn/` submodules. These have been completely eradicated. The compiler now only exposes a universal `ml_switcheroo.ops` mathematical library. All syntactic sugar, OOP constructs, and neural network primitives strictly reside in their respective `zero-*` frontend repositories.
-- **Pluggable Backend Registry**: The compiler backends are fully decoupled via `ml_switcheroo.backends.registry.BackendRegistry`. Backends (like JAX, PyTorch, MLX, WebGPU) are registered dynamically using the `@register_backend("name")` decorator. This $N \times M$ architecture allows adding new target emitters without modifying the core compiler code.
+## 6. Rearchitecture 2026: Backend Focused Rewrite
+In 2026, the architecture was upgraded to enforce a backend-focused paradigm:
+- **Core Ops and Generators**: The compiler focuses on robust operation definitions (`ml_switcheroo_compiler.ops`), frontend compatibility layers (Flax, Pax, Chex, Grain), and backend generators, relegating framework-specific API mimicry (PyTorch, JAX, Keras, etc.) to `zero-*` repositories.
+- **Pluggable Backend Registry**: The compiler backends are fully decoupled via `ml_switcheroo_compiler.backends.registry.BackendRegistry`. Backends (like JAX, PyTorch, MLX, WebGPU) are registered dynamically using the `@register_backend("name")` decorator. This $N \times M$ architecture allows adding new target emitters without modifying the core compiler code.

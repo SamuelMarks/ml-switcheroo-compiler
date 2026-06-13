@@ -15,6 +15,7 @@ import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
@@ -557,3 +558,159 @@ def lu_factor(
     import scipy.linalg as spla
 
     return spla.lu_factor(a, overwrite_a=overwrite_a, check_finite=check_finite)
+
+
+def dot_general(
+    lhs: Tensor,
+    rhs: Tensor,
+    dimension_numbers: tuple[
+        tuple[Sequence[int], Sequence[int]],
+        tuple[Sequence[int], Sequence[int]],
+    ],
+) -> Tensor:
+    """General dot product with support for batching and contracting arbitrary dimensions.
+
+    Args:
+        lhs (Tensor): The left-hand side tensor.
+        rhs (Tensor): The right-hand side tensor.
+        dimension_numbers (tuple): A tuple containing contracting dimensions and batch dimensions.
+
+    Returns:
+        Tensor: The result of the generalized dot product.
+    """
+    if config.eager_mode:
+        msg = "No direct numpy for dot_general"
+        raise UnimplementedMathError(msg)
+
+    attributes = {"dimension_numbers": dimension_numbers}
+
+    # Very rough shape inference for frontend dummy object
+    contracting, batch = dimension_numbers
+    lhs_contracting, rhs_contracting = contracting
+    lhs_batch, rhs_batch = batch
+
+    out_shape = []
+    if lhs.shape and rhs.shape:
+        for b in lhs_batch:
+            out_shape.append(lhs.shape[b])
+        lhs_remaining = [
+            i for i in range(len(lhs.shape)) if i not in lhs_contracting and i not in lhs_batch
+        ]
+        for r in lhs_remaining:
+            out_shape.append(lhs.shape[r])
+        rhs_remaining = [
+            i for i in range(len(rhs.shape)) if i not in rhs_contracting and i not in rhs_batch
+        ]
+        for r in rhs_remaining:
+            out_shape.append(rhs.shape[r])
+
+    return _emit_linalg_node("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [lhs.dtype])
+
+
+def conv_general_dilated(
+    lhs: Tensor,
+    rhs: Tensor,
+    window_strides: Sequence[int],
+    padding: Sequence[tuple[int, int]] | str,
+    lhs_dilation: Sequence[int] | None = None,
+    rhs_dilation: Sequence[int] | None = None,
+    dimension_numbers: object = None,
+) -> Tensor:
+    """General N-dimensional convolution with support for strides, padding, and dilations.
+
+    Args:
+    lhs (Tensor): Left-hand side tensor (input).
+    rhs (Tensor): Right-hand side tensor (filters/weights).
+    window_strides (Sequence[int]): Strides of the window.
+    padding (Sequence[tuple[int, int]] | str): Padding to apply.
+    lhs_dilation (Sequence[int] | None): Dilation of the input.
+    rhs_dilation (Sequence[int] | None): Dilation of the weights.
+    dimension_numbers (object): Dimension numbers specification.
+
+    Returns:
+    Tensor: The result of the convolution.
+
+    Raises:
+    UnimplementedMathError: If called in eager mode.
+    """
+    if config.eager_mode:
+        msg = "No direct numpy for conv_general_dilated"
+        raise UnimplementedMathError(msg)
+
+    inputs = [lhs, rhs]
+    attributes = {
+        "window_strides": window_strides,
+        "padding": padding,
+        "lhs_dilation": lhs_dilation,
+        "rhs_dilation": rhs_dilation,
+        "dimension_numbers": dimension_numbers,
+    }
+
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
+
+    op = ConvGeneralDilated()
+    out_shape = op.infer_shape(
+        lhs,
+        rhs,
+        window_strides,
+        padding,
+        lhs_dilation,
+        rhs_dilation,
+        dimension_numbers,
+    )
+
+    return _emit_linalg_node("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype])
+
+
+def fft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
+    """Computes the one-dimensional discrete Fourier Transform.
+
+    Args:
+    a (Tensor): The input tensor
+    n (int | None): Length of the transformed axis of the output
+    axis (int): Axis over which to compute the FFT
+
+    Returns:
+    Tensor: The transformed tensor
+
+    Raises:
+    UnimplementedMathError: If called in eager mode
+    """
+    if config.eager_mode:
+        data = np.fft.fft(a.data, n=n, axis=axis)
+        # Note: returning proper complex type is complex, using a mock DType mapping if possible
+        # We will just return float32 here if complex not supported
+        return Tensor(data, data.shape, a.dtype, a.device)
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Fft
+
+    op = Fft()
+    out_shape = op.infer_shape(a, n, axis)
+
+    return _emit_linalg_node("Fft", [a], {"n": n, "axis": axis}, [out_shape], [a.dtype])
+
+
+def rfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
+    """Computes the one-dimensional discrete Fourier Transform for real input.
+
+    Args:
+    a (Tensor): The input tensor
+    n (int | None): Length of the transformed axis of the output
+    axis (int): Axis over which to compute the FFT
+
+    Returns:
+    Tensor: The transformed tensor
+
+    Raises:
+    UnimplementedMathError: If called in eager mode
+    """
+    if config.eager_mode:
+        data = np.fft.rfft(a.data, n=n, axis=axis)
+        return Tensor(data, data.shape, a.dtype, a.device)
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Rfft
+
+    op = Rfft()
+    out_shape = op.infer_shape(a, n, axis)
+
+    return _emit_linalg_node("Rfft", [a], {"n": n, "axis": axis}, [out_shape], [a.dtype])

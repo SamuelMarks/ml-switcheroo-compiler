@@ -5,7 +5,7 @@ preserves non-PyTorch code elements, such as standard library imports and built-
 function calls, during the transpilation process.
 """
 
-from ml_switcheroo.backends.cst_transpiler import transpile_source
+from ml_switcheroo_compiler.backends.cst_transpiler import transpile_source
 
 
 def test_transpile_non_torch_import() -> None:

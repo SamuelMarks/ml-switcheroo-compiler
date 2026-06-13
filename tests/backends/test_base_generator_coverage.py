@@ -8,7 +8,7 @@ generation.
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
 
 class DummyGenerator(BaseGenerator):
@@ -105,7 +105,7 @@ def test_generator_attributes_coverage() -> None:
     Returns:
     None
     """
-    from ml_switcheroo.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     class DummyGen(DummyGenerator):
         """A nested dummy generator class used to test IR node attribute coverage."""

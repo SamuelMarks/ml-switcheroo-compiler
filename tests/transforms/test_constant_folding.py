@@ -3,7 +3,7 @@
 import numpy as np
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.passes.constant_folding import constant_folding_pass
+from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 
 
 def test_constant_folding() -> None:

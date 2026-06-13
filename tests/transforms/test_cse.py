@@ -5,7 +5,7 @@ graphs.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.passes.cse import cse_pass
+from ml_switcheroo_compiler.transforms.passes.cse import cse_pass
 
 
 def test_cse() -> None:

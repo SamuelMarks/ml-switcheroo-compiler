@@ -18,12 +18,15 @@ __all__ = [
 from .frontend import (
     arange as arange,
 )
+from .frontend import array as array
+from .frontend import asarray as asarray
 from .frontend import (
     diag as diag,
 )
 from .frontend import (
     empty as empty,
 )
+from .frontend import empty_like as empty_like
 from .frontend import (
     eye as eye,
 )
@@ -39,12 +42,16 @@ from .frontend import (
 from .frontend import (
     linspace as linspace,
 )
+from .frontend import manual_seed as manual_seed
 from .frontend import (
     ones as ones,
 )
 from .frontend import (
     ones_like as ones_like,
 )
+from .frontend import rand as rand
+from .frontend import randint as randint
+from .frontend import randn as randn
 from .frontend import (
     zeros as zeros,
 )

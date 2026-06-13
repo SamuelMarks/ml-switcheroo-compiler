@@ -66,3 +66,7 @@ frexp = get_op("Frexp")()
 atan2 = get_op("Atan2")()
 _ = _math
 _ = _special
+logit = get_op("Logit")()
+mvlgamma = get_op("Mvlgamma")()
+nan_to_num = get_op("NanToNum")()
+signbit = get_op("Signbit")()

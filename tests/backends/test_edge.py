@@ -6,7 +6,7 @@ ONNX code generators using a logical graph.
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo.backends.edge import (
+from ml_switcheroo_compiler.backends.edge import (
     ONNXCodeGenerator,
     WasmCodeGenerator,
     WebGLCodeGenerator,

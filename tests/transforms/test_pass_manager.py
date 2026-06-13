@@ -6,9 +6,9 @@ hashing, and the iterative execution of optimization passes within the PassManag
 
 import pytest
 
-from ml_switcheroo.core.errors import CompilationError
-from ml_switcheroo.ir.core import IRGraph, IRNode
-from ml_switcheroo.transforms.pass_manager import (
+from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.transforms.pass_manager import (
     DAGTopologicalSorter,
     IRValidator,
     PassManager,

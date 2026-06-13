@@ -6,7 +6,7 @@ removes unused nodes from a logical graph representation.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.passes.dce import dce_pass
+from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 
 
 def test_dce() -> None:

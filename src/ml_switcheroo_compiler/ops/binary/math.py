@@ -5,12 +5,6 @@ various element-wise binary mathematical operations (e.g., Add, Subtract, Multip
 Divide) using NumPy for evaluation
 """
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
-
 import numpy as np
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -381,3 +375,28 @@ class Equal(BinaryMathOp):
 
     op_name = "Equal"
     np_op_name = "equal"
+
+
+@register_op("Xlogy")
+class Xlogy(BinaryMathOp):
+    """Computes x * log(y) returning 0 if x is 0 element-wise."""
+
+    op_name = "Xlogy"
+
+    def numpy_eval(self, x: object, y: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            x (object): The x parameter
+            y (object): The y parameter
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        x_arr = np.asarray(x)
+        y_arr = np.asarray(y)
+        res = x_arr * np.log(y_arr)
+        return np.where(x_arr == 0, np.zeros_like(res), res)

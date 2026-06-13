@@ -130,3 +130,154 @@ class Arange(OpDef):
             object: The resulting output
         """
         return np.arange(*args, **kwargs)
+
+
+@register_op("Rand")
+class Rand(CreationOp):
+    """Creates a tensor with random numbers from a uniform distribution [0, 1)."""
+
+    op_name = "Rand"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            *args (object): Variable length argument list
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        if "size" in kwargs:
+            return kwargs["size"]
+        if len(args) == 1 and isinstance(args[0], (tuple, list)):
+            return args[0]
+        return args
+
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            *args (object): Variable length argument list
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        shape = self.infer_shape(*args, **kwargs)
+        dtype = kwargs.get("dtype", float)
+        # Using numpy.random.rand and casting
+        res = np.random.rand(*shape)
+        if dtype is not None:
+            res = res.astype(dtype)
+        return res
+
+
+@register_op("Randn")
+class Randn(Rand):
+    """Creates a tensor with random numbers from a standard normal distribution."""
+
+    op_name = "Randn"
+
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            *args (object): Variable length argument list
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        shape = self.infer_shape(*args, **kwargs)
+        dtype = kwargs.get("dtype", float)
+        res = np.random.randn(*shape)
+        if dtype is not None:
+            res = res.astype(dtype)
+        return res
+
+
+@register_op("Randint")
+class Randint(CreationOp):
+    """Creates a tensor with random integers from [low, high)."""
+
+    op_name = "Randint"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            *args (object): Variable length argument list
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        if "size" in kwargs:
+            return kwargs["size"]
+        if len(args) == 3:
+            return args[2]
+        return ()
+
+    def numpy_eval(self, *args: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            *args (object): Variable length argument list
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        low = args[0] if len(args) > 0 else kwargs.get("low", 0)
+        high = args[1] if len(args) > 1 else kwargs.get("high")
+        if high is None:
+            high = low
+            low = 0
+
+        shape = self.infer_shape(*args, **kwargs)
+        dtype = kwargs.get("dtype", int)
+        res = np.random.randint(low, high, size=shape)
+        if dtype is not None:
+            res = res.astype(dtype)
+        return res
+
+
+@register_op("ManualSeed")
+class ManualSeed(OpDef):
+    """Sets the seed for generating random numbers."""
+
+    op_name = "ManualSeed"
+
+    def infer_shape(self, seed: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            seed (object): The seed parameter
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        return ()
+
+    def numpy_eval(self, seed: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            seed (object): The seed parameter
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        np.random.seed(seed)
+        return seed

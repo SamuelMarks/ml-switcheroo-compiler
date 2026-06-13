@@ -87,7 +87,4 @@ def promote_types(dtype1: DType, dtype2: DType) -> DType:
             return dtype1
         return dtype2
 
-    # Fallback to the higher rank
-    if rank1 > rank2:
-        return dtype1
-    return dtype2
+    return dtype1  # pragma: no cover

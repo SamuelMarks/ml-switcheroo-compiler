@@ -7,7 +7,7 @@ Sin, Cos, Exp, etc.
 
 import numpy as np
 
-from ml_switcheroo.ops.unary.math import (
+from ml_switcheroo_compiler.ops.unary.math import (
     Abs,
     Ceil,
     Cos,
@@ -116,11 +116,29 @@ def test_unary_base_op() -> None:
 
 
 def test_unary_special_coverage() -> None:
-    """Tests special edge cases and error handling for unary operations.
+    """Tests special edge cases and error handling for unary operations."""
+    import numpy as np
+    from ml_switcheroo_compiler.ops.unary.special import Cast, Bitcast, Frexp
+    from ml_switcheroo_compiler.core.dtype import DType
 
-    This test ensures that unimplemented math operations raise the appropriate
-    exceptions and that special coverage scenarios are handled correctly
+    x = np.array([1.5, 2.5])
 
-    Returns:
-    None
-    """
+    cast_op = Cast()
+    res1 = cast_op.numpy_eval(x, dtype=DType.Int32)
+    assert res1.dtype == np.int32
+
+    res1_str = cast_op.numpy_eval(x, dtype="int32")
+    assert res1_str.dtype == np.int32
+
+    bitcast_op = Bitcast()
+    x_int = np.array([1, 2], dtype=np.int32)
+    res2 = bitcast_op.numpy_eval(x_int, dtype=DType.Float32)
+    assert res2.dtype == np.float32
+
+    res2_str = bitcast_op.numpy_eval(x_int, dtype="float32")
+    assert res2_str.dtype == np.float32
+
+    frexp_op = Frexp()
+    res_frexp = frexp_op.numpy_eval(x)
+    assert isinstance(res_frexp, tuple)
+    assert len(res_frexp) == 2

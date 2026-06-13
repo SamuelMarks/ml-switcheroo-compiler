@@ -7,7 +7,7 @@ graph inputs and outputs.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.passes.lift_state import lift_state_pass
+from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
 
 
 def test_lift_state_pass() -> None:
@@ -50,7 +50,7 @@ def test_state_lifting_already_in_outputs() -> None:
     """
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-    from ml_switcheroo.transforms.passes.state_lifting import state_lifting_pass
+    from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
 
     g = LogicalGraph(outputs=["n1"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="AssignVariable", inputs=["a", "b"])

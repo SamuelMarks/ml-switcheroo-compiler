@@ -24,7 +24,7 @@ def test_type_promotion_partial_branches() -> None:
     """
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-    from ml_switcheroo.transforms.passes.type_promotion_explicitizer import (
+    from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
         type_promotion_explicitizer_pass,
     )
 

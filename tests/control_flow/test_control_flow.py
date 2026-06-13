@@ -7,12 +7,12 @@ construction.
 
 import numpy as np
 
-from ml_switcheroo.core.config import ConfigContext
-from ml_switcheroo.core.device import Device, DeviceType
-from ml_switcheroo.core.dtype import DType
-from ml_switcheroo.core.tensor import Tensor
-from ml_switcheroo.ops.control_flow import cond, pmap, scan, vmap, while_loop
-from ml_switcheroo.tracing.tracer import ProxyTensor
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.control_flow import cond, pmap, scan, vmap, while_loop
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 device = Device(DeviceType.CPU)
 
@@ -199,7 +199,7 @@ def test_cond_trace() -> None:
                 device,
             )
 
-        from ml_switcheroo.tracing.tracer import _tracer
+        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
         _tracer.start_tracing()
         res = cond(pred, true_fn, false_fn)
@@ -251,7 +251,7 @@ def test_while_loop_trace() -> None:
             DType.Float32,
             device,
         )
-        from ml_switcheroo.tracing.tracer import _tracer
+        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
         _tracer.start_tracing()
         res = while_loop(cond_fn, body_fn, init_val)
@@ -294,7 +294,7 @@ def test_scan_trace() -> None:
             """
             return carry, x
 
-        from ml_switcheroo.tracing.tracer import _tracer
+        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
         _tracer.start_tracing()
         _carry, ys = scan(f, init, xs)
@@ -330,7 +330,7 @@ def test_vmap_trace() -> None:
             """
             return t
 
-        from ml_switcheroo.tracing.tracer import _tracer
+        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
         _tracer.start_tracing()
         res = vmap(func)(x)
@@ -366,7 +366,7 @@ def test_pmap_trace() -> None:
             """
             return t
 
-        from ml_switcheroo.tracing.tracer import _tracer
+        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
         _tracer.start_tracing()
         res = pmap(func)(x)
@@ -385,8 +385,8 @@ def test_trace_function_type_error() -> None:
     """
     import pytest
 
-    from ml_switcheroo.ops.control_flow import _trace_function
-    from ml_switcheroo.tracing.tracer import _tracer
+    from ml_switcheroo_compiler.ops.control_flow import _trace_function
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
 
     def bad_func(*args: object) -> int:
         """Bad func.
@@ -423,8 +423,8 @@ def test_control_flow_outside_tracing() -> None:
     """
     import pytest
 
-    from ml_switcheroo.core.config import ConfigContext
-    from ml_switcheroo.ops.control_flow import cond, pmap, scan, vmap, while_loop
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.ops.control_flow import cond, pmap, scan, vmap, while_loop
 
     with ConfigContext(eager_mode=False):
         pred = Tensor(
@@ -476,8 +476,8 @@ def test_while_loop_tuple_init() -> None:
     """
     import numpy as np
 
-    from ml_switcheroo.core.config import ConfigContext
-    from ml_switcheroo.ops.control_flow import while_loop
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.ops.control_flow import while_loop
 
     with ConfigContext(eager_mode=True):
         t1 = Tensor(np.array(0), (), DType.Int32, device)
@@ -553,7 +553,7 @@ def test_while_loop_tuple_init() -> None:
             """
             return (v1, v2)
 
-        from ml_switcheroo.tracing.tracer import _tracer
+        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
         _tracer.start_tracing()
         try:
@@ -562,3 +562,93 @@ def test_while_loop_tuple_init() -> None:
             assert len(res_trace) == 2
         finally:
             _tracer.stop_tracing()
+
+
+def test_stop_gradient() -> None:
+    """Test stop_gradient."""
+    import numpy as np
+
+    from ml_switcheroo_compiler.core.device import Device, DeviceType
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ops.control_flow import stop_gradient
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
+    # Test eager mode
+    device = Device(DeviceType.CPU)
+    t_eager = Tensor(np.array([1.0, 2.0]), shape=(2,), dtype=DType.Float32, device=device)
+    t_out = stop_gradient(t_eager)
+    assert t_out is t_eager
+
+    # Test tracing mode with ProxyTensor
+    graph = _tracer.start_tracing(name="stop_gradient_test")
+    try:
+        proxy = ProxyTensor(id="input_proxy", shape=(2,), dtype="float32")
+        out_proxy = stop_gradient(proxy)
+        assert isinstance(out_proxy, ProxyTensor)
+        assert out_proxy.id != proxy.id
+        node = graph.nodes[out_proxy.id]
+        assert node.op_type == "StopGradient"
+        assert node.inputs == ["input_proxy"]
+
+        # Test tracing mode with Tensor wrapping ProxyTensor
+        t_trace = Tensor(proxy, shape=(2,), dtype=DType.Float32, device=device)
+        out_trace = stop_gradient(t_trace)
+        assert isinstance(out_trace, Tensor)
+        assert isinstance(out_trace.data, ProxyTensor)
+        assert out_trace.data.id != proxy.id
+        node2 = graph.nodes[out_trace.data.id]
+        assert node2.op_type == "StopGradient"
+        assert node2.inputs == ["input_proxy"]
+
+        # Test tracing mode with non-tensor
+        val = 42.0
+        assert stop_gradient(val) is val
+
+    finally:
+        _tracer.stop_tracing()
+
+
+def test_scan_eager_ndarray() -> None:
+    """Test scan eager mode returning an ndarray."""
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.ops.control_flow import scan
+    import numpy as np
+
+    device = Device("cpu")
+    with ConfigContext(eager_mode=True):
+        xs = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, device)
+
+        def f(carry: object, x: object) -> object:
+            # Return a Tensor
+            return carry, Tensor(np.array([1, 2]), (2,), DType.Int32, device)
+
+        carry_out, ys_out = scan(f, 0, xs)
+        assert isinstance(ys_out, Tensor)
+        assert np.array_equal(ys_out.data, np.array([[1, 2], [1, 2], [1, 2]]))
+
+
+def test_vmap_tuple_axes() -> None:
+    """Test vmap with tuple in_axes."""
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.ops.control_flow import vmap
+    import numpy as np
+
+    device = Device("cpu")
+    with ConfigContext(eager_mode=True):
+
+        def f(x: object) -> object:
+            from ml_switcheroo_compiler.ops.unary.math import Negative
+
+            return Negative()(x)
+
+        vmap_f = vmap(f, in_axes=(0,), out_axes=(0,))
+        x = Tensor(np.array([1, 2]), (2,), DType.Int32, device)
+        y = vmap_f(x)
+        assert np.array_equal(y.data, np.array([-1, -2]))

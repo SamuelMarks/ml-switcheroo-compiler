@@ -19,7 +19,6 @@ The compiler resolves the impedance mismatch between different machine learning 
 2. **Direct-to-Edge Compilation:** Bypass Python deployment entirely by lowering the Unified IR down to highly optimized browser and edge executables powered by **WebGPU** and **WASM SIMD**.
 
 Please refer to [`ARCHITECTURE.md`](ARCHITECTURE.md) for an in-depth dive into the compiler's architecture, including its intermediate representation, execution engine modes, and transformation pipeline.
-For the detailed implementation roadmap and task tracking, see the [`ML_SWITCHEROO_COMPILER_BUILD_PLAN.md`](ML_SWITCHEROO_COMPILER_BUILD_PLAN.md).
 
 ## Compilation Pipeline
 

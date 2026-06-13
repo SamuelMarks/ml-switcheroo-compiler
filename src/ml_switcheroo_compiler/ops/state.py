@@ -3,12 +3,6 @@
 framework
 """
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 

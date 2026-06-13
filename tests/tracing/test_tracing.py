@@ -10,7 +10,7 @@ propagation.
 import pytest
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo.tracing.tracer import ProxyTensor, TracerTape, _tracer
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape, _tracer
 
 
 def test_tracer_tape() -> None:
@@ -125,3 +125,83 @@ def test_tracer_add_node_with_ast_ref() -> None:
     tape.add_node(n)
     out_graph = tape.stop_tracing()
     assert out_graph.nodes["n1"].source_ast_ref == "test:1"
+
+
+def test_proxy_tensor_assign_operations() -> None:
+    """Test assign, assign_add, and assign_sub on ProxyTensor."""
+    from ml_switcheroo_compiler.ir.state import create_read_variable
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
+    graph = _tracer.start_tracing(name="assign_test")
+    try:
+        # Manually create a variable read to act as our variable proxy
+        var_node = create_read_variable("my_var", shape=(2, 2), dtype="float32")
+        _tracer.add_node(var_node)
+        var_proxy = ProxyTensor(id=var_node.id, shape=(2, 2), dtype="float32")
+
+        # Test assign
+        val_proxy = ProxyTensor(id="val_1", shape=(2, 2), dtype="float32")
+        updated_1 = var_proxy.assign(val_proxy)
+        assert updated_1.shape == (2, 2)
+        assign_node_1 = graph.nodes[updated_1.id]
+        assert assign_node_1.op_type == "AssignVariable"
+        assert assign_node_1.attributes["variable_name"] == "my_var"
+
+        # Test assign_add
+        updated_2 = updated_1.assign_add(val_proxy)
+        assign_node_2 = graph.nodes[updated_2.id]
+        assert assign_node_2.op_type == "AssignVariable"
+        assert assign_node_2.attributes["variable_name"] == "my_var"
+
+        # Test assign_sub
+        updated_3 = updated_2.assign_sub(val_proxy)
+        assign_node_3 = graph.nodes[updated_3.id]
+        assert assign_node_3.op_type == "AssignVariable"
+        assert assign_node_3.attributes["variable_name"] == "my_var"
+
+    finally:
+        _tracer.stop_tracing()
+
+
+def test_proxy_tensor_assign_errors() -> None:
+    """Test proxy_tensor_assign_errors."""
+    import pytest
+
+    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
+    var_proxy = ProxyTensor(id="foo", shape=(), dtype="float32")
+    val_proxy = ProxyTensor(id="bar", shape=(), dtype="float32")
+
+    # Test outside tracing
+    with pytest.raises(RuntimeError, match="Cannot perform assign outside of a tracing context."):
+        var_proxy.assign(val_proxy)
+
+    _tracer.start_tracing(name="assign_err_test")
+    try:
+        # Test assign on non-existent node
+        with pytest.raises(ValueError, match=r"assign\(\) can only be called on a variable proxy."):
+            var_proxy.assign(val_proxy)
+
+        # Test assign on non-variable node
+        _tracer.add_node(IRNode(id="foo", op_type="Add", inputs=[], shape_metadata=()))
+        with pytest.raises(ValueError, match=r"assign\(\) can only be called on a variable proxy."):
+            var_proxy.assign(val_proxy)
+
+        # Test assigning a constant value (not a ProxyTensor)
+        _tracer.add_node(
+            IRNode(
+                id="var_node",
+                op_type="ReadVariable",
+                inputs=[],
+                attributes={"variable_name": "x"},
+                shape_metadata=(),
+            ),
+        )
+        var_proxy_2 = ProxyTensor(id="var_node", shape=(), dtype="float32")
+        out = var_proxy_2.assign(42.0)
+        assert out.shape == ()
+        assert _tracer.active_graph.nodes[out.id].op_type == "AssignVariable"
+
+    finally:
+        _tracer.stop_tracing()

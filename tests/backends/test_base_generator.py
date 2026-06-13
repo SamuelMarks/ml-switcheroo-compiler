@@ -7,7 +7,7 @@ Switcheroo code generation framework.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
 
 class DummyGenerator(BaseGenerator):

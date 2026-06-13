@@ -9,7 +9,7 @@ nodes, cast operations, and edge cases like missing or mismatched types.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.transforms.passes.dtype_inference import dtype_inference_pass
+from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
 
 """Module containing related functionality."""
 

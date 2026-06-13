@@ -5,12 +5,6 @@ of unary mathematical operations (such as trigonometric, exponential, logarithmi
 rounding functions) that can be evaluated using NumPy
 """
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
-
 import numpy as np
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -526,3 +520,87 @@ class Rsqrt(UnaryMathOp):
         import numpy as np
 
         return 1.0 / np.sqrt(x)
+
+
+@register_op("Logit")
+class Logit(UnaryMathOp):
+    """Computes the logit of a tensor element-wise."""
+
+    op_name = "Logit"
+
+    def numpy_eval(self, x: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            x (object): The x parameter
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        eps = kwargs.get("eps")
+        if eps is not None:
+            x = np.clip(x, eps, 1.0 - eps)
+
+        return np.log(x / (1.0 - x))
+
+
+@register_op("Mvlgamma")
+class Mvlgamma(UnaryMathOp):
+    """Computes the multivariate log-gamma function with dimension p element-wise."""
+
+    op_name = "Mvlgamma"
+
+    def numpy_eval(self, x: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            x (object): The x parameter
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import math
+
+        import numpy as np
+
+        p = kwargs.get("p", 1)
+        res = p * (p - 1) / 4.0 * math.log(math.pi)
+        for i in range(1, p + 1):
+            res += np.vectorize(math.lgamma)(x + (1 - i) / 2.0).astype(getattr(x, "dtype", float))
+        return res
+
+
+@register_op("NanToNum")
+class NanToNum(UnaryMathOp):
+    """Replaces NaN, positive infinity, and negative infinity values."""
+
+    op_name = "NanToNum"
+
+    def numpy_eval(self, x: object, **kwargs: object) -> object:
+        """Evaluate the operation using NumPy.
+
+        Args:
+            x (object): The x parameter
+            **kwargs (object): Variable length argument list
+
+        Returns:
+            object: The resulting output
+        """
+        import numpy as np
+
+        nan = kwargs.get("nan", 0.0)
+        posinf = kwargs.get("posinf")
+        neginf = kwargs.get("neginf")
+        return np.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
+
+
+@register_op("Signbit")
+class Signbit(UnaryMathOp):
+    """Returns True where signbit is set (less than zero)."""
+
+    op_name = "Signbit"
+    np_op_name = "signbit"

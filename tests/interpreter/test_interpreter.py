@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.interpreter import evaluate_graph
+from ml_switcheroo_compiler.interpreter import evaluate_graph
 
 
 def test_evaluate_graph() -> None:

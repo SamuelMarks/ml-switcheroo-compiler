@@ -241,6 +241,7 @@ def scan(
     f: Callable[[Any, Any], tuple[Any, Any]],
     init: object,
     xs: object,
+    length: int | None = None,
 ) -> tuple[Any, Any]:
     """Scans a function over the leading dimension of sequence tensors while carrying.
 
@@ -256,6 +257,7 @@ def scan(
         `(new_carry, y)`
     init (object): The initial carry state
     xs (object): The sequence of values to scan over, typically a Tensor
+    length (int | None): An optional length to scan
 
     Returns:
     tuple[Any, Any]: A tuple containing the final carry state and the stacked
@@ -269,19 +271,31 @@ def scan(
         carry = init
         ys = []
         # xs is assumed to be a Tensor with a batch dimension 0
-        length = xs.shape[0]
-        for i in range(length):
+        scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
+        for i in range(scan_length):
             # Extract slice
-            x = Tensor(xs.data[i], xs.shape[1:], xs.dtype, xs.device)
+            x = Tensor(xs.data[i], xs.shape[1:], xs.dtype, xs.device) if xs is not None else None
             carry, y = f(carry, x)
-            ys.append(y.data)
-        stacked_ys = np.stack(ys)
-        return carry, Tensor(
-            stacked_ys,
-            (length, *ys[0].shape),
-            ys[0].dtype if isinstance(ys[0], Tensor) else DType.Float32,
-            xs.device,
-        )
+            ys.append(y.data if hasattr(y, "data") else y)
+        if len(ys) > 0 and isinstance(ys[0], np.ndarray):
+            stacked_ys = np.stack(ys)
+            out_tensor = Tensor(
+                stacked_ys,
+                stacked_ys.shape,
+                y.dtype if hasattr(y, "dtype") else init.dtype,
+                y.device if hasattr(y, "device") else init.device,
+            )
+        else:
+            stacked_ys = np.array(ys)
+            from ml_switcheroo_compiler.core.dtype import DType
+
+            out_tensor = Tensor(
+                stacked_ys,
+                stacked_ys.shape,
+                DType(str(stacked_ys.dtype)),
+                config.default_device,
+            )
+        return carry, out_tensor
     if not _tracer.is_tracing:
         msg = "Cannot emit Scan node outside of a tracing context."
         raise RuntimeError(msg)
@@ -349,16 +363,16 @@ def vmap(
             )
             outs = []
             for i in range(batch_size):
-                if isinstance(in_axes, int):
-                    sliced_data = np.take(arg.data, i, axis=in_axes)
-                    sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != in_axes)
-                    sliced_arg = Tensor(
-                        sliced_data,
-                        sliced_shape,
-                        arg.dtype,
-                        arg.device,
-                    )
-                    outs.append(func(sliced_arg).data)
+                axes = in_axes if isinstance(in_axes, int) else in_axes[0]
+                sliced_data = np.take(arg.data, i, axis=axes)
+                sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != axes)
+                sliced_arg = Tensor(
+                    sliced_data,
+                    sliced_shape,
+                    arg.dtype,
+                    arg.device,
+                )
+                outs.append(func(sliced_arg).data)
 
             out_data = np.stack(
                 outs,
@@ -443,3 +457,40 @@ def pmap(func: Callable, axis_name: str | None = None) -> Callable:
         )
 
     return wrapped
+
+
+def stop_gradient(x: object) -> object:
+    """Stops the flow of gradients during reverse-mode differentiation."""
+    import uuid
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
+    if config.eager_mode or not _tracer.is_tracing:
+        return x
+
+    if isinstance(x, Tensor) and isinstance(x.data, ProxyTensor):
+        out_id = str(uuid.uuid4())
+        node = IRNode(
+            id=out_id,
+            op_type="StopGradient",
+            inputs=[x.data.id],
+            shape_metadata=x.shape,
+        )
+        _tracer.add_node(node)
+        proxy = ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype.value)
+        return Tensor(data=proxy, shape=x.shape, dtype=x.dtype, device=x.device)
+    if isinstance(x, ProxyTensor):
+        out_id = str(uuid.uuid4())
+        node = IRNode(
+            id=out_id,
+            op_type="StopGradient",
+            inputs=[x.id],
+            shape_metadata=x.shape,
+        )
+        _tracer.add_node(node)
+        return ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype)
+
+    return x

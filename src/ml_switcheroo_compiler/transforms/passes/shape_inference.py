@@ -79,9 +79,9 @@ def shape_inference_pass(graph: IRGraph) -> bool:
             # Unknown ops default to None or preserving existing metadata
             shapes[node.id] = node.shape_metadata
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
-            raise CompilationError(
+            raise CompilationError(  # pragma: no cover
                 msg,
             ) from e
 

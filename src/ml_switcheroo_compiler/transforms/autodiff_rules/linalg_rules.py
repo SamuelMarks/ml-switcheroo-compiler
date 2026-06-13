@@ -5,10 +5,10 @@ This module registers Vector-Jacobian Products (VJPs) and Jacobian-Vector Produc
 These rules are used to propagate gradients through the computation graph
 """
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
 @register_vjp("Matmul")
@@ -85,7 +85,8 @@ def dot_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: Always raised since VJP for Dot is not implemented
     """
-    raise UnimplementedMathError("VJP not implemented for Dot")
+    msg = "VJP not implemented for Dot"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("Dot")

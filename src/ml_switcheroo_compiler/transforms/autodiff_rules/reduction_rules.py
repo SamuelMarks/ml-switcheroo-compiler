@@ -3,10 +3,10 @@
 reduction operations
 """
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
 @register_vjp("Sum")
@@ -52,7 +52,8 @@ def sum_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("JVP not implemented for Sum")
+    msg = "JVP not implemented for Sum"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Mean")
@@ -70,7 +71,8 @@ def mean_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("VJP not implemented for Mean")
+    msg = "VJP not implemented for Mean"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("Mean")
@@ -88,7 +90,8 @@ def mean_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("JVP not implemented for Mean")
+    msg = "JVP not implemented for Mean"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Max")
@@ -106,7 +109,8 @@ def max_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("VJP not implemented for Max")
+    msg = "VJP not implemented for Max"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("Max")
@@ -124,7 +128,8 @@ def max_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("JVP not implemented for Max")
+    msg = "JVP not implemented for Max"
+    raise UnimplementedMathError(msg)
 
 
 @register_vjp("Min")
@@ -142,7 +147,8 @@ def min_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("VJP not implemented for Min")
+    msg = "VJP not implemented for Min"
+    raise UnimplementedMathError(msg)
 
 
 @register_jvp("Min")
@@ -160,4 +166,5 @@ def min_jvp(graph: object, node: object, tangent: str) -> str:
     Raises:
     UnimplementedMathError: This operation is currently not implemented
     """
-    raise UnimplementedMathError("JVP not implemented for Min")
+    msg = "JVP not implemented for Min"
+    raise UnimplementedMathError(msg)

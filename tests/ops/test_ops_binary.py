@@ -7,7 +7,7 @@ addition, subtraction, multiplication, division, and power.
 
 import numpy as np
 
-from ml_switcheroo.ops.binary.math import (
+from ml_switcheroo_compiler.ops.binary.math import (
     Add,
     BinaryMathOp,
     Divide,

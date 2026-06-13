@@ -7,14 +7,14 @@ on logical IR graphs.
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo.core.dtype import DType
-from ml_switcheroo.ir.core import IRGraph
-from ml_switcheroo.transforms.passes.broadcast_explicitizer import (
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import (
     broadcast_explicitizer_pass,
 )
-from ml_switcheroo.transforms.passes.dtype_inference import dtype_inference_pass
-from ml_switcheroo.transforms.passes.state_lifting import state_lifting_pass
-from ml_switcheroo.transforms.passes.type_promotion_explicitizer import (
+from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
+from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
+from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
     type_promotion_explicitizer_pass,
 )
 
@@ -48,9 +48,7 @@ def test_dtype_inference() -> None:
     modified = dtype_inference_pass(g)
     assert modified
     assert g.nodes["c"].attributes["dtype"] == DType.Float32.value
-    assert (
-        g.nodes["add"].attributes["dtype"] == "float64"
-    )  # promote_types(float32, int32)
+    assert g.nodes["add"].attributes["dtype"] == "float64"  # promote_types(float32, int32)
 
 
 def test_broadcast_explicitizer() -> None:
@@ -162,7 +160,7 @@ def test_type_promotion_partial_branches() -> None:
     """
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-    from ml_switcheroo.transforms.passes.type_promotion_explicitizer import (
+    from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
         type_promotion_explicitizer_pass,
     )
 

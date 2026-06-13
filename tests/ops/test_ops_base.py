@@ -6,7 +6,7 @@ correctly, and that eager and tracing execution modes behave as expected.
 
 import pytest
 
-from ml_switcheroo.ops.base import _OP_REGISTRY, OpDef, get_op, register_op
+from ml_switcheroo_compiler.ops.base import _OP_REGISTRY, OpDef, get_op, register_op
 
 
 def test_register_and_get_op() -> None:
@@ -176,10 +176,10 @@ def test_opdef_call_eager() -> None:
     """
     import numpy as np
 
-    from ml_switcheroo.core.config import config
-    from ml_switcheroo.core.device import Device, DeviceType
-    from ml_switcheroo.core.dtype import DType
-    from ml_switcheroo.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.core.device import Device, DeviceType
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
 
     original_registry = _OP_REGISTRY.copy()
     try:
@@ -261,11 +261,11 @@ def test_opdef_call_tracing() -> None:
     """
     import numpy as np
 
-    from ml_switcheroo.core.config import config
-    from ml_switcheroo.core.device import Device, DeviceType
-    from ml_switcheroo.core.dtype import DType
-    from ml_switcheroo.core.tensor import Tensor
-    from ml_switcheroo.tracing.tracer import ProxyTensor, _tracer
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.core.device import Device, DeviceType
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     original_registry = _OP_REGISTRY.copy()
     try:

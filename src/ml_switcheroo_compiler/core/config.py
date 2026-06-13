@@ -105,6 +105,7 @@ def ConfigContext(**kwargs: object) -> Iterator[None]:
         config.default_float_dtype = old_config.default_float_dtype
         config.default_int_dtype = old_config.default_int_dtype
         config.default_device = old_config.default_device
+        config.current_stream = old_config.current_stream
 
 
 def EagerMode() -> Iterator[None]:

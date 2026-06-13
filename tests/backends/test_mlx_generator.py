@@ -7,7 +7,7 @@ for unknown operations, and edge cases like empty outputs.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.backends.mlx import MLXCodeGenerator
+from ml_switcheroo_compiler.backends.mlx import MLXCodeGenerator
 
 
 def test_mlx_generator_basic() -> None:

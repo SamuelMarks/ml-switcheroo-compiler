@@ -1,18 +1,20 @@
 """Linear algebra operations package."""
 
 from ml_switcheroo_compiler.ops.linalg.basic import (
+    ConvGeneralDilated,
     Dot,
+    DotGeneral,
     Einsum,
+    Fft,
     Matmul,
+    Rfft,
 )
 
-__all__ = [
-    "Dot",
-    "Einsum",
-    "Matmul",
-]
 from .frontend import (
     cholesky as cholesky,
+)
+from .frontend import (
+    conv_general_dilated as conv_general_dilated,
 )
 from .frontend import (
     cross as cross,
@@ -24,6 +26,9 @@ from .frontend import (
     dot as dot,
 )
 from .frontend import (
+    dot_general as dot_general,
+)
+from .frontend import (
     eigh as eigh,
 )
 from .frontend import (
@@ -31,6 +36,9 @@ from .frontend import (
 )
 from .frontend import (
     einsum as einsum,
+)
+from .frontend import (
+    fft as fft,
 )
 from .frontend import (
     inner as inner,
@@ -60,6 +68,9 @@ from .frontend import (
     qr as qr,
 )
 from .frontend import (
+    rfft as rfft,
+)
+from .frontend import (
     slogdet as slogdet,
 )
 from .frontend import (
@@ -77,3 +88,39 @@ from .frontend import (
 from .frontend import (
     vdot as vdot,
 )
+
+__all__ = [
+    "ConvGeneralDilated",
+    "Dot",
+    "DotGeneral",
+    "Einsum",
+    "Fft",
+    "Matmul",
+    "Rfft",
+    "cholesky",
+    "conv_general_dilated",
+    "cross",
+    "det",
+    "dot",
+    "dot_general",
+    "eigh",
+    "eigvalsh",
+    "einsum",
+    "fft",
+    "inner",
+    "inv",
+    "lu",
+    "lu_factor",
+    "matmul",
+    "matrix_power",
+    "outer",
+    "pinv",
+    "qr",
+    "rfft",
+    "slogdet",
+    "solve",
+    "solve_triangular",
+    "svd",
+    "tensordot",
+    "vdot",
+]

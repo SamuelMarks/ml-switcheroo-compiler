@@ -7,7 +7,7 @@ standard operations, unknown operations, and empty outputs.
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo.backends.keras import KerasCodeGenerator
+from ml_switcheroo_compiler.backends.keras import KerasCodeGenerator
 
 
 def test_keras_generator_basic() -> None:
@@ -126,3 +126,27 @@ def test_keras_generator_no_output() -> None:
     code = generator.generate()
 
     assert "return keras.Model(inputs=[input_0], outputs=[])" in code
+
+
+def test_keras_generator_coverage() -> None:
+    """Test keras generator coverage.
+
+    Args:
+    None
+
+    Returns:
+    None
+    """
+    gen = KerasCodeGenerator(LogicalGraph("foo"))
+
+    class DummyNode:
+        op_type = "Matmul"
+
+    res = gen.visit(DummyNode(), ["a", "b"], unrelated="hi")
+    assert res == "keras.ops.matmul(a, b)"
+
+    class DummyNode2:
+        op_type = "Zeros"
+
+    res2 = gen.visit(DummyNode2(), ["a"], shape=[1], unrelated="hi")
+    assert res2 == "keras.ops.zeros([1])"
