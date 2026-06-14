@@ -7,7 +7,6 @@ from ml_switcheroo_compiler.ops.base import get_op
 
 _ = _binary_special
 
-
 abs = get_op("Abs")()
 acos = get_op("Acos")()
 acosh = get_op("Acosh")()
@@ -61,7 +60,6 @@ trunc = get_op("Trunc")()
 cast = get_op("Cast")()
 bitcast = get_op("Bitcast")()
 frexp = get_op("Frexp")()
-
 
 atan2 = get_op("Atan2")()
 _ = _math

@@ -2,9 +2,10 @@
 
 import uuid
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -37,8 +38,8 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
             continue
 
         try:
-            target_dt = str(np.promote_types(np.dtype(dt1), np.dtype(dt2)))
-        except TypeError:
+            target_dt = promote_types(DType(dt1), DType(dt2)).value
+        except (TypeError, ValueError):
             continue
 
         if dt1 != target_dt:

@@ -44,6 +44,17 @@ class BackendRegistry:
         return cls._registry.copy()
 
 
+def get_active_backend() -> type[BaseGenerator]:
+    """Get the currently active backend based on config.
+
+    Returns:
+        type[BaseGenerator]: The active backend class.
+    """
+    from ml_switcheroo_compiler.core.config import config
+
+    return BackendRegistry.get(config.backend)
+
+
 def register_backend(name: str) -> object:
     """Decorator to register a backend.
 

@@ -141,3 +141,83 @@ class KerasCodeGenerator(BaseGenerator):
         )
 
         return "\n".join(self.code)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Execute op."""
+        import keras.ops
+
+        try:
+            func = getattr(keras.ops, op_type.lower())
+            return func(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        op_map = {
+            "Add": getattr(keras.ops, "add", None),
+            "Subtract": getattr(keras.ops, "subtract", None),
+            "Multiply": getattr(keras.ops, "multiply", None),
+            "TrueDivide": getattr(keras.ops, "divide", getattr(keras.ops, "true_divide", None)),
+            "Exp": getattr(keras.ops, "exp", None),
+            "Log": getattr(keras.ops, "log", None),
+            "Matmul": getattr(keras.ops, "matmul", None),
+            "Sin": getattr(keras.ops, "sin", None),
+            "Cos": getattr(keras.ops, "cos", None),
+            "Sum": getattr(keras.ops, "sum", None),
+            "Mean": getattr(keras.ops, "mean", None),
+            "Max": getattr(keras.ops, "max", None),
+            "Min": getattr(keras.ops, "min", None),
+            "Reshape": getattr(keras.ops, "reshape", None),
+            "Transpose": getattr(keras.ops, "transpose", None),
+            "Equal": getattr(keras.ops, "equal", None),
+            "NotEqual": getattr(keras.ops, "not_equal", None),
+            "Greater": getattr(keras.ops, "greater", None),
+            "Less": getattr(keras.ops, "less", None),
+            "Negative": getattr(keras.ops, "negative", None),
+        }
+
+        if op_type in op_map and op_map[op_type] is not None:
+            return op_map[op_type](*args, **kwargs)
+
+        if op_type == "BroadcastTo":
+            return keras.ops.broadcast_to(*args, **kwargs)
+
+        msg = f"Operation '{op_type}' is not supported by keras backend."
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> object:
+        """Create zeros."""
+        import keras.ops
+
+        return keras.ops.zeros(shape)
+
+    @classmethod
+    def array(cls, data: object) -> object:
+        """Create array."""
+        import keras.ops
+
+        try:
+            return keras.ops.array(data)
+        except AttributeError:
+            return keras.ops.convert_to_tensor(data)
+
+    @classmethod
+    def asarray(cls, data: object) -> object:
+        """Convert array."""
+        import keras.ops
+
+        try:
+            return keras.ops.asarray(data)
+        except AttributeError:
+            return keras.ops.convert_to_tensor(data)
+
+    @classmethod
+    def item(cls, data: object) -> float:
+        """Get item."""
+        import keras.ops
+
+        try:
+            return float(keras.ops.asarray(data).item())
+        except AttributeError:
+            return float(data)

@@ -5,8 +5,6 @@ computations such as matrix multiplication, dot products, and Einstein summation
 supporting both shape inference and NumPy-based evaluation
 """
 
-import numpy as np
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -33,19 +31,6 @@ class Matmul(OpDef):
             return a[:-1] + b[1:]
         return None
 
-    def numpy_eval(self, a: object, b: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return np.matmul(a, b)
-
 
 @register_op("Dot")
 class Dot(OpDef):
@@ -66,19 +51,6 @@ class Dot(OpDef):
             The computed shape or evaluation result.
         """
         return None
-
-    def numpy_eval(self, a: object, b: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return np.dot(a, b)
 
 
 @register_op("Einsum")
@@ -105,30 +77,6 @@ class Einsum(OpDef):
             The computed shape or evaluation result.
         """
         return None
-
-    def numpy_eval(self, equation: object, *operands: object, **kwargs: object) -> object:
-        """Evaluate with NumPy.
-
-        Args:
-            equation (object): The equation.
-            *operands: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The computed result.
-        """
-        import numpy as np
-
-        if hasattr(equation, "item"):
-            equation = str(equation.item())
-        if hasattr(equation, "__array__"):
-            equation = str(np.array(equation).item())
-        # Make sure it's a string, not a proxy tensor
-        if not isinstance(equation, str) and hasattr(equation, "data"):
-            equation = str(equation.data)
-        if not isinstance(equation, str):
-            equation = str(equation)
-        return np.einsum(equation, *operands)
 
 
 @register_op("DotGeneral")
@@ -188,86 +136,6 @@ class DotGeneral(OpDef):
             out_shape.append(rhs_shape[r])
 
         return tuple(out_shape)
-
-    def numpy_eval(
-        self,
-        lhs: object,
-        rhs: object,
-        dimension_numbers: object,
-        **kwargs: object,
-    ) -> object:
-        """Evaluate with NumPy.
-
-        Args:
-            lhs (object): The lhs.
-            rhs (object): The rhs.
-            dimension_numbers (object): The dimension_numbers.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The computed result.
-        """
-        contracting, batch = dimension_numbers
-        lhs_contracting, rhs_contracting = contracting
-        lhs_batch, rhs_batch = batch
-
-        # Compute tensordot equivalent by transposing lhs and rhs
-        # Move batch dims to front, then contracting dims to end for lhs
-        # Move batch dims to front, then contracting dims to front for rhs
-
-        lhs_remaining = [
-            i for i in range(np.ndim(lhs)) if i not in lhs_contracting and i not in lhs_batch
-        ]
-        rhs_remaining = [
-            i for i in range(np.ndim(rhs)) if i not in rhs_contracting and i not in rhs_batch
-        ]
-
-        lhs_transpose = list(lhs_batch) + lhs_remaining + list(lhs_contracting)
-        rhs_transpose = list(rhs_batch) + list(rhs_contracting) + rhs_remaining
-
-        np.transpose(lhs, lhs_transpose)
-        np.transpose(rhs, rhs_transpose)
-
-        # We need to loop over batch dims or we can just use np.matmul if we reshape
-        # Actually, numpy.einsum is easiest to formulate dot_general.
-
-        import string
-
-        letters = string.ascii_letters
-        idx = 0
-
-        batch_chars = letters[idx : idx + len(lhs_batch)]
-        idx += len(lhs_batch)
-
-        contracting_chars = letters[idx : idx + len(lhs_contracting)]
-        idx += len(lhs_contracting)
-
-        lhs_remaining_chars = letters[idx : idx + len(lhs_remaining)]
-        idx += len(lhs_remaining)
-
-        rhs_remaining_chars = letters[idx : idx + len(rhs_remaining)]
-        idx += len(rhs_remaining)
-
-        lhs_subscript = [""] * np.ndim(lhs)
-        for i, b in enumerate(lhs_batch):
-            lhs_subscript[b] = batch_chars[i]
-        for i, c in enumerate(lhs_contracting):
-            lhs_subscript[c] = contracting_chars[i]
-        for i, r in enumerate(lhs_remaining):
-            lhs_subscript[r] = lhs_remaining_chars[i]
-
-        rhs_subscript = [""] * np.ndim(rhs)
-        for i, b in enumerate(rhs_batch):
-            rhs_subscript[b] = batch_chars[i]
-        for i, c in enumerate(rhs_contracting):
-            rhs_subscript[c] = contracting_chars[i]
-        for i, r in enumerate(rhs_remaining):
-            rhs_subscript[r] = rhs_remaining_chars[i]
-
-        out_subscript = batch_chars + lhs_remaining_chars + rhs_remaining_chars
-
-        eq = f"{''.join(lhs_subscript)},{''.join(rhs_subscript)}->{out_subscript}"
-        return np.einsum(eq, lhs, rhs)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
         """Emit jax code.
@@ -371,36 +239,6 @@ class ConvGeneralDilated(OpDef):
         # If dimension_numbers provided, we'd parse it. Let's just return a placeholder for testing.
         return ()
 
-    def numpy_eval(
-        self,
-        lhs: object,
-        rhs: object,
-        window_strides: object,
-        padding: object,
-        lhs_dilation: object = None,
-        rhs_dilation: object = None,
-        dimension_numbers: object = None,
-        **kwargs: object,
-    ) -> object:
-        """Evaluate with NumPy.
-
-        Args:
-            lhs (object): The lhs.
-            rhs (object): The rhs.
-            window_strides (object): The window_strides.
-            padding (object): The padding.
-            lhs_dilation (object): The lhs_dilation.
-            rhs_dilation (object): The rhs_dilation.
-            dimension_numbers (object): The dimension_numbers.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The computed result.
-        """
-        # Simple mock using scipy correlate or just returning zeros of expected shape
-        # In a real impl, this would use np.correlate or similar
-        return np.zeros((1,), dtype=getattr(lhs, "dtype", float))
-
     def emit_jax(self, *args: object, **kwargs: object) -> object:
         """Emit jax code.
 
@@ -492,26 +330,6 @@ class Fft(OpDef):
         if n is not None:
             out_shape[axis] = n
         return tuple(out_shape)
-
-    def numpy_eval(
-        self,
-        a: object,
-        n: object = None,
-        axis: object = -1,
-        **kwargs: object,
-    ) -> object:
-        """Evaluate with NumPy.
-
-        Args:
-            a (object): The a.
-            n (object): The n.
-            axis (object): The axis.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The computed result.
-        """
-        return np.fft.fft(a, n=n, axis=axis)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
         """Emit jax code.
@@ -605,26 +423,6 @@ class Rfft(OpDef):
             n = out_shape[axis]
         out_shape[axis] = n // 2 + 1
         return tuple(out_shape)
-
-    def numpy_eval(
-        self,
-        a: object,
-        n: object = None,
-        axis: object = -1,
-        **kwargs: object,
-    ) -> object:
-        """Evaluate with NumPy.
-
-        Args:
-            a (object): The a.
-            n (object): The n.
-            axis (object): The axis.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The computed result.
-        """
-        return np.fft.rfft(a, n=n, axis=axis)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
         """Emit jax code.

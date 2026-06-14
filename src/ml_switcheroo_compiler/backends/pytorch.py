@@ -118,3 +118,74 @@ class PyTorchCodeGenerator(BaseGenerator):
         self._generate_body()
 
         return "\n".join(self.code)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Eagerly execute an operation using PyTorch."""
+        import torch
+
+        op_map = {
+            "Add": torch.add,
+            "Subtract": torch.sub,
+            "Multiply": torch.mul,
+            "TrueDivide": torch.div,
+            "Exp": torch.exp,
+            "Log": torch.log,
+            "Matmul": torch.matmul,
+            "Sin": torch.sin,
+            "Cos": torch.cos,
+            "Sum": torch.sum,
+            "Mean": torch.mean,
+            "Max": torch.max,
+            "Min": torch.min,
+            "Reshape": torch.reshape,
+            "Transpose": torch.transpose,
+            "Equal": torch.eq,
+            "NotEqual": torch.ne,
+            "Greater": torch.gt,
+            "Less": torch.lt,
+            "Negative": torch.neg,
+        }
+
+        if op_type in op_map:
+            func = op_map[op_type]
+            return func(*args, **kwargs)
+
+        # Handle BroadcastTo separately
+        if op_type == "BroadcastTo":
+            return args[0].expand(kwargs["shape"])
+
+        try:
+            func = getattr(torch, op_type.lower())
+            return func(*args, **kwargs)
+        except AttributeError:
+            msg = f"Operation '{op_type}' is not supported by torch backend."
+            raise NotImplementedError(msg) from None
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> object:
+        """Create zeros."""
+        import torch
+
+        return torch.zeros(shape)
+
+    @classmethod
+    def array(cls, data: object) -> object:
+        """Create array."""
+        import torch
+
+        return torch.tensor(data)
+
+    @classmethod
+    def asarray(cls, data: object) -> object:
+        """Convert array."""
+        import torch
+
+        return torch.as_tensor(data)
+
+    @classmethod
+    def item(cls, data: object) -> float:
+        """Get item."""
+        import torch
+
+        return torch.as_tensor(data).item()

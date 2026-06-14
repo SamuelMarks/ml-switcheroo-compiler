@@ -11,7 +11,6 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -88,8 +87,11 @@ def matmul(input: Tensor, other: Tensor) -> Tensor:
     Tensor: The matrix product of the input tensors
     """
     if config.eager_mode:
-        data = np.matmul(input.data, other.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Matmul", input.data, other.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Matmul", [input, other], {}, [()], [input.dtype])
 
 
@@ -104,8 +106,11 @@ def dot(input: Tensor, other: Tensor) -> Tensor:
     Tensor: The dot product of the input tensors
     """
     if config.eager_mode:
-        data = np.dot(input.data, other.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Dot", input.data, other.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Dot", [input, other], {}, [()], [input.dtype])
 
 
@@ -126,7 +131,10 @@ def tensordot(
     Tensor: The tensor dot product of the inputs
     """
     if config.eager_mode:
-        data = np.tensordot(a.data, b.data, axes=axes)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Tensordot", a.data, b.data, axes=axes)
         return Tensor(data, data.shape, a.dtype, a.device)
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
@@ -142,8 +150,11 @@ def vdot(input: Tensor, other: Tensor) -> Tensor:
     Tensor: The conjugate dot product of the input vectors
     """
     if config.eager_mode:
-        data = np.vdot(input.data, other.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Vdot", input.data, other.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Vdot", [input, other], {}, [()], [input.dtype])
 
 
@@ -158,8 +169,11 @@ def inner(input: Tensor, other: Tensor) -> Tensor:
     Tensor: The inner product of the input tensors
     """
     if config.eager_mode:
-        data = np.inner(input.data, other.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Inner", input.data, other.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Inner", [input, other], {}, [()], [input.dtype])
 
 
@@ -174,8 +188,11 @@ def outer(input: Tensor, other: Tensor) -> Tensor:
     Tensor: The outer product of the input vectors
     """
     if config.eager_mode:
-        data = np.outer(input.data, other.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Outer", input.data, other.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Outer", [input, other], {}, [()], [input.dtype])
 
 
@@ -190,7 +207,10 @@ def einsum(equation: str, *operands: Tensor) -> Tensor:
     Tensor: The result of the Einstein summation
     """
     if config.eager_mode:
-        data = np.einsum(equation, *[op.data for op in operands])
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Einsum", equation, *[op.data for op in operands])
         return Tensor(data, data.shape, operands[0].dtype, operands[0].device)
     return _emit_linalg_node(
         "Einsum",
@@ -213,8 +233,11 @@ def cholesky(input: Tensor) -> Tensor:
     Tensor: The lower-triangular or upper-triangular Cholesky factor
     """
     if config.eager_mode:
-        data = np.linalg.cholesky(input.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Cholesky", input.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Cholesky", [input], {}, [()], [input.dtype])
 
 
@@ -240,7 +263,11 @@ def svd(
         - Vh (Tensor): Right singular vectors (conjugate transposed)
     """
     if config.eager_mode:
-        u, s, vh = np.linalg.svd(
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        u, s, vh = backend.execute_op(
+            "Svd",
             input.data,
             full_matrices=full_matrices,
             compute_uv=compute_uv,
@@ -273,7 +300,10 @@ def qr(input: Tensor, mode: str = "reduced") -> tuple[Tensor, Tensor]:
         - R (Tensor): The upper-triangular matrix
     """
     if config.eager_mode:
-        q, r = np.linalg.qr(input.data, mode=mode)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        q, r = backend.execute_op("Qr", input.data, mode=mode)
         return (
             Tensor(q, q.shape, input.dtype, input.device),
             Tensor(r, r.shape, input.dtype, input.device),
@@ -297,8 +327,11 @@ def inv(input: Tensor) -> Tensor:
     Tensor: The multiplicative inverse of the input matrix
     """
     if config.eager_mode:
-        data = np.linalg.inv(input.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Inv", input.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Inv", [input], {}, [()], [input.dtype])
 
 
@@ -313,7 +346,10 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> Tensor:
     Tensor: The pseudo-inverse of the input matrix
     """
     if config.eager_mode:
-        data = np.linalg.pinv(input.data, rcond=rcond)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Pinv", input.data, rcond=rcond)
         return Tensor(data, data.shape, input.dtype, input.device)
     return _emit_linalg_node("Pinv", [input], {"rcond": rcond}, [()], [input.dtype])
 
@@ -328,8 +364,11 @@ def det(input: Tensor) -> Tensor:
     Tensor: The determinant of the input matrix
     """
     if config.eager_mode:
-        data = np.linalg.det(input.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Det", input.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node("Det", [input], {}, [()], [input.dtype])
 
 
@@ -346,10 +385,13 @@ def slogdet(input: Tensor) -> tuple[Tensor, Tensor]:
     determinant
     """
     if config.eager_mode:
-        sign, logdet = np.linalg.slogdet(input.data)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        sign, logdet = backend.execute_op("Slogdet", input.data)
         return (
-            Tensor(np.array(sign), np.array(sign).shape, input.dtype, input.device),
-            Tensor(np.array(logdet), np.array(logdet).shape, input.dtype, input.device),
+            Tensor(backend.array(sign), backend.array(sign).shape, input.dtype, input.device),
+            Tensor(backend.array(logdet), backend.array(logdet).shape, input.dtype, input.device),
         )
     return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [input.dtype] * 2)
 
@@ -370,7 +412,10 @@ def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
         - eigenvectors (Tensor): The column eigenvectors
     """
     if config.eager_mode:
-        w, v = np.linalg.eigh(input.data, UPLO=UPLO)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        w, v = backend.execute_op("Eigh", input.data, UPLO=UPLO)
         return (
             Tensor(w, w.shape, input.dtype, input.device),
             Tensor(v, v.shape, input.dtype, input.device),
@@ -396,8 +441,11 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> Tensor:
     Tensor: The eigenvalues in ascending order
     """
     if config.eager_mode:
-        data = np.linalg.eigvalsh(input.data, UPLO=UPLO)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Eigvalsh", input.data, UPLO=UPLO)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     return _emit_linalg_node(
         "Eigvalsh",
         [input],
@@ -418,7 +466,10 @@ def matrix_power(input: Tensor, n: int) -> Tensor:
     Tensor: The matrix raised to the power `n`
     """
     if config.eager_mode:
-        data = np.linalg.matrix_power(input.data, n)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("MatrixPower", input.data, n)
         return Tensor(data, data.shape, input.dtype, input.device)
     return _emit_linalg_node("MatrixPower", [input], {"n": n}, [()], [input.dtype])
 
@@ -446,9 +497,13 @@ def cross(
     Returns:
     object: The cross product of the input vectors
     """
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return np.cross(a, b, axisa=axisa, axisb=axisb, axisc=axisc, axis=axis)
+    backend = get_active_backend()
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+    return backend.execute_op("Cross", a, b, axisa=axisa, axisb=axisb, axisc=axisc, axis=axis)
 
 
 def solve(a: object, b: object) -> object:
@@ -461,9 +516,11 @@ def solve(a: object, b: object) -> object:
     Returns:
     object: Solution to the system of linear equations
     """
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return np.linalg.solve(
+    backend = get_active_backend()
+    return backend.execute_op(
+        "Solve",
         (a.data if hasattr(a, "device") else a),
         (b.data if hasattr(b, "device") else b),
     )
@@ -677,7 +734,10 @@ def fft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        data = np.fft.fft(a.data, n=n, axis=axis)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Fft", a.data, n=n, axis=axis)
         # Note: returning proper complex type is complex, using a mock DType mapping if possible
         # We will just return float32 here if complex not supported
         return Tensor(data, data.shape, a.dtype, a.device)
@@ -705,7 +765,10 @@ def rfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        data = np.fft.rfft(a.data, n=n, axis=axis)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Rfft", a.data, n=n, axis=axis)
         return Tensor(data, data.shape, a.dtype, a.device)
 
     from ml_switcheroo_compiler.ops.linalg.basic import Rfft

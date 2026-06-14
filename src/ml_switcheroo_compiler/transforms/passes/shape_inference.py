@@ -28,9 +28,11 @@ def shape_inference_pass(graph: IRGraph) -> bool:
     for node in sorted_nodes:
         if node.op_type == "Constant":
             val = node.attributes.get("value")
-            import numpy as np
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            shape = np.array(val).shape
+            backend = get_active_backend()
+            arr = backend.array(val)
+            shape = getattr(arr, "shape", ())
             shapes[node.id] = shape
             if node.shape_metadata != shape:
                 modified = True

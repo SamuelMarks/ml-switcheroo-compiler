@@ -1,6 +1,8 @@
 """Operations library for the ml-switcheroo compiler."""
 
-import numpy as np
+import math
+from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
+
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
@@ -480,7 +482,7 @@ def broadcast_shapes(*shapes: object) -> object:
     Returns:
         object: The computed result.
     """
-    return np.broadcast_shapes(*shapes)
+    return _bs(*shapes)
 
 
 def logspace(
@@ -545,5 +547,5 @@ def broadcast(x: object, sizes: object) -> object:
     return broadcast_to(x, sizes)
 
 
-pi = np.pi
+pi = math.pi
 ndarray = Tensor

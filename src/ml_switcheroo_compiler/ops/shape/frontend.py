@@ -10,7 +10,6 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -67,8 +66,11 @@ def reshape(input: Tensor, shape: Sequence[int]) -> Tensor:
     Tensor: A reshaped tensor with the specified shape
     """
     if config.eager_mode:
-        data = np.reshape(input.data, shape)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Reshape", input.data, shape)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = tuple(shape)
@@ -93,8 +95,11 @@ def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
     Tensor: A flattened 1D tensor
     """
     if config.eager_mode:
-        data = np.reshape(input.data, -1)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Reshape", input.data, -1)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -119,8 +124,11 @@ def squeeze(input: Tensor, dim: int | Sequence[int] | None = None) -> Tensor:
     Tensor: The squeezed tensor
     """
     if config.eager_mode:
-        data = np.squeeze(input.data, axis=dim)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Squeeze", input.data, axis=dim)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     if dim is None:
         out_shape = tuple(s for s in input.shape if s != 1)
@@ -148,8 +156,11 @@ def expand_dims(a: Tensor, axis: int | Sequence[int]) -> Tensor:
     Tensor: The expanded tensor
     """
     if config.eager_mode:
-        data = np.expand_dims(a.data, axis=axis)
-        return Tensor(np.array(data), np.array(data).shape, a.dtype, a.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("ExpandDims", a.data, axis=axis)
+        return Tensor(backend.array(data), backend.array(data).shape, a.dtype, a.device)
 
     # Calculate new shape
     axes = (axis,) if isinstance(axis, int) else tuple(axis)
@@ -189,8 +200,11 @@ def expand(input: Tensor, size: Sequence[int]) -> Tensor:
     Tensor: The expanded tensor
     """
     if config.eager_mode:
-        data = np.broadcast_to(input.data, size)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("BroadcastTo", input.data, size)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -214,8 +228,11 @@ def broadcast_to(input: Tensor, size: Sequence[int]) -> Tensor:
     Tensor: The broadcasted tensor
     """
     if config.eager_mode:
-        data = np.broadcast_to(input.data, size)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("BroadcastTo", input.data, size)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = tuple(size)
@@ -240,8 +257,11 @@ def transpose(input: Tensor, dim0: int, dim1: int) -> Tensor:
     Tensor: The transposed tensor
     """
     if config.eager_mode:
-        data = np.swapaxes(input.data, dim0, dim1)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Swapaxes", input.data, dim0, dim1)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -265,8 +285,11 @@ def permute(input: Tensor, dims: Sequence[int]) -> Tensor:
     Tensor: The permuted tensor
     """
     if config.eager_mode:
-        data = np.transpose(input.data, dims)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Transpose", input.data, dims)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = tuple(input.shape[d] for d in dims)
@@ -291,8 +314,11 @@ def swapaxes(input: Tensor, axis1: int, axis2: int) -> Tensor:
     Tensor: The tensor with swapped axes
     """
     if config.eager_mode:
-        data = np.swapaxes(input.data, axis1, axis2)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Swapaxes", input.data, axis1, axis2)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -321,8 +347,11 @@ def moveaxis(
     Tensor: The tensor with moved axes
     """
     if config.eager_mode:
-        data = np.moveaxis(input.data, source, destination)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Moveaxis", input.data, source, destination)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -353,8 +382,11 @@ def roll(
     Tensor: The rolled tensor
     """
     if config.eager_mode:
-        data = np.roll(input.data, shifts, axis=dims)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Roll", input.data, shifts, axis=dims)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -540,7 +572,10 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
     Tensor: The concatenated tensor
     """
     if config.eager_mode:
-        data = np.concatenate([getattr(t, "data", t) for t in tensors], axis=dim)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Concatenate", [getattr(t, "data", t) for t in tensors], axis=dim)
         return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
     inputs = list(tensors)
     # shape calculation placeholder
@@ -568,7 +603,10 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
     Tensor: The stacked tensor
     """
     if config.eager_mode:
-        data = np.stack([t.data for t in tensors], axis=dim)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Stack", [t.data for t in tensors], axis=dim)
         return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
     inputs = list(tensors)
     # shape calculation placeholder
@@ -599,7 +637,10 @@ def split(
     Sequence[Tensor]: A sequence of sub-tensors
     """
     if config.eager_mode:
-        datas = np.split(input.data, split_size_or_sections, axis=dim)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        datas = backend.execute_op("Split", input.data, split_size_or_sections, axis=dim)
         return tuple(Tensor(d, d.shape, input.dtype, input.device) for d in datas)
     inputs = [input]
     # shape calculation placeholder
@@ -626,10 +667,13 @@ def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
     Sequence[Tensor]: A sequence of unstacked tensors
     """
     if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
         datas = (
-            np.unstack(input.data, axis=dim)
-            if hasattr(np, "unstack")
-            else np.moveaxis(input.data, dim, 0)
+            backend.execute_op("Unstack", input.data, axis=dim)
+            if hasattr(backend, "unstack")
+            else backend.execute_op("Moveaxis", input.data, dim, 0)
         )
         return tuple(Tensor(d, d.shape, input.dtype, input.device) for d in datas)
     inputs = [input]
@@ -657,8 +701,11 @@ def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
     Tensor: The tiled tensor
     """
     if config.eager_mode:
-        data = np.tile(input.data, reps)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Tile", input.data, reps)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -687,8 +734,11 @@ def repeat(
     Tensor: The tensor with repeated elements
     """
     if config.eager_mode:
-        data = np.repeat(input.data, repeats, axis=dim)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Repeat", input.data, repeats, axis=dim)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -713,8 +763,11 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
     Tensor: The gathered tensor
     """
     if config.eager_mode:
-        data = np.take_along_axis(input.data, index.data, axis=dim)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("TakeAlongAxis", input.data, index.data, axis=dim)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input, index]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -860,8 +913,11 @@ def take(input: Tensor, indices: Tensor) -> Tensor:
     Tensor: A 1D tensor containing the selected elements
     """
     if config.eager_mode:
-        data = np.take(input.data, indices.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Take", input.data, indices.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input, indices]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -887,8 +943,11 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
     Tensor: The selected tensor
     """
     if config.eager_mode:
-        data = np.where(condition.data, input.data, other.data)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Where", condition.data, input.data, other.data)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [condition, input, other]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -913,8 +972,11 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
     Tensor: The upper triangular tensor
     """
     if config.eager_mode:
-        data = np.triu(input.data, k=diagonal)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Triu", input.data, k=diagonal)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -939,8 +1001,11 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
     Tensor: The lower triangular tensor
     """
     if config.eager_mode:
-        data = np.tril(input.data, k=diagonal)
-        return Tensor(np.array(data), np.array(data).shape, input.dtype, input.device)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Tril", input.data, k=diagonal)
+        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -965,7 +1030,10 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     Sequence[Tensor]: A sequence of coordinate grid tensors
     """
     if config.eager_mode:
-        datas = np.meshgrid(*[t.data for t in tensors], indexing=indexing)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        datas = backend.execute_op("Meshgrid", *[t.data for t in tensors], indexing=indexing)
         return tuple(Tensor(d, d.shape, tensors[0].dtype, tensors[0].device) for d in datas)
     inputs = list(tensors)
     # shape calculation placeholder
@@ -999,9 +1067,10 @@ def pad(
     Returns:
     object: The padded array
     """
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return np.pad(array, pad_width, mode=mode, **kwargs)
+    backend = get_active_backend()
+    return backend.execute_op("Pad", array, pad_width, mode=mode, **kwargs)
 
 
 def take_along_axis(arr: object, indices: object, axis: int) -> object:
@@ -1015,9 +1084,11 @@ def take_along_axis(arr: object, indices: object, axis: int) -> object:
     Returns:
     object: The selected values
     """
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return np.take_along_axis(
+    backend = get_active_backend()
+    return backend.execute_op(
+        "TakeAlongAxis",
         (arr.data if hasattr(arr, "device") else arr),
         (indices.data if hasattr(indices, "device") else indices),
         axis=axis,
@@ -1041,7 +1112,10 @@ def array_split(
         Sequence[Tensor]: A sequence of sub-tensors
     """
     if config.eager_mode:
-        datas = np.array_split(ary.data, indices_or_sections, axis=axis)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        datas = backend.execute_op("ArraySplit", ary.data, indices_or_sections, axis=axis)
         return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
     return (
         _emit_shape_node(
@@ -1066,7 +1140,10 @@ def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         Sequence[Tensor]: A sequence of sub-tensors
     """
     if config.eager_mode:
-        datas = np.vsplit(ary.data, indices_or_sections)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        datas = backend.execute_op("Vsplit", ary.data, indices_or_sections)
         return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
     return (
         _emit_shape_node(
@@ -1091,7 +1168,10 @@ def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         Sequence[Tensor]: A sequence of sub-tensors
     """
     if config.eager_mode:
-        datas = np.hsplit(ary.data, indices_or_sections)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        datas = backend.execute_op("Hsplit", ary.data, indices_or_sections)
         return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
     return (
         _emit_shape_node(
@@ -1116,7 +1196,10 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         Sequence[Tensor]: A sequence of sub-tensors
     """
     if config.eager_mode:
-        datas = np.dsplit(ary.data, indices_or_sections)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        datas = backend.execute_op("Dsplit", ary.data, indices_or_sections)
         return tuple(Tensor(d, d.shape, ary.dtype, ary.device) for d in datas)
     return (
         _emit_shape_node(
@@ -1139,7 +1222,10 @@ def vstack(tup: Sequence[Tensor]) -> Tensor:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        data = np.vstack([t.data for t in tup])
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
     inputs = list(tup)
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -1156,7 +1242,10 @@ def hstack(tup: Sequence[Tensor]) -> Tensor:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        data = np.hstack([t.data for t in tup])
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
     inputs = list(tup)
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -1173,7 +1262,10 @@ def dstack(tup: Sequence[Tensor]) -> Tensor:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        data = np.dstack([t.data for t in tup])
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
     inputs = list(tup)
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -1275,10 +1367,14 @@ def sort(
     """
     if axis is not None:
         dimension = axis
+
     if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
-        data = np.sort(operand.data, axis=dimension, kind=kind)
-        return Tensor(np.array(data), np.array(data).shape, operand.dtype, operand.device)
+        data = backend.execute_op("Sort", operand.data, axis=dimension, kind=kind)
+        return Tensor(backend.array(data), backend.array(data).shape, operand.dtype, operand.device)
 
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}
@@ -1358,10 +1454,13 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Tensor:
     Tensor: Array of insertion points with the same shape as v.
     """
     if config.eager_mode:
-        data = np.searchsorted(a.data, v.data, side=side)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Searchsorted", a.data, v.data, side=side)
         from ml_switcheroo_compiler.core.dtype import DType
 
-        return Tensor(np.array(data), np.array(data).shape, DType.Int32, a.device)
+        return Tensor(backend.array(data), backend.array(data).shape, DType.Int32, a.device)
 
     inputs = [a, v]
     attributes = {"side": side}

@@ -130,3 +130,83 @@ class TensorFlowCodeGenerator(BaseGenerator):
         self._generate_body()
 
         return "\n".join(self.code)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Execute op."""
+        import tensorflow as tf
+
+        try:
+            func = getattr(tf.math, op_type.lower())
+            return func(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        op_map = {
+            "Add": getattr(tf.math, "add", None),
+            "Subtract": getattr(tf.math, "subtract", None),
+            "Multiply": getattr(tf.math, "multiply", None),
+            "TrueDivide": getattr(tf.math, "divide", getattr(tf.math, "true_divide", None)),
+            "Exp": getattr(tf.math, "exp", None),
+            "Log": getattr(tf.math, "log", None),
+            "Matmul": getattr(tf.math, "matmul", None),
+            "Sin": getattr(tf.math, "sin", None),
+            "Cos": getattr(tf.math, "cos", None),
+            "Sum": getattr(tf.math, "sum", None),
+            "Mean": getattr(tf.math, "mean", None),
+            "Max": getattr(tf.math, "max", None),
+            "Min": getattr(tf.math, "min", None),
+            "Reshape": getattr(tf.math, "reshape", None),
+            "Transpose": getattr(tf.math, "transpose", None),
+            "Equal": getattr(tf.math, "equal", None),
+            "NotEqual": getattr(tf.math, "not_equal", None),
+            "Greater": getattr(tf.math, "greater", None),
+            "Less": getattr(tf.math, "less", None),
+            "Negative": getattr(tf.math, "negative", None),
+        }
+
+        if op_type in op_map and op_map[op_type] is not None:
+            return op_map[op_type](*args, **kwargs)
+
+        if op_type == "BroadcastTo":
+            return tf.math.broadcast_to(*args, **kwargs)
+
+        msg = f"Operation '{op_type}' is not supported by tensorflow backend."
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> object:
+        """Create zeros."""
+        import tensorflow as tf
+
+        return tf.zeros(shape)
+
+    @classmethod
+    def array(cls, data: object) -> object:
+        """Create array."""
+        import tensorflow as tf
+
+        try:
+            return tf.math.array(data)
+        except AttributeError:
+            return tf.convert_to_tensor(data)
+
+    @classmethod
+    def asarray(cls, data: object) -> object:
+        """Convert array."""
+        import tensorflow as tf
+
+        try:
+            return tf.math.asarray(data)
+        except AttributeError:
+            return tf.convert_to_tensor(data)
+
+    @classmethod
+    def item(cls, data: object) -> float:
+        """Get item."""
+        import tensorflow as tf
+
+        try:
+            return float(tf.math.asarray(data).item())
+        except AttributeError:
+            return float(data)

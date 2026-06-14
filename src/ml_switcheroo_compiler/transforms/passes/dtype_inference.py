@@ -1,8 +1,7 @@
 """DType Inference Pass."""
 
-import numpy as np
-
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -80,10 +79,13 @@ def dtype_inference_pass(graph: IRGraph) -> bool:
                     out_dtype_val = valid_dtypes[0]
                 else:
                     try:
-                        np_types = [np.dtype(dt) for dt in valid_dtypes]
-                        promoted = np.promote_types(*np_types)
-                        out_dtype_val = str(promoted)
-                    except TypeError:
+                        dt1, dt2 = valid_dtypes[0], valid_dtypes[1]
+                        promoted = promote_types(DType(dt1), DType(dt2))
+                        out_dtype_val = promoted.value
+                        for i in range(2, len(valid_dtypes)):
+                            promoted = promote_types(promoted, DType(valid_dtypes[i]))
+                            out_dtype_val = promoted.value
+                    except (TypeError, ValueError):
                         out_dtype_val = valid_dtypes[0]
 
             if out_dtype_val is None:

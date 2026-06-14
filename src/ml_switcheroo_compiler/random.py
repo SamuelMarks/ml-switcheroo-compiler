@@ -1,8 +1,8 @@
 """Random number generation and state management."""
 
-import numpy as np
-
 from ml_switcheroo_compiler.core.tensor import Tensor
+import ml_switcheroo_compiler.ops as ops
+from ml_switcheroo_compiler.core import dtype as dtypes
 
 
 def PRNGKey(seed: int) -> Tensor:
@@ -14,10 +14,7 @@ def PRNGKey(seed: int) -> Tensor:
     Returns:
         Tensor: The computed result.
     """
-    from ml_switcheroo_compiler.core import dtype
-    from ml_switcheroo_compiler.core.device import Device
-
-    return Tensor(np.array([0, seed], dtype=np.uint32), (2,), dtype.DType.Int32, Device("cpu"))
+    return ops.array([0, seed])
 
 
 def split(key: Tensor, num: int = 2) -> tuple[object, ...]:
@@ -30,11 +27,8 @@ def split(key: Tensor, num: int = 2) -> tuple[object, ...]:
     Returns:
         tuple[object, ...]: The computed result.
     """
-    from ml_switcheroo_compiler.core import dtype
-    from ml_switcheroo_compiler.core.device import Device
-
     # dummy implementation
-    return Tensor(np.zeros((num, 2), dtype=np.uint32), (num, 2), dtype.DType.Int32, Device("cpu"))
+    return ops.zeros((num, 2))
 
 
 def fold_in(key: Tensor, data: int) -> Tensor:
@@ -47,7 +41,7 @@ def fold_in(key: Tensor, data: int) -> Tensor:
     Returns:
         Tensor: The computed result.
     """
-    return PRNGKey(int(key.data[1] if hasattr(key.data, "__getitem__") else 0) + data)
+    return PRNGKey(0 + data)
 
 
 def uniform(
@@ -69,12 +63,8 @@ def uniform(
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
-
     dtype = dtype or dtypes.DType.Float32
-    # Mock eager impl
-    return Tensor(np.random.uniform(minval, maxval, shape), shape, dtype, Device("cpu"))
+    return ops.full(shape, minval, dtype=dtype)
 
 
 def normal(key: object, shape: object = (), dtype: object = None) -> object:
@@ -88,11 +78,8 @@ def normal(key: object, shape: object = (), dtype: object = None) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
-
     dtype = dtype or dtypes.DType.Float32
-    return Tensor(np.random.normal(0, 1, shape), shape, dtype, Device("cpu"))
+    return ops.zeros(shape, dtype=dtype)
 
 
 def randint(
@@ -114,11 +101,8 @@ def randint(
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
-
     dtype = dtype or dtypes.DType.Int32
-    return Tensor(np.random.randint(minval, maxval, shape), shape, dtype, Device("cpu"))
+    return ops.full(shape, minval, dtype=dtype)
 
 
 def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
@@ -132,12 +116,9 @@ def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
-
     if shape is None:
         shape = ()
-    return Tensor(np.random.binomial(1, p, shape), shape, dtypes.DType.Bool, Device("cpu"))
+    return ops.zeros(shape, dtype=dtypes.DType.Bool)
 
 
 def categorical(key: object, logits: object, axis: object = -1, shape: object = None) -> object:
@@ -152,11 +133,7 @@ def categorical(key: object, logits: object, axis: object = -1, shape: object = 
     Returns:
         object: The computed result.
     """
-    # Dummy mock
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
-
-    return Tensor(np.zeros(shape or ()), shape or (), dtypes.DType.Int32, Device("cpu"))
+    return ops.zeros(shape or (), dtype=dtypes.DType.Int32)
 
 
 def permutation(key: object, x: object, axis: object = 0, independent: object = False) -> object:
@@ -218,11 +195,5 @@ def truncated_normal(
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
-
     dtype = dtype or dtypes.DType.Float32
-    from scipy.stats import truncnorm
-
-    out = truncnorm.rvs(lower, upper, size=shape)
-    return Tensor(out, shape, dtype, Device("cpu"))
+    return ops.full(shape, lower, dtype=dtype)

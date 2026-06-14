@@ -11,14 +11,18 @@ import os
 import sys
 
 FORBIDDEN_IMPORTS = {
-    "ir": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy"],
-    "ops": ["jax", "torch", "mlx", "keras", "tensorflow"],
-    "transforms": ["jax", "torch", "mlx", "keras", "tensorflow"],
-    "backends/jax.py": ["torch", "mlx", "keras", "tensorflow", "numpy"],
-    "backends/pytorch.py": ["jax", "mlx", "keras", "tensorflow", "numpy"],
-    "backends/mlx.py": ["jax", "torch", "keras", "tensorflow", "numpy"],
-    "backends/keras.py": ["jax", "torch", "mlx", "tensorflow", "numpy"],
-    "backends/tensorflow.py": ["jax", "torch", "mlx", "keras", "numpy"],
+    "ir": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "core": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "ops": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "transforms": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "backends/jax.py": ["torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "backends/pytorch.py": ["jax", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "backends/mlx.py": ["jax", "torch", "keras", "tensorflow", "numpy", "cupy", "dask"],
+    "backends/keras.py": ["jax", "torch", "mlx", "tensorflow", "numpy", "cupy", "dask"],
+    "backends/tensorflow.py": ["jax", "torch", "mlx", "keras", "numpy", "cupy", "dask"],
+    "backends/numpy.py": ["jax", "torch", "mlx", "keras", "tensorflow", "cupy", "dask"],
+    "backends/cupy.py": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "dask"],
+    "backends/dask.py": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy"],
     "backends/base_generator.py": [
         "jax",
         "torch",
@@ -26,6 +30,8 @@ FORBIDDEN_IMPORTS = {
         "keras",
         "tensorflow",
         "numpy",
+        "cupy",
+        "dask",
     ],
 }
 
@@ -89,8 +95,8 @@ def main() -> object:
                     visitor.visit(tree)
                     if visitor.violations:
                         has_violations = True
-                        for _v in visitor.violations:
-                            pass
+                        for v in visitor.violations:
+                            print(v)
                 except Exception:
                     pass
     if has_violations:

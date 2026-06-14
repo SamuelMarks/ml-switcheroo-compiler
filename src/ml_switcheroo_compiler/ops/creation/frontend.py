@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+
 import uuid
 from typing import TYPE_CHECKING
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -72,7 +73,7 @@ def _emit_constant_node(
         raise RuntimeError(msg)
 
     out_id = str(uuid.uuid4())
-    val_arr = np.array(value, dtype=dtype.value)
+    val_arr = get_active_backend().array(value, dtype=dtype.value)
     shape = tuple(val_arr.shape)
 
     node = LogicalNode(
@@ -98,17 +99,16 @@ def array(
         object (Any): Argument object to convert
         dtype (Optional[DType]): The data type
 
-
     Returns:
         Tensor: The computed result.
     """
     if dtype is None:
-        val_arr = np.array(object)
+        val_arr = get_active_backend().array(object)
         from ml_switcheroo_compiler.core.dtype import DType
 
         dtype = DType(str(val_arr.dtype))
     else:
-        val_arr = np.array(object, dtype=dtype.value)
+        val_arr = get_active_backend().array(object)
 
     shape = tuple(val_arr.shape)
 
@@ -127,7 +127,6 @@ def asarray(
     Args:
         a (Any): Argument object to convert
         dtype (Optional[DType]): The data type
-
 
     Returns:
         Tensor: The computed result.
@@ -153,7 +152,6 @@ def zeros(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -162,7 +160,7 @@ def zeros(
     shape = (shape,) if isinstance(shape, int) else tuple(shape)
 
     if config.eager_mode:
-        data = np.zeros(shape, dtype=dtype.value)
+        data = get_active_backend().execute_op("Zeros", shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 0})
 
@@ -179,7 +177,6 @@ def ones(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -188,7 +185,7 @@ def ones(
     shape = (shape,) if isinstance(shape, int) else tuple(shape)
 
     if config.eager_mode:
-        data = np.ones(shape, dtype=dtype.value)
+        data = get_active_backend().execute_op("Ones", shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 1})
 
@@ -207,7 +204,6 @@ def full(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -216,7 +212,7 @@ def full(
     shape = (shape,) if isinstance(shape, int) else tuple(shape)
 
     if config.eager_mode:
-        data = np.full(shape, fill_value, dtype=dtype.value)
+        data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node(
         "ConstantOfShape",
@@ -238,14 +234,13 @@ def zeros_like(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
-        data = np.zeros_like(input.data, dtype=dtype.value)
+        data = get_active_backend().execute_op("Zeros_like", input.data, dtype=dtype.value)
         return Tensor(data, input.shape, dtype, device)
     return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0})
 
@@ -262,14 +257,13 @@ def ones_like(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
-        data = np.ones_like(input.data, dtype=dtype.value)
+        data = get_active_backend().execute_op("Ones_like", input.data, dtype=dtype.value)
         return Tensor(data, input.shape, dtype, device)
     return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1})
 
@@ -288,14 +282,15 @@ def full_like(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
-        data = np.full_like(input.data, fill_value, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Full_like", input.data, fill_value, dtype=dtype.value
+        )
         return Tensor(data, input.shape, dtype, device)
     return _emit_creation_node(
         "ConstantOfShape",
@@ -321,7 +316,6 @@ def arange(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -336,7 +330,7 @@ def arange(
     shape = (size,)
 
     if config.eager_mode:
-        data = np.arange(start, stop, step, dtype=dtype.value)
+        data = get_active_backend().execute_op("Arange", start, stop, step, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node(
         "Range",
@@ -362,7 +356,6 @@ def linspace(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -371,7 +364,7 @@ def linspace(
     shape = (steps,)
 
     if config.eager_mode:
-        data = np.linspace(start, stop, steps, dtype=dtype.value)
+        data = get_active_backend().execute_op("Linspace", start, stop, steps, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node(
         "LinSpace",
@@ -395,7 +388,6 @@ def eye(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -405,7 +397,7 @@ def eye(
     shape = (n, m)
 
     if config.eager_mode:
-        data = np.eye(n, m, dtype=dtype.value)
+        data = get_active_backend().execute_op("Eye", n, m, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("EyeLike", shape, dtype, {"n": n, "m": m})
 
@@ -422,7 +414,6 @@ def identity(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -436,7 +427,6 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     input (Tensor): The input tensor
     diagonal (int): Argument diagonal
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -444,7 +434,7 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     dtype = input.dtype
 
     if config.eager_mode:
-        data = np.diag(input.data, k=diagonal)
+        data = get_active_backend().execute_op("Diag", input.data, k=diagonal)
         return Tensor(data, data.shape, dtype, device)
     if len(input.shape) == 1:
         n = input.shape[0] + abs(diagonal)
@@ -484,7 +474,6 @@ def empty(
     dtype (Optional[DType]): The data type
     device (Optional[Device]): The device to store the tensor on.
 
-
     Returns:
         Tensor: The computed result.
     """
@@ -493,7 +482,7 @@ def empty(
     shape = (shape,) if isinstance(shape, int) else tuple(shape)
 
     if config.eager_mode:
-        data = np.empty(shape, dtype=dtype.value)
+        data = get_active_backend().execute_op("Empty", shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 0})
 
@@ -531,7 +520,7 @@ def rand(
     shape = tuple(size)
 
     if config.eager_mode:
-        data = np.random.rand(*shape).astype(dtype.value)
+        data = get_active_backend().execute_op("Rand", *shape)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("Rand", shape, dtype)
 
@@ -556,7 +545,7 @@ def randn(
     shape = tuple(size)
 
     if config.eager_mode:
-        data = np.random.randn(*shape).astype(dtype.value)
+        data = get_active_backend().execute_op("Randn", *shape)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("Randn", shape, dtype)
 
@@ -585,7 +574,7 @@ def randint(
     shape = tuple(size)
 
     if config.eager_mode:
-        data = np.random.randint(low, high, size=shape).astype(dtype.value)
+        data = get_active_backend().execute_op("Randint", low, high, size=shape)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node("Randint", shape, dtype, {"low": low, "high": high})
 
@@ -600,7 +589,7 @@ def manual_seed(seed: int) -> int:
         int: The computed result.
     """
     if config.eager_mode:
-        np.random.seed(seed)
+        get_active_backend().execute_op("Seed", seed)
         return seed
     _emit_creation_node("ManualSeed", (), config.default_int_dtype, {"seed": seed})
     return seed

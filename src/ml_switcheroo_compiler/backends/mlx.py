@@ -92,3 +92,83 @@ class MLXCodeGenerator(BaseGenerator):
         self._generate_body()
 
         return "\n".join(self.code)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Execute op."""
+        import mlx.core
+
+        try:
+            func = getattr(mlx.core, op_type.lower())
+            return func(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        op_map = {
+            "Add": getattr(mlx.core, "add", None),
+            "Subtract": getattr(mlx.core, "subtract", None),
+            "Multiply": getattr(mlx.core, "multiply", None),
+            "TrueDivide": getattr(mlx.core, "divide", getattr(mlx.core, "true_divide", None)),
+            "Exp": getattr(mlx.core, "exp", None),
+            "Log": getattr(mlx.core, "log", None),
+            "Matmul": getattr(mlx.core, "matmul", None),
+            "Sin": getattr(mlx.core, "sin", None),
+            "Cos": getattr(mlx.core, "cos", None),
+            "Sum": getattr(mlx.core, "sum", None),
+            "Mean": getattr(mlx.core, "mean", None),
+            "Max": getattr(mlx.core, "max", None),
+            "Min": getattr(mlx.core, "min", None),
+            "Reshape": getattr(mlx.core, "reshape", None),
+            "Transpose": getattr(mlx.core, "transpose", None),
+            "Equal": getattr(mlx.core, "equal", None),
+            "NotEqual": getattr(mlx.core, "not_equal", None),
+            "Greater": getattr(mlx.core, "greater", None),
+            "Less": getattr(mlx.core, "less", None),
+            "Negative": getattr(mlx.core, "negative", None),
+        }
+
+        if op_type in op_map and op_map[op_type] is not None:
+            return op_map[op_type](*args, **kwargs)
+
+        if op_type == "BroadcastTo":
+            return mlx.core.broadcast_to(*args, **kwargs)
+
+        msg = f"Operation '{op_type}' is not supported by mlx backend."
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> object:
+        """Create zeros."""
+        import mlx.core
+
+        return mlx.core.zeros(shape)
+
+    @classmethod
+    def array(cls, data: object) -> object:
+        """Create array."""
+        import mlx.core
+
+        try:
+            return mlx.core.array(data)
+        except AttributeError:
+            return mlx.core.convert_to_tensor(data)
+
+    @classmethod
+    def asarray(cls, data: object) -> object:
+        """Convert array."""
+        import mlx.core
+
+        try:
+            return mlx.core.asarray(data)
+        except AttributeError:
+            return mlx.core.convert_to_tensor(data)
+
+    @classmethod
+    def item(cls, data: object) -> float:
+        """Get item."""
+        import mlx.core
+
+        try:
+            return float(mlx.core.asarray(data).item())
+        except AttributeError:
+            return float(data)

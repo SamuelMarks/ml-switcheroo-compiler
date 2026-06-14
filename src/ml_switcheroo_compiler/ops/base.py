@@ -28,13 +28,15 @@ class OpDef(ABC):
         """
         import uuid
 
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_ir import LogicalNode
 
         from ml_switcheroo_compiler.core.config import config
         from ml_switcheroo_compiler.core.dtype import DType
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
+
+        backend = get_active_backend()
 
         if config.eager_mode:
             # Extract underlying data
@@ -94,19 +96,17 @@ class OpDef(ABC):
                 shapes.append(a.shape)
             else:
                 # Primitive/list passed, lift to constant
-                import numpy as np
-
-                arr = np.array(a)
+                arr = backend.array(a)
                 out_id = str(uuid.uuid4())
                 node = LogicalNode(
                     id=out_id,
                     op_type="Constant",
-                    attributes={"value": arr.tolist()},
-                    shape_metadata=arr.shape,
+                    attributes={"value": getattr(arr, "tolist", lambda a=arr: a)()},
+                    shape_metadata=getattr(arr, "shape", ()),
                 )
                 _tracer.add_node(node)
                 input_ids.append(out_id)
-                shapes.append(arr.shape)
+                shapes.append(getattr(arr, "shape", ()))
 
         # Infer shape using the op's infer_shape method
         # Many infer_shape methods expect x, y (which are shapes).
@@ -155,22 +155,12 @@ class OpDef(ABC):
         """
         ...
 
-    @abstractmethod
     def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation eagerly using NumPy.
+        """Compatibility shim for numpy_eval."""
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            *args: Positional arguments (NumPy arrays or scalars).
-            **kwargs: Keyword arguments.
-
-        Returns:
-            The result of the operation as a NumPy array or scalar.
-
-        Args:
-            *args (object): Argument args.
-            **kwargs (object): Argument kwargs.
-
-        """
-        ...
+        backend = get_active_backend()
+        return backend.execute_op(self.op_type, *args, **kwargs)
 
 
 def register_op(name: str) -> Callable[[type[T]], type[T]]:

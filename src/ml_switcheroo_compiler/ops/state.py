@@ -25,23 +25,6 @@ class ReadVariable(OpDef):
         """
         return kwargs.get("shape", ())
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args (object): Additional keyword arguments.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        from ml_switcheroo_compiler.core.errors import CompilationError
-
-        msg = "ReadVariable cannot be evaluated eagerly without a state manager."
-        raise CompilationError(
-            msg,
-        )
-
 
 @register_op("AssignVariable")
 class AssignVariable(OpDef):
@@ -61,20 +44,3 @@ class AssignVariable(OpDef):
             The computed shape or evaluation result.
         """
         return x
-
-    def numpy_eval(self, x: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            x (object): The first input tensor.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        from ml_switcheroo_compiler.core.errors import CompilationError
-
-        msg = "AssignVariable cannot be evaluated eagerly without a state manager."
-        raise CompilationError(
-            msg,
-        )

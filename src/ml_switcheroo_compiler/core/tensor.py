@@ -540,11 +540,13 @@ class Tensor:
         Returns:
             The computed shape or evaluation result.
         """
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
 
         if hasattr(self.data, "id"):
-            return np.zeros(self.shape)
-        return np.array(self.data)
+            return backend.zeros(self.shape)
+        return backend.array(self.data)
 
     def __bool__(self) -> bool:
         """Bool.
@@ -666,11 +668,13 @@ class Tensor:
         Returns:
             float: The computed result.
         """
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
 
         if self.eval().__class__.__name__ == "Tensor":
-            return float(np.asarray(self.eval().data).item())
-        return float(np.asarray(self.eval()).item())
+            return backend.item(self.eval().data)
+        return backend.item(self.eval())
 
     def detach(self) -> "Tensor":
         """Returns a new Tensor, detached from the current graph.

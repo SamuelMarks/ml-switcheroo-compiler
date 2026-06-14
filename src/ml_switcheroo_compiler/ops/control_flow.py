@@ -8,10 +8,11 @@ intermediate representation (IR) graph for compilation
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+
 import uuid
 from typing import Any, Callable
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -277,8 +278,8 @@ def scan(
             x = Tensor(xs.data[i], xs.shape[1:], xs.dtype, xs.device) if xs is not None else None
             carry, y = f(carry, x)
             ys.append(y.data if hasattr(y, "data") else y)
-        if len(ys) > 0 and isinstance(ys[0], np.ndarray):
-            stacked_ys = np.stack(ys)
+        if len(ys) > 0 and isinstance(ys[0], tuple):
+            stacked_ys = get_active_backend().execute_op("Stack", ys)
             out_tensor = Tensor(
                 stacked_ys,
                 stacked_ys.shape,
@@ -286,7 +287,7 @@ def scan(
                 y.device if hasattr(y, "device") else init.device,
             )
         else:
-            stacked_ys = np.array(ys)
+            stacked_ys = get_active_backend().array(ys)
             from ml_switcheroo_compiler.core.dtype import DType
 
             out_tensor = Tensor(
@@ -364,7 +365,7 @@ def vmap(
             outs = []
             for i in range(batch_size):
                 axes = in_axes if isinstance(in_axes, int) else in_axes[0]
-                sliced_data = np.take(arg.data, i, axis=axes)
+                sliced_data = get_active_backend().execute_op("Take", arg.data, i, axis=axes)
                 sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != axes)
                 sliced_arg = Tensor(
                     sliced_data,
@@ -374,7 +375,8 @@ def vmap(
                 )
                 outs.append(func(sliced_arg).data)
 
-            out_data = np.stack(
+            out_data = get_active_backend().execute_op(
+                "Stack",
                 outs,
                 axis=out_axes if isinstance(out_axes, int) else out_axes[0],
             )

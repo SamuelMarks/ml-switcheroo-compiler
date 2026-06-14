@@ -1,6 +1,6 @@
 """FLOP estimation module."""
 
-import numpy as np
+import math
 from ml_switcheroo_ir import LogicalGraph
 
 
@@ -23,7 +23,7 @@ def estimate_flops(graph: LogicalGraph) -> int:
         elif hasattr(node, "shape_metadata") and node.shape_metadata is not None:
             try:
                 # If shape is iterable, multiply dimensions
-                flops = int(np.prod(node.shape_metadata))
+                flops = int(math.prod(node.shape_metadata))
                 total_flops += flops
             except Exception:
                 total_flops += 1

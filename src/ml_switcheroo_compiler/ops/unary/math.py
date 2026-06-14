@@ -5,8 +5,6 @@ of unary mathematical operations (such as trigonometric, exponential, logarithmi
 rounding functions) that can be evaluated using NumPy
 """
 
-import numpy as np
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -34,18 +32,6 @@ class UnaryMathOp(OpDef):
             The computed shape or evaluation result.
         """
         return shapes[0] if shapes else ()  # Unary ops typically preserve shape and dtype
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(args[0])
 
 
 @register_op("Sin")
@@ -234,23 +220,6 @@ class Erf(UnaryMathOp):
     op_name = "Erf"
     np_op_name = "erf"
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        x = args[0]
-        import math
-
-        import numpy as np
-
-        return np.vectorize(math.erf)(x).astype(getattr(x, "dtype", float))
-
 
 @register_op("Erfc")
 class Erfc(UnaryMathOp):
@@ -259,23 +228,6 @@ class Erfc(UnaryMathOp):
     op_name = "Erfc"
     np_op_name = "erfc"
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        x = args[0]
-        import math
-
-        import numpy as np
-
-        return np.vectorize(math.erfc)(x).astype(getattr(x, "dtype", float))
-
 
 @register_op("Erfinv")
 class Erfinv(UnaryMathOp):
@@ -283,21 +235,6 @@ class Erfinv(UnaryMathOp):
 
     op_name = "Erfinv"
     np_op_name = "erfinv"
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        msg = "No direct NumPy equivalent for erfinv."
-        raise UnimplementedMathError(msg)
 
 
 @register_op("Exp2")
@@ -365,23 +302,6 @@ class Lgamma(UnaryMathOp):
 
     op_name = "Lgamma"
     np_op_name = "lgamma"
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        x = args[0]
-        import math
-
-        import numpy as np
-
-        return np.vectorize(math.lgamma)(x).astype(getattr(x, "dtype", float))
 
 
 @register_op("Log10")
@@ -487,21 +407,6 @@ class Digamma(UnaryMathOp):
     op_name = "Digamma"
     np_op_name = "digamma"
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        msg = "No direct NumPy equivalent for digamma."
-        raise UnimplementedMathError(msg)
-
 
 @register_op("Rsqrt")
 class Rsqrt(UnaryMathOp):
@@ -510,45 +415,12 @@ class Rsqrt(UnaryMathOp):
     op_name = "Rsqrt"
     np_op_name = "rsqrt"
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        import numpy as np
-
-        return 1.0 / np.sqrt(args[0])
-
 
 @register_op("Logit")
 class Logit(UnaryMathOp):
     """Computes the logit of a tensor element-wise."""
 
     op_name = "Logit"
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        import numpy as np
-
-        x = args[0]
-        eps = kwargs.get("eps")
-        if eps is not None:
-            x = np.clip(x, eps, 1.0 - eps)
-
-        return np.log(x / (1.0 - x))
 
 
 @register_op("Mvlgamma")
@@ -557,51 +429,12 @@ class Mvlgamma(UnaryMathOp):
 
     op_name = "Mvlgamma"
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        x = args[0]
-        import math
-
-        import numpy as np
-
-        p = kwargs.get("p", 1)
-        res = p * (p - 1) / 4.0 * math.log(math.pi)
-        for i in range(1, p + 1):
-            res += np.vectorize(math.lgamma)(x + (1 - i) / 2.0).astype(getattr(x, "dtype", float))
-        return res
-
 
 @register_op("NanToNum")
 class NanToNum(UnaryMathOp):
     """Replaces NaN, positive infinity, and negative infinity values."""
 
     op_name = "NanToNum"
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        import numpy as np
-
-        x = args[0]
-        nan = kwargs.get("nan", 0.0)
-        posinf = kwargs.get("posinf")
-        neginf = kwargs.get("neginf")
-        return np.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
 
 
 @register_op("Signbit")

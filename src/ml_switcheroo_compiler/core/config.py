@@ -32,6 +32,7 @@ class Config:
     def __init__(self) -> None:
         """Initialize the Config."""
         self.eager_mode: bool = os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1"
+        self.backend: str = os.environ.get("SWITCHEROO_BACKEND", "numpy")
         self.default_float_dtype: DType = DType.Float32
         self.default_int_dtype: DType = DType.Int64
         self.default_device: Device = Device(DeviceType.CPU, 0)
@@ -71,6 +72,7 @@ class Config:
         """
         new_config = Config()
         new_config._eager_mode = self._eager_mode
+        new_config.backend = self.backend
         new_config.default_float_dtype = self.default_float_dtype
         new_config.default_int_dtype = self.default_int_dtype
         new_config.default_device = self.default_device
@@ -110,6 +112,7 @@ def ConfigContext(**kwargs: object) -> Iterator[None]:
         yield
     finally:
         config._eager_mode = old_config._eager_mode
+        config.backend = old_config.backend
         config.default_float_dtype = old_config.default_float_dtype
         config.default_int_dtype = old_config.default_int_dtype
         config.default_device = old_config.default_device

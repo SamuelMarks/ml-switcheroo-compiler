@@ -84,3 +84,83 @@ class JAXCodeGenerator(BaseGenerator):
         self._generate_body()
 
         return "\n".join(self.code)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Execute op."""
+        import jax.numpy
+
+        try:
+            func = getattr(jax.numpy, op_type.lower())
+            return func(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        op_map = {
+            "Add": getattr(jax.numpy, "add", None),
+            "Subtract": getattr(jax.numpy, "subtract", None),
+            "Multiply": getattr(jax.numpy, "multiply", None),
+            "TrueDivide": getattr(jax.numpy, "divide", getattr(jax.numpy, "true_divide", None)),
+            "Exp": getattr(jax.numpy, "exp", None),
+            "Log": getattr(jax.numpy, "log", None),
+            "Matmul": getattr(jax.numpy, "matmul", None),
+            "Sin": getattr(jax.numpy, "sin", None),
+            "Cos": getattr(jax.numpy, "cos", None),
+            "Sum": getattr(jax.numpy, "sum", None),
+            "Mean": getattr(jax.numpy, "mean", None),
+            "Max": getattr(jax.numpy, "max", None),
+            "Min": getattr(jax.numpy, "min", None),
+            "Reshape": getattr(jax.numpy, "reshape", None),
+            "Transpose": getattr(jax.numpy, "transpose", None),
+            "Equal": getattr(jax.numpy, "equal", None),
+            "NotEqual": getattr(jax.numpy, "not_equal", None),
+            "Greater": getattr(jax.numpy, "greater", None),
+            "Less": getattr(jax.numpy, "less", None),
+            "Negative": getattr(jax.numpy, "negative", None),
+        }
+
+        if op_type in op_map and op_map[op_type] is not None:
+            return op_map[op_type](*args, **kwargs)
+
+        if op_type == "BroadcastTo":
+            return jax.numpy.broadcast_to(*args, **kwargs)
+
+        msg = f"Operation '{op_type}' is not supported by jax backend."
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> object:
+        """Create zeros."""
+        import jax.numpy
+
+        return jax.numpy.zeros(shape)
+
+    @classmethod
+    def array(cls, data: object) -> object:
+        """Create array."""
+        import jax.numpy
+
+        try:
+            return jax.numpy.array(data)
+        except AttributeError:
+            return jax.numpy.convert_to_tensor(data)
+
+    @classmethod
+    def asarray(cls, data: object) -> object:
+        """Convert array."""
+        import jax.numpy
+
+        try:
+            return jax.numpy.asarray(data)
+        except AttributeError:
+            return jax.numpy.convert_to_tensor(data)
+
+    @classmethod
+    def item(cls, data: object) -> float:
+        """Get item."""
+        import jax.numpy
+
+        try:
+            return float(jax.numpy.asarray(data).item())
+        except AttributeError:
+            return float(data)

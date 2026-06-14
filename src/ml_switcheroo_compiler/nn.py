@@ -1,7 +1,5 @@
 """Neural network modules and layers."""
 
-import numpy as np
-
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 
@@ -63,7 +61,7 @@ def logsumexp(
     return _lse(a, axis=axis, keepdims=keepdims)
 
 
-def one_hot(x: Tensor, num_classes: int, *, dtype: object = float, axis: int = -1) -> Tensor:
+def one_hot(x: Tensor, num_classes: int, *, dtype: object = None, axis: int = -1) -> Tensor:
     """Creates a one-hot encoding of the given integer array.
 
     Args:
@@ -286,7 +284,7 @@ def log_softmax(x: object, axis: object = -1) -> object:
     return ops.subtract(shifted, ops.log(sum_exp))
 
 
-def zeros(key: object, shape: object, dtype: object = float) -> object:
+def zeros(key: object, shape: object, dtype: object = None) -> object:
     """Initializes an array with all zeros.
 
     Args:
@@ -297,13 +295,13 @@ def zeros(key: object, shape: object, dtype: object = float) -> object:
     Returns:
         object: The computed result.
     """
+    import ml_switcheroo_compiler.ops as ops
     import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
 
-    return Tensor(np.zeros(shape), shape, dtypes.DType.Float32, Device("cpu"))
+    return ops.zeros(shape, dtype=dtype or dtypes.DType.Float32)
 
 
-def ones(key: object, shape: object, dtype: object = float) -> object:
+def ones(key: object, shape: object, dtype: object = None) -> object:
     """Initializes an array with all ones.
 
     Args:
@@ -314,13 +312,13 @@ def ones(key: object, shape: object, dtype: object = float) -> object:
     Returns:
         object: The computed result.
     """
+    import ml_switcheroo_compiler.ops as ops
     import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler.core.device import Device
 
-    return Tensor(np.ones(shape), shape, dtypes.DType.Float32, Device("cpu"))
+    return ops.ones(shape, dtype=dtype or dtypes.DType.Float32)
 
 
-def constant(value: object, dtype: object = float) -> object:
+def constant(value: object, dtype: object = None) -> object:
     """Returns an initializer that generates arrays filled with a constant value.
 
     Args:
@@ -332,15 +330,15 @@ def constant(value: object, dtype: object = float) -> object:
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        import ml_switcheroo_compiler.ops as ops
         import ml_switcheroo_compiler.core.dtype as dtypes
-        from ml_switcheroo_compiler.core.device import Device
 
-        return Tensor(np.full(shape, value), shape, dtypes.DType.Float32, Device("cpu"))
+        return ops.full(shape, value, dtype=dtype or dtypes.DType.Float32)
 
     return init
 
 
-def uniform(scale: object = 0.01, dtype: object = float) -> object:
+def uniform(scale: object = 0.01, dtype: object = None) -> object:
     """Returns an initializer that generates arrays from a uniform distribution.
 
     Args:
@@ -357,7 +355,7 @@ def uniform(scale: object = 0.01, dtype: object = float) -> object:
     return init
 
 
-def normal(stddev: object = 0.01, dtype: object = float) -> object:
+def normal(stddev: object = 0.01, dtype: object = None) -> object:
     """Returns an initializer that generates arrays from a normal distribution.
 
     Args:
@@ -376,7 +374,7 @@ def normal(stddev: object = 0.01, dtype: object = float) -> object:
 
 def truncated_normal(
     stddev: object = 0.01,
-    dtype: object = float,
+    dtype: object = None,
     lower: object = -2.0,
     upper: object = 2.0,
 ) -> object:
@@ -405,7 +403,7 @@ def variance_scaling(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer that scales its variance based on weight shape.
 
@@ -432,7 +430,7 @@ def glorot_uniform(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer for the Glorot (Xavier) uniform initialization.
 
@@ -452,7 +450,7 @@ def glorot_normal(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer for the Glorot (Xavier) normal initialization.
 
@@ -480,7 +478,7 @@ def lecun_uniform(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer for the LeCun uniform initialization.
 
@@ -500,7 +498,7 @@ def lecun_normal(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer for the LeCun normal initialization.
 
@@ -520,7 +518,7 @@ def he_uniform(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer for the He (Kaiming) uniform initialization.
 
@@ -540,7 +538,7 @@ def he_normal(
     in_axis: object = -2,
     out_axis: object = -1,
     batch_axis: object = (),
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer for the He (Kaiming) normal initialization.
 
@@ -556,7 +554,7 @@ def he_normal(
     return variance_scaling(2.0, "fan_in", "truncated_normal", in_axis, out_axis, batch_axis, dtype)
 
 
-def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = float) -> object:
+def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = None) -> object:
     """Returns an initializer that generates orthogonally initialized weight arrays.
 
     Args:
@@ -577,7 +575,7 @@ def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = fl
 def delta_orthogonal(
     scale: object = 1.0,
     column_axis: object = -1,
-    dtype: object = float,
+    dtype: object = None,
 ) -> object:
     """Returns an initializer that generates delta orthogonal arrays (useful for CNNs).
 

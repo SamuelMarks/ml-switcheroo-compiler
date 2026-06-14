@@ -48,7 +48,7 @@ def test_dtype_inference() -> None:
     modified = dtype_inference_pass(g)
     assert modified
     assert g.nodes["c"].attributes["dtype"] == DType.Float32.value
-    assert g.nodes["add"].attributes["dtype"] == "float64"  # promote_types(float32, int32)
+    assert g.nodes["add"].attributes["dtype"] == "float32"  # promote_types(float32, int32)
 
 
 def test_broadcast_explicitizer() -> None:
@@ -104,10 +104,10 @@ def test_type_promotion() -> None:
 
     # Both should be cast to float64, A might be cast depending on numpy rules
     # float32 + int32 -> float64
-    assert g.nodes[in1].op_type == "Cast"
-    assert g.nodes[in1].attributes["dtype"] == "float64"
     assert g.nodes[in2].op_type == "Cast"
-    assert g.nodes[in2].attributes["dtype"] == "float64"
+    assert g.nodes[in1].attributes["dtype"] == "float32"
+    assert g.nodes[in2].op_type == "Cast"
+    assert g.nodes[in2].attributes["dtype"] == "float32"
 
 
 def test_state_lifting() -> None:

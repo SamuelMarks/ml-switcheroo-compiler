@@ -1,7 +1,5 @@
 """Constant Folding pass."""
 
-import numpy as np
-
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -21,12 +19,14 @@ def constant_folding_pass(graph: IRGraph) -> bool:
     """
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.interpreter import evaluate_graph
 
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
 
     id_map: dict[str, str] = {}
+    backend = get_active_backend()
 
     for node in sorted_nodes:
         canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
@@ -60,8 +60,10 @@ def constant_folding_pass(graph: IRGraph) -> bool:
 
                 # Convert single-element arrays to scalar to preserve legacy testing
                 # format
-                if isinstance(val, np.ndarray) and val.size == 1:
-                    val = val.item()
+                if hasattr(val, "size") and val.size == 1:
+                    val = backend.item(val)
+                elif hasattr(val, "numel") and val.numel() == 1:
+                    val = backend.item(val)
 
                 graph.nodes[node.id].op_type = "Constant"
                 graph.nodes[node.id].attributes = {"value": val}

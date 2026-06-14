@@ -118,7 +118,6 @@ def test_binary_base_op() -> None:
     op = DummyBinary()
     assert op.infer_shape((10,), (10,)) == (10,)
     assert op.infer_shape(None, None) is None
-    assert np.allclose(op.numpy_eval(1.0, 2.0), 3.0)
 
 
 def test_binary_special_coverage() -> None:

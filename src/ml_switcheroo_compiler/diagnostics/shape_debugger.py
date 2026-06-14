@@ -6,7 +6,7 @@ well as export logical graphs to Graphviz DOT and HTML formats for visualization
 
 from typing import Any, Callable
 
-import numpy as np
+import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_ir import LogicalGraph
 
 
@@ -30,7 +30,9 @@ def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
         # For the test, it expects to see "| input | (2, 2) | float64 |"
         # and "| output | (2, 2) | float64 |"
 
-        dummy_input = np.zeros(input_shape)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        dummy_input = ops.zeros(input_shape, dtype=DType.Float64)
         res += f"| input | {input_shape} | float64 |\n"
 
         try:

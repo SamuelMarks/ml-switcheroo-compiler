@@ -1,6 +1,6 @@
 """Memory profiling module."""
 
-import numpy as np
+import math
 from ml_switcheroo_ir import LogicalGraph
 
 
@@ -19,7 +19,7 @@ def memory_profiler(graph: LogicalGraph) -> int:
     for node in graph.nodes.values():
         if hasattr(node, "shape_metadata") and node.shape_metadata is not None:
             try:
-                mem = int(np.prod(node.shape_metadata)) * 4  # Assume float32
+                mem = int(math.prod(node.shape_metadata)) * 4  # Assume float32
                 total_mem += mem
             except Exception:
                 total_mem += 4

@@ -212,3 +212,70 @@ class BaseGenerator(ABC):
             returns (str): The returns.
         """
         self.add_line(f"return {returns}")
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: object, **kwargs: object) -> object:
+        """Eagerly execute an operation.
+
+        Args:
+            op_type (str): The operation type.
+            *args (object): Positional arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: The result.
+        """
+        msg = f"execute_op not implemented for {cls.__name__}"
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> object:
+        """Create a zero tensor.
+
+        Args:
+            shape (tuple[int, ...]): The shape.
+
+        Returns:
+            object: The result.
+        """
+        msg = f"zeros not implemented for {cls.__name__}"
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def array(cls, data: object) -> object:
+        """Create a tensor from data.
+
+        Args:
+            data (object): The data.
+
+        Returns:
+            object: The result.
+        """
+        msg = f"array not implemented for {cls.__name__}"
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def asarray(cls, data: object) -> object:
+        """Convert data to tensor.
+
+        Args:
+            data (object): The data.
+
+        Returns:
+            object: The result.
+        """
+        msg = f"asarray not implemented for {cls.__name__}"
+        raise NotImplementedError(msg)
+
+    @classmethod
+    def item(cls, data: object) -> float:
+        """Extract a scalar float from the tensor.
+
+        Args:
+            data (object): The data.
+
+        Returns:
+            float: The result.
+        """
+        msg = f"item not implemented for {cls.__name__}"
+        raise NotImplementedError(msg)

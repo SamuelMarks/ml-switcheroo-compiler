@@ -2,9 +2,9 @@
 
 import uuid
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -51,7 +51,7 @@ def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
             continue
 
         try:
-            target_shape = np.broadcast_shapes(shape1, shape2)
+            target_shape = broadcast_shapes(shape1, shape2)
         except ValueError:
             # Shapes are fundamentally incompatible. Shape pass or execution will fail
             continue

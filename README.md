@@ -57,6 +57,18 @@ To provide a standard developer experience, the engine supports two distinct exe
 - **Eager Mode (Debug / Interactive):** Immediate-execution path where mathematical operations are evaluated eagerly, backed by NumPy or pure Python for accurate, host-level execution without compilation overhead.
 - **Graph Mode (Compiled):** A tracing and parsing execution path that constructs the Unified IR. The resulting computation graph is then routed through the optimization middle-end to the selected deployment backend.
 
+## Internal Backends
+
+The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecosystem. While the frontends provide the API interfaces, the actual execution is delegated to one of several internal execution backends. You can specifically choose between the following backends depending on your platform and performance requirements:
+
+- **`numpy`**: Reference eager execution CPU backend.
+- **`jax`**: High-performance compiler and array library backend.
+- **`mlx`**: Apple Silicon optimized array framework backend.
+- **`cupy`**: GPU-accelerated array computing backend.
+- **`dusk`**: Specialized distributed or alternative backend.
+- **`torch`**: Native PyTorch execution backend.
+- **`keras`**: Keras execution backend.
+
 ---
 
 ## Related Projects
@@ -74,6 +86,7 @@ To provide a standard developer experience, the engine supports two distinct exe
 | [`zero-optax`](https://github.com/SamuelMarks/zero-optax) | Optax is a gradient processing and optimization library for JAX. | [![CI](https://github.com/SamuelMarks/zero-optax/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-optax/actions/workflows/ci.yml) |
 | [`zero-orbax`](https://github.com/SamuelMarks/zero-orbax) | Orbax provides common checkpointing and persistence utilities for JAX users | [![CI](https://github.com/SamuelMarks/zero-orbax/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-orbax/actions/workflows/ci.yml) |
 | [`zero-pax`](https://github.com/SamuelMarks/zero-pax) | Pax is a Jax-based machine learning framework for training large scale models. Pax allows for advanced and fully configurable experimentation and parallelization, and has demonstrated industry leading model flop utilization rates. | [![CI](https://github.com/SamuelMarks/zero-pax/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-pax/actions/workflows/ci.yml) |
+| [`zero-pytorch`](https://github.com/SamuelMarks/zero-pytorch) | Tensors and Dynamic neural networks in Python with strong GPU acceleration | [![CI](https://github.com/SamuelMarks/zero-pytorch/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-pytorch/actions/workflows/ci.yml) |
 | [`zero-tensorflow`](https://github.com/SamuelMarks/zero-tensorflow) | An Open Source Machine Learning Framework for Everyone | [![CI](https://github.com/SamuelMarks/zero-tensorflow/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/zero-tensorflow/actions/workflows/ci.yml) |
 
 ---

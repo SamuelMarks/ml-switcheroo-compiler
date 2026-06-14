@@ -5,8 +5,6 @@ various element-wise binary mathematical operations (e.g., Add, Subtract, Multip
 Divide) using NumPy for evaluation
 """
 
-import numpy as np
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -20,6 +18,9 @@ class BinaryMathOp(OpDef):
     op_name: str = ""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+        """Infer shape."""
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
+
         """Infer the output shape of the operation.
 
         Args:
@@ -32,20 +33,8 @@ class BinaryMathOp(OpDef):
         # Broadcasting logic should ideally happen here, but for now we return x
         # This will be replaced by a proper shape inference pass
         if all(isinstance(s, tuple) for s in shapes):
-            return np.broadcast_shapes(*shapes)
+            return _bs(*shapes)
         return shapes[0] if shapes else ()
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return getattr(np, getattr(self, "np_op_name", self.op_name.lower()))(*args)
 
 
 @register_op("Add")
@@ -81,18 +70,6 @@ class TrueDivide(Divide):
     """Binary operation for element-wise true division of the first operand by the second."""
 
     op_name = "True_Divide"
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        return np.true_divide(args[0], args[1])
 
 
 @register_op("Power")
@@ -381,20 +358,3 @@ class Xlogy(BinaryMathOp):
     """Computes x * log(y) returning 0 if x is 0 element-wise."""
 
     op_name = "Xlogy"
-
-    def numpy_eval(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the operation using NumPy.
-
-        Args:
-            *args: The input arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        import numpy as np
-
-        x_arr = np.asarray(args[0])
-        y_arr = np.asarray(args[1])
-        res = x_arr * np.log(y_arr)
-        return np.where(x_arr == 0, np.zeros_like(res), res)
