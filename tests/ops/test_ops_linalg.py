@@ -174,6 +174,8 @@ def test_conv_general_dilated_opdef() -> None:
     assert op.infer_shape(None, None, [1], "SAME") == ()
 
     class Dummy:
+        """Docstring."""
+
         shape = (1, 3, 32, 32)
 
     assert op.infer_shape(Dummy(), Dummy(), [1], "SAME") == ()
@@ -243,6 +245,8 @@ def test_fft_rfft_opdef() -> None:
     op_rfft = Rfft()
 
     class DummyShape:
+        """Docstring."""
+
         shape = (10,)
 
     assert op_fft.infer_shape(None, 5) == ()

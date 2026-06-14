@@ -23,6 +23,7 @@ def test_autodiff_coverage_brute() -> None:
 
     @register_vjp("FakeOp")
     def fake_op_vjp(graph: object, node: object, adj_id: str) -> list[str]:
+        """Docstring."""
         raise NotImplementedError("Missing VJP")
 
     with pytest.raises(ValueError, match="Missing VJP rule for operation"):
@@ -33,6 +34,7 @@ def test_autodiff_coverage_brute() -> None:
 
     @register_vjp("FakeOp")
     def fake_op_vjp2(graph: object, node: object, adj_id: str) -> list[str]:
+        """Docstring."""
         return ["adj_1"]  # Return 1 instead of 2 expected
 
     with pytest.raises(ValueError, match="VJP for FakeOp returned 1 adjoints, expected 2."):

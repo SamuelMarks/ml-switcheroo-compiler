@@ -102,7 +102,7 @@ def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Flatten",
         inputs,
@@ -207,7 +207,7 @@ def expand(input: Tensor, size: Sequence[int]) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Expand",
         inputs,
@@ -264,7 +264,7 @@ def transpose(input: Tensor, dim0: int, dim1: int) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Transpose",
         inputs,
@@ -321,7 +321,7 @@ def swapaxes(input: Tensor, axis1: int, axis2: int) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Swapaxes",
         inputs,
@@ -354,7 +354,7 @@ def moveaxis(
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Moveaxis",
         inputs,
@@ -389,7 +389,7 @@ def roll(
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Roll",
         inputs,
@@ -427,7 +427,7 @@ def slice(
         return Tensor(data, data.shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Slice",
         inputs,
@@ -470,7 +470,7 @@ def dynamic_slice(
         return Tensor(data, data.shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "DynamicSlice",
         inputs,
@@ -513,7 +513,7 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
         return Tensor(data, data.shape, input.dtype, input.device)
     inputs = [input, update]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "UpdateSlice",
         inputs,
@@ -548,10 +548,10 @@ def strided_slice(
 
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
         data = input.data[idx]
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, data.shape, input.dtype, input.device)  # pragma: no cover
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "StridedSlice",
         inputs,
@@ -610,7 +610,7 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
         return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
     inputs = list(tensors)
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Stack",
         inputs,
@@ -708,7 +708,7 @@ def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Tile",
         inputs,
@@ -741,7 +741,7 @@ def repeat(
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Repeat",
         inputs,
@@ -770,7 +770,7 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input, index]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Gather",
         inputs,
@@ -799,7 +799,7 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
         raise UnimplementedMathError(msg)
     inputs = [input, indices]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "GatherNd",
         inputs,
@@ -831,7 +831,7 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
         raise UnimplementedMathError(msg)
     inputs = [input, index, src]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Scatter",
         inputs,
@@ -860,7 +860,7 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
         raise UnimplementedMathError(msg)
     inputs = [indices, updates]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "ScatterNd",
         inputs,
@@ -892,7 +892,7 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
         raise UnimplementedMathError(msg)
     inputs = [input, index, src]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "ScatterAdd",
         inputs,
@@ -920,7 +920,7 @@ def take(input: Tensor, indices: Tensor) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input, indices]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Take",
         inputs,
@@ -950,7 +950,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [condition, input, other]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Where",
         inputs,
@@ -979,7 +979,7 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Triu",
         inputs,
@@ -1008,7 +1008,7 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node(
         "Tril",
         inputs,
@@ -1228,7 +1228,7 @@ def vstack(tup: Sequence[Tensor]) -> Tensor:
         data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
     inputs = list(tup)
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
@@ -1248,7 +1248,7 @@ def hstack(tup: Sequence[Tensor]) -> Tensor:
         data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
     inputs = list(tup)
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
@@ -1268,7 +1268,7 @@ def dstack(tup: Sequence[Tensor]) -> Tensor:
         data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, data.shape, tup[0].dtype, tup[0].device)
     inputs = list(tup)
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    out_shape = inputs[0].shape
     return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
 
 

@@ -12,6 +12,7 @@ def test_grad_coverage() -> None:
     """Tests the gradient API."""
 
     def f(x: object) -> object:
+        """Docstring."""
         return x
 
     g1 = grad_module.ir_grad(f)

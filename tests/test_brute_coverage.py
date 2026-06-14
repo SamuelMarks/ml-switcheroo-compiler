@@ -14,6 +14,8 @@ def test_coverage_brute() -> None:
     """Execute the requested function."""
 
     class FakeGenerator(BaseGenerator):
+        """Docstring."""
+
         pass
 
     register_backend("fake")(FakeGenerator)

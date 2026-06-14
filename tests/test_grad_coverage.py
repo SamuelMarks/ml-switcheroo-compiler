@@ -150,6 +150,7 @@ def test_grad_frontend_mocks() -> None:
     )
 
     def my_fun(x: int) -> int:
+        """Docstring."""
         return x * 2
 
     # test ir_grad and grad

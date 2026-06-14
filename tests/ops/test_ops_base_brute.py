@@ -15,10 +15,14 @@ def test_base_coverage_brute() -> None:
 
     @register_op("TestCoverageOp")
     class TestCoverageOp(OpDef):
+        """Docstring."""
+
         def infer_shape(self, *args: object, **kwargs: object) -> tuple:
+            """Docstring."""
             return ()
 
         def numpy_eval(self, *args: object, **kwargs: object) -> int:
+            """Docstring."""
             return 1
 
     _tracer.start_tracing()

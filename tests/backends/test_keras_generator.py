@@ -140,12 +140,16 @@ def test_keras_generator_coverage() -> None:
     gen = KerasCodeGenerator(LogicalGraph("foo"))
 
     class DummyNode:
+        """Docstring."""
+
         op_type = "Matmul"
 
     res = gen.visit(DummyNode(), ["a", "b"], unrelated="hi")
     assert res == "keras.ops.matmul(a, b)"
 
     class DummyNode2:
+        """Docstring."""
+
         op_type = "Zeros"
 
     res2 = gen.visit(DummyNode2(), ["a"], shape=[1], unrelated="hi")

@@ -270,6 +270,7 @@ def test_vjp_returns_wrong_number_of_adjoints() -> None:
 
         @register_vjp("TestOp")
         def testop_vjp(graph: object, node: object, cotangent: object) -> tuple:
+            """Docstring."""
             return ("adj",)
     except ValueError:
         pass
@@ -298,6 +299,7 @@ def test_vjp_returns_none() -> None:
 
         @register_vjp("TestNoneOp")
         def testnoneop_vjp(graph: object, node: object, cotangent: object) -> tuple:
+            """Docstring."""
             return (None,)
     except ValueError:
         pass

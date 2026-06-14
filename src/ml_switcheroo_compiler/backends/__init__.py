@@ -13,13 +13,13 @@ from ml_switcheroo_compiler.backends import numpy
 
 try:
     from ml_switcheroo_compiler.backends import cupy
-except ImportError:
-    pass
+except ImportError:  # pragma: no cover
+    pass  # pragma: no cover
 
 try:
     from ml_switcheroo_compiler.backends import dask
-except ImportError:
-    pass
+except ImportError:  # pragma: no cover
+    pass  # pragma: no cover
 
 __all__ = [
     "numpy",

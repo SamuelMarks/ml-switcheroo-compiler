@@ -8,32 +8,33 @@ such as the intermediate representation (IR) or core transforms.
 
 import ast
 import os
+
 import sys
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+
+from typing import get_args
+from ml_switcheroo_compiler.backends.registry import BackendName
+
+ALL_BACKENDS = list(get_args(BackendName))
+
 FORBIDDEN_IMPORTS = {
-    "ir": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "core": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "ops": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "transforms": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "backends/jax.py": ["torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "backends/pytorch.py": ["jax", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "backends/mlx.py": ["jax", "torch", "keras", "tensorflow", "numpy", "cupy", "dask"],
-    "backends/keras.py": ["jax", "torch", "mlx", "tensorflow", "numpy", "cupy", "dask"],
-    "backends/tensorflow.py": ["jax", "torch", "mlx", "keras", "numpy", "cupy", "dask"],
-    "backends/numpy.py": ["jax", "torch", "mlx", "keras", "tensorflow", "cupy", "dask"],
-    "backends/cupy.py": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "dask"],
-    "backends/dask.py": ["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy"],
-    "backends/base_generator.py": [
-        "jax",
-        "torch",
-        "mlx",
-        "keras",
-        "tensorflow",
-        "numpy",
-        "cupy",
-        "dask",
-    ],
+    "ir": ALL_BACKENDS,
+    "core": ALL_BACKENDS,
+    "ops": ALL_BACKENDS,
+    "transforms": ALL_BACKENDS,
+    "backends/base_generator.py": ALL_BACKENDS,
 }
+
+# For each backend file, forbid importing all OTHER backends
+# E.g. backends/jax.py cannot import torch, mlx, keras, tensorflow, numpy, cupy, dask
+for backend in ALL_BACKENDS:
+    if backend == "torch":
+        file_path = "backends/pytorch.py"
+    else:
+        file_path = f"backends/{backend}.py"
+
+    FORBIDDEN_IMPORTS[file_path] = [b for b in ALL_BACKENDS if b != backend]
 
 
 class ImportVisitor(ast.NodeVisitor):

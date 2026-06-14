@@ -38,6 +38,8 @@ def test_pytorch_generator_coverage() -> None:
     gen = PyTorchCodeGenerator(LogicalGraph("foo"))
 
     class DummyNode:
+        """Docstring."""
+
         op_type = "Sum"
 
     res = gen.visit(DummyNode(), ["a"], unrelated="hi")
@@ -45,6 +47,8 @@ def test_pytorch_generator_coverage() -> None:
 
     # Test kwargs placeholder replacement (line 48)
     class ReshapeNode:
+        """Docstring."""
+
         op_type = "Reshape"
 
     res2 = gen.visit(ReshapeNode(), ["a"], shape="(2, 2)")
@@ -52,6 +56,8 @@ def test_pytorch_generator_coverage() -> None:
 
     # Test generic fallback with axis and keepdims (lines 62, 64)
     class ReluNode:
+        """Docstring."""
+
         op_type = "Relu"
 
     res3 = gen.visit(ReluNode(), ["a"], axis=1, keepdims=True)

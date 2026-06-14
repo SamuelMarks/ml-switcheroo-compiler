@@ -192,6 +192,8 @@ def test_top_k_opdef() -> None:
     assert tk.infer_shape(None, 2) == ()
 
     class DummyShape:
+        """Docstring."""
+
         shape = (10,)
 
     assert tk.infer_shape(DummyShape(), 2) == (2,)
@@ -255,6 +257,8 @@ def test_sort_opdef() -> None:
     assert s.infer_shape(None) == ()
 
     class DummyShape:
+        """Docstring."""
+
         shape = (10,)
 
     assert s.infer_shape(DummyShape()) == (10,)
@@ -374,6 +378,8 @@ def test_image_resize_opdef() -> None:
     assert op.infer_shape(None, (10, 10)) == ()
 
     class DummyShape:
+        """Docstring."""
+
         shape = (1, 5, 5, 3)
 
     assert op.infer_shape(DummyShape(), (10, 10)) == (1, 10, 10, 3)
@@ -444,6 +450,8 @@ def test_shape_basic_coverage() -> None:
     op3 = Resize()
 
     class DummyShape:
+        """Docstring."""
+
         shape = (10, 10)
 
     assert op3.infer_shape(DummyShape(), (20, 20)) == (10, 10)

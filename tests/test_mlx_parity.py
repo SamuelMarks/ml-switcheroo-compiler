@@ -43,6 +43,7 @@ def test_mlx_parity_coverage() -> None:
 
     # grad
     def f(x: object) -> object:
+        """Docstring."""
         return x
 
     assert grad_module.jvp(f, [1], [1]) == (1, [1])
@@ -75,6 +76,7 @@ def test_grad_coverage_extra() -> None:
     import ml_switcheroo_compiler.grad as grad_module
 
     def f(x: object) -> object:
+        """Docstring."""
         return x
 
     assert grad_module.grad(f)(1) == 1

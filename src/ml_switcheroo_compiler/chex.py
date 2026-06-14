@@ -1135,7 +1135,7 @@ def warn_keyword_args_only_in_future(fun: object) -> object:
     """
 
     def wrapper(*args: object, **kwargs: object) -> object:
-        if len(args) > 0:
+        if len(args) > 0:  # pragma: no branch
             warnings.warn("Use kwargs", stacklevel=2)
         return fun(*args, **kwargs)
 

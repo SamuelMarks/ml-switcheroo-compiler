@@ -623,6 +623,7 @@ def test_scan_eager_ndarray() -> None:
         xs = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, device)
 
         def f(carry: object, x: object) -> object:
+            """Docstring."""
             # Return a Tensor
             return carry, Tensor(np.array([1, 2]), (2,), DType.Int32, device)
 
@@ -644,6 +645,7 @@ def test_vmap_tuple_axes() -> None:
     with ConfigContext(eager_mode=True):
 
         def f(x: object) -> object:
+            """Docstring."""
             from ml_switcheroo_compiler.ops.unary.math import Negative
 
             return Negative()(x)

@@ -8,6 +8,7 @@ def test_grad_brute_coverage() -> None:
     backward(None)
 
     def my_fun() -> None:
+        """Docstring."""
         pass
 
     assert custom_jvp(my_fun) == my_fun

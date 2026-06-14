@@ -1,15 +1,19 @@
 """Backend Registry."""
 
+from typing import Literal
+
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+
+BackendName = Literal["jax", "torch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"]
 
 
 class BackendRegistry:
     """Registry for pluggable backends."""
 
-    _registry: dict[str, type[BaseGenerator]] = {}
+    _registry: dict[BackendName, type[BaseGenerator]] = {}
 
     @classmethod
-    def register(cls, name: str, backend_class: type[BaseGenerator]) -> None:
+    def register(cls, name: BackendName, backend_class: type[BaseGenerator]) -> None:
         """Register a backend.
 
         Args:
@@ -19,7 +23,7 @@ class BackendRegistry:
         cls._registry[name] = backend_class
 
     @classmethod
-    def get(cls, name: str) -> type[BaseGenerator]:
+    def get(cls, name: BackendName) -> type[BaseGenerator]:
         """Get a backend by name.
 
         Args:
@@ -35,11 +39,11 @@ class BackendRegistry:
         return cls._registry[name]
 
     @classmethod
-    def get_all(cls) -> dict[str, type[BaseGenerator]]:
+    def get_all(cls) -> dict[BackendName, type[BaseGenerator]]:
         """Get all registered backends.
 
         Returns:
-            dict[str, type[BaseGenerator]]: The computed result.
+            dict[BackendName, type[BaseGenerator]]: The computed result.
         """
         return cls._registry.copy()
 
@@ -55,7 +59,7 @@ def get_active_backend() -> type[BaseGenerator]:
     return BackendRegistry.get(config.backend)
 
 
-def register_backend(name: str) -> object:
+def register_backend(name: BackendName) -> object:
     """Decorator to register a backend.
 
     Args:

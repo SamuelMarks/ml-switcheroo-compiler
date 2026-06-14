@@ -2,82 +2,24 @@
 
 import ast
 import os
+
 import sys
 
-FORBIDDEN_IMPORTS = {
-    "src/ml_switcheroo_compiler/backends/cupy.py": {
-        "numpy",
-        "torch",
-        "tensorflow",
-        "keras",
-        "dask",
-        "jax",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/numpy.py": {
-        "cupy",
-        "torch",
-        "tensorflow",
-        "keras",
-        "dask",
-        "jax",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/dask.py": {
-        "cupy",
-        "torch",
-        "tensorflow",
-        "keras",
-        "numpy",
-        "jax",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/pytorch.py": {
-        "numpy",
-        "cupy",
-        "tensorflow",
-        "keras",
-        "dask",
-        "jax",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/keras.py": {
-        "numpy",
-        "cupy",
-        "torch",
-        "tensorflow",
-        "dask",
-        "jax",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/tensorflow.py": {
-        "numpy",
-        "cupy",
-        "torch",
-        "keras",
-        "dask",
-        "jax",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/jax.py": {
-        "numpy",
-        "cupy",
-        "torch",
-        "tensorflow",
-        "keras",
-        "dask",
-        "mlx",
-    },
-    "src/ml_switcheroo_compiler/backends/mlx.py": {
-        "numpy",
-        "cupy",
-        "torch",
-        "tensorflow",
-        "keras",
-        "dask",
-        "jax",
-    },
-}
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+
+from typing import get_args
+from ml_switcheroo_compiler.backends.registry import BackendName
+
+ALL_BACKENDS = set(get_args(BackendName))
+
+FORBIDDEN_IMPORTS = {}
+for backend in ALL_BACKENDS:
+    if backend == "torch":
+        file_path = "src/ml_switcheroo_compiler/backends/pytorch.py"
+    else:
+        file_path = f"src/ml_switcheroo_compiler/backends/{backend}.py"
+
+    FORBIDDEN_IMPORTS[file_path] = ALL_BACKENDS - {backend}
 
 
 def check_file(file_path: str) -> bool:
@@ -100,7 +42,7 @@ def check_file(file_path: str) -> bool:
         "src/ml_switcheroo_compiler/core/" in file_path
         or "src/ml_switcheroo_compiler/ops/" in file_path
     ):
-        forbidden = {"numpy", "cupy", "torch", "tensorflow", "keras", "dask", "jax", "mlx"}
+        forbidden = ALL_BACKENDS.copy()
 
     if not forbidden:
         return True

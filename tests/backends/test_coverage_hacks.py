@@ -45,6 +45,8 @@ def test_registry_coverage() -> None:
         registry.BackendRegistry.get("nonexistent")
 
     class FakeGen:
+        """Docstring."""
+
         pass
 
     registry.BackendRegistry.register("fake", FakeGen)
@@ -53,6 +55,8 @@ def test_registry_coverage() -> None:
 
     @registry.register_backend("fake2")
     class FakeGen2:
+        """Docstring."""
+
         pass
 
     assert registry.BackendRegistry.get("fake2") == FakeGen2

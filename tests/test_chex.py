@@ -385,6 +385,7 @@ def test_chex_tracing_utils() -> None:
 
     @assert_max_traces(n=1)
     def f() -> None:
+        """Docstring."""
         pass
 
     f()
@@ -456,6 +457,8 @@ def test_dataclasses_and_utils() -> None:
 
     @dataclass
     class MyData:
+        """Docstring."""
+
         a: int
 
     m = MyData(1)
@@ -463,6 +466,8 @@ def test_dataclasses_and_utils() -> None:
 
     @mappable_dataclass
     class MapData:
+        """Docstring."""
+
         b: int
 
     map_data = MapData(2)
@@ -472,10 +477,12 @@ def test_dataclasses_and_utils() -> None:
 
     @warn_deprecated_function
     def dep() -> None:
+        """Docstring."""
         pass
 
     @warn_only_n_pos_args_in_future(n=1)
     def pos(a: object, b: object = None) -> None:
+        """Docstring."""
         pass
 
     assert if_args_not_none(lambda x: x, [1], {}) == 1
@@ -483,16 +490,19 @@ def test_dataclasses_and_utils() -> None:
 
     @all_variants()
     def test_av() -> None:
+        """Docstring."""
         pass
 
     @variants()
     def test_v() -> None:
+        """Docstring."""
         pass
 
     register_dataclass_type_with_jax_tree_util(MyData)
 
     @warn_keyword_args_only_in_future
     def kw(a: object) -> None:
+        """Docstring."""
         pass
 
 
@@ -545,6 +555,7 @@ def test_chex_missing_branches() -> None:
     # assert_max_traces no fn
     @assert_max_traces()
     def f_traces() -> None:
+        """Docstring."""
         pass
 
     clear_trace_counter()
@@ -570,6 +581,8 @@ def test_chex_missing_branches() -> None:
 
     @dataclass()
     class D:
+        """Docstring."""
+
         pass
 
     # params_product named
@@ -581,6 +594,7 @@ def test_chex_missing_branches() -> None:
 
     @warn_deprecated_function
     def dep() -> int:
+        """Docstring."""
         return 2
 
     assert dep() == 2
@@ -589,6 +603,7 @@ def test_chex_missing_branches() -> None:
 
     @warn_only_n_pos_args_in_future(n=1)
     def pos(a: object, b: object = None) -> object:
+        """Docstring."""
         return a
 
     assert pos(1, 2) == 1
@@ -597,18 +612,21 @@ def test_chex_missing_branches() -> None:
 
     @all_variants()
     def test_av(a: object) -> object:
+        """Docstring."""
         return a
 
     assert test_av(1) == 1
 
     @variants()
     def test_v(a: object) -> object:
+        """Docstring."""
         return a
 
     assert test_v(1) == 1
 
     @warn_keyword_args_only_in_future
     def test_kw(a: object = 1) -> object:
+        """Docstring."""
         return a
 
     assert test_kw(1) == 1
@@ -622,6 +640,7 @@ def test_chexify_call() -> None:
 
     @chexify
     def my_fn(a: object) -> object:
+        """Docstring."""
         return a
 
     assert my_fn(5) == 5

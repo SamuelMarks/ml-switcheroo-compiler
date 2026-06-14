@@ -210,6 +210,8 @@ def test_psum_pmean_opdef() -> None:
     op_mean = Pmean()
 
     class DummyShape:
+        """Docstring."""
+
         shape = (4, 4)
 
     assert op_sum.infer_shape(DummyShape(), "batch") == (4, 4)
@@ -299,6 +301,8 @@ def test_reduction_infer_shape_coverage() -> None:
     from ml_switcheroo_compiler.ops.reductions.basic import CountNonzero, Cumsum, Logsumexp, Norm
 
     class DummyShape:
+        """Docstring."""
+
         shape = (2, 2)
 
     ds = DummyShape()
@@ -321,6 +325,8 @@ def test_reduction_args_coverage() -> None:
     from ml_switcheroo_compiler.ops.reductions.basic import ReductionOp
 
     class MockReduction(ReductionOp):
+        """Docstring."""
+
         op_name = "MockReduction"
         np_op_name = "mock"
 
@@ -334,6 +340,8 @@ def test_reduce_window_coverage() -> None:
     from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindow
 
     class DummyShape:
+        """Docstring."""
+
         shape = (1, 4, 4, 1)
 
     rw = ReduceWindow()
@@ -351,6 +359,8 @@ def test_reduce_window_coverage_zero_dim() -> None:
     from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindow
 
     class DummyShape:
+        """Docstring."""
+
         shape = (1, 1)
 
     rw = ReduceWindow()

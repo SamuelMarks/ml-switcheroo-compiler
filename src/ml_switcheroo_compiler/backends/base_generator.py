@@ -226,7 +226,7 @@ class BaseGenerator(ABC):
             object: The result.
         """
         msg = f"execute_op not implemented for {cls.__name__}"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover
 
     @classmethod
     def zeros(cls, shape: tuple[int, ...]) -> object:
@@ -239,7 +239,7 @@ class BaseGenerator(ABC):
             object: The result.
         """
         msg = f"zeros not implemented for {cls.__name__}"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover
 
     @classmethod
     def array(cls, data: object) -> object:
@@ -252,7 +252,7 @@ class BaseGenerator(ABC):
             object: The result.
         """
         msg = f"array not implemented for {cls.__name__}"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover
 
     @classmethod
     def asarray(cls, data: object) -> object:
@@ -265,7 +265,7 @@ class BaseGenerator(ABC):
             object: The result.
         """
         msg = f"asarray not implemented for {cls.__name__}"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover
 
     @classmethod
     def item(cls, data: object) -> float:
@@ -278,4 +278,4 @@ class BaseGenerator(ABC):
             float: The result.
         """
         msg = f"item not implemented for {cls.__name__}"
-        raise NotImplementedError(msg)
+        raise NotImplementedError(msg)  # pragma: no cover

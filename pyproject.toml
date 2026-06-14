@@ -8,19 +8,23 @@ version = "0.1.0"
 description = "Abstract ML Machine Compiler for Reverse-Mode AD, Optimization, and Graph Functionalization."
 authors = [{ name = "Samuel Marks" }]
 requires-python = ">=3.9"
-dynamic = ["dependencies"]
-
-[project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov",
-]
+dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["requirements.txt"]
+
+[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
+dev = ["requirements-dev.txt"]
+jax = ["requirements-backend-jax.txt"]
+torch = ["requirements-backend-torch.txt"]
+mlx = ["requirements-backend-mlx.txt"]
+keras = ["requirements-backend-keras.txt"]
+tensorflow = ["requirements-backend-tensorflow.txt"]
+numpy = ["requirements-backend-numpy.txt"]
+cupy = ["requirements-backend-cupy.txt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ml_switcheroo_compiler"]

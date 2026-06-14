@@ -2,8 +2,6 @@
 
 from enum import Enum
 
-from typing_extensions import Self
-
 
 class DeviceType(Enum):
     """Enumeration of supported device types."""
@@ -82,11 +80,11 @@ class StreamContext:
         """
         self.stream = stream
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> "StreamContext":
         """Enter context.
 
         Returns:
-            Self: The computed result.
+            StreamContext: The computed result.
         """
         return self
 
@@ -115,11 +113,11 @@ class FunctionExporter:
             kwargs (object): kwargs
         """
 
-    def __enter__(self) -> Self:
+    def __enter__(self) -> "FunctionExporter":
         """Enter context.
 
         Returns:
-            Self: The computed result.
+            FunctionExporter: The computed result.
         """
         return self
 

@@ -142,6 +142,7 @@ def test_transforms() -> None:
     """Test transforms."""
 
     def construct() -> Module:
+        """Docstring."""
         return Module()
 
     j = Jit(construct)
