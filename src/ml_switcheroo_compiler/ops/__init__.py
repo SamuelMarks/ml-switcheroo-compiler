@@ -1,10 +1,28 @@
 """Operations library for the ml-switcheroo compiler."""
 
-import math
-from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
+from ml_switcheroo_compiler.ops.aliases import (
+    arcsin,
+    arccos,
+    arctan,
+    arctan2,
+    arcsinh,
+    arccosh,
+    arctanh,
+    amin,
+    amax,
+    var,
+    expand_dims,
+    clamp,
+    clip,
+    broadcast_shapes,
+    logspace,
+    rint,
+    broadcast,
+    pi,
+    ndarray,
+)
 
 
-from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.binary import (
     add,
@@ -424,128 +442,4 @@ __all__ = [
 from ml_switcheroo_compiler.ops.state import AssignVariable, ReadVariable
 
 __all__ += ["AssignVariable", "OpDef", "ReadVariable", "get_op", "register_op"]
-__all__.extend(["ndarray", "pi"])
-
-
-# Aliases
-arcsin = asin
-arccos = acos
-arctan = atan
-arctan2 = atan2
-arcsinh = asinh
-arccosh = acosh
-arctanh = atanh
-amin = min
-amax = max
-var = variance
-expand_dims = unsqueeze
-
-
-def clamp(min_val: object, x: object, max_val: object) -> object:
-    """Docstring.
-
-    Args:
-        min_val (object): The min_val.
-        x (object): The x.
-        max_val (object): The max_val.
-
-    Returns:
-        object: The computed result.
-    """
-    if min_val is not None:
-        x = maximum(x, min_val)
-    if max_val is not None:
-        x = minimum(x, max_val)
-    return x
-
-
-def clip(a: object, a_min: object = None, a_max: object = None) -> object:
-    """Docstring.
-
-    Args:
-        a (object): The a.
-        a_min (object): The a_min.
-        a_max (object): The a_max.
-
-    Returns:
-        object: The computed result.
-    """
-    return clamp(a_min, a, a_max)
-
-
-def broadcast_shapes(*shapes: object) -> object:
-    """Docstring.
-
-    Args:
-        *shapes: Additional arguments.
-
-    Returns:
-        object: The computed result.
-    """
-    return _bs(*shapes)
-
-
-def logspace(
-    start: object,
-    stop: object,
-    num: object = 50,
-    endpoint: object = True,
-    base: object = 10.0,
-    dtype: object = None,
-    axis: object = 0,
-) -> object:
-    """Docstring.
-
-    Args:
-        start (object): The start.
-        stop (object): The stop.
-        num (object): The num.
-        endpoint (object): The endpoint.
-        base (object): The base.
-        dtype (object): The dtype.
-        axis (object): The axis.
-
-    Returns:
-        object: The computed result.
-    """
-    from ml_switcheroo_compiler.ops.binary import power
-    from ml_switcheroo_compiler.ops.creation.frontend import linspace
-
-    # 10 ** linspace(...)
-    y = linspace(start, stop, steps=num, dtype=dtype)
-    if base == 10.0:
-        return power(10.0, y)
-    return power(base, y)
-
-
-def rint(x: object) -> object:
-    """Docstring.
-
-    Args:
-        x (object): The x.
-
-    Returns:
-        object: The computed result.
-    """
-    from ml_switcheroo_compiler.ops.unary import round
-
-    return round(x)
-
-
-def broadcast(x: object, sizes: object) -> object:
-    """Docstring.
-
-    Args:
-        x (object): The x.
-        sizes (object): The sizes.
-
-    Returns:
-        object: The computed result.
-    """
-    from ml_switcheroo_compiler.ops.shape.frontend import broadcast_to
-
-    return broadcast_to(x, sizes)
-
-
-pi = math.pi
-ndarray = Tensor
+__all__ += ["ndarray", "pi"]

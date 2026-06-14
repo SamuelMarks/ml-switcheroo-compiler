@@ -9,7 +9,7 @@ def graph_to_json(graph: IRGraph) -> str:
     """Implement JSON serialization for snapshot testing IR passes.
 
     Args:
-    graph (IRGraph): Argument graph
+        graph (IRGraph): Argument graph
 
 
     Returns:
@@ -28,7 +28,7 @@ def json_to_graph(json_str: str) -> IRGraph:
     """Deserialize JSON back into an IRGraph.
 
     Args:
-    json_str (str): Argument json_str
+        json_str (str): Argument json_str
 
 
     Returns:
@@ -53,7 +53,7 @@ def graph_to_protobuf(graph: IRGraph) -> bytes:
     """Define IRGraph Protobuf .proto spec serialization.
 
     Args:
-    graph (IRGraph): Argument graph
+        graph (IRGraph): Argument graph
 
 
     Returns:
@@ -67,7 +67,7 @@ def graph_to_flatbuffers(graph: IRGraph) -> bytes:
     """Implement FlatBuffers serialization for zero-copy JS/TS loading.
 
     Args:
-    graph (IRGraph): Argument graph
+        graph (IRGraph): Argument graph
 
 
     Returns:

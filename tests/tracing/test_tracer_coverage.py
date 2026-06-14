@@ -1,14 +1,12 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.tracing.tracer import _tracer
-from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
 class MockNode(IRNode):
     """Mock Node."""
-
-    pass
 
 
 def test_tracer_coverage_brute() -> None:

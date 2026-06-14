@@ -84,8 +84,8 @@ def transpile_source(source_code: str, target_framework: str = "jax") -> str:
     str: The transpiled source code
 
     Args:
-    source_code (str): Argument source_code
-    target_framework (str): Argument target_framework
+        source_code (str): Argument source_code
+        target_framework (str): Argument target_framework
     """
     tree = cst.parse_module(source_code)
     wrapper = cst.MetadataWrapper(tree)
@@ -104,8 +104,8 @@ def validate_diff(source_code: str, transpiled_code: str) -> bool:
     bool: True if they are syntactically valid and different
 
     Args:
-    source_code (str): Argument source_code
-    transpiled_code (str): Argument transpiled_code
+        source_code (str): Argument source_code
+        transpiled_code (str): Argument transpiled_code
     """
     if source_code == transpiled_code:
         return False
@@ -125,7 +125,7 @@ def type_infer_dry_run(source_code: str) -> dict[str, str]:
     Dict[str, str]: A mapping of variable names to inferred types
 
     Args:
-    source_code (str): Argument source_code
+        source_code (str): Argument source_code
     """
     try:
         cst.parse_module(source_code)

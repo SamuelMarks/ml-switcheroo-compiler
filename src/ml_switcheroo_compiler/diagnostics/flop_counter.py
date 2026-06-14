@@ -1,6 +1,7 @@
 """FLOP estimation module."""
 
 import math
+
 from ml_switcheroo_ir import LogicalGraph
 
 
@@ -13,7 +14,7 @@ def estimate_flops(graph: LogicalGraph) -> int:
     int: Estimated total FLOPs
 
     Args:
-    graph (LogicalGraph): Argument graph
+        graph (LogicalGraph): Argument graph
     """
     total_flops = 0
     for node in graph.nodes.values():
@@ -25,7 +26,7 @@ def estimate_flops(graph: LogicalGraph) -> int:
                 # If shape is iterable, multiply dimensions
                 flops = int(math.prod(node.shape_metadata))
                 total_flops += flops
-            except Exception:
+            except TypeError:
                 total_flops += 1
         elif node.op_type != "Foo":
             total_flops += 1

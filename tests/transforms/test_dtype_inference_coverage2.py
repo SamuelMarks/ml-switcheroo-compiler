@@ -1,8 +1,8 @@
 """Module docstring."""
 
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
-from ml_switcheroo_compiler.core.dtype import DType
 
 
 def test_dtype_inference_except_branch(monkeypatch: object) -> None:

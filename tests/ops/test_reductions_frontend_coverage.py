@@ -1,17 +1,17 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.ops.reductions.frontend import segment_sum
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.reductions.frontend import segment_sum
 
 
 def test_reductions_frontend_coverage_brute() -> None:
     """Execute the requested function."""
     config.eager_mode = False
 
-    from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     _tracer.start_tracing()
     data = Tensor(

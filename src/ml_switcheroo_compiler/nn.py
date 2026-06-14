@@ -13,8 +13,9 @@ def gelu(x: object, approximate: object = False) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.ops as ops
     import math
+
+    from ml_switcheroo_compiler import ops
 
     if approximate == "tanh" or approximate is True:
         # 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
@@ -26,13 +27,12 @@ def gelu(x: object, approximate: object = False) -> object:
         tanh_out = ops.tanh(tanh_in)
         one_plus = ops.add(ops.full_like(x, 1.0), tanh_out)
         return ops.multiply(ops.full_like(x, 0.5), ops.multiply(x, one_plus))
-    else:
-        # x * 0.5 * (1.0 + erf(x / sqrt(2.0)))
-        const_sqrt2 = ops.full_like(x, math.sqrt(2.0))
-        erf_in = ops.divide(x, const_sqrt2)
-        erf_out = ops.erf(erf_in)
-        one_plus = ops.add(ops.full_like(x, 1.0), erf_out)
-        return ops.multiply(ops.multiply(x, ops.full_like(x, 0.5)), one_plus)
+    # x * 0.5 * (1.0 + erf(x / sqrt(2.0)))
+    const_sqrt2 = ops.full_like(x, math.sqrt(2.0))
+    erf_in = ops.divide(x, const_sqrt2)
+    erf_out = ops.erf(erf_in)
+    one_plus = ops.add(ops.full_like(x, 1.0), erf_out)
+    return ops.multiply(ops.multiply(x, ops.full_like(x, 0.5)), one_plus)
 
 
 def logsumexp(
@@ -256,7 +256,7 @@ def selu(x: object) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.ops as ops
+    from ml_switcheroo_compiler import ops
 
     alpha = 1.6732632423543772848170429916717
     scale = 1.0507009873554804934193349852946
@@ -276,7 +276,7 @@ def log_softmax(x: object, axis: object = -1) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.ops as ops
+    from ml_switcheroo_compiler import ops
 
     amax = ops.max(x, axis=axis, keepdims=True)
     shifted = ops.subtract(x, amax)
@@ -295,8 +295,8 @@ def zeros(key: object, shape: object, dtype: object = None) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.ops as ops
     import ml_switcheroo_compiler.core.dtype as dtypes
+    from ml_switcheroo_compiler import ops
 
     return ops.zeros(shape, dtype=dtype or dtypes.DType.Float32)
 
@@ -312,8 +312,8 @@ def ones(key: object, shape: object, dtype: object = None) -> object:
     Returns:
         object: The computed result.
     """
-    import ml_switcheroo_compiler.ops as ops
     import ml_switcheroo_compiler.core.dtype as dtypes
+    from ml_switcheroo_compiler import ops
 
     return ops.ones(shape, dtype=dtype or dtypes.DType.Float32)
 
@@ -330,8 +330,18 @@ def constant(value: object, dtype: object = None) -> object:
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
-        import ml_switcheroo_compiler.ops as ops
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         import ml_switcheroo_compiler.core.dtype as dtypes
+        from ml_switcheroo_compiler import ops
 
         return ops.full(shape, value, dtype=dtype or dtypes.DType.Float32)
 
@@ -350,6 +360,16 @@ def uniform(scale: object = 0.01, dtype: object = None) -> object:
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         return zeros(key, shape, dtype)
 
     return init
@@ -367,6 +387,16 @@ def normal(stddev: object = 0.01, dtype: object = None) -> object:
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         return zeros(key, shape, dtype)
 
     return init
@@ -391,6 +421,16 @@ def truncated_normal(
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         return zeros(key, shape, dtype)
 
     return init
@@ -421,6 +461,16 @@ def variance_scaling(
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         return zeros(key, shape, dtype)
 
     return init
@@ -567,6 +617,16 @@ def orthogonal(scale: object = 1.0, column_axis: object = -1, dtype: object = No
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         return zeros(key, shape, dtype)
 
     return init
@@ -589,6 +649,16 @@ def delta_orthogonal(
     """
 
     def init(key: object, shape: object, dtype: object = dtype) -> object:
+        """Execute init.
+
+        Args:
+            key (Any): Argument key.
+            shape (Any): Argument shape.
+            dtype (Any): Argument dtype.
+
+        Returns:
+        Any: The result.
+        """
         return zeros(key, shape, dtype)
 
     return init

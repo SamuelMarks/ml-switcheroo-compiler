@@ -11,7 +11,15 @@ class Atan2(OpDef):
     """An operation class for computing the element-wise arc tangent of x/y."""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Execute infer_shape.
+
+        Args:
+            *shapes (Any): Argument *shapes.
+            **kwargs (Any): Argument **kwargs.
+
+        Returns:
+        Any: The result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 
         """Infer the output shape of the operation.
@@ -33,7 +41,15 @@ class Divmod(OpDef):
     """An operation class for computing element-wise quotient and remainder."""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Execute infer_shape.
+
+        Args:
+            *shapes (Any): Argument *shapes.
+            **kwargs (Any): Argument **kwargs.
+
+        Returns:
+        Any: The result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 
         """Infer the output shape of the operation.
@@ -75,7 +91,15 @@ class Isclose(OpDef):
     """An operation class for checking element-wise equality within a tolerance."""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Execute infer_shape.
+
+        Args:
+            *shapes (Any): Argument *shapes.
+            **kwargs (Any): Argument **kwargs.
+
+        Returns:
+        Any: The result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 
         """Infer the output shape of the operation.

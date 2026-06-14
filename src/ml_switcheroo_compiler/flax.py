@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
 
+@dataclass(init=False)
 class Module:
     """Base class for all neural network modules in NNX."""
 
@@ -21,10 +23,12 @@ class Module:
             setattr(self, k, v)
 
 
+@dataclass(init=False)
 class GraphDef:
     """Represents the static structure of a Module graph."""
 
 
+@dataclass(init=False)
 class State(dict):
     """A nested dictionary structure for nnx variables."""
 
@@ -42,18 +46,22 @@ class Variable:
         self.value = value
 
 
+@dataclass(init=False)
 class Param(Variable):
     """A variable representing a trainable parameter."""
 
 
+@dataclass(init=False)
 class BatchStat(Variable):
     """A variable representing non-trainable state."""
 
 
+@dataclass(init=False)
 class Rng(Variable):
     """A variable holding a random number generator stream."""
 
 
+@dataclass(init=False)
 class Dense(Module):
     """A standard linear transformation layer."""
 
@@ -78,10 +86,12 @@ class Dense(Module):
         self.use_bias = use_bias
 
 
+@dataclass(init=False)
 class Linear(Dense):
     """Alias/variant of standard linear (dense) layer."""
 
 
+@dataclass(init=False)
 class LinearGeneral(Module):
     """A general linear transformation layer."""
 
@@ -103,6 +113,7 @@ class LinearGeneral(Module):
         self.out_features = out_features
 
 
+@dataclass(init=False)
 class Einsum(Module):
     """A module that performs a linear transformation using an einsum equation."""
 
@@ -119,10 +130,12 @@ class Einsum(Module):
         self.kernel_shape = kernel_shape
 
 
+@dataclass(init=False)
 class LoRA(Module):
     """Low-Rank Adaptation injection module."""
 
 
+@dataclass(init=False)
 class LoRALinear(Module):
     """A pre-configured Linear layer with LoRA adapters."""
 
@@ -139,6 +152,7 @@ class LoRALinear(Module):
         self.out_features = out_features
 
 
+@dataclass(init=False)
 class Conv(Module):
     """A general n-dimensional convolutional layer."""
 
@@ -169,6 +183,7 @@ class Conv(Module):
         self.padding = padding
 
 
+@dataclass(init=False)
 class ConvTranspose(Module):
     """A general n-dimensional transposed convolution."""
 
@@ -193,6 +208,7 @@ class ConvTranspose(Module):
         self.kernel_size = kernel_size
 
 
+@dataclass(init=False)
 class Embed(Module):
     """A simple lookup table that stores embeddings of a fixed dictionary."""
 
@@ -209,6 +225,7 @@ class Embed(Module):
         self.features = features
 
 
+@dataclass(init=False)
 class MultiHeadAttention(Module):
     """Standard Multi-Head Attention implementation."""
 
@@ -225,6 +242,7 @@ class MultiHeadAttention(Module):
         self.qkv_features = qkv_features
 
 
+@dataclass(init=False)
 class MultiHeadDotProductAttention(Module):
     """Core attention kernel without projection layers."""
 
@@ -241,6 +259,7 @@ class MultiHeadDotProductAttention(Module):
         self.qkv_features = qkv_features
 
 
+@dataclass(init=False)
 class BatchNorm(Module):
     """Batch Normalization layer."""
 
@@ -262,6 +281,7 @@ class BatchNorm(Module):
         self.use_running_average = use_running_average
 
 
+@dataclass(init=False)
 class LayerNorm(Module):
     """Layer Normalization layer."""
 
@@ -278,6 +298,7 @@ class LayerNorm(Module):
         self.reduction_axes = reduction_axes
 
 
+@dataclass(init=False)
 class RMSNorm(Module):
     """Root Mean Square Normalization layer."""
 
@@ -292,6 +313,7 @@ class RMSNorm(Module):
         self.num_features = num_features
 
 
+@dataclass(init=False)
 class Dropout(Module):
     """A dropout layer."""
 
@@ -308,6 +330,7 @@ class Dropout(Module):
         self.rng_collection = rng_collection
 
 
+@dataclass(init=False)
 class Sequential(Module):
     """Applies a sequence of modules sequentially."""
 
@@ -322,6 +345,7 @@ class Sequential(Module):
         self.layers = layers
 
 
+@dataclass(init=False)
 class List(Module):
     """A module that holds a list of sub-modules."""
 
@@ -336,6 +360,7 @@ class List(Module):
         self.modules = list(modules)
 
 
+@dataclass(init=False)
 class Dict(Module):
     """A module that holds a dictionary of sub-modules."""
 
@@ -350,6 +375,7 @@ class Dict(Module):
         self.modules = modules
 
 
+@dataclass(init=False)
 class Jit(Module):
     """JIT-compiles the execution of a sub-module."""
 
@@ -364,6 +390,7 @@ class Jit(Module):
         self.module_constructor = module_constructor
 
 
+@dataclass(init=False)
 class Vmap(Module):
     """Vectorizes the execution of a sub-module."""
 
@@ -378,6 +405,7 @@ class Vmap(Module):
         self.module_constructor = module_constructor
 
 
+@dataclass(init=False)
 class Scan(Module):
     """Loops over a sequence of inputs, maintaining module state."""
 
@@ -392,6 +420,7 @@ class Scan(Module):
         self.module_constructor = module_constructor
 
 
+@dataclass(init=False)
 class Remat(Module):
     """Checkpoints a sub-module to save memory during backprop."""
 
@@ -406,6 +435,7 @@ class Remat(Module):
         self.module_constructor = module_constructor
 
 
+@dataclass(init=False)
 class Pmap(Module):
     """Parallelizes module execution across multiple devices."""
 

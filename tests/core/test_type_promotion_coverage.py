@@ -1,7 +1,7 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.type_promotion import promote_types
 
 
 def test_type_promotion_coverage_brute() -> None:
@@ -11,3 +11,8 @@ def test_type_promotion_coverage_brute() -> None:
     assert promote_types(DType.Int8, DType.Int32) == DType.Int32
 
     # We will use mock patch for `is_int1 or is_int2`? We can't mock local variables.
+
+
+def test_bool_promotion() -> None:
+    """Test boolean promotion."""
+    assert promote_types("bool", "bool") == "bool"

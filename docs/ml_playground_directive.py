@@ -51,7 +51,6 @@ class MLPlaygroundDirective(Directive):
                         <option value="jax" selected>JAX</option>
                         <option value="flax_nnx">Flax NNX</option>
                         <option value="flax_linen">Flax Linen</option>
-                        <option value="pax">Pax</option>
                     </optgroup>
                 </select>
                 <select id="source-example" aria-label="Examples"
@@ -80,7 +79,6 @@ class MLPlaygroundDirective(Directive):
                         <option value="jax">JAX</option>
                         <option value="flax_nnx">Flax NNX</option>
                         <option value="flax_linen">Flax Linen</option>
-                        <option value="pax">Pax</option>
                     </optgroup>
                     <optgroup label="Native Web Execution" data-i18n-label="nativeWeb">
                         <option value="webgpu">WebGPU</option>

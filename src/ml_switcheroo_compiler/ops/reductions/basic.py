@@ -321,6 +321,33 @@ class SegmentSum(OpDef):
         return "Not implemented SegmentSum"
 
 
+class ReduceWindowConfig:
+    """Configuration for ReduceWindow shape inference."""
+
+    def __init__(
+        self,
+        window_dimensions: object,
+        window_strides: object = None,
+        padding: object = None,
+        base_dilation: object = None,
+        window_dilation: object = None,
+    ) -> None:
+        """Initialize.
+
+        Args:
+            window_dimensions (Any): Argument window_dimensions.
+            window_strides (Any): Argument window_strides.
+            padding (Any): Argument padding.
+            base_dilation (Any): Argument base_dilation.
+            window_dilation (Any): Argument window_dilation.
+        """
+        self.window_dimensions = window_dimensions
+        self.window_strides = window_strides
+        self.padding = padding
+        self.base_dilation = base_dilation
+        self.window_dilation = window_dilation
+
+
 @register_op("ReduceWindow")
 class ReduceWindow(ReductionOp):
     """ReduceWindow operation.
@@ -330,69 +357,97 @@ class ReduceWindow(ReductionOp):
 
     op_name = "ReduceWindow"
 
-    def infer_shape(
-        self,
-        operand: object,
-        init_value: object,
-        computation: object,
-        window_dimensions: object,
-        window_strides: object = None,
-        padding: object = None,
-        base_dilation: object = None,
-        window_dilation: object = None,
-        **kwargs: object,
-    ) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
-            operand (object): The operand.
-            init_value (object): The init_value.
-            computation (object): The computation.
-            window_dimensions (object): The window_dimensions.
-            window_strides (object): The window_strides.
-            padding (object): The padding.
-            base_dilation (object): The base_dilation.
-            window_dilation (object): The window_dilation.
+            *args (object): operand, init_value, computation, config.
             **kwargs: Additional keyword arguments.
 
         Returns:
             object: The computed result.
         """
+        operand, config = self._extract_reduce_window_args(args, kwargs)
+
         if not hasattr(operand, "shape") or not operand.shape:
             return ()
 
         in_shape = operand.shape
+        window_dimensions, window_strides, padding, base_dilation, window_dilation = (
+            self._normalize_config(config)
+        )
+
         out_shape = []
-
-        if window_strides is None:
-            window_strides = [1] * len(window_dimensions)
-        if padding is None:
-            padding = [(0, 0)] * len(window_dimensions)
-        if base_dilation is None:
-            base_dilation = [1] * len(window_dimensions)
-        if window_dilation is None:
-            window_dilation = [1] * len(window_dimensions)
-
         for i, dim in enumerate(in_shape):
             if i >= len(window_dimensions):
                 out_shape.append(dim)
                 continue
 
-            pad_low, pad_high = (
-                padding[i] if isinstance(padding[i], tuple) else (0, 0)
-            )  # simplified
-            base_dil = base_dilation[i]
-            win_dil = window_dilation[i]
-            stride = window_strides[i]
-            win_dim = window_dimensions[i]
-
-            eff_in_dim = (dim - 1) * base_dil + 1 + pad_low + pad_high
-            eff_win_dim = (win_dim - 1) * win_dil + 1
-
-            out_dim = 0 if eff_in_dim < eff_win_dim else (eff_in_dim - eff_win_dim) // stride + 1
+            out_dim = self._compute_reduce_window_dim(
+                dim,
+                padding[i],
+                base_dilation[i],
+                window_dilation[i],
+                window_strides[i],
+                window_dimensions[i],
+            )
             out_shape.append(out_dim)
 
         return tuple(out_shape)
+
+    def _extract_reduce_window_args(self, args: tuple, kwargs: dict) -> tuple:
+        """Execute _extract_reduce_window_args.
+
+        Args:
+            args (Any): Argument args.
+            kwargs (Any): Argument kwargs.
+
+        Returns:
+        Any: The result.
+        """
+        operand = args[0] if len(args) > 0 else kwargs["operand"]
+        config = args[3] if len(args) > 3 else kwargs.get("config", None)
+        if config is None:
+            config = ReduceWindowConfig(window_dimensions=[])
+        return operand, config
+
+    def _normalize_config(self, config: ReduceWindowConfig) -> tuple:
+        """Execute _normalize_config.
+
+        Args:
+            config (Any): Argument config.
+
+        Returns:
+        Any: The result.
+        """
+        window_dimensions = config.window_dimensions
+        n = len(window_dimensions)
+        window_strides = config.window_strides if config.window_strides is not None else [1] * n
+        padding = config.padding if config.padding is not None else [(0, 0)] * n
+        base_dilation = config.base_dilation if config.base_dilation is not None else [1] * n
+        window_dilation = config.window_dilation if config.window_dilation is not None else [1] * n
+        return window_dimensions, window_strides, padding, base_dilation, window_dilation
+
+    def _compute_reduce_window_dim(
+        self, dim: int, pad: tuple, base_dil: int, win_dil: int, stride: int, win_dim: int
+    ) -> int:
+        """Execute _compute_reduce_window_dim.
+
+        Args:
+            dim (Any): Argument dim.
+            pad (Any): Argument pad.
+            base_dil (Any): Argument base_dil.
+            win_dil (Any): Argument win_dil.
+            stride (Any): Argument stride.
+            win_dim (Any): Argument win_dim.
+
+        Returns:
+        Any: The result.
+        """
+        pad_low, pad_high = pad if isinstance(pad, tuple) else (0, 0)
+        eff_in_dim = (dim - 1) * base_dil + 1 + pad_low + pad_high
+        eff_win_dim = (win_dim - 1) * win_dil + 1
+        return 0 if eff_in_dim < eff_win_dim else (eff_in_dim - eff_win_dim) // stride + 1
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
         """Emit jax code.

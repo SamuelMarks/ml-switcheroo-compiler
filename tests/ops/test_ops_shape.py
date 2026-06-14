@@ -23,7 +23,7 @@ def test_reshape_op() -> None:
     newshape = (2, 2)
 
     assert op.infer_shape(x.shape, newshape) == newshape
-    assert np.array_equal(op.numpy_eval(x, newshape), np.reshape(x, newshape))
+    assert np.array_equal(op.eager_eval(x, newshape), np.reshape(x, newshape))
 
 
 def test_transpose_op() -> None:
@@ -40,8 +40,8 @@ def test_transpose_op() -> None:
 
     assert op.infer_shape(x.shape) is None
     assert op.infer_shape(x.shape, (1, 0)) == (3, 2)
-    assert np.array_equal(op.numpy_eval(x), np.transpose(x))
-    assert np.array_equal(op.numpy_eval(x, axes=(1, 0)), np.transpose(x, axes=(1, 0)))
+    assert np.array_equal(op.eager_eval(x), np.transpose(x))
+    assert np.array_equal(op.eager_eval(x, axes=(1, 0)), np.transpose(x, axes=(1, 0)))
 
 
 def test_broadcast_to_op() -> None:
@@ -58,7 +58,7 @@ def test_broadcast_to_op() -> None:
     shape = (2, 2)
 
     assert op.infer_shape(x.shape, shape) == shape
-    assert np.array_equal(op.numpy_eval(x, shape), np.broadcast_to(x, shape))
+    assert np.array_equal(op.eager_eval(x, shape), np.broadcast_to(x, shape))
 
 
 def test_state_ops() -> None:
@@ -82,10 +82,10 @@ def test_state_ops() -> None:
     assert a.infer_shape((2,)) == (2,)
 
     with pytest.raises(CompilationError):
-        r.numpy_eval()
+        r.eager_eval()
 
     with pytest.raises(CompilationError):
-        a.numpy_eval(1)
+        a.eager_eval(1)
 
 
 def test_dynamic_update_slice() -> None:
@@ -141,7 +141,7 @@ def test_dynamic_slice_opdef() -> None:
     ds = DynamicSlice()
     assert ds.infer_shape(None, None, [2, 3]) == (2, 3)
     x = np.arange(10)
-    assert np.array_equal(ds.numpy_eval(x, [2], [3]), np.array([2, 3, 4]))
+    assert np.array_equal(ds.eager_eval(x, [2], [3]), np.array([2, 3, 4]))
     assert ds.emit_jax() == "Not implemented"
     assert ds.emit_keras() == "Not implemented"
     assert ds.emit_mlx() == "Not implemented"
@@ -151,7 +151,7 @@ def test_dynamic_slice_opdef() -> None:
     dus = DynamicUpdateSlice()
     assert dus.infer_shape(x, None, None) == (10,)
     u = np.array([99, 99])
-    out = dus.numpy_eval(x, u, [2])
+    out = dus.eager_eval(x, u, [2])
     assert out[2] == 99
     assert out[3] == 99
     assert out[4] == 4
@@ -199,7 +199,7 @@ def test_top_k_opdef() -> None:
     assert tk.infer_shape(DummyShape(), 2) == (2,)
 
     x = np.array([1, 5, 2, 8, 3])
-    vals, idxs = tk.numpy_eval(x, 2)
+    vals, idxs = tk.eager_eval(x, 2)
     assert np.array_equal(vals, [8, 5])
     assert np.array_equal(idxs, [3, 1])
 
@@ -264,7 +264,7 @@ def test_sort_opdef() -> None:
     assert s.infer_shape(DummyShape()) == (10,)
 
     x = np.array([3, 1, 2])
-    out = s.numpy_eval(x)
+    out = s.eager_eval(x)
     assert np.array_equal(out, [1, 2, 3])
 
     assert s.emit_jax() == "Not implemented Sort"
@@ -319,7 +319,7 @@ def test_broadcast_in_dim_opdef() -> None:
     assert op.infer_shape(None, (2, 3), [1]) == (2, 3)
 
     x = np.array([1, 2, 3])
-    out = op.numpy_eval(x, (2, 3), [1])
+    out = op.eager_eval(x, (2, 3), [1])
     assert out.shape == (2, 3)
     assert np.array_equal(out[0], [1, 2, 3])
     assert np.array_equal(out[1], [1, 2, 3])
@@ -385,7 +385,7 @@ def test_image_resize_opdef() -> None:
     assert op.infer_shape(DummyShape(), (10, 10)) == (1, 10, 10, 3)
 
     x = np.ones((1, 5, 5, 3))
-    out = op.numpy_eval(x, (10, 10))
+    out = op.eager_eval(x, (10, 10))
     assert out.shape == (1, 10, 10, 3)
 
     assert op.emit_jax() == "Not implemented Resize"
@@ -434,16 +434,17 @@ def test_image_resize_frontend() -> None:
 
 def test_shape_basic_coverage() -> None:
     """Test shape basic coverage."""
-    from ml_switcheroo_compiler.ops.shape.basic import Transpose, TopK, Resize
     import numpy as np
+
+    from ml_switcheroo_compiler.ops.shape.basic import Resize, TopK, Transpose
 
     # Test Transpose _format_args
     op1 = Transpose()
     assert op1._format_args("x", None) == "x"
 
-    # Test TopK numpy_eval with ndarray k
+    # Test TopK eager_eval with ndarray k
     op2 = TopK()
-    res2_val, res2_idx = op2.numpy_eval(np.array([1, 2, 3]), np.array(1))
+    res2_val, res2_idx = op2.eager_eval(np.array([1, 2, 3]), np.array(1))
     assert res2_val.shape == (1,)
 
     # Test Resize infer_shape with len < 3
@@ -459,12 +460,13 @@ def test_shape_basic_coverage() -> None:
 
 def test_shape_frontend_missing() -> None:
     """Test shape frontend missing coverage."""
+    import numpy as np
+
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import squeeze, expand, permute, repeat, gather
-    from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
-    import numpy as np
+    from ml_switcheroo_compiler.ops.shape.frontend import expand, gather, permute, repeat, squeeze
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = "cpu"
     x = Tensor(np.ones((2, 1, 3)), (2, 1, 3), DType.Float32, device)
@@ -501,3 +503,21 @@ def test_shape_frontend_missing() -> None:
         x_1d = Tensor(np.array([1.0, 3.0]), (2,), DType.Float32, device)
         v = Tensor(np.array([2.0]), (1,), DType.Float32, device)
         searchsorted(x_1d, v)
+
+
+def test_slicing_eager_strided() -> None:
+    """Test eager slicing strided."""
+    import numpy as np
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.shape.slicing import strided_slice
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.device import Device
+
+    config.eager_mode = True
+    data = np.array([1.0, 2.0])
+    inp = Tensor(data, shape=(2,), dtype="float32", device=Device("cpu"))
+    try:
+        strided_slice(inp, [0], [1], [1])
+    except Exception:
+        pass
+    config.eager_mode = False

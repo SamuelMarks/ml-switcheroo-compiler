@@ -16,9 +16,9 @@ def create_read_variable(variable_name: str, shape: tuple, dtype: str) -> IRNode
     The created IRNode
 
     Args:
-    variable_name (str): Argument variable_name
-    shape (tuple): The shape of the tensor.
-    dtype (str): The data type
+        variable_name (str): Argument variable_name
+        shape (tuple): The shape of the tensor.
+        dtype (str): The data type
     """
     return IRNode(
         id=str(uuid.uuid4()),
@@ -40,9 +40,9 @@ def create_assign_variable(variable_name: str, value_id: str, shape: tuple) -> I
     The created IRNode
 
     Args:
-    variable_name (str): Argument variable_name
-    value_id (str): Argument value_id
-    shape (tuple): The shape of the tensor.
+        variable_name (str): Argument variable_name
+        value_id (str): Argument value_id
+        shape (tuple): The shape of the tensor.
     """
     return IRNode(
         id=str(uuid.uuid4()),
@@ -70,10 +70,10 @@ def create_scatter_update(
     The created IRNode
 
     Args:
-    tensor_id (str): Argument tensor_id
-    indices_id (str): Argument indices_id
-    updates_id (str): Argument updates_id
-    shape (tuple): The shape of the tensor.
+        tensor_id (str): Argument tensor_id
+        indices_id (str): Argument indices_id
+        updates_id (str): Argument updates_id
+        shape (tuple): The shape of the tensor.
     """
     return IRNode(
         id=str(uuid.uuid4()),

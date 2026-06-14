@@ -30,6 +30,156 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
     return out_id
 
 
+def _copy_graph(graph: LogicalGraph) -> LogicalGraph:
+    """Copy the forward graph into a new graph.
+
+    Args:
+        graph (LogicalGraph): The original graph.
+
+    Returns:
+        LogicalGraph: The new graph.
+    """
+    new_graph = LogicalGraph(name=f"{graph.name}_grad")
+    for nid, node in graph.nodes.items():
+        new_graph.nodes[nid] = LogicalNode(
+            id=node.id,
+            op_type=node.op_type,
+            domain=node.domain,
+            version=node.version,
+            attributes=dict(node.attributes),
+            inputs=list(node.inputs),
+            shape_metadata=node.shape_metadata,
+            source_ast_ref=node.source_ast_ref,
+            sharding=node.sharding,
+        )
+    return new_graph
+
+
+def _get_reachable_from_output(sorted_nodes: list[LogicalNode], output_id: str) -> set[str]:
+    """Find all nodes reachable from the output.
+
+    Args:
+        sorted_nodes (list[LogicalNode]): The sorted nodes.
+        output_id (str): The output id.
+
+    Returns:
+        set[str]: The reachable nodes.
+    """
+    reachable_from_output: set[str] = {output_id}
+    for node in reversed(sorted_nodes):
+        if node.id in reachable_from_output:
+            for inp in node.inputs:
+                reachable_from_output.add(inp)
+    return reachable_from_output
+
+
+def _accumulate_gradients(
+    new_graph: LogicalGraph,
+    node: LogicalNode,
+    adj_id: str,
+    adjoints: dict[str, str],
+) -> None:
+    """Execute _accumulate_gradients.
+
+    Args:
+        new_graph (Any): Argument new_graph.
+        node (Any): Argument node.
+        adj_id (Any): Argument adj_id.
+        adjoints (Any): Argument adjoints.
+    """
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
+
+    try:
+        vjp_func = get_vjp(node.op_type)
+        input_adjs = vjp_func(new_graph, node, adj_id)
+    except NotImplementedError:
+        msg = f"Missing VJP rule for operation: {node.op_type}"
+        raise ValueError(msg) from None
+
+    if len(input_adjs) != len(node.inputs):
+        msg = (
+            f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, "
+            f"expected {len(node.inputs)}."
+        )
+        raise ValueError(msg)
+
+    for inp_id, inp_adj_id in zip(node.inputs, input_adjs):
+        if inp_adj_id is None:
+            continue
+
+        if inp_id in adjoints:
+            adjoints[inp_id] = _add_nodes(new_graph, adjoints[inp_id], inp_adj_id)
+        else:
+            adjoints[inp_id] = inp_adj_id
+
+
+def _backward_pass(
+    new_graph: LogicalGraph,
+    sorted_nodes: list[LogicalNode],
+    reachable_from_output: set[str],
+    adjoints: dict[str, str],
+) -> None:
+    """Perform the backward pass to compute gradients.
+
+    Args:
+        new_graph (LogicalGraph): The new graph.
+        sorted_nodes (list[LogicalNode]): The sorted nodes.
+        reachable_from_output (set[str]): The reachable nodes.
+        adjoints (dict[str, str]): The adjoints map.
+
+    Raises:
+        ValueError: If VJP rule is missing or returns incorrect number of adjoints.
+    """
+    for node in reversed(sorted_nodes):
+        nid = node.id
+        if nid not in reachable_from_output or nid not in adjoints:
+            continue
+
+        if node.op_type in ("StopGradient", "Input", "Constant"):
+            continue
+
+        _accumulate_gradients(new_graph, node, adjoints[nid], adjoints)
+
+
+def _extract_gradients(
+    new_graph: LogicalGraph,
+    wrt: list[str],
+    adjoints: dict[str, str],
+) -> list[str]:
+    """Extract the required gradients.
+
+    Args:
+        new_graph (LogicalGraph): The graph.
+        wrt (list[str]): Target nodes.
+        adjoints (dict[str, str]): Adjoints map.
+
+    Returns:
+        list[str]: Output gradient node IDs.
+
+    Raises:
+        ValueError: If a target node is not found.
+    """
+    grad_outputs = []
+    for w in wrt:
+        if w not in new_graph.nodes:
+            msg = f"Target node '{w}' not found in graph."
+            raise ValueError(msg)
+
+        if w in adjoints:
+            grad_outputs.append(adjoints[w])
+        else:
+            zero_id = f"grad_zeros_{uuid.uuid4().hex[:6]}"
+            zeros_node = LogicalNode(
+                id=zero_id,
+                op_type="Constant",
+                attributes={"value": 0.0},
+                shape_metadata=new_graph.nodes[w].shape_metadata,
+            )
+            new_graph.nodes[zero_id] = zeros_node
+            grad_outputs.append(zero_id)
+    return grad_outputs
+
+
 def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
     """Compute the gradient of a scalar output with respect to specified inputs.
 
@@ -45,49 +195,23 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
     ValueError: If output node does not exist, or required VJPs are missing
 
     Args:
-    graph (LogicalGraph): Argument graph
-    wrt (list[str]): Argument wrt
-    output_id (str): Argument output_id
+        graph (LogicalGraph): Argument graph
+        wrt (list[str]): Argument wrt
+        output_id (str): Argument output_id
     """
     if output_id not in graph.nodes:
         msg = f"Output node '{output_id}' not found in graph."
         raise ValueError(msg)
 
-    # Copy forward graph into new graph
-    new_graph = LogicalGraph(name=f"{graph.name}_grad")
-    for nid, node in graph.nodes.items():
-        # Copy nodes manually to avoid deepcopy overhead
-        new_graph.nodes[nid] = LogicalNode(
-            id=node.id,
-            op_type=node.op_type,
-            domain=node.domain,
-            version=node.version,
-            attributes=dict(node.attributes),
-            inputs=list(node.inputs),
-            shape_metadata=node.shape_metadata,
-            source_ast_ref=node.source_ast_ref,
-            sharding=node.sharding,
-        )
+    new_graph = _copy_graph(graph)
 
-    # 1. Topological sort to determine evaluation order
     from ml_switcheroo_ir import topological_sort
 
     sorted_nodes = topological_sort(new_graph)
 
-    # Prune nodes that don't lead to the output
-    # (Simple backward reachability check)
-    reachable_from_output: set[str] = {output_id}
-    # Reverse iteration
-    for node in reversed(sorted_nodes):
-        if node.id in reachable_from_output:
-            for inp in node.inputs:
-                reachable_from_output.add(inp)
+    reachable_from_output = _get_reachable_from_output(sorted_nodes, output_id)
 
-    # 2. Initialize adjoints (gradients)
-    # Map from forward_node_id -> adjoint_node_id
     adjoints: dict[str, str] = {}
-
-    # The adjoint of the output is 1.0
     one_id = f"grad_ones_{uuid.uuid4().hex[:6]}"
     ones_node = LogicalNode(
         id=one_id,
@@ -98,70 +222,7 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
     new_graph.nodes[one_id] = ones_node
     adjoints[output_id] = one_id
 
-    # 3. Backward pass
-    for node in reversed(sorted_nodes):
-        nid = node.id
-        if nid not in reachable_from_output or nid not in adjoints:
-            continue
+    _backward_pass(new_graph, sorted_nodes, reachable_from_output, adjoints)
 
-        adj_id = adjoints[nid]
-
-        # StopGradient node passes 0.0 backwards (or breaks the chain)
-        if node.op_type == "StopGradient":
-            continue
-
-        if node.op_type in ["Input", "Constant"]:
-            continue
-
-        # VJP returns a list of adjoints corresponding to the inputs
-        try:
-            from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
-
-            vjp_func = get_vjp(node.op_type)
-            input_adjs = vjp_func(new_graph, node, adj_id)
-        except NotImplementedError:
-            msg = f"Missing VJP rule for operation: {node.op_type}"
-            raise ValueError(msg) from None
-
-        if len(input_adjs) != len(node.inputs):
-            msg = (
-                f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, "
-                f"expected {len(node.inputs)}."
-            )
-            raise ValueError(
-                msg,
-            )
-
-        for inp_id, inp_adj_id in zip(node.inputs, input_adjs):
-            if inp_adj_id is None:
-                continue
-
-            # Gradient Accumulation
-            if inp_id in adjoints:
-                adjoints[inp_id] = _add_nodes(new_graph, adjoints[inp_id], inp_adj_id)
-            else:
-                adjoints[inp_id] = inp_adj_id
-
-    # 4. Extract required gradients
-    grad_outputs = []
-    for w in wrt:
-        if w not in new_graph.nodes:
-            msg = f"Target node '{w}' not found in graph."
-            raise ValueError(msg)
-
-        if w in adjoints:
-            grad_outputs.append(adjoints[w])
-        else:
-            # Zero gradient
-            zero_id = f"grad_zeros_{uuid.uuid4().hex[:6]}"
-            zeros_node = LogicalNode(
-                id=zero_id,
-                op_type="Constant",
-                attributes={"value": 0.0},
-                shape_metadata=new_graph.nodes[w].shape_metadata,
-            )
-            new_graph.nodes[zero_id] = zeros_node
-            grad_outputs.append(zero_id)
-
-    new_graph.outputs = grad_outputs
+    new_graph.outputs = _extract_gradients(new_graph, wrt, adjoints)
     return new_graph

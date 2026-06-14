@@ -29,7 +29,7 @@ def test_matmul_op() -> None:
     assert op.infer_shape(a.shape, b.shape) == (2, 4)
     assert op.infer_shape(None, None) is None
 
-    res = op.numpy_eval(a, b)
+    res = op.eager_eval(a, b)
     assert np.allclose(res, np.matmul(a, b))
 
 
@@ -49,7 +49,7 @@ def test_dot_op() -> None:
 
     assert op.infer_shape(a.shape, b.shape) is None
 
-    res = op.numpy_eval(a, b)
+    res = op.eager_eval(a, b)
     assert np.allclose(res, np.dot(a, b))
 
 
@@ -70,7 +70,7 @@ def test_einsum_op() -> None:
 
     assert op.infer_shape(subscripts, a.shape, b.shape) is None
 
-    res = op.numpy_eval(subscripts, a, b)
+    res = op.eager_eval(subscripts, a, b)
     assert np.allclose(res, np.einsum(subscripts, a, b))
 
 
@@ -106,12 +106,12 @@ def test_dot_general_opdef() -> None:
 
     x = np.ones((2, 3))
     y = np.ones((3, 4))
-    out = op.numpy_eval(x, y, (((1,), (0,)), ((), ())))
+    out = op.eager_eval(x, y, (((1,), (0,)), ((), ())))
     assert out.shape == (2, 4)
 
     xb = np.ones((5, 2, 3))
     yb = np.ones((5, 3, 4))
-    outb = op.numpy_eval(xb, yb, (((2,), (1,)), ((0,), (0,))))
+    outb = op.eager_eval(xb, yb, (((2,), (1,)), ((0,), (0,))))
     assert outb.shape == (5, 2, 4)
 
     assert op.emit_jax() == "Not implemented DotGeneral"
@@ -131,7 +131,7 @@ def test_dot_general_frontend() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg.frontend import dot_general
+    from ml_switcheroo_compiler.ops.linalg import dot_general
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
@@ -171,18 +171,21 @@ def test_conv_general_dilated_opdef() -> None:
     from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
 
     op = ConvGeneralDilated()
-    assert op.infer_shape(None, None, [1], "SAME") == ()
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilatedConfig
+
+    cfg = ConvGeneralDilatedConfig([1], "SAME")
+    assert op.infer_shape(None, None, cfg) == ()
 
     class Dummy:
         """Docstring."""
 
         shape = (1, 3, 32, 32)
 
-    assert op.infer_shape(Dummy(), Dummy(), [1], "SAME") == ()
+    assert op.infer_shape(Dummy(), Dummy(), ConvGeneralDilatedConfig([1], "SAME")) == ()
 
     x = np.ones((1, 3, 32, 32))
     w = np.ones((16, 3, 3, 3))
-    out = op.numpy_eval(x, w, [1, 1], "SAME")
+    out = op.eager_eval(x, w, [1, 1], "SAME")
     assert out.shape == (1,)
 
     assert op.emit_jax() == "Not implemented ConvGeneralDilated"
@@ -202,7 +205,7 @@ def test_conv_general_dilated_frontend() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg.frontend import conv_general_dilated
+    from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
@@ -256,10 +259,10 @@ def test_fft_rfft_opdef() -> None:
     assert op_rfft.infer_shape(DummyShape(), None) == (6,)
 
     x = np.random.rand(10)
-    out_fft = op_fft.numpy_eval(x)
+    out_fft = op_fft.eager_eval(x)
     assert out_fft.shape == (10,)
 
-    out_rfft = op_rfft.numpy_eval(x)
+    out_rfft = op_rfft.eager_eval(x)
     assert out_rfft.shape == (6,)
 
     assert op_fft.emit_jax() == "Not implemented Fft"
@@ -283,7 +286,7 @@ def test_fft_rfft_frontend() -> None:
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg.frontend import fft, rfft
+    from ml_switcheroo_compiler.ops.linalg import fft, rfft
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
@@ -319,28 +322,27 @@ def test_fft_rfft_frontend() -> None:
 def test_linalg_eager_missing() -> None:
     """Test missing linalg eager ops."""
     import numpy as np
+
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg.frontend import (
-        matmul,
-        dot,
+    from ml_switcheroo_compiler.ops.linalg import (
         cholesky,
-        svd,
-        qr,
-        eigh,
-        inv,
-        solve,
-        det,
-        slogdet,
-    )
-    from ml_switcheroo_compiler.ops.linalg.frontend import (
         cross,
-        fft,
-        rfft,
-        eigvalsh,
-        matrix_power,
+        det,
+        dot,
         dot_general,
+        eigh,
+        eigvalsh,
+        fft,
+        inv,
+        matmul,
+        matrix_power,
+        qr,
+        rfft,
+        slogdet,
+        solve,
+        svd,
     )
 
     device = "cpu"
@@ -373,7 +375,7 @@ def test_linalg_eager_missing() -> None:
 
     # dot_general tracing with scalar
     with ConfigContext(eager_mode=False):
-        from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
         _tracer.start_tracing("dot_general_scalar")
         s = Tensor(ProxyTensor("s", (), "float32"), (), DType.Float32, device)
@@ -386,9 +388,31 @@ def test_linalg_eager_missing() -> None:
         _tracer.stop_tracing()
 
     # Check 52-53: _emit_linalg_node outside tracing
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
     import pytest
 
-    with ConfigContext(eager_mode=False):
-        with pytest.raises(RuntimeError):
-            _emit_linalg_node("Test", [], {}, [()], [DType.Float32])
+    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
+
+    with ConfigContext(eager_mode=False), pytest.raises(RuntimeError):
+        _emit_linalg_node("Test", [], {}, [()], [DType.Float32])
+
+
+def test_decompositions_eager_pinv() -> None:
+    """Test eager pinv."""
+    import numpy as np
+    from unittest.mock import patch, MagicMock
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.linalg.decompositions import pinv
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.device import Device
+
+    config.eager_mode = True
+    data = np.array([[1.0, 2.0], [3.0, 4.0]])
+    inp = Tensor(data, shape=(2, 2), dtype="float32", device=Device("cpu"))
+
+    mock_backend = MagicMock()
+    mock_backend.execute_op.return_value = np.array([[1.0]])
+    with patch(
+        "ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend
+    ):
+        pinv(inp)
+    config.eager_mode = False

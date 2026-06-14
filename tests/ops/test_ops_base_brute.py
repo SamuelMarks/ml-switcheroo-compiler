@@ -1,12 +1,13 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
 import numpy as np
+
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 
 def test_base_coverage_brute() -> None:
@@ -21,7 +22,7 @@ def test_base_coverage_brute() -> None:
             """Docstring."""
             return ()
 
-        def numpy_eval(self, *args: object, **kwargs: object) -> int:
+        def eager_eval(self, *args: object, **kwargs: object) -> int:
             """Docstring."""
             return 1
 
@@ -29,10 +30,16 @@ def test_base_coverage_brute() -> None:
     op = TestCoverageOp()
 
     t1 = Tensor(
-        data=ProxyTensor(id="n1", shape=()), shape=(), dtype=DType.Int32, device=Device("cpu")
+        data=ProxyTensor(id="n1", shape=()),
+        shape=(),
+        dtype=DType.Int32,
+        device=Device("cpu"),
     )
     t2 = Tensor(
-        data=ProxyTensor(id="n2", shape=()), shape=(), dtype=DType.Int32, device=Device("cpu")
+        data=ProxyTensor(id="n2", shape=()),
+        shape=(),
+        dtype=DType.Int32,
+        device=Device("cpu"),
     )
 
     op(t1, t2)

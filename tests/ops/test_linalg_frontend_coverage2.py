@@ -1,13 +1,15 @@
 """Module docstring."""
 
-import numpy as np
 from unittest.mock import MagicMock
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.ops.linalg.frontend import pinv, solve_triangular, lu, lu_factor
-import ml_switcheroo_compiler.core.config as config
+
+import numpy as np
+
 import ml_switcheroo_compiler.ops.linalg.frontend as lf
+from ml_switcheroo_compiler.core import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.linalg import lu, lu_factor, pinv, solve_triangular
 
 
 def test_pinv_lazy(monkeypatch: object) -> None:

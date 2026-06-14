@@ -17,7 +17,7 @@ def get_source_ast_ref(back_frames: int = 1) -> str | None:
     back to their source origin
 
     Args:
-    back_frames (int): The number of frames to traverse backward from the caller's
+        back_frames (int): The number of frames to traverse backward from the caller's
         frame to locate the target caller. Defaults to 1
 
     Returns:
@@ -39,7 +39,7 @@ def get_source_ast_ref(back_frames: int = 1) -> str | None:
 
         info = inspect.getframeinfo(frame)
         return f"{info.filename}:{info.lineno}"
-    except Exception:
+    except (ValueError, TypeError, AttributeError):
         return None
     finally:
         del frame

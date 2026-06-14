@@ -146,7 +146,7 @@ def test_state_ops() -> None:
     assert a.infer_shape((2,)) == (2,)
 
     with pytest.raises(CompilationError):
-        r.numpy_eval()
+        r.eager_eval()
 
     with pytest.raises(CompilationError):
-        a.numpy_eval(1)
+        a.eager_eval(1)

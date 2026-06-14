@@ -20,8 +20,8 @@ def lift_state(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
     LogicalGraph: The functionalized graph
 
     Args:
-    graph (LogicalGraph): Argument graph
-    state_vars (list[str]): Argument state_vars
+        graph (LogicalGraph): Argument graph
+        state_vars (list[str]): Argument state_vars
     """
     new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
 

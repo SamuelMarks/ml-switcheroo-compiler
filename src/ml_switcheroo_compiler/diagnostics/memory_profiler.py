@@ -1,6 +1,7 @@
 """Memory profiling module."""
 
 import math
+
 from ml_switcheroo_ir import LogicalGraph
 
 
@@ -13,7 +14,7 @@ def memory_profiler(graph: LogicalGraph) -> int:
     int: Estimated peak memory usage in bytes
 
     Args:
-    graph (LogicalGraph): Argument graph
+        graph (LogicalGraph): Argument graph
     """
     total_mem = 0
     for node in graph.nodes.values():
@@ -21,7 +22,7 @@ def memory_profiler(graph: LogicalGraph) -> int:
             try:
                 mem = int(math.prod(node.shape_metadata)) * 4  # Assume float32
                 total_mem += mem
-            except Exception:
+            except TypeError:
                 total_mem += 4
         else:
             total_mem += 4

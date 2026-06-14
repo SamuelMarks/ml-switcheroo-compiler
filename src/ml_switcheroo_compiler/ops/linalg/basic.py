@@ -88,52 +88,56 @@ class DotGeneral(OpDef):
 
     op_name = "DotGeneral"
 
-    def infer_shape(
-        self,
-        lhs: object,
-        rhs: object,
-        dimension_numbers: object,
-        **kwargs: object,
-    ) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
-            lhs (object): The lhs.
-            rhs (object): The rhs.
-            dimension_numbers (object): The dimension_numbers.
+            *args (object): lhs, rhs, dimension_numbers.
             **kwargs: Additional keyword arguments.
 
         Returns:
             object: The computed result.
         """
-        # Simple symbolic bypass if shapes are unavailable
+        lhs = args[0] if len(args) > 0 else kwargs["lhs"]
+        rhs = args[1] if len(args) > 1 else kwargs["rhs"]
+        dimension_numbers = args[2] if len(args) > 2 else kwargs["dimension_numbers"]
         if not hasattr(lhs, "shape") or not hasattr(rhs, "shape") or not lhs.shape or not rhs.shape:
             return ()
 
-        lhs_shape = lhs.shape
-        rhs_shape = rhs.shape
+        return self._compute_out_shape(lhs.shape, rhs.shape, dimension_numbers)
+
+    def _compute_out_shape(
+        self, lhs_shape: tuple, rhs_shape: tuple, dimension_numbers: tuple
+    ) -> tuple:
+        """Execute _compute_out_shape.
+
+        Args:
+            lhs_shape (Any): Argument lhs_shape.
+            rhs_shape (Any): Argument rhs_shape.
+            dimension_numbers (Any): Argument dimension_numbers.
+
+        Returns:
+        Any: The result.
+        """
         contracting, batch = dimension_numbers
         lhs_contracting, rhs_contracting = contracting
         lhs_batch, rhs_batch = batch
 
-        out_shape = []
-        # 1. Batch dims
-        for b in lhs_batch:
-            out_shape.append(lhs_shape[b])
-
-        # 2. LHS non-contracting, non-batch dims
-        lhs_remaining = [
-            i for i in range(len(lhs_shape)) if i not in lhs_contracting and i not in lhs_batch
-        ]
-        for r in lhs_remaining:
-            out_shape.append(lhs_shape[r])
-
-        # 3. RHS non-contracting, non-batch dims
-        rhs_remaining = [
-            i for i in range(len(rhs_shape)) if i not in rhs_contracting and i not in rhs_batch
-        ]
-        for r in rhs_remaining:
-            out_shape.append(rhs_shape[r])
+        out_shape = [lhs_shape[b] for b in lhs_batch]
+        out_shape.extend(
+            [
+                lhs_shape[i]
+                for i in range(len(lhs_shape))
+                if i not in lhs_contracting and i not in lhs_batch
+            ]
+        )
+        out_shape.extend(
+            [
+                rhs_shape[i]
+                for i in range(len(rhs_shape))
+                if i not in rhs_contracting and i not in rhs_batch
+            ]
+        )
 
         return tuple(out_shape)
 
@@ -198,38 +202,54 @@ class DotGeneral(OpDef):
         return "Not implemented DotGeneral"
 
 
+class ConvGeneralDilatedConfig:
+    """Configuration for ConvGeneralDilated shape inference."""
+
+    def __init__(
+        self,
+        window_strides: object,
+        padding: object,
+        lhs_dilation: object = None,
+        rhs_dilation: object = None,
+        dimension_numbers: object = None,
+    ) -> None:
+        """Initialize.
+
+        Args:
+            window_strides (Any): Argument window_strides.
+            padding (Any): Argument padding.
+            lhs_dilation (Any): Argument lhs_dilation.
+            rhs_dilation (Any): Argument rhs_dilation.
+            dimension_numbers (Any): Argument dimension_numbers.
+        """
+        self.window_strides = window_strides
+        self.padding = padding
+        self.lhs_dilation = lhs_dilation
+        self.rhs_dilation = rhs_dilation
+        self.dimension_numbers = dimension_numbers
+
+
 @register_op("ConvGeneralDilated")
 class ConvGeneralDilated(OpDef):
     """General N-dimensional convolution operator."""
 
     op_name = "ConvGeneralDilated"
 
-    def infer_shape(
-        self,
-        lhs: object,
-        rhs: object,
-        window_strides: object,
-        padding: object,
-        lhs_dilation: object = None,
-        rhs_dilation: object = None,
-        dimension_numbers: object = None,
-        **kwargs: object,
-    ) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
-            lhs (object): The lhs.
-            rhs (object): The rhs.
-            window_strides (object): The window_strides.
-            padding (object): The padding.
-            lhs_dilation (object): The lhs_dilation.
-            rhs_dilation (object): The rhs_dilation.
-            dimension_numbers (object): The dimension_numbers.
+            *args (object): lhs, rhs, config.
             **kwargs: Additional keyword arguments.
 
         Returns:
             object: The computed result.
         """
+        lhs = args[0] if len(args) > 0 else kwargs["lhs"]
+        rhs = args[1] if len(args) > 1 else kwargs["rhs"]
+        config = args[2] if len(args) > 2 else kwargs.get("config", None)
+        if config is None:
+            config = ConvGeneralDilatedConfig(window_strides=[], padding=[])
         if not hasattr(lhs, "shape") or not lhs.shape or not hasattr(rhs, "shape") or not rhs.shape:
             return ()
 

@@ -1,7 +1,7 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.ops import clamp
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops import clamp
 
 
 def test_clamp_coverage_brute() -> None:

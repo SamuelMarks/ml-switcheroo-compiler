@@ -37,10 +37,10 @@ def test_reduction_ops() -> None:
 
     for op, np_func in ops:
         assert op.infer_shape(x.shape) == ()
-        assert np.allclose(op.numpy_eval(x), np_func(x))
-        assert np.allclose(op.numpy_eval(x, axis=0), np_func(x, axis=0))
+        assert np.allclose(op.eager_eval(x), np_func(x))
+        assert np.allclose(op.eager_eval(x, axis=0), np_func(x, axis=0))
         assert np.allclose(
-            op.numpy_eval(x, axis=1, keepdims=True),
+            op.eager_eval(x, axis=1, keepdims=True),
             np_func(x, axis=1, keepdims=True),
         )
 
@@ -55,10 +55,10 @@ def test_segment_sum_opdef() -> None:
     assert ss.infer_shape(None, None, None) == ()
     data = np.array([1, 2, 3, 4])
     segment_ids = np.array([0, 0, 1, 1])
-    out = ss.numpy_eval(data, segment_ids)
+    out = ss.eager_eval(data, segment_ids)
     assert np.array_equal(out, np.array([3, 7]))
 
-    out2 = ss.numpy_eval(data, segment_ids, num_segments=3)
+    out2 = ss.eager_eval(data, segment_ids, num_segments=3)
     assert np.array_equal(out2, np.array([3, 7, 0]))
 
     assert ss.emit_jax() == "Not implemented SegmentSum"
@@ -132,8 +132,15 @@ def test_reduce_window_opdef() -> None:
             """
             self.shape = shape
 
-    assert op.infer_shape(None, 0, "max", [2, 2]) == ()
-    assert op.infer_shape(DummyShape((1, 4, 4, 1)), 0, "max", [1, 2, 2, 1], [1, 2, 2, 1]) == (
+        from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+
+        assert op.infer_shape(None, 0, "max", ReduceWindowConfig([2, 2])) == ()
+
+    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+
+    assert op.infer_shape(
+        DummyShape((1, 4, 4, 1)), 0, "max", ReduceWindowConfig([1, 2, 2, 1], [1, 2, 2, 1])
+    ) == (
         1,
         2,
         2,
@@ -142,7 +149,7 @@ def test_reduce_window_opdef() -> None:
 
     # Test numpy evaluation mock
     x = np.ones((4, 4))
-    out = op.numpy_eval(x, 0, "max", [2, 2], [2, 2])
+    out = op.eager_eval(x, 0, "max", [2, 2], [2, 2])
     assert out.shape == (2, 2)
     assert np.all(out == 0)
 
@@ -163,14 +170,14 @@ def test_reduce_window_frontend() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.reductions.frontend import reduce_window
+    from ml_switcheroo_compiler.ops.reductions.frontend import reduce_window, ReduceWindowConfig
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((4, 4)), shape=(4, 4), dtype=DType.Int32, device=device)
 
     with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        reduce_window(x, 0, "max", [2, 2], [2, 2])
+        reduce_window(x, 0, "max", ReduceWindowConfig([2, 2], [2, 2]))
 
     graph = _tracer.start_tracing("test_reduce_window")
     try:
@@ -180,7 +187,7 @@ def test_reduce_window_frontend() -> None:
             dtype=DType.Int32,
             device=device,
         )
-        out = reduce_window(x_proxy, 0, "max", [2, 2], [2, 2])
+        out = reduce_window(x_proxy, 0, "max", ReduceWindowConfig([2, 2], [2, 2]))
         assert out.shape == (2, 2)
         node = graph.nodes[out.data.id]
         assert node.op_type == "ReduceWindow"
@@ -194,7 +201,7 @@ def test_reduce_window_frontend() -> None:
             dtype=DType.Int32,
             device=device,
         )
-        out2 = reduce_window(x_proxy, init_val_proxy, "max", [2, 2], [2, 2])
+        out2 = reduce_window(x_proxy, init_val_proxy, "max", ReduceWindowConfig([2, 2], [2, 2]))
         assert graph.nodes[out2.data.id].inputs == ["x", "init"]
     finally:
         _tracer.stop_tracing()
@@ -220,8 +227,8 @@ def test_psum_pmean_opdef() -> None:
     assert op_mean.infer_shape(None, "batch") == ()
 
     x = np.ones((4, 4))
-    assert np.array_equal(op_sum.numpy_eval(x, "batch"), x)
-    assert np.array_equal(op_mean.numpy_eval(x, "batch"), x)
+    assert np.array_equal(op_sum.eager_eval(x, "batch"), x)
+    assert np.array_equal(op_mean.eager_eval(x, "batch"), x)
 
     for op in (op_sum, op_mean):
         assert op.emit_jax() == f"Not implemented {op.op_name}"
@@ -276,7 +283,7 @@ def test_psum_pmean_frontend() -> None:
         _tracer.stop_tracing()
 
 
-def test_reduction_numpy_eval_coverage() -> None:
+def test_reduction_eager_eval_coverage() -> None:
     """Test numpy eval coverage."""
     import numpy as np
 
@@ -284,16 +291,16 @@ def test_reduction_numpy_eval_coverage() -> None:
 
     x = np.array([1.0, 2.0, 0.0])
     lse = Logsumexp()
-    assert lse.numpy_eval(x) is not None
+    assert lse.eager_eval(x) is not None
 
     cnz = CountNonzero()
-    assert cnz.numpy_eval(x) is not None
+    assert cnz.eager_eval(x) is not None
 
     norm = Norm()
-    assert norm.numpy_eval(x) is not None
+    assert norm.eager_eval(x) is not None
 
     cumsum = Cumsum()
-    assert cumsum.numpy_eval(x) is not None
+    assert cumsum.eager_eval(x) is not None
 
 
 def test_reduction_infer_shape_coverage() -> None:
@@ -346,12 +353,19 @@ def test_reduce_window_coverage() -> None:
 
     rw = ReduceWindow()
     # Test missing defaults
-    assert rw.infer_shape(DummyShape(), 0, "max", [1, 2]) == (1, 3, 4, 1)
+    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+
+    assert rw.infer_shape(DummyShape(), 0, "max", ReduceWindowConfig([1, 2])) == (1, 3, 4, 1)
 
     # Test with padding, base_dilation, window_dilation
-    assert rw.infer_shape(
-        DummyShape(), 0, "max", [2, 2], [1, 1], [(1, 1), (0, 0)], [2, 2], [2, 2]
-    ) == (1, 5, 4, 1)
+    cfg = ReduceWindowConfig(
+        window_dimensions=[2, 2],
+        window_strides=[1, 1],
+        padding=[(1, 1), (0, 0)],
+        base_dilation=[2, 2],
+        window_dilation=[2, 2],
+    )
+    assert rw.infer_shape(DummyShape(), 0, "max", cfg) == (1, 5, 4, 1)
 
 
 def test_reduce_window_coverage_zero_dim() -> None:
@@ -364,4 +378,6 @@ def test_reduce_window_coverage_zero_dim() -> None:
         shape = (1, 1)
 
     rw = ReduceWindow()
-    assert rw.infer_shape(DummyShape(), 0, "max", [2, 2]) == (0, 0)
+    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+
+    assert rw.infer_shape(DummyShape(), 0, "max", ReduceWindowConfig([2, 2])) == (0, 0)

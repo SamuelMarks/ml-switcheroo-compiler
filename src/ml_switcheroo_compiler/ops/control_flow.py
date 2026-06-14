@@ -8,13 +8,12 @@ intermediate representation (IR) graph for compilation
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-
 import uuid
 from typing import Any, Callable
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -32,10 +31,10 @@ def _trace_function(func: Callable, args: tuple[Tensor, ...], name: str) -> IRBl
     input and output logical nodes to form a complete subgraph
 
     Args:
-    func (Callable): The Python function to trace
-    args (tuple[Tensor, ...]): The concrete or proxy tensor arguments to pass to the
-    function
-    name (str): The name to assign to the traced subgraph/IRBlock
+        func (Callable): The Python function to trace
+        args (tuple[Tensor, ...]): The concrete or proxy tensor arguments to pass to the
+        function
+        name (str): The name to assign to the traced subgraph/IRBlock
 
     Returns:
     IRBlock: The traced intermediate representation block containing the logical
@@ -118,9 +117,9 @@ def cond(
     emits an 'If' logical node
 
     Args:
-    pred (Tensor): A scalar boolean tensor determining which branch to execute
-    true_fn (Callable[[], Any]): The function to execute if the predicate is True
-    false_fn (Callable[[], Any]): The function to execute if the predicate is False
+        pred (Tensor): A scalar boolean tensor determining which branch to execute
+        true_fn (Callable[[], Any]): The function to execute if the predicate is True
+        false_fn (Callable[[], Any]): The function to execute if the predicate is False
 
     Returns:
     object: The result of executing the selected branch (a Tensor or structure of
@@ -179,12 +178,12 @@ def while_loop(
     node
 
     Args:
-    cond_fn (Callable[[Any], Tensor]): A function that takes the current state and
+        cond_fn (Callable[[Any], Tensor]): A function that takes the current state and
         returns a scalar boolean Tensor
-    body_fn (Callable[[Any], Any]): A function that takes the current state and
+        body_fn (Callable[[Any], Any]): A function that takes the current state and
         returns the updated state of the same structure and shape
-    init_val (object): The initial state, which can be a Tensor or a sequence of
-    Tensors
+        init_val (object): The initial state, which can be a Tensor or a sequence of
+        Tensors
 
     Returns:
     object: The final state after the loop terminates
@@ -254,11 +253,11 @@ def scan(
     logical node
 
     Args:
-    f (Callable[[Any, Any], tuple[Any, Any]]): A function mapping `(carry, x)` to
+        f (Callable[[Any, Any], tuple[Any, Any]]): A function mapping `(carry, x)` to
         `(new_carry, y)`
-    init (object): The initial carry state
-    xs (object): The sequence of values to scan over, typically a Tensor
-    length (int | None): An optional length to scan
+        init (object): The initial carry state
+        xs (object): The sequence of values to scan over, typically a Tensor
+        length (int | None): An optional length to scan
 
     Returns:
     tuple[Any, Any]: A tuple containing the final carry state and the stacked
@@ -269,34 +268,78 @@ def scan(
     disabled
     """
     if config.eager_mode:
-        carry = init
-        ys = []
-        # xs is assumed to be a Tensor with a batch dimension 0
-        scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
-        for i in range(scan_length):
-            # Extract slice
-            x = Tensor(xs.data[i], xs.shape[1:], xs.dtype, xs.device) if xs is not None else None
-            carry, y = f(carry, x)
-            ys.append(y.data if hasattr(y, "data") else y)
-        if len(ys) > 0 and isinstance(ys[0], tuple):
-            stacked_ys = get_active_backend().execute_op("Stack", ys)
-            out_tensor = Tensor(
-                stacked_ys,
-                stacked_ys.shape,
-                y.dtype if hasattr(y, "dtype") else init.dtype,
-                y.device if hasattr(y, "device") else init.device,
-            )
-        else:
-            stacked_ys = get_active_backend().array(ys)
-            from ml_switcheroo_compiler.core.dtype import DType
+        return _scan_eager(f, init, xs, length)
 
-            out_tensor = Tensor(
-                stacked_ys,
-                stacked_ys.shape,
-                DType(str(stacked_ys.dtype)),
-                config.default_device,
-            )
-        return carry, out_tensor
+    return _scan_tracing(init, xs)
+
+
+def _scan_eager(f: Callable, init: object, xs: object, length: int | None) -> tuple[object, object]:
+    """Execute _scan_eager.
+
+    Args:
+        f (Any): Argument f.
+        init (Any): Argument init.
+        xs (Any): Argument xs.
+        length (Any): Argument length.
+
+    Returns:
+    Any: The result.
+    """
+    carry = init
+    ys = []
+    # xs is assumed to be a Tensor with a batch dimension 0
+    scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
+    for i in range(scan_length):
+        # Extract slice
+        x = Tensor(xs.data[i], xs.shape[1:], xs.dtype, xs.device) if xs is not None else None
+        carry, y = f(carry, x)
+        ys.append(y.data if hasattr(y, "data") else y)
+
+    out_tensor = _stack_scan_outputs(ys, init, y if scan_length > 0 else init)
+    return carry, out_tensor
+
+
+def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
+    """Execute _stack_scan_outputs.
+
+    Args:
+        ys (Any): Argument ys.
+        init (Any): Argument init.
+        last_y (Any): Argument last_y.
+
+    Returns:
+    Any: The result.
+    """
+    if len(ys) > 0 and isinstance(ys[0], tuple):
+        stacked_ys = get_active_backend().execute_op("Stack", ys)
+        return Tensor(
+            stacked_ys,
+            stacked_ys.shape,
+            last_y.dtype if hasattr(last_y, "dtype") else init.dtype,
+            last_y.device if hasattr(last_y, "device") else init.device,
+        )
+    else:
+        stacked_ys = get_active_backend().array(ys)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(
+            stacked_ys,
+            stacked_ys.shape,
+            DType(str(stacked_ys.dtype)),
+            config.default_device,
+        )
+
+
+def _scan_tracing(init: object, xs: object) -> tuple[object, object]:
+    """Execute _scan_tracing.
+
+    Args:
+        init (Any): Argument init.
+        xs (Any): Argument xs.
+
+    Returns:
+    Any: The result.
+    """
     if not _tracer.is_tracing:
         msg = "Cannot emit Scan node outside of a tracing context."
         raise RuntimeError(msg)
@@ -334,10 +377,10 @@ def vmap(
     logical node in the IR
 
     Args:
-    func (Callable): The function to vectorize
-    in_axes (int | tuple[int, ...]): Specifies which axes of the inputs to map over
+        func (Callable): The function to vectorize
+        in_axes (int | tuple[int, ...]): Specifies which axes of the inputs to map over
         Defaults to 0
-    out_axes (int | tuple[int, ...]): Specifies where the mapped axis should appear
+        out_axes (int | tuple[int, ...]): Specifies where the mapped axis should appear
         in the outputs. Defaults to 0
 
     Returns:
@@ -415,8 +458,8 @@ def pmap(func: Callable, axis_name: str | None = None) -> Callable:
     it records a 'Pmap' logical node in the IR
 
     Args:
-    func (Callable): The function to map in parallel
-    axis_name (str | None): The name of the mapped axis, used for collective
+        func (Callable): The function to map in parallel
+        axis_name (str | None): The name of the mapped axis, used for collective
         operations within the function. Defaults to None
 
     Returns:

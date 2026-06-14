@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
@@ -20,6 +21,18 @@ def _emit_reduction_node(
     out_shape: tuple,
     out_dtype: DType,
 ) -> Tensor:
+    """Execute _emit_reduction_node.
+
+    Args:
+        op_type (Any): Argument op_type.
+        inputs (Any): Argument inputs.
+        attrs (Any): Argument attrs.
+        out_shape (Any): Argument out_shape.
+        out_dtype (Any): Argument out_dtype.
+
+    Returns:
+    Any: The result.
+    """
     import uuid
 
     from ml_switcheroo_ir import LogicalNode
@@ -40,27 +53,30 @@ def _emit_reduction_node(
     return Tensor(data=proxy, shape=out_shape, dtype=out_dtype, device=inputs[0].device)
 
 
+@dataclass
+class ReduceWindowConfig:
+    """Reduce window config."""
+
+    window_dimensions: Sequence[int]
+    window_strides: Sequence[int] | None = None
+    padding: Sequence[tuple[int, int]] | None = None
+    base_dilation: Sequence[int] | None = None
+    window_dilation: Sequence[int] | None = None
+
+
 def reduce_window(
     operand: Tensor,
     init_value: Tensor | float,
     computation: str,
-    window_dimensions: Sequence[int],
-    window_strides: Sequence[int] | None = None,
-    padding: Sequence[tuple[int, int]] | None = None,
-    base_dilation: Sequence[int] | None = None,
-    window_dilation: Sequence[int] | None = None,
+    window_config: ReduceWindowConfig,
 ) -> Tensor:
     """Applies a reduction function over a sliding window of the input.
 
     Args:
-    operand (Tensor): The input tensor
-    init_value (Tensor | float | int): The initial value for the reduction
-    computation (str): The reduction to apply (e.g. 'max', 'sum')
-    window_dimensions (Sequence[int]): The shape of the window
-    window_strides (Sequence[int] | None): The strides of the window
-    padding (Sequence[tuple[int, int]] | None): The padding to apply
-    base_dilation (Sequence[int] | None): Dilation of the base operand
-    window_dilation (Sequence[int] | None): Dilation of the window
+        operand (Tensor): The input tensor
+        init_value (Tensor | float | int): The initial value for the reduction
+        computation (str): The reduction to apply (e.g. 'max', 'sum')
+        window_config (ReduceWindowConfig): Configuration parameters for the window
 
     Returns:
     Tensor: The reduced tensor
@@ -85,11 +101,11 @@ def reduce_window(
 
     attributes = {
         "computation": computation,
-        "window_dimensions": window_dimensions,
-        "window_strides": window_strides,
-        "padding": padding,
-        "base_dilation": base_dilation,
-        "window_dilation": window_dilation,
+        "window_dimensions": window_config.window_dimensions,
+        "window_strides": window_config.window_strides,
+        "padding": window_config.padding,
+        "base_dilation": window_config.base_dilation,
+        "window_dilation": window_config.window_dilation,
     }
     if init_val_attr is not None:
         attributes["init_value"] = init_val_attr
@@ -99,16 +115,8 @@ def reduce_window(
     from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindow
 
     rw_op = ReduceWindow()
-    out_shape = rw_op.infer_shape(
-        operand,
-        init_value,
-        computation,
-        window_dimensions,
-        window_strides,
-        padding,
-        base_dilation,
-        window_dilation,
-    )
+
+    out_shape = rw_op.infer_shape(operand, init_value, computation, window_config)
 
     return _emit_reduction_node("ReduceWindow", inputs, attributes, out_shape, operand.dtype)
 
@@ -117,8 +125,8 @@ def psum(x: Tensor, axis_name: str) -> Tensor:
     """Computes an all-reduce sum over the specified mapped axis.
 
     Args:
-    x (Tensor): The input tensor
-    axis_name (str): The axis to map over
+        x (Tensor): The input tensor
+        axis_name (str): The axis to map over
 
     Returns:
     Tensor: The reduced tensor
@@ -139,8 +147,8 @@ def pmean(x: Tensor, axis_name: str) -> Tensor:
     """Computes an all-reduce mean over the specified mapped axis.
 
     Args:
-    x (Tensor): The input tensor
-    axis_name (str): The axis to map over
+        x (Tensor): The input tensor
+        axis_name (str): The axis to map over
 
     Returns:
     Tensor: The reduced tensor
@@ -165,9 +173,9 @@ def segment_sum(
     """Computes the sum of tensor elements grouped by segment_ids.
 
     Args:
-    data (Tensor): The data tensor
-    segment_ids (Tensor): The segment indices
-    num_segments (int | None): The number of segments. Optional
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
 
     Returns:
     Tensor: The segmented sum tensor

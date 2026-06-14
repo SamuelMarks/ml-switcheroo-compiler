@@ -1,11 +1,10 @@
 """Brute force tests for autodiff rules coverage."""
 
 import pytest
+
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, get_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
 
 
 class DummyGraph:

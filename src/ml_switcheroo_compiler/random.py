@@ -1,8 +1,8 @@
 """Random number generation and state management."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor
-import ml_switcheroo_compiler.ops as ops
+from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core import dtype as dtypes
+from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 def PRNGKey(seed: int) -> Tensor:

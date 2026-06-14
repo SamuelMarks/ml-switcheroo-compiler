@@ -1,8 +1,9 @@
 """Module docstring."""
 
 import contextlib
-import sys
 import importlib
+import sys
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -10,11 +11,19 @@ def get_graph(op_type: str) -> IRGraph:
     """Docstring."""
     g = IRGraph()
     n1 = IRNode(
-        id="n1", op_type="Constant", inputs=[], attributes={"value": [1.0]}, shape_metadata=None
+        id="n1",
+        op_type="Constant",
+        inputs=[],
+        attributes={"value": [1.0]},
+        shape_metadata=None,
     )
     n2 = IRNode(id="n2", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
     n3 = IRNode(
-        id="n3", op_type=op_type, inputs=["n1", "n2"], attributes={"axis": 0}, shape_metadata=None
+        id="n3",
+        op_type=op_type,
+        inputs=["n1", "n2"],
+        attributes={"axis": 0},
+        shape_metadata=None,
     )
     for n in [n1, n2, n3]:
         g.nodes[n.id] = n
@@ -41,14 +50,16 @@ def test_backends_brute_coverage_specifics() -> None:
         if lib not in sys.modules:
             sys.modules[lib] = type("MockModule", (), {})()
 
-    import ml_switcheroo_compiler.backends.jax as jax
-    import ml_switcheroo_compiler.backends.keras as keras
-    import ml_switcheroo_compiler.backends.mlx as mlx
-    import ml_switcheroo_compiler.backends.numpy as numpy
-    import ml_switcheroo_compiler.backends.pytorch as pytorch
-    import ml_switcheroo_compiler.backends.tensorflow as tensorflow
-    import ml_switcheroo_compiler.backends.cupy as cupy
-    import ml_switcheroo_compiler.backends.dask as dask
+    from ml_switcheroo_compiler.backends import (
+        cupy,
+        dask,
+        jax,
+        keras,
+        mlx,
+        numpy,
+        pytorch,
+        tensorflow,
+    )
 
     for mod in [jax, keras, mlx, numpy, pytorch, tensorflow, cupy, dask]:
         importlib.reload(mod)

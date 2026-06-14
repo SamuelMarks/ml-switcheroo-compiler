@@ -16,7 +16,7 @@ def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
     LogicalGraph: A new graph with ambiguities resolved
 
     Args:
-    graph (LogicalGraph): Argument graph
+        graph (LogicalGraph): Argument graph
     """
     new_graph = LogicalGraph(
         name=f"{graph.name}_rewritten",

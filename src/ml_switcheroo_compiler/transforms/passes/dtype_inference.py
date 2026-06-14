@@ -1,9 +1,178 @@
 """DType Inference Pass."""
 
+from typing import Optional
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+
+
+def _infer_constant_dtype(node: object, dtypes: dict[str, str]) -> bool:
+    """Infer dtype for a Constant node.
+
+    Args:
+        node (object): The node.
+        dtypes (dict[str, str]): The dtypes dict.
+
+    Returns:
+        bool: True if node was modified.
+    """
+    modified = False
+    val = node.attributes.get("value")
+    dt = None
+    if hasattr(val, "dtype"):
+        dt = DType(str(val.dtype))
+    elif isinstance(val, bool):
+        dt = DType.Bool
+    elif isinstance(val, int):
+        dt = DType.Int32
+    elif isinstance(val, float):
+        dt = DType.Float32
+
+    if dt is not None:
+        dtypes[node.id] = dt.value
+        if node.attributes.get("dtype") != dt.value:
+            node.attributes["dtype"] = dt.value
+            modified = True
+    else:
+        dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
+    return modified
+
+
+def _infer_input_dtype(node: object, dtypes: dict[str, str]) -> bool:
+    """Infer dtype for an Input node.
+
+    Args:
+        node (object): The node.
+        dtypes (dict[str, str]): The dtypes dict.
+
+    Returns:
+        bool: True if node was modified.
+    """
+    dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
+    return False
+
+
+def _infer_output_dtype(node: object, dtypes: dict[str, str]) -> bool:
+    """Infer dtype for an Output node.
+
+    Args:
+        node (object): The node.
+        dtypes (dict[str, str]): The dtypes dict.
+
+    Returns:
+        bool: True if node was modified.
+    """
+    modified = False
+    inp_dtype = None
+    if node.inputs:
+        inp_dtype = dtypes.get(node.inputs[0])
+    dtypes[node.id] = inp_dtype
+    if inp_dtype and node.attributes.get("dtype") != inp_dtype:
+        modified = True
+        node.attributes["dtype"] = inp_dtype
+    return modified
+
+
+def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
+    """Execute _get_promoted_dtype.
+
+    Args:
+        valid_dtypes (Any): Argument valid_dtypes.
+
+    Returns:
+    Any: The result.
+    """
+    if len(valid_dtypes) == 1:
+        return valid_dtypes[0]
+    try:
+        promoted = promote_types(DType(valid_dtypes[0]), DType(valid_dtypes[1]))
+        for i in range(2, len(valid_dtypes)):
+            promoted = promote_types(promoted, DType(valid_dtypes[i]))
+        return promoted.value
+    except (TypeError, ValueError):
+        return valid_dtypes[0]
+
+
+def _handle_cast_dtype(node: object, valid_dtypes: list[str]) -> Optional[str]:
+    """Execute _handle_cast_dtype.
+
+    Args:
+        node (Any): Argument node.
+        valid_dtypes (Any): Argument valid_dtypes.
+
+    Returns:
+    Any: The result.
+    """
+    if "dtype" in node.attributes:
+        val = node.attributes["dtype"]
+        return val.value if isinstance(val, DType) else str(val)
+    return None
+
+
+def _handle_boolean_dtype(node: object, valid_dtypes: list[str]) -> str:
+    """Execute _handle_boolean_dtype.
+
+    Args:
+        node (Any): Argument node.
+        valid_dtypes (Any): Argument valid_dtypes.
+
+    Returns:
+    Any: The result.
+    """
+    return DType.Bool.value
+
+
+DTYPE_INFERENCE_REGISTRY = {
+    "Cast": _handle_cast_dtype,
+    "Bitcast": _handle_cast_dtype,
+    "Equal": _handle_boolean_dtype,
+    "NotEqual": _handle_boolean_dtype,
+    "Greater": _handle_boolean_dtype,
+    "GreaterEqual": _handle_boolean_dtype,
+    "Less": _handle_boolean_dtype,
+    "LessEqual": _handle_boolean_dtype,
+    "Isnan": _handle_boolean_dtype,
+    "Isinf": _handle_boolean_dtype,
+    "Isfinite": _handle_boolean_dtype,
+    "Allclose": _handle_boolean_dtype,
+    "Isclose": _handle_boolean_dtype,
+    "LogicalAnd": _handle_boolean_dtype,
+    "LogicalOr": _handle_boolean_dtype,
+    "LogicalNot": _handle_boolean_dtype,
+    "LogicalXor": _handle_boolean_dtype,
+}
+
+
+def _infer_op_dtype(node: object, dtypes: dict[str, str]) -> bool:
+    """Infer dtype for a generic Op node.
+
+    Args:
+        node (object): The node.
+        dtypes (dict[str, str]): The dtypes dict.
+
+    Returns:
+        bool: True if node was modified.
+    """
+    in_dtypes = [dtypes.get(inp) for inp in node.inputs]
+    valid_dtypes = [dt for dt in in_dtypes if dt is not None]
+
+    out_dtype_val = None
+    if node.op_type in DTYPE_INFERENCE_REGISTRY:
+        out_dtype_val = DTYPE_INFERENCE_REGISTRY[node.op_type](node, valid_dtypes)
+
+    if out_dtype_val is None:
+        if valid_dtypes:
+            out_dtype_val = _get_promoted_dtype(valid_dtypes)
+        else:
+            out_dtype_val = DType.Float32.value
+
+    dtypes[node.id] = out_dtype_val
+    if node.attributes.get("dtype") != out_dtype_val:
+        node.attributes["dtype"] = out_dtype_val
+        return True
+
+    return False
 
 
 def dtype_inference_pass(graph: IRGraph) -> bool:
@@ -21,80 +190,14 @@ def dtype_inference_pass(graph: IRGraph) -> bool:
 
     for node in sorted_nodes:
         if node.op_type == "Constant":
-            val = node.attributes.get("value")
-            dt = None
-            if hasattr(val, "dtype"):
-                dt = DType(str(val.dtype))
-            elif isinstance(val, bool):
-                dt = DType.Bool
-            elif isinstance(val, int):
-                dt = DType.Int32
-            elif isinstance(val, float):
-                dt = DType.Float32
-
-            if dt is not None:
-                dtypes[node.id] = dt.value
-                if node.attributes.get("dtype") != dt.value:
-                    node.attributes["dtype"] = dt.value
-                    modified = True
-            else:
-                dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
-
+            if _infer_constant_dtype(node, dtypes):
+                modified = True
         elif node.op_type == "Input":
-            dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
-
+            _infer_input_dtype(node, dtypes)
         elif node.op_type == "Output":
-            inp_dtype = None
-            if node.inputs:
-                inp_dtype = dtypes.get(node.inputs[0])
-            dtypes[node.id] = inp_dtype
-            if inp_dtype and node.attributes.get("dtype") != inp_dtype:
+            if _infer_output_dtype(node, dtypes):
                 modified = True
-                node.attributes["dtype"] = inp_dtype
-
-        else:
-            in_dtypes = [dtypes.get(inp) for inp in node.inputs]
-            out_dtype_val = None
-
-            if "dtype" in node.attributes and node.op_type in ["Cast", "Bitcast"]:
-                val = node.attributes["dtype"]
-                out_dtype_val = val.value if isinstance(val, DType) else str(val)
-            elif "Logical" in node.op_type or node.op_type in [
-                "Equal",
-                "NotEqual",
-                "Greater",
-                "GreaterEqual",
-                "Less",
-                "LessEqual",
-                "Isnan",
-                "Isinf",
-                "Isfinite",
-                "Allclose",
-                "Isclose",
-            ]:
-                out_dtype_val = DType.Bool.value
-            elif in_dtypes and any(dt is not None for dt in in_dtypes):
-                valid_dtypes = [dt for dt in in_dtypes if dt is not None]
-                if len(valid_dtypes) == 1:
-                    out_dtype_val = valid_dtypes[0]
-                else:
-                    try:
-                        dt1, dt2 = valid_dtypes[0], valid_dtypes[1]
-                        promoted = promote_types(DType(dt1), DType(dt2))
-                        out_dtype_val = promoted.value
-                        for i in range(2, len(valid_dtypes)):
-                            promoted = promote_types(promoted, DType(valid_dtypes[i]))
-                            out_dtype_val = promoted.value
-                    except (TypeError, ValueError):
-                        out_dtype_val = valid_dtypes[0]
-
-            if out_dtype_val is None:
-                out_dtype_val = DType.Float32.value
-
-            dtypes[node.id] = out_dtype_val
-
-            if node.attributes.get("dtype") != out_dtype_val:
-                node.attributes["dtype"] = out_dtype_val
-                modified = True
+        elif _infer_op_dtype(node, dtypes):
+            modified = True
 
     return modified

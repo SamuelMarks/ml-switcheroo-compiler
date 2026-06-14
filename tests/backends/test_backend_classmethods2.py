@@ -1,8 +1,8 @@
 """Module docstring."""
 
 import contextlib
-import sys
 import importlib
+import sys
 from unittest.mock import MagicMock
 
 
@@ -13,14 +13,9 @@ def test_backend_classmethods2() -> None:
     sys.modules["dask"] = MagicMock()
     sys.modules["dask.array"] = MagicMock()
 
-    import ml_switcheroo_compiler.backends.jax as jax
-    import ml_switcheroo_compiler.backends.keras as keras
-    import ml_switcheroo_compiler.backends.mlx as mlx
-    import ml_switcheroo_compiler.backends.numpy as numpy
-    import ml_switcheroo_compiler.backends.pytorch as pytorch
-    import ml_switcheroo_compiler.backends.tensorflow as tensorflow
     import ml_switcheroo_compiler.backends.cupy as cupy_mod
     import ml_switcheroo_compiler.backends.dask as dask_mod
+    from ml_switcheroo_compiler.backends import jax, keras, mlx, numpy, pytorch, tensorflow
 
     importlib.reload(cupy_mod)
     importlib.reload(dask_mod)

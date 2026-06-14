@@ -18,9 +18,9 @@ def sum_vjp(graph: object, node: object, cotangent: str) -> tuple:
     tensor of the Sum operation
 
     Args:
-    graph (object): The computation graph
-    node (object): The Sum operation node
-    cotangent (str): The identifier of the cotangent tensor
+        graph (object): The computation graph
+        node (object): The Sum operation node
+        cotangent (str): The identifier of the cotangent tensor
 
     Returns:
     tuple: A tuple containing the identifier of the broadcasted cotangent tensor
@@ -42,9 +42,9 @@ def sum_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Sum operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Sum operation node
-    tangent (str): The identifier of the tangent tensor
+        graph (object): The computation graph
+        node (object): The Sum operation node
+        tangent (str): The identifier of the tangent tensor
 
     Returns:
     str: The identifier of the computed tangent tensor
@@ -61,9 +61,9 @@ def mean_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Mean operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Mean operation node
-    cotangent (str): The identifier of the cotangent tensor
+        graph (object): The computation graph
+        node (object): The Mean operation node
+        cotangent (str): The identifier of the cotangent tensor
 
     Returns:
     tuple: A tuple containing the identifier of the input cotangent tensor
@@ -80,9 +80,9 @@ def mean_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Mean operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Mean operation node
-    tangent (str): The identifier of the tangent tensor
+        graph (object): The computation graph
+        node (object): The Mean operation node
+        tangent (str): The identifier of the tangent tensor
 
     Returns:
     str: The identifier of the computed tangent tensor
@@ -99,9 +99,9 @@ def max_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Max operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Max operation node
-    cotangent (str): The identifier of the cotangent tensor
+        graph (object): The computation graph
+        node (object): The Max operation node
+        cotangent (str): The identifier of the cotangent tensor
 
     Returns:
     tuple: A tuple containing the identifier of the input cotangent tensor
@@ -118,9 +118,9 @@ def max_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Max operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Max operation node
-    tangent (str): The identifier of the tangent tensor
+        graph (object): The computation graph
+        node (object): The Max operation node
+        tangent (str): The identifier of the tangent tensor
 
     Returns:
     str: The identifier of the computed tangent tensor
@@ -137,9 +137,9 @@ def min_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Min operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Min operation node
-    cotangent (str): The identifier of the cotangent tensor
+        graph (object): The computation graph
+        node (object): The Min operation node
+        cotangent (str): The identifier of the cotangent tensor
 
     Returns:
     tuple: A tuple containing the identifier of the input cotangent tensor
@@ -156,9 +156,9 @@ def min_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Min operation.
 
     Args:
-    graph (object): The computation graph
-    node (object): The Min operation node
-    tangent (str): The identifier of the tangent tensor
+        graph (object): The computation graph
+        node (object): The Min operation node
+        tangent (str): The identifier of the tangent tensor
 
     Returns:
     str: The identifier of the computed tangent tensor

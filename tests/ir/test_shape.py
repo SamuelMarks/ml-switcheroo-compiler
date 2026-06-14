@@ -195,8 +195,9 @@ def test_symbolic_solver() -> None:
 
 def test_shape_tracker() -> None:
     """Test ShapeTracker."""
-    from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymInt
     from collections import namedtuple
+
+    from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymInt
 
     TensorSpec = namedtuple("TensorSpec", ["shape"])
 
@@ -219,3 +220,10 @@ def test_shape_tracker() -> None:
     t6 = TensorSpec(shape=(3, 4))
     out_matmul2 = ShapeTracker.infer_matmul(t5, t6)
     assert out_matmul2 == (2, 4)
+
+
+def test_symint_hash() -> None:
+    """Test symint hash."""
+    from ml_switcheroo_compiler.ir.shape_system import SymInt
+
+    assert hash(SymInt("a")) == hash("a")

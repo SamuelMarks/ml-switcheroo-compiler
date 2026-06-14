@@ -1,11 +1,12 @@
 """Module docstring."""
 
 import numpy as np
-from ml_switcheroo_compiler.ops.shape.frontend import dynamic_slice, update_slice
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
+
+from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
-import ml_switcheroo_compiler.core.config as config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.shape.frontend import dynamic_slice, update_slice
 
 
 def test_dynamic_slice_indices() -> None:
@@ -41,8 +42,9 @@ def test_update_slice_indices() -> None:
 
 def test_shape_frontend_tracing(monkeypatch: object) -> None:
     """Docstring."""
-    import ml_switcheroo_compiler.ops.shape.frontend as sf
     from unittest.mock import MagicMock
+
+    import ml_switcheroo_compiler.ops.shape.frontend as sf
 
     config.eager_mode = False
 
@@ -56,7 +58,9 @@ def test_shape_frontend_tracing(monkeypatch: object) -> None:
             """Docstring."""
             return "n1"
 
-    monkeypatch.setattr(sf, "_tracer", MockTracer())
+    import ml_switcheroo_compiler.ops.shape.utils as su
+
+    monkeypatch.setattr(su, "_tracer", MockTracer())
 
     class MockData:
         """Docstring."""

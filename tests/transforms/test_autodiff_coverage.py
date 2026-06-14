@@ -1,11 +1,12 @@
 """Provides required module functionality."""
 
 import pytest
-from ml_switcheroo_compiler.transforms.autodiff import grad
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.transforms.autodiff import grad
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import (
-    register_vjp,
     _VJP_REGISTRY,
+    register_vjp,
 )
 
 

@@ -196,5 +196,5 @@ class Range(OpDef):
         Returns:
             The output shape
         """
-        # This is a bit tricky, but in eager mode we just rely on numpy_eval.
+        # This is a bit tricky, but in eager mode we just rely on eager_eval.
         return shapes[0] if shapes else ()

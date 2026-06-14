@@ -1,8 +1,8 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.ops.linalg.basic import Rfft
-from ml_switcheroo_compiler.ir.core import TensorSpec
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.ir.core import TensorSpec
+from ml_switcheroo_compiler.ops.linalg.basic import Rfft
 
 
 def test_rfft_infer_shape_coverage() -> None:

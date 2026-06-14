@@ -18,9 +18,9 @@ def sin_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Sine operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Sine operation
-    cotangent (str): The identifier of the incoming cotangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Sine operation
+        cotangent (str): The identifier of the incoming cotangent vector
 
     Returns:
     tuple: A single-element tuple containing the identifier of the computed VJP node
@@ -36,9 +36,9 @@ def sin_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Sine operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Sine operation
-    tangent (str): The identifier of the incoming tangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Sine operation
+        tangent (str): The identifier of the incoming tangent vector
 
     Returns:
     str: The identifier of the computed JVP node
@@ -55,9 +55,9 @@ def cos_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Cosine operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Cosine operation
-    cotangent (str): The identifier of the incoming cotangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Cosine operation
+        cotangent (str): The identifier of the incoming cotangent vector
 
     Returns:
     tuple: A single-element tuple containing the identifier of the computed VJP node
@@ -74,9 +74,9 @@ def cos_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Cosine operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Cosine operation
-    tangent (str): The identifier of the incoming tangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Cosine operation
+        tangent (str): The identifier of the incoming tangent vector
 
     Returns:
     str: The identifier of the computed JVP node
@@ -93,9 +93,9 @@ def exp_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Exponential operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Exponential operation
-    cotangent (str): The identifier of the incoming cotangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Exponential operation
+        cotangent (str): The identifier of the incoming cotangent vector
 
     Returns:
     tuple: A single-element tuple containing the identifier of the computed VJP node
@@ -116,9 +116,9 @@ def exp_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Exponential operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Exponential operation
-    tangent (str): The identifier of the incoming tangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Exponential operation
+        tangent (str): The identifier of the incoming tangent vector
 
     Returns:
     str: The identifier of the computed JVP node
@@ -135,9 +135,9 @@ def log_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the Natural Logarithm operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Logarithm operation
-    cotangent (str): The identifier of the incoming cotangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Logarithm operation
+        cotangent (str): The identifier of the incoming cotangent vector
 
     Returns:
     tuple: A single-element tuple containing the identifier of the computed VJP node
@@ -153,9 +153,9 @@ def log_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the Natural Logarithm operation.
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The IR node representing the Logarithm operation
-    tangent (str): The identifier of the incoming tangent vector
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Logarithm operation
+        tangent (str): The identifier of the incoming tangent vector
 
     Returns:
     str: The identifier of the computed JVP node

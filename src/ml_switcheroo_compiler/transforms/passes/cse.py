@@ -16,7 +16,7 @@ def cse_pass(graph: IRGraph) -> bool:
     bool: True if the graph was modified
 
     Args:
-    graph (IRGraph): Argument graph
+        graph (IRGraph): Argument graph
     """
     modified = False
     seen_expressions: dict[str, str] = {}

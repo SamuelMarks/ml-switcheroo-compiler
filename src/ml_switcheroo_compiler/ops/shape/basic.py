@@ -11,17 +11,17 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Reshape(OpDef):
     """An operator definition for reshaping a tensor to a new shape."""
 
-    def infer_shape(self, x: object, newshape: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The first input tensor.
-            newshape (object): The newshape to process.
+            *args (object): The first input tensor and the newshape.
             **kwargs (object): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
         """
+        newshape = args[1] if len(args) > 1 else kwargs["newshape"]
         return newshape
 
 
@@ -29,17 +29,18 @@ class Reshape(OpDef):
 class Transpose(OpDef):
     """An operator definition for transposing the dimensions of a tensor."""
 
-    def infer_shape(self, x: object, axes: object = None, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The first input tensor.
-            axes (object): The axes to process.
+            *args (object): The first input tensor and the axes.
             **kwargs (object): Additional keyword arguments.
 
         Returns:
             The computed shape or evaluation result.
         """
+        x = args[0] if len(args) > 0 else kwargs["x"]
+        axes = args[1] if len(args) > 1 else kwargs.get("axes", None)
         if isinstance(x, tuple) and axes is not None:
             return tuple(x[i] for i in axes)
         return None
@@ -81,24 +82,17 @@ class DynamicSlice(OpDef):
 
     op_name = "DynamicSlice"
 
-    def infer_shape(
-        self,
-        x: object,
-        start_indices: object,
-        slice_sizes: object,
-        **kwargs: object,
-    ) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
-            x (object): The x.
-            start_indices (object): The start_indices.
-            slice_sizes (object): The slice_sizes.
+            *args (object): x, start_indices, and slice_sizes.
             **kwargs: Additional keyword arguments.
 
         Returns:
             object: The computed result.
         """
+        slice_sizes = args[2] if len(args) > 2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
@@ -275,7 +269,7 @@ class TopK(OpDef):
         else:
             try:
                 k = int(k)
-            except Exception:
+            except (ValueError, TypeError):
                 pass
 
         if not hasattr(x, "shape") or not x.shape:

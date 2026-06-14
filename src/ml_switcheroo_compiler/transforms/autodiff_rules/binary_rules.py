@@ -20,9 +20,9 @@ def add_vjp(graph: object, node: object, cotangent: str) -> tuple:
     incoming cotangent (gradient of the loss with respect to z)
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The addition node in the computation graph
-    cotangent (str): The name or identifier of the incoming cotangent
+        graph (object): The computation graph containing the nodes
+        node (object): The addition node in the computation graph
+        cotangent (str): The name or identifier of the incoming cotangent
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs (cotangent_x,
@@ -38,11 +38,11 @@ def add_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs
     For z = x + y, the tangent of z is tangent_x + tangent_y
 
     Args:
-    tangent_x (object): The tangent of the first input x
-    tangent_y (object): The tangent of the second input y
-    x (object): The primal value of the first input
-    y (object): The primal value of the second input
-    **kwargs (object): Additional keyword arguments
+        tangent_x (object): The tangent of the first input x
+        tangent_y (object): The tangent of the second input y
+        x (object): The primal value of the first input
+        y (object): The primal value of the second input
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representation of the tangent expression
@@ -58,9 +58,9 @@ def subtract_vjp(graph: object, node: object, cotangent: str) -> tuple:
     and the gradient with respect to y is the negative of the incoming cotangent
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The subtraction node in the computation graph
-    cotangent (str): The name or identifier of the incoming cotangent
+        graph (object): The computation graph containing the nodes
+        node (object): The subtraction node in the computation graph
+        cotangent (str): The name or identifier of the incoming cotangent
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs (cotangent_x,
@@ -83,11 +83,11 @@ def subtract_jvp(
     For z = x - y, the tangent of z is tangent_x - tangent_y
 
     Args:
-    tangent_x (object): The tangent of the first input x
-    tangent_y (object): The tangent of the second input y
-    x (object): The primal value of the first input
-    y (object): The primal value of the second input
-    **kwargs (object): Additional keyword arguments
+        tangent_x (object): The tangent of the first input x
+        tangent_y (object): The tangent of the second input y
+        x (object): The primal value of the first input
+        y (object): The primal value of the second input
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representation of the tangent expression
@@ -103,9 +103,9 @@ def multiply_vjp(graph: object, node: object, cotangent: str) -> tuple:
     and the gradient with respect to y is cotangent * x
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The multiplication node in the computation graph
-    cotangent (str): The name or identifier of the incoming cotangent
+        graph (object): The computation graph containing the nodes
+        node (object): The multiplication node in the computation graph
+        cotangent (str): The name or identifier of the incoming cotangent
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs (cotangent_x,
@@ -130,11 +130,11 @@ def multiply_jvp(
     For z = x * y, the tangent of z is tangent_x * y + x * tangent_y
 
     Args:
-    tangent_x (object): The tangent of the first input x
-    tangent_y (object): The tangent of the second input y
-    x (object): The primal value of the first input
-    y (object): The primal value of the second input
-    **kwargs (object): Additional keyword arguments
+        tangent_x (object): The tangent of the first input x
+        tangent_y (object): The tangent of the second input y
+        x (object): The primal value of the first input
+        y (object): The primal value of the second input
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representation of the tangent expression
@@ -149,9 +149,9 @@ def divide_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Currently not implemented
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The division node in the computation graph
-    cotangent (str): The name or identifier of the incoming cotangent
+        graph (object): The computation graph containing the nodes
+        node (object): The division node in the computation graph
+        cotangent (str): The name or identifier of the incoming cotangent
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs
@@ -170,11 +170,11 @@ def divide_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwa
     Currently not implemented
 
     Args:
-    tangent_x (object): The tangent of the first input x
-    tangent_y (object): The tangent of the second input y
-    x (object): The primal value of the first input
-    y (object): The primal value of the second input
-    **kwargs (object): Additional keyword arguments
+        tangent_x (object): The tangent of the first input x
+        tangent_y (object): The tangent of the second input y
+        x (object): The primal value of the first input
+        y (object): The primal value of the second input
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representation of the tangent expression
@@ -193,9 +193,9 @@ def power_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Currently not implemented
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The power node in the computation graph
-    cotangent (str): The name or identifier of the incoming cotangent
+        graph (object): The computation graph containing the nodes
+        node (object): The power node in the computation graph
+        cotangent (str): The name or identifier of the incoming cotangent
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs
@@ -214,11 +214,11 @@ def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwar
     Currently not implemented
 
     Args:
-    tangent_x (object): The tangent of the first input x
-    tangent_y (object): The tangent of the second input y
-    x (object): The primal value of the first input
-    y (object): The primal value of the second input
-    **kwargs (object): Additional keyword arguments
+        tangent_x (object): The tangent of the first input x
+        tangent_y (object): The tangent of the second input y
+        x (object): The primal value of the first input
+        y (object): The primal value of the second input
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representation of the tangent expression

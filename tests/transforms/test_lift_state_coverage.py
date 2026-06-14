@@ -1,11 +1,11 @@
 """Provides required module functionality."""
 
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.lift_state import (
     flatten_state_dict,
-    unflatten_state_dict,
     lift_state_pass,
+    unflatten_state_dict,
 )
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_lift_state_coverage_brute() -> None:
@@ -27,7 +27,11 @@ def test_lift_state_coverage_brute() -> None:
 
     g = IRGraph()
     n2 = IRNode(
-        id="n2", op_type="AssignVariable", inputs=["n1"], attributes={}, shape_metadata=None
+        id="n2",
+        op_type="AssignVariable",
+        inputs=["n1"],
+        attributes={},
+        shape_metadata=None,
     )
     g.nodes = {"n2": n2}
     g.outputs = ["n2", "n3"]

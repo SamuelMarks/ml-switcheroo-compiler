@@ -48,8 +48,8 @@ def test_binary_math_ops() -> None:
         # Check infer_shape
         assert op.infer_shape((2,), (2,)) == (2,)
 
-        # Check numpy_eval
-        assert np.allclose(op.numpy_eval(x, y), np_func(x, y))
+        # Check eager_eval
+        assert np.allclose(op.eager_eval(x, y), np_func(x, y))
 
         # Check emitters for basic BinaryMathOp behavior
 

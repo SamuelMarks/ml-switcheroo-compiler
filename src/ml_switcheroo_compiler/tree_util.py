@@ -33,6 +33,14 @@ class TreeDef:
         """
         return f"TreeDef({self.node_type.__name__}, {self.children_defs})"
 
+    def __hash__(self) -> int:
+        """Execute __hash__.
+
+        Returns:
+        Any: The result.
+        """
+        return hash(str(self.node_type) + str(self.children_defs))
+
     def __eq__(self, other: object) -> bool:
         """Equality.
 
@@ -93,6 +101,14 @@ def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
     leaves_it = iter(leaves)
 
     def _unflatten(t_def: TreeDef) -> object:
+        """Execute _unflatten.
+
+        Args:
+            t_def (Any): Argument t_def.
+
+        Returns:
+        Any: The result.
+        """
         if t_def.node_type is type(None):
             try:
                 return next(leaves_it)

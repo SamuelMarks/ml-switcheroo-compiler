@@ -43,10 +43,10 @@ def test_all_ops_coverage() -> None:
             op.vjp(g, n, "cotangent")
 
         try:
-            op.numpy_eval(2.0, 3.0)
+            op.eager_eval(2.0, 3.0)
         except Exception:
             with contextlib.suppress(Exception):
-                op.numpy_eval(2.0)
+                op.eager_eval(2.0)
 
         try:
             op.infer_shape((2, 3), (2, 3))

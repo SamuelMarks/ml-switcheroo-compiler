@@ -59,7 +59,7 @@ def lift_state_pass(graph: IRGraph) -> bool:
     bool: True if modified
 
     Args:
-    graph (IRGraph): Argument graph
+        graph (IRGraph): Argument graph
     """
     modified = False
 

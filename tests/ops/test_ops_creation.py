@@ -32,7 +32,7 @@ def test_creation_ops() -> None:
 
     for op, np_func in ops:
         assert op.infer_shape(shape) == shape
-        assert np.array_equal(op.numpy_eval(shape), np_func(shape))
+        assert np.array_equal(op.eager_eval(shape), np_func(shape))
 
 
 def test_full_op() -> None:
@@ -48,7 +48,7 @@ def test_full_op() -> None:
     shape = (2, 2)
     val = 5.0
     assert op.infer_shape(shape, val) == shape
-    assert np.array_equal(op.numpy_eval(shape, val), np.full(shape, val))
+    assert np.array_equal(op.eager_eval(shape, val), np.full(shape, val))
 
 
 def test_arange_op() -> None:
@@ -62,7 +62,7 @@ def test_arange_op() -> None:
     """
     op = Arange()
     assert op.infer_shape(10) is None
-    assert np.array_equal(op.numpy_eval(5), np.arange(5))
+    assert np.array_equal(op.eager_eval(5), np.arange(5))
 
 
 def test_rand_ops() -> None:
@@ -73,32 +73,32 @@ def test_rand_ops() -> None:
     assert op.infer_shape(size=(2, 3)) == (2, 3)
     assert op.infer_shape((2, 3)) == (2, 3)
     assert op.infer_shape(2, 3) == (2, 3)
-    res = op.numpy_eval(2, 3, dtype=np.float32)
+    res = op.eager_eval(2, 3, dtype=np.float32)
     assert res.shape == (2, 3)
     assert res.dtype == np.float32
 
-    res_none = op.numpy_eval(2, 3, dtype=None)
+    res_none = op.eager_eval(2, 3, dtype=None)
     assert res_none.shape == (2, 3)
 
     op_randn = get_op("Randn")()
-    res_randn = op_randn.numpy_eval(2, 3, dtype=np.float32)
+    res_randn = op_randn.eager_eval(2, 3, dtype=np.float32)
     assert res_randn.shape == (2, 3)
     assert res_randn.dtype == np.float32
 
-    res_randn_none = op_randn.numpy_eval(2, 3, dtype=None)
+    res_randn_none = op_randn.eager_eval(2, 3, dtype=None)
     assert res_randn_none.shape == (2, 3)
 
     op_randint = get_op("Randint")()
     assert op_randint.infer_shape(size=(2, 3)) == (2, 3)
     assert op_randint.infer_shape(0, 10, (2, 3)) == (2, 3)
     assert op_randint.infer_shape(0, 10) == ()
-    res_randint = op_randint.numpy_eval(0, 10, size=(2, 3), dtype=np.int32)
+    res_randint = op_randint.eager_eval(0, 10, size=(2, 3), dtype=np.int32)
     assert res_randint.shape == (2, 3)
     assert res_randint.dtype == np.int32
 
-    res_randint2 = op_randint.numpy_eval(10, size=(2, 3), dtype=None)
+    res_randint2 = op_randint.eager_eval(10, size=(2, 3), dtype=None)
     assert res_randint2.shape == (2, 3)
 
     op_seed = get_op("ManualSeed")()
     assert op_seed.infer_shape(42) == ()
-    assert op_seed.numpy_eval(42) == 42
+    assert op_seed.eager_eval(42) == 42

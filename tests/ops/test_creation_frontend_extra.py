@@ -29,8 +29,8 @@ def test_rand_frontend_tracing() -> None:
     assert t3.shape == (2, 3)
     assert manual_seed(42) == 42
 
-    from ml_switcheroo_compiler.ops.creation.frontend import array, diag
     from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.creation.frontend import array, diag
 
     arr = array([1, 2, 3], dtype=DType.Int32)
     assert arr.shape == (3,)

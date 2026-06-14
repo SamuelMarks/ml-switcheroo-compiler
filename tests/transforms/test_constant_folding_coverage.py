@@ -1,7 +1,7 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 
 
 def test_constant_folding_coverage_brute() -> None:
@@ -15,10 +15,18 @@ def test_constant_folding_coverage_brute() -> None:
 
     g3 = IRGraph()
     n4 = IRNode(
-        id="n4", op_type="Constant", inputs=[], attributes={"value": [1, 2]}, shape_metadata=None
+        id="n4",
+        op_type="Constant",
+        inputs=[],
+        attributes={"value": [1, 2]},
+        shape_metadata=None,
     )
     n5 = IRNode(
-        id="n5", op_type="Constant", inputs=[], attributes={"value": [3, 4]}, shape_metadata=None
+        id="n5",
+        op_type="Constant",
+        inputs=[],
+        attributes={"value": [3, 4]},
+        shape_metadata=None,
     )
     n6 = IRNode(id="n6", op_type="Add", inputs=["n4", "n5"], attributes={}, shape_metadata=None)
     g3.nodes = {"n4": n4, "n5": n5, "n6": n6}
@@ -26,7 +34,11 @@ def test_constant_folding_coverage_brute() -> None:
 
     g4 = IRGraph()
     n7 = IRNode(
-        id="n7", op_type="Constant", inputs=[], attributes={"value": 1}, shape_metadata=None
+        id="n7",
+        op_type="Constant",
+        inputs=[],
+        attributes={"value": 1},
+        shape_metadata=None,
     )
     n8 = IRNode(
         id="n8",

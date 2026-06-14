@@ -1,11 +1,12 @@
 """Module docstring."""
 
 import numpy as np
-from ml_switcheroo_compiler.nn import gelu
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
+
+from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
-import ml_switcheroo_compiler.core.config as config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.nn import gelu
 
 
 def test_gelu_approximate() -> None:

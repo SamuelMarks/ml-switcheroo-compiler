@@ -19,7 +19,7 @@ def register_vjp(op_name: str) -> Callable:
     implement the VJP for the specified operation
 
     Args:
-    op_name (str): The name of the operation (e.g., 'add', 'multiply')
+        op_name (str): The name of the operation (e.g., 'add', 'multiply')
 
     Returns:
     Callable: A decorator function that registers the VJP rule
@@ -30,6 +30,14 @@ def register_vjp(op_name: str) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Execute decorator.
+
+        Args:
+            func (Any): Argument func.
+
+        Returns:
+        Any: The result.
+        """
         if op_name in _VJP_REGISTRY:
             msg = f"VJP for operation '{op_name}' is already registered."
             raise ValueError(msg)
@@ -43,7 +51,7 @@ def get_vjp(op_name: str) -> Callable:
     """Retrieves the registered Vector-Jacobian Product (VJP) rule for a given operation.
 
     Args:
-    op_name (str): The name of the operation whose VJP rule is to be retrieved
+        op_name (str): The name of the operation whose VJP rule is to be retrieved
 
     Returns:
     Callable: The registered VJP function for the operation

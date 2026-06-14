@@ -15,7 +15,7 @@ def dce_pass(graph: IRGraph) -> bool:
     bool: True if the graph was modified
 
     Args:
-    graph (IRGraph): Argument graph
+        graph (IRGraph): Argument graph
     """
     reachable: set[str] = set(graph.outputs)
 

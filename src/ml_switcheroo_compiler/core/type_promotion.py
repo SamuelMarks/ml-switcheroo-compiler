@@ -4,6 +4,65 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 
 
+def _promote_complex(dtype1: DType, dtype2: DType) -> DType:
+    """Promote complex types.
+
+    Args:
+        dtype1 (DType): The first dtype.
+        dtype2 (DType): The second dtype.
+
+    Returns:
+        DType: The promoted dtype.
+    """
+    if DType.Complex128 in (dtype1, dtype2):
+        return DType.Complex128
+    if DType.Float64 in (dtype1, dtype2):
+        return DType.Complex128
+    return DType.Complex64
+
+
+def _promote_float(dtype1: DType, dtype2: DType, rank1: int, rank2: int) -> DType:
+    """Promote float types.
+
+    Args:
+        dtype1 (DType): The first dtype.
+        dtype2 (DType): The second dtype.
+        rank1 (int): The rank of the first dtype.
+        rank2 (int): The rank of the second dtype.
+
+    Returns:
+        DType: The promoted dtype.
+    """
+    if DType.Float64 in (dtype1, dtype2):
+        return DType.Float64
+    if DType.Float32 in (dtype1, dtype2):
+        return DType.Float32
+    if (dtype1 == DType.Float16 and dtype2 == DType.BFloat16) or (
+        dtype1 == DType.BFloat16 and dtype2 == DType.Float16
+    ):
+        return DType.Float32
+    if rank1 > rank2:
+        return dtype1
+    return dtype2
+
+
+def _promote_int(dtype1: DType, dtype2: DType, rank1: int, rank2: int) -> DType:
+    """Promote int types.
+
+    Args:
+        dtype1 (DType): The first dtype.
+        dtype2 (DType): The second dtype.
+        rank1 (int): The rank of the first dtype.
+        rank2 (int): The rank of the second dtype.
+
+    Returns:
+        DType: The promoted dtype.
+    """
+    if rank1 > rank2:
+        return dtype1
+    return dtype2
+
+
 def promote_types(dtype1: DType, dtype2: DType) -> DType:
     """Determine the resulting DType when operating on two tensors of dtype1 and dtype2.
 
@@ -23,8 +82,8 @@ def promote_types(dtype1: DType, dtype2: DType) -> DType:
     DTypePromotionError: If the types cannot be safely promoted
 
     Args:
-    dtype1 (DType): Argument dtype1
-    dtype2 (DType): Argument dtype2
+        dtype1 (DType): Argument dtype1
+        dtype2 (DType): Argument dtype2
     """
     if dtype1 == dtype2:
         return dtype1
@@ -58,33 +117,13 @@ def promote_types(dtype1: DType, dtype2: DType) -> DType:
     is_int1 = dtype1 in (DType.Int8, DType.Int16, DType.Int32, DType.Int64, DType.UInt8)
     is_int2 = dtype2 in (DType.Int8, DType.Int16, DType.Int32, DType.Int64, DType.UInt8)
 
-    # Complex promotion
     if is_complex1 or is_complex2:
-        if DType.Complex128 in (dtype1, dtype2):
-            return DType.Complex128
-        if DType.Float64 in (dtype1, dtype2):
-            return DType.Complex128
-        return DType.Complex64
+        return _promote_complex(dtype1, dtype2)
 
-    # Float promotion
     if is_float1 or is_float2:
-        if DType.Float64 in (dtype1, dtype2):
-            return DType.Float64
-        if DType.Float32 in (dtype1, dtype2):
-            return DType.Float32
-        # If float16 and bfloat16 meet, promote to float32
-        if (dtype1 == DType.Float16 and dtype2 == DType.BFloat16) or (
-            dtype1 == DType.BFloat16 and dtype2 == DType.Float16
-        ):
-            return DType.Float32
-        if rank1 > rank2:
-            return dtype1
-        return dtype2
+        return _promote_float(dtype1, dtype2, rank1, rank2)
 
-    # Integer promotion
     if is_int1 or is_int2:
-        if rank1 > rank2:
-            return dtype1
-        return dtype2
+        return _promote_int(dtype1, dtype2, rank1, rank2)
 
-    return dtype1  # pragma: no cover
+    return dtype1

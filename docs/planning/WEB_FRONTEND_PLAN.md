@@ -13,7 +13,7 @@ The playground will be cleanly integrated into the Sphinx theme (e.g., Furo or S
   - [ ] **Header Controls:**
     - [ ] **Source Framework Dropdown:** Uses `<optgroup>` to organize options logically:
       - *Group: Base ML Frameworks* (TensorFlow, Keras, PyTorch, MLX)
-      - *Group: JAX Ecosystem* (JAX, Flax NNX, Flax Linen, Pax)
+      - *Group: JAX Ecosystem* (JAX, Flax NNX, Flax Linen)
     - [ ] **Examples Dropdown:** Pre-populated code snippets that auto-update based on the selected Source Framework (e.g., Simple MLP, CNN, Attention Block).
   - [ ] **Editor:** A Monaco Editor instance configured for Python.
     - [ ] Enable syntax highlighting.
@@ -23,7 +23,7 @@ The playground will be cleanly integrated into the Sphinx theme (e.g., Furo or S
   - [ ] **Header Controls:**
     - [ ] **Target Framework Dropdown:** Uses `<optgroup>` to organize options logically:
       - *Group: Base ML Frameworks* (TensorFlow, Keras, PyTorch, MLX)
-      - *Group: JAX Ecosystem* (JAX, Flax NNX, Flax Linen, Pax)
+      - *Group: JAX Ecosystem* (JAX, Flax NNX, Flax Linen)
       - *Group: Native Web Execution* (WebGPU, WASM SIMD)
     - [ ] **Action Buttons:**
       - [ ] `Compile`: Runs the ML Switcheroo compiler to generate the target code.

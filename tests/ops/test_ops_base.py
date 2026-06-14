@@ -44,7 +44,7 @@ def test_register_and_get_op() -> None:
                     object: The resulting output.
                 """
 
-            def numpy_eval(self, *args: object, **kwargs: object) -> object:
+            def eager_eval(self, *args: object, **kwargs: object) -> object:
                 """Evaluate the operation using NumPy.
 
                 Args:
@@ -200,8 +200,8 @@ def test_opdef_call_eager() -> None:
                 """
                 return ()
 
-            def numpy_eval(self, *args: object, **kwargs: object) -> object:
-                """numpy_eval function.
+            def eager_eval(self, *args: object, **kwargs: object) -> object:
+                """eager_eval function.
 
                 Args:
                     *args: Additional arguments.
@@ -360,8 +360,8 @@ def test_opdef_call_tracing() -> None:
                 """
                 return (3,)
 
-            def numpy_eval(self, *args: object, **kwargs: object) -> object:
-                """numpy_eval function.
+            def eager_eval(self, *args: object, **kwargs: object) -> object:
+                """eager_eval function.
 
                 Args:
                     *args: Additional arguments.

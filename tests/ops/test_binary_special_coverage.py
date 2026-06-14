@@ -1,6 +1,6 @@
 """Module docstring."""
 
-from ml_switcheroo_compiler.ops.binary.special import Divmod, Isclose, Atan2
+from ml_switcheroo_compiler.ops.binary.special import Atan2, Divmod, Isclose
 
 
 def test_divmod_infer_shape_fallback() -> None:

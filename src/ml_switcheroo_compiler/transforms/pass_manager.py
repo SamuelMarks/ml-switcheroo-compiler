@@ -11,57 +11,10 @@ import json
 from typing import Callable
 
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
-class DAGTopologicalSorter:
-    """Provides topological sorting utilities for Directed Acyclic Graphs (DAGs).
-
-    representing IR
-    """
-
-    @staticmethod
-    def sort(graph: IRGraph) -> list[IRNode]:
-        """Perform topological sort on the graph nodes.
-
-        graph (IRGraph): Argument graph
-
-        Returns:
-            list[IRNode]: The result of the operation
-
-        Args:
-            graph (IRGraph): Argument graph
-        """
-        visited: set[str] = set()
-        temp_mark: set[str] = set()
-        sorted_nodes: list[IRNode] = []
-
-        def visit(node_id: str) -> None:
-            """Visit.
-
-            Args:
-                node_id (str): The node_id to process.
-            """
-            if node_id in temp_mark:
-                msg = "Cycle detected in graph."
-                raise CompilationError(msg)
-            if node_id not in visited:
-                temp_mark.add(node_id)
-                node = graph.nodes.get(node_id)
-                if node is not None:
-                    for in_id in node.inputs:
-                        visit(in_id)
-                temp_mark.remove(node_id)
-                visited.add(node_id)
-                if node is not None:
-                    sorted_nodes.append(node)
-
-        # Visit all nodes
-        for node_id in graph.nodes:
-            if node_id not in visited:
-                visit(node_id)
-
-        return sorted_nodes
+from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
 
 class IRValidator:
@@ -76,7 +29,7 @@ class IRValidator:
         Args:
             graph (IRGraph): Argument graph
         """
-        DAGTopologicalSorter.sort(graph)
+        topological_sort(graph)
 
     @staticmethod
     def check_shapes(graph: IRGraph) -> None:
@@ -101,7 +54,7 @@ def _graph_hash(graph: IRGraph) -> str:
     allowing for quick comparison of graph states to detect modifications
 
     Args:
-    graph (IRGraph): The intermediate representation graph to hash
+        graph (IRGraph): The intermediate representation graph to hash
 
     Returns:
     str: A hexadecimal MD5 hash representing the structural state of the graph
@@ -201,3 +154,21 @@ class PassManager:
 
         self.validate(graph)
         return graph
+
+
+class DAGTopologicalSorter:
+    """Alias for topological sorter."""
+
+    @staticmethod
+    def sort(graph: "object") -> list["object"]:
+        """Execute sort.
+
+        Args:
+            graph (Any): Argument graph.
+
+        Returns:
+        Any: The result.
+        """
+        from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+
+        return topological_sort(graph)

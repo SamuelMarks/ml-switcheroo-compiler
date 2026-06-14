@@ -48,8 +48,8 @@ class TestUnimplVjp(OpDef):
             **kwargs: Additional keyword arguments.
         """
 
-    def numpy_eval(self, *args: object, **kwargs: object) -> None:
-        """numpy_eval function.
+    def eager_eval(self, *args: object, **kwargs: object) -> None:
+        """eager_eval function.
 
         Args:
             *args: Additional arguments.
@@ -136,6 +136,8 @@ def test_evaluator_dict_error() -> None:
 def test_grad_frontend_mocks() -> None:
     """Test the mock frontend functions in grad.py."""
     from ml_switcheroo_compiler.grad import (
+        backward,
+        custom_jvp,
         custom_vjp,
         disable_jit,
         eval_shape,
@@ -184,3 +186,9 @@ def test_grad_frontend_mocks() -> None:
 
     # test custom_vjp
     assert custom_vjp(my_fun)(5) == 10
+
+    # test custom_jvp
+    assert custom_jvp(my_fun) == my_fun
+
+    # test backward
+    assert backward(None) is None

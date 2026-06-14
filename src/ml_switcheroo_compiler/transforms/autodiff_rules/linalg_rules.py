@@ -20,10 +20,10 @@ def matmul_vjp(graph: object, node: object, cotangent: str) -> tuple:
     transposed matrix multiplications
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The matrix multiplication IR node being differentiated
-    cotangent (str): The name or identifier of the cotangent (incoming gradient)
-    variable
+        graph (object): The computation graph containing the nodes
+        node (object): The matrix multiplication IR node being differentiated
+        cotangent (str): The name or identifier of the cotangent (incoming gradient)
+        variable
 
     Returns:
     tuple: A tuple containing the identifiers of the adjoint nodes for the two
@@ -55,11 +55,11 @@ def matmul_jvp(tangent_a: object, tangent_b: object, a: object, b: object, **kwa
     (jnp.matmul) to propagate tangents through the matrix multiplication
 
     Args:
-    tangent_a (object): The tangent corresponding to the first input matrix
-    tangent_b (object): The tangent corresponding to the second input matrix
-    a (object): The first input matrix
-    b (object): The second input matrix
-    **kwargs (object): Additional keyword arguments
+        tangent_a (object): The tangent corresponding to the first input matrix
+        tangent_b (object): The tangent corresponding to the second input matrix
+        a (object): The first input matrix
+        b (object): The second input matrix
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representing the JAX code for the JVP calculation
@@ -74,10 +74,10 @@ def dot_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Currently, this operation is not implemented and will raise an error
 
     Args:
-    graph (object): The computation graph containing the nodes
-    node (object): The dot product IR node being differentiated
-    cotangent (str): The name or identifier of the cotangent (incoming gradient)
-    variable
+        graph (object): The computation graph containing the nodes
+        node (object): The dot product IR node being differentiated
+        cotangent (str): The name or identifier of the cotangent (incoming gradient)
+        variable
 
     Returns:
     tuple: This function does not return normally as it raises an error
@@ -97,11 +97,11 @@ def dot_jvp(tangent_a: object, tangent_b: object, a: object, b: object, **kwargs
     (jnp.dot) to propagate tangents through the dot product
 
     Args:
-    tangent_a (object): The tangent corresponding to the first input
-    tangent_b (object): The tangent corresponding to the second input
-    a (object): The first input
-    b (object): The second input
-    **kwargs (object): Additional keyword arguments
+        tangent_a (object): The tangent corresponding to the first input
+        tangent_b (object): The tangent corresponding to the second input
+        a (object): The first input
+        b (object): The second input
+        **kwargs (object): Additional keyword arguments
 
     Returns:
     str: A string representing the JAX code for the JVP calculation

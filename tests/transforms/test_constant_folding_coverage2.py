@@ -1,6 +1,7 @@
 """Module docstring."""
 
 from unittest.mock import MagicMock
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 
@@ -30,7 +31,8 @@ def test_constant_folding_numel_branch(monkeypatch: object) -> None:
     mock_backend = MagicMock()
     mock_backend.item.return_value = 42
     monkeypatch.setattr(
-        "ml_switcheroo_compiler.backends.registry.get_active_backend", lambda: mock_backend
+        "ml_switcheroo_compiler.backends.registry.get_active_backend",
+        lambda: mock_backend,
     )
 
     constant_folding_pass(graph)

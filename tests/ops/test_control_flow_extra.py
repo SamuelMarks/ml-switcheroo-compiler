@@ -1,13 +1,15 @@
 """Module docstring."""
 
-import numpy as np
 from unittest.mock import MagicMock
-from ml_switcheroo_compiler.ops.control_flow import scan
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device
-import ml_switcheroo_compiler.core.config as config
+
+import numpy as np
+
 import ml_switcheroo_compiler.ops.control_flow as cf
+from ml_switcheroo_compiler.core import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.control_flow import scan
 
 
 def test_scan_tuple_y(monkeypatch: object) -> None:

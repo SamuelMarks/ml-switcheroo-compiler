@@ -5,6 +5,8 @@ core code generation, variable assignment, and indentation mechanisms of the ML
 Switcheroo code generation framework.
 """
 
+import pytest
+from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -104,10 +106,6 @@ def test_base_generator_expand_shape() -> None:
     generator = DummyGenerator(graph)
     generator.generate()
 
-    # The kwargs handling relies on op_instance.emit..
-    # but our dummy doesn't use kwargs in its output
-    # Let's adjust dummy to just dump kwargs if they exist
-
 
 def test_base_generator_unknown_op() -> None:
     """Tests that the generator falls back to a lower-case op mapping for unknown ops.
@@ -181,3 +179,113 @@ def test_base_generator_get_indent() -> None:
     assert generator.get_indent() == ""
     generator.indent_level = 2
     assert generator.get_indent() == "        "
+
+
+def test_cycle_detection() -> None:
+    """Verifies that the generator correctly detects cycles in the graph and raises a.
+
+    CompilationError
+
+    Returns:
+    None
+    """
+    g = LogicalGraph(outputs=["n1"])
+    g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=["n2"])
+    g.nodes["n2"] = LogicalNode(id="n2", op_type="Add", inputs=["n1"])
+    with pytest.raises(CompilationError, match="Cycle detected"):
+        DummyGenerator(g)
+
+
+def test_missing_node_in_graph() -> None:
+    """Verifies that the generator handles missing input nodes gracefully without crashing.
+
+    Returns:
+    None
+    """
+    g = LogicalGraph(outputs=["n1"])
+    g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=["missing"])
+    DummyGenerator(g)
+    # The missing node won't be processed but shouldn't crash
+
+
+def test_assign_var_name_existing() -> None:
+    """Verifies the variable name assignment and caching logic of the generator.
+
+    Returns:
+    None
+    """
+    g = LogicalGraph()
+    gen = DummyGenerator(g)
+    gen.assign_var_name("n1")
+    assert gen.assign_var_name("n1") == "tensor_0"
+    assert gen.assign_var_name("n2") == "tensor_1"
+
+
+def test_output_assignment() -> None:
+    """Verifies that output nodes are correctly identified and processed during generation.
+
+    Returns:
+    None
+    """
+    g = LogicalGraph(outputs=["n1"])
+    g.nodes["n1"] = LogicalNode(id="n1", op_type="Output", inputs=["n2"])
+    g.nodes["n2"] = LogicalNode(id="n2", op_type="Input")
+    _ = DummyGenerator(g)
+
+
+def test_generator_attributes_coverage() -> None:
+    """Verifies generator coverage when handling nodes with specific IR attributes.
+
+    Returns:
+    None
+    """
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    class DummyGen(DummyGenerator):
+        """A nested dummy generator class used to test IR node attribute coverage."""
+
+        def generate(self) -> str:
+            """Generate function.
+
+            Returns:
+                str: The computed result.
+            """
+            return super().generate()
+
+        def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+            """_dispatch_op_template function.
+
+            Args:
+                node (object): The node.
+                input_vars (list[str]): The input_vars.
+                **kwargs: Additional keyword arguments.
+
+            Returns:
+                str: The computed result.
+            """
+            return "code"
+
+    g = IRGraph("dummy")
+    g.nodes["a"] = IRNode(
+        id="a",
+        op_type="Add",
+        inputs=[],
+        attributes={"stream_id": 1, "async_check": True},
+    )
+
+    gen = DummyGen(g)
+    _ = gen.generate()
+
+
+def test_base_generator_not_implemented() -> None:
+    """Docstring."""
+    with pytest.raises(NotImplementedError):
+        BaseGenerator.execute_op("Op")
+    with pytest.raises(NotImplementedError):
+        BaseGenerator.zeros((2, 2))
+    with pytest.raises(NotImplementedError):
+        BaseGenerator.array([1, 2])
+    with pytest.raises(NotImplementedError):
+        BaseGenerator.asarray([1, 2])
+    with pytest.raises(NotImplementedError):
+        BaseGenerator.item(1)

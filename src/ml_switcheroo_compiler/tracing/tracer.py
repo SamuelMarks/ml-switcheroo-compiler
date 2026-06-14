@@ -80,80 +80,8 @@ class TracerTape(threading.local):
 _tracer = TracerTape()
 
 
-class ProxyTensor:
-    """A proxy object that intercepts mathematical operations and builds the IR graph.
-
-    Attributes:
-        id (str): The ID of the IRNode producing this tensor
-        shape (Tuple[Union[int, str], ...]): The shape of the tensor
-        dtype (str): The data type of the tensor
-    """
-
-    def __init__(
-        self,
-        id: str,
-        shape: tuple[int | str, ...],
-        dtype: str = "float32",
-    ) -> None:
-        """Initialize a ProxyTensor.
-
-        id (str): Node ID producing this tensor
-            shape (Tuple[Union[int, str], ...]): Tensor shape
-            dtype (str): Tensor data type
-
-        Args:
-            id (str): Argument id
-            shape (tuple[Union[int, str], ...]): The shape of the tensor.
-            dtype (str): The data type
-        """
-        self.id = id
-        self.shape = shape
-        self.dtype = dtype
-
-    def _binary_op(self, other: object, op_type: str) -> ProxyTensor:
-        """Help with binary operations.
-
-        Args:
-            other (Any): The right-hand side operand
-            op_type (str): The ONNX operation type (e.g., 'Add')
-
-        Returns:
-            ProxyTensor: The resulting proxy tensor
-        """
-        if not _tracer.is_tracing:
-            msg = f"Cannot perform {op_type} outside of a tracing context."
-            raise RuntimeError(
-                msg,
-            )
-
-        other_id = getattr(other, "id", None)
-        other_shape = getattr(other, "shape", ())
-
-        # Broadcast shapes
-        out_shape = broadcast_shapes(self.shape, other_shape)
-        out_dtype = self.dtype
-
-        if other_id is None:
-            # Constant scalar logic would wrap 'other' in a Constant node
-            other_id = str(uuid.uuid4())
-            const_node = IRNode(
-                id=other_id,
-                op_type="Constant",
-                attributes={"value": other},
-                shape_metadata=(),
-            )
-            _tracer.add_node(const_node)
-
-        out_id = str(uuid.uuid4())
-        node = IRNode(
-            id=out_id,
-            op_type=op_type,
-            inputs=[self.id, other_id],
-            shape_metadata=out_shape,
-        )
-        _tracer.add_node(node)
-
-        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+class ProxyArithmeticMixin:
+    """Arithmetic mixin for ProxyTensor."""
 
     def __add__(self, other: object) -> ProxyTensor:
         """Addition.
@@ -299,6 +227,34 @@ class ProxyTensor:
         """
         return self._binary_op(other, "Mod")
 
+    def __neg__(self) -> ProxyTensor:
+        """Evaluate neg.
+
+        Returns:
+            'ProxyTensor': The result of the operation
+        """
+        return self._unary_op("Neg")
+
+    def __pos__(self) -> ProxyTensor:
+        """Evaluate pos.
+
+        Returns:
+            'ProxyTensor': The result of the operation
+        """
+        return self
+
+    def __abs__(self) -> ProxyTensor:
+        """Evaluate abs.
+
+        Returns:
+            'ProxyTensor': The result of the operation
+        """
+        return self._unary_op("Abs")
+
+
+class ProxyBitwiseMixin:
+    """Bitwise mixin for ProxyTensor."""
+
     def __and__(self, other: object) -> ProxyTensor:
         """Evaluate and.
 
@@ -409,6 +365,90 @@ class ProxyTensor:
         """
         return self._binary_op(other, "BitShiftRight")
 
+    def __invert__(self) -> ProxyTensor:
+        """Evaluate invert.
+
+        Returns:
+            'ProxyTensor': The result of the operation
+        """
+        return self._unary_op("BitwiseNot")
+
+
+class ProxyTensor(ProxyArithmeticMixin, ProxyBitwiseMixin):
+    """A proxy object that intercepts mathematical operations and builds the IR graph.
+
+    Attributes:
+        id (str): The ID of the IRNode producing this tensor
+        shape (Tuple[Union[int, str], ...]): The shape of the tensor
+        dtype (str): The data type of the tensor
+    """
+
+    def __init__(
+        self,
+        id: str,
+        shape: tuple[int | str, ...],
+        dtype: str = "float32",
+    ) -> None:
+        """Initialize a ProxyTensor.
+
+        id (str): Node ID producing this tensor
+            shape (Tuple[Union[int, str], ...]): Tensor shape
+            dtype (str): Tensor data type
+
+        Args:
+            id (str): Argument id
+            shape (tuple[Union[int, str], ...]): The shape of the tensor.
+            dtype (str): The data type
+        """
+        self.id = id
+        self.shape = shape
+        self.dtype = dtype
+
+    def _binary_op(self, other: object, op_type: str) -> ProxyTensor:
+        """Help with binary operations.
+
+        Args:
+            other (Any): The right-hand side operand
+            op_type (str): The ONNX operation type (e.g., 'Add')
+
+        Returns:
+            ProxyTensor: The resulting proxy tensor
+        """
+        if not _tracer.is_tracing:
+            msg = f"Cannot perform {op_type} outside of a tracing context."
+            raise RuntimeError(
+                msg,
+            )
+
+        other_id = getattr(other, "id", None)
+        other_shape = getattr(other, "shape", ())
+
+        # Broadcast shapes
+        out_shape = broadcast_shapes(self.shape, other_shape)
+        out_dtype = self.dtype
+
+        if other_id is None:
+            # Constant scalar logic would wrap 'other' in a Constant node
+            other_id = str(uuid.uuid4())
+            const_node = IRNode(
+                id=other_id,
+                op_type="Constant",
+                attributes={"value": other},
+                shape_metadata=(),
+            )
+            _tracer.add_node(const_node)
+
+        out_id = str(uuid.uuid4())
+        node = IRNode(
+            id=out_id,
+            op_type=op_type,
+            inputs=[self.id, other_id],
+            shape_metadata=out_shape,
+        )
+        _tracer.add_node(node)
+
+        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+
     def _unary_op(self, op_type: str) -> ProxyTensor:
         """Evaluate unary op.
 
@@ -433,38 +473,6 @@ class ProxyTensor:
         )
         _tracer.add_node(node)
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
-
-    def __neg__(self) -> ProxyTensor:
-        """Evaluate neg.
-
-        Returns:
-            'ProxyTensor': The result of the operation
-        """
-        return self._unary_op("Neg")
-
-    def __pos__(self) -> ProxyTensor:
-        """Evaluate pos.
-
-        Returns:
-            'ProxyTensor': The result of the operation
-        """
-        return self
-
-    def __abs__(self) -> ProxyTensor:
-        """Evaluate abs.
-
-        Returns:
-            'ProxyTensor': The result of the operation
-        """
-        return self._unary_op("Abs")
-
-    def __invert__(self) -> ProxyTensor:
-        """Evaluate invert.
-
-        Returns:
-            'ProxyTensor': The result of the operation
-        """
-        return self._unary_op("BitwiseNot")
 
     def __getitem__(self, key: object) -> ProxyTensor:
         """Evaluate getitem.

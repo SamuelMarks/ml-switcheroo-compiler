@@ -196,3 +196,18 @@ def test_dtype_inference_everything() -> None:
     )
 
     dtype_inference_pass(g)
+
+
+def test_dtype_inference_110() -> None:
+    """Check cast attr missing value dtype."""
+    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.transforms.passes.dtype_inference import _handle_cast_dtype
+
+    class AttrVal:
+        def __init__(self, val: object) -> None:
+            self.value = val
+
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    n = IRNode("n0", "Dummy", [], {"dtype": AttrVal(DType.Float32)})
+    _handle_cast_dtype(n, [])

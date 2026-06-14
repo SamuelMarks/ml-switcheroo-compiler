@@ -89,7 +89,7 @@ def ConfigContext(**kwargs: object) -> Iterator[None]:
     """Context manager for temporarily overriding global configuration values.
 
     Args:
-    **kwargs (object): Configuration keys and the values to temporarily set
+        **kwargs (object): Configuration keys and the values to temporarily set
 
     Yields:
     None: Yields control to the enclosed block with the overridden configuration
@@ -136,7 +136,7 @@ def StreamContext(stream_name: str) -> Iterator[None]:
     """Context manager to temporarily switch the current execution stream.
 
     Args:
-    stream_name (str): The name of the stream to execute on
+        stream_name (str): The name of the stream to execute on
 
     Yields:
     None: Yields control to the enclosed block with the specified stream active

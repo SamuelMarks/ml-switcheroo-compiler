@@ -70,6 +70,11 @@ def register_backend(name: BackendName) -> object:
     """
 
     def decorator(cls: type[BaseGenerator]) -> type[BaseGenerator]:
+        """Execute decorator.
+
+        Returns:
+        Any: The result.
+        """
         BackendRegistry.register(name, cls)
         return cls
 

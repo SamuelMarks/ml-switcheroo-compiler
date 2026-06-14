@@ -21,7 +21,7 @@ def register_jvp(op_name: str) -> Callable:
     how to compute the JVP for the given operation name
 
     Args:
-    op_name (str): The unique name of the operation to register
+        op_name (str): The unique name of the operation to register
 
     Returns:
     Callable: A decorator function that registers the decorated JVP rule
@@ -32,6 +32,14 @@ def register_jvp(op_name: str) -> Callable:
     """
 
     def decorator(func: Callable) -> Callable:
+        """Execute decorator.
+
+        Args:
+            func (Any): Argument func.
+
+        Returns:
+        Any: The result.
+        """
         if op_name in _JVP_REGISTRY:
             msg = f"JVP for operation '{op_name}' is already registered."
             raise ValueError(msg)
@@ -45,7 +53,7 @@ def get_jvp(op_name: str) -> Callable:
     """Retrieves the registered Jacobian-Vector Product (JVP) rule for a given operation.
 
     Args:
-    op_name (str): The name of the operation whose JVP rule is being requested
+        op_name (str): The name of the operation whose JVP rule is being requested
 
     Returns:
     Callable: The registered JVP function associated with the operation

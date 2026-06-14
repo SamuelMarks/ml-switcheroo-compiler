@@ -5,7 +5,10 @@ compatibility, including file IO, atomic writes, tensor store driver,
 msgpack engine, barrier sync, and global array sharding.
 """
 
+from dataclasses import dataclass
 
+
+@dataclass(init=False)
 class FileSystemIO:
     """A file system IO handler for standard VFS, GCS, and S3."""
 
@@ -29,6 +32,7 @@ class FileSystemIO:
         """
 
 
+@dataclass(init=False)
 class AtomicWrite:
     """Atomic write handler."""
 
@@ -41,6 +45,7 @@ class AtomicWrite:
         """
 
 
+@dataclass(init=False)
 class TensorStoreDriver:
     """TensorStore driver for chunked IO."""
 
@@ -67,6 +72,7 @@ class TensorStoreDriver:
         """
 
 
+@dataclass(init=False)
 class MsgpackEngine:
     """Msgpack parser and emitter."""
 
@@ -93,6 +99,7 @@ class MsgpackEngine:
         return None
 
 
+@dataclass(init=False)
 class BarrierSync:
     """Multi-host barrier sync."""
 
@@ -105,6 +112,7 @@ class BarrierSync:
         """
 
 
+@dataclass(init=False)
 class GlobalArraySharding:
     """Global array sharding utility."""
 

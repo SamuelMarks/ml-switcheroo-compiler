@@ -18,7 +18,15 @@ class BinaryMathOp(OpDef):
     op_name: str = ""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Execute infer_shape.
+
+        Args:
+            *shapes (Any): Argument *shapes.
+            **kwargs (Any): Argument **kwargs.
+
+        Returns:
+        Any: The result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 
         """Infer the output shape of the operation.

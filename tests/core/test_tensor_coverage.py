@@ -1,10 +1,11 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+from unittest.mock import MagicMock
+
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.config import config
-from unittest.mock import MagicMock
+from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 def test_tensor_eval_coverage() -> None:

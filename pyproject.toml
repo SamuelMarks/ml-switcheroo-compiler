@@ -35,3 +35,7 @@ lint.select = ["E", "F", "D", "ANN", "UP", "B"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.mypy]
+disallow_untyped_defs = true
+ignore_missing_imports = true

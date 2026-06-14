@@ -1,7 +1,7 @@
 """Provides required module functionality."""
 
-from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 
 
 def test_dce_coverage_brute_loop() -> None:

@@ -149,6 +149,14 @@ def vjp(fun: Callable[..., object], *primals: object) -> tuple[object, Callable[
     out_primal = fun(*primals)
 
     def vjp_fn(*cotangents: object) -> object:
+        """Execute vjp_fn.
+
+        Args:
+            *cotangents (Any): Argument *cotangents.
+
+        Returns:
+        Any: The result.
+        """
         # Mock VJP backward function
         return cotangents
 

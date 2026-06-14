@@ -1,10 +1,11 @@
 """Provides required module functionality."""
 
 import pytest
+
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import (
-    register_jvp,
-    get_jvp,
     _JVP_REGISTRY,
+    get_jvp,
+    register_jvp,
 )
 
 
@@ -16,7 +17,6 @@ def test_jvp_registry_coverage_brute() -> None:
     @register_jvp("fake_op")
     def fake_jvp() -> None:
         """Docstring."""
-        pass
 
     assert get_jvp("fake_op") == fake_jvp
 
@@ -25,7 +25,6 @@ def test_jvp_registry_coverage_brute() -> None:
         @register_jvp("fake_op")
         def fake_jvp2() -> None:
             """Docstring."""
-            pass
 
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 

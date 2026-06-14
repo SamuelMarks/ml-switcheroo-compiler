@@ -22,9 +22,9 @@ def reshape_vjp(graph: object, node: object, cotangent: str) -> tuple:
     input tensor
 
     Args:
-    graph (object): The computation graph
-    node (object): The Reshape node
-    cotangent (str): The cotangent variable name
+        graph (object): The computation graph
+        node (object): The Reshape node
+        cotangent (str): The cotangent variable name
 
     Returns:
     tuple: A tuple containing the name of the emitted node representing the
@@ -50,9 +50,9 @@ def reshape_jvp(graph: object, node: object, tangent: str) -> str:
     the target shape
 
     Args:
-    graph (object): The computation graph
-    node (object): The Reshape node
-    tangent (str): The tangent variable name
+        graph (object): The computation graph
+        node (object): The Reshape node
+        tangent (str): The tangent variable name
 
     Returns:
     str: A code string representing the JAX reshape operation
@@ -68,9 +68,9 @@ def transpose_vjp(graph: object, node: object, cotangent: str) -> tuple:
     of the original transpose axes to match the input's original shape
 
     Args:
-    graph (object): The computation graph
-    node (object): The Transpose node
-    cotangent (str): The cotangent variable name
+        graph (object): The computation graph
+        node (object): The Transpose node
+        cotangent (str): The cotangent variable name
 
     Returns:
     tuple: A tuple containing the name of the emitted node representing the
@@ -103,9 +103,9 @@ def transpose_jvp(graph: object, node: object, tangent: str) -> str:
     using the same axes as the original operation
 
     Args:
-    graph (object): The computation graph
-    node (object): The Transpose node
-    tangent (str): The tangent variable name
+        graph (object): The computation graph
+        node (object): The Transpose node
+        tangent (str): The tangent variable name
 
     Returns:
     str: A code string representing the JAX transpose operation
@@ -123,9 +123,9 @@ def broadcast_to_vjp(graph: object, node: object, cotangent: str) -> tuple:
     Currently, this operation is not implemented and will raise an error
 
     Args:
-    graph (object): The computation graph
-    node (object): The BroadcastTo node
-    cotangent (str): The cotangent variable name
+        graph (object): The computation graph
+        node (object): The BroadcastTo node
+        cotangent (str): The cotangent variable name
 
     Returns:
     tuple: This function does not return normally
@@ -145,9 +145,9 @@ def broadcast_to_jvp(graph: object, node: object, tangent: str) -> str:
     to the target shape
 
     Args:
-    graph (object): The computation graph
-    node (object): The BroadcastTo node
-    tangent (str): The tangent variable name
+        graph (object): The computation graph
+        node (object): The BroadcastTo node
+        tangent (str): The tangent variable name
 
     Returns:
     str: A code string representing the JAX broadcast_to operation

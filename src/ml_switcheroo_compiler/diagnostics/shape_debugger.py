@@ -6,8 +6,10 @@ well as export logical graphs to Graphviz DOT and HTML formats for visualization
 
 from typing import Any, Callable
 
-import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_ir import LogicalGraph
+
+from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
 def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
@@ -18,13 +20,14 @@ def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
     of the specified shape
 
     Args:
-    model_func (Callable[..., Any]): The model function to trace
-    input_shape (object): The shape of the dummy input tensor to generate
+        model_func (Callable[..., Any]): The model function to trace
+        input_shape (object): The shape of the dummy input tensor to generate
 
     Returns:
     str: A Markdown table detailing the node names, shapes, and data types
     """
     res = "| Node | Shape | DType |\n|---|---|---|\n"
+    _tracer.start_tracing()
     try:
         # We need to trace or just execute dummy
         # For the test, it expects to see "| input | (2, 2) | float64 |"
@@ -35,17 +38,16 @@ def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
         dummy_input = ops.zeros(input_shape, dtype=DType.Float64)
         res += f"| input | {input_shape} | float64 |\n"
 
-        try:
-            out = model_func(dummy_input)
-            if hasattr(out, "shape"):
-                res += f"| output | {out.shape} | float64 |\n"
-            else:
-                res += "| output | unknown | float64 |\n"
-        except Exception:
-            raise
-    except Exception:
+        out = model_func(dummy_input)
+        if hasattr(out, "shape"):
+            res += f"| output | {out.shape} | float64 |\n"
+        else:
+            res += "| output | unknown | float64 |\n"
+    except RuntimeError:
         # Failing test expects no input line, just header
         res = "| Node | Shape | DType |\n|---|---|---|\n"
+    finally:
+        _tracer.stop_tracing()
 
     return res
 
@@ -57,7 +59,7 @@ def to_graphviz(graph: LogicalGraph) -> str:
     directed graph representation suitable for visualization with Graphviz
 
     Args:
-    graph (LogicalGraph): The logical intermediate representation graph to convert
+        graph (LogicalGraph): The logical intermediate representation graph to convert
 
     Returns:
     str: The Graphviz DOT language representation of the graph
@@ -78,8 +80,8 @@ def to_html(graph: LogicalGraph) -> str:
     intermediate representation graph
 
     Args:
-    graph (LogicalGraph): The logical intermediate representation graph to
-    visualize
+        graph (LogicalGraph): The logical intermediate representation graph to
+        visualize
 
     Returns:
     str: An HTML string containing the graph visualization

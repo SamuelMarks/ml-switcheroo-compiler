@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-
 import uuid
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
@@ -148,9 +147,9 @@ def zeros(
     """Return a tensor filled with the scalar value 0.
 
     Args:
-    shape (Union[int, Sequence[int]]): The shape of the tensor.
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        shape (Union[int, Sequence[int]]): The shape of the tensor.
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -173,9 +172,9 @@ def ones(
     """Return a tensor filled with the scalar value 1.
 
     Args:
-    shape (Union[int, Sequence[int]]): The shape of the tensor.
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        shape (Union[int, Sequence[int]]): The shape of the tensor.
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -199,10 +198,10 @@ def full(
     """Return a tensor filled with `fill_value`.
 
     Args:
-    shape (Union[int, Sequence[int]]): The shape of the tensor.
-    fill_value (Union[float, int]): The value to fill the tensor with.
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        shape (Union[int, Sequence[int]]): The shape of the tensor.
+        fill_value (Union[float, int]): The value to fill the tensor with.
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -230,9 +229,9 @@ def zeros_like(
     """Return a tensor filled with scalar 0, with the same size as `input`.
 
     Args:
-    input (Tensor): The input tensor
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        input (Tensor): The input tensor
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -253,9 +252,9 @@ def ones_like(
     """Return a tensor filled with scalar 1, with the same size as `input`.
 
     Args:
-    input (Tensor): The input tensor
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        input (Tensor): The input tensor
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -277,10 +276,10 @@ def full_like(
     """Return a tensor filled with `fill_value`, with the same size as `input`.
 
     Args:
-    input (Tensor): The input tensor
-    fill_value (Union[float, int]): The value to fill the tensor with.
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        input (Tensor): The input tensor
+        fill_value (Union[float, int]): The value to fill the tensor with.
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -289,7 +288,10 @@ def full_like(
     device = device or input.device
     if config.eager_mode:
         data = get_active_backend().execute_op(
-            "Full_like", input.data, fill_value, dtype=dtype.value
+            "Full_like",
+            input.data,
+            fill_value,
+            dtype=dtype.value,
         )
         return Tensor(data, input.shape, dtype, device)
     return _emit_creation_node(
@@ -310,11 +312,11 @@ def arange(
     """Return a 1-D tensor of size with values from the interval `[start, stop)`.
 
     Args:
-    start (Union[float, int]): Argument start
-    stop (Optional[Union[float, int]]): Argument stop
-    step (Union[float, int]): Argument step
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        start (Union[float, int]): Argument start
+        stop (Optional[Union[float, int]]): Argument stop
+        step (Union[float, int]): Argument step
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -350,11 +352,11 @@ def linspace(
     """Create a 1D tensor evenly spaced from `start` to `stop`.
 
     Args:
-    start (Union[float, int]): Argument start
-    stop (Union[float, int]): Argument stop
-    steps (int): Argument steps
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        start (Union[float, int]): Argument start
+        stop (Union[float, int]): Argument stop
+        steps (int): Argument steps
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -383,10 +385,10 @@ def eye(
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
     Args:
-    n (int): Argument n
-    m (Optional[int]): Argument m
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        n (int): Argument n
+        m (Optional[int]): Argument m
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -410,9 +412,9 @@ def identity(
     """Return the 2-D identity matrix of shape `(n, n)`.
 
     Args:
-    n (int): Argument n
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        n (int): Argument n
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
@@ -424,8 +426,8 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
     Args:
-    input (Tensor): The input tensor
-    diagonal (int): Argument diagonal
+        input (Tensor): The input tensor
+        diagonal (int): Argument diagonal
 
     Returns:
         Tensor: The computed result.
@@ -470,9 +472,9 @@ def empty(
     """Return a tensor filled with uninitialized data.
 
     Args:
-    shape (Union[int, Sequence[int]]): The shape of the tensor.
-    dtype (Optional[DType]): The data type
-    device (Optional[Device]): The device to store the tensor on.
+        shape (Union[int, Sequence[int]]): The shape of the tensor.
+        dtype (Optional[DType]): The data type
+        device (Optional[Device]): The device to store the tensor on.
 
     Returns:
         Tensor: The computed result.
