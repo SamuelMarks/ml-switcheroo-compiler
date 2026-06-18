@@ -1,12 +1,13 @@
 """Frontend reductions ops."""
 
 from __future__ import annotations
+from ml_switcheroo_compiler.ops.configs import WindowConfig
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import dispatch_eager
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -53,52 +54,26 @@ def _emit_reduction_node(
     return Tensor(data=proxy, shape=out_shape, dtype=out_dtype, device=inputs[0].device)
 
 
-@dataclass
-class ReduceWindowConfig:
-    """Reduce window config."""
-
-    window_dimensions: Sequence[int]
-    window_strides: Sequence[int] | None = None
-    padding: Sequence[tuple[int, int]] | None = None
-    base_dilation: Sequence[int] | None = None
-    window_dilation: Sequence[int] | None = None
-
-
-def reduce_window(
-    operand: Tensor,
-    init_value: Tensor | float,
-    computation: str,
-    window_config: ReduceWindowConfig,
+def _reduce_window_eager(
+    operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig
 ) -> Tensor:
-    """Applies a reduction function over a sliding window of the input.
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    Args:
-        operand (Tensor): The input tensor
-        init_value (Tensor | float | int): The initial value for the reduction
-        computation (str): The reduction to apply (e.g. 'max', 'sum')
-        window_config (ReduceWindowConfig): Configuration parameters for the window
+    backend = get_active_backend()
+    init_val_data = init_value.data if isinstance(init_value, Tensor) else init_value
+    data = backend.execute_op(
+        "ReduceWindow",
+        operand.data,
+        init_val_data,
+        computation,
+        config=window_config,
+    )
+    return Tensor(backend.array(data), backend.array(data).shape, operand.dtype, operand.device)
 
-    Returns:
-    Tensor: The reduced tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
-    """
-    if config.eager_mode:
-        msg = "No direct numpy for reduce_window"
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        raise UnimplementedMathError(msg)
-
-    inputs = [operand]
-    # In a full implementation init_value might be a tensor input,
-    # but for simplicty we'll put it in attributes if it's a scalar.
-    if isinstance(init_value, Tensor):
-        inputs.append(init_value)
-        init_val_attr = None
-    else:
-        init_val_attr = init_value
-
+def _build_reduce_window_attributes(
+    init_value: Tensor | float, computation: str, window_config: WindowConfig
+) -> dict:
     attributes = {
         "computation": computation,
         "window_dimensions": window_config.window_dimensions,
@@ -107,20 +82,51 @@ def reduce_window(
         "base_dilation": window_config.base_dilation,
         "window_dilation": window_config.window_dilation,
     }
-    if init_val_attr is not None:
-        attributes["init_value"] = init_val_attr
+    if not isinstance(init_value, Tensor):
+        attributes["init_value"] = init_value
+    return attributes
 
-    # We do a rough shape inference here to satisfy the IR node shape metadata requirement
-    # Real shape inference is handled by the OpDef
+
+def _reduce_window_trace(
+    operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig
+) -> Tensor:
+    inputs = [operand]
+    if isinstance(init_value, Tensor):
+        inputs.append(init_value)
+
+    attributes = _build_reduce_window_attributes(init_value, computation, window_config)
+
     from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindow
 
     rw_op = ReduceWindow()
-
     out_shape = rw_op.infer_shape(operand, init_value, computation, window_config)
 
     return _emit_reduction_node("ReduceWindow", inputs, attributes, out_shape, operand.dtype)
 
 
+def reduce_window(
+    operand: Tensor,
+    init_value: Tensor | float,
+    computation: str,
+    window_config: WindowConfig,
+) -> Tensor:
+    """Applies a reduction function over a sliding window of the input.
+
+    Args:
+        operand (Tensor): The input tensor
+        init_value (Tensor | float | int): The initial value for the reduction
+        computation (str): The reduction to apply (e.g. 'max', 'sum')
+        window_config (WindowConfig): Configuration parameters for the window
+
+    Returns:
+    Tensor: The reduced tensor
+    """
+    if config.eager_mode:
+        return _reduce_window_eager(operand, init_value, computation, window_config)
+    return _reduce_window_trace(operand, init_value, computation, window_config)
+
+
+@dispatch_eager("Psum")
 def psum(x: Tensor, axis_name: str) -> Tensor:
     """Computes an all-reduce sum over the specified mapped axis.
 
@@ -131,18 +137,11 @@ def psum(x: Tensor, axis_name: str) -> Tensor:
     Returns:
     Tensor: The reduced tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        msg = "No direct numpy for psum"
-        raise UnimplementedMathError(msg)
-
     return _emit_reduction_node("Psum", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
+@dispatch_eager("Pmean")
 def pmean(x: Tensor, axis_name: str) -> Tensor:
     """Computes an all-reduce mean over the specified mapped axis.
 
@@ -153,18 +152,11 @@ def pmean(x: Tensor, axis_name: str) -> Tensor:
     Returns:
     Tensor: The reduced tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        msg = "No direct numpy for pmean"
-        raise UnimplementedMathError(msg)
-
     return _emit_reduction_node("Pmean", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
+@dispatch_eager("SegmentSum")
 def segment_sum(
     data: Tensor,
     segment_ids: Tensor,
@@ -180,15 +172,7 @@ def segment_sum(
     Returns:
     Tensor: The segmented sum tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        msg = "No direct numpy for segment_sum"
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        raise UnimplementedMathError(msg)
-
     inputs = [data, segment_ids]
     attributes = {}
     if num_segments is not None:
@@ -200,4 +184,145 @@ def segment_sum(
         attributes,
         (),  # Placeholder shape
         data.dtype,
+    )
+
+
+def ctc_loss(
+    log_probs: Tensor,
+    targets: Tensor,
+    input_lengths: Tensor,
+    target_lengths: Tensor,
+) -> Tensor:
+    """Connectionist Temporal Classification Loss.
+
+    Args:
+        log_probs (Tensor): Log probabilities.
+        targets (Tensor): Targets.
+        input_lengths (Tensor): Input lengths.
+        target_lengths (Tensor): Target lengths.
+
+    Returns:
+        Tensor: The loss.
+    """
+    inputs = [log_probs, targets, input_lengths, target_lengths]
+    return _emit_reduction_node("CTCLoss", inputs, {}, (), log_probs.dtype)
+
+
+def fractional_max_pool2d(
+    operand: Tensor,
+    output_size: tuple[int, int],
+) -> Tensor:
+    """Fractional max pooling 2D.
+
+    Args:
+        operand (Tensor): The input tensor.
+        output_size (tuple[int, int]): The output size.
+
+    Returns:
+        Tensor: The pooled tensor.
+    """
+    out_shape = list(operand.shape)
+    if len(out_shape) >= 2:
+        out_shape[-2] = output_size[0]
+        out_shape[-1] = output_size[1]
+    return _emit_reduction_node(
+        "FractionalMaxPool2D",
+        [operand],
+        {"output_size": output_size},
+        tuple(out_shape),
+        operand.dtype,
+    )
+
+
+def adaptive_avg_pool2d(
+    operand: Tensor,
+    output_size: tuple[int, int],
+) -> Tensor:
+    """Adaptive average pooling 2D.
+
+    Args:
+        operand (Tensor): The input tensor.
+        output_size (tuple[int, int]): The output size.
+
+    Returns:
+        Tensor: The pooled tensor.
+    """
+    out_shape = list(operand.shape)
+    if len(out_shape) >= 2:
+        out_shape[-2] = output_size[0]
+        out_shape[-1] = output_size[1]
+    return _emit_reduction_node(
+        "AdaptiveAvgPool2D",
+        [operand],
+        {"output_size": output_size},
+        tuple(out_shape),
+        operand.dtype,
+    )
+
+
+def adaptive_max_pool2d(
+    operand: Tensor,
+    output_size: tuple[int, int],
+) -> Tensor:
+    """Adaptive max pooling 2D.
+
+    Args:
+        operand (Tensor): The input tensor.
+        output_size (tuple[int, int]): The output size.
+
+    Returns:
+        Tensor: The pooled tensor.
+    """
+    out_shape = list(operand.shape)
+    if len(out_shape) >= 2:
+        out_shape[-2] = output_size[0]
+        out_shape[-1] = output_size[1]
+    return _emit_reduction_node(
+        "AdaptiveMaxPool2D",
+        [operand],
+        {"output_size": output_size},
+        tuple(out_shape),
+        operand.dtype,
+    )
+
+
+def unfold(
+    operand: Tensor,
+    kernel_size: tuple[int, int],
+) -> Tensor:
+    """Unfold (Im2Col) operator.
+
+    Args:
+        operand (Tensor): The input tensor.
+        kernel_size (tuple[int, int]): The kernel size.
+
+    Returns:
+        Tensor: The unfolded tensor.
+    """
+    return _emit_reduction_node(
+        "Unfold", [operand], {"kernel_size": kernel_size}, (), operand.dtype
+    )
+
+
+def fold(
+    operand: Tensor,
+    output_size: tuple[int, int],
+    kernel_size: tuple[int, int],
+) -> Tensor:
+    """Fold (Col2Im) operator.
+
+    Args:
+        operand (Tensor): The input tensor.
+        output_size (tuple[int, int]): The output size.
+        kernel_size (tuple[int, int]): The kernel size.
+
+    Returns:
+        Tensor: The folded tensor.
+    """
+    return _emit_reduction_node(
+        "Fold",
+        [operand],
+        {"output_size": output_size, "kernel_size": kernel_size},
+        (),
+        operand.dtype,
     )

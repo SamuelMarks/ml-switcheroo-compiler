@@ -5,6 +5,7 @@ from ml_switcheroo_compiler.transforms.passes.cse import cse_pass
 from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
+from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
 
 __all__ = [
     "constant_folding_pass",
@@ -12,4 +13,5 @@ __all__ = [
     "dce_pass",
     "lift_state_pass",
     "shape_inference_pass",
+    "inject_spmd_communication_pass",
 ]

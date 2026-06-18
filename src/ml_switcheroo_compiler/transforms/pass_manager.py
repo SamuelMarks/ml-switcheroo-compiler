@@ -118,7 +118,7 @@ class PassManager:
 
 
         Returns:
-            IRGraph: The computed result.
+            IRGraph: The evaluated output resulting from this operation.
         """
         self.validate(graph)
         for ir_pass in self.passes:
@@ -138,7 +138,7 @@ class PassManager:
 
 
         Returns:
-            IRGraph: The computed result.
+            IRGraph: The evaluated output resulting from this operation.
         """
         self.validate(graph)
 

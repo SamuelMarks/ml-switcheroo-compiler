@@ -7,6 +7,9 @@ intermediate representation (IR) graph for compilation
 """
 
 from __future__ import annotations
+from ml_switcheroo_compiler.ops.vmap import vmap
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+
 
 import uuid
 from typing import Any, Callable
@@ -21,88 +24,12 @@ from ml_switcheroo_compiler.ir.core import IRBlock
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
 
-def _trace_function(func: Callable, args: tuple[Tensor, ...], name: str) -> IRBlock:
-    """Traces a Python function's execution into an IRBlock.
+def _trace_true_branch(true_fn: Callable) -> IRBlock:
+    return _trace_function(true_fn, (), "true_branch")
 
-    This helper function temporarily redirects the active tracer to capture the
-    operations
-    performed by the given function when applied to proxy tensor arguments. It
-    constructs
-    input and output logical nodes to form a complete subgraph
 
-    Args:
-        func (Callable): The Python function to trace
-        args (tuple[Tensor, ...]): The concrete or proxy tensor arguments to pass to the
-        function
-        name (str): The name to assign to the traced subgraph/IRBlock
-
-    Returns:
-    IRBlock: The traced intermediate representation block containing the logical
-    nodes
-
-    Raises:
-    TypeError: If the traced function does not return a Tensor or a tuple of
-    Tensors
-    """
-    prev_graph = _tracer.active_graph
-    is_tracing = _tracer.is_tracing
-
-    subgraph = _tracer.start_tracing(name=name)
-
-    # Re-wrap input args as proxy tensors in the subgraph context
-    proxy_args = []
-    input_ids = []
-    for _i, arg in enumerate(args):
-        in_id = str(uuid.uuid4())
-        node = LogicalNode(
-            id=in_id,
-            op_type="Input",
-            inputs=[],
-            shape_metadata=arg.shape,
-        )
-        subgraph.nodes[in_id] = node
-        input_ids.append(in_id)
-        proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
-        proxy_tensor = Tensor(
-            data=proxy,
-            shape=arg.shape,
-            dtype=arg.dtype,
-            device=arg.device,
-        )
-        proxy_args.append(proxy_tensor)
-
-    # Execute the function
-    out = func(*proxy_args)
-
-    # Process outputs
-    if isinstance(out, Tensor):
-        out_ids = [out.data.id]
-    elif isinstance(out, (tuple, list)):
-        out_ids = [o.data.id for o in out]
-    else:
-        msg = "Control flow functions must return a Tensor or a tuple of Tensors."
-        raise TypeError(
-            msg,
-        )
-
-    out_node = LogicalNode(
-        id=str(uuid.uuid4()),
-        op_type="Output",
-        inputs=out_ids,
-        shape_metadata=(),
-    )
-    subgraph.nodes[out_node.id] = out_node
-
-    _tracer.stop_tracing()
-    _tracer.active_graph = prev_graph
-    _tracer.is_tracing = is_tracing
-
-    return IRBlock(
-        id=name,
-        nodes=list(subgraph.nodes.values()),
-        inputs=input_ids,
-        outputs=[out_node.id],
-    )
+def _trace_false_branch(false_fn: Callable) -> IRBlock:
+    return _trace_function(false_fn, (), "false_branch")
 
 
 def cond(
@@ -137,16 +64,9 @@ def cond(
         msg = "Cannot emit Cond node outside of a tracing context."
         raise RuntimeError(msg)
 
-    true_graph = _trace_function(true_fn, (), "true_branch")
-    false_graph = _trace_function(false_fn, (), "false_branch")
+    true_graph = _trace_true_branch(true_fn)
+    false_graph = _trace_false_branch(false_fn)
 
-    # For tracing shapes, execute true_fn once eagerly? No, trace function provides
-    # it
-    # We need the output shapes
-    # Actually in JAX/Switcheroo, output shapes/dtypes must match
-    # We get output nodes from true_graph
-    # We just approximate shape here
-    # In a real compiler, we'd extract it from the graphs
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
@@ -156,13 +76,36 @@ def cond(
             "then_branch": true_graph,
             "else_branch": false_graph,
         },
-        shape_metadata=(),  # Deferred shape resolution
+        shape_metadata=(),
     )
     _tracer.add_node(node)
 
-    # We return a dummy proxy. In full implementation, we'd parse output shapes
     proxy = ProxyTensor(id=out_id, shape=(), dtype="float32")
     return Tensor(data=proxy, shape=(), dtype=DType.Float32, device=pred.device)
+
+
+def _trace_while_cond(cond_fn: Callable, args: tuple[Tensor, ...]) -> IRBlock:
+    return _trace_function(cond_fn, args, "cond")
+
+
+def _trace_while_body(body_fn: Callable, args: tuple[Tensor, ...]) -> IRBlock:
+    return _trace_function(body_fn, args, "body")
+
+
+def _approximate_while_return(init_val: object, out_id: str) -> object:
+    if isinstance(init_val, Tensor):
+        proxy = ProxyTensor(
+            id=out_id,
+            shape=init_val.shape,
+            dtype=init_val.dtype.value,
+        )
+        return Tensor(
+            data=proxy,
+            shape=init_val.shape,
+            dtype=init_val.dtype,
+            device=init_val.device,
+        )
+    return init_val
 
 
 def while_loop(
@@ -201,11 +144,10 @@ def while_loop(
         msg = "Cannot emit While node outside of a tracing context."
         raise RuntimeError(msg)
 
-    # Wrap state in a tuple for tracing
-    args = (init_val,) if isinstance(init_val, Tensor) else tuple(init_val)
+    args = (init_val,) if isinstance(init_val, Tensor) else tuple(init_val)  # type: ignore
 
-    cond_graph = _trace_function(cond_fn, args, "cond")
-    body_graph = _trace_function(body_fn, args, "body")
+    cond_graph = _trace_while_cond(cond_fn, args)
+    body_graph = _trace_while_body(body_fn, args)
 
     out_id = str(uuid.uuid4())
     node = LogicalNode(
@@ -220,21 +162,7 @@ def while_loop(
     )
     _tracer.add_node(node)
 
-    # Approximate return type
-    if isinstance(init_val, Tensor):
-        proxy = ProxyTensor(
-            id=out_id,
-            shape=init_val.shape,
-            dtype=init_val.dtype.value,
-        )
-        return Tensor(
-            data=proxy,
-            shape=init_val.shape,
-            dtype=init_val.dtype,
-            device=init_val.device,
-        )
-    # Tuple of tensors
-    return init_val  # Simplified
+    return _approximate_while_return(init_val, out_id)
 
 
 def scan(
@@ -270,7 +198,7 @@ def scan(
     if config.eager_mode:
         return _scan_eager(f, init, xs, length)
 
-    return _scan_tracing(init, xs)
+    return _scan_tracing(f, init, xs)
 
 
 def _scan_eager(f: Callable, init: object, xs: object, length: int | None) -> tuple[object, object]:
@@ -330,10 +258,11 @@ def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
         )
 
 
-def _scan_tracing(init: object, xs: object) -> tuple[object, object]:
+def _scan_tracing(f: Callable, init: object, xs: object) -> tuple[object, object]:
     """Execute _scan_tracing.
 
     Args:
+        f (Callable): The function to scan.
         init (Any): Argument init.
         xs (Any): Argument xs.
 
@@ -344,12 +273,31 @@ def _scan_tracing(init: object, xs: object) -> tuple[object, object]:
         msg = "Cannot emit Scan node outside of a tracing context."
         raise RuntimeError(msg)
 
-    # Approximate tracing
+    # Need a dummy x for tracing `f`
+    x_shape = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
+    proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=xs.dtype.value)
+    dummy_x = Tensor(data=proxy_x, shape=x_shape, dtype=xs.dtype, device=xs.device)
+
+    body_graph = _trace_function(f, (init, dummy_x), "scan_body")
+
+    def _flatten_inputs(obj: object) -> list[str]:
+        if isinstance(obj, Tensor):
+            return [obj.data.id]
+        elif isinstance(obj, (list, tuple)):
+            res = []
+            for item in obj:
+                res.extend(_flatten_inputs(item))
+            return res
+        return []
+
+    init_ids = _flatten_inputs(init)
+
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Scan",
-        inputs=[init.data.id, xs.data.id] if isinstance(init, Tensor) else [xs.data.id],
+        inputs=init_ids + [xs.data.id],
+        attributes={"body": body_graph},
         shape_metadata=(),
     )
     _tracer.add_node(node)
@@ -362,93 +310,48 @@ def _scan_tracing(init: object, xs: object) -> tuple[object, object]:
         dtype=xs.dtype,
         device=xs.device,
     )
+
+    # We must construct a structure matching `init` for the returned carry
+    # However, currently it just returns `init` as the carry, which might not correctly propagate traced IDs
+    # But for now, returning `init` is what the original code did.
     return init, out_tensor
 
 
-def vmap(
-    func: Callable,
-    in_axes: int | tuple[int, ...] = 0,
-    out_axes: int | tuple[int, ...] = 0,
-) -> Callable:
-    """Creates a vectorized version of a function mapped over specified axes.
+def _create_pmap_dummy_args(args: tuple[object, ...]) -> list[object]:
+    dummy_args = []
+    for a in args:
+        if isinstance(a, Tensor):
+            new_shape = a.shape[1:] if len(a.shape) > 0 else ()
+            proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
+            dummy_args.append(Tensor(data=proxy, shape=new_shape, dtype=a.dtype, device=a.device))
+        else:
+            dummy_args.append(a)
+    return dummy_args
 
-    In eager mode, the returned function applies the original function sequentially
-    over the batch dimension using a loop. In tracing mode, it records a 'Vmap'
-    logical node in the IR
 
-    Args:
-        func (Callable): The function to vectorize
-        in_axes (int | tuple[int, ...]): Specifies which axes of the inputs to map over
-        Defaults to 0
-        out_axes (int | tuple[int, ...]): Specifies where the mapped axis should appear
-        in the outputs. Defaults to 0
+def _emit_pmap_node(
+    func: Callable, args: tuple[object, ...], dummy_args: list[object], axis_name: str | None
+) -> object:
+    body_graph = _trace_function(func, tuple(dummy_args), "pmap_body")  # type: ignore
 
-    Returns:
-    Callable: A vectorized version of the input function
-    """
+    out_id = str(uuid.uuid4())
+    node = LogicalNode(
+        id=out_id,
+        op_type="Pmap",
+        inputs=[a.data.id for a in args if isinstance(a, Tensor)],  # type: ignore
+        attributes={"axis_name": axis_name, "body": body_graph},
+        shape_metadata=(),
+    )
+    _tracer.add_node(node)
 
-    def wrapped(*args: object) -> object:
-        """Wrapped.
-
-        Args:
-            *args (object): Additional keyword arguments.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        if config.eager_mode:
-            # Eager vmap uses a Python loop over the batch dimension
-            # Simplified implementation for single tensor
-            arg = args[0]
-            batch_size = (
-                (arg.shape[in_axes] if arg.shape else 1)
-                if isinstance(in_axes, int)
-                else (arg.shape[in_axes[0]] if arg.shape else 1)
-            )
-            outs = []
-            for i in range(batch_size):
-                axes = in_axes if isinstance(in_axes, int) else in_axes[0]
-                sliced_data = get_active_backend().execute_op("Take", arg.data, i, axis=axes)
-                sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != axes)
-                sliced_arg = Tensor(
-                    sliced_data,
-                    sliced_shape,
-                    arg.dtype,
-                    arg.device,
-                )
-                outs.append(func(sliced_arg).data)
-
-            out_data = get_active_backend().execute_op(
-                "Stack",
-                outs,
-                axis=out_axes if isinstance(out_axes, int) else out_axes[0],
-            )
-            out_shape = out_data.shape
-            return Tensor(out_data, out_shape, arg.dtype, arg.device)
-        if not _tracer.is_tracing:
-            msg = "Cannot emit Vmap outside of a tracing context."
-            raise RuntimeError(msg)
-
-        out_id = str(uuid.uuid4())
-        node = LogicalNode(
-            id=out_id,
-            op_type="Vmap",
-            inputs=[a.data.id for a in args if isinstance(a, Tensor)],
-            attributes={"in_axes": in_axes, "out_axes": out_axes},
-            shape_metadata=(),
-        )
-        _tracer.add_node(node)
-        # Dummy return
-        arg = args[0]
-        proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
-        return Tensor(
-            data=proxy,
-            shape=arg.shape,
-            dtype=arg.dtype,
-            device=arg.device,
-        )
-
-    return wrapped
+    arg = args[0]
+    proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)  # type: ignore
+    return Tensor(
+        data=proxy,
+        shape=arg.shape,  # type: ignore
+        dtype=arg.dtype,  # type: ignore
+        device=arg.device,  # type: ignore
+    )
 
 
 def pmap(func: Callable, axis_name: str | None = None) -> Callable:
@@ -476,30 +379,13 @@ def pmap(func: Callable, axis_name: str | None = None) -> Callable:
             The computed shape or evaluation result.
         """
         if config.eager_mode:
-            # In eager mode, pmap usually falls back to vmap or a loop
             return vmap(func)(*args)
         if not _tracer.is_tracing:
             msg = "Cannot emit Pmap outside of a tracing context."
             raise RuntimeError(msg)
 
-        out_id = str(uuid.uuid4())
-        node = LogicalNode(
-            id=out_id,
-            op_type="Pmap",
-            inputs=[a.data.id for a in args if isinstance(a, Tensor)],
-            attributes={"axis_name": axis_name},
-            shape_metadata=(),
-        )
-        _tracer.add_node(node)
-        # Dummy return
-        arg = args[0]
-        proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
-        return Tensor(
-            data=proxy,
-            shape=arg.shape,
-            dtype=arg.dtype,
-            device=arg.device,
-        )
+        dummy_args = _create_pmap_dummy_args(args)
+        return _emit_pmap_node(func, args, dummy_args, axis_name)
 
     return wrapped
 
@@ -508,10 +394,10 @@ def stop_gradient(x: object) -> object:
     """Stops the flow of gradients during reverse-mode differentiation.
 
     Args:
-        x (object): The x.
+        x (object): The input x tensor.
 
     Returns:
-        object: The computed result.
+        object: The evaluated output resulting from this operation.
     """
     import uuid
 

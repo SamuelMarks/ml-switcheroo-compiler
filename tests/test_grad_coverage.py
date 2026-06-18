@@ -145,6 +145,7 @@ def test_grad_frontend_mocks() -> None:
         jit,
         jvp,
         value_and_grad,
+        value_and_grad_wrt_vars,
         vjp,
     )
     from ml_switcheroo_compiler.grad import (
@@ -163,6 +164,11 @@ def test_grad_frontend_mocks() -> None:
     val, g = value_and_grad(my_fun)(5)
     assert val == 10
     assert g == 10
+
+    # test value_and_grad_wrt_vars
+    val_v, g_v = value_and_grad_wrt_vars(my_fun)(5)
+    assert val_v == 10
+    assert g_v == {}
 
     # test jit
     assert jit(my_fun)(5) == 10
@@ -192,3 +198,42 @@ def test_grad_frontend_mocks() -> None:
 
     # test backward
     assert backward(None) is None
+
+
+def test_custom_vjp_lazy() -> None:
+    """Test custom vjp lazy."""
+    from ml_switcheroo_compiler.grad import custom_vjp
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+
+    @custom_vjp
+    def f(x: object) -> object:
+        """F."""
+        return x * 2  # type: ignore[operator]
+
+    def fwd(x: object) -> object:
+        """Fwd."""
+        return f(x), x
+
+    def bwd(res: object, g: object) -> object:
+        """Bwd."""
+        return (res * g,)  # type: ignore[operator]
+
+    f.defvjp(fwd, bwd)
+
+    config.eager_mode = False
+    _tracer.start_tracing()
+
+    from unittest.mock import MagicMock
+
+    x = Tensor(MagicMock(id="inp_x"), (2,), DType.Float32, Device("cpu"))
+    f(x)
+
+    assert _tracer.active_graph is not None
+    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "CustomVJP"
+
+    _tracer.stop_tracing()
+    config.eager_mode = True

@@ -4,6 +4,7 @@ from ml_switcheroo_compiler.flax import (
     BatchNorm,
     BatchStat,
     Conv,
+    ConvConfig,
     ConvTranspose,
     Dense,
     Dict,
@@ -82,7 +83,7 @@ def test_linear_layers() -> None:
 
 def test_conv_layers() -> None:
     """Test convolutional layers."""
-    c = Conv(in_features=3, out_features=16, kernel_size=(3, 3))
+    c = Conv(ConvConfig(in_features=3, out_features=16, kernel_size=(3, 3)))
     assert c.in_features == 3
     assert c.kernel_size == (3, 3)
 

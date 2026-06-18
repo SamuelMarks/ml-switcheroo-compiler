@@ -150,3 +150,40 @@ def test_state_ops() -> None:
 
     with pytest.raises(CompilationError):
         a.eager_eval(1)
+
+
+def test_keras_batch_normalization_state_lifting() -> None:
+    """Validate that state lifting supports Keras moving statistics."""
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
+
+    graph = IRGraph()
+    # Initial read of moving mean
+    graph.nodes["read_mean"] = IRNode(
+        "read_mean", "ReadVariable", attributes={"variable_name": "moving_mean"}
+    )
+    # Some computation
+    graph.nodes["new_mean"] = IRNode("new_mean", "Add", inputs=["read_mean"])
+    # Assignment back to moving mean
+    graph.nodes["assign_mean"] = IRNode(
+        "assign_mean",
+        "AssignVariable",
+        inputs=["new_mean"],
+        attributes={"variable_name": "moving_mean"},
+    )
+
+    # Another output representing standard output
+    graph.nodes["output"] = IRNode("output", "Identity", inputs=["new_mean"])
+    graph.outputs = ["output"]
+
+    modified = state_lifting_pass(graph)
+
+    assert modified
+    # ReadVariable should become an Input node
+    assert graph.nodes["read_mean"].op_type == "Input"
+    assert graph.nodes["read_mean"].attributes["name"] == "moving_mean"
+
+    # AssignVariable should become an Output node
+    assert graph.nodes["assign_mean"].op_type == "Output"
+    assert graph.nodes["assign_mean"].attributes["name"] == "moving_mean_out"
+    assert "assign_mean" in graph.outputs

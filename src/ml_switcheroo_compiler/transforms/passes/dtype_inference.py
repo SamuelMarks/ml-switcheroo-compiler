@@ -11,7 +11,7 @@ def _infer_constant_dtype(node: object, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a Constant node.
 
     Args:
-        node (object): The node.
+        node (object): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -43,7 +43,7 @@ def _infer_input_dtype(node: object, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Input node.
 
     Args:
-        node (object): The node.
+        node (object): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -57,7 +57,7 @@ def _infer_output_dtype(node: object, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Output node.
 
     Args:
-        node (object): The node.
+        node (object): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -148,7 +148,7 @@ def _infer_op_dtype(node: object, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a generic Op node.
 
     Args:
-        node (object): The node.
+        node (object): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -179,10 +179,10 @@ def dtype_inference_pass(graph: IRGraph) -> bool:
     """In-place dtype inference.
 
     Args:
-        graph (IRGraph): The graph.
+        graph (IRGraph): The graph parameter for the operation.
 
     Returns:
-        bool: The computed result.
+        bool: A boolean indicating the result of the check.
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)

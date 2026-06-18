@@ -5,7 +5,6 @@ This module registers Vector-Jacobian Products (VJPs) and Jacobian-Vector Produc
 These rules are used to propagate gradients through the computation graph
 """
 
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -71,8 +70,6 @@ def matmul_jvp(tangent_a: object, tangent_b: object, a: object, b: object, **kwa
 def dot_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for a dot product operation.
 
-    Currently, this operation is not implemented and will raise an error
-
     Args:
         graph (object): The computation graph containing the nodes
         node (object): The dot product IR node being differentiated
@@ -80,13 +77,24 @@ def dot_vjp(graph: object, node: object, cotangent: str) -> tuple:
         variable
 
     Returns:
-    tuple: This function does not return normally as it raises an error
-
-    Raises:
-    UnimplementedMathError: Always raised since VJP for Dot is not implemented
+    tuple: A tuple containing the identifiers of the adjoint nodes
     """
-    msg = "VJP not implemented for Dot"
-    raise UnimplementedMathError(msg)
+    a, b = node.inputs
+    adj_a = emit_ir_node(
+        graph,
+        "Dot",
+        [cotangent, b],
+        graph.nodes[a].shape_metadata,
+        attributes={"transpose_b": True},
+    )
+    adj_b = emit_ir_node(
+        graph,
+        "Dot",
+        [a, cotangent],
+        graph.nodes[b].shape_metadata,
+        attributes={"transpose_a": True},
+    )
+    return (adj_a, adj_b)
 
 
 @register_jvp("Dot")

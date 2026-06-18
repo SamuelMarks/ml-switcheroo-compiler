@@ -1,16 +1,68 @@
+# pylint: disable=duplicate-code
+
 """Shape manipulation operations package."""
 
-from ml_switcheroo_compiler.ops.shape.basic import (
+from ml_switcheroo_compiler.ops.shape.reshape import (
     BroadcastInDim,
     BroadcastTo,
-    DynamicSlice,
-    DynamicUpdateSlice,
+    Expand,
+    Flatten,
+    Meshgrid,
+    Moveaxis,
+    Permute,
+    Repeat,
     Reshape,
     Resize,
-    Sort,
-    TopK,
+    Roll,
+    Squeeze,
+    Swapaxes,
+    Tile,
     Transpose,
+    Tril,
+    Triu,
 )
+from ml_switcheroo_compiler.ops.shape.concat import (
+    ColumnStack,
+    Concatenate,
+    Dsplit,
+    Dstack,
+    Hsplit,
+    Hstack,
+    RowStack,
+    Split,
+    Stack,
+    Vsplit,
+    Vstack,
+)
+from ml_switcheroo_compiler.ops.shape.slicing import (
+    Slice,
+    StridedSlice,
+)
+from ml_switcheroo_compiler.ops.shape.dynamic_slicing import (
+    DynamicSlice,
+    DynamicUpdateSlice,
+)
+from ml_switcheroo_compiler.ops.shape.indexing_advanced import (
+    ArgSort,
+    Assign,
+    AssignAdd,
+    AssignSub,
+    Gather,
+    GatherNd,
+    Scatter,
+    ScatterAdd,
+    ScatterNd,
+    SearchSorted,
+    Select,
+    Sort,
+    Take,
+    TakeAlongAxis,
+    TensorScatterUpdate,
+    TopK,
+    Vdot,
+    Where,
+)
+
 
 from .frontend import (
     array_split as array_split,
@@ -89,6 +141,10 @@ from .frontend import (
 )
 from .frontend import (
     scatter_nd as scatter_nd,
+    tensor_scatter_update as tensor_scatter_update,
+    tensor_scatter_add as tensor_scatter_add,
+    tensor_scatter_max as tensor_scatter_max,
+    tensor_scatter_min as tensor_scatter_min,
 )
 from .frontend import (
     searchsorted as searchsorted,
@@ -101,6 +157,7 @@ from .frontend import (
 )
 from .frontend import (
     sort as sort,
+    argsort as argsort,
 )
 from .frontend import (
     split as split,
@@ -116,6 +173,7 @@ from .frontend import (
 )
 from .frontend import (
     swapaxes as swapaxes,
+    reverse as reverse,
 )
 from .frontend import (
     take as take,
@@ -165,6 +223,7 @@ __all__ = [
     "Reshape",
     "Resize",
     "Sort",
+    "ArgSort",
     "TopK",
     "Transpose",
     "array_split",
@@ -192,9 +251,16 @@ __all__ = [
     "scatter",
     "scatter_add",
     "scatter_nd",
+    "tensor_scatter_update",
+    "tensor_scatter_add",
+    "tensor_scatter_max",
+    "tensor_scatter_min",
+    "TensorScatterMax",
+    "TensorScatterMin",
     "select",
     "slice",
     "sort",
+    "argsort",
     "split",
     "squeeze",
     "stack",
@@ -213,4 +279,53 @@ __all__ = [
     "vsplit",
     "vstack",
     "where",
+    "Flatten",
+    "Squeeze",
+    "Where",
+    "Swapaxes",
+    "Repeat",
+    "Permute",
+    "Moveaxis",
+    "Roll",
+    "Concatenate",
+    "Stack",
+    "Split",
+    "Hsplit",
+    "Vsplit",
+    "Dsplit",
+    "Hstack",
+    "Vstack",
+    "Dstack",
+    "ColumnStack",
+    "RowStack",
+    "Tile",
+    "Expand",
+    "Gather",
+    "Take",
+    "TakeAlongAxis",
+    "GatherNd",
+    "Scatter",
+    "ScatterNd",
+    "TensorScatterUpdate",
+    "tensor_scatter_update",
+    "TensorScatterUpdate",
+    "TensorScatterAdd",
+    "tensor_scatter_add",
+    "tensor_scatter_max",
+    "tensor_scatter_min",
+    "TensorScatterMax",
+    "TensorScatterMin",
+    "ScatterAdd",
+    "Slice",
+    "SearchSorted",
+    "StridedSlice",
+    "Tril",
+    "Triu",
+    "Assign",
+    "Meshgrid",
+    "AssignAdd",
+    "AssignSub",
+    "Select",
+    "Vdot",
 ]
+# pylint: disable=duplicate-code

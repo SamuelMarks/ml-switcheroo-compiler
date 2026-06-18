@@ -31,7 +31,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Add")(self, other)
 
@@ -42,7 +42,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Add")(other, self)
 
@@ -53,7 +53,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Subtract")(self, other)
 
@@ -64,7 +64,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Subtract")(other, self)
 
@@ -75,7 +75,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Multiply")(self, other)
 
@@ -86,7 +86,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Multiply")(other, self)
 
@@ -97,7 +97,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("TrueDivide")(self, other)
 
@@ -108,7 +108,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("TrueDivide")(other, self)
 
@@ -119,7 +119,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Power")(self, other)
 
@@ -130,7 +130,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("FloorDivide")(self, other)
 
@@ -141,7 +141,7 @@ class TensorArithmeticMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Mod")(self, other)
 
@@ -156,7 +156,7 @@ class TensorBitwiseMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("BitwiseAnd")(self, other)
 
@@ -167,7 +167,7 @@ class TensorBitwiseMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("BitwiseOr")(self, other)
 
@@ -178,7 +178,7 @@ class TensorBitwiseMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("BitwiseXor")(self, other)
 
@@ -189,7 +189,7 @@ class TensorBitwiseMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("LeftShift")(self, other)
 
@@ -200,7 +200,7 @@ class TensorBitwiseMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("RightShift")(self, other)
 
@@ -208,7 +208,7 @@ class TensorBitwiseMixin:
         """Neg.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Negative")(self)
 
@@ -216,7 +216,7 @@ class TensorBitwiseMixin:
         """Pos.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Positive")(self)
 
@@ -224,7 +224,7 @@ class TensorBitwiseMixin:
         """Abs.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Abs")(self)
 
@@ -232,7 +232,7 @@ class TensorBitwiseMixin:
         """Invert.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("BitwiseNot")(self)
 
@@ -247,7 +247,7 @@ class TensorLogicalMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Less")(self, other)
 
@@ -258,7 +258,7 @@ class TensorLogicalMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Greater")(self, other)
 
@@ -269,7 +269,7 @@ class TensorLogicalMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("LessEqual")(self, other)
 
@@ -280,7 +280,7 @@ class TensorLogicalMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("GreaterEqual")(self, other)
 
@@ -299,7 +299,7 @@ class TensorLogicalMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("Equal")(self, other)
 
@@ -310,6 +310,6 @@ class TensorLogicalMixin:
             other (object): The other to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         return self._get_op("NotEqual")(self, other)

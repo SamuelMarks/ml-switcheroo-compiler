@@ -16,6 +16,37 @@ class OpDef(ABC):
 
     op_type: str = "Unknown"
 
+    def _resolve_dtype(self, res_data: object, first_tensor: object) -> object:
+        """Resolve the dtype for the eager result.
+
+        Args:
+            res_data (object): The result data.
+            first_tensor (object): The first tensor argument if any.
+
+        Returns:
+            object: The resolved DType.
+        """
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        if hasattr(res_data, "dtype"):
+            dtype_str = str(res_data.dtype)
+            if "dtype" in dtype_str:
+                import re
+
+                m = re.search(r"dtype\('(.*?)'\)", dtype_str)
+                if m:
+                    dtype_str = m.group(1)
+            if dtype_str.startswith("dtype"):
+                dtype_str = "float32"
+            dtype_str = dtype_str.split(".")[-1]
+            try:
+                return DType(dtype_str)
+            except ValueError:
+                return DType.Float32
+        elif first_tensor is not None:
+            return first_tensor.dtype
+        return DType.Float32
+
     def _evaluate_eagerly(self, *args: object, **kwargs: object) -> object:
         """Evaluate the operation eagerly.
 
@@ -36,19 +67,24 @@ class OpDef(ABC):
         first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
         device = first_tensor.device if first_tensor is not None else None
 
-        if hasattr(res_data, "dtype"):
-            from ml_switcheroo_compiler.core.dtype import DType
-
-            dtype = DType(str(res_data.dtype))
-        elif first_tensor is not None:
-            dtype = first_tensor.dtype
-        else:
-            from ml_switcheroo_compiler.core.dtype import DType
-
-            dtype = DType.Float32
-
+        dtype = self._resolve_dtype(res_data, first_tensor)
         shape = res_data.shape if hasattr(res_data, "shape") else ()
         return Tensor(data=res_data, shape=shape, dtype=dtype, device=device)
+
+    def _create_constant_node(self, val: object, shape: tuple) -> str:
+        import uuid
+        from ml_switcheroo_ir import LogicalNode
+        from ml_switcheroo_compiler.tracing import _tracer
+
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
+            id=out_id,
+            op_type="Constant",
+            attributes={"value": val},
+            shape_metadata=shape,
+        )
+        _tracer.add_node(node)
+        return out_id
 
     def _extract_proxy_inputs(self, args: tuple[Any, ...]) -> tuple[list[str], list[Any], Any]:
         """Extract proxy input IDs and shapes from arguments.
@@ -59,10 +95,6 @@ class OpDef(ABC):
         Returns:
             tuple[list[str], list[Any], Any]: Input IDs, shapes, and the first tensor found.
         """
-        import uuid
-
-        from ml_switcheroo_ir import LogicalNode
-
         from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.tracing import _tracer
@@ -79,34 +111,61 @@ class OpDef(ABC):
                 if hasattr(a.data, "id"):
                     input_ids.append(a.data.id)
                 else:
-                    out_id = str(uuid.uuid4())
-                    val = getattr(a.data, "tolist", lambda a=a: a.data)()
-                    node = LogicalNode(
-                        id=out_id,
-                        op_type="Constant",
-                        attributes={"value": val},
-                        shape_metadata=a.shape,
-                    )
-                    _tracer.add_node(node)
-                    input_ids.append(out_id)
+                    data_id = id(a.data)
+                    if hasattr(_tracer, "constant_cache") and data_id in _tracer.constant_cache:
+                        input_ids.append(_tracer.constant_cache[data_id])
+                    else:
+                        val = getattr(a.data, "tolist", lambda a=a: a.data)()
+                        out_id = self._create_constant_node(val, a.shape)
+                        if hasattr(_tracer, "constant_cache"):
+                            _tracer.constant_cache[data_id] = out_id
+                        input_ids.append(out_id)
                 shapes.append(a.shape)
             elif hasattr(a, "id"):
                 input_ids.append(a.id)
                 shapes.append(a.shape)
             else:
                 arr = backend.array(a)
-                out_id = str(uuid.uuid4())
-                node = LogicalNode(
-                    id=out_id,
-                    op_type="Constant",
-                    attributes={"value": getattr(arr, "tolist", lambda a=arr: a)()},
-                    shape_metadata=getattr(arr, "shape", ()),
-                )
-                _tracer.add_node(node)
+                val = getattr(arr, "tolist", lambda a=arr: a)()
+                shape = getattr(arr, "shape", ())
+                out_id = self._create_constant_node(val, shape)
                 input_ids.append(out_id)
-                shapes.append(getattr(arr, "shape", ()))
+                shapes.append(shape)
 
         return input_ids, shapes, first_tensor
+
+    def _resolve_output_dtype_and_device(
+        self, first_tensor: object, kwargs: dict
+    ) -> tuple[object, object]:
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        out_dtype = None
+        if "dtype" in kwargs:
+            out_dtype = kwargs["dtype"]
+        elif first_tensor is not None:
+            out_dtype = first_tensor.dtype
+        else:
+            out_dtype = DType.Float32
+        device = first_tensor.device if first_tensor is not None else None
+        return out_dtype, device
+
+    def _create_tracing_logical_node(
+        self, input_ids: list[str], kwargs: dict, out_shape: tuple
+    ) -> str:
+        import uuid
+        from ml_switcheroo_ir import LogicalNode
+        from ml_switcheroo_compiler.tracing import _tracer
+
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
+            id=out_id,
+            op_type=self.op_type,
+            inputs=input_ids,
+            attributes=kwargs,
+            shape_metadata=out_shape,
+        )
+        _tracer.add_node(node)
+        return out_id
 
     def _emit_tracing_node(self, *args: object, **kwargs: object) -> object:
         """Emit a logical node for tracing.
@@ -118,38 +177,16 @@ class OpDef(ABC):
         Returns:
             object: The resulting proxy tensor.
         """
-        import uuid
-
-        from ml_switcheroo_ir import LogicalNode
-
-        from ml_switcheroo_compiler.core.dtype import DType
         from ml_switcheroo_compiler.core.tensor import Tensor
-        from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
+        from ml_switcheroo_compiler.tracing import ProxyTensor
 
         input_ids, shapes, first_tensor = self._extract_proxy_inputs(args)
-
         out_shape = self.infer_shape(*shapes, **kwargs)
+        out_dtype, device = self._resolve_output_dtype_and_device(first_tensor, kwargs)
 
-        out_dtype = None
-        if "dtype" in kwargs:
-            out_dtype = kwargs["dtype"]
-        elif first_tensor is not None:
-            out_dtype = first_tensor.dtype
-        else:
-            out_dtype = DType.Float32
-
-        out_id = str(uuid.uuid4())
-        node = LogicalNode(
-            id=out_id,
-            op_type=self.op_type,
-            inputs=input_ids,
-            attributes=kwargs,
-            shape_metadata=out_shape,
-        )
-        _tracer.add_node(node)
+        out_id = self._create_tracing_logical_node(input_ids, kwargs, out_shape)
 
         proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
-        device = first_tensor.device if first_tensor is not None else None
         return Tensor(data=proxy, shape=out_shape, dtype=out_dtype, device=device)
 
     def __call__(self, *args: object, **kwargs: object) -> object:
@@ -226,7 +263,7 @@ def register_op(name: str) -> Callable[[type[T]], type[T]]:
         Returns:
             type[T]: The resulting output.
         """
-        if name in _OP_REGISTRY:
+        if name in _OP_REGISTRY and _OP_REGISTRY[name].__name__ != cls.__name__:
             msg = f"Operation '{name}' is already registered."
             raise ValueError(msg)
         cls.op_type = name

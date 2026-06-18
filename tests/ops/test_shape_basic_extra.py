@@ -1,6 +1,6 @@
 """Module docstring."""
 
-from ml_switcheroo_compiler.ops.shape.basic import TopK
+from ml_switcheroo_compiler.ops.shape import TopK
 
 
 def test_topk_infer_shape_k_forms() -> None:

@@ -7,7 +7,6 @@ Sine, Cosine, Exponential, and Natural Logarithm, allowing backpropagation and f
 mode differentiation through the computation graph
 """
 
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -42,12 +41,10 @@ def sin_jvp(graph: object, node: object, tangent: str) -> str:
 
     Returns:
     str: The identifier of the computed JVP node
-
-    Raises:
-    UnimplementedMathError: Always raised as JVP is not implemented for Sin
     """
-    msg = "JVP not implemented for Sin"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    cos_x = emit_ir_node(graph, "Cos", [x], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, cos_x], graph.nodes[x].shape_metadata)
 
 
 @register_vjp("Cos")
@@ -80,12 +77,11 @@ def cos_jvp(graph: object, node: object, tangent: str) -> str:
 
     Returns:
     str: The identifier of the computed JVP node
-
-    Raises:
-    UnimplementedMathError: Always raised as JVP is not implemented for Cos
     """
-    msg = "JVP not implemented for Cos"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    sin_x = emit_ir_node(graph, "Sin", [x], graph.nodes[x].shape_metadata)
+    neg_sin = emit_ir_node(graph, "Negative", [sin_x], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, neg_sin], graph.nodes[x].shape_metadata)
 
 
 @register_vjp("Exp")
@@ -122,12 +118,10 @@ def exp_jvp(graph: object, node: object, tangent: str) -> str:
 
     Returns:
     str: The identifier of the computed JVP node
-
-    Raises:
-    UnimplementedMathError: Always raised as JVP is not implemented for Exp
     """
-    msg = "JVP not implemented for Exp"
-    raise UnimplementedMathError(msg)
+    return emit_ir_node(
+        graph, "Multiply", [tangent, node.id], graph.nodes[node.inputs[0]].shape_metadata
+    )
 
 
 @register_vjp("Log")
@@ -159,9 +153,7 @@ def log_jvp(graph: object, node: object, tangent: str) -> str:
 
     Returns:
     str: The identifier of the computed JVP node
-
-    Raises:
-    UnimplementedMathError: Always raised as JVP is not implemented for Log
     """
-    msg = "JVP not implemented for Log"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    recip = emit_ir_node(graph, "Reciprocal", [x], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, recip], graph.nodes[x].shape_metadata)

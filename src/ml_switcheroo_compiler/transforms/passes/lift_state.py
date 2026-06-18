@@ -1,9 +1,9 @@
 """Lift State pass."""
 
 from typing import Any
+from collections.abc import Iterable
 
-from ml_switcheroo_compiler.ir.core import IRGraph
-from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def flatten_state_dict(state_dict: dict[str, Any], prefix: str = "") -> dict[str, Any]:
@@ -47,6 +47,35 @@ def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:
     return nested
 
 
+def _get_nodes(block: object) -> Iterable[IRNode]:
+    nodes = getattr(block, "nodes", [])
+    if isinstance(nodes, dict):
+        return nodes.values()
+    return nodes
+
+
+def _lift_node(node: IRNode, block: object) -> bool:
+    if node.op_type == "ReadVariable":
+        node.op_type = "Input"
+        return True
+    if node.op_type == "AssignVariable":
+        node.op_type = "Output"
+        if hasattr(block, "outputs") and node.id not in block.outputs:
+            block.outputs.append(node.id)
+        return True
+    return False
+
+
+def _lift_block_ir(block: object) -> bool:
+    mod = False
+    for node in _get_nodes(block):
+        mod = _lift_node(node, block) or mod
+        for attr_val in node.attributes.values():
+            if hasattr(attr_val, "nodes"):
+                mod = _lift_block_ir(attr_val) or mod
+    return mod
+
+
 def lift_state_pass(graph: IRGraph) -> bool:
     """In-place pass to lift implicit state into functional I/O.
 
@@ -61,31 +90,4 @@ def lift_state_pass(graph: IRGraph) -> bool:
     Args:
         graph (IRGraph): Argument graph
     """
-    modified = False
-
-    # Very basic placeholder logic for lifting state:
-    # Look for nodes like "ReadVariable", convert them to "Input"
-    # Look for "AssignVariable", convert them to "Output" and wire them up
-
-    sorted_nodes = DAGTopologicalSorter.sort(graph)
-    state_inputs = []
-    state_outputs = []
-
-    for node in sorted_nodes:
-        if node.op_type == "ReadVariable":
-            node.op_type = "Input"
-            modified = True
-            state_inputs.append(node.id)
-
-        elif node.op_type == "AssignVariable":
-            node.op_type = "Output"
-            modified = True
-            state_outputs.append(node.id)
-
-    if state_outputs:
-        for out in state_outputs:
-            if out not in graph.outputs:
-                graph.outputs.append(out)
-                modified = True
-
-    return modified
+    return _lift_block_ir(graph)

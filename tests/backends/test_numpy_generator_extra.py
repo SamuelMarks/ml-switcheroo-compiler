@@ -1,5 +1,8 @@
 """Test numpy generator extra coverage."""
 
+from ml_switcheroo_compiler.backends.formatters import FormatterContext
+
+
 import ml_switcheroo_compiler.backends.numpy.generator as gen
 from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -40,8 +43,10 @@ def test_numpy_generator_kwargs_only() -> None:
         def __init__(self) -> None:
             pass  # skip IRGraph requirement
 
-    g = Gen()
-    res = g._format_generic_fallback("out", op_type, input_vars, kwargs)
+    Gen()
+    from ml_switcheroo_compiler.backends.formatters import OpFormatter
+
+    res = OpFormatter.format_generic_fallback(FormatterContext("out", op_type, input_vars, kwargs))
     # The output might be different than np.zeros, we just want to hit the branch
     assert res == "np.zeros(shape=(2, 2))" or True
 
@@ -54,8 +59,10 @@ def test_cupy_generator_kwargs_only() -> None:
         def __init__(self) -> None:
             pass
 
-    g = Gen()
-    g._format_generic_fallback("out", "Zeros", [], {"shape": "(2, 2)"})
+    Gen()
+    from ml_switcheroo_compiler.backends.formatters import OpFormatter
+
+    OpFormatter.format_generic_fallback(FormatterContext("out", "Zeros", [], {"shape": "(2, 2)"}))
 
 
 def test_dask_generator_kwargs_only() -> None:
@@ -66,8 +73,10 @@ def test_dask_generator_kwargs_only() -> None:
         def __init__(self) -> None:
             pass
 
-    g = Gen()
-    g._format_generic_fallback("out", "Zeros", [], {"shape": "(2, 2)"})
+    Gen()
+    from ml_switcheroo_compiler.backends.formatters import OpFormatter
+
+    OpFormatter.format_generic_fallback(FormatterContext("out", "Zeros", [], {"shape": "(2, 2)"}))
 
 
 def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
@@ -78,5 +87,7 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
         def __init__(self) -> None:
             pass
 
-    g = Gen()
-    g._format_generic_fallback("out", "Zeros", [], {"shape": "(2, 2)"})
+    Gen()
+    from ml_switcheroo_compiler.backends.formatters import OpFormatter
+
+    OpFormatter.format_generic_fallback(FormatterContext("out", "Zeros", [], {"shape": "(2, 2)"}))

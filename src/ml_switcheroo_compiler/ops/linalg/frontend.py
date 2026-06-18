@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
@@ -22,6 +21,21 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ml_switcheroo_compiler.core.dtype import DType
+
+
+def _build_linalg_output_tensors(
+    out_ids: list[str],
+    out_shapes: Sequence[Sequence[int]],
+    out_dtypes: Sequence[DType],
+    device: object,
+) -> list[Tensor]:
+    tensors = []
+    for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
+        proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value)
+        tensors.append(
+            Tensor(data=proxy, shape=tuple(shape), dtype=dtype, device=device),
+        )
+    return tensors
 
 
 def _emit_linalg_node(
@@ -52,26 +66,25 @@ def _emit_linalg_node(
         raise RuntimeError(msg)
 
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
-    # Simple broadcast fallback for shape_metadata
     shape_meta = (
         tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes)
     )
 
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    op_def = get_op(op_type)()
+    input_ids, _, _ = op_def._extract_proxy_inputs(tuple(inputs))
+
     node = LogicalNode(
         id=out_ids[0],
         op_type=op_type,
-        inputs=[inp.data.id for inp in inputs],
+        inputs=input_ids,
         attributes=attrs,
         shape_metadata=shape_meta,
     )
     _tracer.add_node(node)
 
-    tensors = []
-    for _i, (out_id, shape, dtype) in enumerate(zip(out_ids, out_shapes, out_dtypes)):
-        proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value)
-        tensors.append(
-            Tensor(data=proxy, shape=tuple(shape), dtype=dtype, device=inputs[0].device),
-        )
+    tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, inputs[0].device)
 
     return tensors[0] if len(tensors) == 1 else tuple(tensors)
 
@@ -92,7 +105,11 @@ def matmul(input: Tensor, other: Tensor) -> Tensor:
         backend = get_active_backend()
         data = backend.execute_op("Matmul", input.data, other.data)
         return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
-    return _emit_linalg_node("Matmul", [input, other], {}, [()], [input.dtype])
+
+    from ml_switcheroo_compiler.ir.shape_system import matmul_shape
+
+    out_shape = matmul_shape(input.shape, other.shape)
+    return _emit_linalg_node("Matmul", [input, other], {}, [out_shape], [input.dtype])
 
 
 def dot(input: Tensor, other: Tensor) -> Tensor:
@@ -110,7 +127,12 @@ def dot(input: Tensor, other: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Dot", input.data, other.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data),
+            backend.array(data).shape,
+            getattr(input, "dtype", "float32"),
+            getattr(input, "device", None),
+        )
     return _emit_linalg_node("Dot", [input, other], {}, [()], [input.dtype])
 
 
@@ -154,7 +176,12 @@ def vdot(input: Tensor, other: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Vdot", input.data, other.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data),
+            backend.array(data).shape,
+            getattr(input, "dtype", "float32"),
+            getattr(input, "device", None),
+        )
     return _emit_linalg_node("Vdot", [input, other], {}, [()], [input.dtype])
 
 
@@ -173,7 +200,12 @@ def inner(input: Tensor, other: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Inner", input.data, other.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data),
+            backend.array(data).shape,
+            getattr(input, "dtype", "float32"),
+            getattr(input, "device", None),
+        )
     return _emit_linalg_node("Inner", [input, other], {}, [()], [input.dtype])
 
 
@@ -192,7 +224,12 @@ def outer(input: Tensor, other: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Outer", input.data, other.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data),
+            backend.array(data).shape,
+            getattr(input, "dtype", "float32"),
+            getattr(input, "device", None),
+        )
     return _emit_linalg_node("Outer", [input, other], {}, [()], [input.dtype])
 
 
@@ -221,25 +258,68 @@ def einsum(equation: str, *operands: Tensor) -> Tensor:
     )
 
 
+def band_part(input: Tensor, num_lower: int, num_upper: int) -> Tensor:
+    """Copy a tensor setting everything outside a central band in each innermost matrix to zero.
+
+    Args:
+        input (Tensor): The input tensor.
+        num_lower (int): Number of subdiagonals to keep.
+        num_upper (int): Number of superdiagonals to keep.
+
+    Returns:
+        Tensor: The banded tensor.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("BandPart", input.data, num_lower=num_lower, num_upper=num_upper)
+        return Tensor(data, input.shape, input.dtype, input.device)
+    return _emit_linalg_node(
+        "BandPart",
+        [input],
+        {"num_lower": num_lower, "num_upper": num_upper},
+        [input.shape],
+        [input.dtype],
+    )
+
+
+def diag(input: Tensor, k: int = 0) -> Tensor:
+    """Extracts a diagonal or constructs a diagonal array.
+
+    Args:
+        input (Tensor): The input tensor.
+        k (int): Diagonal in question.
+
+    Returns:
+        Tensor: The extracted diagonal or constructed diagonal array.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Diag", input.data, k=k)
+        # We need shape for eager return, backend.array handles it mostly
+        return Tensor(
+            backend.array(data),
+            backend.array(data).shape,
+            getattr(input, "dtype", "float32"),
+            getattr(input, "device", None),
+        )
+    return _emit_linalg_node("Diag", [input], {"k": k}, [()], [input.dtype])
+
+
 def cross(
     a: object,
     b: object,
-    axisa: int = -1,
-    axisb: int = -1,
-    axisc: int = -1,
-    axis: int | None = None,
+    **kwargs: object,
 ) -> object:
     """Computes the vector cross product of two arrays.
 
     Args:
         a (object): The first input vector or array of vectors
         b (object): The second input vector or array of vectors
-        axisa (int): Axis of `a` that defines the vector(s). Defaults to -1
-        axisb (int): Axis of `b` that defines the vector(s). Defaults to -1
-        axisc (int): Axis of the output that contains the cross product vector(s)
-        Defaults to -1
-        axis (int | None): If defined, the axis of `a`, `b`, and the output that
-        defines the vector(s). Defaults to None
+        **kwargs (object): Optional arguments axisa, axisb, axisc, axis.
 
     Returns:
     object: The cross product of the input vectors
@@ -247,10 +327,19 @@ def cross(
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-    backend = get_active_backend()
+    axisa = kwargs.get("axisa", -1)
+    axisb = kwargs.get("axisb", -1)
+    axisc = kwargs.get("axisc", -1)
+    axis = kwargs.get("axis", None)
     return backend.execute_op("Cross", a, b, axisa=axisa, axisb=axisb, axisc=axisc, axis=axis)
+
+
+def _get_remaining_dims(
+    shape_len: int, contracting: Sequence[int], batch: Sequence[int]
+) -> list[int]:
+    contract_set = set(contracting)
+    batch_set = set(batch)
+    return [i for i in range(shape_len) if i not in contract_set and i not in batch_set]
 
 
 def _infer_dot_general_shape(
@@ -279,15 +368,11 @@ def _infer_dot_general_shape(
     for b in lhs_batch:
         out_shape.append(lhs_shape[b])
 
-    lhs_remaining = [
-        i for i in range(len(lhs_shape)) if i not in lhs_contracting and i not in lhs_batch
-    ]
+    lhs_remaining = _get_remaining_dims(len(lhs_shape), lhs_contracting, lhs_batch)
     for r in lhs_remaining:
         out_shape.append(lhs_shape[r])
 
-    rhs_remaining = [
-        i for i in range(len(rhs_shape)) if i not in rhs_contracting and i not in rhs_batch
-    ]
+    rhs_remaining = _get_remaining_dims(len(rhs_shape), rhs_contracting, rhs_batch)
     for r in rhs_remaining:
         out_shape.append(rhs_shape[r])
 
@@ -313,8 +398,13 @@ def dot_general(
         Tensor: The result of the generalized dot product.
     """
     if config.eager_mode:
-        msg = "No direct numpy for dot_general"
-        raise UnimplementedMathError(msg)
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "DotGeneral", lhs.data, rhs.data, dimension_numbers=dimension_numbers
+        )
+        return Tensor(backend.array(data), backend.array(data).shape, lhs.dtype, lhs.device)
 
     attributes = {"dimension_numbers": dimension_numbers}
 

@@ -31,6 +31,9 @@ def test_dtype_inference() -> None:
     Returns:
     None
     """
+    from ml_switcheroo_compiler.core.config import config
+
+    config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["c"] = LogicalNode(
         id="c",
@@ -48,7 +51,7 @@ def test_dtype_inference() -> None:
     modified = dtype_inference_pass(g)
     assert modified
     assert g.nodes["c"].attributes["dtype"] == DType.Float32.value
-    assert g.nodes["add"].attributes["dtype"] == "float32"  # promote_types(float32, int32)
+    assert g.nodes["add"].attributes["dtype"] == "float64"  # promote_types(float32, int32)
 
 
 def test_broadcast_explicitizer() -> None:
@@ -62,6 +65,9 @@ def test_broadcast_explicitizer() -> None:
     Returns:
     None
     """
+    from ml_switcheroo_compiler.core.config import config
+
+    config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["A"] = LogicalNode(id="A", op_type="Input", shape_metadata=(1, 3))
     g.nodes["B"] = LogicalNode(id="B", op_type="Input", shape_metadata=(2, 3))
@@ -91,6 +97,9 @@ def test_type_promotion() -> None:
     Returns:
     None
     """
+    from ml_switcheroo_compiler.core.config import config
+
+    config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["A"] = LogicalNode(id="A", op_type="Input", attributes={"dtype": "float32"})
     g.nodes["B"] = LogicalNode(id="B", op_type="Input", attributes={"dtype": "int32"})
@@ -105,9 +114,9 @@ def test_type_promotion() -> None:
     # Both should be cast to float64, A might be cast depending on numpy rules
     # float32 + int32 -> float64
     assert g.nodes[in2].op_type == "Cast"
-    assert g.nodes[in1].attributes["dtype"] == "float32"
+    assert g.nodes[in1].attributes["dtype"] == "float64"
     assert g.nodes[in2].op_type == "Cast"
-    assert g.nodes[in2].attributes["dtype"] == "float32"
+    assert g.nodes[in2].attributes["dtype"] == "float64"
 
 
 def test_state_lifting() -> None:
@@ -124,6 +133,9 @@ def test_state_lifting() -> None:
     Returns:
     None
     """
+    from ml_switcheroo_compiler.core.config import config
+
+    config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["r"] = LogicalNode(
         id="r",

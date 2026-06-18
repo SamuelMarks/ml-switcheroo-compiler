@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
@@ -6,9 +8,9 @@ from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.base import dispatch_eager
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -188,6 +190,7 @@ def pad(
     return backend.execute_op("Pad", array, pad_width, mode=mode, **kwargs)
 
 
+@dispatch_eager("TopK")
 def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
     """Returns the top k values and their indices along the last dimension.
 
@@ -201,10 +204,6 @@ def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
     Raises:
     UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        msg = "No direct numpy for top_k"
-        raise UnimplementedMathError(msg)
-
     out_shape = list(operand.shape) if operand.shape else []
     if out_shape:
         out_shape[-1] = k
@@ -216,6 +215,43 @@ def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
     val_node = _emit_shape_node("TopK", inputs, {"k": k}, out_shape, operand.dtype)
     idx_node = _emit_shape_node("TopK", inputs, {"k": k}, out_shape, DType.Int32)
     return val_node, idx_node
+
+
+def argsort(
+    operand: Tensor,
+    dimension: int = -1,
+    is_stable: bool = True,
+    axis: int | None = None,
+) -> Tensor:
+    """Returns the indices that would sort an array along a given dimension.
+
+    Args:
+        operand (Tensor): The input tensor
+        dimension (int): The dimension to sort along
+        is_stable (bool): Whether to use a stable sorting algorithm
+        axis (int): Alias for dimension.
+
+    Returns:
+    Tensor: The indices that sort the tensor
+    """
+    if axis is not None:
+        dimension = axis
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        kind = "stable" if is_stable else "quicksort"
+        data = backend.execute_op("ArgSort", operand.data, axis=dimension, kind=kind)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(data, operand.shape, DType.Int32, operand.device)
+
+    inputs = [operand]
+    attributes = {"dimension": dimension, "is_stable": is_stable}
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    return _emit_shape_node("ArgSort", inputs, attributes, operand.shape, DType.Int32)
 
 
 def sort(
@@ -251,6 +287,7 @@ def sort(
     return _emit_shape_node("Sort", inputs, attributes, operand.shape, operand.dtype)
 
 
+@dispatch_eager("Resize")
 def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> Tensor:
     """Resizes an image to the given target shape using interpolation.
 
@@ -261,15 +298,8 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
 
     Returns:
     Tensor: The resized image tensor
-
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        msg = "No direct numpy for image_resize"
-        raise UnimplementedMathError(msg)
-
-    from ml_switcheroo_compiler.ops.shape.basic import Resize
+    from ml_switcheroo_compiler.ops.shape.reshape import Resize
 
     op = Resize()
     out_shape = op.infer_shape(image, shape, method)

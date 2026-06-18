@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
@@ -5,9 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
-from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -16,12 +16,12 @@ if TYPE_CHECKING:
 
 
 @dispatch_eager("Reshape")
-def reshape(input: Tensor, shape: Sequence[int]) -> Tensor:
+def reshape(input: Tensor, shape: Sequence[int] | None = None) -> Tensor:
     """Reshapes the input tensor to the specified shape.
 
     Args:
         input (Tensor): The input tensor to reshape
-        shape (Sequence[int]): The target shape
+        shape (Sequence[int] | None): The target shape
 
     Returns:
     Tensor: A reshaped tensor with the specified shape
@@ -119,11 +119,11 @@ def unsqueeze(input: Tensor, dim: int) -> Tensor:
     """Inserts a dimension of size 1 at the specified position.
 
     Args:
-        input (Tensor): The input.
-        dim (int): The dim.
+        input (Tensor): The input input tensor.
+        dim (int): The dim parameter for the operation.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     return expand_dims(input, dim)
 
@@ -151,25 +151,87 @@ def expand(input: Tensor, size: Sequence[int]) -> Tensor:
     )
 
 
+def _extract_tolist(size: object) -> object:
+    if hasattr(size, "data") and hasattr(size.data, "tolist") and callable(size.data.tolist):
+        return size.data.tolist()
+    if hasattr(size, "tolist") and callable(size.tolist):
+        return size.tolist()
+    return size
+
+
+def _try_extract_tolist(size_list: list[object]) -> list[object] | None:
+    try:
+        return [
+            int(s.data.tolist() if not isinstance(s.data.tolist(), list) else s.data.tolist()[0])
+            for s in size_list
+        ]
+    except TypeError:
+        return None
+
+
+def _try_extract_item(size_list: list[object]) -> list[object] | None:
+    try:
+        return [int(s.data.item()) for s in size_list]
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
+def _extract_from_list(size_list: list[object]) -> list[object]:
+    if not size_list or not hasattr(size_list[0], "data"):
+        return size_list
+
+    first_data = size_list[0].data
+    if hasattr(first_data, "tolist") and callable(first_data.tolist):
+        res = _try_extract_tolist(size_list)
+        if res is not None:
+            return res
+    elif hasattr(first_data, "item") and callable(first_data.item):
+        res = _try_extract_item(size_list)
+        if res is not None:
+            return res
+    return size_list
+
+
+def _parse_shape_arg(size: object) -> tuple[int, ...] | None:
+    """Parses various types of size arguments into a shape tuple.
+
+    Handles scalar tensors, shape tuples, lists of tensors, etc.
+    """
+    if size is None:
+        return None
+
+    size = _extract_tolist(size)
+
+    if isinstance(size, list):
+        size = _extract_from_list(size)
+
+    if isinstance(size, list) or isinstance(size, tuple):
+        size = [int(s) if isinstance(s, (int, float, bool)) else s for s in size]
+
+    return tuple(size)
+
+
 @dispatch_eager("BroadcastTo")
-def broadcast_to(input: Tensor, size: Sequence[int]) -> Tensor:
+def broadcast_to(input: Tensor, shape: Sequence[int] = None, **kwargs: object) -> Tensor:
     """Broadcasts the input tensor to a new shape.
 
     Args:
         input (Tensor): The input tensor
-        size (Sequence[int]): The target shape to broadcast to
+        shape (Sequence[int]): The target shape to broadcast to
+        **kwargs (object): Additional keyword arguments.
 
     Returns:
     Tensor: The broadcasted tensor
     """
+    size = shape if shape is not None else kwargs.get("size")
+    out_shape = _parse_shape_arg(size)
+
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = tuple(size)
     return _emit_shape_node(
         "BroadcastTo",
         inputs,
         {},
-        out_shape,
+        out_shape if out_shape is not None else (),
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
 
@@ -188,11 +250,19 @@ def transpose(input: Tensor, dim0: int, dim1: int) -> Tensor:
     """
     inputs = [input]
     # shape calculation placeholder
-    out_shape = inputs[0].shape
+    out_shape = list(inputs[0].shape)
+    if len(out_shape) > max(dim0, dim1):
+        out_shape[dim0], out_shape[dim1] = out_shape[dim1], out_shape[dim0]
+    out_shape = tuple(out_shape)
+
+    axes = list(range(len(inputs[0].shape)))
+    if len(axes) > max(dim0, dim1):
+        axes[dim0], axes[dim1] = axes[dim1], axes[dim0]
+
     return _emit_shape_node(
         "Transpose",
         inputs,
-        {},
+        {"axes": tuple(axes)},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -213,9 +283,9 @@ def permute(input: Tensor, dims: Sequence[int]) -> Tensor:
     # shape calculation placeholder
     out_shape = tuple(input.shape[d] for d in dims)
     return _emit_shape_node(
-        "Permute",
+        "Transpose",
         inputs,
-        {},
+        {"axes": tuple(dims)},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -223,23 +293,13 @@ def permute(input: Tensor, dims: Sequence[int]) -> Tensor:
 
 @dispatch_eager("Swapaxes")
 def swapaxes(input: Tensor, axis1: int, axis2: int) -> Tensor:
-    """Swaps two axes of the input tensor.
-
-    Args:
-        input (Tensor): The input tensor
-        axis1 (int): The first axis to swap
-        axis2 (int): The second axis to swap
-
-    Returns:
-    Tensor: The tensor with swapped axes
-    """
+    """Swap axes."""
     inputs = [input]
-    # shape calculation placeholder
     out_shape = inputs[0].shape
     return _emit_shape_node(
         "Swapaxes",
         inputs,
-        {},
+        {"axis1": axis1, "axis2": axis2},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -303,6 +363,7 @@ def roll(
     )
 
 
+@dispatch_eager("BroadcastInDim")
 def broadcast_in_dim(
     operand: Tensor,
     shape: Sequence[int],
@@ -321,10 +382,20 @@ def broadcast_in_dim(
     Raises:
     UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        msg = "No direct numpy for broadcast_in_dim"
-        raise UnimplementedMathError(msg)
-
     inputs = [operand]
     attributes = {"shape": shape, "broadcast_dimensions": broadcast_dimensions}
     return _emit_shape_node("BroadcastInDim", inputs, attributes, tuple(shape), operand.dtype)
+
+
+@dispatch_eager("Reverse")
+def reverse(input: Tensor, dims: tuple[int, ...]) -> Tensor:
+    """Reverse dimensions."""
+    inputs = [input]
+    out_shape = inputs[0].shape
+    return _emit_shape_node(
+        "Reverse",
+        inputs,
+        {"dims": dims},
+        out_shape,
+        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
+    )

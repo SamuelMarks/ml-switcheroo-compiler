@@ -48,12 +48,14 @@ def test_solve_triangular(monkeypatch: object) -> None:
 
     scipy = MagicMock()
     scipy.linalg.solve_triangular.return_value = "solved"
-    sys.modules["scipy"] = scipy
-    sys.modules["scipy.linalg"] = scipy.linalg
+    monkeypatch.setitem(sys.modules, "scipy", scipy)
+    monkeypatch.setitem(sys.modules, "scipy.linalg", scipy.linalg)
 
     a = np.array([[3, 0, 0], [2, 1, 0], [1, 0, 1]])
     b = np.array([4, 2, 4])
-    res = solve_triangular(a, b, lower=True)
+    from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
+
+    res = solve_triangular(a, b, TriangularSolveOptions(lower=True))
     assert res == "solved"
 
 
@@ -63,8 +65,8 @@ def test_lu(monkeypatch: object) -> None:
 
     scipy = MagicMock()
     scipy.linalg.lu.return_value = ("p", "l", "u")
-    sys.modules["scipy"] = scipy
-    sys.modules["scipy.linalg"] = scipy.linalg
+    monkeypatch.setitem(sys.modules, "scipy", scipy)
+    monkeypatch.setitem(sys.modules, "scipy.linalg", scipy.linalg)
 
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     p, l_, u = lu(a)
@@ -77,8 +79,8 @@ def test_lu_factor(monkeypatch: object) -> None:
 
     scipy = MagicMock()
     scipy.linalg.lu_factor.return_value = ("lu", "piv")
-    sys.modules["scipy"] = scipy
-    sys.modules["scipy.linalg"] = scipy.linalg
+    monkeypatch.setitem(sys.modules, "scipy", scipy)
+    monkeypatch.setitem(sys.modules, "scipy.linalg", scipy.linalg)
 
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     lu_arr, piv = lu_factor(a)

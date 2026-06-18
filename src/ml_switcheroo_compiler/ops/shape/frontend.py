@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+
 """Defines shape, memory, and movement operations for Tensor objects.
 
 This module provides functions to manipulate tensor shapes, dimensions, and memory
@@ -11,6 +13,10 @@ from ml_switcheroo_compiler.ops.shape.indexing import (
     scatter,
     scatter_add,
     scatter_nd,
+    tensor_scatter_update,
+    tensor_scatter_add,
+    tensor_scatter_max,
+    tensor_scatter_min,
     searchsorted,
     select,
     take,
@@ -30,6 +36,7 @@ from ml_switcheroo_compiler.ops.shape.manipulation import (
     roll,
     squeeze,
     swapaxes,
+    reverse,
     transpose,
     unsqueeze,
 )
@@ -39,16 +46,19 @@ from ml_switcheroo_compiler.ops.shape.misc import (
     pad,
     repeat,
     sort,
+    argsort,
     tile,
     top_k,
     tril,
     triu,
 )
 from ml_switcheroo_compiler.ops.shape.slicing import (
-    dynamic_slice,
-    dynamic_update_slice,
     slice,
     strided_slice,
+)
+from ml_switcheroo_compiler.ops.shape.dynamic_slicing import (
+    dynamic_slice,
+    dynamic_update_slice,
     update_slice,
 )
 from ml_switcheroo_compiler.ops.shape.splitting import (
@@ -89,15 +99,21 @@ __all__ = [
     "scatter",
     "scatter_add",
     "scatter_nd",
+    "tensor_scatter_update",
+    "tensor_scatter_add",
+    "tensor_scatter_max",
+    "tensor_scatter_min",
     "searchsorted",
     "select",
     "slice",
     "sort",
+    "argsort",
     "split",
     "squeeze",
     "stack",
     "strided_slice",
     "swapaxes",
+    "reverse",
     "take",
     "take_along_axis",
     "tile",

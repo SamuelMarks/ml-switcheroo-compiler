@@ -35,7 +35,7 @@ def test_nn_coverage() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
 
     config.eager_mode = True
-    t = Tensor(np.array(1.0), (), DType.Float32, Device("cpu"))
+    t = Tensor(np.array(1.0, dtype=np.float32), (), DType.Float32, Device("cpu"))
     assert nn.gelu(t) is not None
     assert nn.logsumexp(t) is not None
     assert nn.one_hot(t, 2) is not None
@@ -75,9 +75,13 @@ def test_nn_coverage() -> None:
     ]:
         assert init_fn()(key, (2,)).shape == (2,)
 
+    from ml_switcheroo_compiler.ops.configs import InitializerConfig
+
     for init_fn in [nn.orthogonal, nn.delta_orthogonal, nn.variance_scaling]:
         if init_fn == nn.variance_scaling:
-            assert init_fn(1.0, "fan_in", "uniform")(key, (2,)).shape == (2,)
+            assert init_fn(InitializerConfig(scale=1.0, mode="fan_in", distribution="uniform"))(
+                key, (2,)
+            ).shape == (2,)
         else:
             assert init_fn()(key, (2,)).shape == (2,)
 
@@ -96,8 +100,8 @@ def test_random_coverage() -> None:
     assert random.bernoulli(key).shape == ()
     assert random.categorical(key, None, shape=(2,)).shape == (2,)
     assert random.categorical(key, None).shape == ()
-    assert random.permutation(key, key) is key
-    assert random.choice(key, key) is key
+    assert random.permutation(key, key).shape == (2,)
+    assert random.choice(key, key).shape == ()
     assert random.truncated_normal(key, -2.0, 2.0, (2,)).shape == (2,)
 
 
@@ -111,9 +115,11 @@ def test_ops_composite_coverage() -> None:
     assert ops.clip(t1, 1, 2) is not None
     assert ops.broadcast_shapes((1,), (2,)) == (2,)
 
+    from ml_switcheroo_compiler.ops.configs import SpaceConfig
+
     ls = ops.logspace(1, 2)
     assert ls is not None
-    ls2 = ops.logspace(1, 2, base=2.0)
+    ls2 = ops.logspace(1, 2, SpaceConfig(base=2.0))
     assert ls2 is not None
 
     assert ops.rint(t1) is not None

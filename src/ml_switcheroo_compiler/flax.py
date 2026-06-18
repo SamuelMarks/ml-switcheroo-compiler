@@ -40,7 +40,7 @@ class Variable:
         """Initialize.
 
         Args:
-            value (object): The value.
+            value (object): The value parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         self.value = value
@@ -75,9 +75,9 @@ class Dense(Module):
         """Initialize.
 
         Args:
-            in_features (int): The in_features.
-            out_features (int): The out_features.
-            use_bias (bool): The use_bias.
+            in_features (int): The in_features parameter for the operation.
+            out_features (int): The out_features parameter for the operation.
+            use_bias (bool): The use_bias parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -104,8 +104,8 @@ class LinearGeneral(Module):
         """Initialize.
 
         Args:
-            in_features (int | Sequence[int]): The in_features.
-            out_features (int | Sequence[int]): The out_features.
+            in_features (int | Sequence[int]): The in_features parameter for the operation.
+            out_features (int | Sequence[int]): The out_features parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -121,8 +121,8 @@ class Einsum(Module):
         """Initialize.
 
         Args:
-            einsum_str (str): The einsum_str.
-            kernel_shape (tuple[int, ...]): The kernel_shape.
+            einsum_str (str): The einsum_str parameter for the operation.
+            kernel_shape (tuple[int, ...]): The kernel_shape parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -143,13 +143,32 @@ class LoRALinear(Module):
         """Initialize.
 
         Args:
-            in_features (int): The in_features.
-            out_features (int): The out_features.
+            in_features (int): The in_features parameter for the operation.
+            out_features (int): The out_features parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
         self.in_features = in_features
         self.out_features = out_features
+
+
+@dataclass
+class ConvConfig:
+    """Configuration for a convolutional layer.
+
+    Attributes:
+        in_features: The in_features parameter for the operation.
+        out_features: The out_features parameter for the operation.
+        kernel_size: The kernel_size parameter for the operation.
+        strides: The strides parameter for the operation.
+        padding: The padding parameter for the operation.
+    """
+
+    in_features: int
+    out_features: int
+    kernel_size: tuple[int, ...]
+    strides: tuple[int, ...] | None = None
+    padding: str | tuple[tuple[int, int], ...] = "VALID"
 
 
 @dataclass(init=False)
@@ -158,29 +177,22 @@ class Conv(Module):
 
     def __init__(
         self,
-        in_features: int,
-        out_features: int,
-        kernel_size: tuple[int, ...],
-        strides: tuple[int, ...] | None = None,
-        padding: str | tuple[tuple[int, int], ...] = "VALID",
+        config: ConvConfig,
         **kwargs: object,
     ) -> None:
         """Initialize.
 
         Args:
-            in_features (int): The in_features.
-            out_features (int): The out_features.
-            kernel_size (tuple[int, ...]): The kernel_size.
-            strides (tuple[int, ...] | None): The strides.
-            padding (str | tuple[tuple[int, int], ...]): The padding.
+            config (ConvConfig): The configuration for the convolution layer.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
-        self.in_features = in_features
-        self.out_features = out_features
-        self.kernel_size = kernel_size
-        self.strides = strides
-        self.padding = padding
+        self.config = config
+        self.in_features = config.in_features
+        self.out_features = config.out_features
+        self.kernel_size = config.kernel_size
+        self.strides = config.strides
+        self.padding = config.padding
 
 
 @dataclass(init=False)
@@ -197,9 +209,9 @@ class ConvTranspose(Module):
         """Initialize.
 
         Args:
-            in_features (int): The in_features.
-            out_features (int): The out_features.
-            kernel_size (tuple[int, ...]): The kernel_size.
+            in_features (int): The in_features parameter for the operation.
+            out_features (int): The out_features parameter for the operation.
+            kernel_size (tuple[int, ...]): The kernel_size parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -216,8 +228,8 @@ class Embed(Module):
         """Initialize.
 
         Args:
-            num_embeddings (int): The num_embeddings.
-            features (int): The features.
+            num_embeddings (int): The num_embeddings parameter for the operation.
+            features (int): The features parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -233,8 +245,8 @@ class MultiHeadAttention(Module):
         """Initialize.
 
         Args:
-            num_heads (int): The num_heads.
-            qkv_features (int): The qkv_features.
+            num_heads (int): The num_heads parameter for the operation.
+            qkv_features (int): The qkv_features parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -250,8 +262,8 @@ class MultiHeadDotProductAttention(Module):
         """Initialize.
 
         Args:
-            num_heads (int): The num_heads.
-            qkv_features (int): The qkv_features.
+            num_heads (int): The num_heads parameter for the operation.
+            qkv_features (int): The qkv_features parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -272,8 +284,8 @@ class BatchNorm(Module):
         """Initialize.
 
         Args:
-            num_features (int): The num_features.
-            use_running_average (bool): The use_running_average.
+            num_features (int): The num_features parameter for the operation.
+            use_running_average (bool): The use_running_average parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -289,8 +301,8 @@ class LayerNorm(Module):
         """Initialize.
 
         Args:
-            num_features (int): The num_features.
-            reduction_axes (int): The reduction_axes.
+            num_features (int): The num_features parameter for the operation.
+            reduction_axes (int): The reduction_axes parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -306,7 +318,7 @@ class RMSNorm(Module):
         """Initialize.
 
         Args:
-            num_features (int): The num_features.
+            num_features (int): The num_features parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -321,8 +333,8 @@ class Dropout(Module):
         """Initialize.
 
         Args:
-            rate (float): The rate.
-            rng_collection (str): The rng_collection.
+            rate (float): The rate parameter for the operation.
+            rng_collection (str): The rng_collection parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -353,7 +365,7 @@ class List(Module):
         """Initialize.
 
         Args:
-            modules (Iterable[Module]): The modules.
+            modules (Iterable[Module]): The modules parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -368,7 +380,7 @@ class Dict(Module):
         """Initialize.
 
         Args:
-            modules (dict[str, Module]): The modules.
+            modules (dict[str, Module]): The modules parameter for the operation.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -383,7 +395,7 @@ class Jit(Module):
         """Initialize.
 
         Args:
-            module_constructor (Callable[..., Module]): The module_constructor.
+            module_constructor (Callable[..., Module]): The module_constructor parameter.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -398,7 +410,7 @@ class Vmap(Module):
         """Initialize.
 
         Args:
-            module_constructor (Callable[..., Module]): The module_constructor.
+            module_constructor (Callable[..., Module]): The module_constructor parameter.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -413,7 +425,7 @@ class Scan(Module):
         """Initialize.
 
         Args:
-            module_constructor (Callable[..., Module]): The module_constructor.
+            module_constructor (Callable[..., Module]): The module_constructor parameter.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -428,7 +440,7 @@ class Remat(Module):
         """Initialize.
 
         Args:
-            module_constructor (Callable[..., Module]): The module_constructor.
+            module_constructor (Callable[..., Module]): The module_constructor parameter.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -443,7 +455,7 @@ class Pmap(Module):
         """Initialize.
 
         Args:
-            module_constructor (Callable[..., Module]): The module_constructor.
+            module_constructor (Callable[..., Module]): The module_constructor parameter.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)

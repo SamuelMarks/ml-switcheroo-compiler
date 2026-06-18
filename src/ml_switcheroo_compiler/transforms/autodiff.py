@@ -9,12 +9,12 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
     """Emit an Add node for gradient accumulation.
 
     Args:
-        graph (LogicalGraph): The graph.
-        n1_id (str): The n1_id.
-        n2_id (str): The n2_id.
+        graph (LogicalGraph): The graph parameter for the operation.
+        n1_id (str): The n1_id parameter for the operation.
+        n2_id (str): The n2_id parameter for the operation.
 
     Returns:
-        str: The computed result.
+        str: The evaluated output resulting from this operation.
     """
     out_id = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
     n1 = graph.nodes[n1_id]
@@ -39,19 +39,11 @@ def _copy_graph(graph: LogicalGraph) -> LogicalGraph:
     Returns:
         LogicalGraph: The new graph.
     """
+    from ml_switcheroo_compiler.ir.core import clone_logical_node
+
     new_graph = LogicalGraph(name=f"{graph.name}_grad")
     for nid, node in graph.nodes.items():
-        new_graph.nodes[nid] = LogicalNode(
-            id=node.id,
-            op_type=node.op_type,
-            domain=node.domain,
-            version=node.version,
-            attributes=dict(node.attributes),
-            inputs=list(node.inputs),
-            shape_metadata=node.shape_metadata,
-            source_ast_ref=node.source_ast_ref,
-            sharding=node.sharding,
-        )
+        new_graph.nodes[nid] = clone_logical_node(node)
     return new_graph
 
 
@@ -149,7 +141,7 @@ def _extract_gradients(
     """Extract the required gradients.
 
     Args:
-        new_graph (LogicalGraph): The graph.
+        new_graph (LogicalGraph): The new_graph parameter for the operation.
         wrt (list[str]): Target nodes.
         adjoints (dict[str, str]): Adjoints map.
 

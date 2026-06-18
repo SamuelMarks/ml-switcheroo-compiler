@@ -124,12 +124,10 @@ def test_dot_general_opdef() -> None:
 def test_dot_general_frontend() -> None:
     """Test dot_general_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.linalg import dot_general
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
@@ -138,8 +136,9 @@ def test_dot_general_frontend() -> None:
     x = Tensor(np.ones((2, 3)), shape=(2, 3), dtype=DType.Int32, device=device)
     y = Tensor(np.ones((3, 4)), shape=(3, 4), dtype=DType.Int32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        dot_general(x, y, (((1,), (0,)), ((), ())))
+    with ConfigContext(eager_mode=True):
+        out = dot_general(x, y, (((1,), (0,)), ((), ())))
+        assert isinstance(out, Tensor)
 
     graph = _tracer.start_tracing("test_dot_general")
     try:
@@ -171,9 +170,9 @@ def test_conv_general_dilated_opdef() -> None:
     from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
 
     op = ConvGeneralDilated()
-    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilatedConfig
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvConfig
 
-    cfg = ConvGeneralDilatedConfig([1], "SAME")
+    cfg = ConvConfig([1], "SAME")
     assert op.infer_shape(None, None, cfg) == ()
 
     class Dummy:
@@ -181,12 +180,14 @@ def test_conv_general_dilated_opdef() -> None:
 
         shape = (1, 3, 32, 32)
 
-    assert op.infer_shape(Dummy(), Dummy(), ConvGeneralDilatedConfig([1], "SAME")) == ()
+    assert op.infer_shape(Dummy(), Dummy(), ConvConfig([1], "SAME")) == ()
+
+    from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     x = np.ones((1, 3, 32, 32))
     w = np.ones((16, 3, 3, 3))
-    out = op.eager_eval(x, w, [1, 1], "SAME")
-    assert out.shape == (1,)
+    out = op.eager_eval(x, w, ConvConfig(window_strides=[1, 1], padding="SAME"))
+    assert out.shape == (1, 16, 32, 32)
 
     assert op.emit_jax() == "Not implemented ConvGeneralDilated"
     assert op.emit_keras() == "Not implemented ConvGeneralDilated"
@@ -198,12 +199,10 @@ def test_conv_general_dilated_opdef() -> None:
 def test_conv_general_dilated_frontend() -> None:
     """Test conv_general_dilated_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
@@ -212,8 +211,12 @@ def test_conv_general_dilated_frontend() -> None:
     x = Tensor(np.ones((1, 3, 32, 32)), shape=(1, 3, 32, 32), dtype=DType.Float32, device=device)
     w = Tensor(np.ones((16, 3, 3, 3)), shape=(16, 3, 3, 3), dtype=DType.Float32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        conv_general_dilated(x, w, [1, 1], "SAME")
+    from ml_switcheroo_compiler.ops.configs import ConvConfig
+
+    with ConfigContext(eager_mode=True):
+        assert conv_general_dilated(
+            x, w, ConvConfig(window_strides=[1, 1], padding="SAME")
+        ).shape == (1, 16, 32, 32)
 
     graph = _tracer.start_tracing("test_conv")
     try:
@@ -229,11 +232,13 @@ def test_conv_general_dilated_frontend() -> None:
             dtype=DType.Float32,
             device=device,
         )
-        out = conv_general_dilated(x_proxy, w_proxy, [1, 1], "SAME")
+        out = conv_general_dilated(
+            x_proxy, w_proxy, ConvConfig(window_strides=[1, 1], padding="SAME")
+        )
         assert out.shape == ()
         node = graph.nodes[out.data.id]
         assert node.op_type == "ConvGeneralDilated"
-        assert node.attributes["window_strides"] == [1, 1]
+        assert node.attributes["config"].window_strides == [1, 1]
     finally:
         _tracer.stop_tracing()
 

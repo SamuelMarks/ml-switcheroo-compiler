@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ml_switcheroo_compiler.ops.shape.basic import (
+from ml_switcheroo_compiler.ops.shape import (
     BroadcastTo,
     Reshape,
     Transpose,
@@ -91,7 +91,6 @@ def test_state_ops() -> None:
 def test_dynamic_update_slice() -> None:
     """Test dynamic_update_slice."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
@@ -105,10 +104,7 @@ def test_dynamic_update_slice() -> None:
     u = Tensor(np.ones((2,)), shape=(2,), dtype=DType.Float32, device=device)
 
     with ConfigContext(eager_mode=True):
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-        with pytest.raises(UnimplementedMathError):
-            dynamic_update_slice(t, u, [0])
+        assert dynamic_update_slice(t, u, [0]).shape == (5,)
 
     graph = _tracer.start_tracing("test")
     try:
@@ -124,7 +120,8 @@ def test_dynamic_update_slice() -> None:
             dtype=DType.Float32,
             device=device,
         )
-        out = dynamic_update_slice(t_proxy, u_proxy, [0])
+        proxy = ProxyTensor(id="idx", shape=(), dtype="int32")
+        out = dynamic_update_slice(t_proxy, u_proxy, [Tensor(proxy, (), DType.Int32, device)])
         assert out.shape == (5,)
         node = graph.nodes[out.data.id]
         assert node.op_type == "DynamicUpdateSlice"
@@ -136,7 +133,7 @@ def test_dynamic_slice_opdef() -> None:
     """Test dynamic_slice_opdef."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.shape.basic import DynamicSlice, DynamicUpdateSlice
+    from ml_switcheroo_compiler.ops.shape import DynamicSlice, DynamicUpdateSlice
 
     ds = DynamicSlice()
     assert ds.infer_shape(None, None, [2, 3]) == (2, 3)
@@ -186,7 +183,7 @@ def test_top_k_opdef() -> None:
     """Test top_k_opdef."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.shape.basic import TopK
+    from ml_switcheroo_compiler.ops.shape import TopK
 
     tk = TopK()
     assert tk.infer_shape(None, 2) == ()
@@ -213,12 +210,10 @@ def test_top_k_opdef() -> None:
 def test_top_k_frontend() -> None:
     """Test top_k_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.shape.frontend import top_k
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
@@ -226,8 +221,9 @@ def test_top_k_frontend() -> None:
     device = Device(DeviceType.CPU)
     x = Tensor(np.array([1, 5, 2, 8, 3]), shape=(5,), dtype=DType.Int32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        top_k(x, 2)
+    with ConfigContext(eager_mode=True):
+        out_val, out_idx = top_k(x, 2)
+        assert out_val.shape == (2,)
 
     graph = _tracer.start_tracing("test_top_k")
     try:
@@ -251,7 +247,7 @@ def test_sort_opdef() -> None:
     """Test sort_opdef."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.shape.basic import Sort
+    from ml_switcheroo_compiler.ops.shape import Sort
 
     s = Sort()
     assert s.infer_shape(None) == ()
@@ -313,7 +309,7 @@ def test_broadcast_in_dim_opdef() -> None:
     """Test broadcast_in_dim_opdef."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.shape.basic import BroadcastInDim
+    from ml_switcheroo_compiler.ops.shape import BroadcastInDim
 
     op = BroadcastInDim()
     assert op.infer_shape(None, (2, 3), [1]) == (2, 3)
@@ -334,12 +330,10 @@ def test_broadcast_in_dim_opdef() -> None:
 def test_broadcast_in_dim_frontend() -> None:
     """Test broadcast_in_dim_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.shape.frontend import broadcast_in_dim
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
@@ -347,8 +341,8 @@ def test_broadcast_in_dim_frontend() -> None:
     device = Device(DeviceType.CPU)
     x = Tensor(np.array([1, 2, 3]), shape=(3,), dtype=DType.Int32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        broadcast_in_dim(x, (2, 3), [1])
+    with ConfigContext(eager_mode=True):
+        assert broadcast_in_dim(x, (2, 3), [1]).shape == (2, 3)
 
     graph = _tracer.start_tracing("test_broadcast")
     try:
@@ -372,7 +366,7 @@ def test_image_resize_opdef() -> None:
     """Test image_resize_opdef."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.shape.basic import Resize
+    from ml_switcheroo_compiler.ops.shape import Resize
 
     op = Resize()
     assert op.infer_shape(None, (10, 10)) == ()
@@ -398,12 +392,10 @@ def test_image_resize_opdef() -> None:
 def test_image_resize_frontend() -> None:
     """Test image_resize_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.shape.frontend import image_resize
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
@@ -411,8 +403,8 @@ def test_image_resize_frontend() -> None:
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((1, 5, 5, 3)), shape=(1, 5, 5, 3), dtype=DType.Float32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        image_resize(x, (10, 10))
+    with ConfigContext(eager_mode=True):
+        assert image_resize(x, (10, 10)).shape == (1, 10, 10, 3)
 
     graph = _tracer.start_tracing("test_resize")
     try:
@@ -436,7 +428,7 @@ def test_shape_basic_coverage() -> None:
     """Test shape basic coverage."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.shape.basic import Resize, TopK, Transpose
+    from ml_switcheroo_compiler.ops.shape import Resize, TopK, Transpose
 
     # Test Transpose _format_args
     op1 = Transpose()

@@ -10,7 +10,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     """Execute zeros.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         shape (Any): Argument shape.
 
     Returns:
@@ -23,7 +23,7 @@ def array(cls: type, data: object) -> object:
     """Execute array.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
 
     Returns:
@@ -36,7 +36,7 @@ def asarray(cls: type, data: object) -> object:
     """Execute asarray.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
 
     Returns:
@@ -49,7 +49,7 @@ def item(cls: type, data: object) -> float:
     """Execute item.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
 
     Returns:

@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
@@ -28,7 +30,12 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Concatenate", [getattr(t, "data", t) for t in tensors], axis=dim)
-        return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
+        return Tensor(
+            data,
+            getattr(data, "shape", ()),
+            getattr(tensors[0], "dtype", "float32"),
+            getattr(tensors[0], "device", None),
+        )
     inputs = list(tensors)
     # shape calculation placeholder
     out_shape = tuple(
@@ -58,8 +65,13 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Stack", [t.data for t in tensors], axis=dim)
-        return Tensor(data, data.shape, tensors[0].dtype, tensors[0].device)
+        data = backend.execute_op("Stack", [getattr(t, "data", t) for t in tensors], axis=dim)
+        return Tensor(
+            data,
+            getattr(data, "shape", ()),
+            getattr(tensors[0], "dtype", "float32"),
+            getattr(tensors[0], "device", None),
+        )
     inputs = list(tensors)
     # shape calculation placeholder
     out_shape = inputs[0].shape

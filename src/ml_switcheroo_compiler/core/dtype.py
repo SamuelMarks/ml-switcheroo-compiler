@@ -19,6 +19,7 @@ class DType(Enum):
     Int8 = "int8"
     UInt8 = "uint8"
     Bool = "bool"
+    String = "string"
 
 
 class QuantDType(Enum):

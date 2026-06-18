@@ -2,7 +2,7 @@
 
 import mlx.core as mx
 
-from ml_switcheroo_compiler.backends.eager_utils import (
+from ml_switcheroo_compiler.backends.eager import (
     generic_array,
     generic_asarray,
     generic_item,
@@ -14,7 +14,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     """Execute zeros.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         shape (Any): Argument shape.
 
     Returns:
@@ -23,24 +23,25 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return generic_zeros(mx, shape)
 
 
-def array(cls: type, data: object) -> object:
+def array(cls: type, data: object, dtype: object = None) -> object:
     """Execute array.
 
     Args:
-        cls (Any): The class.
-        data (Any): Argument data.
+        cls (type): The class type.
+        data (object): The data to convert.
+        dtype (object): The data type.
 
     Returns:
     Any: The result.
     """
-    return generic_array(mx, data)
+    return mx.array(data, dtype=getattr(mx, str(dtype), None)) if dtype else generic_array(mx, data)
 
 
 def asarray(cls: type, data: object) -> object:
     """Execute asarray.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
 
     Returns:
@@ -53,7 +54,7 @@ def item(cls: type, data: object) -> float:
     """Execute item.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
 
     Returns:

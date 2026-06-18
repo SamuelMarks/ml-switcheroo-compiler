@@ -1,5 +1,6 @@
 """Alias operations."""
 
+from ml_switcheroo_compiler.ops.configs import SpaceConfig
 import math
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -71,26 +72,25 @@ def broadcast_shapes(*shapes: object) -> object:
 def logspace(
     start: object,
     stop: object,
-    num: object = 50,
-    endpoint: object = True,
-    base: object = 10.0,
-    dtype: object = None,
-    axis: object = 0,
+    config: SpaceConfig = None,
 ) -> object:
     """Execute logspace.
 
     Args:
         start (Any): Argument start.
         stop (Any): Argument stop.
-        num (Any): Argument num.
-        endpoint (Any): Argument endpoint.
-        base (Any): Argument base.
-        dtype (Any): Argument dtype.
-        axis (Any): Argument axis.
+        config (SpaceConfig): Argument config.
 
     Returns:
     Any: The result.
     """
+    if config is None:
+        config = SpaceConfig()
+    num = config.num
+
+    base = config.base
+    dtype = config.dtype
+
     y = linspace(start, stop, steps=num, dtype=dtype)
     if base == 10.0:
         return power(10.0, y)

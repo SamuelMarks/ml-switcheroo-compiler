@@ -1,6 +1,7 @@
 """Core module for ml-switcheroo."""
 
 from .config import ConfigContext, EagerMode, config
+from .dataset import Dataset
 from .device import Device, DeviceType
 from .dtype import DType, QuantDType
 from .errors import (
@@ -19,6 +20,7 @@ __all__ = [
     "CompilationError",
     "ConfigContext",
     "DType",
+    "Dataset",
     "DTypePromotionError",
     "Device",
     "DeviceType",

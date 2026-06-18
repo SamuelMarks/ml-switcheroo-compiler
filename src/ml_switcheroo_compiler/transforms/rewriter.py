@@ -1,6 +1,6 @@
 """Shape-Aware Rewriting Passes."""
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
+from ml_switcheroo_ir import LogicalGraph, topological_sort
 
 
 def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
@@ -18,6 +18,8 @@ def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
     Args:
         graph (LogicalGraph): Argument graph
     """
+    from ml_switcheroo_compiler.ir.core import clone_logical_node
+
     new_graph = LogicalGraph(
         name=f"{graph.name}_rewritten",
         outputs=list(graph.outputs),
@@ -25,17 +27,7 @@ def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
     )
 
     for node in topological_sort(graph):
-        new_node = LogicalNode(
-            id=node.id,
-            op_type=node.op_type,
-            domain=node.domain,
-            version=node.version,
-            attributes=dict(node.attributes),
-            inputs=list(node.inputs),
-            shape_metadata=node.shape_metadata,
-            source_ast_ref=node.source_ast_ref,
-            sharding=node.sharding,
-        )
+        new_node = clone_logical_node(node)
 
         # Rewrite 1: Resolve -1 in Reshape operations
         if node.op_type == "Reshape" and node.shape_metadata is not None:

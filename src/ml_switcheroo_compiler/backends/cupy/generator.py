@@ -4,42 +4,37 @@ try:
     import cupy as cp
 except ImportError:
     cp = None
-
-from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-class CupyGenerator(BaseGenerator):
+@register_backend("cupy")
+class CupyGenerator(PythonStringGenerator):
     """Generates CuPy python code from IR."""
 
-    def generate(self) -> str:
-        """Execute generate.
+    def _get_backend_prefix(self) -> str:
+        return "cp"
 
-        Returns:
-        Any: The result.
-        """
-        self.code = [self.header]
-        self.add_line("import cupy as cp")
-        self.add_line("")
-        self.add_line("def evaluate(args):")
-        self.indent_level += 1
+    _import_header = "import cupy as cp"
+    _func_name = "evaluate"
 
-        self._generate_body("args")
+    def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Handle Einsum nodes."""
+        args_str = ", ".join(input_vars)
+        eq = kwargs.get("equation", "")
+        return f"cupy.einsum('{eq}', {args_str})"
 
-        self.indent_level -= 1
-        return "\n".join(self.code)
-
-    def visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Execute visit.
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Fallback for generic nodes.
 
         Args:
-            node (Any): Argument node.
-            input_vars (Any): Argument input_vars.
-            **kwargs (Any): Argument **kwargs.
+            node (IRNode): Argument node.
+            input_vars (list[str]): Argument input_vars.
+            **kwargs: Extra attributes.
 
         Returns:
-        Any: The result.
+            str: Generated code.
         """
         op_type = node.op_type
         # Mapping from IR op types to cupy functions

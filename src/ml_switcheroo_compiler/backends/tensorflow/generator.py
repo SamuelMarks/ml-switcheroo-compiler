@@ -1,15 +1,52 @@
 """TensorFlow Target Emission."""
 
+from ml_switcheroo_compiler.backends.formatters import OpFormatter
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 
 @register_backend("tensorflow")
-class TensorFlowCodeGenerator(BaseGenerator):
+class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
     """Emit TensorFlow-compatible code from IR."""
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Visit a node and return the TensorFlow code string.
+    def _get_backend_prefix(self) -> str:
+        return "tf"
+
+    def _format_zeros_like(self, op: str, kwargs: object) -> str:
+        res = f"tf.{op}({{shape}})"
+        if "dtype" in kwargs:
+            res += f", dtype='{kwargs['dtype']}'"
+        return res
+
+    def _format_full(self, kwargs: object) -> str:
+        res = "tf.full({shape}, {fill_value})"
+        if "dtype" in kwargs:
+            res += f", dtype='{kwargs['dtype']}'"
+        return res
+
+    def _format_transpose(self, kwargs: object) -> str:
+        if "axes" in kwargs:
+            return "tf.transpose({0}, perm={axes})"
+        return "tf.transpose({0})"
+
+    def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Handle Einsum nodes.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): Input variable names.
+            **kwargs: Extra arguments.
+
+        Returns:
+            str: The code string.
+        """
+        args_str = ", ".join(input_vars)
+        eq = kwargs.get("equation", "")
+        return f"tf.einsum('{eq}', {args_str})"
+
+    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Fallback visit method for generic nodes.
 
         Args:
             node (object): The IR node
@@ -27,16 +64,21 @@ class TensorFlowCodeGenerator(BaseGenerator):
             "BroadcastTo": "tf.broadcast_to({0}, {shape})",
             "Reshape": "tf.reshape({0}, {shape})",
             "TrueDivide": "tf.math.truediv({0}, {1})",
-            "Zeros": "tf.zeros({shape})",
-            "Ones": "tf.ones({shape})",
-            "Full": "tf.fill({shape}, {fill_value})",
             "Arange": "tf.range({0})",
+            "Zeros": self._format_zeros_like("zeros", kwargs),
+            "Ones": self._format_zeros_like("ones", kwargs),
+            "Full": self._format_full(kwargs),
+            "Sort": "tf.sort({0}, axis={dimension})",
+            "ArgSort": "tf.argsort({0}, axis={dimension})",
+            "Allclose": "tf.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})",
+            "Fft": "tf.signal.fft({0})",
+            "Rfft": "tf.signal.rfft({0})",
+            "Fftn": "tf.signal.fftNd({0})",
+            "Erfinv": "tf.math.erfinv({0})",
+            "NanToNum": "tf.where(tf.math.is_nan({0}), {nan}, tf.where(tf.math.is_inf({0}) & ({0} > 0), {posinf}, tf.where(tf.math.is_inf({0}) & ({0} < 0), {neginf}, {0})))",
             "AssignVariable": "{0}",
             "ReadVariable": "{0}",
-            "Transpose": "tf.transpose({0}, perm={axes})"
-            if "axes" in kwargs
-            else "tf.transpose({0})",
-            "Einsum": "tf.einsum({subscripts}, {0})",
+            "Transpose": self._format_transpose(kwargs),
             "Sum": "tf.reduce_sum({0}, axis={axis}, keepdims={keepdims})",
             "Mean": "tf.reduce_mean({0}, axis={axis}, keepdims={keepdims})",
             "Max": "tf.reduce_max({0}, axis={axis}, keepdims={keepdims})",
@@ -62,37 +104,29 @@ class TensorFlowCodeGenerator(BaseGenerator):
             "Conv1D": "tf.nn.conv1d({0}, {1}, stride={stride}, padding={padding})",
             "Conv2D": "tf.nn.conv2d({0}, {1}, strides={strides}, padding={padding})",
             "Conv3D": "tf.nn.conv3d({0}, {1}, strides={strides}, padding={padding})",
-            "MaxPool1D": "tf.nn.max_pool1d({0}, ksize={ksize}, "
-            "strides={strides}, padding={padding})",
-            "MaxPool2D": "tf.nn.max_pool2d({0}, ksize={ksize}, "
-            "strides={strides}, padding={padding})",
-            "MaxPool3D": "tf.nn.max_pool3d({0}, ksize={ksize}, "
-            "strides={strides}, padding={padding})",
-            "AvgPool1D": "tf.nn.avg_pool1d({0}, ksize={ksize}, "
-            "strides={strides}, padding={padding})",
-            "AvgPool2D": "tf.nn.avg_pool2d({0}, ksize={ksize}, "
-            "strides={strides}, padding={padding})",
-            "AvgPool3D": "tf.nn.avg_pool3d({0}, ksize={ksize}, "
-            "strides={strides}, padding={padding})",
+            "MaxPool1D": "tf.nn.max_pool1d({0}, ksize={ksize}, strides={strides}, padding={padding})",
+            "MaxPool2D": "tf.nn.max_pool2d({0}, ksize={ksize}, strides={strides}, padding={padding})",
+            "MaxPool3D": "tf.nn.max_pool3d({0}, ksize={ksize}, strides={strides}, padding={padding})",
+            "AvgPool1D": "tf.nn.avg_pool1d({0}, ksize={ksize}, strides={strides}, padding={padding})",
+            "AvgPool2D": "tf.nn.avg_pool2d({0}, ksize={ksize}, strides={strides}, padding={padding})",
+            "AvgPool3D": "tf.nn.avg_pool3d({0}, ksize={ksize}, strides={strides}, padding={padding})",
         }
 
         if op_type in ops_map:
             fmt = ops_map[op_type]
-            # Replace kwargs placeholders
-            for k, v in kwargs.items():
-                if f"{{{k}}}" in fmt:
-                    fmt = fmt.replace(f"{{{k}}}", str(v))
-            # Strip remaining unmatched kwargs in the form `, key={key}`
+            fmt = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
             import re
 
             fmt = re.sub(r", \w+=\{[^\}]+\}", "", fmt)
-
-            # Replace args placeholders
-            for i, var in enumerate(input_vars):
-                fmt = fmt.replace(f"{{{i}}}", var)
             return fmt
 
-        return self._format_generic_fallback("tf.math", op_type, input_vars, kwargs)
+        from ml_switcheroo_compiler.backends.formatters import FormatterContext
+
+        return OpFormatter.format_generic_fallback(
+            FormatterContext(
+                prefix="tf.math", op_type=op_type, input_vars=input_vars, kwargs=kwargs
+            )
+        )
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
         """Evaluate emit constant assignment.

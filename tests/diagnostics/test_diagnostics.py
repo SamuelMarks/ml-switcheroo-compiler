@@ -15,8 +15,8 @@ from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.diagnostics import (
-    NumericalAnomalyDetector,
-    TracebackReconstructor,
+    check_numerical_anomaly,
+    format_traceback,
     debug_shapes,
     estimate_flops,
     memory_profiler,
@@ -32,7 +32,7 @@ def test_traceback_reconstructor() -> None:
     None
     """
     exc = ValueError("test error")
-    formatted = TracebackReconstructor.format_traceback(exc)
+    formatted = format_traceback(exc)
     assert "TracebackReconstructor: test error" in formatted
 
 
@@ -170,11 +170,11 @@ def test_numerical_anomaly_detector() -> None:
         dtype=DType.Float32,
         device=device,
     )
-    NumericalAnomalyDetector.check(t1)
+    check_numerical_anomaly(t1)
 
     # None data
     t_none = Tensor(data=None, shape=(2,), dtype=DType.Float32, device=device)
-    NumericalAnomalyDetector.check(t_none)
+    check_numerical_anomaly(t_none)
 
     # NaN
     t2 = Tensor(
@@ -184,7 +184,7 @@ def test_numerical_anomaly_detector() -> None:
         device=device,
     )
     with pytest.raises(ValueError, match="NaN or Inf"):
-        NumericalAnomalyDetector.check(t2)
+        check_numerical_anomaly(t2)
 
     # Non-array-like
     class NonArray:
@@ -192,7 +192,7 @@ def test_numerical_anomaly_detector() -> None:
 
     t3 = Tensor(data=NonArray(), shape=(2,), dtype=DType.Float32, device=device)
     # Should silently pass or catch TypeError
-    NumericalAnomalyDetector.check(t3)
+    check_numerical_anomaly(t3)
 
 
 def test_to_graphviz() -> None:

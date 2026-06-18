@@ -117,9 +117,9 @@ def test_tensor_errors() -> None:
         bool(t)
 
     config.eager_mode = False
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(RuntimeError):
         t[0]
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(TypeError):
         t[0] = 1
     config.eager_mode = True
 

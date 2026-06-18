@@ -5,7 +5,37 @@ computations such as matrix multiplication, dot products, and Einstein summation
 supporting both shape inference and NumPy-based evaluation
 """
 
+from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@register_op("BandPart")
+class BandPart(OpDef):
+    """BandPart operator.
+
+    Extracts a central band of a tensor.
+    """
+
+    def infer_shape(self, input: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return input if isinstance(input, tuple) else None
+
+
+@register_op("Diag")
+class Diag(OpDef):
+    """Diag operator.
+
+    Extracts a diagonal or constructs a diagonal array.
+    """
+
+    def infer_shape(self, input: object, **kwargs: object) -> object:
+        """Infer shape."""
+        if isinstance(input, tuple):
+            if len(input) == 1:
+                return (input[0], input[0])
+            elif len(input) >= 2:
+                return input[:-1]
+        return None
 
 
 @register_op("Matmul")
@@ -26,9 +56,13 @@ class Matmul(OpDef):
         Returns:
             The computed shape or evaluation result.
         """
-        if isinstance(a, tuple) and isinstance(b, tuple) and len(a) >= 2 and len(b) >= 2:
-            # Basic matmul shape inference for 2D+
-            return a[:-1] + b[1:]
+        if isinstance(a, tuple) and isinstance(b, tuple):
+            from ml_switcheroo_compiler.ir.shape_system import matmul_shape
+
+            try:
+                return matmul_shape(a, b)
+            except ValueError:
+                return None
         return None
 
 
@@ -96,7 +130,7 @@ class DotGeneral(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         lhs = args[0] if len(args) > 0 else kwargs["lhs"]
         rhs = args[1] if len(args) > 1 else kwargs["rhs"]
@@ -149,7 +183,7 @@ class DotGeneral(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented DotGeneral"
 
@@ -161,7 +195,7 @@ class DotGeneral(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented DotGeneral"
 
@@ -173,7 +207,7 @@ class DotGeneral(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented DotGeneral"
 
@@ -185,7 +219,7 @@ class DotGeneral(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented DotGeneral"
 
@@ -197,36 +231,9 @@ class DotGeneral(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented DotGeneral"
-
-
-class ConvGeneralDilatedConfig:
-    """Configuration for ConvGeneralDilated shape inference."""
-
-    def __init__(
-        self,
-        window_strides: object,
-        padding: object,
-        lhs_dilation: object = None,
-        rhs_dilation: object = None,
-        dimension_numbers: object = None,
-    ) -> None:
-        """Initialize.
-
-        Args:
-            window_strides (Any): Argument window_strides.
-            padding (Any): Argument padding.
-            lhs_dilation (Any): Argument lhs_dilation.
-            rhs_dilation (Any): Argument rhs_dilation.
-            dimension_numbers (Any): Argument dimension_numbers.
-        """
-        self.window_strides = window_strides
-        self.padding = padding
-        self.lhs_dilation = lhs_dilation
-        self.rhs_dilation = rhs_dilation
-        self.dimension_numbers = dimension_numbers
 
 
 @register_op("ConvGeneralDilated")
@@ -243,13 +250,13 @@ class ConvGeneralDilated(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         lhs = args[0] if len(args) > 0 else kwargs["lhs"]
         rhs = args[1] if len(args) > 1 else kwargs["rhs"]
         config = args[2] if len(args) > 2 else kwargs.get("config", None)
         if config is None:
-            config = ConvGeneralDilatedConfig(window_strides=[], padding=[])
+            config = ConvConfig(window_strides=[], padding=[])
         if not hasattr(lhs, "shape") or not lhs.shape or not hasattr(rhs, "shape") or not rhs.shape:
             return ()
 
@@ -267,7 +274,7 @@ class ConvGeneralDilated(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ConvGeneralDilated"
 
@@ -279,7 +286,7 @@ class ConvGeneralDilated(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ConvGeneralDilated"
 
@@ -291,7 +298,7 @@ class ConvGeneralDilated(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ConvGeneralDilated"
 
@@ -303,7 +310,7 @@ class ConvGeneralDilated(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ConvGeneralDilated"
 
@@ -315,7 +322,7 @@ class ConvGeneralDilated(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ConvGeneralDilated"
 
@@ -336,13 +343,13 @@ class Fft(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a.
-            n (object): The n.
-            axis (object): The axis.
+            a (object): The input a tensor.
+            n (object): The n parameter for the operation.
+            axis (object): The axis along which to perform the operation.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         if not hasattr(a, "shape") or not a.shape:
             return ()
@@ -359,7 +366,7 @@ class Fft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Fft"
 
@@ -371,7 +378,7 @@ class Fft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Fft"
 
@@ -383,7 +390,7 @@ class Fft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Fft"
 
@@ -395,7 +402,7 @@ class Fft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Fft"
 
@@ -407,7 +414,7 @@ class Fft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Fft"
 
@@ -428,13 +435,13 @@ class Rfft(OpDef):
         """Infer shape.
 
         Args:
-            a (object): The a.
-            n (object): The n.
-            axis (object): The axis.
+            a (object): The input a tensor.
+            n (object): The n parameter for the operation.
+            axis (object): The axis along which to perform the operation.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         if not hasattr(a, "shape") or not a.shape:
             return ()
@@ -452,7 +459,7 @@ class Rfft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Rfft"
 
@@ -464,7 +471,7 @@ class Rfft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Rfft"
 
@@ -476,7 +483,7 @@ class Rfft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Rfft"
 
@@ -488,7 +495,7 @@ class Rfft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Rfft"
 
@@ -500,6 +507,116 @@ class Rfft(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Rfft"
+
+
+@register_op("Tensordot")
+class Tensordot(OpDef):
+    """Tensordot operator.
+
+    Computes tensor dot product along specified axes.
+    """
+
+    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            object: The evaluated output resulting from this operation.
+        """
+        return ()
+
+
+@register_op("Pinv")
+class Pinv(OpDef):
+    """Pseudo-inverse operator.
+
+    Computes the Moore-Penrose pseudo-inverse of a matrix.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            a (object): The input tensor.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            object: The evaluated output resulting from this operation.
+        """
+        if hasattr(a, "shape"):
+            s = list(a.shape)
+            if len(s) >= 2:
+                s[-2], s[-1] = s[-1], s[-2]
+            return tuple(s)
+        return ()
+
+
+@register_op("Inner")
+class Inner(OpDef):
+    """Inner product operator.
+
+    Computes the inner product of two vectors or matrices.
+    """
+
+    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            object: The evaluated output resulting from this operation.
+        """
+        return ()
+
+
+@register_op("Outer")
+class Outer(OpDef):
+    """Outer product operator.
+
+    Computes the outer product of two vectors.
+    """
+
+    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            a (object): The first input tensor.
+            b (object): The second input tensor.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            object: The evaluated output resulting from this operation.
+        """
+        return ()
+
+
+@register_op("MatrixPower")
+class MatrixPower(OpDef):
+    """Matrix power operator.
+
+    Computes the matrix power of a square matrix.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation.
+
+        Args:
+            a (object): The input tensor.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            object: The evaluated output resulting from this operation.
+        """
+        if hasattr(a, "shape"):
+            return a.shape
+        return ()

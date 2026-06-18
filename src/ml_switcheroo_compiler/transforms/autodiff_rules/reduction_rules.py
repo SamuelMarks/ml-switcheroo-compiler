@@ -3,7 +3,6 @@
 reduction operations
 """
 
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -39,7 +38,7 @@ def sum_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Sum")
 def sum_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for the Sum operation.
+    """Computes the JVP for the Sum operation.
 
     Args:
         graph (object): The computation graph
@@ -47,13 +46,9 @@ def sum_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The identifier of the tangent tensor
 
     Returns:
-    str: The identifier of the computed tangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    str: The identifier of the computed JVP node
     """
-    msg = "JVP not implemented for Sum"
-    raise UnimplementedMathError(msg)
+    return emit_ir_node(graph, "Sum", [tangent], node.shape_metadata, node.attributes)
 
 
 @register_vjp("Mean")
@@ -66,18 +61,33 @@ def mean_vjp(graph: object, node: object, cotangent: str) -> tuple:
         cotangent (str): The identifier of the cotangent tensor
 
     Returns:
-    tuple: A tuple containing the identifier of the input cotangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    tuple: A tuple containing the identifier of the broadcasted cotangent tensor
     """
-    msg = "VJP not implemented for Mean"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    bcast = emit_ir_node(
+        graph,
+        "BroadcastTo",
+        [cotangent],
+        graph.nodes[x].shape_metadata,
+        {"shape": graph.nodes[x].shape_metadata},
+    )
+
+    import math
+
+    n = 1.0
+    if graph.nodes[x].shape_metadata and node.shape_metadata:
+        n = math.prod(graph.nodes[x].shape_metadata) / (
+            math.prod(node.shape_metadata) if node.shape_metadata else 1.0
+        )
+
+    n_id = emit_ir_node(graph, "Constant", [], graph.nodes[x].shape_metadata, {"value": float(n)})
+    res = emit_ir_node(graph, "TrueDivide", [bcast, n_id], graph.nodes[x].shape_metadata)
+    return (res,)
 
 
 @register_jvp("Mean")
 def mean_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for the Mean operation.
+    """Computes the JVP for the Mean operation.
 
     Args:
         graph (object): The computation graph
@@ -85,13 +95,9 @@ def mean_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The identifier of the tangent tensor
 
     Returns:
-    str: The identifier of the computed tangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    str: The identifier of the computed JVP node
     """
-    msg = "JVP not implemented for Mean"
-    raise UnimplementedMathError(msg)
+    return emit_ir_node(graph, "Mean", [tangent], node.shape_metadata, node.attributes)
 
 
 @register_vjp("Max")
@@ -104,18 +110,22 @@ def max_vjp(graph: object, node: object, cotangent: str) -> tuple:
         cotangent (str): The identifier of the cotangent tensor
 
     Returns:
-    tuple: A tuple containing the identifier of the input cotangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    tuple: A tuple containing the identifier of the broadcasted cotangent tensor
     """
-    msg = "VJP not implemented for Max"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    bcast = emit_ir_node(
+        graph,
+        "BroadcastTo",
+        [cotangent],
+        graph.nodes[x].shape_metadata,
+        {"shape": graph.nodes[x].shape_metadata},
+    )
+    return (bcast,)
 
 
 @register_jvp("Max")
 def max_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for the Max operation.
+    """Computes the JVP for the Max operation.
 
     Args:
         graph (object): The computation graph
@@ -123,13 +133,9 @@ def max_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The identifier of the tangent tensor
 
     Returns:
-    str: The identifier of the computed tangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    str: The identifier of the computed JVP node
     """
-    msg = "JVP not implemented for Max"
-    raise UnimplementedMathError(msg)
+    return emit_ir_node(graph, "Max", [tangent], node.shape_metadata, node.attributes)
 
 
 @register_vjp("Min")
@@ -142,18 +148,22 @@ def min_vjp(graph: object, node: object, cotangent: str) -> tuple:
         cotangent (str): The identifier of the cotangent tensor
 
     Returns:
-    tuple: A tuple containing the identifier of the input cotangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    tuple: A tuple containing the identifier of the broadcasted cotangent tensor
     """
-    msg = "VJP not implemented for Min"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    bcast = emit_ir_node(
+        graph,
+        "BroadcastTo",
+        [cotangent],
+        graph.nodes[x].shape_metadata,
+        {"shape": graph.nodes[x].shape_metadata},
+    )
+    return (bcast,)
 
 
 @register_jvp("Min")
 def min_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for the Min operation.
+    """Computes the JVP for the Min operation.
 
     Args:
         graph (object): The computation graph
@@ -161,10 +171,6 @@ def min_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The identifier of the tangent tensor
 
     Returns:
-    str: The identifier of the computed tangent tensor
-
-    Raises:
-    UnimplementedMathError: This operation is currently not implemented
+    str: The identifier of the computed JVP node
     """
-    msg = "JVP not implemented for Min"
-    raise UnimplementedMathError(msg)
+    return emit_ir_node(graph, "Min", [tangent], node.shape_metadata, node.attributes)

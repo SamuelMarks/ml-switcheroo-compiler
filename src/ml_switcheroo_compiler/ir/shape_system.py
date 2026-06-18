@@ -112,7 +112,7 @@ class SymInt:
         """Evaluate str.
 
         Returns:
-            str: The computed result.
+            str: The evaluated output resulting from this operation.
         """
         return str(self.expr)
 
@@ -120,7 +120,7 @@ class SymInt:
         """Evaluate repr.
 
         Returns:
-            str: The computed result.
+            str: The evaluated output resulting from this operation.
         """
         return f"SymInt({self.expr})"
 
@@ -140,7 +140,7 @@ class SymInt:
 
 
         Returns:
-            bool: The computed result.
+            bool: A boolean indicating the result of the check.
         """
         if isinstance(other, SymInt):
             return self.expr == other.expr
@@ -163,7 +163,7 @@ class SymbolicSolver:
 
 
         Returns:
-            bool: The computed result.
+            bool: A boolean indicating the result of the check.
         """
         if isinstance(expr1, int) and isinstance(expr2, int):
             return expr1 == expr2
@@ -336,6 +336,18 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     return (shape_a[0], shape_b[1])
 
 
+def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, int, int]:
+    m_dim = shape_a[-2] if len(shape_a) > 1 else 1
+    k_dim_a = shape_a[-1]
+    k_dim_b = shape_b[-2] if len(shape_b) > 1 else shape_b[-1]
+    n_dim = shape_b[-1] if len(shape_b) > 1 else 1
+    return m_dim, k_dim_a, k_dim_b, n_dim
+
+
+def _get_batch_dims(shape: ShapeType) -> ShapeType:
+    return shape[:-2] if len(shape) > 2 else ()
+
+
 def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """Calculate the output shape for a batched matrix multiplication.
 
@@ -346,21 +358,15 @@ def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     Returns:
     ShapeType: Output shape
     """
-    batch_a = shape_a[:-2] if len(shape_a) > 2 else ()
-    batch_b = shape_b[:-2] if len(shape_b) > 2 else ()
-
+    batch_a = _get_batch_dims(shape_a)
+    batch_b = _get_batch_dims(shape_b)
     out_batch = broadcast_shapes(batch_a, batch_b)
 
-    m_dim = shape_a[-2] if len(shape_a) > 1 else 1
-    k_dim_a = shape_a[-1]
-    k_dim_b = shape_b[-2] if len(shape_b) > 1 else shape_b[-1]
-    n_dim = shape_b[-1] if len(shape_b) > 1 else 1
+    m_dim, k_dim_a, k_dim_b, n_dim = _get_matmul_dims(shape_a, shape_b)
 
     if k_dim_a != k_dim_b:
         msg = f"Incompatible inner dimensions for matmul: {k_dim_a} and {k_dim_b}"
-        raise ValueError(
-            msg,
-        )
+        raise ValueError(msg)
 
     out_shape = list(out_batch)
     if len(shape_a) > 1:
@@ -400,6 +406,16 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     return _matmul_shape_batched(shape_a, shape_b)
 
 
+def _normalize_single_axis(axis: int, ndim: int) -> int:
+    """Normalize a single negative axis to be positive."""
+    if axis < -ndim or axis >= ndim:
+        msg = f"Axis {axis} is out of bounds for tensor of dimension {ndim}"
+        raise ValueError(msg)
+    if axis < 0:
+        return axis + ndim
+    return axis
+
+
 def normalize_axis(
     axis: int | tuple[int, ...],
     ndim: int,
@@ -420,26 +436,8 @@ def normalize_axis(
         ndim (int): Argument ndim
     """
     if isinstance(axis, int):
-        if axis < -ndim or axis >= ndim:
-            msg = f"Axis {axis} is out of bounds for tensor of dimension {ndim}"
-            raise ValueError(
-                msg,
-            )
-        if axis < 0:
-            return axis + ndim
-        return axis
+        return _normalize_single_axis(axis, ndim)
     if isinstance(axis, (tuple, list)):
-        normalized = []
-        for ax in axis:
-            if ax < -ndim or ax >= ndim:
-                msg = f"Axis {ax} is out of bounds for tensor of dimension {ndim}"
-                raise ValueError(
-                    msg,
-                )
-            if ax < 0:
-                normalized.append(ax + ndim)
-            else:
-                normalized.append(ax)
-        return tuple(normalized)
+        return tuple(_normalize_single_axis(ax, ndim) for ax in axis)
     msg = f"Invalid type for axis: {type(axis)}"
     raise TypeError(msg)

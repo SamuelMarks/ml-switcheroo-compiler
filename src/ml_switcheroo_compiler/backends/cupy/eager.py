@@ -1,6 +1,6 @@
 """Backend utilities."""
 
-from ml_switcheroo_compiler.backends.eager_utils import execute_generic_op
+from ml_switcheroo_compiler.backends.eager import execute_generic_op
 
 try:
     import cupy as cp
@@ -12,7 +12,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     """Execute execute_op.
 
     Args:
-        cls (Any): The class.
+        cls (Any): The cls parameter for the operation.
         op_type (Any): Argument op_type.
         *args (Any): Argument *args.
         **kwargs (Any): Argument **kwargs.

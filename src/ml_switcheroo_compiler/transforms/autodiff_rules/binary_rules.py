@@ -6,7 +6,6 @@ This module registers automatic differentiation rules for common binary operatio
 as addition, subtraction, multiplication, division, and exponentiation
 """
 
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -146,8 +145,6 @@ def multiply_jvp(
 def divide_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the division operation.
 
-    Currently not implemented
-
     Args:
         graph (object): The computation graph containing the nodes
         node (object): The division node in the computation graph
@@ -155,19 +152,21 @@ def divide_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs
-
-    Raises:
-    UnimplementedMathError: Always raised as VJP is not implemented for Divide
     """
-    msg = "VJP not implemented for Divide"
-    raise UnimplementedMathError(msg)
+    x, y = node.inputs
+    dx = emit_ir_node(graph, "TrueDivide", [cotangent, y], graph.nodes[x].shape_metadata)
+
+    neg_x = emit_ir_node(graph, "Negative", [x], graph.nodes[x].shape_metadata)
+    num = emit_ir_node(graph, "Multiply", [cotangent, neg_x], graph.nodes[y].shape_metadata)
+    y_sq = emit_ir_node(graph, "Multiply", [y, y], graph.nodes[y].shape_metadata)
+    dy = emit_ir_node(graph, "TrueDivide", [num, y_sq], graph.nodes[y].shape_metadata)
+
+    return (dx, dy)
 
 
 @register_jvp("Divide")
 def divide_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the division operation.
-
-    Currently not implemented
 
     Args:
         tangent_x (object): The tangent of the first input x
@@ -178,19 +177,13 @@ def divide_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwa
 
     Returns:
     str: A string representation of the tangent expression
-
-    Raises:
-    UnimplementedMathError: Always raised as JVP is not implemented for Divide
     """
-    msg = "JVP not implemented for Divide"
-    raise UnimplementedMathError(msg)
+    return f"(({tangent_x} * {y} - {x} * {tangent_y}) / ({y} * {y}))"
 
 
 @register_vjp("Power")
 def power_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Computes the Vector-Jacobian Product (VJP) for the power operation.
-
-    Currently not implemented
 
     Args:
         graph (object): The computation graph containing the nodes
@@ -199,19 +192,24 @@ def power_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
     Returns:
     tuple: A tuple containing the cotangents for the two inputs
-
-    Raises:
-    UnimplementedMathError: Always raised as VJP is not implemented for Power
     """
-    msg = "VJP not implemented for Power"
-    raise UnimplementedMathError(msg)
+    x, y = node.inputs
+    one_id = emit_ir_node(graph, "Constant", [], graph.nodes[y].shape_metadata, {"value": 1.0})
+    y_minus_1 = emit_ir_node(graph, "Subtract", [y, one_id], graph.nodes[y].shape_metadata)
+    x_pow = emit_ir_node(graph, "Power", [x, y_minus_1], graph.nodes[x].shape_metadata)
+    dx_partial = emit_ir_node(graph, "Multiply", [y, x_pow], graph.nodes[x].shape_metadata)
+    dx = emit_ir_node(graph, "Multiply", [cotangent, dx_partial], graph.nodes[x].shape_metadata)
+
+    log_x = emit_ir_node(graph, "Log", [x], graph.nodes[x].shape_metadata)
+    dy_partial = emit_ir_node(graph, "Multiply", [node.id, log_x], graph.nodes[y].shape_metadata)
+    dy = emit_ir_node(graph, "Multiply", [cotangent, dy_partial], graph.nodes[y].shape_metadata)
+
+    return (dx, dy)
 
 
 @register_jvp("Power")
 def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
     """Computes the Jacobian-Vector Product (JVP) for the power operation.
-
-    Currently not implemented
 
     Args:
         tangent_x (object): The tangent of the first input x
@@ -222,9 +220,5 @@ def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwar
 
     Returns:
     str: A string representation of the tangent expression
-
-    Raises:
-    UnimplementedMathError: Always raised as JVP is not implemented for Power
     """
-    msg = "JVP not implemented for Power"
-    raise UnimplementedMathError(msg)
+    return f"({tangent_x} * {y} * {x} ** ({y} - 1) + {tangent_y} * {x} ** {y} * log({x}))"

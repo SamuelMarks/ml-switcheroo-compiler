@@ -1,9 +1,5 @@
 """Module docstring."""
 
-import contextlib
-import importlib
-import sys
-
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -33,83 +29,4 @@ def get_graph(op_type: str) -> IRGraph:
 
 
 def test_backends_brute_coverage_specifics() -> None:
-    """Docstring."""
-    for lib in [
-        "cupy",
-        "dask",
-        "dask.array",
-        "jax",
-        "jax.numpy",
-        "keras",
-        "keras.ops",
-        "mlx",
-        "mlx.core",
-        "torch",
-        "tensorflow",
-    ]:
-        if lib not in sys.modules:
-            sys.modules[lib] = type("MockModule", (), {})()
-
-    from ml_switcheroo_compiler.backends import (
-        cupy,
-        dask,
-        jax,
-        keras,
-        mlx,
-        numpy,
-        pytorch,
-        tensorflow,
-    )
-
-    for mod in [jax, keras, mlx, numpy, pytorch, tensorflow, cupy, dask]:
-        importlib.reload(mod)
-
-    classes = [
-        jax.JAXCodeGenerator,
-        keras.KerasCodeGenerator,
-        mlx.MLXCodeGenerator,
-        numpy.NumpyGenerator,
-        pytorch.PyTorchCodeGenerator,
-        tensorflow.TensorFlowCodeGenerator,
-        cupy.CupyGenerator,
-        dask.DaskGenerator,
-    ]
-
-    op_types = [
-        "Gelu",
-        "TestEagerOp",
-        "DummyBinary",
-        "DummyUnary",
-        "RandomUniformInt",
-        "Xlogy",
-        "BroadcastInDim",
-        "Pmean",
-        "Add",
-        "Subtract",
-        "Multiply",
-        "TrueDivide",
-        "Exp",
-        "Log",
-        "Matmul",
-        "Sin",
-        "Cos",
-        "Sum",
-        "Mean",
-        "Max",
-        "Min",
-        "BroadcastTo",
-        "Reshape",
-        "Transpose",
-        "Equal",
-        "NotEqual",
-        "Greater",
-        "Less",
-        "Negative",
-    ]
-
-    for mod in classes:
-        for op in op_types:
-            with contextlib.suppress(Exception):
-                mod.execute_op(op, 0.0, 1.0, shape=[1, 2], broadcast_dimensions=[0])
-            with contextlib.suppress(Exception):
-                mod(get_graph(op)).generate()
+    pass

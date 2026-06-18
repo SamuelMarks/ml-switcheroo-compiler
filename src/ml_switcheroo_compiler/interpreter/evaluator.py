@@ -96,7 +96,10 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict:
     """
     kwargs = {**node.attributes}
     if getattr(node, "shape_metadata", None):
-        if target_op in ("Expand", "BroadcastTo") and "shape" not in kwargs:
+        if (
+            target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full")
+            and "shape" not in kwargs
+        ):
             kwargs["shape"] = node.shape_metadata
         if target_op == "Reshape" and "newshape" not in kwargs:
             kwargs["newshape"] = node.shape_metadata

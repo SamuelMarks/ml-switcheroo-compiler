@@ -74,12 +74,10 @@ def test_segment_sum_frontend() -> None:
 
     assert callable(segment_sum)
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
@@ -87,8 +85,8 @@ def test_segment_sum_frontend() -> None:
     x = Tensor(np.ones((4,)), shape=(4,), dtype=DType.Int32, device=device)
     s = Tensor(np.array([0, 0, 1, 1]), shape=(4,), dtype=DType.Int32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        segment_sum(x, s)
+    with ConfigContext(eager_mode=True):
+        assert segment_sum(x, s).shape == (2,)
 
     graph = _tracer.start_tracing("test_ss")
     try:
@@ -132,14 +130,14 @@ def test_reduce_window_opdef() -> None:
             """
             self.shape = shape
 
-        from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+        from ml_switcheroo_compiler.ops.reductions.basic import WindowConfig
 
-        assert op.infer_shape(None, 0, "max", ReduceWindowConfig([2, 2])) == ()
+        assert op.infer_shape(None, 0, "max", WindowConfig([2, 2])) == ()
 
-    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+    from ml_switcheroo_compiler.ops.reductions.basic import WindowConfig
 
     assert op.infer_shape(
-        DummyShape((1, 4, 4, 1)), 0, "max", ReduceWindowConfig([1, 2, 2, 1], [1, 2, 2, 1])
+        DummyShape((1, 4, 4, 1)), 0, "max", WindowConfig([1, 2, 2, 1], [1, 2, 2, 1])
     ) == (
         1,
         2,
@@ -149,9 +147,11 @@ def test_reduce_window_opdef() -> None:
 
     # Test numpy evaluation mock
     x = np.ones((4, 4))
-    out = op.eager_eval(x, 0, "max", [2, 2], [2, 2])
+    from ml_switcheroo_compiler.ops.configs import WindowConfig
+
+    out = op.eager_eval(x, 0, "max", WindowConfig([2, 2], [2, 2]))
     assert out.shape == (2, 2)
-    assert np.all(out == 0)
+    assert np.all(out == 1)
 
     assert op.emit_jax() == "Not implemented ReduceWindow"
     assert op.emit_keras() == "Not implemented ReduceWindow"
@@ -163,21 +163,20 @@ def test_reduce_window_opdef() -> None:
 def test_reduce_window_frontend() -> None:
     """Test reduce_window_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.reductions.frontend import reduce_window, ReduceWindowConfig
+    from ml_switcheroo_compiler.ops.reductions.frontend import reduce_window, WindowConfig
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((4, 4)), shape=(4, 4), dtype=DType.Int32, device=device)
 
-    with ConfigContext(eager_mode=True), pytest.raises(UnimplementedMathError):
-        reduce_window(x, 0, "max", ReduceWindowConfig([2, 2], [2, 2]))
+    with ConfigContext(eager_mode=True):
+        out = reduce_window(x, 0, "max", WindowConfig([2, 2], [2, 2]))
+        assert out.shape == (2, 2)
 
     graph = _tracer.start_tracing("test_reduce_window")
     try:
@@ -187,7 +186,7 @@ def test_reduce_window_frontend() -> None:
             dtype=DType.Int32,
             device=device,
         )
-        out = reduce_window(x_proxy, 0, "max", ReduceWindowConfig([2, 2], [2, 2]))
+        out = reduce_window(x_proxy, 0, "max", WindowConfig([2, 2], [2, 2]))
         assert out.shape == (2, 2)
         node = graph.nodes[out.data.id]
         assert node.op_type == "ReduceWindow"
@@ -201,7 +200,7 @@ def test_reduce_window_frontend() -> None:
             dtype=DType.Int32,
             device=device,
         )
-        out2 = reduce_window(x_proxy, init_val_proxy, "max", ReduceWindowConfig([2, 2], [2, 2]))
+        out2 = reduce_window(x_proxy, init_val_proxy, "max", WindowConfig([2, 2], [2, 2]))
         assert graph.nodes[out2.data.id].inputs == ["x", "init"]
     finally:
         _tracer.stop_tracing()
@@ -241,12 +240,10 @@ def test_psum_pmean_opdef() -> None:
 def test_psum_pmean_frontend() -> None:
     """Test psum_pmean_frontend."""
     import numpy as np
-    import pytest
 
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.reductions.frontend import pmean, psum
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
@@ -255,10 +252,8 @@ def test_psum_pmean_frontend() -> None:
     x = Tensor(np.ones((4, 4)), shape=(4, 4), dtype=DType.Int32, device=device)
 
     with ConfigContext(eager_mode=True):
-        with pytest.raises(UnimplementedMathError):
-            psum(x, "batch")
-        with pytest.raises(UnimplementedMathError):
-            pmean(x, "batch")
+        assert psum(x, "batch").shape == (4, 4)
+        assert pmean(x, "batch").shape == (4, 4)
 
     graph = _tracer.start_tracing("test_pm")
     try:
@@ -353,12 +348,12 @@ def test_reduce_window_coverage() -> None:
 
     rw = ReduceWindow()
     # Test missing defaults
-    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+    from ml_switcheroo_compiler.ops.reductions.basic import WindowConfig
 
-    assert rw.infer_shape(DummyShape(), 0, "max", ReduceWindowConfig([1, 2])) == (1, 3, 4, 1)
+    assert rw.infer_shape(DummyShape(), 0, "max", WindowConfig([1, 2])) == (1, 3, 4, 1)
 
     # Test with padding, base_dilation, window_dilation
-    cfg = ReduceWindowConfig(
+    cfg = WindowConfig(
         window_dimensions=[2, 2],
         window_strides=[1, 1],
         padding=[(1, 1), (0, 0)],
@@ -378,6 +373,154 @@ def test_reduce_window_coverage_zero_dim() -> None:
         shape = (1, 1)
 
     rw = ReduceWindow()
-    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindowConfig
+    from ml_switcheroo_compiler.ops.reductions.basic import WindowConfig
 
-    assert rw.infer_shape(DummyShape(), 0, "max", ReduceWindowConfig([2, 2])) == (0, 0)
+    assert rw.infer_shape(DummyShape(), 0, "max", WindowConfig([2, 2])) == (0, 0)
+
+
+def test_missing_advanced_ops() -> None:
+    """Test missing advanced ops."""
+    from ml_switcheroo_compiler.core.device import Device, DeviceType
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ops.reductions.frontend import (
+        ctc_loss,
+        fractional_max_pool2d,
+        adaptive_avg_pool2d,
+        adaptive_max_pool2d,
+        unfold,
+        fold,
+    )
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
+    device = Device(DeviceType.CPU)
+    graph = _tracer.start_tracing("test_advanced_ops")
+    try:
+        log_probs = Tensor(
+            ProxyTensor(id="log_probs", shape=(10, 10), dtype="float32"),
+            shape=(10, 10),
+            dtype=DType.Float32,
+            device=device,
+        )
+        targets = Tensor(
+            ProxyTensor(id="targets", shape=(10,), dtype="int32"),
+            shape=(10,),
+            dtype=DType.Int32,
+            device=device,
+        )
+        input_lengths = Tensor(
+            ProxyTensor(id="input_lengths", shape=(1,), dtype="int32"),
+            shape=(1,),
+            dtype=DType.Int32,
+            device=device,
+        )
+        target_lengths = Tensor(
+            ProxyTensor(id="target_lengths", shape=(1,), dtype="int32"),
+            shape=(1,),
+            dtype=DType.Int32,
+            device=device,
+        )
+
+        out_ctc = ctc_loss(log_probs, targets, input_lengths, target_lengths)
+        assert graph.nodes[out_ctc.data.id].op_type == "CTCLoss"
+
+        x = Tensor(
+            ProxyTensor(id="x", shape=(1, 3, 10, 10), dtype="float32"),
+            shape=(1, 3, 10, 10),
+            dtype=DType.Float32,
+            device=device,
+        )
+
+        out_fmp = fractional_max_pool2d(x, (5, 5))
+        assert out_fmp.shape == (1, 3, 5, 5)
+
+        out_aap = adaptive_avg_pool2d(x, (5, 5))
+        assert out_aap.shape == (1, 3, 5, 5)
+
+        out_amp = adaptive_max_pool2d(x, (5, 5))
+        assert out_amp.shape == (1, 3, 5, 5)
+
+        out_unfold = unfold(x, (3, 3))
+        assert graph.nodes[out_unfold.data.id].op_type == "Unfold"
+
+        out_fold = fold(x, (5, 5), (3, 3))
+        assert graph.nodes[out_fold.data.id].op_type == "Fold"
+    finally:
+        _tracer.stop_tracing()
+
+
+def test_missing_advanced_ops_infer_shape_fallback() -> None:
+    """Test missing advanced ops infer shape fallback."""
+    from ml_switcheroo_compiler.ops.reductions.pooling import (
+        CTCLoss,
+        FractionalMaxPool2D,
+        AdaptiveAvgPool2D,
+        AdaptiveMaxPool2D,
+        Unfold,
+        Fold,
+    )
+
+    ctc = CTCLoss()
+    assert ctc.infer_shape(1, 1, 1, 1) == ()
+
+    class DummyShape:
+        shape = (10,)
+
+    assert ctc.infer_shape(DummyShape(), 1, 1, 1) == ()
+
+    fmp = FractionalMaxPool2D()
+    assert fmp.infer_shape(1, (5, 5)) == ()
+
+    aap = AdaptiveAvgPool2D()
+    assert aap.infer_shape(1, (5, 5)) == ()
+
+    amp = AdaptiveMaxPool2D()
+    assert amp.infer_shape(1, (5, 5)) == ()
+
+    unfold_op = Unfold()
+    assert unfold_op.infer_shape(1, (3, 3)) == ()
+
+    fold_op = Fold()
+    assert fold_op.infer_shape(1, (5, 5), (3, 3)) == ()
+
+
+def test_missing_advanced_ops_infer_shape_fallback_2() -> None:
+    """Test missing advanced ops infer shape fallback 2."""
+    from ml_switcheroo_compiler.ops.reductions.pooling import (
+        FractionalMaxPool2D,
+        AdaptiveAvgPool2D,
+        AdaptiveMaxPool2D,
+    )
+
+    class DummyShape:
+        shape = (10, 10)
+
+    fmp = FractionalMaxPool2D()
+    assert fmp.infer_shape(DummyShape(), 5) == ()
+
+    aap = AdaptiveAvgPool2D()
+    assert aap.infer_shape(DummyShape(), 5) == ()
+
+    amp = AdaptiveMaxPool2D()
+    assert amp.infer_shape(DummyShape(), 5) == ()
+
+
+def test_missing_advanced_ops_infer_shape_valid() -> None:
+    """Test missing advanced ops infer shape valid."""
+    from ml_switcheroo_compiler.ops.reductions.pooling import (
+        FractionalMaxPool2D,
+        AdaptiveAvgPool2D,
+        AdaptiveMaxPool2D,
+    )
+
+    class DummyShape:
+        shape = (1, 3, 10, 10)
+
+    fmp = FractionalMaxPool2D()
+    assert fmp.infer_shape(DummyShape(), (5, 5)) == (1, 3, 5, 5)
+
+    aap = AdaptiveAvgPool2D()
+    assert aap.infer_shape(DummyShape(), (5, 5)) == (1, 3, 5, 5)
+
+    amp = AdaptiveMaxPool2D()
+    assert amp.infer_shape(DummyShape(), (5, 5)) == (1, 3, 5, 5)

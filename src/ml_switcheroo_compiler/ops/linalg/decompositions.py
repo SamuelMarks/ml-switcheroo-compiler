@@ -7,6 +7,29 @@ from typing import TYPE_CHECKING
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
+from ml_switcheroo_compiler.ops.base import register_op, OpDef
+
+
+@register_op("PowerIteration")
+class PowerIteration(OpDef):
+    """Power Iteration Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape for Power Iteration.
+
+        Args:
+            *args (object): The positional arguments.
+            **kwargs (object): The keyword arguments.
+
+        Returns:
+            object: The tuple containing output shapes and dtypes.
+        """
+        in_shape = args[0].shape
+        v_shape = in_shape[:-2] + (in_shape[-1],)
+        u_shape = in_shape[:-2] + (in_shape[-2],)
+        sigma_shape = in_shape[:-2]
+        return (v_shape, u_shape, sigma_shape), (args[0].dtype,) * 3
+
 
 if TYPE_CHECKING:
     pass
@@ -294,40 +317,32 @@ def solve(a: object, b: object) -> object:
 def solve_triangular(
     a: object,
     b: object,
-    trans: int = 0,
-    lower: bool = False,
-    unit_diagonal: bool = False,
-    overwrite_b: bool = False,
-    check_finite: bool = True,
+    options: object = None,
 ) -> object:
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:
         a (object): Triangular coefficient matrix
         b (object): Right-hand side matrix or vector
-        trans (int): Type of system to solve. 0 for `a x = b`, 1 for `a^T x = b`,
-        2 for `a^H x = b`. Defaults to 0
-        lower (bool): Use only the lower triangular part of `a`. If False, use the
-        upper triangular part. Defaults to False
-        unit_diagonal (bool): If True, diagonal elements of `a` are assumed to be 1
-        Defaults to False
-        overwrite_b (bool): Allow overwriting data in `b` for speed. Defaults to False
-        check_finite (bool): Whether to check that the input matrices contain only
-        finite numbers. Defaults to True
+        options (object, optional): A TriangularSolveOptions instance. Defaults to None.
 
     Returns:
     object: The solution matrix `x`
     """
     import scipy.linalg as spla
+    from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
+
+    if options is None:
+        options = TriangularSolveOptions()
 
     return spla.solve_triangular(
         a,
         b,
-        trans=trans,
-        lower=lower,
-        unit_diagonal=unit_diagonal,
-        overwrite_b=overwrite_b,
-        check_finite=check_finite,
+        trans=options.trans,  # type: ignore
+        lower=options.lower,  # type: ignore
+        unit_diagonal=options.unit_diagonal,  # type: ignore
+        overwrite_b=options.overwrite_b,  # type: ignore
+        check_finite=options.check_finite,  # type: ignore
     )
 
 
@@ -380,3 +395,67 @@ def lu_factor(
     import scipy.linalg as spla
 
     return spla.lu_factor(a, overwrite_a=overwrite_a, check_finite=check_finite)
+
+
+def power_iteration(
+    input: Tensor,
+    num_iters: int = 1,
+    u: Tensor | None = None,
+) -> tuple[Tensor, Tensor, Tensor]:
+    """Computes the dominant singular value and vectors using power iteration.
+
+    Args:
+        input (Tensor): The input matrix of shape (..., M, N)
+        num_iters (int): The number of iterations to perform. Defaults to 1
+        u (Tensor | None): Optional initial estimate for the left singular vector
+            of shape (..., M, 1). If None, a uniform vector of ones is used.
+
+    Returns:
+    tuple[Tensor, Tensor, Tensor]: A tuple containing:
+        - v (Tensor): Right singular vector estimate
+        - u (Tensor): Left singular vector estimate
+        - sigma (Tensor): Spectral norm estimate
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+
+        v_data, u_data, sigma_data = backend.execute_op(
+            "PowerIteration",
+            input.data,
+            num_iters=num_iters,
+            u=u.data if u is not None else None,
+        )
+
+        # Deduce shapes
+        # v shape is (..., N)
+        # u shape is (..., M)
+        # sigma shape is (...)
+        return (
+            Tensor(v_data, v_data.shape, input.dtype, input.device),
+            Tensor(u_data, u_data.shape, input.dtype, input.device),
+            Tensor(sigma_data, sigma_data.shape, input.dtype, input.device),
+        )
+
+    # Need to deduce shapes for IR node
+    # input shape: (..., M, N)
+    # v shape: (..., N)
+    # u shape: (..., M)
+    # sigma shape: (...)
+    inputs = [input]
+    if u is not None:
+        inputs.append(u)
+
+    in_shape = input.shape
+    v_shape = in_shape[:-2] + (in_shape[-1],)
+    u_shape = in_shape[:-2] + (in_shape[-2],)
+    sigma_shape = in_shape[:-2]
+
+    return _emit_linalg_node(
+        "PowerIteration",
+        inputs,
+        {"num_iters": num_iters},
+        [v_shape, u_shape, sigma_shape],
+        [input.dtype, input.dtype, input.dtype],
+    )

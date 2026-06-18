@@ -152,7 +152,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Get the data type of the tensor.
 
         Returns:
-            DType: The computed result.
+            DType: The data type associated with the tensor.
         """
         return self._dtype
 
@@ -161,7 +161,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Get the device of the tensor.
 
         Returns:
-            Device: The computed result.
+            Device: The device associated with the tensor.
         """
         return self._device
 
@@ -170,7 +170,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Check if the tensor requires gradient computation.
 
         Returns:
-            bool: The computed result.
+            bool: A boolean indicating the result of the check.
         """
         return self._requires_grad
 
@@ -179,7 +179,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Get the underlying data payload.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return self._data
 
@@ -231,7 +231,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Bool.
 
         Returns:
-            bool: The resulting output
+            bool: A boolean indicating the result of the check.
         """
         arr = self.__array__()
         if getattr(arr, "size", 1) == 1:
@@ -245,7 +245,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Len.
 
         Returns:
-            int: The resulting output
+            int: The evaluated output resulting from this operation.
         """
         return self.shape[0] if self.shape else 0
 
@@ -266,7 +266,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             key (object): The key to process.
 
         Returns:
-            'Tensor': The resulting output
+            'Tensor': A tensor containing the result of the operation.
         """
         arr = self.__array__()
         if hasattr(key, "data"):
@@ -280,10 +280,26 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
 
         if config.eager_mode:
             return Tensor(res, getattr(res, "shape", ()), self.dtype, self.device)
-        msg = "Tracing getitem is not yet fully implemented via an OpDef."
-        raise NotImplementedError(
-            msg,
+
+        from ml_switcheroo_compiler.tracing import _tracer, ProxyTensor
+        import uuid
+        from ml_switcheroo_ir import LogicalNode
+
+        nid = f"getitem_{uuid.uuid4().hex[:6]}"
+        input_id = getattr(self.data, "id", "const")
+
+        node = LogicalNode(
+            id=nid,
+            op_type="GetItem",
+            inputs=[input_id],
+            attributes={"key": str(key)},
+            shape_metadata=(),
         )
+        if _tracer.is_tracing:
+            _tracer.add_node(node)
+        else:
+            raise RuntimeError("Cannot add node: not currently tracing.")
+        return Tensor(ProxyTensor(nid, (), self.dtype.value), (), self.dtype, self.device)
 
     def __setitem__(self, key: object, value: object) -> None:
         """Setitem.
@@ -298,10 +314,11 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             val = getattr(value, "data", value)
             self.data[key] = val
         else:
-            msg = "Item assignment is only supported in eager mode."
-            raise NotImplementedError(
-                msg,
+            msg = (
+                "Tensor object does not support item assignment in tracing "
+                "mode. Use .at[...].set(...) instead."
             )
+            raise TypeError(msg)
 
     def backward(self, *args: object, **kwargs: object) -> None:
         """Triggers the reverse-mode auto-differentiation.
@@ -321,7 +338,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             *shape: Additional arguments.
 
         Returns:
-            'Tensor': The computed result.
+            'Tensor': A tensor containing the result of the operation.
         """
         from ml_switcheroo_compiler.ops.shape import reshape
 
@@ -337,7 +354,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Returns a contiguous in memory tensor.
 
         Returns:
-            'Tensor': The computed result.
+            'Tensor': A tensor containing the result of the operation.
         """
         return self
 
@@ -345,7 +362,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Returns the value of this tensor as a standard Python number.
 
         Returns:
-            float: The computed result.
+            float: The evaluated output resulting from this operation.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -359,7 +376,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """Returns a new Tensor, detached from the current graph.
 
         Returns:
-            'Tensor': The computed result.
+            'Tensor': A tensor containing the result of the operation.
         """
         from ml_switcheroo_compiler.core.device import Device
 
@@ -373,3 +390,107 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             ArrayAtIndexer: The indexer
         """
         return ArrayAtIndexer(self)
+
+
+class Variable(Tensor):
+    """A mutable variable tensor for tracking state."""
+
+    def __init__(
+        self,
+        data: object,
+        shape: tuple[int, ...],
+        dtype: DType,
+        device: Device,
+        trainable: bool = False,
+    ) -> None:
+        """Init.
+
+        Args:
+            data (object): The underlying data array or proxy object.
+            shape (tuple[int, ...]): The shape of the tensor.
+            dtype (DType): The data type.
+            device (Device): The device where the tensor is stored.
+            trainable (bool): Whether the variable is trainable.
+        """
+        super().__init__(data, shape, dtype, device)
+        self.trainable = trainable
+
+    def assign(self, value: Tensor) -> "Variable":
+        """Assign a new value to the variable.
+
+        Args:
+            value (Tensor): The new value.
+
+        Returns:
+            Variable: The updated variable.
+        """
+        from ml_switcheroo_compiler.core.config import config
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        if config.eager_mode:
+            backend = get_active_backend()
+            self._data = backend.execute_op("Assign", self._data, value.data)
+        else:
+            from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+            _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
+        return self
+
+    def assign_add(self, value: Tensor) -> "Variable":
+        """Add a value to the variable in-place.
+
+        Args:
+            value (Tensor): The value to add.
+
+        Returns:
+            Variable: The updated variable.
+        """
+        from ml_switcheroo_compiler.core.config import config
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        if config.eager_mode:
+            backend = get_active_backend()
+            # Eager implementation: just update self._data
+            self._data = backend.execute_op("Add", self._data, value.data)
+        else:
+            from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+            _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
+        return self
+
+    def assign_sub(self, value: Tensor) -> "Variable":
+        """Subtract a value from the variable in-place.
+
+        Args:
+            value (Tensor): The value to subtract.
+
+        Returns:
+            Variable: The updated variable.
+        """
+        from ml_switcheroo_compiler.core.config import config
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        if config.eager_mode:
+            backend = get_active_backend()
+            # Eager implementation: just update self._data
+            self._data = backend.execute_op("Subtract", self._data, value.data)
+        else:
+            from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+            _emit_shape_node("AssignSub", [self, value], {}, self.shape, self.dtype)
+        return self
+
+
+class Parameter(Variable):
+    """A trainable parameter tensor."""
+
+    def __init__(self, data: object, shape: tuple[int, ...], dtype: DType, device: Device) -> None:
+        """Init.
+
+        Args:
+            data (object): The underlying data array or proxy object.
+            shape (tuple[int, ...]): The shape of the tensor.
+            dtype (DType): The data type.
+            device (Device): The device where the tensor is stored.
+        """
+        super().__init__(data, shape, dtype, device, trainable=True)

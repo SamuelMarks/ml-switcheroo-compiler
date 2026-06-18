@@ -23,8 +23,6 @@ def fft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     Returns:
     Tensor: The transformed tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -54,8 +52,6 @@ def rfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     Returns:
     Tensor: The transformed tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

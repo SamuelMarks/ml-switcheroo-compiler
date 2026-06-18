@@ -31,6 +31,9 @@ def test_dtype_inference_except_branch(monkeypatch: object) -> None:
 
 def test_dtype_inference_3_inputs() -> None:
     """Docstring."""
+    from ml_switcheroo_compiler.core.config import config
+
+    config.jax_enable_x64 = True
     graph = IRGraph()
     n0 = IRNode(id="n0", op_type="Constant", inputs=[], attributes={"dtype": DType.Int32.value})
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"dtype": DType.Float32.value})

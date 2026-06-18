@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 class ONNXCodeGenerator(BaseGenerator):
     """Emit ONNX Protobuf payload."""
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Visit a node and return the code string.
 
         Args:
@@ -23,6 +23,6 @@ class ONNXCodeGenerator(BaseGenerator):
         """Evaluate generate.
 
         Returns:
-            str: The computed result.
+            str: The evaluated output resulting from this operation.
         """
         return "/* ONNX Generated Code */"

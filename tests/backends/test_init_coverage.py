@@ -1,5 +1,8 @@
 """Module docstring."""
 
+from ml_switcheroo_compiler.backends.formatters import FormatterContext
+
+
 import importlib
 
 
@@ -274,8 +277,10 @@ def test_cupy_generator_fallback_kwargs_only() -> None:
     from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    gen = CupyGenerator(IRGraph())
-    gen._format_generic_fallback("out", "Op", [], {"a": "1"})
+    CupyGenerator(IRGraph())
+    from ml_switcheroo_compiler.backends.formatters import OpFormatter
+
+    OpFormatter.format_generic_fallback(FormatterContext("out", "Op", [], {"a": "1"}))
 
 
 def test_dask_generator_fallback_kwargs_only() -> None:
@@ -283,12 +288,17 @@ def test_dask_generator_fallback_kwargs_only() -> None:
     from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph
 
-    gen = DaskGenerator(IRGraph())
-    gen._format_generic_fallback("out", "Op", [], {"a": "1"})
+    DaskGenerator(IRGraph())
+    from ml_switcheroo_compiler.backends.formatters import OpFormatter
+
+    OpFormatter.format_generic_fallback(FormatterContext("out", "Op", [], {"a": "1"}))
 
 
 def test_type_promotion_129_complex() -> None:
     """Docstring."""
+    from ml_switcheroo_compiler.core.config import config
+
+    config.jax_enable_x64 = True
     from ml_switcheroo_compiler.core.type_promotion import promote_types
     from ml_switcheroo_compiler.core.dtype import DType
 

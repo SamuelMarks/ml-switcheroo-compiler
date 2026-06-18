@@ -1,6 +1,7 @@
 """Broadcast Explicitizer Pass."""
 
 import uuid
+from typing import Optional
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -10,14 +11,38 @@ from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
+def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[int, ...]) -> str:
+    new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
+    new_node = LogicalNode(
+        id=new_id,
+        op_type="BroadcastTo",
+        inputs=[input_id],
+        shape_metadata=target_shape,
+        attributes={"shape": target_shape},
+    )
+    graph.nodes[new_id] = new_node
+    return new_id
+
+
+def _needs_broadcast(
+    shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]
+) -> Optional[tuple[int, ...]]:
+    if shape1 is None or shape2 is None or shape1 == shape2:
+        return None
+    try:
+        return broadcast_shapes(shape1, shape2)
+    except ValueError:
+        return None
+
+
 def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
     """In-place pass to explicitly inject BroadcastTo nodes.
 
     Args:
-        graph (IRGraph): The graph.
+        graph (IRGraph): The graph parameter for the operation.
 
     Returns:
-        bool: The computed result.
+        bool: A boolean indicating the result of the check.
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
@@ -28,14 +53,11 @@ def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
     shape_inference_pass(graph)
 
     for node in sorted_nodes:
-        # Only binary ops typically broadcast implicitly
         try:
             get_op(node.op_type)
         except KeyError:
             continue
 
-        # Is it a binary op? Check if it inherits from BinaryMathOp
-        # Or just check if inputs == 2
         if len(node.inputs) != 2:
             continue
 
@@ -43,45 +65,16 @@ def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
         shape1 = graph.nodes[in1].shape_metadata
         shape2 = graph.nodes[in2].shape_metadata
 
-        # Don't try broadcasting None shapes
-        if shape1 is None or shape2 is None:
-            continue
-
-        if shape1 == shape2:
-            continue
-
-        try:
-            target_shape = broadcast_shapes(shape1, shape2)
-        except ValueError:
-            # Shapes are fundamentally incompatible. Shape pass or execution will fail
+        target_shape = _needs_broadcast(shape1, shape2)
+        if target_shape is None:
             continue
 
         if shape1 != target_shape:
-            # Inject BroadcastTo for input 1
-            new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
-            new_node = LogicalNode(
-                id=new_id,
-                op_type="BroadcastTo",
-                inputs=[in1],
-                shape_metadata=target_shape,
-                attributes={"shape": target_shape},
-            )
-            graph.nodes[new_id] = new_node
-            node.inputs[0] = new_id
+            node.inputs[0] = _inject_broadcast_node(graph, in1, target_shape)
             modified = True
 
         if shape2 != target_shape:
-            # Inject BroadcastTo for input 2
-            new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
-            new_node = LogicalNode(
-                id=new_id,
-                op_type="BroadcastTo",
-                inputs=[in2],
-                shape_metadata=target_shape,
-                attributes={"shape": target_shape},
-            )
-            graph.nodes[new_id] = new_node
-            node.inputs[1] = new_id
+            node.inputs[1] = _inject_broadcast_node(graph, in2, target_shape)
             modified = True
 
     return modified

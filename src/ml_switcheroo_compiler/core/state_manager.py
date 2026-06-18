@@ -3,6 +3,37 @@
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
 
+def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
+    target = node.inputs[0]
+    new_val = node.inputs[1]
+    if target in state_env:
+        state_env[target] = new_val
+
+
+def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
+    new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
+    return LogicalNode(
+        id=node.id,
+        op_type=node.op_type,
+        domain=node.domain,
+        version=node.version,
+        attributes=dict(node.attributes),
+        inputs=new_inputs,
+        shape_metadata=node.shape_metadata,
+        source_ast_ref=node.source_ast_ref,
+        sharding=node.sharding,
+    )
+
+
+def _build_functional_outputs(
+    graph_outputs: list[str], state_vars: list[str], state_env: dict[str, str]
+) -> list[str]:
+    functional_outputs = list(graph_outputs)
+    for v in state_vars:
+        functional_outputs.append(state_env[v])
+    return functional_outputs
+
+
 def lift_state(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
     """Lifts mutable state into pure functional boundaries.
 
@@ -24,47 +55,14 @@ def lift_state(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
         state_vars (list[str]): Argument state_vars
     """
     new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
-
     sorted_nodes = topological_sort(graph)
-
-    # Map from original node ID to the current latest state node ID
     state_env: dict[str, str] = {v: v for v in state_vars}
 
     for node in sorted_nodes:
         if node.op_type == "Assign":
-            # Assign expects [target_state, new_value]
-            # We don't emit Assign in functional graph, instead we just update the
-            # environment
-            target = node.inputs[0]
-            new_val = node.inputs[1]
-            # Trace target back to original state var if it's an alias
-            # (assuming simple direct updates for now)
-            if target in state_env:
-                state_env[target] = new_val
+            _process_assign_node(node, state_env)
         else:
-            # For all other nodes, rewrite inputs using latest state
-            new_inputs = []
-            for inp in node.inputs:
-                # If input is a state variable, use its latest version
-                # (Note: standard read of a state var gets mapped here)
-                new_inputs.append(state_env.get(inp, inp))
+            new_graph.nodes[node.id] = _rewrite_node(node, state_env)
 
-            new_graph.nodes[node.id] = LogicalNode(
-                id=node.id,
-                op_type=node.op_type,
-                domain=node.domain,
-                version=node.version,
-                attributes=dict(node.attributes),
-                inputs=new_inputs,
-                shape_metadata=node.shape_metadata,
-                source_ast_ref=node.source_ast_ref,
-                sharding=node.sharding,
-            )
-
-    # The new outputs are the original outputs + the updated state variables
-    functional_outputs = list(graph.outputs)
-    for v in state_vars:
-        functional_outputs.append(state_env[v])
-
-    new_graph.outputs = functional_outputs
+    new_graph.outputs = _build_functional_outputs(graph.outputs, state_vars, state_env)
     return new_graph

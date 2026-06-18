@@ -1,11 +1,15 @@
 """Reductions operations package."""
 
+import ml_switcheroo_compiler.ops.reductions.pooling as _pooling
+
 import ml_switcheroo_compiler.ops.reductions.basic as _basic
 from ml_switcheroo_compiler.ops.base import get_op
 
 from .basic import Pmean, Psum, ReduceWindow
 from .frontend import pmean as pmean
 from .frontend import psum as psum
+
+
 from .frontend import reduce_window as reduce_window
 from .frontend import segment_sum as segment_sum
 
@@ -51,3 +55,4 @@ __all__ = [
     "sum",
     "variance",
 ]
+_ = _pooling

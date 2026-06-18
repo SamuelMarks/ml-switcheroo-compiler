@@ -55,9 +55,9 @@ class Environment:
         """Check if an item is in the environment.
 
         Args:
-            name (str): The name.
+            name (str): The name parameter for the operation.
 
         Returns:
-            bool: The computed result.
+            bool: A boolean indicating the result of the check.
         """
         return name in self.memory

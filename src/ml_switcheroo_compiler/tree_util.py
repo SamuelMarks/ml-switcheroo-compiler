@@ -17,9 +17,9 @@ class TreeDef:
         """Initialize.
 
         Args:
-            node_type (type): The node_type.
-            children_defs (list[TreeDef] | None): The children_defs.
-            keys (list[Any] | None): The keys.
+            node_type (type): The node_type parameter for the operation.
+            children_defs (list[TreeDef] | None): The children_defs parameter for the operation.
+            keys (list[Any] | None): The keys parameter for the operation.
         """
         self.node_type = node_type
         self.children_defs = children_defs or []
@@ -29,7 +29,7 @@ class TreeDef:
         """Repr.
 
         Returns:
-            str: The computed result.
+            str: The evaluated output resulting from this operation.
         """
         return f"TreeDef({self.node_type.__name__}, {self.children_defs})"
 
@@ -45,10 +45,10 @@ class TreeDef:
         """Equality.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            bool: The computed result.
+            bool: A boolean indicating the result of the check.
         """
         if not isinstance(other, TreeDef):
             return False
@@ -63,10 +63,10 @@ def tree_flatten(tree: object) -> tuple[list[object], TreeDef]:
     """Flattens a PyTree into a list of leaves and an auxiliary treedef.
 
     Args:
-        tree (object): The tree.
+        tree (object): The tree parameter for the operation.
 
     Returns:
-        tuple[list[object], TreeDef]: The computed result.
+        tuple[list[object], TreeDef]: The evaluated output resulting from this operation.
     """
     if isinstance(tree, dict):
         keys = sorted(tree.keys())
@@ -92,11 +92,11 @@ def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
     """Reconstructs a PyTree from a treedef and a list of leaves.
 
     Args:
-        treedef (TreeDef): The treedef.
-        leaves (list[object]): The leaves.
+        treedef (TreeDef): The treedef parameter for the operation.
+        leaves (list[object]): The leaves parameter for the operation.
 
     Returns:
-        object: The computed result.
+        object: The evaluated output resulting from this operation.
     """
     leaves_it = iter(leaves)
 
@@ -141,12 +141,12 @@ def tree_map(f: Callable, tree: object, *rest: object) -> object:
     """Maps a function over the leaves of a PyTree.
 
     Args:
-        f (Callable): The f.
-        tree (object): The tree.
+        f (Callable): The f parameter for the operation.
+        tree (object): The tree parameter for the operation.
         *rest: Additional arguments.
 
     Returns:
-        object: The computed result.
+        object: The evaluated output resulting from this operation.
     """
     leaves, treedef = tree_flatten(tree)
     rest_leaves = []

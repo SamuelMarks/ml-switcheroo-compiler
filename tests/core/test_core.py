@@ -120,11 +120,12 @@ def test_config_env_var(monkeypatch: object) -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import Config
 
     monkeypatch.setenv("SWITCHEROO_EAGER_MODE", "1")
-    new_cfg = Config()
-    assert new_cfg.eager_mode is True
+    from ml_switcheroo_compiler.core.config import ConfigState
+
+    new_state = ConfigState()
+    assert new_state.eager_mode is True
 
 
 def test_tensor() -> None:

@@ -13,7 +13,7 @@ repos:
     - --fix
   - id: ruff-format
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.15.0
+  rev: v2.1.0
   hooks:
   - id: mypy
     args:
@@ -30,3 +30,11 @@ repos:
     language: system
     files: ^src/ml_switcheroo_compiler/
     pass_filenames: false
+- repo: local
+  hooks:
+  - id: radon
+    name: radon
+    entry: radon cc -nc
+    language: python
+    types: [python]
+    additional_dependencies: [radon]

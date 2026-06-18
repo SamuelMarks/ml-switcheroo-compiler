@@ -8,7 +8,6 @@ This module registers differentiation rules for operations like Reshape, Transpo
 BroadcastTo, allowing the autodiff system to propagate gradients through shape changes
 """
 
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -118,23 +117,19 @@ def transpose_jvp(graph: object, node: object, tangent: str) -> str:
 
 @register_vjp("BroadcastTo")
 def broadcast_to_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Computes the Vector-Jacobian Product (VJP) for a BroadcastTo operation.
-
-    Currently, this operation is not implemented and will raise an error
+    """Computes the Vector-Jacobian Product (VJP) for the BroadcastTo operation.
 
     Args:
         graph (object): The computation graph
-        node (object): The BroadcastTo node
-        cotangent (str): The cotangent variable name
+        node (object): The BroadcastTo operation node
+        cotangent (str): The identifier of the cotangent tensor
 
     Returns:
-    tuple: This function does not return normally
-
-    Raises:
-    UnimplementedMathError: Always raised as VJP is not implemented
+    tuple: A tuple containing the identifier of the summed cotangent tensor
     """
-    msg = "VJP not implemented for BroadcastTo"
-    raise UnimplementedMathError(msg)
+    x = node.inputs[0]
+    res = emit_ir_node(graph, "Sum", [cotangent], graph.nodes[x].shape_metadata)
+    return (res,)
 
 
 @register_jvp("BroadcastTo")

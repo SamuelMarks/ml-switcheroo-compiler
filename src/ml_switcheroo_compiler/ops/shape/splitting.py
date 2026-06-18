@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations

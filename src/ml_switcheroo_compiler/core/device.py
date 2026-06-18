@@ -3,6 +3,9 @@
 from enum import Enum
 
 
+from dataclasses import dataclass
+
+
 class DeviceType(Enum):
     """Enumeration of supported device types."""
 
@@ -11,48 +14,18 @@ class DeviceType(Enum):
     WEBGPU = "webgpu"
 
 
+@dataclass(frozen=True)
 class Device:
     """Represents a specific hardware device and index."""
 
-    def __init__(self, device_type: DeviceType, index: int = 0) -> None:
-        """Initialize the Device.
-
-        device_type (DeviceType): The device to store the tensor on._type
-            index (int): Argument index
-
-        Args:
-            device_type (DeviceType): The device to store the tensor on._type
-            index (int): Argument index
-        """
-        self.device_type = device_type
-        self.index = index
-
-    def __eq__(self, other: object) -> bool:
-        """Check for equality with another Device.
-
-        Args:
-            other (object): The other.
-
-        Returns:
-            bool: The computed result.
-        """
-        if not isinstance(other, Device):
-            return False
-        return self.device_type == other.device_type and self.index == other.index
-
-    def __hash__(self) -> int:
-        """Hash the Device.
-
-        Returns:
-            int: The computed result.
-        """
-        return hash((self.device_type, self.index))
+    device_type: DeviceType
+    index: int = 0
 
     def __repr__(self) -> str:
         """Return the string representation of the Device.
 
         Returns:
-            str: The computed result.
+            str: The evaluated output resulting from this operation.
         """
         return f"Device({self.device_type.value}:{self.index})"
 
@@ -84,7 +57,7 @@ class StreamContext:
         """Enter context.
 
         Returns:
-            StreamContext: The computed result.
+            StreamContext: The evaluated output resulting from this operation.
         """
         return self
 
@@ -117,7 +90,7 @@ class FunctionExporter:
         """Enter context.
 
         Returns:
-            FunctionExporter: The computed result.
+            FunctionExporter: The evaluated output resulting from this operation.
         """
         return self
 

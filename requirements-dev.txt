@@ -1,3 +1,4 @@
 pytest
 pytest-cov
 pre-commit
+radon>=6.0.0

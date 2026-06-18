@@ -103,7 +103,6 @@ def test_vjp_mul() -> None:
     assert len(grad_g.outputs) == 2
 
 
-@pytest.mark.skip(reason="VJP not implemented for Divide")
 def test_vjp_div() -> None:
     """Tests the vector-Jacobian product (VJP) rule for the 'Divide' operation.
 
@@ -148,7 +147,6 @@ def test_vjp_sum() -> None:
     assert len(grad_g.outputs) == 1
 
 
-@pytest.mark.skip(reason="VJP not implemented for Mean")
 def test_vjp_mean() -> None:
     """Tests the vector-Jacobian product (VJP) rule for the 'Mean' operation.
 
@@ -160,7 +158,6 @@ def test_vjp_mean() -> None:
     assert len(grad_g.outputs) == 1
 
 
-@pytest.mark.skip(reason="VJP not implemented for Max")
 def test_vjp_max() -> None:
     """Tests the vector-Jacobian product (VJP) rule for the 'Max' operation.
 
@@ -172,7 +169,6 @@ def test_vjp_max() -> None:
     assert len(grad_g.outputs) == 1
 
 
-@pytest.mark.skip(reason="VJP not implemented for Min")
 def test_vjp_min() -> None:
     """Tests the vector-Jacobian product (VJP) rule for the 'Min' operation.
 

@@ -5,6 +5,7 @@ implementations of common reductions such as Sum, Mean, Max, Min, Prod, Variance
 Argmax, Argmin, All, Logsumexp, CountNonzero, Norm, Cumsum, and Any
 """
 
+from ml_switcheroo_compiler.ops.configs import WindowConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -46,7 +47,7 @@ class ReductionOp(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            str: The resulting output
+            str: The evaluated output resulting from this operation.
         """
         args = [x]
         if "axis" in kwargs and kwargs["axis"] is not None:
@@ -248,13 +249,13 @@ class SegmentSum(OpDef):
         """Infer shape.
 
         Args:
-            data (object): The data.
-            segment_ids (object): The segment_ids.
-            num_segments (object): The num_segments.
+            data (object): The data parameter for the operation.
+            segment_ids (object): The segment_ids parameter for the operation.
+            num_segments (object): The num_segments parameter for the operation.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         # Simple heuristic: replace first dimension with num_segments
         # If num_segments is unknown or None, we might return symbolic or ()
@@ -268,7 +269,7 @@ class SegmentSum(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented SegmentSum"
 
@@ -280,7 +281,7 @@ class SegmentSum(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented SegmentSum"
 
@@ -292,7 +293,7 @@ class SegmentSum(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented SegmentSum"
 
@@ -304,7 +305,7 @@ class SegmentSum(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented SegmentSum"
 
@@ -316,36 +317,9 @@ class SegmentSum(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented SegmentSum"
-
-
-class ReduceWindowConfig:
-    """Configuration for ReduceWindow shape inference."""
-
-    def __init__(
-        self,
-        window_dimensions: object,
-        window_strides: object = None,
-        padding: object = None,
-        base_dilation: object = None,
-        window_dilation: object = None,
-    ) -> None:
-        """Initialize.
-
-        Args:
-            window_dimensions (Any): Argument window_dimensions.
-            window_strides (Any): Argument window_strides.
-            padding (Any): Argument padding.
-            base_dilation (Any): Argument base_dilation.
-            window_dilation (Any): Argument window_dilation.
-        """
-        self.window_dimensions = window_dimensions
-        self.window_strides = window_strides
-        self.padding = padding
-        self.base_dilation = base_dilation
-        self.window_dilation = window_dilation
 
 
 @register_op("ReduceWindow")
@@ -365,7 +339,7 @@ class ReduceWindow(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         operand, config = self._extract_reduce_window_args(args, kwargs)
 
@@ -383,14 +357,7 @@ class ReduceWindow(ReductionOp):
                 out_shape.append(dim)
                 continue
 
-            out_dim = self._compute_reduce_window_dim(
-                dim,
-                padding[i],
-                base_dilation[i],
-                window_dilation[i],
-                window_strides[i],
-                window_dimensions[i],
-            )
+            out_dim = self._compute_reduce_window_dim(dim, i, config)
             out_shape.append(out_dim)
 
         return tuple(out_shape)
@@ -408,10 +375,10 @@ class ReduceWindow(ReductionOp):
         operand = args[0] if len(args) > 0 else kwargs["operand"]
         config = args[3] if len(args) > 3 else kwargs.get("config", None)
         if config is None:
-            config = ReduceWindowConfig(window_dimensions=[])
+            config = WindowConfig(window_dimensions=[])
         return operand, config
 
-    def _normalize_config(self, config: ReduceWindowConfig) -> tuple:
+    def _normalize_config(self, config: WindowConfig) -> tuple:
         """Execute _normalize_config.
 
         Args:
@@ -428,23 +395,37 @@ class ReduceWindow(ReductionOp):
         window_dilation = config.window_dilation if config.window_dilation is not None else [1] * n
         return window_dimensions, window_strides, padding, base_dilation, window_dilation
 
-    def _compute_reduce_window_dim(
-        self, dim: int, pad: tuple, base_dil: int, win_dil: int, stride: int, win_dim: int
-    ) -> int:
+    def _extract_window_params(
+        self, axis: int, config: WindowConfig
+    ) -> tuple[int, int, int, int, int, int]:
+        window_dimensions, window_strides, padding, base_dilation, window_dilation = (
+            self._normalize_config(config)
+        )
+        pad = (
+            padding[axis] if isinstance(padding, (list, tuple)) and axis < len(padding) else (0, 0)
+        )
+        base_dil = base_dilation[axis] if axis < len(base_dilation) else 1
+        win_dil = window_dilation[axis] if axis < len(window_dilation) else 1
+        stride = window_strides[axis] if axis < len(window_strides) else 1
+        win_dim = window_dimensions[axis] if axis < len(window_dimensions) else 1
+
+        pad_low, pad_high = pad if isinstance(pad, tuple) else (0, 0)
+        return pad_low, pad_high, base_dil, win_dil, stride, win_dim
+
+    def _compute_reduce_window_dim(self, dim: int, axis: int, config: WindowConfig) -> int:
         """Execute _compute_reduce_window_dim.
 
         Args:
-            dim (Any): Argument dim.
-            pad (Any): Argument pad.
-            base_dil (Any): Argument base_dil.
-            win_dil (Any): Argument win_dil.
-            stride (Any): Argument stride.
-            win_dim (Any): Argument win_dim.
+            dim (int): Argument dim.
+            axis (int): Argument axis.
+            config (WindowConfig): Argument config.
 
         Returns:
         Any: The result.
         """
-        pad_low, pad_high = pad if isinstance(pad, tuple) else (0, 0)
+        pad_low, pad_high, base_dil, win_dil, stride, win_dim = self._extract_window_params(
+            axis, config
+        )
         eff_in_dim = (dim - 1) * base_dil + 1 + pad_low + pad_high
         eff_win_dim = (win_dim - 1) * win_dil + 1
         return 0 if eff_in_dim < eff_win_dim else (eff_in_dim - eff_win_dim) // stride + 1
@@ -457,7 +438,7 @@ class ReduceWindow(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ReduceWindow"
 
@@ -469,7 +450,7 @@ class ReduceWindow(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ReduceWindow"
 
@@ -481,7 +462,7 @@ class ReduceWindow(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ReduceWindow"
 
@@ -493,7 +474,7 @@ class ReduceWindow(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ReduceWindow"
 
@@ -505,7 +486,7 @@ class ReduceWindow(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented ReduceWindow"
 
@@ -520,12 +501,12 @@ class Psum(ReductionOp):
         """Infer shape.
 
         Args:
-            x (object): The x.
-            axis_name (object): The axis_name.
+            x (object): The input x tensor.
+            axis_name (object): The axis_name parameter for the operation.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return getattr(x, "shape", ())
 
@@ -537,7 +518,7 @@ class Psum(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Psum"
 
@@ -549,7 +530,7 @@ class Psum(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Psum"
 
@@ -561,7 +542,7 @@ class Psum(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Psum"
 
@@ -573,7 +554,7 @@ class Psum(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Psum"
 
@@ -585,7 +566,7 @@ class Psum(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Psum"
 
@@ -600,12 +581,12 @@ class Pmean(ReductionOp):
         """Infer shape.
 
         Args:
-            x (object): The x.
-            axis_name (object): The axis_name.
+            x (object): The input x tensor.
+            axis_name (object): The axis_name parameter for the operation.
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return getattr(x, "shape", ())
 
@@ -617,7 +598,7 @@ class Pmean(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Pmean"
 
@@ -629,7 +610,7 @@ class Pmean(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Pmean"
 
@@ -641,7 +622,7 @@ class Pmean(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Pmean"
 
@@ -653,7 +634,7 @@ class Pmean(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Pmean"
 
@@ -665,6 +646,6 @@ class Pmean(ReductionOp):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The computed result.
+            object: The evaluated output resulting from this operation.
         """
         return "Not implemented Pmean"

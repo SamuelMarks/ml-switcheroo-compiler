@@ -28,13 +28,13 @@ def _emit_creation_node(
     """Emit a creation node to the IR graph.
 
     Args:
-        op_type (str): The op_type.
-        shape (Sequence[int]): The shape.
-        dtype (DType): The dtype.
-        attributes (dict | None): The attributes.
+        op_type (str): The op_type parameter for the operation.
+        shape (Sequence[int]): The target shape.
+        dtype (DType): The target data type.
+        attributes (dict | None): The attributes parameter for the operation.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     if not _tracer.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."
@@ -45,7 +45,7 @@ def _emit_creation_node(
         id=out_id,
         op_type=op_type,
         inputs=[],
-        attributes=attributes or {},
+        attributes={**(attributes or {}), "dtype": dtype.value},
         shape_metadata=shape,
     )
     _tracer.add_node(node)
@@ -61,11 +61,11 @@ def _emit_constant_node(
     """Emit a Constant node to the IR graph.
 
     Args:
-        value (object): The value.
-        dtype (DType): The dtype.
+        value (object): The value parameter for the operation.
+        dtype (DType): The target data type.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     if not _tracer.is_tracing:
         msg = "Cannot emit Constant node outside of a tracing context."
@@ -99,13 +99,17 @@ def array(
         dtype (Optional[DType]): The data type
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     if dtype is None:
         val_arr = get_active_backend().array(object)
         from ml_switcheroo_compiler.core.dtype import DType
 
-        dtype = DType(str(val_arr.dtype))
+        dtype_str = str(val_arr.dtype)
+        if dtype_str.startswith("<U") or dtype_str.startswith("|S") or dtype_str == "object":
+            dtype = DType.String
+        else:
+            dtype = DType(dtype_str)
     else:
         val_arr = get_active_backend().array(object)
 
@@ -128,7 +132,7 @@ def asarray(
         dtype (Optional[DType]): The data type
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     if isinstance(a, Tensor):
         if dtype is not None and a.dtype != dtype:
@@ -152,7 +156,7 @@ def zeros(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -161,7 +165,7 @@ def zeros(
     if config.eager_mode:
         data = get_active_backend().execute_op("Zeros", shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
-    return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 0})
+    return _emit_creation_node("Zeros", shape, dtype, {})
 
 
 def ones(
@@ -177,7 +181,7 @@ def ones(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -186,7 +190,7 @@ def ones(
     if config.eager_mode:
         data = get_active_backend().execute_op("Ones", shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
-    return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 1})
+    return _emit_creation_node("Ones", shape, dtype, {})
 
 
 def full(
@@ -204,7 +208,7 @@ def full(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -234,7 +238,7 @@ def zeros_like(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -257,7 +261,7 @@ def ones_like(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -282,7 +286,7 @@ def full_like(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -319,7 +323,7 @@ def arange(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -335,7 +339,7 @@ def arange(
         data = get_active_backend().execute_op("Arange", start, stop, step, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
     return _emit_creation_node(
-        "Range",
+        "Arange",
         shape,
         dtype,
         {"start": start, "stop": stop, "step": step},
@@ -359,7 +363,7 @@ def linspace(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -391,7 +395,7 @@ def eye(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -417,7 +421,7 @@ def identity(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     return eye(n, n, dtype, device)
 
@@ -430,7 +434,7 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
         diagonal (int): Argument diagonal
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     device = input.device
     dtype = input.dtype
@@ -477,7 +481,7 @@ def empty(
         device (Optional[Device]): The device to store the tensor on.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -486,18 +490,18 @@ def empty(
     if config.eager_mode:
         data = get_active_backend().execute_op("Empty", shape, dtype=dtype.value)
         return Tensor(data, shape, dtype, device)
-    return _emit_creation_node("ConstantOfShape", shape, dtype, {"value": 0})
+    return _emit_creation_node("Zeros", shape, dtype, {})
 
 
 def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
     """Return a new array with the same shape and type as a given array.
 
     Args:
-        x (Tensor): The x.
-        dtype (DType | None): The dtype.
+        x (Tensor): The input x tensor.
+        dtype (DType | None): The target data type.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     return empty(x.shape, dtype=dtype if dtype is not None else x.dtype)
 
@@ -511,11 +515,11 @@ def rand(
 
     Args:
         *size: Additional arguments.
-        dtype (DType | None): The dtype.
-        device (Device | None): The device.
+        dtype (DType | None): The target data type.
+        device (Device | None): The device parameter for the operation.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -536,11 +540,11 @@ def randn(
 
     Args:
         *size: Additional arguments.
-        dtype (DType | None): The dtype.
-        device (Device | None): The device.
+        dtype (DType | None): The target data type.
+        device (Device | None): The device parameter for the operation.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -562,14 +566,14 @@ def randint(
     """Return a tensor filled with random integers from [low, high).
 
     Args:
-        low (int): The low.
-        high (int): The high.
-        size (Sequence[int]): The size.
-        dtype (DType | None): The dtype.
-        device (Device | None): The device.
+        low (int): The low parameter for the operation.
+        high (int): The high parameter for the operation.
+        size (Sequence[int]): The size parameter for the operation.
+        dtype (DType | None): The target data type.
+        device (Device | None): The device parameter for the operation.
 
     Returns:
-        Tensor: The computed result.
+        Tensor: A tensor containing the result of the operation.
     """
     dtype = dtype or config.default_int_dtype
     device = device or config.default_device
@@ -585,10 +589,10 @@ def manual_seed(seed: int) -> int:
     """Sets the seed for generating random numbers.
 
     Args:
-        seed (int): The seed.
+        seed (int): The random seed.
 
     Returns:
-        int: The computed result.
+        int: The evaluated output resulting from this operation.
     """
     if config.eager_mode:
         get_active_backend().execute_op("Seed", seed)

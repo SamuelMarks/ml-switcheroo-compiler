@@ -3,63 +3,51 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from collections.abc import Sequence
 
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import dispatch_eager
 from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
+from ml_switcheroo_compiler.ops.configs import ConvConfig
+
+
+@dispatch_eager("ConvGeneralDilated")
 def conv_general_dilated(
     lhs: Tensor,
     rhs: Tensor,
-    window_strides: Sequence[int],
-    padding: Sequence[tuple[int, int]] | str,
-    lhs_dilation: Sequence[int] | None = None,
-    rhs_dilation: Sequence[int] | None = None,
-    dimension_numbers: object = None,
+    config: ConvConfig,
 ) -> Tensor:
     """General N-dimensional convolution with support for strides, padding, and dilations.
 
     Args:
         lhs (Tensor): Left-hand side tensor (input).
         rhs (Tensor): Right-hand side tensor (filters/weights).
-        window_strides (Sequence[int]): Strides of the window.
-        padding (Sequence[tuple[int, int]] | str): Padding to apply.
-        lhs_dilation (Sequence[int] | None): Dilation of the input.
-        rhs_dilation (Sequence[int] | None): Dilation of the weights.
-        dimension_numbers (object): Dimension numbers specification.
+        config (ConvConfig): The configuration for the convolution.
 
     Returns:
     Tensor: The result of the convolution.
-
-    Raises:
-    UnimplementedMathError: If called in eager mode.
     """
-    if config.eager_mode:
-        msg = "No direct numpy for conv_general_dilated"
-        raise UnimplementedMathError(msg)
-
     inputs = [lhs, rhs]
     attributes = {
-        "window_strides": window_strides,
-        "padding": padding,
-        "lhs_dilation": lhs_dilation,
-        "rhs_dilation": rhs_dilation,
-        "dimension_numbers": dimension_numbers,
+        "config": config,
     }
 
     from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
 
     op = ConvGeneralDilated()
-    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilatedConfig
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvConfig
 
-    cfg = ConvGeneralDilatedConfig(
-        window_strides, padding, lhs_dilation, rhs_dilation, dimension_numbers
+    cfg = ConvConfig(
+        config.window_strides,
+        config.padding,
+        config.lhs_dilation,
+        config.rhs_dilation,
+        config.dimension_numbers,
+        config.feature_group_count,
     )
     out_shape = op.infer_shape(lhs, rhs, cfg)
 

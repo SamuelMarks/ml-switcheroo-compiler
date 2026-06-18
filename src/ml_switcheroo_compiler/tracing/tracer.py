@@ -21,6 +21,7 @@ class TracerTape(threading.local):
         """Initialize the tracer tape."""
         self.active_graph: LogicalGraph | None = None
         self.is_tracing: bool = False
+        self.constant_cache: dict[int, str] = {}
 
     def start_tracing(self, name: str = "Model") -> LogicalGraph:
         """Begin tracking a new graph.
@@ -34,6 +35,7 @@ class TracerTape(threading.local):
             name (str): Argument name
         """
         self.active_graph = LogicalGraph(name=name)
+        self.constant_cache = {}
         self.is_tracing = True
         return self.active_graph
 
@@ -87,10 +89,10 @@ class ProxyArithmeticMixin:
         """Addition.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Add")
 
@@ -98,10 +100,10 @@ class ProxyArithmeticMixin:
         """Right addition.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         # Note: In real implementation, Constant is left-hand side
         return self._binary_op(other, "Add")
@@ -110,10 +112,10 @@ class ProxyArithmeticMixin:
         """Subtraction.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Sub")
 
@@ -121,10 +123,10 @@ class ProxyArithmeticMixin:
         """Right subtraction.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Sub")
 
@@ -132,10 +134,10 @@ class ProxyArithmeticMixin:
         """Multiplication.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Mul")
 
@@ -143,10 +145,10 @@ class ProxyArithmeticMixin:
         """Right multiplication.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Mul")
 
@@ -154,10 +156,10 @@ class ProxyArithmeticMixin:
         """Division.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Div")
 
@@ -165,10 +167,10 @@ class ProxyArithmeticMixin:
         """Right division.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Div")
 
@@ -176,10 +178,10 @@ class ProxyArithmeticMixin:
         """Power.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         return self._binary_op(other, "Pow")
 
@@ -412,7 +414,7 @@ class ProxyTensor(ProxyArithmeticMixin, ProxyBitwiseMixin):
             op_type (str): The ONNX operation type (e.g., 'Add')
 
         Returns:
-            ProxyTensor: The resulting proxy tensor
+            ProxyTensor: A tensor containing the result of the operation.
         """
         if not _tracer.is_tracing:
             msg = f"Cannot perform {op_type} outside of a tracing context."
@@ -504,10 +506,10 @@ class ProxyTensor(ProxyArithmeticMixin, ProxyBitwiseMixin):
         """Matrix multiplication.
 
         Args:
-            other (object): The other.
+            other (object): The other parameter for the operation.
 
         Returns:
-            ProxyTensor: The computed result.
+            ProxyTensor: A tensor containing the result of the operation.
         """
         from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 

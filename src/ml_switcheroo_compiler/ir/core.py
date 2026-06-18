@@ -13,6 +13,26 @@ if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.dtype import DType
 
 
+def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:
+    """Clones a LogicalNode, allowing overrides via kwargs."""
+    attributes = dict(node.attributes)
+    inputs = list(node.inputs)
+
+    clone_kwargs = {
+        "id": node.id,
+        "op_type": node.op_type,
+        "domain": node.domain,
+        "version": node.version,
+        "attributes": attributes,
+        "inputs": inputs,
+        "shape_metadata": node.shape_metadata,
+        "source_ast_ref": node.source_ast_ref,
+        "sharding": node.sharding,
+    }
+    clone_kwargs.update(kwargs)
+    return LogicalNode(**clone_kwargs)
+
+
 @dataclass
 class IRNode(LogicalNode):
     """Extended LogicalNode for ml_switcheroo_compiler compiler internal IR."""
