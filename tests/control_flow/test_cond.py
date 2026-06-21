@@ -1,12 +1,13 @@
 """Control flow tests."""
 
-from ml_switcheroo_compiler.tracing import ProxyTensor
-from ml_switcheroo_compiler.ops.control_flow import cond
 import numpy as np
+
 from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.control_flow import cond
+from ml_switcheroo_compiler.tracing import ProxyTensor
 
 device = Device(DeviceType.CPU, 0)
 """Control flow tests."""
@@ -22,11 +23,11 @@ def test_cond_eager() -> None:
     None
     """
     with ConfigContext(eager_mode=True):
-        pred = Tensor(np.array(True), (), DType.Bool, device)
+        pred = Tensor(np.array(True), TensorConfig((), DType.Bool, device))
         res = cond(pred, lambda: 1, lambda: 0)
         assert res == 1
 
-        pred2 = Tensor(np.array(False), (), DType.Bool, device)
+        pred2 = Tensor(np.array(False), TensorConfig((), DType.Bool, device))
         res2 = cond(pred2, lambda: 1, lambda: 0)
         assert res2 == 0
 
@@ -42,10 +43,7 @@ def test_cond_trace() -> None:
     """
     with ConfigContext(eager_mode=False):
         pred = Tensor(
-            ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (),
-            DType.Bool,
-            device,
+            ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device)
         )
 
         def true_fn() -> object:
@@ -56,9 +54,7 @@ def test_cond_trace() -> None:
             """
             return Tensor(
                 ProxyTensor(id="mock", shape=(), dtype="float32"),
-                (),
-                DType.Float32,
-                device,
+                TensorConfig((), DType.Float32, device),
             )
 
         def false_fn() -> object:
@@ -69,9 +65,7 @@ def test_cond_trace() -> None:
             """
             return Tensor(
                 ProxyTensor(id="mock", shape=(), dtype="float32"),
-                (),
-                DType.Float32,
-                device,
+                TensorConfig((), DType.Float32, device),
             )
 
         from ml_switcheroo_compiler.tracing.tracer import _tracer

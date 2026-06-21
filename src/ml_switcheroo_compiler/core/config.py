@@ -16,25 +16,39 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 
 @dataclass
-class ConfigState:
-    """State held in ContextVar for configuration."""
+class ExecutionConfig:
+    """Execution settings."""
 
     eager_mode: bool = field(
         default_factory=lambda: os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1"
     )
     backend: str = field(default_factory=lambda: os.environ.get("SWITCHEROO_BACKEND", "numpy"))
+    current_stream: str = "default"
+
+
+@dataclass
+class EnvironmentConfig:
+    """Environment and typing settings."""
+
     default_float_dtype: DType = DType.Float32
     default_int_dtype: DType = DType.Int64
     default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
-    current_stream: str = "default"
     jax_enable_x64: bool = False
     layout_map: object = None
+
+
+@dataclass
+class ConfigState:
+    """State held in ContextVar for configuration."""
+
+    execution: ExecutionConfig = field(default_factory=ExecutionConfig)
+    env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
 
     def clone(self) -> "ConfigState":
         """Clone."""
         import copy
 
-        return copy.copy(self)
+        return copy.deepcopy(self)
 
 
 _config_state_var: ContextVar[ConfigState] = ContextVar("config_state")
@@ -68,65 +82,65 @@ class Config:
     @property
     def backend(self) -> str:
         """Backend."""
-        return self._state.backend
+        return self._state.execution.backend
 
     @backend.setter
     def backend(self, value: str) -> None:
-        self._state.backend = value
+        self._state.execution.backend = value
 
     @property
     def default_float_dtype(self) -> DType:
         """Float dtype."""
-        return self._state.default_float_dtype
+        return self._state.env.default_float_dtype
 
     @default_float_dtype.setter
     def default_float_dtype(self, value: DType) -> None:
-        self._state.default_float_dtype = value
+        self._state.env.default_float_dtype = value
 
     @property
     def default_int_dtype(self) -> DType:
         """Int dtype."""
-        return self._state.default_int_dtype
+        return self._state.env.default_int_dtype
 
     @default_int_dtype.setter
     def default_int_dtype(self, value: DType) -> None:
-        self._state.default_int_dtype = value
+        self._state.env.default_int_dtype = value
 
     @property
     def default_device(self) -> Device:
         """Device."""
-        return self._state.default_device
+        return self._state.env.default_device
 
     @default_device.setter
     def default_device(self, value: Device) -> None:
-        self._state.default_device = value
+        self._state.env.default_device = value
 
     @property
     def current_stream(self) -> str:
         """Stream."""
-        return self._state.current_stream
+        return self._state.execution.current_stream
 
     @current_stream.setter
     def current_stream(self, value: str) -> None:
-        self._state.current_stream = value
+        self._state.execution.current_stream = value
 
     @property
     def layout_map(self) -> object:
         """Layout map."""
-        return self._state.layout_map
+        return self._state.env.layout_map
 
     @layout_map.setter
     def layout_map(self, value: object) -> None:
-        self._state.layout_map = value
+        self._state.env.layout_map = value
 
     @property
     def jax_enable_x64(self) -> bool:
         """JAX x64."""
-        return self._state.jax_enable_x64
+        return self._state.env.jax_enable_x64
 
     @jax_enable_x64.setter
     def jax_enable_x64(self, value: bool) -> None:
-        self._state.jax_enable_x64 = value
+        self._state.env.jax_enable_x64 = value
 
     def clear_cache(self) -> None:
         """Clear memory cache. Hook for backends like MLX."""
@@ -142,7 +156,7 @@ class Config:
 
         if _tracer.is_tracing:
             return False
-        return self._state.eager_mode
+        return self._state.execution.eager_mode
 
     @eager_mode.setter
     def eager_mode(self, value: bool) -> None:
@@ -151,7 +165,7 @@ class Config:
         Args:
             value (bool): The value to set or add.
         """
-        self._state.eager_mode = value
+        self._state.execution.eager_mode = value
 
     def clone(self) -> ConfigState:
         """Clone the current configuration.
@@ -186,11 +200,10 @@ def ConfigContext(**kwargs: object) -> Iterator[None]:
     new_state = old_state.clone()
 
     for k, v in kwargs.items():
-        if hasattr(new_state, k) or k == "eager_mode":
-            if k == "eager_mode":
-                new_state.eager_mode = v
-            else:
-                setattr(new_state, k, v)
+        if hasattr(new_state.execution, k):
+            setattr(new_state.execution, k, v)
+        elif hasattr(new_state.env, k):
+            setattr(new_state.env, k, v)
         else:
             msg = f"Unknown config key: {k}"
             raise ValueError(msg)

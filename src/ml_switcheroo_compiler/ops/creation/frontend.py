@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 import uuid
 from typing import TYPE_CHECKING
 
@@ -9,7 +10,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ def _emit_creation_node(
     _tracer.add_node(node)
 
     proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
-    return Tensor(data=proxy, shape=shape, dtype=dtype, device=config.default_device)
+    return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
 def _emit_constant_node(
@@ -85,7 +86,7 @@ def _emit_constant_node(
     _tracer.add_node(node)
 
     proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
-    return Tensor(data=proxy, shape=shape, dtype=dtype, device=config.default_device)
+    return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
 def array(
@@ -116,7 +117,7 @@ def array(
     shape = tuple(val_arr.shape)
 
     if config.eager_mode:
-        return Tensor(val_arr, shape, dtype, config.default_device)
+        return Tensor(val_arr, TensorConfig(shape, dtype, config.default_device))
 
     return _emit_constant_node(object, dtype)
 
@@ -164,7 +165,7 @@ def zeros(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Zeros", shape, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Zeros", shape, dtype, {})
 
 
@@ -189,7 +190,7 @@ def ones(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Ones", shape, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Ones", shape, dtype, {})
 
 
@@ -216,7 +217,7 @@ def full(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
         "ConstantOfShape",
         shape,
@@ -244,7 +245,7 @@ def zeros_like(
     device = device or input.device
     if config.eager_mode:
         data = get_active_backend().execute_op("Zeros_like", input.data, dtype=dtype.value)
-        return Tensor(data, input.shape, dtype, device)
+        return Tensor(data, TensorConfig(input.shape, dtype, device))
     return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0})
 
 
@@ -267,7 +268,7 @@ def ones_like(
     device = device or input.device
     if config.eager_mode:
         data = get_active_backend().execute_op("Ones_like", input.data, dtype=dtype.value)
-        return Tensor(data, input.shape, dtype, device)
+        return Tensor(data, TensorConfig(input.shape, dtype, device))
     return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1})
 
 
@@ -297,7 +298,7 @@ def full_like(
             fill_value,
             dtype=dtype.value,
         )
-        return Tensor(data, input.shape, dtype, device)
+        return Tensor(data, TensorConfig(input.shape, dtype, device))
     return _emit_creation_node(
         "ConstantOfShape",
         input.shape,
@@ -337,7 +338,7 @@ def arange(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Arange", start, stop, step, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
         "Arange",
         shape,
@@ -371,7 +372,7 @@ def linspace(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Linspace", start, stop, steps, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
         "LinSpace",
         shape,
@@ -404,7 +405,7 @@ def eye(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Eye", n, m, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("EyeLike", shape, dtype, {"n": n, "m": m})
 
 
@@ -441,7 +442,7 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Diag", input.data, k=diagonal)
-        return Tensor(data, data.shape, dtype, device)
+        return Tensor(data, TensorConfig(data.shape, dtype, device))
     if len(input.shape) == 1:
         n = input.shape[0] + abs(diagonal)
         shape = (n, n)
@@ -465,7 +466,7 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     )
     _tracer.add_node(node)
     proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
-    return Tensor(data=proxy, shape=shape, dtype=dtype, device=device)
+    return Tensor(proxy, TensorConfig(shape, dtype, device))
 
 
 def empty(
@@ -489,7 +490,7 @@ def empty(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Empty", shape, dtype=dtype.value)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Zeros", shape, dtype, {})
 
 
@@ -527,7 +528,7 @@ def rand(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Rand", *shape)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Rand", shape, dtype)
 
 
@@ -552,7 +553,7 @@ def randn(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Randn", *shape)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Randn", shape, dtype)
 
 
@@ -581,7 +582,7 @@ def randint(
 
     if config.eager_mode:
         data = get_active_backend().execute_op("Randint", low, high, size=shape)
-        return Tensor(data, shape, dtype, device)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Randint", shape, dtype, {"low": low, "high": high})
 
 
@@ -599,3 +600,99 @@ def manual_seed(seed: int) -> int:
         return seed
     _emit_creation_node("ManualSeed", (), config.default_int_dtype, {"seed": seed})
     return seed
+
+
+def blackman(M: int) -> Tensor:
+    """Return the blackman window.
+
+    Args:
+        M (int): Number of points in the output window.
+
+    Returns:
+        Tensor: The window.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        data = get_active_backend().execute_op("Blackman", M)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(data, TensorConfig((M,), DType.Float32, None))
+    return _emit_creation_node("Blackman", (M,), DType.Float32, {})
+
+
+def bartlett(M: int) -> Tensor:
+    """Return the bartlett window.
+
+    Args:
+        M (int): Number of points in the output window.
+
+    Returns:
+        Tensor: The window.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        data = get_active_backend().execute_op("Bartlett", M)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(data, TensorConfig((M,), DType.Float32, None))
+    return _emit_creation_node("Bartlett", (M,), DType.Float32, {})
+
+
+def hamming(M: int) -> Tensor:
+    """Return the hamming window.
+
+    Args:
+        M (int): Number of points in the output window.
+
+    Returns:
+        Tensor: The window.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        data = get_active_backend().execute_op("Hamming", M)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(data, TensorConfig((M,), DType.Float32, None))
+    return _emit_creation_node("Hamming", (M,), DType.Float32, {})
+
+
+def hanning(M: int) -> Tensor:
+    """Return the hanning window.
+
+    Args:
+        M (int): Number of points in the output window.
+
+    Returns:
+        Tensor: The window.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        data = get_active_backend().execute_op("Hanning", M)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(data, TensorConfig((M,), DType.Float32, None))
+    return _emit_creation_node("Hanning", (M,), DType.Float32, {})
+
+
+def kaiser(M: int, beta: float) -> Tensor:
+    """Return the Kaiser window.
+
+    Args:
+        M (int): Number of points in the output window.
+        beta (float): Shape parameter.
+
+    Returns:
+        Tensor: The window.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        data = get_active_backend().execute_op("Kaiser", M, beta)
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        return Tensor(data, TensorConfig((M,), DType.Float32, None))
+    return _emit_creation_node("Kaiser", (M,), DType.Float32, {"beta": beta})

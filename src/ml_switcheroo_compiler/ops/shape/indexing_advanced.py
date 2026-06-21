@@ -1,8 +1,8 @@
-# pylint: disable=duplicate-code
-
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 from typing import TYPE_CHECKING
 
@@ -10,6 +10,19 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if TYPE_CHECKING:
     pass
+
+
+def _normalize_k(k: object) -> int | object:
+    if hasattr(k, "__array__") and not isinstance(k, tuple):
+        k = k.__array__()
+    if hasattr(k, "item"):
+        k = int(k.item())
+    else:
+        try:
+            k = int(k)
+        except (ValueError, TypeError):
+            pass
+    return k
 
 
 @register_op("TopK")
@@ -31,15 +44,7 @@ class TopK(OpDef):
         """
         if k is None:
             k = kwargs.get("k", 1)
-        if hasattr(k, "__array__") and not isinstance(k, tuple):
-            k = k.__array__()
-        if hasattr(k, "item"):
-            k = int(k.item())
-        else:
-            try:
-                k = int(k)
-            except (ValueError, TypeError):
-                pass
+        k = _normalize_k(k)
 
         if not hasattr(x, "shape") or not x.shape:
             return ()
@@ -369,3 +374,91 @@ class TensorScatterUpdate(OpDef):
     ) -> object:
         """Infer shape for TensorScatterUpdate."""
         return getattr(tensor, "shape", ())
+
+
+@register_op("Argpartition")
+class Argpartition(OpDef):
+    """Perform an indirect partition along the given axis using the algorithm specified by the kind keyword."""
+
+    op_name = "Argpartition"
+    np_op_name = "argpartition"
+
+    def infer_shape(self, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return a.shape if hasattr(a, "shape") else ()
+
+
+@register_op("Partition")
+class Partition(OpDef):
+    """Return a partitioned copy of an array."""
+
+    op_name = "Partition"
+    np_op_name = "partition"
+
+    def infer_shape(self, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return a.shape if hasattr(a, "shape") else ()
+
+
+@register_op("Compress")
+class Compress(OpDef):
+    """Return selected slices of an array along given axis."""
+
+    op_name = "Compress"
+    np_op_name = "compress"
+
+    def infer_shape(
+        self, condition: object, a: object, axis: int = None, out: object = None, **kwargs: object
+    ) -> object:
+        """Infer the output shape."""
+        return (None,)
+
+
+@register_op("Diagonal")
+class Diagonal(OpDef):
+    """Return specified diagonals."""
+
+    op_name = "Diagonal"
+    np_op_name = "diagonal"
+
+    def infer_shape(
+        self, a: object, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: object
+    ) -> object:
+        """Infer the output shape."""
+        return (None,)
+
+
+@register_op("Diagflat")
+class Diagflat(OpDef):
+    """Create a two-dimensional array with the flattened input as a diagonal."""
+
+    op_name = "Diagflat"
+    np_op_name = "diagflat"
+
+    def infer_shape(self, v: object, k: int = 0, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (None, None)
+
+
+@register_op("DiagIndices")
+class DiagIndices(OpDef):
+    """Return the indices to access the main diagonal of an array."""
+
+    op_name = "DiagIndices"
+    np_op_name = "diag_indices"
+
+    def infer_shape(self, n: int, ndim: int = 2, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (None,)
+
+
+@register_op("DiagIndicesFrom")
+class DiagIndicesFrom(OpDef):
+    """Return the indices to access the main diagonal of an n-dimensional array."""
+
+    op_name = "DiagIndicesFrom"
+    np_op_name = "diag_indices_from"
+
+    def infer_shape(self, arr: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (None,)

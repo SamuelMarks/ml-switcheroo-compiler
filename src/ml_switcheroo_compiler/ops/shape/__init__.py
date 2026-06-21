@@ -2,25 +2,6 @@
 
 """Shape manipulation operations package."""
 
-from ml_switcheroo_compiler.ops.shape.reshape import (
-    BroadcastInDim,
-    BroadcastTo,
-    Expand,
-    Flatten,
-    Meshgrid,
-    Moveaxis,
-    Permute,
-    Repeat,
-    Reshape,
-    Resize,
-    Roll,
-    Squeeze,
-    Swapaxes,
-    Tile,
-    Transpose,
-    Tril,
-    Triu,
-)
 from ml_switcheroo_compiler.ops.shape.concat import (
     ColumnStack,
     Concatenate,
@@ -34,14 +15,7 @@ from ml_switcheroo_compiler.ops.shape.concat import (
     Vsplit,
     Vstack,
 )
-from ml_switcheroo_compiler.ops.shape.slicing import (
-    Slice,
-    StridedSlice,
-)
-from ml_switcheroo_compiler.ops.shape.dynamic_slicing import (
-    DynamicSlice,
-    DynamicUpdateSlice,
-)
+from ml_switcheroo_compiler.ops.shape.dynamic_slicing import DynamicSlice, DynamicUpdateSlice
 from ml_switcheroo_compiler.ops.shape.indexing_advanced import (
     ArgSort,
     Assign,
@@ -62,158 +36,99 @@ from ml_switcheroo_compiler.ops.shape.indexing_advanced import (
     Vdot,
     Where,
 )
+from ml_switcheroo_compiler.ops.shape.reshape import (
+    BroadcastInDim,
+    BroadcastTo,
+    Expand,
+    Flatten,
+    Meshgrid,
+    Moveaxis,
+    Permute,
+    Repeat,
+    Reshape,
+    Resize,
+    Roll,
+    Squeeze,
+    Swapaxes,
+    Tile,
+    Transpose,
+    Tril,
+    Triu,
+)
+from ml_switcheroo_compiler.ops.shape.slicing import Slice, StridedSlice
 
-
-from .frontend import (
-    array_split as array_split,
-)
-from .frontend import (
-    broadcast_in_dim as broadcast_in_dim,
-)
-from .frontend import (
-    broadcast_to as broadcast_to,
-)
-from .frontend import (
-    concatenate as concatenate,
-)
-from .frontend import (
-    dsplit as dsplit,
-)
-from .frontend import (
-    dstack as dstack,
-)
-from .frontend import (
-    dynamic_slice as dynamic_slice,
-)
-from .frontend import (
-    dynamic_update_slice as dynamic_update_slice,
-)
-from .frontend import (
-    expand as expand,
-)
-from .frontend import (
-    expand_dims as expand_dims,
-)
-from .frontend import (
-    flatten as flatten,
-)
-from .frontend import (
-    gather as gather,
-)
-from .frontend import (
-    gather_nd as gather_nd,
-)
-from .frontend import (
-    hsplit as hsplit,
-)
-from .frontend import (
-    hstack as hstack,
-)
-from .frontend import (
-    image_resize as image_resize,
-)
-from .frontend import (
-    meshgrid as meshgrid,
-)
-from .frontend import (
-    moveaxis as moveaxis,
-)
-from .frontend import (
-    pad as pad,
-)
-from .frontend import (
-    permute as permute,
-)
-from .frontend import (
-    repeat as repeat,
-)
-from .frontend import (
-    reshape as reshape,
-)
-from .frontend import (
-    roll as roll,
-)
-from .frontend import (
-    scatter as scatter,
-)
-from .frontend import (
-    scatter_add as scatter_add,
-)
-from .frontend import (
-    scatter_nd as scatter_nd,
-    tensor_scatter_update as tensor_scatter_update,
-    tensor_scatter_add as tensor_scatter_add,
-    tensor_scatter_max as tensor_scatter_max,
-    tensor_scatter_min as tensor_scatter_min,
-)
-from .frontend import (
-    searchsorted as searchsorted,
-)
-from .frontend import (
-    select as select,
-)
-from .frontend import (
-    slice as slice,
-)
-from .frontend import (
-    sort as sort,
-    argsort as argsort,
-)
-from .frontend import (
-    split as split,
-)
-from .frontend import (
-    squeeze as squeeze,
-)
-from .frontend import (
-    stack as stack,
-)
-from .frontend import (
-    strided_slice as strided_slice,
-)
-from .frontend import (
-    swapaxes as swapaxes,
-    reverse as reverse,
-)
-from .frontend import (
-    take as take,
-)
-from .frontend import (
-    take_along_axis as take_along_axis,
-)
-from .frontend import (
-    tile as tile,
-)
-from .frontend import (
-    top_k as top_k,
-)
-from .frontend import (
-    transpose as transpose,
-)
-from .frontend import (
-    tril as tril,
-)
-from .frontend import (
-    triu as triu,
-)
-from .frontend import (
-    unsqueeze as unsqueeze,
-)
-from .frontend import (
-    unstack as unstack,
-)
-from .frontend import (
-    update_slice as update_slice,
-)
-from .frontend import (
-    vsplit as vsplit,
-)
-from .frontend import (
-    vstack as vstack,
-)
-from .frontend import (
-    where as where,
-)
+from .frontend import append as append
+from .frontend import argpartition as argpartition
+from .frontend import argsort as argsort
+from .frontend import argwhere as argwhere
+from .frontend import array_split as array_split
+from .frontend import atleast_1d as atleast_1d
+from .frontend import atleast_2d as atleast_2d
+from .frontend import atleast_3d as atleast_3d
+from .frontend import broadcast_arrays as broadcast_arrays
+from .frontend import broadcast_in_dim as broadcast_in_dim
+from .frontend import broadcast_to as broadcast_to
+from .frontend import choose as choose
+from .frontend import column_stack as column_stack
+from .frontend import compress as compress
+from .frontend import concatenate as concatenate
+from .frontend import delete as delete
+from .frontend import diag_indices as diag_indices
+from .frontend import diag_indices_from as diag_indices_from
+from .frontend import diagflat as diagflat
+from .frontend import diagonal as diagonal
+from .frontend import diff as diff
+from .frontend import digitize as digitize
+from .frontend import dsplit as dsplit
+from .frontend import dstack as dstack
+from .frontend import dynamic_slice as dynamic_slice
+from .frontend import dynamic_update_slice as dynamic_update_slice
+from .frontend import expand as expand
+from .frontend import expand_dims as expand_dims
+from .frontend import flatten as flatten
+from .frontend import gather as gather
+from .frontend import gather_nd as gather_nd
+from .frontend import hsplit as hsplit
+from .frontend import hstack as hstack
+from .frontend import image_resize as image_resize
+from .frontend import meshgrid as meshgrid
+from .frontend import moveaxis as moveaxis
+from .frontend import pad as pad
+from .frontend import partition as partition
+from .frontend import permute as permute
+from .frontend import repeat as repeat
+from .frontend import reshape as reshape
+from .frontend import reverse as reverse
+from .frontend import roll as roll
+from .frontend import scatter as scatter
+from .frontend import scatter_add as scatter_add
+from .frontend import scatter_nd as scatter_nd
+from .frontend import searchsorted as searchsorted
+from .frontend import select as select
+from .frontend import slice as slice
+from .frontend import sort as sort
+from .frontend import split as split
+from .frontend import squeeze as squeeze
+from .frontend import stack as stack
+from .frontend import strided_slice as strided_slice
+from .frontend import swapaxes as swapaxes
+from .frontend import take as take
+from .frontend import take_along_axis as take_along_axis
+from .frontend import tensor_scatter_add as tensor_scatter_add
+from .frontend import tensor_scatter_max as tensor_scatter_max
+from .frontend import tensor_scatter_min as tensor_scatter_min
+from .frontend import tensor_scatter_update as tensor_scatter_update
+from .frontend import tile as tile
+from .frontend import top_k as top_k
+from .frontend import transpose as transpose
+from .frontend import tril as tril
+from .frontend import triu as triu
+from .frontend import unsqueeze as unsqueeze
+from .frontend import unstack as unstack
+from .frontend import update_slice as update_slice
+from .frontend import vsplit as vsplit
+from .frontend import vstack as vstack
+from .frontend import where as where
 
 __all__ = [
     "BroadcastInDim",
@@ -227,9 +142,23 @@ __all__ = [
     "TopK",
     "Transpose",
     "array_split",
+    "atleast_1d",
+    "atleast_2d",
+    "atleast_3d",
     "broadcast_in_dim",
+    "broadcast_arrays",
     "broadcast_to",
+    "choose",
     "concatenate",
+    "column_stack",
+    "compress",
+    "delete",
+    "diff",
+    "diagonal",
+    "diagflat",
+    "diag_indices",
+    "diag_indices_from",
+    "digitize",
     "dsplit",
     "dstack",
     "dynamic_slice",
@@ -244,6 +173,7 @@ __all__ = [
     "meshgrid",
     "moveaxis",
     "pad",
+    "partition",
     "permute",
     "repeat",
     "reshape",
@@ -255,12 +185,13 @@ __all__ = [
     "tensor_scatter_add",
     "tensor_scatter_max",
     "tensor_scatter_min",
-    "TensorScatterMax",
-    "TensorScatterMin",
     "select",
     "slice",
     "sort",
+    "argpartition",
     "argsort",
+    "argwhere",
+    "append",
     "split",
     "squeeze",
     "stack",
@@ -309,14 +240,12 @@ __all__ = [
     "TensorScatterUpdate",
     "tensor_scatter_update",
     "TensorScatterUpdate",
-    "TensorScatterAdd",
     "tensor_scatter_add",
     "tensor_scatter_max",
     "tensor_scatter_min",
-    "TensorScatterMax",
-    "TensorScatterMin",
     "ScatterAdd",
     "Slice",
+    "searchsorted",
     "SearchSorted",
     "StridedSlice",
     "Tril",

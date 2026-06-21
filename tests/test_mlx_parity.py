@@ -14,13 +14,13 @@ from ml_switcheroo_compiler.core.device import (
     export_function,
     exporter,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def test_mlx_parity_coverage() -> None:
     """Tests the MLX specific API parity."""
     config.eager_mode = True
-    t = Tensor(np.array(1), (), "float32", Device(DeviceType.CPU))
+    t = Tensor(np.array(1), TensorConfig((), "float32", Device(DeviceType.CPU)))
 
     # ArrayAt
     assert t.at[0].add(1) is t

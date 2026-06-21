@@ -89,7 +89,7 @@ def _extract_numpy_weights(weights: dict) -> dict:
         else:
             try:
                 weights_np[k] = np.array(w)
-            except Exception:
+            except (ValueError, TypeError):
                 pass
     return weights_np
 
@@ -139,33 +139,74 @@ def save_weights(weights: dict, filepath: str) -> None:
         _save_as_pickle(weights_np, filepath)
 
 
-def load_weights(filepath: str) -> dict:
-    """Load weights from a file."""
+def _load_h5_weights(filepath: str) -> dict:
     import pickle
 
-    weights = {}
-    if filepath.endswith(".h5"):
-        try:
-            import h5py
+    try:
+        import h5py
 
-            with h5py.File(filepath, "r") as f:
-                for k in f.keys():
-                    weights[k] = f[k][()]
-        except ImportError:
-            with open(filepath, "rb") as f:
-                weights = pickle.load(f)
-    elif filepath.endswith(".safetensors"):
-        try:
-            from safetensors.numpy import load_file
-
-            weights = load_file(filepath)
-        except ImportError:
-            with open(filepath, "rb") as f:
-                weights = pickle.load(f)
-    else:
+        weights = {}
+        with h5py.File(filepath, "r") as f:
+            for k in f.keys():
+                weights[k] = f[k][()]
+        return weights
+    except ImportError:
         with open(filepath, "rb") as f:
-            weights = pickle.load(f)
-    return weights
+            return pickle.load(f)
+
+
+def _load_safetensors_weights(filepath: str) -> dict:
+    import pickle
+
+    try:
+        from safetensors.numpy import load_file
+
+        return load_file(filepath)
+    except ImportError:
+        with open(filepath, "rb") as f:
+            return pickle.load(f)
+
+
+def _load_npz_weights(filepath: str) -> dict:
+    import numpy as np
+
+    with np.load(filepath) as npz:
+        return {k: npz[k] for k in npz.files}
+
+
+def _load_pickle_weights(filepath: str) -> dict:
+    import pickle
+
+    with open(filepath, "rb") as f:
+        return pickle.load(f)
+
+
+def _infer_weight_format(filepath: str) -> str:
+    if filepath.endswith(".h5"):
+        return "h5"
+    if filepath.endswith(".safetensors"):
+        return "safetensors"
+    if filepath.endswith(".npz"):
+        return "npz"
+    return "pickle"
+
+
+def _validate_and_map_weights(weights_dict: dict, target_model: object = None) -> dict:
+    return weights_dict
+
+
+def load_weights(filepath: str, target_model: object = None) -> dict:
+    """Load weights from a file."""
+    fmt = _infer_weight_format(filepath)
+    if fmt == "h5":
+        weights = _load_h5_weights(filepath)
+    elif fmt == "safetensors":
+        weights = _load_safetensors_weights(filepath)
+    elif fmt == "npz":
+        weights = _load_npz_weights(filepath)
+    else:
+        weights = _load_pickle_weights(filepath)
+    return _validate_and_map_weights(weights, target_model)
 
 
 def to_numpy(tensor: object) -> object:
@@ -179,13 +220,14 @@ def to_numpy(tensor: object) -> object:
     else:
         try:
             return np.array(tensor)
-        except Exception:
+        except (ValueError, TypeError):
             return tensor
 
 
 def get_npz_bytes(weights: dict) -> bytes:
     """Get npz bytes."""
     import io
+
     import numpy as np
 
     buf = io.BytesIO()

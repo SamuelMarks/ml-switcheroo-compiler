@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device, DeviceType
-from ml_switcheroo_compiler.ops.configs import STFTConfig
 from ml_switcheroo_compiler.backends.eager.audio import MFCCConfig
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.configs import STFTConfig
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def stft(input_tensor: Tensor, config_obj: STFTConfig | None = None, **kwargs: object) -> Tensor:
@@ -30,8 +31,6 @@ def stft(input_tensor: Tensor, config_obj: STFTConfig | None = None, **kwargs: o
             fft_length=kwargs.get("fft_length"),
         )
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "Stft",
@@ -39,7 +38,8 @@ def stft(input_tensor: Tensor, config_obj: STFTConfig | None = None, **kwargs: o
             config=config_obj,
         )
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Complex64, input_tensor.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Complex64, input_tensor.device),
         )
     return _emit_shape_node(
         "Stft",
@@ -70,8 +70,6 @@ def mel_spectrogram(
         Tensor: Mel spectrogram.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "MelSpectrogram",
@@ -82,7 +80,8 @@ def mel_spectrogram(
             upper_edge_hertz=upper_edge_hertz,
         )
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Float32, input_tensor.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Float32, input_tensor.device),
         )
     return _emit_shape_node(
         "MelSpectrogram",
@@ -120,8 +119,6 @@ def istft(
             window_fn=kwargs.get("window", "hann"),
         )
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "Istft",
@@ -131,7 +128,8 @@ def istft(
         )
         # ISTFT returns real audio signals (float)
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Float32, stft_tensor.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Float32, stft_tensor.device),
         )
     return _emit_shape_node(
         "Istft",
@@ -168,8 +166,6 @@ def mel_filterbank(
         upper_edge_hertz = float(sample_rate) / 2.0
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "MelFilterbank",
@@ -183,7 +179,8 @@ def mel_filterbank(
             },
         )
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Float32, Device(DeviceType.CPU)
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Float32, Device(DeviceType.CPU)),
         )  # Typically created on CPU then moved
 
     return _emit_shape_node(
@@ -223,8 +220,6 @@ def mfcc(spectrogram: Tensor, config_obj: MFCCConfig | None = None, **kwargs: ob
             "num_mfccs": kwargs.get("num_mfccs", 13),
         }
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "Mfcc",
@@ -232,7 +227,8 @@ def mfcc(spectrogram: Tensor, config_obj: MFCCConfig | None = None, **kwargs: ob
             config=config_obj,
         )
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Float32, spectrogram.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Float32, spectrogram.device),
         )
 
     return _emit_shape_node(

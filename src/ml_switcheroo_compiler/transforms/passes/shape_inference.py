@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops import get_op
@@ -19,7 +21,6 @@ def _infer_constant_shape(node: object, shapes: dict) -> tuple:
     Any: The result.
     """
     val = node.attributes.get("value")
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
     arr = backend.array(val)

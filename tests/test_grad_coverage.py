@@ -8,6 +8,7 @@ operations. It also tests input validation errors during graph evaluation.
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.core.tensor import TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.transforms.autodiff import grad
 
@@ -141,15 +142,15 @@ def test_grad_frontend_mocks() -> None:
         custom_vjp,
         disable_jit,
         eval_shape,
+    )
+    from ml_switcheroo_compiler.grad import grad as frontend_grad
+    from ml_switcheroo_compiler.grad import (
         ir_grad,
         jit,
         jvp,
         value_and_grad,
         value_and_grad_wrt_vars,
         vjp,
-    )
-    from ml_switcheroo_compiler.grad import (
-        grad as frontend_grad,
     )
 
     def my_fun(x: int) -> int:
@@ -202,11 +203,11 @@ def test_grad_frontend_mocks() -> None:
 
 def test_custom_vjp_lazy() -> None:
     """Test custom vjp lazy."""
-    from ml_switcheroo_compiler.grad import custom_vjp
     from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.grad import custom_vjp
     from ml_switcheroo_compiler.tracing.tracer import _tracer
 
     @custom_vjp
@@ -229,7 +230,7 @@ def test_custom_vjp_lazy() -> None:
 
     from unittest.mock import MagicMock
 
-    x = Tensor(MagicMock(id="inp_x"), (2,), DType.Float32, Device("cpu"))
+    x = Tensor(MagicMock(id="inp_x"), TensorConfig((2,), DType.Float32, Device("cpu")))
     f(x)
 
     assert _tracer.active_graph is not None
@@ -237,3 +238,9 @@ def test_custom_vjp_lazy() -> None:
 
     _tracer.stop_tracing()
     config.eager_mode = True
+
+
+def test_check_numerical_grads():
+    from ml_switcheroo_compiler.grad import check_numerical_grads
+
+    check_numerical_grads(lambda x: x, (1.0,))

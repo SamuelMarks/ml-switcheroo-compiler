@@ -4,6 +4,14 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
+def _compute_node_signature(node: object, canonical_inputs: list[str]) -> str:
+    attr_list = []
+    for k, v in node.attributes.items():
+        attr_list.append((k, str(v)))
+    attr_str = str(sorted(attr_list))
+    return f"{node.op_type}|{canonical_inputs}|{attr_str}"
+
+
 def cse_pass(graph: IRGraph) -> bool:
     """In-place Common Subexpression Elimination (CSE).
 
@@ -27,11 +35,7 @@ def cse_pass(graph: IRGraph) -> bool:
     for node in sorted_nodes:
         # Map inputs to canonical inputs
         canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
-
-        # Serialize attributes deterministically
-        attr_str = str(sorted([(k, str(v)) for k, v in node.attributes.items()]))
-
-        signature = f"{node.op_type}|{canonical_inputs}|{attr_str}"
+        signature = _compute_node_signature(node, canonical_inputs)
 
         if signature in seen_expressions:
             canonical_id = seen_expressions[signature]
@@ -46,7 +50,10 @@ def cse_pass(graph: IRGraph) -> bool:
                 modified = True
 
     # Update outputs to point to canonical nodes
-    new_outputs = [id_map.get(o, o) for o in graph.outputs]
+    new_outputs = []
+    for o in graph.outputs:
+        new_outputs.append(id_map.get(o, o))
+
     if graph.outputs != new_outputs:
         graph.outputs = new_outputs
         modified = True

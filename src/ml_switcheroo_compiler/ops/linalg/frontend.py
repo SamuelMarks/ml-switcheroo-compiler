@@ -8,13 +8,15 @@ nodes to the intermediate representation (IR) graph
 
 from __future__ import annotations
 
+
 import uuid
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
 if TYPE_CHECKING:
@@ -33,7 +35,7 @@ def _build_linalg_output_tensors(
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
         proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value)
         tensors.append(
-            Tensor(data=proxy, shape=tuple(shape), dtype=dtype, device=device),
+            Tensor(proxy, TensorConfig(tuple(shape), dtype, device)),
         )
     return tensors
 
@@ -104,7 +106,9 @@ def matmul(input: Tensor, other: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Matmul", input.data, other.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
 
     from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 
@@ -129,9 +133,11 @@ def dot(input: Tensor, other: Tensor) -> Tensor:
         data = backend.execute_op("Dot", input.data, other.data)
         return Tensor(
             backend.array(data),
-            backend.array(data).shape,
-            getattr(input, "dtype", "float32"),
-            getattr(input, "device", None),
+            TensorConfig(
+                backend.array(data).shape,
+                getattr(input, "dtype", "float32"),
+                getattr(input, "device", None),
+            ),
         )
     return _emit_linalg_node("Dot", [input, other], {}, [()], [input.dtype])
 
@@ -157,7 +163,7 @@ def tensordot(
 
         backend = get_active_backend()
         data = backend.execute_op("Tensordot", a.data, b.data, axes=axes)
-        return Tensor(data, data.shape, a.dtype, a.device)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
@@ -178,9 +184,11 @@ def vdot(input: Tensor, other: Tensor) -> Tensor:
         data = backend.execute_op("Vdot", input.data, other.data)
         return Tensor(
             backend.array(data),
-            backend.array(data).shape,
-            getattr(input, "dtype", "float32"),
-            getattr(input, "device", None),
+            TensorConfig(
+                backend.array(data).shape,
+                getattr(input, "dtype", "float32"),
+                getattr(input, "device", None),
+            ),
         )
     return _emit_linalg_node("Vdot", [input, other], {}, [()], [input.dtype])
 
@@ -202,9 +210,11 @@ def inner(input: Tensor, other: Tensor) -> Tensor:
         data = backend.execute_op("Inner", input.data, other.data)
         return Tensor(
             backend.array(data),
-            backend.array(data).shape,
-            getattr(input, "dtype", "float32"),
-            getattr(input, "device", None),
+            TensorConfig(
+                backend.array(data).shape,
+                getattr(input, "dtype", "float32"),
+                getattr(input, "device", None),
+            ),
         )
     return _emit_linalg_node("Inner", [input, other], {}, [()], [input.dtype])
 
@@ -226,9 +236,11 @@ def outer(input: Tensor, other: Tensor) -> Tensor:
         data = backend.execute_op("Outer", input.data, other.data)
         return Tensor(
             backend.array(data),
-            backend.array(data).shape,
-            getattr(input, "dtype", "float32"),
-            getattr(input, "device", None),
+            TensorConfig(
+                backend.array(data).shape,
+                getattr(input, "dtype", "float32"),
+                getattr(input, "device", None),
+            ),
         )
     return _emit_linalg_node("Outer", [input, other], {}, [()], [input.dtype])
 
@@ -248,7 +260,7 @@ def einsum(equation: str, *operands: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Einsum", equation, *[op.data for op in operands])
-        return Tensor(data, data.shape, operands[0].dtype, operands[0].device)
+        return Tensor(data, TensorConfig(data.shape, operands[0].dtype, operands[0].device))
     return _emit_linalg_node(
         "Einsum",
         operands,
@@ -274,7 +286,7 @@ def band_part(input: Tensor, num_lower: int, num_upper: int) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("BandPart", input.data, num_lower=num_lower, num_upper=num_upper)
-        return Tensor(data, input.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(input.shape, input.dtype, input.device))
     return _emit_linalg_node(
         "BandPart",
         [input],
@@ -302,9 +314,11 @@ def diag(input: Tensor, k: int = 0) -> Tensor:
         # We need shape for eager return, backend.array handles it mostly
         return Tensor(
             backend.array(data),
-            backend.array(data).shape,
-            getattr(input, "dtype", "float32"),
-            getattr(input, "device", None),
+            TensorConfig(
+                backend.array(data).shape,
+                getattr(input, "dtype", "float32"),
+                getattr(input, "device", None),
+            ),
         )
     return _emit_linalg_node("Diag", [input], {"k": k}, [()], [input.dtype])
 
@@ -404,7 +418,9 @@ def dot_general(
         data = backend.execute_op(
             "DotGeneral", lhs.data, rhs.data, dimension_numbers=dimension_numbers
         )
-        return Tensor(backend.array(data), backend.array(data).shape, lhs.dtype, lhs.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, lhs.dtype, lhs.device)
+        )
 
     attributes = {"dimension_numbers": dimension_numbers}
 
@@ -414,3 +430,18 @@ def dot_general(
         out_shape = list(_infer_dot_general_shape(lhs.shape, rhs.shape, dimension_numbers))
 
     return _emit_linalg_node("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [lhs.dtype])
+
+
+def convolve(a: object, v: object, mode: str = "full") -> Tensor:
+    """Returns the discrete, linear convolution of two one-dimensional sequences."""
+    if config.eager_mode:
+        data = get_active_backend().execute_op(
+            "Convolve", getattr(a, "data", a), getattr(v, "data", v), mode=mode
+        )
+        return Tensor(
+            data,
+            TensorConfig(data.shape, getattr(a, "dtype", "float32"), getattr(a, "device", None)),
+        )
+    return _emit_linalg_node(
+        "Convolve", [a, v], {"mode": mode}, (None,), getattr(a, "dtype", "float32")
+    )

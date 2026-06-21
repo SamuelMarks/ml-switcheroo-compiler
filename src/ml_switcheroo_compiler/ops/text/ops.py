@@ -1,7 +1,7 @@
 """Text operations class definitions."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
-
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -40,5 +40,119 @@ class Lookup(OpDef):
         """Infer shape."""
         # The first argument is input_tensor. The shape should be the same as input_tensor.
         if args and isinstance(args[0], Tensor):
-            return args[0].shape
+            return args[0]
         return ()
+
+
+@register_op("Hashing")
+class Hashing(OpDef):
+    """Hashing op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("StringLookup")
+class StringLookup(OpDef):
+    """StringLookup op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("IntegerLookup")
+class IntegerLookup(OpDef):
+    """IntegerLookup op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("TextVectorization")
+class TextVectorization(OpDef):
+    """TextVectorization op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+def string_to_hash(inputs: "Tensor", **kwargs: object) -> "Tensor":
+    """String to hash.
+
+    Args:
+    inputs: Input tensor.
+    **kwargs: Kwargs.
+
+    Returns:
+    Tensor.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Hashing", inputs.data, **kwargs)
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
+        )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("Hashing")()(inputs, **kwargs)
+
+
+def lookup(inputs: "Tensor", **kwargs: object) -> "Tensor":
+    """Lookup operation.
+
+    Args:
+    inputs: Input tensor.
+    **kwargs: Kwargs.
+
+    Returns:
+    Tensor.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("StringLookup", inputs.data, **kwargs)
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
+        )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("StringLookup")()(inputs, **kwargs)
+
+
+def text_vectorization(inputs: "Tensor", **kwargs: object) -> "Tensor":
+    """Text vectorization operation.
+
+    Args:
+    inputs: Input tensor.
+    **kwargs: Kwargs.
+
+    Returns:
+    Tensor.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("TextVectorization", inputs.data, **kwargs)
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
+        )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("TextVectorization")()(inputs, **kwargs)

@@ -1,8 +1,8 @@
-# pylint: disable=duplicate-code
-
 """Utility functions for shape ops."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 import uuid
 from typing import TYPE_CHECKING
@@ -11,7 +11,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
 if TYPE_CHECKING:
@@ -53,4 +53,4 @@ def _emit_shape_node(
     _tracer.add_node(node)
     proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
     device = inputs[0].device if len(inputs) > 0 else config.default_device
-    return Tensor(data=proxy, shape=out_shape, dtype=out_dtype, device=device)
+    return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))

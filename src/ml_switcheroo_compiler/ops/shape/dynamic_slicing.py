@@ -1,16 +1,16 @@
-# pylint: disable=duplicate-code
-
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from ml_switcheroo_compiler.ops.base import dispatch_eager, OpDef, register_op
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -46,7 +46,7 @@ def dynamic_slice(
         starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
         data = input.data[idx]
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -89,7 +89,7 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, update.shape))
         data = input.data.copy()
         data[idx] = update.data
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input, update]
     # shape calculation placeholder
     out_shape = inputs[0].shape

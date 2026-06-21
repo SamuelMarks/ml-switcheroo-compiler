@@ -7,7 +7,6 @@ intermediate representation (IR) graph for compilation
 """
 
 from __future__ import annotations
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 
 
 import uuid
@@ -17,7 +16,8 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
 
@@ -27,32 +27,22 @@ def _eager_vmap(
     out_axes: int | tuple[int, ...],
     args: tuple[object, ...],
 ) -> object:
-
     arg = args[0]
-    batch_size = (
-        (arg.shape[in_axes] if arg.shape else 1)
-        if isinstance(in_axes, int)
-        else (arg.shape[in_axes[0]] if arg.shape else 1)
-    )
+    in_axis = in_axes if isinstance(in_axes, int) else in_axes[0]
+    out_axis = out_axes if isinstance(out_axes, int) else out_axes[0]
+
+    batch_size = arg.shape[in_axis] if arg.shape else 1
+
     outs = []
+    backend = get_active_backend()
     for i in range(batch_size):
-        axes = in_axes if isinstance(in_axes, int) else in_axes[0]
-        sliced_data = get_active_backend().execute_op("Take", arg.data, i, axis=axes)
-        sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != axes)
-        sliced_arg = Tensor(
-            sliced_data,
-            sliced_shape,
-            arg.dtype,
-            arg.device,
-        )
+        sliced_data = backend.execute_op("Take", arg.data, i, axis=in_axis)
+        sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != in_axis)
+        sliced_arg = Tensor(sliced_data, TensorConfig(sliced_shape, arg.dtype, arg.device))
         outs.append(func(sliced_arg).data)
 
-    out_data = get_active_backend().execute_op(
-        "Stack",
-        outs,
-        axis=out_axes if isinstance(out_axes, int) else out_axes[0],
-    )
-    return Tensor(out_data, out_data.shape, arg.dtype, arg.device)
+    out_data = backend.execute_op("Stack", outs, axis=out_axis)
+    return Tensor(out_data, TensorConfig(out_data.shape, arg.dtype, arg.device))
 
 
 def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
@@ -74,7 +64,7 @@ def _create_vmap_dummy_args(
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
             proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
-            dummy_args.append(Tensor(data=proxy, shape=new_shape, dtype=a.dtype, device=a.device))
+            dummy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
             dummy_args.append(a)
     return dummy_args
@@ -101,12 +91,7 @@ def _trace_vmap(
 
     arg = args[0]
     proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
-    return Tensor(
-        data=proxy,
-        shape=arg.shape,
-        dtype=arg.dtype,
-        device=arg.device,
-    )
+    return Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
 
 
 def vmap(

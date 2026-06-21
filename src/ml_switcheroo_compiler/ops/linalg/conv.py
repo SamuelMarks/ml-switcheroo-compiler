@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.tensor import Tensor

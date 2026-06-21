@@ -2,11 +2,7 @@
 
 import mlx.core as mx
 
-from ml_switcheroo_compiler.backends.eager import (
-    execute_generic_op,
-)
-
-
+from ml_switcheroo_compiler.backends.eager import execute_generic_op
 from ml_switcheroo_compiler.backends.eager_registry import mlx_eager_registry
 
 

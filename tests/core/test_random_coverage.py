@@ -1,8 +1,9 @@
 import pytest
+
 from ml_switcheroo_compiler import random as rn
 from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.tracing.tracer import _tracer
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
 def test_random_ops():
@@ -29,4 +30,4 @@ def test_random_ops():
 
     with ConfigContext(eager_mode=True):
         with pytest.raises(NotImplementedError):
-            rn._emit_random_node("FakeOp", [], (), DType.Float32, {})
+            rn.state._emit_random_node("FakeOp", [], (), DType.Float32, {})

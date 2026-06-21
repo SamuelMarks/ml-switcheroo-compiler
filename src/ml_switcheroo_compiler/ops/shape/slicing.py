@@ -1,16 +1,16 @@
-# pylint: disable=duplicate-code
-
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from ml_switcheroo_compiler.ops.base import dispatch_eager, OpDef, register_op
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -41,7 +41,7 @@ def slice(
         sl = [builtins.slice(None)] * len(input.shape)
         sl[dim] = builtins.slice(start, end, step)
         data = input.data[tuple(sl)]
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -79,7 +79,7 @@ def strided_slice(
 
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
         data = input.data[idx]
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -109,3 +109,17 @@ class StridedSlice(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape for StridedSlice."""
         return ()
+
+
+@register_op("Choose")
+class Choose(OpDef):
+    """Construct an array from an index array and a list of arrays to choose from."""
+
+    op_name = "Choose"
+    np_op_name = "choose"
+
+    def infer_shape(
+        self, a: object, choices: object, out: object = None, mode: str = "raise", **kwargs: object
+    ) -> object:
+        """Infer the output shape."""
+        return a.shape if hasattr(a, "shape") else ()

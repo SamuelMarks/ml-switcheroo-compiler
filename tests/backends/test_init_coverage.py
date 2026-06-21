@@ -1,9 +1,8 @@
 """Module docstring."""
 
-from ml_switcheroo_compiler.backends.formatters import FormatterContext
-
-
 import importlib
+
+from ml_switcheroo_compiler.backends.formatters import FormatterContext
 
 
 def test_import_error_branches() -> None:
@@ -37,8 +36,8 @@ def test_import_error_branches() -> None:
 
 def test_cupy_generator_import() -> None:
     """Test cupy generator reload branches."""
-    import sys
     import importlib
+    import sys
 
     orig_import = __import__
 
@@ -63,8 +62,8 @@ def test_cupy_generator_import() -> None:
 
         # To hit the except branch in fallback
         from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
-        from ml_switcheroo_compiler.ir.core import IRGraph
         from ml_switcheroo_compiler.core.dtype import DType
+        from ml_switcheroo_compiler.ir.core import IRGraph
 
         gen = CupyGenerator(IRGraph())
         try:
@@ -82,8 +81,8 @@ def test_cupy_generator_import() -> None:
 
 def test_dask_generator_import() -> None:
     """Test dask generator reload branches."""
-    import sys
     import importlib
+    import sys
 
     orig_import = __import__
 
@@ -122,6 +121,7 @@ def test_dask_generator_import() -> None:
 def test_numpy_eager_extra() -> None:
     """Extra eager checks."""
     import numpy as np
+
     from ml_switcheroo_compiler.backends.numpy.eager import execute_op
 
     try:
@@ -150,8 +150,8 @@ def test_type_promotion_129() -> None:
 
 def test_cupy_eager_import() -> None:
     """Test cupy eager reload branches."""
-    import sys
     import importlib
+    import sys
 
     orig_import = __import__
 
@@ -181,8 +181,8 @@ def test_cupy_eager_import() -> None:
 
 def test_dask_eager_import() -> None:
     """Test dask eager reload branches."""
-    import sys
     import importlib
+    import sys
 
     orig_import = __import__
 
@@ -212,8 +212,8 @@ def test_dask_eager_import() -> None:
 
 def test_cupy_types_import() -> None:
     """Test cupy types reload branches."""
-    import sys
     import importlib
+    import sys
 
     orig_import = __import__
 
@@ -243,8 +243,8 @@ def test_cupy_types_import() -> None:
 
 def test_dask_types_import() -> None:
     """Test dask types reload branches."""
-    import sys
     import importlib
+    import sys
 
     orig_import = __import__
 
@@ -299,7 +299,7 @@ def test_type_promotion_129_complex() -> None:
     from ml_switcheroo_compiler.core.config import config
 
     config.jax_enable_x64 = True
-    from ml_switcheroo_compiler.core.type_promotion import promote_types
     from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.type_promotion import promote_types
 
     assert promote_types(DType.Complex64, DType.Complex128) == DType.Complex128

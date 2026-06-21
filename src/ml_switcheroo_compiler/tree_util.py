@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+
 from typing import Any, Callable
+from collections.abc import Iterator
 
 
 class TreeDef:
@@ -88,6 +90,67 @@ def tree_flatten(tree: object) -> tuple[list[object], TreeDef]:
     return [tree], TreeDef(type(None))
 
 
+def _unflatten_leaf(leaves_it: Iterator[object]) -> object:
+    """Unflatten a leaf node.
+
+    Args:
+        leaves_it (Iterator[object]): Iterator of leaves.
+
+    Returns:
+        object: The leaf.
+    """
+    try:
+        return next(leaves_it)
+    except StopIteration:
+        msg = "Too few leaves for treedef"
+        raise ValueError(msg) from None
+
+
+def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
+    """Unflatten a dict node.
+
+    Args:
+        t_def (TreeDef): The TreeDef for this node.
+        leaves_it (Iterator[object]): Iterator of leaves.
+
+    Returns:
+        object: The unflattened dict.
+    """
+    if t_def.keys is None:
+        msg_0 = "Dict treedef must have keys"
+        raise ValueError(msg_0)
+    return {
+        k: _unflatten_node(c_def, leaves_it) for k, c_def in zip(t_def.keys, t_def.children_defs)
+    }
+
+
+def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
+    """Unflatten a list or tuple node.
+
+    Args:
+        t_def (TreeDef): The TreeDef for this node.
+        leaves_it (Iterator[object]): Iterator of leaves.
+
+    Returns:
+        object: The unflattened sequence.
+    """
+    children = [_unflatten_node(c_def, leaves_it) for c_def in t_def.children_defs]
+    return t_def.node_type(children)
+
+
+def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
+    """Unflatten a single node based on its TreeDef."""
+    if t_def.node_type is type(None):
+        return _unflatten_leaf(leaves_it)
+    if t_def.node_type is dict:
+        return _unflatten_dict(t_def, leaves_it)
+    if t_def.node_type in (list, tuple):
+        return _unflatten_sequence(t_def, leaves_it)
+
+    msg = f"Unsupported treedef node_type: {t_def.node_type}"
+    raise ValueError(msg)
+
+
 def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
     """Reconstructs a PyTree from a treedef and a list of leaves.
 
@@ -99,41 +162,15 @@ def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
         object: The evaluated output resulting from this operation.
     """
     leaves_it = iter(leaves)
+    res = _unflatten_node(treedef, leaves_it)
 
-    def _unflatten(t_def: TreeDef) -> object:
-        """Execute _unflatten.
-
-        Args:
-            t_def (Any): Argument t_def.
-
-        Returns:
-        Any: The result.
-        """
-        if t_def.node_type is type(None):
-            try:
-                return next(leaves_it)
-            except StopIteration:
-                msg = "Too few leaves for treedef"
-                raise ValueError(msg) from None
-        elif t_def.node_type is dict:
-            if t_def.keys is None:
-                msg_0 = "Dict treedef must have keys"
-                raise ValueError(msg_0)
-            return {k: _unflatten(c_def) for k, c_def in zip(t_def.keys, t_def.children_defs)}
-        elif t_def.node_type in (list, tuple):
-            children = [_unflatten(c_def) for c_def in t_def.children_defs]
-            return t_def.node_type(children)
-        else:
-            msg = f"Unsupported treedef node_type: {t_def.node_type}"
-            raise ValueError(msg)
-
-    res = _unflatten(treedef)
     try:
         next(leaves_it)
         msg = "Too many leaves for treedef"
         raise ValueError(msg)
     except StopIteration:
         pass
+
     return res
 
 

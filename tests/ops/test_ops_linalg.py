@@ -3,13 +3,11 @@
 product, and Einstein summation.
 """
 
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+
 import numpy as np
 
-from ml_switcheroo_compiler.ops.linalg.basic import (
-    Dot,
-    Einsum,
-    Matmul,
-)
+from ml_switcheroo_compiler.ops.linalg.basic import Dot, Einsum, Matmul
 
 
 def test_matmul_op() -> None:
@@ -68,7 +66,7 @@ def test_einsum_op() -> None:
     b = np.random.randn(3, 4)
     subscripts = "ij,jk->ik"
 
-    assert op.infer_shape(subscripts, a.shape, b.shape) is None
+    assert op.infer_shape(subscripts, a.shape, b.shape) == (2, 4)
 
     res = op.eager_eval(subscripts, a, b)
     assert np.allclose(res, np.einsum(subscripts, a, b))
@@ -133,8 +131,8 @@ def test_dot_general_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.ones((2, 3)), shape=(2, 3), dtype=DType.Int32, device=device)
-    y = Tensor(np.ones((3, 4)), shape=(3, 4), dtype=DType.Int32, device=device)
+    x = Tensor(np.ones((2, 3)), TensorConfig((2, 3), DType.Int32, device))
+    y = Tensor(np.ones((3, 4)), TensorConfig((3, 4), DType.Int32, device))
 
     with ConfigContext(eager_mode=True):
         out = dot_general(x, y, (((1,), (0,)), ((), ())))
@@ -144,15 +142,11 @@ def test_dot_general_frontend() -> None:
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(2, 3), dtype="int32"),
-            shape=(2, 3),
-            dtype=DType.Int32,
-            device=device,
+            TensorConfig((2, 3), DType.Int32, device),
         )
         y_proxy = Tensor(
             ProxyTensor(id="y", shape=(3, 4), dtype="int32"),
-            shape=(3, 4),
-            dtype=DType.Int32,
-            device=device,
+            TensorConfig((3, 4), DType.Int32, device),
         )
         out = dot_general(x_proxy, y_proxy, (((1,), (0,)), ((), ())))
         assert out.shape == (2, 4)
@@ -208,8 +202,8 @@ def test_conv_general_dilated_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.ones((1, 3, 32, 32)), shape=(1, 3, 32, 32), dtype=DType.Float32, device=device)
-    w = Tensor(np.ones((16, 3, 3, 3)), shape=(16, 3, 3, 3), dtype=DType.Float32, device=device)
+    x = Tensor(np.ones((1, 3, 32, 32)), TensorConfig((1, 3, 32, 32), DType.Float32, device))
+    w = Tensor(np.ones((16, 3, 3, 3)), TensorConfig((16, 3, 3, 3), DType.Float32, device))
 
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
@@ -222,15 +216,11 @@ def test_conv_general_dilated_frontend() -> None:
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(1, 3, 32, 32), dtype="float32"),
-            shape=(1, 3, 32, 32),
-            dtype=DType.Float32,
-            device=device,
+            TensorConfig((1, 3, 32, 32), DType.Float32, device),
         )
         w_proxy = Tensor(
             ProxyTensor(id="w", shape=(16, 3, 3, 3), dtype="float32"),
-            shape=(16, 3, 3, 3),
-            dtype=DType.Float32,
-            device=device,
+            TensorConfig((16, 3, 3, 3), DType.Float32, device),
         )
         out = conv_general_dilated(
             x_proxy, w_proxy, ConvConfig(window_strides=[1, 1], padding="SAME")
@@ -295,7 +285,7 @@ def test_fft_rfft_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.random.rand(10), shape=(10,), dtype=DType.Float32, device=device)
+    x = Tensor(np.random.rand(10), TensorConfig((10,), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
         out_f = fft(x)
@@ -307,9 +297,7 @@ def test_fft_rfft_frontend() -> None:
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(10,), dtype="float32"),
-            shape=(10,),
-            dtype=DType.Float32,
-            device=device,
+            TensorConfig((10,), DType.Float32, device),
         )
         out_f2 = fft(x_proxy)
         assert out_f2.shape == (10,)
@@ -352,11 +340,11 @@ def test_linalg_eager_missing() -> None:
 
     device = "cpu"
     with ConfigContext(eager_mode=True):
-        a = Tensor(np.ones((2, 3)), (2, 3), DType.Float32, device)
-        b = Tensor(np.ones((3, 4)), (3, 4), DType.Float32, device)
-        c = Tensor(np.eye(3), (3, 3), DType.Float32, device)
-        d = Tensor(np.ones((3,)), (3,), DType.Float32, device)
-        d2 = Tensor(np.ones((3,)), (3,), DType.Float32, device)
+        a = Tensor(np.ones((2, 3)), TensorConfig((2, 3), DType.Float32, device))
+        b = Tensor(np.ones((3, 4)), TensorConfig((3, 4), DType.Float32, device))
+        c = Tensor(np.eye(3), TensorConfig((3, 3), DType.Float32, device))
+        d = Tensor(np.ones((3,)), TensorConfig((3,), DType.Float32, device))
+        d2 = Tensor(np.ones((3,)), TensorConfig((3,), DType.Float32, device))
 
         matmul(a, b)
         dot(d, d)
@@ -383,11 +371,11 @@ def test_linalg_eager_missing() -> None:
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
         _tracer.start_tracing("dot_general_scalar")
-        s = Tensor(ProxyTensor("s", (), "float32"), (), DType.Float32, device)
+        s = Tensor(ProxyTensor("s", (), "float32"), TensorConfig((), DType.Float32, device))
         dot_general(s, s, (((), ()), ((), ())))
 
         # Test 595: lhs_batch non-empty
-        b = Tensor(ProxyTensor("b", (2, 3), "float32"), (2, 3), DType.Float32, device)
+        b = Tensor(ProxyTensor("b", (2, 3), "float32"), TensorConfig((2, 3), DType.Float32, device))
         dot_general(b, b, (((1,), (1,)), ((0,), (0,))))
 
         _tracer.stop_tracing()
@@ -403,16 +391,18 @@ def test_linalg_eager_missing() -> None:
 
 def test_decompositions_eager_pinv() -> None:
     """Test eager pinv."""
+    from unittest.mock import MagicMock, patch
+
     import numpy as np
-    from unittest.mock import patch, MagicMock
+
     from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.ops.linalg.decompositions import pinv
-    from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ops.linalg.decompositions import pinv
 
     config.eager_mode = True
     data = np.array([[1.0, 2.0], [3.0, 4.0]])
-    inp = Tensor(data, shape=(2, 2), dtype="float32", device=Device("cpu"))
+    inp = Tensor(data, TensorConfig((2, 2), "float32", Device("cpu")))
 
     mock_backend = MagicMock()
     mock_backend.execute_op.return_value = np.array([[1.0]])

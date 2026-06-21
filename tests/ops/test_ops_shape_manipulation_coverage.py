@@ -1,21 +1,22 @@
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.manipulation import transpose
 from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
 def test_transpose_coverage():
     _tracer.start_tracing()
-    t = Tensor(data=None, device=Device("cpu"), dtype=DType.Float32, shape=(2,))
+    t = Tensor(None, TensorConfig((2,), DType.Float32, Device("cpu")))
     # dim0 and dim1 >= len
     transpose(t, 2, 3)
     _tracer.stop_tracing()
 
 
 def test_extract_helpers_coverage():
-    from ml_switcheroo_compiler.ops.shape.manipulation import _try_extract_tolist, _try_extract_item
     from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.ops.shape.manipulation import _try_extract_item, _try_extract_tolist
 
     # tolist list
     m1 = MagicMock()

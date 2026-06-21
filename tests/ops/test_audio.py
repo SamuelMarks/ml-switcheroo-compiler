@@ -1,23 +1,21 @@
 """Tests for audio operations."""
 
-import numpy as np
-from ml_switcheroo_compiler.ops.audio import istft
-from ml_switcheroo_compiler.ops.audio.ops import Istft
 from unittest import mock
+
+import numpy as np
+
 from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.device import Device, DeviceType
-from ml_switcheroo_compiler.ops.audio import (
-    stft,
-    mel_spectrogram,
-)
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.audio import istft, mel_spectrogram, stft
+from ml_switcheroo_compiler.ops.audio.ops import Istft
 from ml_switcheroo_compiler.tracing import _tracer
 
 
 def test_audio_eager_mode_exceptions():
     device = Device(DeviceType.CPU, 0)
-    img = Tensor(np.zeros((100,), dtype=np.float32), (100,), DType.Float32, device)
+    img = Tensor(np.zeros((100,), dtype=np.float32), TensorConfig((100,), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
         with mock.patch(
@@ -44,7 +42,7 @@ def test_audio_tracing_mode():
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing()
         try:
-            img = Tensor("dummy_audio", (100,), DType.Float32, device)
+            img = Tensor("dummy_audio", TensorConfig((100,), DType.Float32, device))
 
             stft(img, frame_length=10, frame_step=5)
             mel_spectrogram(
@@ -64,7 +62,7 @@ def test_istft_tracing():
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing()
         try:
-            stft = Tensor("dummy_stft", (1, 129, 10), DType.Complex64, device)
+            stft = Tensor("dummy_stft", TensorConfig((1, 129, 10), DType.Complex64, device))
             istft(stft, 256, 128)
         finally:
             _tracer.stop_tracing()
@@ -85,7 +83,7 @@ def test_istft_eager_backends():
             try:
                 backend_cls = BackendRegistry.get(backend_name)
                 stft_tensor = Tensor(
-                    backend_cls.array(stft_data), (2, 65, 10), DType.Complex64, device
+                    backend_cls.array(stft_data), TensorConfig((2, 65, 10), DType.Complex64, device)
                 )
                 res = istft(stft_tensor, frame_length=128, frame_step=64)
             except Exception:
@@ -110,7 +108,7 @@ def test_mel_filterbank_mfcc_tracing():
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing()
         try:
-            spectrogram = Tensor("dummy_spec", (2, 65, 129), DType.Float32, device)
+            spectrogram = Tensor("dummy_spec", TensorConfig((2, 65, 129), DType.Float32, device))
             from ml_switcheroo_compiler.ops.audio import mel_filterbank, mfcc
 
             mel_filterbank(40, 129, 16000, 20.0, 4000.0)
@@ -138,7 +136,9 @@ def test_mel_filterbank_mfcc_eager_backends():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                spec = Tensor(backend_cls.array(spec_data), (2, 65, 129), DType.Float32, device)
+                spec = Tensor(
+                    backend_cls.array(spec_data), TensorConfig((2, 65, 129), DType.Float32, device)
+                )
                 from ml_switcheroo_compiler.ops.audio import mel_filterbank, mfcc
 
                 res_fb = mel_filterbank(40, 129, 16000, 20.0, 4000.0)
@@ -173,9 +173,7 @@ def test_mel_filterbank_mfcc_eager_backends():
 
 
 def test_audio_infer_shapes():
-    from ml_switcheroo_compiler.ops.audio.ops import Stft, MelSpectrogram
-
-    from ml_switcheroo_compiler.ops.audio.ops import MelFilterbank, Mfcc
+    from ml_switcheroo_compiler.ops.audio.ops import MelFilterbank, MelSpectrogram, Mfcc, Stft
 
     assert Istft().infer_shape(None) == ()
     assert Stft().infer_shape(None) == ()

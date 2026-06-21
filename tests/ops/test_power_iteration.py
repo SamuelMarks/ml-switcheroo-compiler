@@ -1,12 +1,12 @@
-import pytest
 import numpy as np
+import pytest
 
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.ops.linalg import power_iteration
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.linalg import power_iteration
 
 
 @pytest.mark.parametrize("backend_name", ["numpy", "torch", "jax", "mlx"])
@@ -19,7 +19,7 @@ def test_power_iteration_convergence(backend_name):
             pytest.skip(f"Backend {backend_name} not available")
         w_np = np.random.randn(2, 4, 4).astype(np.float32)
         w_data = backend.array(w_np)
-        w_tensor = Tensor(w_data, w_np.shape, DType.Float32, device)
+        w_tensor = Tensor(w_data, TensorConfig(w_np.shape, DType.Float32, device))
 
         # SVD reference
         _, s, _ = np.linalg.svd(w_np)
@@ -49,8 +49,8 @@ def test_power_iteration_with_u(backend_name):
 
         w_data = backend.array(w_np)
         u_data = backend.array(u_np)
-        w_tensor = Tensor(w_data, w_np.shape, DType.Float32, device)
-        u_tensor = Tensor(u_data, u_np.shape, DType.Float32, device)
+        w_tensor = Tensor(w_data, TensorConfig(w_np.shape, DType.Float32, device))
+        u_tensor = Tensor(u_data, TensorConfig(u_np.shape, DType.Float32, device))
 
         v, u, sigma = power_iteration(w_tensor, num_iters=2, u=u_tensor)
 
@@ -61,17 +61,17 @@ def test_power_iteration_with_u(backend_name):
 
 def test_power_iteration_tracing():
     from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.device import Device, DeviceType
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.tracing.tracer import _tracer
 
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing()
         try:
-            w = Tensor("dummy_w", (3, 3), DType.Float32, device)
-            u = Tensor("dummy_u", (3, 1), DType.Float32, device)
+            w = Tensor("dummy_w", TensorConfig((3, 3), DType.Float32, device))
+            u = Tensor("dummy_u", TensorConfig((3, 1), DType.Float32, device))
 
             v, u_out, sigma = power_iteration(w, num_iters=2, u=u)
             v2, u2, s2 = power_iteration(w, num_iters=5)
@@ -80,11 +80,11 @@ def test_power_iteration_tracing():
 
 
 def test_power_iteration_generator():
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
     from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
     from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
     n1 = IRNode(id="w", op_type="Input", inputs=[])

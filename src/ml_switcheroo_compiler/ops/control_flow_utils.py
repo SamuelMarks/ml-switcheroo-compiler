@@ -14,7 +14,7 @@ from typing import Callable
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRBlock
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
@@ -42,12 +42,7 @@ def _wrap_proxy_inputs(
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
             proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
-            proxy_tensor = Tensor(
-                data=proxy,
-                shape=arg.shape,
-                dtype=arg.dtype,
-                device=arg.device,
-            )
+            proxy_tensor = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
             proxy_args.append(proxy_tensor)
         else:
             proxy_args.append(arg)
@@ -106,6 +101,10 @@ def _trace_function(func: Callable, args: tuple[Tensor, ...], name: str) -> IRBl
     """
     prev_graph = _tracer.active_graph
     is_tracing = _tracer.is_tracing
+
+    from ml_switcheroo_compiler.tracing.tracer import increment_trace_count
+
+    increment_trace_count(func)
 
     subgraph = _tracer.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)

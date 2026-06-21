@@ -3,7 +3,7 @@
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend import segment_sum
 
 
@@ -15,16 +15,10 @@ def test_reductions_frontend_coverage_brute() -> None:
 
     _tracer.start_tracing()
     data = Tensor(
-        data=ProxyTensor(id="data_id", shape=(5,)),
-        shape=(5,),
-        dtype=DType.Float32,
-        device=Device("cpu"),
+        ProxyTensor(id="data_id", shape=(5,)), TensorConfig((5,), DType.Float32, Device("cpu"))
     )
     segment_ids = Tensor(
-        data=ProxyTensor(id="segment_id", shape=(5,)),
-        shape=(5,),
-        dtype=DType.Int32,
-        device=Device("cpu"),
+        ProxyTensor(id="segment_id", shape=(5,)), TensorConfig((5,), DType.Int32, Device("cpu"))
     )
 
     segment_sum(data, segment_ids)  # Test branch where num_segments is None

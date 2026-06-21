@@ -1,9 +1,7 @@
 """Device and DeviceType classes for the ml-switcheroo compiler."""
 
-from enum import Enum
-
-
 from dataclasses import dataclass
+from enum import Enum
 
 
 class DeviceType(Enum):

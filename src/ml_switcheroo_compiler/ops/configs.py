@@ -1,8 +1,8 @@
 """Configuration classes for operations."""
 
-from dataclasses import dataclass
-from typing import Union, Optional, Any
 from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Any, Optional, Union
 
 
 @dataclass
@@ -121,3 +121,63 @@ class TriangularSolveOptions:
     unit_diagonal: bool = False
     overwrite_b: bool = False
     check_finite: bool = True
+
+
+class ConvDimensionNumbers:
+    """ConvDimensionNumbers class."""
+
+    pass
+
+
+class ConvGeneralDilatedDimensionNumbers:
+    """ConvGeneralDilatedDimensionNumbers class."""
+
+    pass
+
+
+class DotDimensionNumbers:
+    """DotDimensionNumbers class."""
+
+    pass
+
+
+class GatherDimensionNumbers:
+    """GatherDimensionNumbers class."""
+
+    pass
+
+
+class GatherScatterMode:
+    """GatherScatterMode class."""
+
+    pass
+
+
+class Precision:
+    """Precision class."""
+
+    pass
+
+
+class PrecisionLike:
+    """PrecisionLike class."""
+
+    pass
+
+
+class RandomAlgorithm:
+    """RandomAlgorithm class."""
+
+    pass
+
+
+class RoundingMethod:
+    """RoundingMethod class."""
+
+    pass
+
+
+class ScatterDimensionNumbers:
+    """ScatterDimensionNumbers class."""
+
+    pass

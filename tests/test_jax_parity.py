@@ -5,7 +5,7 @@ import numpy as np
 import ml_switcheroo_compiler.grad as grad_module
 from ml_switcheroo_compiler import nn, ops, random
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def test_grad_coverage() -> None:
@@ -35,7 +35,7 @@ def test_nn_coverage() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
 
     config.eager_mode = True
-    t = Tensor(np.array(1.0, dtype=np.float32), (), DType.Float32, Device("cpu"))
+    t = Tensor(np.array(1.0, dtype=np.float32), TensorConfig((), DType.Float32, Device("cpu")))
     assert nn.gelu(t) is not None
     assert nn.logsumexp(t) is not None
     assert nn.one_hot(t, 2) is not None
@@ -107,8 +107,8 @@ def test_random_coverage() -> None:
 
 def test_ops_composite_coverage() -> None:
     """Tests composite ops."""
-    t1 = Tensor(np.array([1, 2]), (2,), "int32", "cpu")
-    t2 = Tensor(np.array([1, 2]), (2,), "int32", "cpu")
+    t1 = Tensor(np.array([1, 2]), TensorConfig((2,), "int32", "cpu"))
+    t2 = Tensor(np.array([1, 2]), TensorConfig((2,), "int32", "cpu"))
 
     config.eager_mode = True
     assert ops.clamp(1, t1, 2) is not None
@@ -134,7 +134,7 @@ def test_ops_composite_coverage() -> None:
         pass
     config.eager_mode = True
 
-    assert ops.select(Tensor(np.array(True), (), "bool", "cpu"), t1, t2) is not None
+    assert ops.select(Tensor(np.array(True), TensorConfig((), "bool", "cpu")), t1, t2) is not None
 
     # array_equal eager
     config.eager_mode = True

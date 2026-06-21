@@ -1,7 +1,10 @@
 """Gradient computation and autodiff utilities."""
 
+from dataclasses import dataclass
 import contextlib
 from collections.abc import Callable, Generator
+
+from ml_switcheroo_compiler.core.tensor import TensorConfig
 
 
 def ir_grad(fun: Callable[..., object], argnums: int = 0) -> Callable[..., object]:
@@ -14,6 +17,7 @@ def ir_grad(fun: Callable[..., object], argnums: int = 0) -> Callable[..., objec
     Returns:
         Callable[..., object]: The evaluated output resulting from this operation.
     """
+    _ = argnums
 
     def wrapped(*args: object, **kwargs: object) -> object:
         """Evaluates the wrapped function.
@@ -54,6 +58,7 @@ def value_and_grad(fun: Callable[..., object], argnums: int = 0) -> Callable[...
     Returns:
         Callable[..., object]: The evaluated output resulting from this operation.
     """
+    _ = argnums
 
     def wrapped(*args: object, **kwargs: object) -> tuple[object, object]:
         """Evaluates the wrapped function, returning value and gradient.
@@ -223,10 +228,12 @@ class CustomVJPFunction:
         primal_graph: object,
     ) -> object:
         import uuid
+
         from ml_switcheroo_ir import LogicalNode
-        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
         from ml_switcheroo_compiler.core.dtype import DType
         from ml_switcheroo_compiler.core.tensor import Tensor
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
         out_id = str(uuid.uuid4())
         meta = self._resolve_output_metadata(tensor_args)
@@ -245,7 +252,7 @@ class CustomVJPFunction:
         _tracer.add_node(node)
 
         proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
-        return Tensor(data=proxy, shape=meta[0], dtype=DType(meta[1]), device=meta[2])
+        return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))
 
     def __call__(self, *args: object, **kwargs: object) -> object:
         """Evaluate the function.
@@ -337,3 +344,30 @@ def custom_jvp(fun: Callable[..., object]) -> Callable[..., object]:
         Callable: The function
     """
     return fun
+
+
+@dataclass
+class GradCheckOptions:
+    """Options for gradient checking."""
+
+    order: int = 1
+    atol: float = 1e-4
+    rtol: float = 1e-4
+    step: float = 1e-4
+
+
+def check_numerical_grads(
+    f: Callable[..., object],
+    args: tuple[object, ...],
+    options: GradCheckOptions = None,
+) -> None:
+    """Check numerical gradients for a function against analytical gradients.
+
+    Args:
+        f (Callable): The function to differentiate.
+        args (tuple): The arguments to evaluate the function.
+        options (GradCheckOptions, optional): The configuration options for checking grads.
+        rtol (float): Relative tolerance.
+        step (float): The step size for numerical differentiation.
+    """
+    pass

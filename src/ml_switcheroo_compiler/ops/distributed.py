@@ -1,9 +1,9 @@
 """Distributed execution operations."""
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def shard_tensor(tensor: Tensor, device_mesh: object, layout: object) -> Tensor:
@@ -24,7 +24,10 @@ def shard_tensor(tensor: Tensor, device_mesh: object, layout: object) -> Tensor:
         data = backend.execute_op(
             "ShardTensor", tensor.data, device_mesh=device_mesh, layout=layout
         )
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     return _emit_shape_node(
         "ShardTensor", [tensor], {"device_mesh": device_mesh, "layout": layout}, (), tensor.dtype
     )
@@ -45,7 +48,10 @@ def all_reduce(tensor: Tensor, op: str = "sum") -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("AllReduce", tensor.data, op=op)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     return _emit_shape_node("AllReduce", [tensor], {"op": op}, (), tensor.dtype)
 
 
@@ -64,7 +70,10 @@ def all_gather(tensor: Tensor, axis: int = 0) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("AllGather", tensor.data, axis=axis)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     return _emit_shape_node("AllGather", [tensor], {"axis": axis}, (), tensor.dtype)
 
 
@@ -84,7 +93,10 @@ def reduce_scatter(tensor: Tensor, op: str = "sum", axis: int = 0) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("ReduceScatter", tensor.data, op=op, axis=axis)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     return _emit_shape_node("ReduceScatter", [tensor], {"op": op, "axis": axis}, (), tensor.dtype)
 
 

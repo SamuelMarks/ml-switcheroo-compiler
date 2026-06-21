@@ -5,8 +5,8 @@ from typing import Any
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.interpreter.environment import Environment
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.interpreter.environment import Environment
 
 
 def evaluate_graph(graph: LogicalGraph, inputs: dict[str, Any]) -> dict[str, Any]:

@@ -292,3 +292,86 @@ def log_softmax(x: object, axis: object = -1) -> object:
     shifted = ops.subtract(x, amax)
     sum_exp = ops.sum(ops.exp(shifted), axis=axis, keepdims=True)
     return ops.subtract(shifted, ops.log(sum_exp))
+
+
+def glu(x: object, axis: int = -1) -> object:
+    """Computes the Gated Linear Unit (GLU) activation function."""
+    from ml_switcheroo_compiler import ops
+
+    a, b = ops.split(x, 2, axis=axis)
+    return ops.multiply(a, sigmoid(b))
+
+
+def hard_silu(x: object) -> object:
+    """Computes the Hard SiLU activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.multiply(x, hard_sigmoid(x))
+
+
+def hard_swish(x: object) -> object:
+    """Computes the Hard Swish activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.multiply(x, ops.divide(ops.clip(ops.add(x, 3.0), 0.0, 6.0), 6.0))
+
+
+def leaky_relu(x: object, negative_slope: float = 0.01) -> object:
+    """Computes the Leaky ReLU activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.where(ops.greater_equal(x, 0.0), x, ops.multiply(x, negative_slope))
+
+
+def mish(x: object) -> object:
+    """Computes the Mish activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.multiply(x, ops.tanh(softplus(x)))
+
+
+def soft_sign(x: object) -> object:
+    """Computes the SoftSign activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.divide(x, ops.add(1.0, ops.abs(x)))
+
+
+def softplus(x: object) -> object:
+    """Computes the Softplus activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.log1p(ops.exp(x))
+
+
+def sparse_plus(x: object) -> object:
+    """Computes the SparsePlus activation function."""
+    from ml_switcheroo_compiler import ops
+
+    leq = ops.less_equal(x, -1.0)
+    geq = ops.greater_equal(x, 1.0)
+    mid = ops.multiply(0.25, ops.square(ops.add(x, 1.0)))
+    return ops.where(leq, 0.0, ops.where(geq, x, mid))
+
+
+def sparse_sigmoid(x: object) -> object:
+    """Computes the Sparse Sigmoid activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.clip(ops.add(ops.multiply(0.5, x), 0.5), 0.0, 1.0)
+
+
+def squareplus(x: object, b: float = 4.0) -> object:
+    """Computes the SquarePlus activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.multiply(0.5, ops.add(x, ops.sqrt(ops.add(ops.square(x), b))))
+
+
+def standardize(x: object, axis: int = -1, epsilon: float = 1e-5) -> object:
+    """Standardizes the input tensor along the given axis."""
+    from ml_switcheroo_compiler import ops
+
+    mean = ops.mean(x, axis=axis, keepdims=True)
+    var = ops.var(x, axis=axis, keepdims=True)
+    return ops.divide(ops.subtract(x, mean), ops.sqrt(ops.add(var, epsilon)))

@@ -11,10 +11,8 @@ import json
 from typing import Callable
 
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph
-
-
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 class IRValidator:

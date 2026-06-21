@@ -2,9 +2,7 @@
 
 import tensorflow.math as tfm
 
-from ml_switcheroo_compiler.backends.eager import (
-    execute_generic_op,
-)
+from ml_switcheroo_compiler.backends.eager import execute_generic_op
 
 
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:

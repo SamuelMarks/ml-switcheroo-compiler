@@ -84,6 +84,48 @@ def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
     return graph
 
 
+def _extract_jaxpr_constants(jaxpr: object, graph: LogicalGraph) -> None:
+    """Extract constants from a JAX jaxpr.
+
+    Args:
+        jaxpr (object): The JAX jaxpr.
+        graph (LogicalGraph): The logical graph to populate.
+    """
+    pass
+
+
+def _translate_jax_equation(eqn: object, graph: LogicalGraph) -> None:
+    """Translate a JAX equation into a logical node.
+
+    Args:
+        eqn (object): The JAX equation.
+        graph (LogicalGraph): The logical graph.
+    """
+    op_type = "Unknown"
+    primitive_name = getattr(eqn.primitive, "name", str(eqn.primitive))
+    if primitive_name == "add":
+        op_type = "Add"
+    elif primitive_name == "mul":
+        op_type = "Mul"
+
+    inputs = []
+    for invar in eqn.invars:
+        inputs.append(str(id(invar)))
+
+    out_id = str(id(eqn.outvars[0])) if eqn.outvars else "out"
+
+    l_node = LogicalNode(
+        id=out_id,
+        op_type=op_type,
+        domain="ai.onnx",
+        version=1,
+        attributes={},
+        inputs=inputs,
+        shape_metadata=(),
+    )
+    graph.nodes[out_id] = l_node
+
+
 def ingest_jaxpr(jaxpr: object) -> LogicalGraph:
     """Ingests a JAX jaxpr and converts it to a LogicalGraph.
 
@@ -98,31 +140,10 @@ def ingest_jaxpr(jaxpr: object) -> LogicalGraph:
 
     graph = LogicalGraph(name="jaxpr_ingested")
 
+    _extract_jaxpr_constants(jaxpr, graph)
+
     if hasattr(jaxpr, "eqns"):
         for eqn in jaxpr.eqns:
-            op_type = "Unknown"
-            primitive_name = getattr(eqn.primitive, "name", str(eqn.primitive))
-            if primitive_name == "add":
-                op_type = "Add"
-            elif primitive_name == "mul":
-                op_type = "Mul"
-
-            inputs = []
-            for invar in eqn.invars:
-                # Mocking the variable name
-                inputs.append(str(id(invar)))
-
-            out_id = str(id(eqn.outvars[0])) if eqn.outvars else "out"
-
-            l_node = LogicalNode(
-                id=out_id,
-                op_type=op_type,
-                domain="ai.onnx",
-                version=1,
-                attributes={},
-                inputs=inputs,
-                shape_metadata=(),
-            )
-            graph.nodes[out_id] = l_node
+            _translate_jax_equation(eqn, graph)
 
     return graph

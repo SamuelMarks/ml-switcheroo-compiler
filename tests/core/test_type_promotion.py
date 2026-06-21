@@ -7,10 +7,10 @@ invalid promotions raise the appropriate errors.
 
 import pytest
 
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 from ml_switcheroo_compiler.core.type_promotion import promote_types
-from ml_switcheroo_compiler.core.config import config
 
 
 def test_promote_types() -> None:

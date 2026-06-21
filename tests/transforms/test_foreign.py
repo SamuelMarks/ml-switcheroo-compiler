@@ -1,7 +1,8 @@
 """Tests for foreign architecture bridging."""
 
 import pytest
-from ml_switcheroo_compiler.transforms.foreign import ingest_torch_fx, ingest_jaxpr
+
+from ml_switcheroo_compiler.transforms.foreign import ingest_jaxpr, ingest_torch_fx
 
 
 class MockFXNode:

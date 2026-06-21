@@ -1,8 +1,10 @@
 """Backend utilities."""
 
+from typing import cast, Any
+
 
 def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
-    tensor, indices, updates = args[0], args[1], args[2]  # type: ignore
+    tensor, indices, updates = cast(Any, args[0]), cast(Any, args[1]), cast(Any, args[2])
     flat_idx = sum(indices[..., i] * tensor.stride(i) for i in range(indices.shape[-1]))
     res = tensor.clone().flatten()
     res.scatter_reduce_(0, flat_idx.flatten(), updates.flatten(), reduce="amax", include_self=True)
@@ -10,7 +12,7 @@ def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
 
 
 def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
-    tensor, indices, updates = args[0], args[1], args[2]  # type: ignore
+    tensor, indices, updates = cast(Any, args[0]), cast(Any, args[1]), cast(Any, args[2])
     flat_idx = sum(indices[..., i] * tensor.stride(i) for i in range(indices.shape[-1]))
     res = tensor.clone().flatten()
     res.scatter_reduce_(0, flat_idx.flatten(), updates.flatten(), reduce="amin", include_self=True)
@@ -18,11 +20,19 @@ def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
 
 
 def _execute_tensor_scatter_update(*args: object, **kwargs: object) -> object:
-    return args[0].clone().index_put_(tuple(args[1].unbind(-1)), args[2])  # type: ignore
+    return (
+        cast(Any, args[0])
+        .clone()
+        .index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]))
+    )
 
 
 def _execute_tensor_scatter_add(*args: object, **kwargs: object) -> object:
-    return args[0].clone().index_put_(tuple(args[1].unbind(-1)), args[2], accumulate=True)  # type: ignore
+    return (
+        cast(Any, args[0])
+        .clone()
+        .index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]), accumulate=True)
+    )
 
 
 def _execute_power_iteration(*args: object, **kwargs: object) -> object:
@@ -44,7 +54,7 @@ def _execute_power_iteration(*args: object, **kwargs: object) -> object:
 
 
 def _execute_broadcast_to(*args: object, **kwargs: object) -> object:
-    return args[0].expand(kwargs["shape"])  # type: ignore
+    return cast(Any, args[0]).expand(kwargs["shape"])
 
 
 def _get_custom_torch_op_map() -> dict:

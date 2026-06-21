@@ -1,8 +1,10 @@
 """Core utilities."""
 
 import warnings
-import scipy.special
+import importlib
+import typing
 
+import scipy.special
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -177,8 +179,8 @@ def _tensor_scatter_update(backend_module: object, *args: object, **kwargs: obje
         return tensor.clone().index_put_(tuple(indices.unbind(-1)), updates)
     elif name == "keras.ops":
         return backend_module.tensor_scatter_update(tensor, indices, updates)
-    elif name == "tensorflow.math" or name == "tensorflow":
-        import tensorflow as tf
+    elif name in {"tensorflow.math", "tensorflow"}:
+        tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_update(tensor, indices, updates)
     else:
@@ -195,8 +197,8 @@ def _tensor_scatter_add(backend_module: object, *args: object, **kwargs: object)
         return tensor.clone().index_put_(tuple(indices.unbind(-1)), updates, accumulate=True)
     elif name == "keras.ops":
         return backend_module.tensor_scatter_add(tensor, indices, updates)
-    elif name == "tensorflow.math" or name == "tensorflow":
-        import tensorflow as tf
+    elif name in {"tensorflow.math", "tensorflow"}:
+        tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_add(tensor, indices, updates)
     else:
@@ -213,8 +215,8 @@ def _tensor_scatter_max(backend_module: object, *args: object, **kwargs: object)
         raise NotImplementedError("TensorScatterMax not implemented for torch in legacy eager")
     elif name == "keras.ops":
         return backend_module.tensor_scatter_max(tensor, indices, updates)
-    elif name == "tensorflow.math" or name == "tensorflow":
-        import tensorflow as tf
+    elif name in {"tensorflow.math", "tensorflow"}:
+        tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_max(tensor, indices, updates)
     else:
@@ -231,8 +233,8 @@ def _tensor_scatter_min(backend_module: object, *args: object, **kwargs: object)
         raise NotImplementedError("TensorScatterMin not implemented for torch in legacy eager")
     elif name == "keras.ops":
         return backend_module.tensor_scatter_min(tensor, indices, updates)
-    elif name == "tensorflow.math" or name == "tensorflow":
-        import tensorflow as tf
+    elif name in {"tensorflow.math", "tensorflow"}:
+        tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_min(tensor, indices, updates)
     else:
@@ -259,14 +261,14 @@ def _extract_shape_value(val: object) -> int:
         val_list = val.tolist()
         val = val_list[0] if isinstance(val_list, list) else val_list
 
-    return int(val)  # type: ignore
+    return int(typing.cast(typing.Any, val))
 
 
 def _parse_eager_shape(shape: object) -> list[int]:
     shape = _normalize_shape(shape)
 
     if not isinstance(shape, list) or not shape:
-        return shape  # type: ignore
+        return typing.cast(list[int], shape)
 
     return [_extract_shape_value(s) for s in shape]
 
@@ -471,13 +473,31 @@ def generic_item(backend_module: object, data: object) -> float:
         return float(data)
 
 
-def _apply_grouped_reduction(
-    backend_module: object,
-    op_name: str,
-    x: object,
-    groups: int,
-    axis: int,
+def _get_reduction_axes(reshaped_dims: list, axis: int) -> tuple:
+    return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
+
+
+def _invoke_grouped_op(
+    backend_module: object, op_name: str, reshaped_x: object, reduction_axes: tuple, is_torch: bool
 ) -> object:
+    if op_name == "mean":
+        if is_torch:
+            return backend_module.mean(reshaped_x, dim=reduction_axes, keepdim=True)
+        return backend_module.mean(reshaped_x, axis=reduction_axes, keepdims=True)
+    if op_name == "variance":
+        if is_torch:
+            return backend_module.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False)
+        return backend_module.var(reshaped_x, axis=reduction_axes, keepdims=True)
+    msg = f"Unknown grouped reduction op: {op_name}"
+    raise ValueError(msg)
+
+
+def _apply_grouped_reduction(
+    backend_module: object, op_name: str, x: object, **kwargs: int
+) -> object:
+    groups = kwargs["groups"]
+    axis = kwargs["axis"]
+
     shape = list(x.shape)
     ndims = len(shape)
     if axis < 0:
@@ -490,21 +510,10 @@ def _apply_grouped_reduction(
     reshaped_dims[axis : axis + 1] = [groups, C_per_group]
 
     reshaped_x = backend_module.reshape(x, reshaped_dims)
-    reduction_axes = tuple(i for i in range(len(reshaped_dims)) if i != 0 and i != axis)
+    reduction_axes = _get_reduction_axes(reshaped_dims, axis)
 
     is_torch = backend_module.__name__ == "torch"
-
-    if op_name == "mean":
-        if is_torch:
-            return backend_module.mean(reshaped_x, dim=reduction_axes, keepdim=True)
-        return backend_module.mean(reshaped_x, axis=reduction_axes, keepdims=True)
-    elif op_name == "variance":
-        if is_torch:
-            return backend_module.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False)
-        return backend_module.var(reshaped_x, axis=reduction_axes, keepdims=True)
-
-    msg = f"Unknown grouped reduction op: {op_name}"
-    raise ValueError(msg)
+    return _invoke_grouped_op(backend_module, op_name, reshaped_x, reduction_axes, is_torch)
 
 
 @global_eager_registry.register("GroupMean")
@@ -512,7 +521,7 @@ def _group_mean(backend_module: object, *args: object, **kwargs: object) -> obje
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
     axis = kwargs.get("axis", -1)
-    return _apply_grouped_reduction(backend_module, "mean", x, groups, axis)
+    return _apply_grouped_reduction(backend_module, "mean", x, groups=groups, axis=axis)
 
 
 @global_eager_registry.register("GroupVariance")
@@ -520,17 +529,61 @@ def _group_variance(backend_module: object, *args: object, **kwargs: object) -> 
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
     axis = kwargs.get("axis", -1)
-    return _apply_grouped_reduction(backend_module, "variance", x, groups, axis)
+    return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
 
-@global_eager_registry.register("GroupNorm")
-def _group_norm(backend_module: object, *args: object, **kwargs: object) -> object:
+def _apply_affine_transform(
+    backend_module: object, out: object, axis: int, **kwargs: object
+) -> object:
+    """Apply affine transform scaling to normalized output."""
+    weight = kwargs.get("weight")
+    bias = kwargs.get("bias")
+    shape = out.shape
+    ndims = len(shape)
+    if weight is not None:
+        w_shape = [1] * ndims
+        w_shape[axis] = shape[axis]
+        w = backend_module.reshape(weight, w_shape)
+        out = out * w
+    if bias is not None:
+        b_shape = [1] * ndims
+        b_shape[axis] = shape[axis]
+        b = backend_module.reshape(bias, b_shape)
+        out = out + b
+    return out
+
+
+def _parse_group_norm_args(args: tuple, kwargs: dict) -> tuple:
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
     weight = kwargs.get("weight", None)
     bias = kwargs.get("bias", None)
     axis = kwargs.get("axis", -1)
     epsilon = kwargs.get("epsilon", 1e-5)
+    return x, groups, weight, bias, axis, epsilon
+
+
+def _compute_group_norm(
+    backend_module: object,
+    x: object,
+    shape: list,
+    group_params: tuple[int, int],
+    stats: tuple[object, object, float],
+) -> object:
+    axis, groups = group_params
+    mean, var, epsilon = stats
+    C_per_group = shape[axis] // groups
+    reshaped_dims = shape.copy()
+    reshaped_dims[axis : axis + 1] = [groups, C_per_group]
+
+    reshaped_x = backend_module.reshape(x, reshaped_dims)
+    normalized = (reshaped_x - mean) / backend_module.sqrt(var + epsilon)
+    return backend_module.reshape(normalized, shape)
+
+
+@global_eager_registry.register("GroupNorm")
+def _group_norm(backend_module: object, *args: object, **kwargs: object) -> object:
+    x, groups, weight, bias, axis, epsilon = _parse_group_norm_args(args, kwargs)
 
     shape = list(x.shape)
     ndims = len(shape)
@@ -540,39 +593,6 @@ def _group_norm(backend_module: object, *args: object, **kwargs: object) -> obje
     mean = _group_mean(backend_module, x, groups=groups, axis=axis)
     var = _group_variance(backend_module, x, groups=groups, axis=axis)
 
-    C_per_group = shape[axis] // groups
-    reshaped_dims = shape.copy()
-    reshaped_dims[axis : axis + 1] = [groups, C_per_group]
+    out = _compute_group_norm(backend_module, x, shape, (axis, groups), (mean, var, epsilon))
 
-    is_torch = backend_module.__name__ == "torch"
-
-    if is_torch:
-        reshaped_x = backend_module.reshape(x, reshaped_dims)
-        normalized = (reshaped_x - mean) / backend_module.sqrt(var + epsilon)
-        out = backend_module.reshape(normalized, shape)
-        if weight is not None:
-            w_shape = [1] * ndims
-            w_shape[axis] = shape[axis]
-            w = backend_module.reshape(weight, w_shape)
-            out = out * w
-        if bias is not None:
-            b_shape = [1] * ndims
-            b_shape[axis] = shape[axis]
-            b = backend_module.reshape(bias, b_shape)
-            out = out + b
-        return out
-    else:
-        reshaped_x = backend_module.reshape(x, reshaped_dims)
-        normalized = (reshaped_x - mean) / backend_module.sqrt(var + epsilon)
-        out = backend_module.reshape(normalized, shape)
-        if weight is not None:
-            w_shape = [1] * ndims
-            w_shape[axis] = shape[axis]
-            w = backend_module.reshape(weight, w_shape)
-            out = out * w
-        if bias is not None:
-            b_shape = [1] * ndims
-            b_shape[axis] = shape[axis]
-            b = backend_module.reshape(bias, b_shape)
-            out = out + b
-        return out
+    return _apply_affine_transform(backend_module, out, axis, weight=weight, bias=bias)

@@ -10,60 +10,34 @@ from ml_switcheroo_compiler.ops.linalg.basic import (
     Rfft,
 )
 
-from .frontend import (
-    cross as cross,
-)
-from .frontend import (
-    dot as dot,
-)
-from .frontend import (
-    dot_general as dot_general,
-)
-from .frontend import (
-    einsum as einsum,
-)
-from .frontend import (
-    inner as inner,
-)
-from .frontend import (
-    matmul as matmul,
-)
-from .frontend import (
-    outer as outer,
-)
-from .frontend import (
-    tensordot as tensordot,
-)
-from .frontend import (
-    vdot as vdot,
-)
-
-from .decompositions import (
-    cholesky as cholesky,
-    det as det,
-    eigh as eigh,
-    eigvalsh as eigvalsh,
-    inv as inv,
-    lu as lu,
-    lu_factor as lu_factor,
-    matrix_power as matrix_power,
-    pinv as pinv,
-    power_iteration as power_iteration,
-    qr as qr,
-    slogdet as slogdet,
-    solve as solve,
-    solve_triangular as solve_triangular,
-    svd as svd,
-)
-
-from .conv import (
-    conv_general_dilated as conv_general_dilated,
-)
-
-from .fft import (
-    fft as fft,
-    rfft as rfft,
-)
+from .conv import conv_general_dilated as conv_general_dilated
+from .decompositions import cholesky as cholesky
+from .decompositions import det as det
+from .decompositions import eigh as eigh
+from .decompositions import eigvalsh as eigvalsh
+from .decompositions import inv as inv
+from .decompositions import lu as lu
+from .decompositions import lu_factor as lu_factor
+from .decompositions import matrix_power as matrix_power
+from .decompositions import pinv as pinv
+from .decompositions import power_iteration as power_iteration
+from .decompositions import qr as qr
+from .decompositions import slogdet as slogdet
+from .decompositions import solve as solve
+from .decompositions import solve_triangular as solve_triangular
+from .decompositions import svd as svd
+from .fft import fft as fft
+from .fft import rfft as rfft
+from .frontend import convolve as convolve
+from .frontend import cross as cross
+from .frontend import dot as dot
+from .frontend import dot_general as dot_general
+from .frontend import einsum as einsum
+from .frontend import inner as inner
+from .frontend import matmul as matmul
+from .frontend import outer as outer
+from .frontend import tensordot as tensordot
+from .frontend import vdot as vdot
 
 __all__ = [
     "ConvGeneralDilated",
@@ -74,6 +48,7 @@ __all__ = [
     "Matmul",
     "Rfft",
     "cholesky",
+    "convolve",
     "conv_general_dilated",
     "cross",
     "det",

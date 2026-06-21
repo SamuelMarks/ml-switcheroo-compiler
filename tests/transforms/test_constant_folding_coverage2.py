@@ -31,7 +31,7 @@ def test_constant_folding_numel_branch(monkeypatch: object) -> None:
     mock_backend = MagicMock()
     mock_backend.item.return_value = 42
     monkeypatch.setattr(
-        "ml_switcheroo_compiler.backends.registry.get_active_backend",
+        "ml_switcheroo_compiler.transforms.passes.constant_folding.get_active_backend",
         lambda: mock_backend,
     )
 

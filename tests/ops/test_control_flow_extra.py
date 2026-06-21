@@ -8,7 +8,7 @@ import ml_switcheroo_compiler.ops.control_flow as cf
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import scan
 
 
@@ -20,8 +20,8 @@ def test_scan_tuple_y(monkeypatch: object) -> None:
         """Docstring."""
         return carry + 1, (x + 1, x + 2)
 
-    init = Tensor(np.array(0.0), shape=(), dtype=DType.Float32, device=Device("cpu"))
-    xs = Tensor(np.array([1.0, 2.0]), shape=(2,), dtype=DType.Float32, device=Device("cpu"))
+    init = Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
+    xs = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, Device("cpu")))
 
     mock_backend = MagicMock()
     mock_array = MagicMock()

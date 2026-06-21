@@ -7,8 +7,6 @@ intermediate representation (IR) graph for compilation
 """
 
 from __future__ import annotations
-from ml_switcheroo_compiler.ops.vmap import vmap
-from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 
 
 import uuid
@@ -19,8 +17,11 @@ from ml_switcheroo_ir import LogicalNode
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRBlock
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from ml_switcheroo_compiler.ops.vmap import vmap
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
 
@@ -81,7 +82,7 @@ def cond(
     _tracer.add_node(node)
 
     proxy = ProxyTensor(id=out_id, shape=(), dtype="float32")
-    return Tensor(data=proxy, shape=(), dtype=DType.Float32, device=pred.device)
+    return Tensor(proxy, TensorConfig((), DType.Float32, pred.device))
 
 
 def _trace_while_cond(cond_fn: Callable, args: tuple[Tensor, ...]) -> IRBlock:
@@ -99,12 +100,7 @@ def _approximate_while_return(init_val: object, out_id: str) -> object:
             shape=init_val.shape,
             dtype=init_val.dtype.value,
         )
-        return Tensor(
-            data=proxy,
-            shape=init_val.shape,
-            dtype=init_val.dtype,
-            device=init_val.device,
-        )
+        return Tensor(proxy, TensorConfig(init_val.shape, init_val.dtype, init_val.device))
     return init_val
 
 
@@ -144,7 +140,13 @@ def while_loop(
         msg = "Cannot emit While node outside of a tracing context."
         raise RuntimeError(msg)
 
-    args = (init_val,) if isinstance(init_val, Tensor) else tuple(init_val)  # type: ignore
+    import typing
+
+    args = (
+        (init_val,)
+        if isinstance(init_val, Tensor)
+        else tuple(typing.cast(typing.Iterable[Tensor], init_val))
+    )
 
     cond_graph = _trace_while_cond(cond_fn, args)
     body_graph = _trace_while_body(body_fn, args)
@@ -219,7 +221,11 @@ def _scan_eager(f: Callable, init: object, xs: object, length: int | None) -> tu
     scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
     for i in range(scan_length):
         # Extract slice
-        x = Tensor(xs.data[i], xs.shape[1:], xs.dtype, xs.device) if xs is not None else None
+        x = (
+            Tensor(xs.data[i], TensorConfig(xs.shape[1:], xs.dtype, xs.device))
+            if xs is not None
+            else None
+        )
         carry, y = f(carry, x)
         ys.append(y.data if hasattr(y, "data") else y)
 
@@ -242,9 +248,11 @@ def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
         stacked_ys = get_active_backend().execute_op("Stack", ys)
         return Tensor(
             stacked_ys,
-            stacked_ys.shape,
-            last_y.dtype if hasattr(last_y, "dtype") else init.dtype,
-            last_y.device if hasattr(last_y, "device") else init.device,
+            TensorConfig(
+                stacked_ys.shape,
+                last_y.dtype if hasattr(last_y, "dtype") else init.dtype,
+                last_y.device if hasattr(last_y, "device") else init.device,
+            ),
         )
     else:
         stacked_ys = get_active_backend().array(ys)
@@ -252,9 +260,7 @@ def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
 
         return Tensor(
             stacked_ys,
-            stacked_ys.shape,
-            DType(str(stacked_ys.dtype)),
-            config.default_device,
+            TensorConfig(stacked_ys.shape, DType(str(stacked_ys.dtype)), config.default_device),
         )
 
 
@@ -276,7 +282,7 @@ def _scan_tracing(f: Callable, init: object, xs: object) -> tuple[object, object
     # Need a dummy x for tracing `f`
     x_shape = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
     proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=xs.dtype.value)
-    dummy_x = Tensor(data=proxy_x, shape=x_shape, dtype=xs.dtype, device=xs.device)
+    dummy_x = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
 
     body_graph = _trace_function(f, (init, dummy_x), "scan_body")
 
@@ -304,12 +310,7 @@ def _scan_tracing(f: Callable, init: object, xs: object) -> tuple[object, object
 
     # Return a dummy proxy
     proxy = ProxyTensor(id=out_id, shape=xs.shape, dtype=xs.dtype.value)
-    out_tensor = Tensor(
-        data=proxy,
-        shape=xs.shape,
-        dtype=xs.dtype,
-        device=xs.device,
-    )
+    out_tensor = Tensor(proxy, TensorConfig(xs.shape, xs.dtype, xs.device))
 
     # We must construct a structure matching `init` for the returned carry
     # However, currently it just returns `init` as the carry, which might not correctly propagate traced IDs
@@ -323,7 +324,7 @@ def _create_pmap_dummy_args(args: tuple[object, ...]) -> list[object]:
         if isinstance(a, Tensor):
             new_shape = a.shape[1:] if len(a.shape) > 0 else ()
             proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
-            dummy_args.append(Tensor(data=proxy, shape=new_shape, dtype=a.dtype, device=a.device))
+            dummy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
             dummy_args.append(a)
     return dummy_args
@@ -332,26 +333,25 @@ def _create_pmap_dummy_args(args: tuple[object, ...]) -> list[object]:
 def _emit_pmap_node(
     func: Callable, args: tuple[object, ...], dummy_args: list[object], axis_name: str | None
 ) -> object:
-    body_graph = _trace_function(func, tuple(dummy_args), "pmap_body")  # type: ignore
+    import typing
+
+    body_graph = _trace_function(
+        func, typing.cast(tuple[Tensor, ...], tuple(dummy_args)), "pmap_body"
+    )
 
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Pmap",
-        inputs=[a.data.id for a in args if isinstance(a, Tensor)],  # type: ignore
+        inputs=[typing.cast(typing.Any, a).data.id for a in args if isinstance(a, Tensor)],
         attributes={"axis_name": axis_name, "body": body_graph},
         shape_metadata=(),
     )
     _tracer.add_node(node)
 
-    arg = args[0]
-    proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)  # type: ignore
-    return Tensor(
-        data=proxy,
-        shape=arg.shape,  # type: ignore
-        dtype=arg.dtype,  # type: ignore
-        device=arg.device,  # type: ignore
-    )
+    arg = typing.cast(typing.Any, args[0])
+    proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
+    return Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
 
 
 def pmap(func: Callable, axis_name: str | None = None) -> Callable:
@@ -419,7 +419,7 @@ def stop_gradient(x: object) -> object:
         )
         _tracer.add_node(node)
         proxy = ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype.value)
-        return Tensor(data=proxy, shape=x.shape, dtype=x.dtype, device=x.device)
+        return Tensor(proxy, TensorConfig(x.shape, x.dtype, x.device))
     if isinstance(x, ProxyTensor):
         out_id = str(uuid.uuid4())
         node = IRNode(
@@ -432,3 +432,37 @@ def stop_gradient(x: object) -> object:
         return ProxyTensor(id=out_id, shape=x.shape, dtype=x.dtype)
 
     return x
+
+
+@register_op("Assert")
+class AssertOp(OpDef):
+    """An operation definition for asserting a condition within the computational graph."""
+
+    def infer_shape(self, condition: object, **kwargs: object) -> object:
+        """Infer the output shape of the operation."""
+        return ()
+
+
+def assert_value(condition: object, message: str = "") -> None:
+    """Assert a condition. In eager mode, records it. In tracing mode, emits an Assert node."""
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.core.assertions import record_assertion
+    from ml_switcheroo_compiler.tracing import _tracer
+    import uuid
+    from ml_switcheroo_ir import LogicalNode
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+    if config.eager_mode or not _tracer.is_tracing:
+        record_assertion(condition, message)
+        return
+
+    inp_id = condition.data.id if isinstance(condition, Tensor) else condition.id
+    out_id = str(uuid.uuid4())
+    node = LogicalNode(
+        id=out_id,
+        op_type="Assert",
+        inputs=[inp_id],
+        attributes={"message": message},
+        shape_metadata=(),
+    )
+    _tracer.add_node(node)

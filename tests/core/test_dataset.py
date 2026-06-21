@@ -2,11 +2,11 @@
 
 import pytest
 
-from ml_switcheroo_compiler.core.dataset import Dataset
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.dataset import Dataset
 from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def test_dataset_basic():
@@ -14,8 +14,12 @@ def test_dataset_basic():
     backend = get_active_backend()
     device = Device("cpu")
 
-    data1 = Tensor(backend.array([1.0, 2.0, 3.0, 4.0, 5.0]), (5,), DType.Float32, device)
-    data2 = Tensor(backend.array([10.0, 20.0, 30.0, 40.0, 50.0]), (5,), DType.Float32, device)
+    data1 = Tensor(
+        backend.array([1.0, 2.0, 3.0, 4.0, 5.0]), TensorConfig((5,), DType.Float32, device)
+    )
+    data2 = Tensor(
+        backend.array([10.0, 20.0, 30.0, 40.0, 50.0]), TensorConfig((5,), DType.Float32, device)
+    )
 
     ds = Dataset(data1, data2).batch(2)
     batches = list(ds)
@@ -30,7 +34,7 @@ def test_dataset_shuffle():
     backend = get_active_backend()
     device = Device("cpu")
 
-    data = Tensor(backend.array(list(range(100))), (100,), DType.Int32, device)
+    data = Tensor(backend.array(list(range(100))), TensorConfig((100,), DType.Int32, device))
 
     ds = Dataset(data).batch(10).shuffle(10)
     batches = list(ds)
@@ -46,7 +50,7 @@ def test_dataset_prefetch():
     backend = get_active_backend()
     device = Device("cpu")
 
-    data = Tensor(backend.array([1.0, 2.0]), (2,), DType.Float32, device)
+    data = Tensor(backend.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
     ds = Dataset(data).prefetch(2)
     assert ds._prefetch_buffer == 2
 
@@ -56,8 +60,8 @@ def test_dataset_exceptions():
     backend = get_active_backend()
     device = Device("cpu")
 
-    data1 = Tensor(backend.array([1.0, 2.0]), (2,), DType.Float32, device)
-    data2 = Tensor(backend.array([1.0, 2.0, 3.0]), (3,), DType.Float32, device)
+    data1 = Tensor(backend.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
+    data2 = Tensor(backend.array([1.0, 2.0, 3.0]), TensorConfig((3,), DType.Float32, device))
 
     with pytest.raises(ValueError, match="At least one tensor must be provided"):
         Dataset()

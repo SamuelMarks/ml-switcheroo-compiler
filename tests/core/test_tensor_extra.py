@@ -4,13 +4,13 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def test_tensor_extra_methods() -> None:
     """Test function."""
     config.eager_mode = True
-    t = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), (2, 2), "float32", Device("cpu"))
+    t = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", Device("cpu")))
 
     t_contig = t.contiguous()
     assert t_contig is t
@@ -25,7 +25,7 @@ def test_tensor_extra_methods() -> None:
     assert t_detach.shape == (2, 2)
     assert t_detach is not t
 
-    t_scalar = Tensor(np.array(5.0), (), "float32", Device("cpu"))
+    t_scalar = Tensor(np.array(5.0), TensorConfig((), "float32", Device("cpu")))
     assert t_scalar.item() == 5.0
 
     # backward just passes, let's call it
@@ -34,7 +34,7 @@ def test_tensor_extra_methods() -> None:
 
 def test_tensor_item_non_tensor() -> None:
     """Test function."""
-    t_scalar = Tensor(np.array(5.0), (), "float32", Device("cpu"))
+    t_scalar = Tensor(np.array(5.0), TensorConfig((), "float32", Device("cpu")))
     # Mock eval to return scalar
     from unittest.mock import patch
 

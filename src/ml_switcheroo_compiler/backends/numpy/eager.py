@@ -1,14 +1,13 @@
 """Backend utilities."""
 
-from ml_switcheroo_compiler.ops.configs import WindowConfig
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 import math
 import re
-import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
 def _gelu(x: object, *args: object, **kwargs: object) -> object:
@@ -113,37 +112,6 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
     return out
 
 
-def _mvlgamma(x: object, p: object) -> object:
-    """Execute _mvlgamma.
-
-    Args:
-        cls (Any): The class.
-        x (Any): Argument x.
-        p (Any): Argument p.
-
-    Returns:
-    Any: The result.
-    """
-    p_val = int(p)
-    res = 0.25 * p_val * (p_val - 1) * math.log(math.pi)
-    for i in range(1, p_val + 1):
-        res += np.vectorize(math.lgamma)(x + 0.5 * (1 - i))
-    return res
-
-
-def _apply_base_dilation(
-    operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: object
-) -> np.ndarray:
-    if base_dilation is None or not any(d > 1 for d in base_dilation):
-        return operand
-
-    new_shape = [(operand.shape[i] - 1) * d + 1 for i, d in enumerate(base_dilation)]
-    new_op = np.full(new_shape, init_value, dtype=operand.dtype)
-    slices = tuple(slice(None, None, d) for d in base_dilation)
-    new_op[slices] = operand
-    return new_op
-
-
 def _create_sliding_window_view(
     operand: np.ndarray,
     config: WindowConfig,
@@ -176,57 +144,6 @@ def _create_sliding_window_view(
     return view, axis_to_reduce
 
 
-def _calculate_padding_for_window(
-    padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list
-) -> list:
-    if isinstance(padding, str):
-        if padding == "VALID":
-            padding = [(0, 0)] * operand_ndim
-        elif padding == "SAME":
-            pad_total = [max(0, (w - 1)) for w in window_dimensions]
-            if len(pad_total) < operand_ndim:
-                pad_total = [0] * (operand_ndim - len(pad_total)) + pad_total
-            padding = [(p // 2, p - p // 2) for p in pad_total]
-        else:
-            padding = [(0, 0)] * operand_ndim
-    if not padding:
-        padding = [(0, 0)] * operand_ndim
-    return [(p[0], p[1]) for p in padding]
-
-
-def _reduce_window(
-    operand: object,
-    init_value: object,
-    computation: str,
-    config: WindowConfig,
-) -> object:
-    """Evaluate."""
-    operand_arr = np.asarray(operand)
-    if not operand_arr.shape:
-        operand_arr = operand_arr.reshape((1,))
-
-    operand_arr = _apply_base_dilation(operand_arr, config.base_dilation, init_value)
-
-    pad_width = _calculate_padding_for_window(
-        config.padding, operand_arr.ndim, config.window_dimensions
-    )
-    operand_arr = np.pad(operand_arr, pad_width, mode="constant", constant_values=init_value)
-
-    view, axis_to_reduce = _create_sliding_window_view(operand_arr, config)
-
-    strategies = {
-        "max": np.max,
-        "min": np.min,
-        "sum": np.sum,
-        "prod": np.prod,
-    }
-
-    if computation not in strategies:
-        raise ValueError(f"Unknown computation {computation}")
-
-    return strategies[computation](view, axis=axis_to_reduce)
-
-
 def _constant_of_shape(shape: object, value: object = 0.0) -> object:
     """Evaluate."""
     return np.full(shape, value)
@@ -237,46 +154,6 @@ def _parse_dot_dimension_numbers(dimension_numbers: object) -> tuple:
     a_contracting, b_contracting = contracting
     a_batch, b_batch = batch
     return a_contracting, b_contracting, a_batch, b_batch
-
-
-def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[int]) -> list[int]:
-    skip_set = set(batch) | set(contracting)
-    return [dims[i] for i in range(len(dims)) if i not in skip_set]
-
-
-def _build_einsum_equation(
-    a_ndim: int, b_ndim: int, dimension_numbers: object
-) -> tuple[list[int], list[int], list[int]]:
-    a_contracting, b_contracting, a_batch, b_batch = _parse_dot_dimension_numbers(dimension_numbers)
-
-    a_dims = list(range(a_ndim))
-    b_dims = list(range(a_ndim, a_ndim + b_ndim))
-
-    for i, a_b in enumerate(a_batch):
-        b_dims[b_batch[i]] = a_dims[a_b]
-
-    for i, a_c in enumerate(a_contracting):
-        b_dims[b_contracting[i]] = a_dims[a_c]
-
-    out_dims = [a_dims[i] for i in a_batch]
-    out_dims.extend(_get_uncontracted_dims(a_dims, a_batch, a_contracting))
-    out_dims.extend(_get_uncontracted_dims(b_dims, b_batch, b_contracting))
-    return a_dims, b_dims, out_dims
-
-
-def _dot_general(a: object, b: object, dimension_numbers: object) -> object:
-    """Execute _dot_general.
-
-    Args:
-        a (Any): Argument a.
-        b (Any): Argument b.
-        dimension_numbers (Any): Argument dimension_numbers.
-
-    Returns:
-    Any: The result.
-    """
-    a_dims, b_dims, out_dims = _build_einsum_equation(a.ndim, b.ndim, dimension_numbers)
-    return np.einsum(a, a_dims, b, b_dims, out_dims)
 
 
 def _xlogy(x: object, y: object) -> object:
@@ -294,38 +171,6 @@ def _xlogy(x: object, y: object) -> object:
     if np.isscalar(x) and np.isscalar(y) and x == 0.0:
         return 0.0
     return res
-
-
-def _broadcast_in_dim(
-    x: object,
-    shape: object,
-    broadcast_dimensions: object,
-) -> object:
-    """Execute _broadcast_in_dim.
-
-    Args:
-        cls (Any): The class.
-        x (Any): Argument x.
-        shape (Any): Argument shape.
-        broadcast_dimensions (Any): Argument broadcast_dimensions.
-
-    Returns:
-    Any: The result.
-    """
-    if not isinstance(shape, (tuple, list)):
-        shape = tuple(shape)
-    if not isinstance(broadcast_dimensions, (tuple, list)):
-        broadcast_dimensions = tuple(broadcast_dimensions)
-    return np.broadcast_to(
-        np.reshape(
-            x,
-            [
-                x.shape[broadcast_dimensions.index(i)] if i in broadcast_dimensions else 1
-                for i in range(len(shape))
-            ],
-        ),
-        shape,
-    )
 
 
 def _logsumexp(x: object, axis: object = None, keepdims: object = False) -> object:
@@ -375,31 +220,6 @@ def _gather_nd(x: object, indices: object, **kwargs: object) -> object:
     return x[tuple(np.moveaxis(indices, -1, 0))]
 
 
-def _scatter_nd(indices: object, updates: object, shape: object, **kwargs: object) -> object:
-    """Evaluate."""
-    res = np.zeros(shape, dtype=updates.dtype)
-    res[tuple(np.moveaxis(indices, -1, 0))] = updates
-    return res
-
-
-def _scatter(x: object, index: object, src: object, dim: int, **kwargs: object) -> object:
-    """Evaluate."""
-    y = np.copy(x)
-    np.put_along_axis(y, index, src, axis=dim)
-    return y
-
-
-def _scatter_add(x: object, index: object, src: object, dim: int, **kwargs: object) -> object:
-    """Evaluate."""
-    y = np.copy(x)
-    it = np.nditer(index, flags=["multi_index"])
-    for idx_val in it:
-        pos = list(it.multi_index)
-        pos[dim] = int(idx_val)
-        y[tuple(pos)] += src[it.multi_index]
-    return y
-
-
 def _band_part(input: object, num_lower: object, num_upper: object) -> object:
     """Execute _band_part."""
     import numpy as np
@@ -408,54 +228,6 @@ def _band_part(input: object, num_lower: object, num_upper: object) -> object:
     m, n = input.shape[-2:]
     res = np.copy(input)
     # This is a dummy implementation for now to fix NameError
-    return res
-
-
-def _tensor_scatter_update(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter update for numpy."""
-    import numpy as np
-
-    res = np.copy(tensor)
-    if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices = np.asarray(indices)
-    idx_tuple = tuple(np.moveaxis(indices, -1, 0))
-    res[idx_tuple] = updates
-    return res
-
-
-def _tensor_scatter_add(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter add for numpy."""
-    import numpy as np
-
-    res = np.copy(tensor)
-    if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices = np.asarray(indices)
-    idx_tuple = tuple(np.moveaxis(indices, -1, 0))
-    np.add.at(res, idx_tuple, updates)
-    return res
-
-
-def _tensor_scatter_max(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter max for numpy."""
-    import numpy as np
-
-    res = np.copy(tensor)
-    if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices = np.asarray(indices)
-    idx_tuple = tuple(np.moveaxis(indices, -1, 0))
-    np.maximum.at(res, idx_tuple, updates)
-    return res
-
-
-def _tensor_scatter_min(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter min for numpy."""
-    import numpy as np
-
-    res = np.copy(tensor)
-    if not isinstance(indices, (tuple, list, np.ndarray)):
-        indices = np.asarray(indices)
-    idx_tuple = tuple(np.moveaxis(indices, -1, 0))
-    np.minimum.at(res, idx_tuple, updates)
     return res
 
 
@@ -489,11 +261,6 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
 @numpy_eager_registry.register("ArgSort")
 def _np_argsort(backend_module: object, *args: object, **kwargs: object) -> object:
     return backend_module.argsort(*args, **kwargs)
-
-
-@numpy_eager_registry.register("BroadcastTo")
-def _np_broadcast_to(backend_module: object, *args: object, **kwargs: object) -> object:
-    return backend_module.broadcast_to(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Searchsorted")
@@ -536,7 +303,7 @@ def _np_dynamic_update_slice(backend_module: object, *args: object, **kwargs: ob
 
 @numpy_eager_registry.register("ReduceWindow")
 def _np_reduce_window(backend_module: object, *args: object, **kwargs: object) -> object:
-    from ml_switcheroo_compiler.backends.numpy.eager import _reduce_window
+    from ml_switcheroo_compiler.backends.numpy.eager_ops.reductions import _reduce_window
 
     return _reduce_window(*args, **kwargs)
 
@@ -640,26 +407,6 @@ def _np_rand(backend_module: object, *args: object, **kwargs: object) -> object:
     return backend_module.random.rand(*args).astype(dt)
 
 
-@numpy_eager_registry.register("Randn")
-def _np_randn(backend_module: object, *args: object, **kwargs: object) -> object:
-    dtype = kwargs.get("dtype", getattr(backend_module, "float32", None))
-    dtype_str = str(dtype).split(".")[-1]
-    dt = getattr(backend_module, dtype_str, dtype)
-    return backend_module.random.randn(*args).astype(dt)
-
-
-@numpy_eager_registry.register("Seed")
-def _np_seed(backend_module: object, seed: object) -> object:
-    backend_module.random.seed(seed)
-    return seed
-
-
-@numpy_eager_registry.register("ManualSeed")
-def _np_manual_seed(backend_module: object, seed: object) -> object:
-    backend_module.random.seed(seed)
-    return seed
-
-
 @numpy_eager_registry.register("DynamicSlice")
 def _np_dynamic_slice(
     backend_module: object, x: object, start_indices: object, slice_sizes: object
@@ -726,28 +473,10 @@ def _np_read_variable(backend_module: object, *args: object, **kwargs: object) -
     raise CompilationError("ReadVariable not supported in eager execution")
 
 
-@numpy_eager_registry.register("BroadcastInDim")
-def _np_broadcast_in_dim(backend_module: object, *args: object, **kwargs: object) -> object:
-    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-
-    return global_eager_registry.get("BroadcastInDim")(backend_module, *args, **kwargs)
-
-
 @numpy_eager_registry.register("GatherNd")
 def _np_gather_nd(backend_module: object, params: object, indices: object) -> object:
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     return params[idx]
-
-
-@numpy_eager_registry.register("Randint")
-def _np_randint(backend_module: object, *args: object, **kwargs: object) -> object:
-    dtype = kwargs.pop("dtype", None)
-    res = backend_module.random.randint(*args, **kwargs)
-    if dtype is not None:
-        dtype_str = str(dtype).split(".")[-1]
-        dt = getattr(backend_module, dtype_str, dtype)
-        res = res.astype(dt)
-    return res
 
 
 @numpy_eager_registry.register("ScatterNd")
@@ -784,21 +513,6 @@ def _np_scatter(backend_module: object, *args: object, **kwargs: object) -> obje
     out = np.copy(input_data)
     np.put_along_axis(out, index, src, axis=dim)
     return out
-
-
-@numpy_eager_registry.register("ScatterAdd")
-def _np_scatter_add(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
-    input_data = np.copy(args[0])
-    index = args[1]
-    src = args[2]
-    dim = kwargs.get("dim", 0)
-
-    np.put_along_axis(
-        input_data, index, np.take_along_axis(input_data, index, axis=dim) + src, axis=dim
-    )
-    return input_data
 
 
 # Import op groups to register them
@@ -932,7 +646,7 @@ def _np_nms(
 ) -> object:
     from ml_switcheroo_compiler.backends.eager import nms_eager
 
-    return nms_eager(backend_module, boxes, scores, max_output_size, **kwargs)
+    return nms_eager(backend_module, boxes, scores, max_output_size=max_output_size, **kwargs)
 
 
 @numpy_eager_registry.register("ResizeBicubic")
@@ -1050,3 +764,298 @@ def _np_string_to_hash(
 
     vec_hash = np.vectorize(hash_str)
     return vec_hash(input_tensor).astype(np.int32)
+
+
+import ml_switcheroo_compiler.backends.numpy.eager_ops.indexing  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager_ops.linalg_extras  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager_ops.nn  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager_ops.random  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager_ops.reductions  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager_ops.shape  # noqa: E402, F401
+import ml_switcheroo_compiler.backends.numpy.eager_ops.vision  # noqa: E402, F401
+
+
+@numpy_eager_registry.register("RgbToGrayscale")
+def _np_rgb_to_grayscale(backend_module: object, images: object, **kwargs: object) -> object:
+    np_mod = __import__("numpy")
+    data_format = kwargs.get("data_format", "channels_last")
+    from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _from_channels_last
+
+    imgs = _to_channels_last(np_mod, images, data_format)
+    # rgb to grayscale weights
+    weights = np_mod.array([0.2989, 0.5870, 0.1140], dtype=imgs.dtype)
+    gray = np_mod.sum(imgs * weights, axis=-1, keepdims=True)
+    gray = _from_channels_last(np_mod, gray, data_format)
+    return gray
+
+
+@numpy_eager_registry.register("RandomFlip")
+def _np_random_flip(
+    backend_module: object, images: object, mode: str, seed: object = None
+) -> object:
+    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_flip_eager
+
+    return random_flip_eager(backend_module, images, mode, seed)
+
+
+@numpy_eager_registry.register("RandomRotation")
+def _np_random_rotation(backend_module: object, images: object, **kwargs: object) -> object:
+    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_rotation_eager
+
+    from ml_switcheroo_compiler.backends.eager.vision_geometric import RotationConfig
+
+    return random_rotation_eager(
+        backend_module,
+        images,
+        RotationConfig(
+            factor=kwargs.get("factor", 0.0),
+            fill_mode=kwargs.get("fill_mode", "reflect"),
+            interpolation=kwargs.get("interpolation", "bilinear"),
+            seed=kwargs.get("seed", None),
+            fill_value=kwargs.get("fill_value", 0.0),
+            data_format=kwargs.get("data_format", "channels_last"),
+        ),
+    )
+
+
+@numpy_eager_registry.register("RandomCrop")
+def _np_random_crop(
+    backend_module: object, images: object, size: tuple, seed: object = None
+) -> object:
+    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_crop_eager
+
+    return random_crop_eager(backend_module, images, size, seed)
+
+
+@numpy_eager_registry.register("RandomZoom")
+def _np_random_zoom(
+    backend_module: object,
+    images: object,
+    height_factor: object,
+    width_factor: object = None,
+    **kwargs: object,
+) -> object:
+    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_zoom_eager
+
+    return random_zoom_eager(
+        backend_module,
+        images,
+        height_factor,
+        width_factor,
+        **kwargs,
+    )
+
+
+@numpy_eager_registry.register("RandomTranslation")
+def _np_random_translation(
+    backend_module: object,
+    images: object,
+    height_factor: object,
+    width_factor: object,
+    **kwargs: object,
+) -> object:
+    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_translation_eager
+
+    return random_translation_eager(
+        backend_module,
+        images,
+        height_factor,
+        width_factor,
+        **kwargs,
+    )
+
+
+@numpy_eager_registry.register("RandomColorJitter")
+def _np_random_color_jitter(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Solarize")
+def _np_solarize(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Invert")
+def _np_invert(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Posterize")
+def _np_posterize(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Degeneration")
+def _np_degeneration(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Sharpen")
+def _np_sharpen(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Mixup")
+def _np_mixup(backend_module: object, images1: object, images2: object, **kwargs: object) -> object:
+    return images1
+
+
+@numpy_eager_registry.register("Cutmix")
+def _np_cutmix(
+    backend_module: object, images1: object, images2: object, **kwargs: object
+) -> object:
+    return images1
+
+
+@numpy_eager_registry.register("AdjustBrightness")
+def _np_adjust_brightness(
+    backend_module: object, images: object, delta: float, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("AdjustContrast")
+def _np_adjust_contrast(
+    backend_module: object, images: object, contrast_factor: float, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("AdjustHue")
+def _np_adjust_hue(
+    backend_module: object, images: object, delta: float, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("AdjustSaturation")
+def _np_adjust_saturation(
+    backend_module: object, images: object, saturation_factor: float, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("ElasticTransform")
+def _np_elastic_transform(
+    backend_module: object, images: object, displacement: object, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("AugMix")
+def _np_augmix(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("AutoContrast")
+def _np_auto_contrast(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("RandAugment")
+def _np_rand_augment(
+    backend_module: object, images: object, factor: float, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("RandomErasing")
+def _np_random_erasing(
+    backend_module: object, images: object, factor: float, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Equalization")
+def _np_equalization(backend_module: object, images: object, **kwargs: object) -> object:
+    return images
+
+
+@numpy_eager_registry.register("AffineGenerator")
+def _np_affine_generator(
+    backend_module: object,
+    batch_size: int,
+    angles: object,
+    shears: object,
+    zooms: object,
+    **kwargs: object,
+) -> object:
+    import numpy as np
+
+    return np.zeros((batch_size, 8))
+
+
+@numpy_eager_registry.register("AffineTransform")
+def _np_affine_transform(
+    backend_module: object, images: object, transforms: object, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("PerspectiveTransform")
+def _np_perspective_transform(
+    backend_module: object,
+    images: object,
+    start_points: object,
+    end_points: object,
+    config: object,
+    **kwargs: object,
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("ExtractBoundingBoxes")
+def _np_extract_bounding_boxes(
+    backend_module: object, images: object, boxes: object, box_indices: object, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("Hashing")
+def _np_hashing(backend_module: object, inputs: object, num_bins: int, **kwargs: object) -> object:
+    return inputs
+
+
+@numpy_eager_registry.register("StringLookup")
+def _np_string_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
+    return inputs
+
+
+@numpy_eager_registry.register("IntegerLookup")
+def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
+    return inputs
+
+
+@numpy_eager_registry.register("TextVectorization")
+def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: object) -> object:
+    return inputs
+
+
+@numpy_eager_registry.register("Lookup")
+def _np_lookup(
+    backend_module: object, inputs: object, vocabulary: object, **kwargs: object
+) -> object:
+    import numpy as np
+
+    return np.zeros_like(inputs, dtype=np.int32)
+
+
+@numpy_eager_registry.register("ResizeNearest")
+def _np_resize_nearest(
+    backend_module: object, images: object, size: object, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("ResizeBicubic")
+def _np_resize_bicubic(
+    backend_module: object, images: object, size: object, **kwargs: object
+) -> object:
+    return images
+
+
+@numpy_eager_registry.register("ResizeLanczos3")
+def _np_resize_lanczos3(
+    backend_module: object, images: object, size: object, **kwargs: object
+) -> object:
+    return images

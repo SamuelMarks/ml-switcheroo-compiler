@@ -1,10 +1,12 @@
 """Text and Categorical operations."""
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 import uuid
+
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Tensor:
@@ -18,12 +20,11 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Tensor:
         Tensor: Hashed integers.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("StringToHash", input_tensor.data, num_buckets=num_buckets)
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Int32, input_tensor.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToHash",
@@ -46,14 +47,13 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
         Tensor: Replaced string tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite
         )
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.String, input_tensor.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexReplace",
@@ -65,28 +65,23 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
 
 
 def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
     tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)
     return (
         Tensor(
             backend.array(tokens),
-            backend.array(tokens).shape,
-            DType.String,
-            input_tensor.device,
+            TensorConfig(backend.array(tokens).shape, DType.String, input_tensor.device),
         ),
         Tensor(
             backend.array(lengths),
-            backend.array(lengths).shape,
-            DType.Int32,
-            input_tensor.device,
+            TensorConfig(backend.array(lengths).shape, DType.Int32, input_tensor.device),
         ),
     )
 
 
 def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
-    from ml_switcheroo_compiler.tracing import _tracer, ProxyTensor
+    from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
     if not _tracer.is_tracing:
         raise RuntimeError("Cannot emit StringSplit node outside of a tracing context.")
@@ -114,8 +109,8 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
     proxy_lengths = ProxyTensor(id=out_id_lengths, shape=(), dtype="int32")
 
     return (
-        Tensor(proxy_tokens, (), DType.String, input_tensor.device),
-        Tensor(proxy_lengths, (), DType.Int32, input_tensor.device),
+        Tensor(proxy_tokens, TensorConfig((), DType.String, input_tensor.device)),
+        Tensor(proxy_lengths, TensorConfig((), DType.Int32, input_tensor.device)),
     )
 
 
@@ -145,17 +140,42 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Tensor:
         Tensor: Integer indices.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)
         return Tensor(
-            backend.array(data), backend.array(data).shape, DType.Int32, input_tensor.device
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "Lookup",
         [input_tensor, vocabulary],
         {},
+        input_tensor.shape,
+        DType.Int32,
+    )
+
+
+def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
+    """Text vectorization.
+
+    Args:
+        input_tensor: Input tensor.
+        **kwargs: Kwargs.
+
+    Returns:
+        Tensor.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "TextVectorization",
+        [input_tensor],
+        kwargs,
         input_tensor.shape,
         DType.Int32,
     )

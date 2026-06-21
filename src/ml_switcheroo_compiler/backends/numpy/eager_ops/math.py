@@ -380,7 +380,7 @@ def _np_xlogy(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Mvlgamma")
 def _np_mvlgamma(backend_module: object, *args: object, **kwargs: object) -> object:
-    from ml_switcheroo_compiler.backends.numpy.eager import _mvlgamma
+    from ml_switcheroo_compiler.backends.numpy.eager_ops.shape import _mvlgamma
 
     return _mvlgamma(*args, **kwargs)
 

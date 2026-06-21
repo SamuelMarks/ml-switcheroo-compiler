@@ -2,11 +2,12 @@
 
 from typing import Optional
 
+from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
+from ml_switcheroo_compiler.ops.shape import split
 
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.unary import tanh
 from ml_switcheroo_compiler.nn.activations import sigmoid
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import matmul
 
 
@@ -29,9 +30,9 @@ def scan(
     Returns:
         tuple[tuple[Tensor, ...], Tensor]: The final carry and the stacked outputs.
     """
-    from ml_switcheroo_compiler.ops.shape import stack, unstack
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
+    from ml_switcheroo_compiler.ops.shape import stack, unstack
 
     if config.eager_mode:
         xs_unstacked = unstack(xs, dim=0)
@@ -119,8 +120,6 @@ def lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The output and new state (h, c).
     """
-    from ml_switcheroo_compiler.ops.shape import split
-
     h, c = state
 
     # Check dimensions
@@ -142,6 +141,15 @@ def lstm_cell(
     return h_new, (h_new, c_new)
 
 
+def _compute_gru_gates(x_parts: tuple, r_parts: tuple, state: Tensor) -> Tensor:
+    x_z, x_r, x_h = x_parts
+    recurrent_z, recurrent_r, recurrent_h = r_parts
+    z = sigmoid(add(x_z, recurrent_z))
+    r = sigmoid(add(x_r, recurrent_r))
+    hh = tanh(add(x_h, multiply(r, recurrent_h)))
+    return add(multiply(z, state), multiply(subtract(1.0, z), hh))
+
+
 def gru_cell(
     inputs: Tensor,
     state: Tensor,
@@ -149,41 +157,15 @@ def gru_cell(
     recurrent_kernel: Tensor,
     bias: Optional[Tensor] = None,
 ) -> tuple[Tensor, Tensor]:
-    """Fused GRU cell math.
-
-    Args:
-        inputs (Tensor): The inputs.
-        state (Tensor): The hidden state.
-        kernel (Tensor): The input weights.
-        recurrent_kernel (Tensor): The recurrent weights.
-        bias (Optional[Tensor]): The bias.
-
-    Returns:
-        tuple[Tensor, Tensor]: The output and new state.
-    """
-    from ml_switcheroo_compiler.ops.shape import split
-
-    # Kernel shape: (input_dim, 3 * hidden_dim)
-    # Recurrent kernel shape: (hidden_dim, 3 * hidden_dim)
-
+    """Fused GRU cell math."""
     matrix_x = matmul(inputs, kernel)
     if bias is not None:
-        # Bias has shape (2, 3 * hidden_dim) or (3 * hidden_dim)
         matrix_x = add(matrix_x, bias)
 
     matrix_inner = matmul(state, recurrent_kernel)
 
-    x_z, x_r, x_h = split(matrix_x, 3, dim=-1)
-    recurrent_z, recurrent_r, recurrent_h = split(matrix_inner, 3, dim=-1)
+    x_parts = split(matrix_x, 3, dim=-1)
+    r_parts = split(matrix_inner, 3, dim=-1)
 
-    z = sigmoid(add(x_z, recurrent_z))
-    r = sigmoid(add(x_r, recurrent_r))
-
-    hh = tanh(add(x_h, multiply(r, recurrent_h)))
-
-    # state = z * state + (1 - z) * hh
-    from ml_switcheroo_compiler.ops.binary import subtract
-
-    h_new = add(multiply(z, state), multiply(subtract(1.0, z), hh))
-
+    h_new = _compute_gru_gates(x_parts, r_parts, state)
     return h_new, h_new

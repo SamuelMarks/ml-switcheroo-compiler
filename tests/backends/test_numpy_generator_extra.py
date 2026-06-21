@@ -1,9 +1,7 @@
 """Test numpy generator extra coverage."""
 
-from ml_switcheroo_compiler.backends.formatters import FormatterContext
-
-
 import ml_switcheroo_compiler.backends.numpy.generator as gen
+from ml_switcheroo_compiler.backends.formatters import FormatterContext
 from ml_switcheroo_compiler.ir.core import IRNode
 
 

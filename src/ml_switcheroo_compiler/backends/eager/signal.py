@@ -1,72 +1,14 @@
 """Signal utilities."""
 
 import typing
+from dataclasses import dataclass
 
-
-def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
-    if name == "torch":
-        return x.detach().cpu().numpy()
-    if name == "mlx.core":
-        return np_mod.array(x)
-    if hasattr(x, "numpy"):
-        return x.numpy()
-    return np_mod.asarray(x)
-
-
-def _from_numpy_array(
-    backend_module: object, out: object, name: str, original_tensor: object = None
-) -> object:
-    if name == "torch":
-        import torch
-
-        return (
-            torch.tensor(out, dtype=original_tensor.dtype, device=original_tensor.device)
-            if original_tensor is not None
-            else torch.tensor(out)
-        )
-    if name == "mlx.core":
-        import mlx.core as mx
-
-        return (
-            mx.array(out, dtype=original_tensor.dtype)
-            if original_tensor is not None
-            else mx.array(out)
-        )
-    if name == "jax.numpy":
-        import jax.numpy as jnp
-
-        return (
-            jnp.array(out, dtype=original_tensor.dtype)
-            if original_tensor is not None
-            else jnp.array(out)
-        )
-    if name == "keras.ops":
-        return backend_module.convert_to_tensor(
-            out, dtype=original_tensor.dtype if original_tensor is not None else "float32"
-        )
-    return (
-        backend_module.array(out, dtype=original_tensor.dtype)
-        if original_tensor is not None
-        else backend_module.array(out)
-    )
-
-
-def _to_channels_last(np_mod: object, imgs: object, data_format: typing.Optional[str]) -> object:
-    if data_format == "channels_first" and imgs.ndim >= 3:
-        if imgs.ndim == 4:
-            return np_mod.transpose(imgs, (0, 2, 3, 1))
-        elif imgs.ndim == 3:
-            return np_mod.transpose(imgs, (1, 2, 0))
-    return imgs
-
-
-def _from_channels_last(np_mod: object, out: object, data_format: typing.Optional[str]) -> object:
-    if data_format == "channels_first" and out.ndim >= 3:
-        if out.ndim == 4:
-            return np_mod.transpose(out, (0, 3, 1, 2))
-        elif out.ndim == 3:
-            return np_mod.transpose(out, (2, 0, 1))
-    return out
+from ml_switcheroo_compiler.backends.eager.utils import (
+    _from_channels_last,
+    _from_numpy_array,
+    _to_channels_last,
+    _to_numpy_array,
+)
 
 
 def _generate_gaussian_kernel(
@@ -100,6 +42,18 @@ def _apply_conv2d_batch(np_mod: object, imgs: object, kernel: object, mode: str)
     return out
 
 
+def _get_blur_config(kwargs: dict, config_obj: typing.Optional[object]) -> object:
+    if config_obj is None:
+        from ml_switcheroo_compiler.ops.configs import BlurConfig
+
+        return BlurConfig(
+            kernel_size=kwargs.get("kernel_size", (3, 3)),
+            sigma=kwargs.get("sigma", (1.0, 1.0)),
+            data_format=kwargs.get("data_format", None),
+        )
+    return config_obj
+
+
 def gaussian_blur_eager(
     backend_module: object,
     images: object,
@@ -110,32 +64,22 @@ def gaussian_blur_eager(
     name = getattr(backend_module, "__name__", "")
     np_mod = __import__("numpy")
 
-    if config_obj is None:
-        from ml_switcheroo_compiler.ops.configs import BlurConfig
-
-        config_obj = BlurConfig(
-            kernel_size=kwargs.get("kernel_size", (3, 3)),
-            sigma=kwargs.get("sigma", (1.0, 1.0)),
-            data_format=kwargs.get("data_format", None),
-        )
-    kernel_size = config_obj.kernel_size
-    sigma = config_obj.sigma
+    config_obj = _get_blur_config(kwargs, config_obj)
     padding = kwargs.get("padding", "same")
-    data_format = config_obj.data_format
 
     imgs = _to_numpy_array(np_mod, images, name)
-    kernel = _generate_gaussian_kernel(np_mod, kernel_size, sigma)
+    kernel = _generate_gaussian_kernel(np_mod, config_obj.kernel_size, config_obj.sigma)
 
     original_ndim = imgs.ndim
     if original_ndim == 3:
         imgs = imgs[None, ...]
 
-    imgs = _to_channels_last(np_mod, imgs, data_format)
+    imgs = _to_channels_last(np_mod, imgs, config_obj.data_format)
 
     mode = "same" if padding == "same" else "valid"
     out = _apply_conv2d_batch(np_mod, imgs, kernel, mode)
 
-    out = _from_channels_last(np_mod, out, data_format)
+    out = _from_channels_last(np_mod, out, config_obj.data_format)
 
     if original_ndim == 3:
         out = out[0]
@@ -143,10 +87,35 @@ def gaussian_blur_eager(
     return _from_numpy_array(backend_module, out, name, images)
 
 
+@dataclass
+class FilterConfig:
+    """Configuration for filtering."""
+
+    ky: int
+    kx: int
+    padding: str
+
+
+def _apply_median_filter_channel(imgs: object, out: object, config: FilterConfig, b: int) -> None:
+    import scipy.ndimage
+
+    C = imgs.shape[-1]
+    for c in range(C):
+        filtered = scipy.ndimage.median_filter(
+            imgs[b, ..., c], size=(config.ky, config.kx), mode="constant", cval=0.0
+        )
+        if config.padding == "valid":
+            pad_y_top = config.ky // 2
+            pad_x_left = config.kx // 2
+            filtered = filtered[
+                pad_y_top : pad_y_top + out.shape[1], pad_x_left : pad_x_left + out.shape[2]
+            ]
+        out[b, ..., c] = filtered
+
+
 def _apply_median_filter_batch(
     np_mod: object, imgs: object, kernel_size: tuple[int, int], padding: str
 ) -> object:
-    import scipy.ndimage
 
     B, H, W, C = imgs.shape
     ky, kx = kernel_size
@@ -156,18 +125,9 @@ def _apply_median_filter_batch(
     else:
         out = np_mod.zeros_like(imgs)
 
+    config = FilterConfig(ky=ky, kx=kx, padding=padding)
     for b in range(B):
-        for c in range(C):
-            filtered = scipy.ndimage.median_filter(
-                imgs[b, ..., c], size=(ky, kx), mode="constant", cval=0.0
-            )
-            if padding == "valid":
-                pad_y_top = ky // 2
-                pad_x_left = kx // 2
-                filtered = filtered[
-                    pad_y_top : pad_y_top + out.shape[1], pad_x_left : pad_x_left + out.shape[2]
-                ]
-            out[b, ..., c] = filtered
+        _apply_median_filter_channel(imgs, out, config, b)
     return out
 
 

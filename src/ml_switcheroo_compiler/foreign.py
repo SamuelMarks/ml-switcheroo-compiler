@@ -1,17 +1,62 @@
 """Foreign module integration."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.tensor import Tensor
+
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@register_op("TorchModule")
+class TorchModule(OpDef):
+    """TorchModule op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        if args and hasattr(args[0], "shape"):
+            return args[0].shape
+        return ()
+
+
+@register_op("Jaxpr")
+class Jaxpr(OpDef):
+    """Jaxpr op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        if args and hasattr(args[0], "shape"):
+            return args[0].shape
+        return ()
+
+
+@register_op("FlaxModule")
+class FlaxModule(OpDef):
+    """FlaxModule op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        if args and hasattr(args[0], "shape"):
+            return args[0].shape
+        return ()
+
+
+@register_op("TFModule")
+class TFModule(OpDef):
+    """TFModule op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        if args and hasattr(args[0], "shape"):
+            return args[0].shape
+        return ()
 
 
 def torch_to_ir(module: object, *inputs: object, **kwargs: object) -> object:
     """Convert torch module to IR."""
     if config.eager_mode:
         return module(*[i.data if isinstance(i, Tensor) else i for i in inputs], **kwargs)
-    return _emit_shape_node(
-        "TorchModule", list(inputs), {"module": module, "kwargs": kwargs}, (), inputs[0].dtype
-    )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("TorchModule")()(*inputs, module=module, **kwargs)
 
 
 def jaxpr_to_ir(
@@ -28,13 +73,9 @@ def jaxpr_to_ir(
         return call_fn(
             {"params": params}, *[i.data if isinstance(i, Tensor) else i for i in inputs], **kwargs
         )
-    return _emit_shape_node(
-        "Jaxpr",
-        list(inputs),
-        {"call_fn": call_fn, "params": params, "state": state, "kwargs": kwargs},
-        (),
-        inputs[0].dtype,
-    )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("Jaxpr")()(*inputs, call_fn=call_fn, params=params, state=state, **kwargs)
 
 
 def flax_to_ir(
@@ -44,12 +85,10 @@ def flax_to_ir(
     if config.eager_mode:
         fn = getattr(module, method) if method else module.apply
         return fn(variables, *[i.data if isinstance(i, Tensor) else i for i in inputs], **kwargs)
-    return _emit_shape_node(
-        "FlaxModule",
-        list(inputs),
-        {"module": module, "variables": variables, "method": method, "kwargs": kwargs},
-        (),
-        inputs[0].dtype,
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("FlaxModule")()(
+        *inputs, module=module, variables=variables, method=method, **kwargs
     )
 
 
@@ -57,6 +96,6 @@ def tf_to_ir(module: object, *inputs: object, **kwargs: object) -> object:
     """Convert tf module to IR."""
     if config.eager_mode:
         return module(*[i.data if isinstance(i, Tensor) else i for i in inputs], **kwargs)
-    return _emit_shape_node(
-        "TFModule", list(inputs), {"module": module, "kwargs": kwargs}, (), inputs[0].dtype
-    )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("TFModule")()(*inputs, module=module, **kwargs)

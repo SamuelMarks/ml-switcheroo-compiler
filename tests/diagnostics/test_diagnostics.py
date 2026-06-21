@@ -5,6 +5,8 @@ reconstruction, shape debugging, FLOPs estimation, memory profiling, numerical a
 detection, and graph visualization utilities (Graphviz and HTML exports).
 """
 
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+
 from typing import NoReturn
 
 import numpy as np
@@ -16,9 +18,9 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.diagnostics import (
     check_numerical_anomaly,
-    format_traceback,
     debug_shapes,
     estimate_flops,
+    format_traceback,
     memory_profiler,
     to_graphviz,
     to_html,
@@ -164,25 +166,15 @@ def test_numerical_anomaly_detector() -> None:
     device = Device(DeviceType.CPU, 0)
 
     # Valid
-    t1 = Tensor(
-        data=np.array([1.0, 2.0]),
-        shape=(2,),
-        dtype=DType.Float32,
-        device=device,
-    )
+    t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
     check_numerical_anomaly(t1)
 
     # None data
-    t_none = Tensor(data=None, shape=(2,), dtype=DType.Float32, device=device)
+    t_none = Tensor(None, TensorConfig((2,), DType.Float32, device))
     check_numerical_anomaly(t_none)
 
     # NaN
-    t2 = Tensor(
-        data=np.array([1.0, np.nan]),
-        shape=(2,),
-        dtype=DType.Float32,
-        device=device,
-    )
+    t2 = Tensor(np.array([1.0, np.nan]), TensorConfig((2,), DType.Float32, device))
     with pytest.raises(ValueError, match="NaN or Inf"):
         check_numerical_anomaly(t2)
 
@@ -190,7 +182,7 @@ def test_numerical_anomaly_detector() -> None:
     class NonArray:
         """Non Array class."""
 
-    t3 = Tensor(data=NonArray(), shape=(2,), dtype=DType.Float32, device=device)
+    t3 = Tensor(NonArray(), TensorConfig((2,), DType.Float32, device))
     # Should silently pass or catch TypeError
     check_numerical_anomaly(t3)
 

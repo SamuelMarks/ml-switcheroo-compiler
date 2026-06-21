@@ -4,15 +4,17 @@ This module provides the Tensor class, which serves as the core multi-dimensiona
 abstraction across different execution backends and tracing modes
 """
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from dataclasses import dataclass
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor_math_mixin import (
     TensorArithmeticMixin,
     TensorBitwiseMixin,
     TensorLogicalMixin,
 )
-from collections.abc import Sequence
-
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.dtype import DType
 
 
 class ArrayAt:
@@ -101,6 +103,17 @@ class ArrayAtIndexer:
         return ArrayAt(self.tensor, indices)
 
 
+@dataclass(frozen=True)
+class TensorConfig:
+    """Configuration for a Tensor."""
+
+    shape: tuple[int, ...]
+    dtype: "DType"
+    device: "Device"
+    requires_grad: bool = False
+    trainable: bool = False
+
+
 class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
     """The unified backend array base class for ml-switcheroo.
 
@@ -108,34 +121,19 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
     data payloads, supporting both eager execution and lazy tracing
     """
 
-    def __init__(
-        self,
-        data: object,
-        shape: Sequence[int],
-        dtype: DType,
-        device: Device,
-        requires_grad: bool = False,
-    ) -> None:
+    def __init__(self, data: object, config: TensorConfig) -> None:
         """Initialize the Tensor.
-
-        data (object): The actual data payload.
-            shape (Sequence[int]): The shape of the tensor.
-            dtype (DType): The data type
-            device (Device): The device to store the tensor on.
-            requires_grad (bool): Whether the tensor requires gradients.
 
         Args:
             data (object): The actual data payload.
-            shape (Sequence[int]): The shape of the tensor.
-            dtype (DType): The data type
-            device (Device): The device to store the tensor on.
-            requires_grad (bool): Whether the tensor requires gradients.
+            config (TensorConfig): The tensor configuration.
         """
         self._data = data
-        self._shape = tuple(shape)
-        self._dtype = dtype
-        self._device = device
-        self._requires_grad = requires_grad
+        self._shape = tuple(int(s) for s in config.shape)
+        self._dtype = config.dtype
+        self._device = config.device
+        self._requires_grad = config.requires_grad
+        self.config = config
 
     @property
     def shape(self) -> Sequence[int]:
@@ -219,8 +217,6 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             The computed shape or evaluation result.
         """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
 
         if hasattr(self.data, "id"):
@@ -256,8 +252,11 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             The computed shape or evaluation result.
         """
         arr = self.__array__()
-        for i in range(getattr(arr, "shape", [0])[0]):
-            yield Tensor(arr[i], arr[i].shape, self.dtype, self.device)
+        shape = getattr(arr, "shape", [0])
+        if not shape:
+            raise TypeError("iteration over a 0-d tensor")
+        for i in range(shape[0]):
+            yield Tensor(arr[i], TensorConfig(arr[i].shape, self.dtype, self.device))
 
     def __getitem__(self, key: object) -> "Tensor":
         """Getitem.
@@ -279,11 +278,13 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         from ml_switcheroo_compiler.core.config import config
 
         if config.eager_mode:
-            return Tensor(res, getattr(res, "shape", ()), self.dtype, self.device)
+            return Tensor(res, TensorConfig(getattr(res, "shape", ()), self.dtype, self.device))
 
-        from ml_switcheroo_compiler.tracing import _tracer, ProxyTensor
         import uuid
+
         from ml_switcheroo_ir import LogicalNode
+
+        from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
         nid = f"getitem_{uuid.uuid4().hex[:6]}"
         input_id = getattr(self.data, "id", "const")
@@ -299,7 +300,9 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             _tracer.add_node(node)
         else:
             raise RuntimeError("Cannot add node: not currently tracing.")
-        return Tensor(ProxyTensor(nid, (), self.dtype.value), (), self.dtype, self.device)
+        return Tensor(
+            ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device)
+        )
 
     def __setitem__(self, key: object, value: object) -> None:
         """Setitem.
@@ -364,8 +367,6 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             float: The evaluated output resulting from this operation.
         """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
 
         if self.eval().__class__.__name__ == "Tensor":
@@ -380,7 +381,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """
         from ml_switcheroo_compiler.core.device import Device
 
-        return Tensor(self.eval().data, self.shape, self.dtype, Device("cpu"))
+        return Tensor(self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
 
     @property
     def at(self) -> ArrayAtIndexer:
@@ -395,25 +396,15 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
 class Variable(Tensor):
     """A mutable variable tensor for tracking state."""
 
-    def __init__(
-        self,
-        data: object,
-        shape: tuple[int, ...],
-        dtype: DType,
-        device: Device,
-        trainable: bool = False,
-    ) -> None:
+    def __init__(self, data: object, config: TensorConfig) -> None:
         """Init.
 
         Args:
             data (object): The underlying data array or proxy object.
-            shape (tuple[int, ...]): The shape of the tensor.
-            dtype (DType): The data type.
-            device (Device): The device where the tensor is stored.
-            trainable (bool): Whether the variable is trainable.
+            config (TensorConfig): The tensor configuration.
         """
-        super().__init__(data, shape, dtype, device)
-        self.trainable = trainable
+        super().__init__(data, config)
+        self.trainable = config.trainable
 
     def assign(self, value: Tensor) -> "Variable":
         """Assign a new value to the variable.
@@ -425,7 +416,6 @@ class Variable(Tensor):
             Variable: The updated variable.
         """
         from ml_switcheroo_compiler.core.config import config
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         if config.eager_mode:
             backend = get_active_backend()
@@ -446,7 +436,6 @@ class Variable(Tensor):
             Variable: The updated variable.
         """
         from ml_switcheroo_compiler.core.config import config
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         if config.eager_mode:
             backend = get_active_backend()
@@ -468,7 +457,6 @@ class Variable(Tensor):
             Variable: The updated variable.
         """
         from ml_switcheroo_compiler.core.config import config
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         if config.eager_mode:
             backend = get_active_backend()
@@ -484,13 +472,13 @@ class Variable(Tensor):
 class Parameter(Variable):
     """A trainable parameter tensor."""
 
-    def __init__(self, data: object, shape: tuple[int, ...], dtype: DType, device: Device) -> None:
+    def __init__(self, data: object, config: TensorConfig) -> None:
         """Init.
 
         Args:
             data (object): The underlying data array or proxy object.
-            shape (tuple[int, ...]): The shape of the tensor.
-            dtype (DType): The data type.
-            device (Device): The device where the tensor is stored.
+            config (TensorConfig): The tensor configuration.
         """
-        super().__init__(data, shape, dtype, device, trainable=True)
+        # Override config.trainable to True for Parameter
+        config = TensorConfig(config.shape, config.dtype, config.device, config.requires_grad, True)
+        super().__init__(data, config)

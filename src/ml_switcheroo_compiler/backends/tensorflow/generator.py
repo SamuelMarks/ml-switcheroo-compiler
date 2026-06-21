@@ -1,8 +1,8 @@
 """TensorFlow Target Emission."""
 
-from ml_switcheroo_compiler.backends.formatters import OpFormatter
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+from ml_switcheroo_compiler.backends.formatters import OpFormatter
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 

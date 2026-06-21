@@ -10,7 +10,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond, pmap, scan, vmap, while_loop
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
@@ -27,7 +27,7 @@ def test_vmap_eager() -> None:
     None
     """
     with ConfigContext(eager_mode=True):
-        x = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, device)
+        x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
         def func(t: object) -> object:
             """Func.
@@ -38,7 +38,7 @@ def test_vmap_eager() -> None:
             Returns:
                 object: The resulting output.
             """
-            return Tensor(t.data * 2, t.shape, t.dtype, t.device)
+            return Tensor(t.data * 2, TensorConfig(t.shape, t.dtype, t.device))
 
         res = vmap(func)(x)
         assert np.array_equal(res.data, np.array([2, 4, 6]))
@@ -53,7 +53,7 @@ def test_pmap_eager() -> None:
     None
     """
     with ConfigContext(eager_mode=True):
-        x = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, device)
+        x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
         def func(t: object) -> object:
             """Func.
@@ -64,7 +64,7 @@ def test_pmap_eager() -> None:
             Returns:
                 object: The resulting output.
             """
-            return Tensor(t.data * 2, t.shape, t.dtype, t.device)
+            return Tensor(t.data * 2, TensorConfig(t.shape, t.dtype, t.device))
 
         res = pmap(func)(x)
         assert np.array_equal(res.data, np.array([2, 4, 6]))
@@ -82,9 +82,7 @@ def test_vmap_trace() -> None:
     with ConfigContext(eager_mode=False):
         x = Tensor(
             ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (3,),
-            DType.Int32,
-            device,
+            TensorConfig((3,), DType.Int32, device),
         )
 
         def func(t: object) -> object:
@@ -118,9 +116,7 @@ def test_pmap_trace() -> None:
     with ConfigContext(eager_mode=False):
         x = Tensor(
             ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (3,),
-            DType.Int32,
-            device,
+            TensorConfig((3,), DType.Int32, device),
         )
 
         def func(t: object) -> object:
@@ -196,10 +192,7 @@ def test_control_flow_outside_tracing() -> None:
 
     with ConfigContext(eager_mode=False):
         pred = Tensor(
-            ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (),
-            DType.Bool,
-            device,
+            ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device)
         )
 
         with pytest.raises(
@@ -245,7 +238,7 @@ def test_stop_gradient() -> None:
 
     # Test eager mode
     device = Device(DeviceType.CPU)
-    t_eager = Tensor(np.array([1.0, 2.0]), shape=(2,), dtype=DType.Float32, device=device)
+    t_eager = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
     t_out = stop_gradient(t_eager)
     assert t_out is t_eager
 
@@ -261,7 +254,7 @@ def test_stop_gradient() -> None:
         assert node.inputs == ["input_proxy"]
 
         # Test tracing mode with Tensor wrapping ProxyTensor
-        t_trace = Tensor(proxy, shape=(2,), dtype=DType.Float32, device=device)
+        t_trace = Tensor(proxy, TensorConfig((2,), DType.Float32, device))
         out_trace = stop_gradient(t_trace)
         assert isinstance(out_trace, Tensor)
         assert isinstance(out_trace.data, ProxyTensor)
@@ -298,6 +291,6 @@ def test_vmap_tuple_axes() -> None:
             return Negative()(x)
 
         vmap_f = vmap(f, in_axes=(0,), out_axes=(0,))
-        x = Tensor(np.array([1, 2]), (2,), DType.Int32, device)
+        x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
         y = vmap_f(x)
         assert np.array_equal(y.data, np.array([-1, -2]))

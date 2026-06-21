@@ -1,12 +1,13 @@
 """Control flow tests."""
 
-from ml_switcheroo_compiler.tracing import ProxyTensor
-from ml_switcheroo_compiler.ops.control_flow import scan
 import numpy as np
+
 from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.control_flow import scan
+from ml_switcheroo_compiler.tracing import ProxyTensor
 
 device = Device(DeviceType.CPU, 0)
 """Control flow tests."""
@@ -22,7 +23,7 @@ def test_scan_eager() -> None:
     None
     """
     with ConfigContext(eager_mode=True):
-        xs = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, device)
+        xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
         def f(carry: object, x: object) -> object:
             """F.
@@ -35,7 +36,7 @@ def test_scan_eager() -> None:
                 object: The resulting output.
             """
             y = carry + x.data
-            return y, Tensor(y, (), DType.Int32, device)
+            return y, Tensor(y, TensorConfig((), DType.Int32, device))
 
         carry, ys = scan(f, 0, xs)
         assert carry == 6
@@ -54,15 +55,10 @@ def test_scan_trace() -> None:
     with ConfigContext(eager_mode=False):
         xs = Tensor(
             ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (3,),
-            DType.Int32,
-            device,
+            TensorConfig((3,), DType.Int32, device),
         )
         init = Tensor(
-            ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (),
-            DType.Int32,
-            device,
+            ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Int32, device)
         )
 
         def f(carry: object, x: object) -> object:
@@ -97,12 +93,12 @@ def test_scan_eager_ndarray() -> None:
 
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
-        xs = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, device)
+        xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
         def f(carry: object, x: object) -> object:
             """Docstring."""
             # Return a Tensor
-            return carry, Tensor(np.array([1, 2]), (2,), DType.Int32, device)
+            return carry, Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
 
         carry_out, ys_out = scan(f, 0, xs)
         assert isinstance(ys_out, Tensor)

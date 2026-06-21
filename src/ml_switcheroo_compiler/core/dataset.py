@@ -1,11 +1,12 @@
 """Dataset pipeline primitives for ML Switcheroo Compiler."""
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 import math
 import random
 from collections.abc import Iterator
 
-from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 class Dataset:
@@ -85,9 +86,8 @@ class Dataset:
 
         num_batches = math.ceil(self.length / self._batch_size)
 
-        from ml_switcheroo_compiler.ops.shape.indexing import gather
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.core.config import ConfigContext
+        from ml_switcheroo_compiler.ops.shape.indexing import gather
 
         backend = get_active_backend()
 
@@ -99,9 +99,7 @@ class Dataset:
             # Using DType.Int32 for indices
             batch_idx_tensor = Tensor(
                 backend.array(batch_indices, dtype="int32"),
-                (len(batch_indices),),
-                DType.Int32,
-                self.tensors[0].device,
+                TensorConfig((len(batch_indices),), DType.Int32, self.tensors[0].device),
             )
 
             batch_tensors = []

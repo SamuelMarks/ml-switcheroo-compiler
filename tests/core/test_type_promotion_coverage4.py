@@ -1,6 +1,6 @@
-from ml_switcheroo_compiler.core.type_promotion import promote_types
-from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.type_promotion import promote_types
 
 
 def test_type_promotion_complex128_downgrade():

@@ -1,14 +1,15 @@
 import numpy as np
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device, DeviceType
+
 from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.frontend import band_part, diag
 
 
 def test_linalg_band_part_diag_coverage():
     device = Device(DeviceType.CPU, 0)
-    t = Tensor(np.array([[1, 2], [3, 4]]), (2, 2), DType.Int32, device)
+    t = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Int32, device))
 
     with ConfigContext(eager_mode=True):
         res1 = band_part(t, 1, 1)

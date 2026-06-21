@@ -1,0 +1,137 @@
+"""Prefix template code."""
+
+KERAS_PREFIX_TEMPLATE = """def keras_mel_filterbank(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):
+    import tensorflow as tf
+    return keras.ops.convert_to_tensor(tf.signal.linear_to_mel_weight_matrix(
+        num_mel_bins=num_mel_bins, num_spectrogram_bins=num_spectrogram_bins, sample_rate=sample_rate,
+        lower_edge_hertz=lower_edge_hertz, upper_edge_hertz=upper_edge_hertz))
+def keras_mfcc(spectrogram, sample_rate, num_mel_bins, lower_edge_hertz, upper_edge_hertz, num_mfccs):
+    import tensorflow as tf
+    spec_tf = keras.ops.convert_to_tensor(spectrogram)
+    mel_weights = tf.signal.linear_to_mel_weight_matrix(
+        num_mel_bins=num_mel_bins, num_spectrogram_bins=spec_tf.shape[-1], sample_rate=sample_rate,
+        lower_edge_hertz=lower_edge_hertz, upper_edge_hertz=upper_edge_hertz)
+    mel_spec = tf.matmul(spec_tf, mel_weights)
+    log_mel = tf.math.log(mel_spec + 1e-6)
+    mfccs = tf.signal.mfccs_from_log_mel_spectrograms(log_mel)[..., :num_mfccs]
+    return keras.ops.convert_to_tensor(mfccs)
+def keras_istft(stft_tensor, frame_length, frame_step, fft_length, window, center):
+    import tensorflow as tf
+    stft_tensor = keras.ops.convert_to_tensor(stft_tensor)
+    if fft_length is None: fft_length = frame_length
+    if window == 'hann': win = tf.signal.hann_window(frame_length, periodic=True)
+    elif window == 'hamming': win = tf.signal.hamming_window(frame_length, periodic=True)
+    else: win = None
+    res = tf.signal.inverse_stft(stft_tensor, frame_length=frame_length, frame_step=frame_step, fft_length=fft_length, window_fn=lambda w, d: win)
+    return keras.ops.convert_to_tensor(res)
+def keras_resize(images, size, interpolation, align_corners):
+    import tensorflow as tf
+    method = tf.image.ResizeMethod.LANCZOS3 if interpolation == 'lanczos3' else tf.image.ResizeMethod.BICUBIC
+    images_tf = keras.ops.convert_to_tensor(images)
+    out = tf.image.resize(images_tf, size, method=method, antialias=True)
+    return keras.ops.convert_to_tensor(out)
+def keras_iou(boxes1, boxes2, bounding_box_format):
+    from ml_switcheroo_compiler.backends.eager_utils import iou_eager
+    import keras.ops as kops
+    return iou_eager(kops, boxes1, boxes2, bounding_box_format)
+def keras_nms(boxes, scores, max_output_size, iou_threshold, score_threshold):
+    import tensorflow as tf
+    boxes_tf = keras.ops.convert_to_tensor(boxes)
+    scores_tf = keras.ops.convert_to_tensor(scores)
+    out = tf.image.non_max_suppression(boxes_tf, scores_tf, max_output_size, iou_threshold, score_threshold)
+    return keras.ops.convert_to_tensor(out)
+def keras_extract_bounding_boxes(images, boxes, box_indices, crop_size, interpolation='bilinear', extrapolation_value=0.0, data_format=None):
+    import tensorflow as tf
+    images_tf = keras.ops.convert_to_tensor(images)
+    if data_format == "channels_first":
+        images_tf = keras.ops.transpose(images_tf, (0, 2, 3, 1))
+    boxes_tf = keras.ops.convert_to_tensor(boxes)
+    box_indices_tf = keras.ops.convert_to_tensor(box_indices)
+    out = tf.image.crop_and_resize(images_tf, boxes_tf, box_indices_tf, crop_size, method=interpolation, extrapolation_value=extrapolation_value)
+    out = keras.ops.convert_to_tensor(out)
+    if data_format == "channels_first":
+        out = keras.ops.transpose(out, (0, 3, 1, 2))
+    return out
+def keras_median_filter(images, kernel_size, padding='same', data_format=None):
+    orig_ndim = len(images.shape)
+    if orig_ndim == 3:
+        images = keras.ops.expand_dims(images, 0)
+    if data_format == "channels_first":
+        images = keras.ops.transpose(images, (0, 2, 3, 1))
+    import tensorflow as tf
+    ky, kx = kernel_size
+    images_tf = keras.ops.convert_to_tensor(images)
+    B, H, W, C = images_tf.shape
+    if padding == 'same':
+        pad_y, pad_x = ky // 2, kx // 2
+        images_tf = tf.pad(images_tf, [[0, 0], [pad_y, pad_y], [pad_x, pad_x], [0, 0]])
+        H, W = images_tf.shape[1], images_tf.shape[2]
+    out_H, out_W = H - ky + 1, W - kx + 1
+    patches = tf.image.extract_patches(images_tf, sizes=[1, ky, kx, 1], strides=[1, 1, 1, 1], rates=[1, 1, 1, 1], padding='VALID')
+    patches = tf.reshape(patches, [-1, out_H, out_W, ky * kx, C])
+    sorted_patches = tf.sort(patches, axis=3)
+    out = sorted_patches[..., (ky * kx) // 2, :]
+    out = keras.ops.convert_to_tensor(out)
+    if data_format == "channels_first":
+        out = keras.ops.transpose(out, (0, 3, 1, 2))
+    if orig_ndim == 3:
+        out = out[0]
+    return out
+def keras_gaussian_blur(images, kernel_size, sigma, padding='same', data_format=None):
+    orig_ndim = len(images.shape)
+    if orig_ndim == 3:
+        images = keras.ops.expand_dims(images, 0)
+    if data_format == "channels_first":
+        images = keras.ops.transpose(images, (0, 2, 3, 1))
+    B, H, W, C = images.shape
+    ky, kx = kernel_size
+    sy, sx = sigma
+    y = keras.ops.arange(-ky // 2 + 1, ky // 2 + 1, dtype=images.dtype)
+    x = keras.ops.arange(-kx // 2 + 1, kx // 2 + 1, dtype=images.dtype)
+    yy, xx = keras.ops.meshgrid(y, x, indexing='ij')
+    kernel = keras.ops.exp(-(yy**2 / (2.0 * sy**2) + xx**2 / (2.0 * sx**2)))
+    kernel = kernel / keras.ops.sum(kernel)
+    kernel = keras.ops.reshape(kernel, (ky, kx, 1, 1))
+    kernel = keras.ops.broadcast_to(kernel, (ky, kx, C, 1))
+    import tensorflow as tf
+    images_tf = keras.ops.convert_to_tensor(images)
+    kernel_tf = keras.ops.convert_to_tensor(kernel)
+    pad_str = 'SAME' if padding == 'same' else 'VALID'
+    out = tf.nn.depthwise_conv2d(images_tf, kernel_tf, strides=[1, 1, 1, 1], padding=pad_str)
+    out = keras.ops.convert_to_tensor(out)
+    if data_format == "channels_first":
+        out = keras.ops.transpose(out, (0, 3, 1, 2))
+    if orig_ndim == 3:
+        out = out[0]
+    return out
+def keras_elastic_transform(images, displacement, interpolation='bilinear', fill_value=0.0, data_format=None):
+    import tensorflow as tf
+    import tensorflow_addons as tfa
+    orig_ndim = len(images.shape)
+    if orig_ndim == 3:
+        images = keras.ops.expand_dims(images, 0)
+        displacement = keras.ops.expand_dims(displacement, 0)
+    if data_format == "channels_first":
+        images = keras.ops.transpose(images, (0, 2, 3, 1))
+    images_tf = keras.ops.convert_to_tensor(images)
+    disp_tf = keras.ops.convert_to_tensor(displacement)
+    interp = 'BILINEAR' if interpolation == 'bilinear' else 'NEAREST'
+    out = tfa.image.dense_image_warp(images_tf, -disp_tf)
+    out = keras.ops.convert_to_tensor(out)
+    if data_format == "channels_first":
+        out = keras.ops.transpose(out, (0, 3, 1, 2))
+    if orig_ndim == 3:
+        out = out[0]
+    return out
+def keras_power_iteration(w, num_iters, u=None):
+    if u is None:
+        u = keras.ops.ones(w.shape[:-2] + (w.shape[-2], 1), dtype=w.dtype)
+    for _ in range(num_iters):
+        w_t = keras.ops.swapaxes(w, -1, -2)
+        v = keras.ops.matmul(w_t, u)
+        v = v / (keras.ops.sqrt(keras.ops.sum(v ** 2, axis=-2, keepdims=True)) + 1e-12)
+        u = keras.ops.matmul(w, v)
+        u = u / (keras.ops.sqrt(keras.ops.sum(u ** 2, axis=-2, keepdims=True)) + 1e-12)
+    sigma = keras.ops.matmul(keras.ops.swapaxes(u, -1, -2), keras.ops.matmul(w, v))
+    return keras.ops.squeeze(v, -1), keras.ops.squeeze(u, -1), keras.ops.squeeze(keras.ops.squeeze(sigma, -1), -1)
+"""

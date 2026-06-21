@@ -1,10 +1,24 @@
 """DType Inference Pass."""
 
 from typing import Optional
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+
+
+def _get_value_dtype(val: object) -> Optional[DType]:
+    """Get the dtype from a constant value."""
+    if hasattr(val, "dtype"):
+        return DType(str(val.dtype))
+    if isinstance(val, bool):
+        return DType.Bool
+    if isinstance(val, int):
+        return DType.Int32
+    if isinstance(val, float):
+        return DType.Float32
+    return None
 
 
 def _infer_constant_dtype(node: object, dtypes: dict[str, str]) -> bool:
@@ -17,26 +31,18 @@ def _infer_constant_dtype(node: object, dtypes: dict[str, str]) -> bool:
     Returns:
         bool: True if node was modified.
     """
-    modified = False
     val = node.attributes.get("value")
-    dt = None
-    if hasattr(val, "dtype"):
-        dt = DType(str(val.dtype))
-    elif isinstance(val, bool):
-        dt = DType.Bool
-    elif isinstance(val, int):
-        dt = DType.Int32
-    elif isinstance(val, float):
-        dt = DType.Float32
+    dt = _get_value_dtype(val)
 
     if dt is not None:
         dtypes[node.id] = dt.value
         if node.attributes.get("dtype") != dt.value:
             node.attributes["dtype"] = dt.value
-            modified = True
-    else:
-        dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
-    return modified
+            return True
+        return False
+
+    dtypes[node.id] = node.attributes.get("dtype", DType.Float32.value)
+    return False
 
 
 def _infer_input_dtype(node: object, dtypes: dict[str, str]) -> bool:
@@ -144,6 +150,15 @@ DTYPE_INFERENCE_REGISTRY = {
 }
 
 
+def _get_node_valid_dtypes(node: object, dtypes: dict[str, str]) -> list[str]:
+    valid = []
+    for inp in node.inputs:
+        dt = dtypes.get(inp)
+        if dt is not None:
+            valid.append(dt)
+    return valid
+
+
 def _infer_op_dtype(node: object, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a generic Op node.
 
@@ -154,8 +169,7 @@ def _infer_op_dtype(node: object, dtypes: dict[str, str]) -> bool:
     Returns:
         bool: True if node was modified.
     """
-    in_dtypes = [dtypes.get(inp) for inp in node.inputs]
-    valid_dtypes = [dt for dt in in_dtypes if dt is not None]
+    valid_dtypes = _get_node_valid_dtypes(node, dtypes)
 
     out_dtype_val = None
     if node.op_type in DTYPE_INFERENCE_REGISTRY:
@@ -175,6 +189,13 @@ def _infer_op_dtype(node: object, dtypes: dict[str, str]) -> bool:
     return False
 
 
+_INFERENCE_HANDLERS = {
+    "Constant": _infer_constant_dtype,
+    "Input": _infer_input_dtype,
+    "Output": _infer_output_dtype,
+}
+
+
 def dtype_inference_pass(graph: IRGraph) -> bool:
     """In-place dtype inference.
 
@@ -186,18 +207,11 @@ def dtype_inference_pass(graph: IRGraph) -> bool:
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
-    dtypes = {}
+    dtypes: dict[str, str] = {}
 
     for node in sorted_nodes:
-        if node.op_type == "Constant":
-            if _infer_constant_dtype(node, dtypes):
-                modified = True
-        elif node.op_type == "Input":
-            _infer_input_dtype(node, dtypes)
-        elif node.op_type == "Output":
-            if _infer_output_dtype(node, dtypes):
-                modified = True
-        elif _infer_op_dtype(node, dtypes):
+        handler = _INFERENCE_HANDLERS.get(node.op_type, _infer_op_dtype)
+        if handler(node, dtypes):
             modified = True
 
     return modified

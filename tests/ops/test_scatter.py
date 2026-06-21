@@ -1,19 +1,19 @@
 """Tests for scatter operations."""
 
-import pytest
 import numpy as np
+import pytest
 
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.backends.registry import BackendRegistry
+from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import (
-    tensor_scatter_update,
     tensor_scatter_add,
     tensor_scatter_max,
     tensor_scatter_min,
+    tensor_scatter_update,
 )
-from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
 
 @pytest.mark.parametrize("backend_name", list(BackendRegistry.get_all().keys()))
@@ -33,11 +33,9 @@ def test_tensor_scatter_max_eager(backend_name: str) -> None:
 
     with ConfigContext(eager_mode=True, backend=backend_name):
         try:
-            tensor = Tensor(
-                backend_cls.array(arr), shape=(3, 3), dtype=DType.Float32, device=device
-            )
-            indices = Tensor(backend_cls.array(idx), shape=(4, 2), dtype=DType.Int32, device=device)
-            updates = Tensor(backend_cls.array(upd), shape=(4,), dtype=DType.Float32, device=device)
+            tensor = Tensor(backend_cls.array(arr), TensorConfig((3, 3), DType.Float32, device))
+            indices = Tensor(backend_cls.array(idx), TensorConfig((4, 2), DType.Int32, device))
+            updates = Tensor(backend_cls.array(upd), TensorConfig((4,), DType.Float32, device))
 
             res = tensor_scatter_max(tensor, indices, updates)
         except Exception as e:
@@ -73,11 +71,9 @@ def test_tensor_scatter_min_eager(backend_name: str) -> None:
 
     with ConfigContext(eager_mode=True, backend=backend_name):
         try:
-            tensor = Tensor(
-                backend_cls.array(arr), shape=(3, 3), dtype=DType.Float32, device=device
-            )
-            indices = Tensor(backend_cls.array(idx), shape=(4, 2), dtype=DType.Int32, device=device)
-            updates = Tensor(backend_cls.array(upd), shape=(4,), dtype=DType.Float32, device=device)
+            tensor = Tensor(backend_cls.array(arr), TensorConfig((3, 3), DType.Float32, device))
+            indices = Tensor(backend_cls.array(idx), TensorConfig((4, 2), DType.Int32, device))
+            updates = Tensor(backend_cls.array(upd), TensorConfig((4,), DType.Float32, device))
 
             res = tensor_scatter_min(tensor, indices, updates)
         except Exception as e:
@@ -114,11 +110,9 @@ def test_tensor_scatter_add_eager(backend_name: str) -> None:
 
     with ConfigContext(eager_mode=True, backend=backend_name):
         try:
-            tensor = Tensor(
-                backend_cls.array(arr), shape=(3, 3), dtype=DType.Float32, device=device
-            )
-            indices = Tensor(backend_cls.array(idx), shape=(4, 2), dtype=DType.Int32, device=device)
-            updates = Tensor(backend_cls.array(upd), shape=(4,), dtype=DType.Float32, device=device)
+            tensor = Tensor(backend_cls.array(arr), TensorConfig((3, 3), DType.Float32, device))
+            indices = Tensor(backend_cls.array(idx), TensorConfig((4, 2), DType.Int32, device))
+            updates = Tensor(backend_cls.array(upd), TensorConfig((4,), DType.Float32, device))
 
             res = tensor_scatter_add(tensor, indices, updates)
         except Exception as e:
@@ -155,15 +149,9 @@ def test_tensor_scatter_add_nd_indices(backend_name: str) -> None:
 
     with ConfigContext(eager_mode=True, backend=backend_name):
         try:
-            tensor = Tensor(
-                backend_cls.array(arr), shape=(2, 2, 2), dtype=DType.Float32, device=device
-            )
-            indices = Tensor(
-                backend_cls.array(idx), shape=(2, 2, 3), dtype=DType.Int32, device=device
-            )
-            updates = Tensor(
-                backend_cls.array(upd), shape=(2, 2), dtype=DType.Float32, device=device
-            )
+            tensor = Tensor(backend_cls.array(arr), TensorConfig((2, 2, 2), DType.Float32, device))
+            indices = Tensor(backend_cls.array(idx), TensorConfig((2, 2, 3), DType.Int32, device))
+            updates = Tensor(backend_cls.array(upd), TensorConfig((2, 2), DType.Float32, device))
 
             res = tensor_scatter_add(tensor, indices, updates)
         except Exception as e:
@@ -202,11 +190,9 @@ def test_tensor_scatter_update_eager(backend_name: str) -> None:
 
     with ConfigContext(eager_mode=True, backend=backend_name):
         try:
-            tensor = Tensor(
-                backend_cls.array(arr), shape=(3, 3), dtype=DType.Float32, device=device
-            )
-            indices = Tensor(backend_cls.array(idx), shape=(3, 2), dtype=DType.Int32, device=device)
-            updates = Tensor(backend_cls.array(upd), shape=(3,), dtype=DType.Float32, device=device)
+            tensor = Tensor(backend_cls.array(arr), TensorConfig((3, 3), DType.Float32, device))
+            indices = Tensor(backend_cls.array(idx), TensorConfig((3, 2), DType.Int32, device))
+            updates = Tensor(backend_cls.array(upd), TensorConfig((3,), DType.Float32, device))
 
             res = tensor_scatter_update(tensor, indices, updates)
         except Exception as e:

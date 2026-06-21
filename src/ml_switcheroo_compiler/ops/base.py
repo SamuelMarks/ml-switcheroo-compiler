@@ -2,8 +2,21 @@
 
 from __future__ import annotations
 
+
 from abc import ABC, abstractmethod
 from typing import Any, Callable, TypeVar
+
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+
+import re
+import uuid
+import functools
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.tracing import _tracer, ProxyTensor
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_ir import LogicalNode
 
 T = TypeVar("T", bound="OpDef")
 
@@ -26,13 +39,9 @@ class OpDef(ABC):
         Returns:
             object: The resolved DType.
         """
-        from ml_switcheroo_compiler.core.dtype import DType
-
         if hasattr(res_data, "dtype"):
             dtype_str = str(res_data.dtype)
             if "dtype" in dtype_str:
-                import re
-
                 m = re.search(r"dtype\('(.*?)'\)", dtype_str)
                 if m:
                     dtype_str = m.group(1)
@@ -57,8 +66,6 @@ class OpDef(ABC):
         Returns:
             object: The result of the eager evaluation.
         """
-        from ml_switcheroo_compiler.core.tensor import Tensor
-
         res_data = self.eager_eval(
             *[a.data if isinstance(a, Tensor) else a for a in args],
             **kwargs,
@@ -69,12 +76,9 @@ class OpDef(ABC):
 
         dtype = self._resolve_dtype(res_data, first_tensor)
         shape = res_data.shape if hasattr(res_data, "shape") else ()
-        return Tensor(data=res_data, shape=shape, dtype=dtype, device=device)
+        return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     def _create_constant_node(self, val: object, shape: tuple) -> str:
-        import uuid
-        from ml_switcheroo_ir import LogicalNode
-        from ml_switcheroo_compiler.tracing import _tracer
 
         out_id = str(uuid.uuid4())
         node = LogicalNode(
@@ -86,6 +90,43 @@ class OpDef(ABC):
         _tracer.add_node(node)
         return out_id
 
+    def _extract_from_tensor(self, a: object, tracer: object) -> tuple[str, tuple]:
+        """Extract proxy input ID and shape from a Tensor.
+
+        Args:
+            a: The tensor.
+            tracer: The tracer.
+
+        Returns:
+            The ID and shape.
+        """
+        if hasattr(a.data, "id"):
+            return a.data.id, a.shape
+        data_id = id(a.data)
+        if hasattr(tracer, "constant_cache") and data_id in tracer.constant_cache:
+            return tracer.constant_cache[data_id], a.shape
+        val = getattr(a.data, "tolist", lambda a=a: a.data)()
+        out_id = self._create_constant_node(val, a.shape)
+        if hasattr(tracer, "constant_cache"):
+            tracer.constant_cache[data_id] = out_id
+        return out_id, a.shape
+
+    def _extract_from_constant(self, a: object, backend: object) -> tuple[str, tuple]:
+        """Extract proxy input ID and shape from a constant.
+
+        Args:
+            a: The constant.
+            backend: The active backend.
+
+        Returns:
+            The ID and shape.
+        """
+        arr = backend.array(a)
+        val = getattr(arr, "tolist", lambda arr=arr: arr)()
+        shape = getattr(arr, "shape", ())
+        out_id = self._create_constant_node(val, shape)
+        return out_id, shape
+
     def _extract_proxy_inputs(self, args: tuple[Any, ...]) -> tuple[list[str], list[Any], Any]:
         """Extract proxy input IDs and shapes from arguments.
 
@@ -95,10 +136,6 @@ class OpDef(ABC):
         Returns:
             tuple[list[str], list[Any], Any]: Input IDs, shapes, and the first tensor found.
         """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-        from ml_switcheroo_compiler.core.tensor import Tensor
-        from ml_switcheroo_compiler.tracing import _tracer
-
         backend = get_active_backend()
         input_ids = []
         shapes = []
@@ -108,36 +145,20 @@ class OpDef(ABC):
             if isinstance(a, Tensor):
                 if first_tensor is None:
                     first_tensor = a
-                if hasattr(a.data, "id"):
-                    input_ids.append(a.data.id)
-                else:
-                    data_id = id(a.data)
-                    if hasattr(_tracer, "constant_cache") and data_id in _tracer.constant_cache:
-                        input_ids.append(_tracer.constant_cache[data_id])
-                    else:
-                        val = getattr(a.data, "tolist", lambda a=a: a.data)()
-                        out_id = self._create_constant_node(val, a.shape)
-                        if hasattr(_tracer, "constant_cache"):
-                            _tracer.constant_cache[data_id] = out_id
-                        input_ids.append(out_id)
-                shapes.append(a.shape)
+                out_id, shape = self._extract_from_tensor(a, _tracer)
             elif hasattr(a, "id"):
-                input_ids.append(a.id)
-                shapes.append(a.shape)
+                out_id, shape = a.id, getattr(a, "shape", ())
             else:
-                arr = backend.array(a)
-                val = getattr(arr, "tolist", lambda a=arr: a)()
-                shape = getattr(arr, "shape", ())
-                out_id = self._create_constant_node(val, shape)
-                input_ids.append(out_id)
-                shapes.append(shape)
+                out_id, shape = self._extract_from_constant(a, backend)
+
+            input_ids.append(out_id)
+            shapes.append(shape)
 
         return input_ids, shapes, first_tensor
 
     def _resolve_output_dtype_and_device(
         self, first_tensor: object, kwargs: dict
     ) -> tuple[object, object]:
-        from ml_switcheroo_compiler.core.dtype import DType
 
         out_dtype = None
         if "dtype" in kwargs:
@@ -152,9 +173,6 @@ class OpDef(ABC):
     def _create_tracing_logical_node(
         self, input_ids: list[str], kwargs: dict, out_shape: tuple
     ) -> str:
-        import uuid
-        from ml_switcheroo_ir import LogicalNode
-        from ml_switcheroo_compiler.tracing import _tracer
 
         out_id = str(uuid.uuid4())
         node = LogicalNode(
@@ -177,9 +195,6 @@ class OpDef(ABC):
         Returns:
             object: The resulting proxy tensor.
         """
-        from ml_switcheroo_compiler.core.tensor import Tensor
-        from ml_switcheroo_compiler.tracing import ProxyTensor
-
         input_ids, shapes, first_tensor = self._extract_proxy_inputs(args)
         out_shape = self.infer_shape(*shapes, **kwargs)
         out_dtype, device = self._resolve_output_dtype_and_device(first_tensor, kwargs)
@@ -187,7 +202,7 @@ class OpDef(ABC):
         out_id = self._create_tracing_logical_node(input_ids, kwargs, out_shape)
 
         proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
-        return Tensor(data=proxy, shape=out_shape, dtype=out_dtype, device=device)
+        return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
 
     def __call__(self, *args: object, **kwargs: object) -> object:
         """Universal dispatcher for the operation.
@@ -199,9 +214,6 @@ class OpDef(ABC):
         Returns:
             object: The result of the operation.
         """
-        from ml_switcheroo_compiler.core.config import config
-        from ml_switcheroo_compiler.tracing import _tracer
-
         if config.eager_mode:
             return self._evaluate_eagerly(*args, **kwargs)
 
@@ -238,8 +250,6 @@ class OpDef(ABC):
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         return backend.execute_op(self.op_type, *args, **kwargs)
 
@@ -313,10 +323,6 @@ def emit_ir_node(
     Returns:
         str: The computed result.
     """
-    import uuid
-
-    from ml_switcheroo_ir import LogicalNode
-
     nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
     node = LogicalNode(
         id=nid,
@@ -338,10 +344,6 @@ def dispatch_eager(op_name: str) -> Callable:
     Returns:
     Any: The result.
     """
-    import functools
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.core.tensor import Tensor
 
     def decorator(func: Callable) -> Callable:
         """Execute decorator.
@@ -373,7 +375,9 @@ def dispatch_eager(op_name: str) -> Callable:
                 first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
                 device = first_tensor.device if first_tensor is not None else None
                 dtype = first_tensor.dtype if first_tensor is not None else None
-                return Tensor(backend.array(data), backend.array(data).shape, dtype, device)
+                return Tensor(
+                    backend.array(data), TensorConfig(backend.array(data).shape, dtype, device)
+                )
             return func(*args, **kwargs)
 
         return wrapper

@@ -1,10 +1,10 @@
-# ruff: noqa: UP007
 """Type & Shape System for IR."""
 
 from __future__ import annotations
-from __future__ import annotations
+# ruff: noqa: UP007
 
-from typing import Union, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import TensorSpec

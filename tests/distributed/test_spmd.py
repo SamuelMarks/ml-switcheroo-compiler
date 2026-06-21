@@ -1,6 +1,6 @@
-from ml_switcheroo_compiler.ir.core import IRNode, IRGraph
 from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 from ml_switcheroo_compiler.distributed.layout_map import ShardingSpec
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
 
 

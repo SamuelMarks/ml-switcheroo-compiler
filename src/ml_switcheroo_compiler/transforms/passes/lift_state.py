@@ -1,7 +1,7 @@
 """Lift State pass."""
 
-from typing import Any
 from collections.abc import Iterable
+from typing import Any
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 

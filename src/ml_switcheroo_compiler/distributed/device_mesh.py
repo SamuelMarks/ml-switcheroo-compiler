@@ -1,7 +1,7 @@
 """Logical hardware topology abstraction."""
 
-from typing import Optional
 from collections.abc import Sequence
+from typing import Optional
 
 
 class DeviceMesh:

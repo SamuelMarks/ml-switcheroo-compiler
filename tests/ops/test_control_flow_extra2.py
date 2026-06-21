@@ -1,8 +1,8 @@
-from ml_switcheroo_compiler.ops.control_flow import vmap, pmap
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.control_flow import pmap, vmap
 from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
@@ -11,7 +11,7 @@ def test_vmap_pmap_scalar_fallback():
         return x * y
 
     dev = Device("cpu")
-    t = Tensor([1, 2, 3], (3,), DType.Int32, dev)
+    t = Tensor([1, 2, 3], TensorConfig((3,), DType.Int32, dev))
 
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing()

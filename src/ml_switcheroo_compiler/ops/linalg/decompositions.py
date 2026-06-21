@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
-from ml_switcheroo_compiler.ops.base import register_op, OpDef
 
 
 @register_op("PowerIteration")
@@ -51,7 +52,9 @@ def cholesky(input: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Cholesky", input.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     return _emit_linalg_node("Cholesky", [input], {}, [()], [input.dtype])
 
 
@@ -87,9 +90,9 @@ def svd(
             compute_uv=compute_uv,
         )
         return (
-            Tensor(u, u.shape, input.dtype, input.device),
-            Tensor(s, s.shape, input.dtype, input.device),
-            Tensor(vh, vh.shape, input.dtype, input.device),
+            Tensor(u, TensorConfig(u.shape, input.dtype, input.device)),
+            Tensor(s, TensorConfig(s.shape, input.dtype, input.device)),
+            Tensor(vh, TensorConfig(vh.shape, input.dtype, input.device)),
         )
     return _emit_linalg_node(
         "Svd",
@@ -119,8 +122,8 @@ def qr(input: Tensor, mode: str = "reduced") -> tuple[Tensor, Tensor]:
         backend = get_active_backend()
         q, r = backend.execute_op("Qr", input.data, mode=mode)
         return (
-            Tensor(q, q.shape, input.dtype, input.device),
-            Tensor(r, r.shape, input.dtype, input.device),
+            Tensor(q, TensorConfig(q.shape, input.dtype, input.device)),
+            Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
         )
     return _emit_linalg_node(
         "Qr",
@@ -145,7 +148,9 @@ def inv(input: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Inv", input.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     return _emit_linalg_node("Inv", [input], {}, [()], [input.dtype])
 
 
@@ -164,7 +169,7 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Pinv", input.data, rcond=rcond)
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_linalg_node(
         "Pinv",
         [input],
@@ -188,7 +193,9 @@ def det(input: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Det", input.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     return _emit_linalg_node("Det", [input], {}, [()], [input.dtype])
 
 
@@ -210,8 +217,14 @@ def slogdet(input: Tensor) -> tuple[Tensor, Tensor]:
         backend = get_active_backend()
         sign, logdet = backend.execute_op("Slogdet", input.data)
         return (
-            Tensor(backend.array(sign), backend.array(sign).shape, input.dtype, input.device),
-            Tensor(backend.array(logdet), backend.array(logdet).shape, input.dtype, input.device),
+            Tensor(
+                backend.array(sign),
+                TensorConfig(backend.array(sign).shape, input.dtype, input.device),
+            ),
+            Tensor(
+                backend.array(logdet),
+                TensorConfig(backend.array(logdet).shape, input.dtype, input.device),
+            ),
         )
     return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [input.dtype] * 2)
 
@@ -237,8 +250,8 @@ def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
         backend = get_active_backend()
         w, v = backend.execute_op("Eigh", input.data, UPLO=UPLO)
         return (
-            Tensor(w, w.shape, input.dtype, input.device),
-            Tensor(v, v.shape, input.dtype, input.device),
+            Tensor(w, TensorConfig(w.shape, input.dtype, input.device)),
+            Tensor(v, TensorConfig(v.shape, input.dtype, input.device)),
         )
     return _emit_linalg_node(
         "Eigh",
@@ -265,7 +278,9 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Eigvalsh", input.data, UPLO=UPLO)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     return _emit_linalg_node(
         "Eigvalsh",
         [input],
@@ -290,7 +305,7 @@ def matrix_power(input: Tensor, n: int) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("MatrixPower", input.data, n)
-        return Tensor(data, data.shape, input.dtype, input.device)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     return _emit_linalg_node("MatrixPower", [input], {"n": n}, [()], [input.dtype])
 
 
@@ -330,19 +345,22 @@ def solve_triangular(
     object: The solution matrix `x`
     """
     import scipy.linalg as spla
+
     from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
 
     if options is None:
         options = TriangularSolveOptions()
 
+    from typing import cast, Any
+
     return spla.solve_triangular(
         a,
         b,
-        trans=options.trans,  # type: ignore
-        lower=options.lower,  # type: ignore
-        unit_diagonal=options.unit_diagonal,  # type: ignore
-        overwrite_b=options.overwrite_b,  # type: ignore
-        check_finite=options.check_finite,  # type: ignore
+        trans=cast(Any, options.trans),
+        lower=cast(Any, options.lower),
+        unit_diagonal=cast(Any, options.unit_diagonal),
+        overwrite_b=cast(Any, options.overwrite_b),
+        check_finite=cast(Any, options.check_finite),
     )
 
 
@@ -433,9 +451,9 @@ def power_iteration(
         # u shape is (..., M)
         # sigma shape is (...)
         return (
-            Tensor(v_data, v_data.shape, input.dtype, input.device),
-            Tensor(u_data, u_data.shape, input.dtype, input.device),
-            Tensor(sigma_data, sigma_data.shape, input.dtype, input.device),
+            Tensor(v_data, TensorConfig(v_data.shape, input.dtype, input.device)),
+            Tensor(u_data, TensorConfig(u_data.shape, input.dtype, input.device)),
+            Tensor(sigma_data, TensorConfig(sigma_data.shape, input.dtype, input.device)),
         )
 
     # Need to deduce shapes for IR node

@@ -6,12 +6,7 @@ of Zeros, Ones, Full, and Arange operations against their NumPy equivalents.
 
 import numpy as np
 
-from ml_switcheroo_compiler.ops.creation.basic import (
-    Arange,
-    Full,
-    Ones,
-    Zeros,
-)
+from ml_switcheroo_compiler.ops.creation.basic import Arange, Full, Ones, Zeros
 
 
 def test_creation_ops() -> None:

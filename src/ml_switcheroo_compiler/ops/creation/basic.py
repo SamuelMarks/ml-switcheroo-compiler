@@ -198,3 +198,48 @@ class Range(OpDef):
         """
         # This is a bit tricky, but in eager mode we just rely on eager_eval.
         return shapes[0] if shapes else ()
+
+
+@register_op("Blackman")
+class Blackman(OpDef):
+    """Blackman window."""
+
+    def infer_shape(self, M: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (M,) if isinstance(M, int) else (M.item(),)
+
+
+@register_op("Bartlett")
+class Bartlett(OpDef):
+    """Bartlett window."""
+
+    def infer_shape(self, M: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (M,) if isinstance(M, int) else (M.item(),)
+
+
+@register_op("Hamming")
+class Hamming(OpDef):
+    """Hamming window."""
+
+    def infer_shape(self, M: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (M,) if isinstance(M, int) else (M.item(),)
+
+
+@register_op("Hanning")
+class Hanning(OpDef):
+    """Hanning window."""
+
+    def infer_shape(self, M: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (M,) if isinstance(M, int) else (M.item(),)
+
+
+@register_op("Kaiser")
+class Kaiser(OpDef):
+    """Kaiser window."""
+
+    def infer_shape(self, M: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (M,) if isinstance(M, int) else (M.item(),)

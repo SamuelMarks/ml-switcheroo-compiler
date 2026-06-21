@@ -1,6 +1,8 @@
-"""Vision operations class definitions."""
+"""Vision ops."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+"""Vision operations class definitions."""
 
 
 @register_op("ResizeBilinear")
@@ -234,3 +236,170 @@ class PadToBoundingBox(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
+
+
+@register_op("RandomFlip")
+class RandomFlipOp(OpDef):
+    """RandomFlip operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomRotation")
+class RandomRotationOp(OpDef):
+    """RandomRotation operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomCrop")
+class RandomCropOp(OpDef):
+    """RandomCrop operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        size = kwargs.get("size", (0, 0))
+        shape = list(args[0])
+        if len(shape) == 3:
+            shape[0] = size[0]
+            shape[1] = size[1]
+        elif len(shape) == 4:
+            shape[1] = size[0]
+            shape[2] = size[1]
+        return tuple(shape)
+
+
+@register_op("RgbToGrayscale")
+class RgbToGrayscaleOp(OpDef):
+    """RgbToGrayscale operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        shape = list(args[0])
+        data_format = kwargs.get("data_format", "channels_last")
+        if data_format == "channels_last":
+            shape[-1] = 1
+        else:
+            shape[-3] = 1
+        return tuple(shape)
+
+
+@register_op("RandomColorJitter")
+class RandomColorJitter(OpDef):
+    """RandomColorJitter op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Solarize")
+class Solarize(OpDef):
+    """Solarize op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Invert")
+class Invert(OpDef):
+    """Invert op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Posterize")
+class Posterize(OpDef):
+    """Posterize op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Degeneration")
+class Degeneration(OpDef):
+    """Degeneration op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Sharpen")
+class Sharpen(OpDef):
+    """Sharpen op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Mixup")
+class Mixup(OpDef):
+    """Mixup op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Cutmix")
+class Cutmix(OpDef):
+    """Cutmix op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("AugMix")
+class AugMix(OpDef):
+    """AugMix operation."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("AutoContrast")
+class AutoContrast(OpDef):
+    """AutoContrast operation."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandAugment")
+class RandAugment(OpDef):
+    """RandAugment operation."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomErasing")
+class RandomErasing(OpDef):
+    """RandomErasing operation."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("Equalization")
+class Equalization(OpDef):
+    """Equalization operation."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0]

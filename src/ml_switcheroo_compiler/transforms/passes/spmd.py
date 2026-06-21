@@ -2,7 +2,6 @@
 
 import typing
 
-
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 

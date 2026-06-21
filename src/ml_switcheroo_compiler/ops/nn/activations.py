@@ -1,7 +1,7 @@
 """Activations and advanced NN operations."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.nn.activations import relu, selu, elu, gelu
+from ml_switcheroo_compiler.nn.activations import elu, gelu, relu, selu
 
 
 def softplus(x: Tensor) -> Tensor:
@@ -13,7 +13,7 @@ def softplus(x: Tensor) -> Tensor:
     Returns:
         Tensor: The result of the softplus activation.
     """
-    from ml_switcheroo_compiler.ops.unary import log1p, exp
+    from ml_switcheroo_compiler.ops.unary import exp, log1p
 
     return log1p(exp(x))
 

@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
 

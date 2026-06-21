@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 import threading
 import uuid
 from typing import TypeVar
@@ -12,6 +13,40 @@ from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
 
 T = TypeVar("T", bound="ProxyTensor")
+
+
+_TRACE_COUNTS: dict[int, int] = {}
+
+
+def get_trace_count(func: object) -> int:
+    """Return the number of times the function has been traced.
+
+    Args:
+        func (object): The function to check.
+
+    Returns:
+        int: The number of times the function has been traced.
+    """
+    return _TRACE_COUNTS.get(id(func), 0)
+
+
+def increment_trace_count(func: object) -> None:
+    """Increment the trace count for the given function.
+
+    Args:
+        func (object): The function to increment the trace count for.
+    """
+    _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
+
+
+def reset_trace_count(func: object) -> None:
+    """Reset the trace count for the given function.
+
+    Args:
+        func (object): The function to reset the trace count for.
+    """
+    if id(func) in _TRACE_COUNTS:
+        del _TRACE_COUNTS[id(func)]
 
 
 class TracerTape(threading.local):

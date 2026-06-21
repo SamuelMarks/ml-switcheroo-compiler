@@ -4,7 +4,7 @@ import contextlib
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
@@ -17,9 +17,9 @@ def test_lazy_frontend_direct() -> None:
     p_y = ProxyTensor(id="y", shape=(2, 2), dtype=DType.Float32)
     p_z = ProxyTensor(id="z", shape=(4,), dtype=DType.Float32)
 
-    x = Tensor(data=p_x, shape=(2, 2), dtype=DType.Float32, device="cpu")
-    y = Tensor(data=p_y, shape=(2, 2), dtype=DType.Float32, device="cpu")
-    z = Tensor(data=p_z, shape=(4,), dtype=DType.Float32, device="cpu")
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
 
     _tracer.start_tracing()
     try:
@@ -38,7 +38,7 @@ def test_lazy_frontend_direct() -> None:
         shape.vsplit(x, 2)
 
         p_3d = ProxyTensor(id="3d", shape=(2, 2, 2), dtype=DType.Float32)
-        t_3d = Tensor(data=p_3d, shape=(2, 2, 2), dtype=DType.Float32, device="cpu")
+        t_3d = Tensor(p_3d, TensorConfig((2, 2, 2), DType.Float32, "cpu"))
         shape.dsplit(t_3d, 2)
 
         shape.tile(x, (2, 2))
@@ -48,11 +48,11 @@ def test_lazy_frontend_direct() -> None:
         shape.expand(x, (2, 2, 2))
 
         p_bool = ProxyTensor(id="bool", shape=(2, 2), dtype=DType.Bool)
-        t_bool = Tensor(data=p_bool, shape=(2, 2), dtype=DType.Bool, device="cpu")
+        t_bool = Tensor(p_bool, TensorConfig((2, 2), DType.Bool, "cpu"))
         shape.where(t_bool, x, y)
 
         p_int = ProxyTensor(id="int", shape=(2, 2), dtype=DType.Int32)
-        t_int = Tensor(data=p_int, shape=(2, 2), dtype=DType.Int32, device="cpu")
+        t_int = Tensor(p_int, TensorConfig((2, 2), DType.Int32, "cpu"))
         shape.gather(x, 0, t_int)
         shape.take(x, t_int)
         shape.scatter(x, 0, t_int, t_int)

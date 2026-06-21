@@ -1,6 +1,8 @@
+import numpy as np
+
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.config import config
-import numpy as np
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def setup_module():
@@ -51,6 +53,20 @@ def test_conv_transpose():
     out2 = ops.conv_transpose(lhs, rhs, strides=(2,), padding="SAME")
     assert out1 is not None
     assert out2 is not None
+
+    out3 = ops.conv1d_transpose(lhs, rhs, strides=2, padding="SAME")
+    assert out3 is not None
+
+    lhs2d = ops.array(np.random.randn(2, 3, 10, 10).astype(np.float32))
+    rhs2d = ops.array(np.random.randn(4, 3, 3, 3).astype(np.float32))
+    out4 = ops.conv2d_transpose(lhs2d, rhs2d, strides=2, padding="SAME")
+    assert out4 is not None
+
+    lhs3d = ops.array(np.random.randn(2, 3, 10, 10, 10).astype(np.float32))
+    rhs3d = ops.array(np.random.randn(4, 3, 3, 3, 3).astype(np.float32))
+    out5 = ops.conv3d_transpose(lhs3d, rhs3d, strides=2, padding="SAME")
+    assert out5 is not None
+
     print("out1 shape:", out1.shape)
     print("out2 shape:", out2.shape)
 
@@ -142,8 +158,10 @@ def test_nlp():
     v = ops.array(np.random.randn(2, 3, 5).astype(np.float32))
     mask = ops.array(np.zeros((2, 3, 3)).astype(np.float32))
 
-    ops.attention(q, k, v)
-    ops.attention(q, k, v, mask=mask, is_causal=True, dropout=0.1)
+    ops.attention(ops.AttentionInputs(q, k, v))
+    ops.attention(
+        ops.AttentionInputs(q, k, v), ops.AttentionConfig(mask=mask, is_causal=True, dropout=0.1)
+    )
 
 
 def test_pooling_explicit_padding():
@@ -154,3 +172,23 @@ def test_pooling_explicit_padding():
     assert out2 is not None
     print("out1 shape:", out1.shape)
     print("out2 shape:", out2.shape)
+
+
+def test_depthwise_conv1d():
+    lhs = Tensor(np.ones((2, 4, 3), dtype=np.float32), TensorConfig((2, 4, 3), "float32", "cpu"))
+    rhs = Tensor(np.ones((2, 3, 2), dtype=np.float32), TensorConfig((2, 3, 2), "float32", "cpu"))
+    config.eager_mode = True
+    out1 = ops.depthwise_conv1d(lhs, rhs, strides=1, padding="VALID")
+    assert out1.shape == (2, 3, 6)
+
+
+def test_depthwise_conv2d():
+    lhs = Tensor(
+        np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu")
+    )
+    rhs = Tensor(
+        np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu")
+    )
+    config.eager_mode = True
+    out1 = ops.depthwise_conv2d(lhs, rhs, strides=1, padding="VALID")
+    assert out1.shape == (2, 3, 3, 6)

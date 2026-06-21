@@ -1,13 +1,15 @@
 """Frontend reductions ops."""
 
 from __future__ import annotations
-from ml_switcheroo_compiler.ops.configs import WindowConfig
+
 
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import dispatch_eager
+from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -51,7 +53,7 @@ def _emit_reduction_node(
     _tracer.add_node(node)
 
     proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
-    return Tensor(data=proxy, shape=out_shape, dtype=out_dtype, device=inputs[0].device)
+    return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
 def _reduce_window_eager(
@@ -68,7 +70,9 @@ def _reduce_window_eager(
         computation,
         config=window_config,
     )
-    return Tensor(backend.array(data), backend.array(data).shape, operand.dtype, operand.device)
+    return Tensor(
+        backend.array(data), TensorConfig(backend.array(data).shape, operand.dtype, operand.device)
+    )
 
 
 def _build_reduce_window_attributes(
@@ -96,7 +100,7 @@ def _reduce_window_trace(
 
     attributes = _build_reduce_window_attributes(init_value, computation, window_config)
 
-    from ml_switcheroo_compiler.ops.reductions.basic import ReduceWindow
+    from ml_switcheroo_compiler.ops.reductions.aggregations import ReduceWindow
 
     rw_op = ReduceWindow()
     out_shape = rw_op.infer_shape(operand, init_value, computation, window_config)
@@ -325,4 +329,89 @@ def fold(
         {"output_size": output_size, "kernel_size": kernel_size},
         (),
         operand.dtype,
+    )
+
+
+def corrcoef(
+    x: object, y: object = None, rowvar: bool = True, bias: object = None, ddof: object = None
+) -> Tensor:
+    """Return Pearson product-moment correlation coefficients."""
+    if config.eager_mode:
+        data = get_active_backend().execute_op(
+            "Corrcoef",
+            getattr(x, "data", x),
+            getattr(y, "data", y) if y is not None else None,
+            rowvar=rowvar,
+            bias=bias,
+            ddof=ddof,
+        )
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(x, "device", None)))
+    return _emit_reduction_node(
+        "Corrcoef",
+        [x, y] if y is not None else [x],
+        {"rowvar": rowvar, "bias": bias, "ddof": ddof},
+        (None, None),
+        "float32",
+    )
+
+
+def correlate(a: object, v: object, mode: str = "valid") -> Tensor:
+    """Cross-correlation of two 1-dimensional sequences."""
+    if config.eager_mode:
+        data = get_active_backend().execute_op(
+            "Correlate", getattr(a, "data", a), getattr(v, "data", v), mode=mode
+        )
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(a, "device", None)))
+    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")
+
+
+def cov(
+    m: object,
+    y: object = None,
+    **kwargs: object,
+) -> Tensor:
+    """Estimate a covariance matrix, given data and weights.
+
+    Args:
+        m (object): A 1-D or 2-D array containing multiple variables and observations.
+        y (object, optional): An additional set of variables and observations.
+        **kwargs: Optional covariance configuration parameters. Allowed keys are:
+            - rowvar (bool): If rowvar is True (default), then each row represents a variable.
+            - bias (bool): Default normalization is False.
+            - ddof (int): If not None the default value implied by bias is overridden.
+            - fweights (object): 1-D array of integer frequency weights.
+            - aweights (object): 1-D array of observation vector weights.
+
+    Returns:
+        Tensor: The covariance matrix.
+    """
+    allowed_keys = {"rowvar", "bias", "ddof", "fweights", "aweights"}
+    for k in kwargs:
+        if k not in allowed_keys:
+            raise ValueError(f"Invalid keyword argument to cov: {k}")
+
+    rowvar = kwargs.get("rowvar", True)
+    bias = kwargs.get("bias", False)
+    ddof = kwargs.get("ddof", None)
+    fweights = kwargs.get("fweights", None)
+    aweights = kwargs.get("aweights", None)
+
+    if config.eager_mode:
+        data = get_active_backend().execute_op(
+            "Cov",
+            getattr(m, "data", m),
+            getattr(y, "data", y) if y is not None else None,
+            rowvar=rowvar,
+            bias=bias,
+            ddof=ddof,
+            fweights=fweights,
+            aweights=aweights,
+        )
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(m, "device", None)))
+    return _emit_reduction_node(
+        "Cov",
+        [m, y] if y is not None else [m],
+        {"rowvar": rowvar, "bias": bias, "ddof": ddof, "fweights": fweights, "aweights": aweights},
+        (None, None),
+        "float32",
     )

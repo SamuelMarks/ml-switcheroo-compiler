@@ -1,5 +1,6 @@
 """Eager backend registry."""
 
+import typing
 from collections.abc import Callable
 
 
@@ -26,22 +27,22 @@ class EagerOpRegistry:
 
         return decorator
 
-    def get(self, op_type: str) -> object:
+    def get(self, op_type: str) -> typing.Optional[typing.Callable[..., object]]:
         """Get an eager operation.
 
         Args:
-            op_type (str): The operation type.
+            op_type (str): The name of the operation.
 
         Returns:
-            object: The operation function.
+            typing.Optional[typing.Callable[..., object]]: The eager function or None.
         """
         return self._registry.get(op_type)
 
-    def execute(self, op_type: str, *args: object, **kwargs: object) -> object:
-        """Execute an eager operation.
+    def dispatch(self, op_type: str, *args: object, **kwargs: object) -> object:
+        """Dispatch an eager operation.
 
         Args:
-            op_type (str): The operation type.
+            op_type (str): The name of the operation.
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
@@ -50,7 +51,7 @@ class EagerOpRegistry:
         """
         func = self.get(op_type)
         if func is not None:
-            return func(*args, **kwargs)  # type: ignore
+            return func(*args, **kwargs)
         msg = f"Operation '{op_type}' not found in registry."
         raise NotImplementedError(msg)
 

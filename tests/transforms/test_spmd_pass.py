@@ -1,7 +1,7 @@
 from ml_switcheroo_compiler.transforms.passes.spmd import (
-    _is_boundary_transition,
     _create_all_gather_node,
     _create_reduce_scatter_node,
+    _is_boundary_transition,
 )
 
 

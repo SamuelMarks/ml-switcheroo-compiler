@@ -205,3 +205,37 @@ def test_proxy_tensor_assign_errors() -> None:
 
     finally:
         _tracer.stop_tracing()
+
+
+def test_trace_counts():
+    from ml_switcheroo_compiler.tracing.tracer import (
+        get_trace_count,
+        increment_trace_count,
+        reset_trace_count,
+    )
+
+    def my_func():
+        pass
+
+    reset_trace_count(my_func)
+    assert get_trace_count(my_func) == 0
+    increment_trace_count(my_func)
+    assert get_trace_count(my_func) == 1
+    reset_trace_count(my_func)
+    assert get_trace_count(my_func) == 0
+
+    # Test increment through _trace_function
+    from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+
+    def traced_fn():
+        from ml_switcheroo_compiler.core.dtype import DType
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        proxy = ProxyTensor(id="out", shape=(), dtype="float32")
+        return Tensor(proxy, TensorConfig((), DType.Float32, "cpu"))
+
+    reset_trace_count(traced_fn)
+    _trace_function(traced_fn, (), "test_trace")
+    assert get_trace_count(traced_fn) == 1
+    reset_trace_count(traced_fn)

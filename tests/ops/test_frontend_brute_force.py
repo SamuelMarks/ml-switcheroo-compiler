@@ -4,7 +4,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import binary, creation, linalg, reductions, shape, unary
 
 
@@ -32,11 +32,11 @@ def _test_namespace(ns: object, eager: bool) -> None:
         data_w = ProxyTensor("w", (1, 2), "float32")
         data_a = ProxyTensor("a", (2,), "int32")
 
-    x = Tensor(data=data_x, shape=(2, 3, 4), dtype=DType.Float32, device="cpu")
-    y = Tensor(data=data_y, shape=(2, 3, 4), dtype=DType.Float32, device="cpu")
-    z = Tensor(data=data_z, shape=(2, 3), dtype=DType.Float32, device="cpu")
-    w = Tensor(data=data_w, shape=(1, 2), dtype=DType.Float32, device="cpu")
-    a = Tensor(data=data_a, shape=(2,), dtype=DType.Int32, device="cpu")
+    x = Tensor(data_x, TensorConfig((2, 3, 4), DType.Float32, "cpu"))
+    y = Tensor(data_y, TensorConfig((2, 3, 4), DType.Float32, "cpu"))
+    z = Tensor(data_z, TensorConfig((2, 3), DType.Float32, "cpu"))
+    w = Tensor(data_w, TensorConfig((1, 2), DType.Float32, "cpu"))
+    a = Tensor(data_a, TensorConfig((2,), DType.Int32, "cpu"))
 
     args_list = [
         (x,),

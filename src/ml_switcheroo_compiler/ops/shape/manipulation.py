@@ -1,14 +1,14 @@
-# pylint: disable=duplicate-code
-
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 from typing import TYPE_CHECKING
-from ml_switcheroo_compiler.ops.base import dispatch_eager
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import dispatch_eager
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
@@ -50,16 +50,35 @@ def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
     Returns:
     Tensor: A flattened 1D tensor
     """
+    import math
+
     inputs = [input]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
+    shape = list(inputs[0].shape)
+    s_dim = start_dim if start_dim >= 0 else start_dim + len(shape)
+    e_dim = end_dim if end_dim >= 0 else end_dim + len(shape)
+
+    new_shape = shape[:s_dim] + [math.prod(shape[s_dim : e_dim + 1])] + shape[e_dim + 1 :]
+
     return _emit_shape_node(
         "Flatten",
         inputs,
-        {},
-        out_shape,
+        {"start_dim": start_dim, "end_dim": end_dim},
+        tuple(new_shape),
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
+
+
+def _normalize_dims(dim: int | tuple[int, ...] | list[int] | None) -> list[int] | None:
+    if dim is None:
+        return None
+    return [dim] if isinstance(dim, int) else list(dim)
+
+
+def _compute_squeeze_shape(shape: tuple, dim: int | tuple[int, ...] | list[int] | None) -> tuple:
+    dims = _normalize_dims(dim)
+    if dims is None:
+        return tuple(s for s in shape if s != 1)
+    return tuple(s for i, s in enumerate(shape) if i not in dims or s != 1)
 
 
 @dispatch_eager("Squeeze")
@@ -75,18 +94,9 @@ def squeeze(input: Tensor, dim: int | Sequence[int] | None = None) -> Tensor:
     Tensor: The squeezed tensor
     """
     inputs = [input]
-    if dim is None:
-        out_shape = tuple(s for s in input.shape if s != 1)
-    else:
-        dims = [dim] if isinstance(dim, int) else dim
-        out_shape = tuple(s for i, s in enumerate(input.shape) if i not in dims or s != 1)
-    return _emit_shape_node(
-        "Squeeze",
-        inputs,
-        {"dim": dim} if dim is not None else {},
-        out_shape,
-        input.dtype,
-    )
+    out_shape = _compute_squeeze_shape(input.shape, dim)
+    kwargs = {"dim": dim} if dim is not None else {}
+    return _emit_shape_node("Squeeze", inputs, kwargs, out_shape, input.dtype)
 
 
 @dispatch_eager("ExpandDims")
@@ -176,20 +186,24 @@ def _try_extract_item(size_list: list[object]) -> list[object] | None:
         return None
 
 
-def _extract_from_list(size_list: list[object]) -> list[object]:
-    if not size_list or not hasattr(size_list[0], "data"):
-        return size_list
-
-    first_data = size_list[0].data
+def _process_data_list(size_list: list[object], first_data: object) -> list[object]:
     if hasattr(first_data, "tolist") and callable(first_data.tolist):
         res = _try_extract_tolist(size_list)
         if res is not None:
             return res
-    elif hasattr(first_data, "item") and callable(first_data.item):
+    if hasattr(first_data, "item") and callable(first_data.item):
         res = _try_extract_item(size_list)
         if res is not None:
             return res
     return size_list
+
+
+def _extract_from_list(size_list: list[object]) -> list[object]:
+    if not size_list:
+        return size_list
+    if not hasattr(size_list[0], "data"):
+        return size_list
+    return _process_data_list(size_list, size_list[0].data)
 
 
 def _parse_shape_arg(size: object) -> tuple[int, ...] | None:
@@ -399,3 +413,98 @@ def reverse(input: Tensor, dims: tuple[int, ...]) -> Tensor:
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
+
+
+def atleast_1d(*arys: object) -> object:
+    """Convert inputs to arrays with at least one dimension.
+
+    Args:
+        *arys (object): One or more input arrays.
+
+    Returns:
+        object: An array, or list of arrays, each with a.ndim >= 1.
+    """
+    from ml_switcheroo_compiler.ops.creation.frontend import asarray
+
+    res = []
+    for a in arys:
+        t = asarray(a)
+        if len(t.shape) == 0:
+            res.append(reshape(t, (1,)))
+        else:
+            res.append(t)
+    if len(res) == 1:
+        return res[0]
+    return res
+
+
+def atleast_2d(*arys: object) -> object:
+    """Convert inputs to arrays with at least two dimensions.
+
+    Args:
+        *arys (object): One or more input arrays.
+
+    Returns:
+        object: An array, or list of arrays, each with a.ndim >= 2.
+    """
+    from ml_switcheroo_compiler.ops.creation.frontend import asarray
+
+    res = []
+    for a in arys:
+        t = asarray(a)
+        if len(t.shape) == 0:
+            res.append(reshape(t, (1, 1)))
+        elif len(t.shape) == 1:
+            res.append(reshape(t, (1, t.shape[0])))
+        else:
+            res.append(t)
+    if len(res) == 1:
+        return res[0]
+    return res
+
+
+def atleast_3d(*arys: object) -> object:
+    """Convert inputs to arrays with at least three dimensions.
+
+    Args:
+        *arys (object): One or more input arrays.
+
+    Returns:
+        object: An array, or list of arrays, each with a.ndim >= 3.
+    """
+    from ml_switcheroo_compiler.ops.creation.frontend import asarray
+
+    res = []
+    for a in arys:
+        t = asarray(a)
+        if len(t.shape) == 0:
+            res.append(reshape(t, (1, 1, 1)))
+        elif len(t.shape) == 1:
+            res.append(reshape(t, (1, t.shape[0], 1)))
+        elif len(t.shape) == 2:
+            res.append(reshape(t, (t.shape[0], t.shape[1], 1)))
+        else:
+            res.append(t)
+    if len(res) == 1:
+        return res[0]
+    return res
+
+
+def broadcast_arrays(*args: object, **kwargs: object) -> object:
+    """Broadcast any number of arrays against each other.
+
+    Args:
+        *args (object): The arrays to broadcast.
+        **kwargs: Keyword arguments.
+
+    Returns:
+        object: A list of broadcasted arrays.
+    """
+    from ml_switcheroo_compiler.core.shape import broadcast_shapes
+    from ml_switcheroo_compiler.ops.creation.frontend import asarray
+
+    tensors = [asarray(a) for a in args]
+    b_shape = tensors[0].shape
+    for t in tensors[1:]:
+        b_shape = broadcast_shapes(b_shape, t.shape)
+    return [broadcast_to(t, b_shape) for t in tensors]

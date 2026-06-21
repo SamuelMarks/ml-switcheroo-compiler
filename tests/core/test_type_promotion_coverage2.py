@@ -4,6 +4,7 @@
 def test_type_promotion_129() -> None:
     """Test type promotion edge cases."""
     import importlib
+
     import ml_switcheroo_compiler.core.type_promotion as tp
 
     importlib.reload(tp)

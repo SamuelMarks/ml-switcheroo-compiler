@@ -1,7 +1,8 @@
 import numpy as np
-from ml_switcheroo_compiler.backends.numpy.eager import _reduce_window
+
+from ml_switcheroo_compiler.backends.numpy.eager_ops.reductions import _reduce_window
 from ml_switcheroo_compiler.backends.numpy.eager_ops.conv import _conv_general_dilated
-from ml_switcheroo_compiler.ops.configs import WindowConfig, ConvConfig
+from ml_switcheroo_compiler.ops.configs import ConvConfig, WindowConfig
 
 
 def test_reduce_window_coverage():

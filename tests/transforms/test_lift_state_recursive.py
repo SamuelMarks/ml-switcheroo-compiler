@@ -1,4 +1,4 @@
-from ml_switcheroo_compiler.ir.core import IRGraph, IRBlock, IRNode
+from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
 from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
 

@@ -1,5 +1,6 @@
-from ml_switcheroo_compiler.ops.linalg.basic import Pinv, MatrixPower
 from unittest.mock import MagicMock
+
+from ml_switcheroo_compiler.ops.linalg.basic import MatrixPower, Pinv
 
 
 def test_linalg_infer_shape_coverage():

@@ -1,5 +1,7 @@
 """Neural network modules and layers."""
 
+import ml_switcheroo_compiler.core.dtype as dtypes
+from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.ops.configs import InitializerConfig
 
 
@@ -14,9 +16,6 @@ def zeros(key: object, shape: object, dtype: object = None) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler import ops
-
     return ops.zeros(shape, dtype=dtype or dtypes.DType.Float32)
 
 
@@ -31,9 +30,6 @@ def ones(key: object, shape: object, dtype: object = None) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    import ml_switcheroo_compiler.core.dtype as dtypes
-    from ml_switcheroo_compiler import ops
-
     return ops.ones(shape, dtype=dtype or dtypes.DType.Float32)
 
 
@@ -59,9 +55,6 @@ def constant(value: object, dtype: object = None) -> object:
         Returns:
         Any: The result.
         """
-        import ml_switcheroo_compiler.core.dtype as dtypes
-        from ml_switcheroo_compiler import ops
-
         return ops.full(shape, value, dtype=dtype or dtypes.DType.Float32)
 
     return init

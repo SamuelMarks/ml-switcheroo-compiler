@@ -1,3 +1,4 @@
+*.bak
 *venv*
 .nyc_output
 # Byte-compiled / optimized / DLL files

@@ -1,6 +1,6 @@
-from ml_switcheroo_compiler.ir.core import IRNode, IRGraph
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_jax_spmd_lowering():

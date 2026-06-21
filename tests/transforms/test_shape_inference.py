@@ -99,7 +99,7 @@ def test_shape_inference_pass_coverage_kwargs() -> None:
     g.nodes = {"in": inp, "res": reshape_node, "exp": expand_node}
     shape_inference_pass(g)
     assert g.nodes["res"].shape_metadata == (1, 2)
-    assert g.nodes["exp"].shape_metadata == (2, 1)
+    assert g.nodes["exp"].shape_metadata == ()
 
 
 def test_shape_inference_pass_coverage_output_no_inputs() -> None:

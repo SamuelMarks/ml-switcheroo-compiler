@@ -1,3 +1,5 @@
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+
 """Provides required module functionality."""
 
 
@@ -12,7 +14,7 @@ def test_tensor_coverage() -> None:
 
     config.eager_mode = True
 
-    t = Tensor(np.array([1.0, 2.0]), (2,), DType.Float32, Device("cpu"))
+    t = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, Device("cpu")))
     assert t.__len__() == 2
     for _x in t:
         pass

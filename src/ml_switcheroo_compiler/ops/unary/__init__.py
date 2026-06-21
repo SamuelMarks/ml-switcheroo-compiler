@@ -8,6 +8,8 @@ from ml_switcheroo_compiler.ops.base import get_op
 _ = _binary_special
 
 abs = get_op("Abs")()
+angle = get_op("Angle")()
+
 acos = get_op("Acos")()
 acosh = get_op("Acosh")()
 asin = get_op("Asin")()
@@ -15,6 +17,8 @@ asinh = get_op("Asinh")()
 atan = get_op("Atan")()
 atanh = get_op("Atanh")()
 bitwise_not = get_op("BitwiseNot")()
+bitwise_count = get_op("BitwiseCount")()
+
 cbrt = get_op("Cbrt")()
 ceil = get_op("Ceil")()
 conj = get_op("Conj")()

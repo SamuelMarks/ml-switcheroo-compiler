@@ -1,6 +1,7 @@
 """State Lifting Pass."""
 
 from collections.abc import Iterable
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 

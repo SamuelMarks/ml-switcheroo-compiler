@@ -8,7 +8,7 @@ import ml_switcheroo_compiler.ops.linalg.frontend as lf
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg import lu, lu_factor, pinv, solve_triangular
 
 
@@ -35,7 +35,7 @@ def test_pinv_lazy(monkeypatch: object) -> None:
 
             id = "test_id"
 
-        t = Tensor(MockData(), shape=(2, 2), dtype=DType.Float32, device=Device("cpu"))
+        t = Tensor(MockData(), TensorConfig((2, 2), DType.Float32, Device("cpu")))
         res = pinv(t)
         assert res is not None
     finally:

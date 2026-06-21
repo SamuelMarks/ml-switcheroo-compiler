@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
@@ -33,6 +34,7 @@ class State(dict):
     """A nested dictionary structure for nnx variables."""
 
 
+@dataclass
 class Variable:
     """A base class representing a stateful variable in the framework."""
 

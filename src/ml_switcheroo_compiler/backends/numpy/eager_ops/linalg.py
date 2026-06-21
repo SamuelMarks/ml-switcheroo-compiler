@@ -22,7 +22,7 @@ def _np_norm(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("DotGeneral")
 def _np_dot_general(backend_module: object, *args: object, **kwargs: object) -> object:
-    from ml_switcheroo_compiler.backends.numpy.eager import _dot_general
+    from ml_switcheroo_compiler.backends.numpy.eager_ops.linalg_extras import _dot_general
 
     return _dot_general(*args, **kwargs)
 

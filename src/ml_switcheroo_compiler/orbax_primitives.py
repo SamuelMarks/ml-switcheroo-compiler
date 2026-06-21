@@ -21,6 +21,7 @@ class FileSystemIO:
         Returns:
             The file data as bytes.
         """
+        _ = path
         return b""
 
     def write(self, path: str, data: bytes) -> None:
@@ -85,9 +86,10 @@ class MsgpackEngine:
         Returns:
             The packed msgpack bytes.
         """
+        _ = tree
         return b""
 
-    def unpackb(self, data: bytes) -> object:
+    def unpackb(self, _data: bytes) -> object:
         """Unpack msgpack bytes into a tree.
 
         Args:
@@ -116,7 +118,7 @@ class BarrierSync:
 class GlobalArraySharding:
     """Global array sharding utility."""
 
-    def get_local_shard(self, array: object, host_id: int) -> object:
+    def get_local_shard(self, _array: object, _host_id: int) -> object:
         """Get the local shard of a global array.
 
         Args:

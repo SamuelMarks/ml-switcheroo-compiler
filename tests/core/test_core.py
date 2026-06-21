@@ -5,6 +5,8 @@ correctness of core data types, device representations, custom exceptions, confi
 contexts, and the base Tensor class.
 """
 
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+
 import pytest
 
 from ml_switcheroo_compiler.core import (
@@ -125,7 +127,7 @@ def test_config_env_var(monkeypatch: object) -> None:
     from ml_switcheroo_compiler.core.config import ConfigState
 
     new_state = ConfigState()
-    assert new_state.eager_mode is True
+    assert new_state.execution.eager_mode is True
 
 
 def test_tensor() -> None:
@@ -138,13 +140,7 @@ def test_tensor() -> None:
     None
     """
     device = Device(DeviceType.CPU, 0)
-    t = Tensor(
-        data=[1, 2],
-        shape=(2,),
-        dtype=DType.Int32,
-        device=device,
-        requires_grad=True,
-    )
+    t = Tensor([1, 2], TensorConfig((2,), DType.Int32, device, requires_grad=True))
 
     assert t.shape == (2,)
     assert t.dtype == DType.Int32

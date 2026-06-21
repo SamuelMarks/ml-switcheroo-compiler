@@ -1,6 +1,7 @@
 """Test base generator."""
 
 import pytest
+
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 

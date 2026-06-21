@@ -6,6 +6,7 @@ correctly, and that eager and tracing execution modes behave as expected.
 
 import pytest
 
+from ml_switcheroo_compiler.core.tensor import TensorConfig
 from ml_switcheroo_compiler.ops.base import _OP_REGISTRY, OpDef, get_op, register_op
 
 
@@ -306,7 +307,7 @@ def test_opdef_call_eager() -> None:
         config.eager_mode = True
         op = get_op("TestEagerOp")()
         dev = Device(DeviceType.CPU)
-        t_in = Tensor(data=np.array([0]), shape=(1,), dtype=DType.Float32, device=dev)
+        t_in = Tensor(np.array([0]), TensorConfig((1,), DType.Float32, dev))
         t_out = op(t_in)
         assert isinstance(t_out, Tensor)
         assert t_out.device is dev
@@ -466,7 +467,7 @@ def test_opdef_call_tracing() -> None:
         config.eager_mode = False
         dev = Device(DeviceType.CPU)
         proxy_in = ProxyTensor(id="in1", shape=(1,), dtype=DType.Float32.value)
-        t_in = Tensor(data=proxy_in, shape=(1,), dtype=DType.Float32, device=dev)
+        t_in = Tensor(proxy_in, TensorConfig((1,), DType.Float32, dev))
 
         _tracer.start_tracing()
         try:

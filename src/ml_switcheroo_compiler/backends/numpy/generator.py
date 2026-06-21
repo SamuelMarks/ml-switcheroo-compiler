@@ -1,3 +1,14 @@
+# ruff: noqa: E402, D100, D101
+from ml_switcheroo_compiler.backends.common.audio_utils import (
+    extract_stft_attributes,
+    extract_mel_attributes,
+)
+from ml_switcheroo_compiler.backends.generator_utils import (
+    _extract_extract_boxes_attributes,
+    _extract_filter_attributes,
+    _extract_vision_transform_attributes,
+)
+
 """NumPy code generator and eager execution backend."""
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
@@ -113,9 +124,7 @@ class NumpyGenerator(PythonStringGenerator):
         self, node: object, input_vars: list[str], **kwargs: object
     ) -> str:
         """Evaluate perspective transform."""
-        interpolation = node.attributes.get("interpolation", "bilinear")
-        fill_value = node.attributes.get("fill_value", 0.0)
-        data_format = node.attributes.get("data_format", None)
+        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
         df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_perspective_transform({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, '{interpolation}', {fill_value}, {df_str})"
 
@@ -175,26 +184,19 @@ class NumpyGenerator(PythonStringGenerator):
 
     def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate elastic transform."""
-        interpolation = node.attributes.get("interpolation", "bilinear")
-        fill_value = node.attributes.get("fill_value", 0.0)
-        data_format = node.attributes.get("data_format", None)
+        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
         df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"
 
     def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate gaussian blur."""
-        kernel_size = node.attributes.get("kernel_size")
-        sigma = node.attributes.get("sigma")
-        padding = node.attributes.get("padding", "same")
-        data_format = node.attributes.get("data_format", None)
+        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
         df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
 
     def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate median filter."""
-        kernel_size = node.attributes.get("kernel_size")
-        padding = node.attributes.get("padding", "same")
-        data_format = node.attributes.get("data_format", None)
+        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
         df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"
 
@@ -202,10 +204,9 @@ class NumpyGenerator(PythonStringGenerator):
         self, node: object, input_vars: list[str], **kwargs: object
     ) -> str:
         """Evaluate extract bounding boxes."""
-        crop_size = node.attributes.get("crop_size")
-        interpolation = node.attributes.get("interpolation", "bilinear")
-        extrapolation_value = node.attributes.get("extrapolation_value", 0.0)
-        data_format = node.attributes.get("data_format", None)
+        crop_size, interpolation, extrapolation_value, data_format = (
+            _extract_extract_boxes_attributes(node)
+        )
         df_str = "None" if data_format is None else f'"{data_format}"'
         return f"np_extract_bounding_boxes({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {crop_size}, '{interpolation}', {extrapolation_value}, {df_str})"
 
@@ -235,28 +236,19 @@ class NumpyGenerator(PythonStringGenerator):
 
     def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate istft."""
-        frame_length = node.attributes.get("frame_length")
-        frame_step = node.attributes.get("frame_step")
-        fft_length = node.attributes.get("fft_length", None)
-        window = node.attributes.get("window", "hann")
-        center = node.attributes.get("center", True)
-        fft_len_str = "None" if fft_length is None else str(fft_length)
+        frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(node)
         return f"np_istft({input_vars[0]}, {frame_length}, {frame_step}, {fft_len_str}, '{window}', {center})"
 
     def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate mel_filterbank."""
-        num_mel_bins = node.attributes.get("num_mel_bins")
-        num_spectrogram_bins = node.attributes.get("num_spectrogram_bins")
-        sample_rate = node.attributes.get("sample_rate")
-        lower_edge_hertz = node.attributes.get("lower_edge_hertz")
-        upper_edge_hertz = node.attributes.get("upper_edge_hertz")
+        num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz, _ = (
+            extract_mel_attributes(node)
+        )
         return f"np_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
 
     def visit_Mfcc(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate mfcc."""
-        sample_rate = node.attributes.get("sample_rate")
-        num_mel_bins = node.attributes.get("num_mel_bins", 40)
-        lower_edge_hertz = node.attributes.get("lower_edge_hertz", 20.0)
-        upper_edge_hertz = node.attributes.get("upper_edge_hertz", 4000.0)
-        num_mfccs = node.attributes.get("num_mfccs", 13)
+        num_mel_bins, _, sample_rate, lower_edge_hertz, upper_edge_hertz, num_mfccs = (
+            extract_mel_attributes(node)
+        )
         return f"np_mfcc({input_vars[0]}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs})"

@@ -5,7 +5,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
@@ -29,22 +29,12 @@ def test_base_coverage_brute() -> None:
     _tracer.start_tracing()
     op = TestCoverageOp()
 
-    t1 = Tensor(
-        data=ProxyTensor(id="n1", shape=()),
-        shape=(),
-        dtype=DType.Int32,
-        device=Device("cpu"),
-    )
-    t2 = Tensor(
-        data=ProxyTensor(id="n2", shape=()),
-        shape=(),
-        dtype=DType.Int32,
-        device=Device("cpu"),
-    )
+    t1 = Tensor(ProxyTensor(id="n1", shape=()), TensorConfig((), DType.Int32, Device("cpu")))
+    t2 = Tensor(ProxyTensor(id="n2", shape=()), TensorConfig((), DType.Int32, Device("cpu")))
 
     op(t1, t2)
 
-    t3 = Tensor(data=np.array(5), shape=(), dtype=DType.Int32, device=Device("cpu"))
+    t3 = Tensor(np.array(5), TensorConfig((), DType.Int32, Device("cpu")))
     op(t3)
 
     op(ProxyTensor(id="n3", shape=()))

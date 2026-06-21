@@ -1,8 +1,8 @@
-from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 from ml_switcheroo_compiler.backends.numpy.distributed.dummy import (
-    _dummy_reduce_scatter,
     _dummy_all_reduce,
+    _dummy_reduce_scatter,
 )
+from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 
 
 def test_dummy_extras():

@@ -1,5 +1,7 @@
 """Broadcast Explicitizer Pass."""
 
+from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
+
 import uuid
 from typing import Optional
 
@@ -35,6 +37,44 @@ def _needs_broadcast(
         return None
 
 
+def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
+    """Process node.
+
+    Args:
+        graph (IRGraph): Graph.
+        node (LogicalNode): Node.
+
+    Returns:
+        bool: Result.
+    """
+    try:
+        get_op(node.op_type)
+    except KeyError:
+        return False
+
+    if len(node.inputs) != 2:
+        return False
+
+    in1, in2 = node.inputs
+    shape1 = graph.nodes[in1].shape_metadata
+    shape2 = graph.nodes[in2].shape_metadata
+
+    target_shape = _needs_broadcast(shape1, shape2)
+    if target_shape is None:
+        return False
+
+    modified = False
+    if shape1 != target_shape:
+        node.inputs[0] = _inject_broadcast_node(graph, in1, target_shape)
+        modified = True
+
+    if shape2 != target_shape:
+        node.inputs[1] = _inject_broadcast_node(graph, in2, target_shape)
+        modified = True
+
+    return modified
+
+
 def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
     """In-place pass to explicitly inject BroadcastTo nodes.
 
@@ -47,34 +87,10 @@ def broadcast_explicitizer_pass(graph: IRGraph) -> bool:
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
 
-    # Needs shapes up to date
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     shape_inference_pass(graph)
 
     for node in sorted_nodes:
-        try:
-            get_op(node.op_type)
-        except KeyError:
-            continue
-
-        if len(node.inputs) != 2:
-            continue
-
-        in1, in2 = node.inputs
-        shape1 = graph.nodes[in1].shape_metadata
-        shape2 = graph.nodes[in2].shape_metadata
-
-        target_shape = _needs_broadcast(shape1, shape2)
-        if target_shape is None:
-            continue
-
-        if shape1 != target_shape:
-            node.inputs[0] = _inject_broadcast_node(graph, in1, target_shape)
-            modified = True
-
-        if shape2 != target_shape:
-            node.inputs[1] = _inject_broadcast_node(graph, in2, target_shape)
+        if _process_broadcast_node(graph, node):
             modified = True
 
     return modified

@@ -10,7 +10,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def test_tensor_dunders() -> None:
@@ -27,9 +27,9 @@ def test_tensor_dunders() -> None:
     """
     config.eager_mode = True
     d = Device(DeviceType.CPU, 0)
-    t1 = Tensor(np.array([1, 2, 3]), (3,), DType.Int32, d)
-    t2 = Tensor(np.array([4, 5, 6]), (3,), DType.Int32, d)
-    t3 = Tensor(np.array([1]), (1,), DType.Int32, d)
+    t1 = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, d))
+    t2 = Tensor(np.array([4, 5, 6]), TensorConfig((3,), DType.Int32, d))
+    t3 = Tensor(np.array([1]), TensorConfig((1,), DType.Int32, d))
     _ = t1 % t2
     _ = t1 & t2
     _ = t1 | t2
@@ -63,8 +63,10 @@ def test_tensor_dunders_extra() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-    t1 = Tensor(np.array(1), (), DType.Float32, Device(DeviceType.CPU), requires_grad=True)
-    t2 = Tensor(np.array(2), (), DType.Float32, Device(DeviceType.CPU))
+    t1 = Tensor(
+        np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU), requires_grad=True)
+    )
+    t2 = Tensor(np.array(2), TensorConfig((), DType.Float32, Device(DeviceType.CPU)))
 
     assert t1.requires_grad
 
@@ -84,8 +86,8 @@ def test_tensor_dunders_extra() -> None:
     assert (2 / t2).data == 1
 
     # bitwise
-    t3 = Tensor(np.array(1), (), DType.Int32, Device(DeviceType.CPU))
-    t4 = Tensor(np.array(2), (), DType.Int32, Device(DeviceType.CPU))
+    t3 = Tensor(np.array(1), TensorConfig((), DType.Int32, Device(DeviceType.CPU)))
+    t4 = Tensor(np.array(2), TensorConfig((), DType.Int32, Device(DeviceType.CPU)))
     assert (t3 & t4).data == 0
     assert (t3 | t4).data == 3
     assert (t3 ^ t4).data == 3
@@ -112,7 +114,7 @@ def test_tensor_errors() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-    t = Tensor(np.array([1, 2]), (2,), DType.Float32, Device(DeviceType.CPU))
+    t = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Float32, Device(DeviceType.CPU)))
     with pytest.raises(ValueError):
         bool(t)
 
@@ -135,7 +137,7 @@ def test_tensor_tracing_eval() -> None:
     config.eager_mode = False
     g = _tracer.start_tracing()
     pt = ProxyTensor("test_id", (1,), DType.Float32)
-    t = Tensor(pt, (1,), DType.Float32, Device(DeviceType.CPU))
+    t = Tensor(pt, TensorConfig((1,), DType.Float32, Device(DeviceType.CPU)))
     t.eval()
     assert "test_id" in g.outputs
     t.eval()  # test already in outputs
@@ -153,18 +155,20 @@ def test_tensor_coverage_more() -> None:
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-    t1 = Tensor(np.array(1), (), DType.Float32, Device(DeviceType.CPU))
+    t1 = Tensor(np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU)))
     assert (+t1).data == 1
 
     pt = ProxyTensor("test_id", (1,), DType.Float32)
-    t_proxy = Tensor(pt, (1,), DType.Float32, Device(DeviceType.CPU))
+    t_proxy = Tensor(pt, TensorConfig((1,), DType.Float32, Device(DeviceType.CPU)))
     assert np.array(t_proxy).shape == (1,)
 
     config.eager_mode = True
-    t_tuple = Tensor(np.array([1, 2]), (2,), DType.Float32, Device(DeviceType.CPU))
+    t_tuple = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Float32, Device(DeviceType.CPU)))
     assert t_tuple[(0,)].data == 1
 
-    t_tuple2 = Tensor(np.array([[1, 2], [3, 4]]), (2, 2), DType.Float32, Device(DeviceType.CPU))
+    t_tuple2 = Tensor(
+        np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Float32, Device(DeviceType.CPU))
+    )
     assert t_tuple2[0, 0].data == 1
 
 
@@ -176,11 +180,11 @@ def test_tensor_coverage_even_more() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-    t1 = Tensor(np.array(1), (), DType.Float32, Device(DeviceType.CPU))
+    t1 = Tensor(np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU)))
     assert (-t1).data == -1
 
-    t_tuple = Tensor(np.array([1, 2]), (2,), DType.Float32, Device(DeviceType.CPU))
+    t_tuple = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Float32, Device(DeviceType.CPU)))
 
     # test __getitem__ with Tensor as key
-    idx = Tensor(np.array(0), (), DType.Int32, Device(DeviceType.CPU))
+    idx = Tensor(np.array(0), TensorConfig((), DType.Int32, Device(DeviceType.CPU)))
     assert t_tuple[idx].data == 1

@@ -1,19 +1,20 @@
 """Tests for distributed operations."""
 
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ops.distributed import (
-    shard_tensor,
-    all_reduce,
-    all_gather,
-    reduce_scatter,
-    ShardTensorOp,
-    AllReduceOp,
-    AllGatherOp,
-    ReduceScatterOp,
-)
 from unittest.mock import MagicMock, patch
+
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.distributed import (
+    AllGatherOp,
+    AllReduceOp,
+    ReduceScatterOp,
+    ShardTensorOp,
+    all_gather,
+    all_reduce,
+    reduce_scatter,
+    shard_tensor,
+)
 from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
@@ -29,7 +30,7 @@ def test_distributed_ops_eager():
         backend_instance.execute_op.return_value = [1, 2, 3]
         backend_instance.array.return_value = MagicMock(shape=(3,))
 
-        tensor = Tensor(None, (3,), DType.Float32, "cpu")
+        tensor = Tensor(None, TensorConfig((3,), DType.Float32, "cpu"))
         res1 = shard_tensor(tensor, "mesh", "layout")
         res2 = all_reduce(tensor)
         res3 = all_gather(tensor)
@@ -46,7 +47,7 @@ def test_distributed_ops_tracing():
     config.eager_mode = False
     _tracer.start_tracing("test_graph")
     try:
-        tensor = Tensor(MagicMock(id="t1"), (3,), DType.Float32, "cpu")
+        tensor = Tensor(MagicMock(id="t1"), TensorConfig((3,), DType.Float32, "cpu"))
 
         res1 = shard_tensor(tensor, "mesh", "layout")
         res2 = all_reduce(tensor)

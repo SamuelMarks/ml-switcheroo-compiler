@@ -1,14 +1,14 @@
-# pylint: disable=duplicate-code
-
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
@@ -31,7 +31,9 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("TakeAlongAxis", input.data, index.data, axis=dim)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input, index]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -63,7 +65,9 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("GatherNd", input.data, indices.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input, indices]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -91,7 +95,9 @@ def take(input: Tensor, indices: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Take", input.data, indices.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input, indices]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -146,7 +152,9 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Tensor:
         data = backend.execute_op("Searchsorted", a.data, v.data, side=side)
         from ml_switcheroo_compiler.core.dtype import DType
 
-        return Tensor(backend.array(data), backend.array(data).shape, DType.Int32, a.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, a.device)
+        )
 
     inputs = [a, v]
     attributes = {"side": side}
@@ -177,7 +185,9 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Scatter", input.data, index.data, src.data, dim=dim)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input, index, src]
     attributes = {"dim": dim}
     # shape calculation placeholder
@@ -210,7 +220,9 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
 
         backend = get_active_backend()
         data = backend.execute_op("ScatterNd", indices.data, updates.data, shape=shape)
-        return Tensor(backend.array(data), tuple(shape), updates.dtype, updates.device)
+        return Tensor(
+            backend.array(data), TensorConfig(tuple(shape), updates.dtype, updates.device)
+        )
     inputs = [indices, updates]
     attributes = {"shape": shape}
     return _emit_shape_node(
@@ -244,7 +256,9 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("ScatterAdd", input.data, index.data, src.data, dim=dim)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input, index, src]
     attributes = {"dim": dim}
     # shape calculation placeholder
@@ -275,7 +289,9 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Where", condition.data, input.data, other.data)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [condition, input, other]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -318,7 +334,10 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> T
 
         backend = get_active_backend()
         data = backend.execute_op("TensorScatterUpdate", tensor.data, indices.data, updates.data)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     inputs = [tensor, indices, updates]
     # shape calculation placeholder
     out_shape = tensor.shape
@@ -347,7 +366,10 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
 
         backend = get_active_backend()
         data = backend.execute_op("TensorScatterMax", tensor.data, indices.data, updates.data)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     inputs = [tensor, indices, updates]
     # shape calculation placeholder
     out_shape = tensor.shape
@@ -376,7 +398,10 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
 
         backend = get_active_backend()
         data = backend.execute_op("TensorScatterMin", tensor.data, indices.data, updates.data)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     inputs = [tensor, indices, updates]
     # shape calculation placeholder
     out_shape = tensor.shape
@@ -405,7 +430,10 @@ def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
 
         backend = get_active_backend()
         data = backend.execute_op("TensorScatterAdd", tensor.data, indices.data, updates.data)
-        return Tensor(backend.array(data), backend.array(data).shape, tensor.dtype, tensor.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
     inputs = [tensor, indices, updates]
     # shape calculation placeholder
     out_shape = tensor.shape

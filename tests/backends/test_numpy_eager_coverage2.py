@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+
 from ml_switcheroo_compiler.backends.numpy.eager import execute_op
 
 

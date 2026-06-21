@@ -1,14 +1,90 @@
+from ml_switcheroo_compiler.backends.common.generator_mixins import GroupNormConfig
+# ruff: noqa: E402, D100, D101
+
 """PyTorch Target Emission."""
 
-from ml_switcheroo_compiler.backends.formatters import OpFormatter
-from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+from ml_switcheroo_compiler.backends.formatters import OpFormatter
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 
 @register_backend("pytorch")
-class PyTorchCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
+class PyTorchVisionVisitor:
+    """Handles vision ops for PyTorch."""
+
+    handled_ops = {
+        "ElasticTransform",
+        "PerspectiveTransform",
+        "ExtractBoundingBoxes",
+        "IoU",
+        "NonMaxSuppression",
+        "ResizeBicubic",
+        "ResizeLanczos3",
+        "GaussianBlur",
+        "MedianFilter",
+    }
+
+    _handlers = {
+        "ElasticTransform": lambda vars: (
+            f"torchvision.transforms.functional.elastic_transform({vars[0]}, {vars[1]})"
+        ),
+        "PerspectiveTransform": lambda vars: (
+            f"torchvision.transforms.functional.perspective({vars[0]}, {vars[1]}, {vars[2]})"
+        ),
+        "ExtractBoundingBoxes": lambda vars: (
+            f"torchvision.ops.roi_align({vars[0]}, {vars[1]}, 1.0)"
+        ),
+        "IoU": lambda vars: f"torchvision.ops.box_iou({vars[0]}, {vars[1]})",
+        "NonMaxSuppression": lambda vars: f"torchvision.ops.nms({vars[0]}, {vars[1]}, 0.5)",
+        "ResizeBicubic": lambda vars: f"torch.nn.functional.interpolate({vars[0]}, mode='bicubic')",
+        "ResizeLanczos3": lambda vars: f"torch.nn.functional.interpolate({vars[0]}, mode='linear')",
+        "GaussianBlur": lambda vars: f"torchvision.transforms.functional.gaussian_blur({vars[0]})",
+        "MedianFilter": lambda vars: f"torchaudio.functional.median_filter({vars[0]})",
+    }
+
+    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Visit."""
+        op_type = getattr(node, "op_type", "")
+        handler = self._handlers.get(op_type)
+        return handler(input_vars) if handler else ""
+
+
+class PyTorchAudioVisitor:
+    """Handles audio ops for PyTorch."""
+
+    handled_ops = {"Istft", "MelFilterbank", "Mfcc"}
+
+    _handlers = {
+        "Istft": lambda vars: f"torch.istft({vars[0]})",
+        "MelFilterbank": lambda vars: f"torchaudio.functional.melscale_fbanks({vars[0]})",
+        "Mfcc": lambda vars: f"torchaudio.transforms.MFCC()({vars[0]})",
+    }
+
+    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Visit."""
+        op_type = getattr(node, "op_type", "")
+        handler = self._handlers.get(op_type)
+        return handler(input_vars) if handler else ""
+
+
+class PyTorchCodeGenerator(SharedASTGeneratorMixin, ClassBasedGenerator):
     """PyTorch code generator."""
+
+    def __init__(self, graph: object) -> None:
+        """Init."""
+        super().__init__(graph)
+        self.vision_visitor = PyTorchVisionVisitor()
+        self.audio_visitor = PyTorchAudioVisitor()
+
+    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Visit."""
+        op_type = getattr(node, "op_type", "")
+        if op_type in self.vision_visitor.handled_ops:
+            return self.vision_visitor.visit(node, input_vars, **kwargs)
+        if op_type in self.audio_visitor.handled_ops:
+            return self.audio_visitor.visit(node, input_vars, **kwargs)
+        return super().visit(node, input_vars, **kwargs)
 
     def _get_backend_prefix(self) -> str:
         return "pt"
@@ -36,104 +112,6 @@ class PyTorchCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         num_iters = node.attributes.get("num_iters", 1)
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"pt_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
-
-    def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate elastic transform."""
-        interpolation = node.attributes.get("interpolation", "bilinear")
-        fill_value = node.attributes.get("fill_value", 0.0)
-        data_format = node.attributes.get("data_format", None)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"pt_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"
-
-    def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate gaussian blur."""
-        kernel_size = node.attributes.get("kernel_size")
-        sigma = node.attributes.get("sigma")
-        padding = node.attributes.get("padding", "same")
-        data_format = node.attributes.get("data_format", None)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"pt_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
-
-    def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate median filter."""
-        kernel_size = node.attributes.get("kernel_size")
-        padding = node.attributes.get("padding", "same")
-        data_format = node.attributes.get("data_format", None)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"pt_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"
-
-    def visit_ExtractBoundingBoxes(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
-        """Evaluate extract bounding boxes."""
-        crop_size = node.attributes.get("crop_size")
-        interpolation = node.attributes.get("interpolation", "bilinear")
-        extrapolation_value = node.attributes.get("extrapolation_value", 0.0)
-        data_format = node.attributes.get("data_format", None)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"pt_extract_bounding_boxes({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {crop_size}, '{interpolation}', {extrapolation_value}, {df_str})"
-
-    def visit_IoU(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate iou."""
-        bounding_box_format = node.attributes.get("bounding_box_format", "xyxy")
-        return f"pt_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
-
-    def visit_NonMaxSuppression(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate nms."""
-        max_output_size = node.attributes.get("max_output_size")
-        iou_threshold = node.attributes.get("iou_threshold", 0.5)
-        score_threshold = node.attributes.get("score_threshold", float("-inf"))
-        return f"pt_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
-
-    def visit_ResizeBicubic(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate resize bicubic."""
-        size = node.attributes.get("size")
-        align_corners = node.attributes.get("align_corners", False)
-        return f"pt_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
-
-    def visit_ResizeLanczos3(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate resize lanczos3."""
-        size = node.attributes.get("size")
-        align_corners = node.attributes.get("align_corners", False)
-        return f"pt_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"  # PyTorch doesn't natively support lanczos3 in F.interpolate, mapping to bicubic
-
-    def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate istft."""
-        frame_length = node.attributes.get("frame_length")
-        frame_step = node.attributes.get("frame_step")
-        fft_length = node.attributes.get("fft_length", None)
-        window = node.attributes.get("window", "hann")
-        center = node.attributes.get("center", True)
-        fft_len_str = "None" if fft_length is None else str(fft_length)
-        return f"pt_istft({input_vars[0]}, {frame_length}, {frame_step}, {fft_len_str}, '{window}', {center})"
-
-    def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate mel_filterbank."""
-        num_mel_bins = node.attributes.get("num_mel_bins")
-        num_spectrogram_bins = node.attributes.get("num_spectrogram_bins")
-        sample_rate = node.attributes.get("sample_rate")
-        lower_edge_hertz = node.attributes.get("lower_edge_hertz")
-        upper_edge_hertz = node.attributes.get("upper_edge_hertz")
-        return f"pt_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
-
-    def visit_Mfcc(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate mfcc."""
-        sample_rate = node.attributes.get("sample_rate")
-        num_mel_bins = node.attributes.get("num_mel_bins", 40)
-        lower_edge_hertz = node.attributes.get("lower_edge_hertz", 20.0)
-        upper_edge_hertz = node.attributes.get("upper_edge_hertz", 4000.0)
-        num_mfccs = node.attributes.get("num_mfccs", 13)
-        return f"pt_mfcc({input_vars[0]}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs})"
-
-    def visit_PerspectiveTransform(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
-        """Evaluate perspective transform."""
-        interpolation = node.attributes.get("interpolation", "bilinear")
-        fill_value = node.attributes.get("fill_value", 0.0)
-        data_format = node.attributes.get("data_format", None)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"pt_perspective_transform({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, '{interpolation}', {fill_value}, {df_str})"
 
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes."""
@@ -244,16 +222,12 @@ class PyTorchCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         Returns:
         Any: The result.
         """
-        # Replace kwargs placeholders
         for k, v in kwargs.items():
-            if f"{{{k}}}" in fmt:
-                fmt = fmt.replace(f"{{{k}}}", str(v))
-        # Special case for keepdims
-        if "keepdims" in fmt and "keepdims" not in kwargs:
-            fmt = fmt.replace("keepdim={keepdims}", "keepdim=False")
-        if "axis" in fmt and "axis" not in kwargs:
-            fmt = fmt.replace(", dim={axis}", "")
-        # Replace args placeholders
+            fmt = fmt.replace(f"{{{k}}}", str(v))
+
+        fmt = fmt.replace("keepdim={keepdims}", "keepdim=False")
+        fmt = fmt.replace(", dim={axis}", "")
+
         for i, var in enumerate(input_vars):
             fmt = fmt.replace(f"{{{i}}}", var)
         return fmt
@@ -284,63 +258,24 @@ class PyTorchCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         """
         self.add_line(f"{var_name} = self.{var_name}")
 
-    def generate(self) -> str:
-        """Generate PyTorch model code from the IR graph.
-
-        Returns:
-            str: The generated PyTorch Python code
-        """
-        self.code = [
-            self.header.strip(),
+    def _get_prefix_code(self) -> list[str]:
+        """Return prefix code."""
+        return [
             "import torch",
             "import torch.nn as nn\n",
-            "def pt_group_norm(x, groups, weight=None, bias=None, axis=-1, epsilon=1e-5):",
-            "    import torch",
-            "    shape = list(x.shape)",
-            "    ndims = len(shape)",
-            "    if axis < 0: axis += ndims",
-            "    C = shape[axis]",
-            "    reshaped_dims = shape.copy()",
-            "    reshaped_dims[axis:axis+1] = [groups, C // groups]",
-            "    reshaped_x = torch.reshape(x, reshaped_dims)",
-            "    reduction_axes = tuple(i for i in range(len(reshaped_dims)) if i != 0 and i != axis)",
-            "    mean = torch.mean(reshaped_x, dim=reduction_axes, keepdim=True)",
-            "    var = torch.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False)",
-            "    normalized = (reshaped_x - mean) / torch.sqrt(var + epsilon)",
-            "    out = torch.reshape(normalized, shape)",
-            "    if weight is not None:",
-            "        w_shape = [1] * ndims",
-            "        w_shape[axis] = C",
-            "        weight = torch.reshape(weight, w_shape)",
-            "        out = out * weight",
-            "    if bias is not None:",
-            "        b_shape = [1] * ndims",
-            "        b_shape[axis] = C",
-            "        bias = torch.reshape(bias, b_shape)",
-            "        out = out + bias",
-            "    return out",
-            "def pt_group_mean(x, groups, axis=-1):",
-            "    import torch",
-            "    shape = list(x.shape)",
-            "    ndims = len(shape)",
-            "    if axis < 0: axis += ndims",
-            "    C = shape[axis]",
-            "    reshaped_dims = shape.copy()",
-            "    reshaped_dims[axis:axis+1] = [groups, C // groups]",
-            "    reshaped_x = torch.reshape(x, reshaped_dims)",
-            "    reduction_axes = tuple(i for i in range(len(reshaped_dims)) if i != 0 and i != axis)",
-            "    return torch.mean(reshaped_x, dim=reduction_axes, keepdim=True)",
-            "def pt_group_variance(x, groups, axis=-1):",
-            "    import torch",
-            "    shape = list(x.shape)",
-            "    ndims = len(shape)",
-            "    if axis < 0: axis += ndims",
-            "    C = shape[axis]",
-            "    reshaped_dims = shape.copy()",
-            "    reshaped_dims[axis:axis+1] = [groups, C // groups]",
-            "    reshaped_x = torch.reshape(x, reshaped_dims)",
-            "    reduction_axes = tuple(i for i in range(len(reshaped_dims)) if i != 0 and i != axis)",
-            "    return torch.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False)",
+            *self._get_group_norm_code(
+                GroupNormConfig(
+                    "pt",
+                    "torch",
+                    "torch.reshape",
+                    "torch.mean",
+                    "torch.var",
+                    "torch.sqrt",
+                    "dim",
+                    "keepdim",
+                    ", unbiased=False",
+                )
+            ),
             "def pt_mel_filterbank(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):",
             "    import torchaudio",
             "    return torchaudio.functional.melscale_fbanks(",
@@ -487,15 +422,10 @@ class PyTorchCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
             "        u = u / (torch.linalg.norm(u, dim=-2, keepdim=True) + 1e-12)",
             "    sigma = torch.matmul(u.transpose(-1, -2), torch.matmul(w, v))",
             "    return v.squeeze(-1), u.squeeze(-1), sigma.squeeze(-1).squeeze(-1)",
-            "class CompiledModel(nn.Module):",
         ]
 
-        # __init__
-        self.indent_level = 1
-        self.add_line("def __init__(self):")
-        self.indent_level += 1
-        self.add_line("super().__init__()")
-
+    def _emit_init_body(self) -> bool:
+        """Emit initialization code. Return True if params were emitted, False otherwise."""
         has_params = False
         for node in self.sorted_nodes:
             if node.op_type == "Constant":
@@ -506,17 +436,4 @@ class PyTorchCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
                     f"nn.Parameter(torch.tensor({val_repr})))",
                 )
                 has_params = True
-
-        if not has_params:
-            self.add_line("pass")
-
-        self.add_line("")
-        self.indent_level -= 1
-
-        # forward
-        self.add_line("def forward(self, *args, **kwargs):")
-        self.indent_level += 1
-
-        self._generate_body()
-
-        return "\n".join(self.code)
+        return has_params

@@ -1,16 +1,16 @@
-# pylint: disable=duplicate-code
-
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+# pylint: disable=duplicate-code
+
 
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import dispatch_eager
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -31,7 +31,9 @@ def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Tile", input.data, reps)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -64,7 +66,9 @@ def repeat(
 
         backend = get_active_backend()
         data = backend.execute_op("Repeat", input.data, repeats, axis=dim)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -93,7 +97,9 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Triu", input.data, k=diagonal)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -122,7 +128,9 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("Tril", input.data, k=diagonal)
-        return Tensor(backend.array(data), backend.array(data).shape, input.dtype, input.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -151,7 +159,9 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
 
         backend = get_active_backend()
         datas = backend.execute_op("Meshgrid", *[t.data for t in tensors], indexing=indexing)
-        return tuple(Tensor(d, d.shape, tensors[0].dtype, tensors[0].device) for d in datas)
+        return tuple(
+            Tensor(d, TensorConfig(d.shape, tensors[0].dtype, tensors[0].device)) for d in datas
+        )
     inputs = list(tensors)
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -245,7 +255,7 @@ def argsort(
         data = backend.execute_op("ArgSort", operand.data, axis=dimension, kind=kind)
         from ml_switcheroo_compiler.core.dtype import DType
 
-        return Tensor(data, operand.shape, DType.Int32, operand.device)
+        return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))
 
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}
@@ -280,7 +290,10 @@ def sort(
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
         data = backend.execute_op("Sort", operand.data, axis=dimension, kind=kind)
-        return Tensor(backend.array(data), backend.array(data).shape, operand.dtype, operand.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, operand.dtype, operand.device),
+        )
 
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
 
 
@@ -27,9 +27,9 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
     p_y = MagicMock(id="y", shape=(2, 2))
     p_z = MagicMock(id="z", shape=(4,))
 
-    x = Tensor(data=p_x, shape=(2, 2), dtype=DType.Float32, device="cpu")
-    y = Tensor(data=p_y, shape=(2, 2), dtype=DType.Float32, device="cpu")
-    z = Tensor(data=p_z, shape=(4,), dtype=DType.Float32, device="cpu")
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
 
     shape.reshape(x, (4,))
     shape.flatten(x)
@@ -46,10 +46,7 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
     shape.vsplit(x, 2)
 
     t_3d = Tensor(
-        data=MagicMock(id="3d", shape=(2, 2, 2)),
-        shape=(2, 2, 2),
-        dtype=DType.Float32,
-        device="cpu",
+        MagicMock(id="3d", shape=(2, 2, 2)), TensorConfig((2, 2, 2), DType.Float32, "cpu")
     )
     shape.dsplit(t_3d, 2)
 
@@ -59,20 +56,10 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
     shape.broadcast_to(x, (2, 2, 2))
     shape.expand(x, (2, 2, 2))
 
-    t_bool = Tensor(
-        data=MagicMock(id="bool", shape=(2, 2)),
-        shape=(2, 2),
-        dtype=DType.Bool,
-        device="cpu",
-    )
+    t_bool = Tensor(MagicMock(id="bool", shape=(2, 2)), TensorConfig((2, 2), DType.Bool, "cpu"))
     shape.where(t_bool, x, y)
 
-    t_int = Tensor(
-        data=MagicMock(id="int", shape=(2, 2)),
-        shape=(2, 2),
-        dtype=DType.Int32,
-        device="cpu",
-    )
+    t_int = Tensor(MagicMock(id="int", shape=(2, 2)), TensorConfig((2, 2), DType.Int32, "cpu"))
     shape.gather(x, 0, t_int)
     shape.take(x, t_int)
     shape.scatter(x, 0, t_int, t_int)

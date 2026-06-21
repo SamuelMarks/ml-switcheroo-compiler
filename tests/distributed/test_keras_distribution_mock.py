@@ -1,8 +1,8 @@
 import numpy as np
 
-from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
-from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _dummy_all_gather
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 
 
 def test_keras_distribution_mock():

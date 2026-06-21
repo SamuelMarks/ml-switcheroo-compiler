@@ -102,3 +102,15 @@ class RowStack(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape for RowStack."""
         return ()
+
+
+@register_op("Argwhere")
+class Argwhere(OpDef):
+    """Find the indices of array elements that are non-zero, grouped by element."""
+
+    op_name = "Argwhere"
+    np_op_name = "argwhere"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (None, len(a) if isinstance(a, tuple) else None)

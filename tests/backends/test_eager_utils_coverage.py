@@ -1,10 +1,11 @@
 from unittest.mock import MagicMock, patch
+
 from ml_switcheroo_compiler.backends.eager import (
     execute_generic_op,
     generic_array,
-    generic_zeros,
     generic_asarray,
     generic_item,
+    generic_zeros,
 )
 
 
@@ -141,12 +142,13 @@ def test_generic_utils():
 
 
 def test_shape_parsing_helpers():
+    from unittest.mock import MagicMock
+
     from ml_switcheroo_compiler.backends.eager import (
-        _normalize_shape,
         _extract_shape_value,
+        _normalize_shape,
         _parse_eager_shape,
     )
-    from unittest.mock import MagicMock
 
     # _normalize_shape
     m1 = MagicMock()

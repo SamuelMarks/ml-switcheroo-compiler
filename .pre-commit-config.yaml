@@ -13,7 +13,7 @@ repos:
     - --fix
   - id: ruff-format
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v2.1.0
+  rev: v1.19.1
   hooks:
   - id: mypy
     args:
@@ -24,6 +24,12 @@ repos:
     files: ^src/ml_switcheroo_compiler/transforms/pass_manager.py
 - repo: local
   hooks:
+  - id: generate-exports
+    name: Generate Module Exports
+    entry: python3 scripts/generate_exports.py
+    language: system
+    files: ^src/ml_switcheroo_compiler/ops/|^src/ml_switcheroo_compiler/lax/
+    pass_filenames: false
   - id: detect-leaks
     name: Detect Dependency Leaks
     entry: ./scripts/detect_leaks.py
@@ -36,5 +42,7 @@ repos:
     name: radon
     entry: radon cc -nc
     language: python
-    types: [python]
-    additional_dependencies: [radon]
+    types:
+    - python
+    additional_dependencies:
+    - radon

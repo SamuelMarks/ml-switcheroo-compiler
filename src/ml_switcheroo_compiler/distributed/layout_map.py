@@ -1,7 +1,7 @@
 """LayoutMap API for annotating tensors with sharding constraints."""
 
-from typing import Optional
 from collections.abc import Sequence
+from typing import Optional
 
 
 class ShardingSpec:

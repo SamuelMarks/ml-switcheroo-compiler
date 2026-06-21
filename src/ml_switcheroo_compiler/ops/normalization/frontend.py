@@ -1,7 +1,24 @@
 """Normalization frontend operations."""
 
 import typing
+from dataclasses import dataclass
+
 from ml_switcheroo_compiler.ops.base import get_op
+
+
+@dataclass
+class NormConfig:
+    """Configuration for normalization operations.
+
+    Attributes:
+        weight (object): Optional scale tensor.
+        bias (object): Optional shift tensor.
+        epsilon (float): Small value to avoid division by zero.
+    """
+
+    weight: object = None
+    bias: object = None
+    epsilon: float = 1e-5
 
 
 def group_mean(
@@ -27,12 +44,22 @@ def group_variance(
 def group_norm(
     x: object,
     groups: int,
-    weight: object = None,
-    bias: object = None,
+    config: typing.Optional[NormConfig] = None,
     axis: typing.Union[int, tuple[int, ...]] = -1,
-    epsilon: float = 1e-5,
 ) -> object:
-    """Computes the group normalization."""
+    """Computes the group normalization.
+
+    Args:
+        x (object): Input tensor.
+        groups (int): Number of groups.
+        config (Optional[NormConfig]): Normalization configuration.
+        axis (Union[int, tuple[int, ...]]): Axis to normalize over.
+
+    Returns:
+        object: Normalized tensor.
+    """
+    if config is None:
+        config = NormConfig()
     return get_op("GroupNorm")()(
-        x, groups=groups, weight=weight, bias=bias, axis=axis, epsilon=epsilon
+        x, groups=groups, weight=config.weight, bias=config.bias, axis=axis, epsilon=config.epsilon
     )

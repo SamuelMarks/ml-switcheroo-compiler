@@ -5,6 +5,10 @@ from typing import Union
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
+from ml_switcheroo_compiler.backends.formatters import CodeFormatter
+from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+
 
 class BaseGenerator(ABC):
     """Abstract base class for backend code generation."""
@@ -16,8 +20,6 @@ class BaseGenerator(ABC):
             graph (IRGraph): The graph to process.
         """
         self.graph = graph
-        from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-        from ml_switcheroo_compiler.backends.formatters import CodeFormatter
 
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
@@ -101,8 +103,6 @@ class BaseGenerator(ABC):
         Args:
             input_prefix (str): The input_prefix parameter for the operation.
         """
-        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-
         visitor = CodeGeneratorVisitor(self)
         visitor.generate_body(input_prefix)
 
@@ -289,4 +289,45 @@ class PythonStringGenerator(BaseGenerator):
         self._generate_body("args")
 
         self.indent_level -= 1
+        return "\n".join(self.code)
+
+
+class ClassBasedGenerator(BaseGenerator):
+    """Mixin for class-based string generators to avoid DRY issues in generate()."""
+
+    _forward_method_name: str = "forward"
+
+    def _get_prefix_code(self) -> list[str]:
+        """Return the code to be inserted before the class definition."""
+        return []
+
+    def _emit_init_body(self) -> bool:
+        """Emit initialization code. Return True if params were emitted, False otherwise."""
+        return False
+
+    def generate(self) -> str:
+        """Generate the complete script."""
+        self.code = [self.header]
+        self.code.extend(self._get_prefix_code())
+        self.add_line("class CompiledModel(nn.Module):")
+
+        # __init__
+        self.indent_level = 1
+        self.add_line("def __init__(self):")
+        self.indent_level += 1
+        self.add_line("super().__init__()")
+
+        has_params = self._emit_init_body()
+        if not has_params:
+            self.add_line("pass")
+
+        self.add_line("")
+        self.indent_level -= 1
+
+        # forward
+        self.add_line(f"def {self._forward_method_name}(self, *args, **kwargs):")
+        self.indent_level += 1
+
+        self._generate_body()
+
         return "\n".join(self.code)

@@ -2,8 +2,8 @@
 
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.backend_utils import format_shape_metadata, resolve_input_vars
 from ml_switcheroo_compiler.ir.core import IRNode
-from ml_switcheroo_compiler.backends.backend_utils import resolve_input_vars, format_shape_metadata
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator

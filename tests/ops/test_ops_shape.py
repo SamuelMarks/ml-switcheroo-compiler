@@ -1,12 +1,10 @@
 """Unit tests for shape manipulation and state operations in the ml_switcheroo_compiler library."""
 
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+
 import numpy as np
 
-from ml_switcheroo_compiler.ops.shape import (
-    BroadcastTo,
-    Reshape,
-    Transpose,
-)
+from ml_switcheroo_compiler.ops.shape import BroadcastTo, Reshape, Transpose
 
 
 def test_reshape_op() -> None:
@@ -100,8 +98,8 @@ def test_dynamic_update_slice() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    t = Tensor(np.zeros((5,)), shape=(5,), dtype=DType.Float32, device=device)
-    u = Tensor(np.ones((2,)), shape=(2,), dtype=DType.Float32, device=device)
+    t = Tensor(np.zeros((5,)), TensorConfig((5,), DType.Float32, device))
+    u = Tensor(np.ones((2,)), TensorConfig((2,), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
         assert dynamic_update_slice(t, u, [0]).shape == (5,)
@@ -110,18 +108,16 @@ def test_dynamic_update_slice() -> None:
     try:
         t_proxy = Tensor(
             ProxyTensor(id="t", shape=(5,), dtype="float32"),
-            shape=(5,),
-            dtype=DType.Float32,
-            device=device,
+            TensorConfig((5,), DType.Float32, device),
         )
         u_proxy = Tensor(
             ProxyTensor(id="u", shape=(2,), dtype="float32"),
-            shape=(2,),
-            dtype=DType.Float32,
-            device=device,
+            TensorConfig((2,), DType.Float32, device),
         )
         proxy = ProxyTensor(id="idx", shape=(), dtype="int32")
-        out = dynamic_update_slice(t_proxy, u_proxy, [Tensor(proxy, (), DType.Int32, device)])
+        out = dynamic_update_slice(
+            t_proxy, u_proxy, [Tensor(proxy, TensorConfig((), DType.Int32, device))]
+        )
         assert out.shape == (5,)
         node = graph.nodes[out.data.id]
         assert node.op_type == "DynamicUpdateSlice"
@@ -170,9 +166,9 @@ def test_select() -> None:
     from ml_switcheroo_compiler.ops.shape.frontend import select
 
     device = Device(DeviceType.CPU)
-    c = Tensor(np.array([True, False]), shape=(2,), dtype=DType.Bool, device=device)
-    x = Tensor(np.array([1, 2]), shape=(2,), dtype=DType.Int32, device=device)
-    y = Tensor(np.array([3, 4]), shape=(2,), dtype=DType.Int32, device=device)
+    c = Tensor(np.array([True, False]), TensorConfig((2,), DType.Bool, device))
+    x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
+    y = Tensor(np.array([3, 4]), TensorConfig((2,), DType.Int32, device))
 
     with ConfigContext(eager_mode=True):
         out = select(c, x, y)
@@ -219,7 +215,7 @@ def test_top_k_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.array([1, 5, 2, 8, 3]), shape=(5,), dtype=DType.Int32, device=device)
+    x = Tensor(np.array([1, 5, 2, 8, 3]), TensorConfig((5,), DType.Int32, device))
 
     with ConfigContext(eager_mode=True):
         out_val, out_idx = top_k(x, 2)
@@ -228,10 +224,7 @@ def test_top_k_frontend() -> None:
     graph = _tracer.start_tracing("test_top_k")
     try:
         x_proxy = Tensor(
-            ProxyTensor(id="x", shape=(5,), dtype="int32"),
-            shape=(5,),
-            dtype=DType.Int32,
-            device=device,
+            ProxyTensor(id="x", shape=(5,), dtype="int32"), TensorConfig((5,), DType.Int32, device)
         )
         v, i = top_k(x_proxy, 2)
         assert v.shape == (2,)
@@ -282,7 +275,7 @@ def test_sort_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.array([3, 1, 2]), shape=(3,), dtype=DType.Int32, device=device)
+    x = Tensor(np.array([3, 1, 2]), TensorConfig((3,), DType.Int32, device))
 
     with ConfigContext(eager_mode=True):
         res = sort(x)
@@ -291,10 +284,7 @@ def test_sort_frontend() -> None:
     graph = _tracer.start_tracing("test_sort")
     try:
         x_proxy = Tensor(
-            ProxyTensor(id="x", shape=(3,), dtype="int32"),
-            shape=(3,),
-            dtype=DType.Int32,
-            device=device,
+            ProxyTensor(id="x", shape=(3,), dtype="int32"), TensorConfig((3,), DType.Int32, device)
         )
         out = sort(x_proxy)
         assert out.shape == (3,)
@@ -339,7 +329,7 @@ def test_broadcast_in_dim_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.array([1, 2, 3]), shape=(3,), dtype=DType.Int32, device=device)
+    x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
     with ConfigContext(eager_mode=True):
         assert broadcast_in_dim(x, (2, 3), [1]).shape == (2, 3)
@@ -347,10 +337,7 @@ def test_broadcast_in_dim_frontend() -> None:
     graph = _tracer.start_tracing("test_broadcast")
     try:
         x_proxy = Tensor(
-            ProxyTensor(id="x", shape=(3,), dtype="int32"),
-            shape=(3,),
-            dtype=DType.Int32,
-            device=device,
+            ProxyTensor(id="x", shape=(3,), dtype="int32"), TensorConfig((3,), DType.Int32, device)
         )
         out = broadcast_in_dim(x_proxy, (2, 3), [1])
         assert out.shape == (2, 3)
@@ -401,7 +388,7 @@ def test_image_resize_frontend() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
-    x = Tensor(np.ones((1, 5, 5, 3)), shape=(1, 5, 5, 3), dtype=DType.Float32, device=device)
+    x = Tensor(np.ones((1, 5, 5, 3)), TensorConfig((1, 5, 5, 3), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
         assert image_resize(x, (10, 10)).shape == (1, 10, 10, 3)
@@ -410,9 +397,7 @@ def test_image_resize_frontend() -> None:
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(1, 5, 5, 3), dtype="float32"),
-            shape=(1, 5, 5, 3),
-            dtype=DType.Float32,
-            device=device,
+            TensorConfig((1, 5, 5, 3), DType.Float32, device),
         )
         out = image_resize(x_proxy, (10, 10))
         assert out.shape == (1, 10, 10, 3)
@@ -461,8 +446,10 @@ def test_shape_frontend_missing() -> None:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = "cpu"
-    x = Tensor(np.ones((2, 1, 3)), (2, 1, 3), DType.Float32, device)
-    x_proxy = Tensor(ProxyTensor("x", (2, 1, 3), "float32"), (2, 1, 3), DType.Float32, device)
+    x = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), DType.Float32, device))
+    x_proxy = Tensor(
+        ProxyTensor("x", (2, 1, 3), "float32"), TensorConfig((2, 1, 3), DType.Float32, device)
+    )
 
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing("test")
@@ -471,7 +458,9 @@ def test_shape_frontend_missing() -> None:
         repeat(x_proxy, 2, dim=0)
 
         # top_k tracing with 0D tensor to hit out_shape false branch
-        x_proxy_0d = Tensor(ProxyTensor("x0", (), "float32"), (), DType.Float32, device)
+        x_proxy_0d = Tensor(
+            ProxyTensor("x0", (), "float32"), TensorConfig((), DType.Float32, device)
+        )
         from ml_switcheroo_compiler.ops.shape.frontend import top_k
 
         top_k(x_proxy_0d, 1)
@@ -479,35 +468,36 @@ def test_shape_frontend_missing() -> None:
 
     with ConfigContext(eager_mode=True):
         # expand eager
-        x_expand = Tensor(np.ones((2, 1)), (2, 1), DType.Float32, device)
+        x_expand = Tensor(np.ones((2, 1)), TensorConfig((2, 1), DType.Float32, device))
         expand(x_expand, (2, 3))
 
         # repeat eager
         repeat(x_expand, 2, dim=0)
 
         # gather eager
-        idx = Tensor(np.array([[[0]]]), (1, 1, 1), DType.Int32, device)
+        idx = Tensor(np.array([[[0]]]), TensorConfig((1, 1, 1), DType.Int32, device))
         gather(x, 2, idx)
 
         # searchsorted eager
         from ml_switcheroo_compiler.ops.shape.frontend import searchsorted
 
-        x_1d = Tensor(np.array([1.0, 3.0]), (2,), DType.Float32, device)
-        v = Tensor(np.array([2.0]), (1,), DType.Float32, device)
+        x_1d = Tensor(np.array([1.0, 3.0]), TensorConfig((2,), DType.Float32, device))
+        v = Tensor(np.array([2.0]), TensorConfig((1,), DType.Float32, device))
         searchsorted(x_1d, v)
 
 
 def test_slicing_eager_strided() -> None:
     """Test eager slicing strided."""
     import numpy as np
+
     from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.ops.shape.slicing import strided_slice
-    from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.ops.shape.slicing import strided_slice
 
     config.eager_mode = True
     data = np.array([1.0, 2.0])
-    inp = Tensor(data, shape=(2,), dtype="float32", device=Device("cpu"))
+    inp = Tensor(data, TensorConfig((2,), "float32", Device("cpu")))
     try:
         strided_slice(inp, [0], [1], [1])
     except Exception:

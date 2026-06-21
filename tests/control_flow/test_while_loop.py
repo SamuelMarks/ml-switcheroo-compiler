@@ -1,12 +1,13 @@
 """Control flow tests."""
 
-from ml_switcheroo_compiler.tracing import ProxyTensor
-from ml_switcheroo_compiler.ops.control_flow import while_loop
 import numpy as np
+
 from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.control_flow import while_loop
+from ml_switcheroo_compiler.tracing import ProxyTensor
 
 device = Device(DeviceType.CPU, 0)
 """Control flow tests."""
@@ -32,7 +33,7 @@ def test_while_loop_eager() -> None:
             Returns:
                 object: The resulting output.
             """
-            return Tensor(val < 5, (), DType.Bool, device)
+            return Tensor(val < 5, TensorConfig((), DType.Bool, device))
 
         def body_fn(val: object) -> object:
             """Body fn.
@@ -71,9 +72,7 @@ def test_while_loop_trace() -> None:
             """
             return Tensor(
                 ProxyTensor(id="mock", shape=(), dtype="float32"),
-                (),
-                DType.Bool,
-                device,
+                TensorConfig((), DType.Bool, device),
             )
 
         def body_fn(val: object) -> object:
@@ -89,9 +88,7 @@ def test_while_loop_trace() -> None:
 
         init_val = Tensor(
             ProxyTensor(id="mock", shape=(), dtype="float32"),
-            (),
-            DType.Float32,
-            device,
+            TensorConfig((), DType.Float32, device),
         )
         from ml_switcheroo_compiler.tracing.tracer import _tracer
 
@@ -114,8 +111,8 @@ def test_while_loop_tuple_init() -> None:
     from ml_switcheroo_compiler.ops.control_flow import while_loop
 
     with ConfigContext(eager_mode=True):
-        t1 = Tensor(np.array(0), (), DType.Int32, device)
-        t2 = Tensor(np.array(0), (), DType.Int32, device)
+        t1 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
+        t2 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
 
         def cond_fn(state: object) -> object:
             """Cond fn.
@@ -127,7 +124,7 @@ def test_while_loop_tuple_init() -> None:
                 object: The resulting output.
             """
             v1, _v2 = state
-            return Tensor(v1.data < 2, (), DType.Bool, device)
+            return Tensor(v1.data < 2, TensorConfig((), DType.Bool, device))
 
         def body_fn(state: object) -> object:
             """Body fn.
@@ -139,23 +136,17 @@ def test_while_loop_tuple_init() -> None:
                 object: The resulting output.
             """
             v1, v2 = state
-            return (Tensor(v1.data + 1, (), DType.Int32, device), v2)
+            return (Tensor(v1.data + 1, TensorConfig((), DType.Int32, device)), v2)
 
         res1, _res2 = while_loop(cond_fn, body_fn, (t1, t2))
         assert res1.data == 2
 
     with ConfigContext(eager_mode=False):
         pt1 = Tensor(
-            ProxyTensor(id="mock1", shape=(), dtype="int32"),
-            (),
-            DType.Int32,
-            device,
+            ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device)
         )
         pt2 = Tensor(
-            ProxyTensor(id="mock2", shape=(), dtype="int32"),
-            (),
-            DType.Int32,
-            device,
+            ProxyTensor(id="mock2", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device)
         )
 
         def cond_fn_trace(v1: object, v2: object) -> object:
@@ -170,9 +161,7 @@ def test_while_loop_tuple_init() -> None:
             """
             return Tensor(
                 ProxyTensor(id="mock3", shape=(), dtype="bool"),
-                (),
-                DType.Bool,
-                device,
+                TensorConfig((), DType.Bool, device),
             )
 
         def body_fn_trace(v1: object, v2: object) -> object:

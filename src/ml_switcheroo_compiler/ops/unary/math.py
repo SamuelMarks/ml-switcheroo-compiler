@@ -443,3 +443,18 @@ class Signbit(UnaryMathOp):
 
     op_name = "Signbit"
     np_op_name = "signbit"
+
+
+@register_op("Angle")
+class Angle(UnaryMathOp):
+    """Computes the angle of the complex argument."""
+
+    op_name = "Angle"
+
+
+@register_op("BitwiseCount")
+class BitwiseCount(UnaryMathOp):
+    """Computes the number of 1-bits in the binary representation of x."""
+
+    op_name = "BitwiseCount"
+    np_op_name = "bitwise_count"

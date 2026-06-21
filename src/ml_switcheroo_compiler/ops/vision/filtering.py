@@ -1,16 +1,15 @@
-"""Vision and Image processing operations."""
+"""Vision operations."""
 
-import typing
+from __future__ import annotations
+
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def gaussian_blur(
-    images: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object
-) -> Tensor:
+def gaussian_blur(images: Tensor, config_obj: object | None = None, **kwargs: object) -> Tensor:
     """Applies Gaussian blur to the image(s).
 
     Args:
@@ -46,7 +45,9 @@ def gaussian_blur(
             config=config_obj,
             padding=padding,
         )
-        return Tensor(backend.array(data), backend.array(data).shape, DType.Int32, images.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
+        )
     return _emit_shape_node(
         "GaussianBlur",
         [images],
@@ -58,9 +59,9 @@ def gaussian_blur(
 
 def median_filter(
     images: Tensor,
-    kernel_size: typing.Union[int, tuple[int, int]],
+    kernel_size: int | tuple[int, int],
     padding: str = "same",
-    data_format: typing.Optional[str] = None,
+    data_format: str | None = None,
 ) -> Tensor:
     """Applies a median filter to the image(s).
 
@@ -87,7 +88,9 @@ def median_filter(
             padding=padding,
             data_format=data_format,
         )
-        return Tensor(backend.array(data), backend.array(data).shape, DType.Int32, images.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
+        )
     return _emit_shape_node(
         "MedianFilter",
         [images],
@@ -126,7 +129,10 @@ def iou(
             boxes2.data,
             bounding_box_format=bounding_box_format,
         )
-        return Tensor(backend.array(data), backend.array(data).shape, boxes1.dtype, boxes1.device)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, boxes1.dtype, boxes1.device),
+        )
     return _emit_shape_node(
         "IoU",
         [boxes1, boxes2],
@@ -168,7 +174,9 @@ def non_max_suppression(
             score_threshold=score_threshold,
         )
         # Note: output of NMS is typically integer indices
-        return Tensor(backend.array(data), backend.array(data).shape, DType.Int32, boxes.device)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, boxes.device)
+        )
     return _emit_shape_node(
         "NonMaxSuppression",
         [boxes, scores],
@@ -180,3 +188,28 @@ def non_max_suppression(
         (),
         DType.Int32,
     )
+
+
+def sharpen(images: Tensor, factor: float = 1.0) -> Tensor:
+    """Sharpen images.
+
+    Args:
+        images (Tensor): Input images.
+        factor (float): Sharpening factor.
+
+    Returns:
+        Tensor: Sharpened images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Sharpen", images.data, factor=factor)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    kwargs = {"factor": factor}
+    return get_op("Sharpen")()(images, **kwargs)

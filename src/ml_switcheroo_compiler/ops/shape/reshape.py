@@ -362,3 +362,39 @@ class Triu(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape for Triu."""
         return ()
+
+
+@register_op("Delete")
+class Delete(OpDef):
+    """Return a new array with sub-arrays along an axis deleted."""
+
+    op_name = "Delete"
+    np_op_name = "delete"
+
+    def infer_shape(self, arr: object, obj: object, axis: int = None, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (None,)
+
+
+@register_op("Diff")
+class Diff(OpDef):
+    """Calculate the n-th discrete difference along the given axis."""
+
+    op_name = "Diff"
+    np_op_name = "diff"
+
+    def infer_shape(self, a: object, n: int = 1, axis: int = -1, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return (None,)
+
+
+@register_op("Digitize")
+class Digitize(OpDef):
+    """Return the indices of the bins to which each value in input array belongs."""
+
+    op_name = "Digitize"
+    np_op_name = "digitize"
+
+    def infer_shape(self, x: object, bins: object, right: bool = False, **kwargs: object) -> object:
+        """Infer the output shape."""
+        return x.shape if hasattr(x, "shape") else ()
