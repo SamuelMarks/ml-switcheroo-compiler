@@ -15,6 +15,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - uses: actions/checkout@v4
+      with:
+        repository: SamuelMarks/ml-switcheroo-ir
+        path: ml-switcheroo-ir
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -24,8 +29,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install ruff pytest pytest-cov build radon
+        pip install -e ./ml-switcheroo-ir
         if [ -f "pyproject.toml" ]; then pip install -e . || true; fi
-        if [ -f "requirements.txt" ]; then pip install -r requirements.txt || true; fi
+        for req in requirements*.txt; do pip install -r "$req" || true; fi
 
     - name: Check Code Formatting (Ruff)
       run: ruff format --check .

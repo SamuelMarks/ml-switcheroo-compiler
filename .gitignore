@@ -1,3 +1,4 @@
+.mermaid
 *.bak
 *venv*
 .nyc_output
