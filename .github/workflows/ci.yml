@@ -13,31 +13,32 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         repository: SamuelMarks/ml-switcheroo-ir
         path: ml-switcheroo-ir
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.12'
 
     - name: Install Dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install ruff pytest pytest-cov build radon
-        pip install -e ./ml-switcheroo-ir
-        if [ -f "pyproject.toml" ]; then pip install -e . || true; fi
-        for req in requirements*.txt; do pip install -r "$req" || true; fi
+        python3 -m pip install --upgrade pip
+        python3 -m pip install --upgrade setuptools wheel
+        python3 -m pip install ruff pytest pytest-cov build radon
+        python3 -m pip install -e ./ml-switcheroo-ir
+        if [ -f "pyproject.toml" ]; then python3 -m pip install -e . || true; fi
+        for req in requirements*.txt; do python3 -m pip install -r "$req" || true; done
 
     - name: Check Code Formatting (Ruff)
-      run: ruff format --check .
+      run: ruff format --config pyproject.toml --check
 
     - name: Check Linting (Ruff)
-      run: ruff check .
+      run: ruff check --config pyproject.toml
 
     - name: Test & Coverage
       run: |
@@ -48,11 +49,11 @@ jobs:
 
     - name: Update Badges
       run: |
-        python scripts/update_badges.py
+        python3 scripts/update_badges.py
         if ! git diff --exit-code README.md; then
           echo "Coverage badges in README.md are out of date. Please run pre-commit or the update badges script locally and commit the changes."
           exit 1
         fi
 
     - name: Build Package
-      run: python -m build
+      run: python3 -m build
