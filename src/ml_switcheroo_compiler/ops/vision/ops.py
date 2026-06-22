@@ -403,3 +403,66 @@ class Equalization(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return args[0]
+
+
+@register_op("RandomZoom")
+class RandomZoomOp(OpDef):
+    """RandomZoom operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomShear")
+class RandomShearOp(OpDef):
+    """RandomShear operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomTranslation")
+class RandomTranslationOp(OpDef):
+    """RandomTranslation operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomPerspective")
+class RandomPerspectiveOp(OpDef):
+    """RandomPerspective operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomElasticTransform")
+class RandomElasticTransformOp(OpDef):
+    """RandomElasticTransform operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomGaussianBlur")
+class RandomGaussianBlurOp(OpDef):
+    """RandomGaussianBlur operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]
+
+
+@register_op("RandomSharpness")
+class RandomSharpnessOp(OpDef):
+    """RandomSharpness operation definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0]

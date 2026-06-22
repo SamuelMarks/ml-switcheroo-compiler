@@ -19,6 +19,22 @@ class GroupNormConfig:  # pylint: disable=too-many-instance-attributes
 
 
 class SharedASTGeneratorMixin:
+    """Shared AST generator mixin."""
+
+    def visit_TimeDistributed(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate time distributed."""
+        # Fallback implementation: we assume the frontend has provided a TimeDistributed node.
+        # Natively, backends might want to generate a loop or a vmap.
+        # For simplicity in this mixin, we return a function call to a backend-specific time_distributed utility.
+        return f"{self._get_backend_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
+
+    def visit_ActivityRegularization(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate activity regularization."""
+        # It's an identity op as loss is handled externally
+        return input_vars[0]
+
     """Mixin for shared AST generation logic across backends."""
 
     def _get_backend_prefix(self) -> str:

@@ -18,7 +18,19 @@ from .frontend import cov as cov
 from .frontend import pmean as pmean
 from .frontend import psum as psum
 from .frontend import reduce_window as reduce_window
+from .frontend import segment_max as segment_max
+from .frontend import segment_mean as segment_mean
+from .frontend import segment_min as segment_min
+from .frontend import segment_prod as segment_prod
 from .frontend import segment_sum as segment_sum
+from .frontend import unsorted_segment_max as unsorted_segment_max
+from .frontend import unsorted_segment_mean as unsorted_segment_mean
+from .frontend import unsorted_segment_min as unsorted_segment_min
+from .frontend import unsorted_segment_prod as unsorted_segment_prod
+from .frontend import unsorted_segment_sqrt_n as unsorted_segment_sqrt_n
+from .frontend import unsorted_segment_sum as unsorted_segment_sum
+from .frontend import approx_max_k as approx_max_k
+from .frontend import approx_min_k as approx_min_k
 
 _ = _basic
 _ = _nan
@@ -64,6 +76,19 @@ norm = get_op("Norm")()
 cumsum = get_op("Cumsum")()
 
 __all__ = [
+    "approx_min_k",
+    "approx_max_k",
+    "unsorted_segment_sum",
+    "unsorted_segment_sqrt_n",
+    "unsorted_segment_prod",
+    "unsorted_segment_min",
+    "unsorted_segment_mean",
+    "unsorted_segment_max",
+    "segment_sum",
+    "segment_prod",
+    "segment_min",
+    "segment_mean",
+    "segment_max",
     "Pmean",
     "Psum",
     "ReduceWindow",

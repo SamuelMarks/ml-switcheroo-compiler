@@ -160,12 +160,28 @@ def pmean(x: Tensor, axis_name: str) -> Tensor:
     return _emit_reduction_node("Pmean", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
-@dispatch_eager("SegmentSum")
-def segment_sum(
+def _emit_segment_op(
+    op_type: str,
     data: Tensor,
     segment_ids: Tensor,
     num_segments: int | None = None,
 ) -> Tensor:
+    inputs = [data, segment_ids]
+    attributes = {}
+    if num_segments is not None:
+        attributes["num_segments"] = num_segments
+
+    return _emit_reduction_node(
+        op_type,
+        inputs,
+        attributes,
+        (),  # Placeholder shape
+        data.dtype,
+    )
+
+
+@dispatch_eager("SegmentSum")
+def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the sum of tensor elements grouped by segment_ids.
 
     Args:
@@ -174,21 +190,227 @@ def segment_sum(
         num_segments (int | None): The number of segments. Optional
 
     Returns:
-    Tensor: The segmented sum tensor
-
+        Tensor: The segmented sum tensor
     """
-    inputs = [data, segment_ids]
-    attributes = {}
-    if num_segments is not None:
-        attributes["num_segments"] = num_segments
+    return _emit_segment_op("SegmentSum", data, segment_ids, num_segments)
 
-    return _emit_reduction_node(
-        "SegmentSum",
-        inputs,
-        attributes,
-        (),  # Placeholder shape
-        data.dtype,
-    )
+
+@dispatch_eager("SegmentMax")
+def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
+    """Computes the max of tensor elements grouped by segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented max tensor
+    """
+    return _emit_segment_op("SegmentMax", data, segment_ids, num_segments)
+
+
+@dispatch_eager("SegmentMean")
+def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
+    """Computes the mean of tensor elements grouped by segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented mean tensor
+    """
+    return _emit_segment_op("SegmentMean", data, segment_ids, num_segments)
+
+
+@dispatch_eager("SegmentMin")
+def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
+    """Computes the min of tensor elements grouped by segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented min tensor
+    """
+    return _emit_segment_op("SegmentMin", data, segment_ids, num_segments)
+
+
+@dispatch_eager("SegmentProd")
+def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
+    """Computes the prod of tensor elements grouped by segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented prod tensor
+    """
+    return _emit_segment_op("SegmentProd", data, segment_ids, num_segments)
+
+
+@dispatch_eager("UnsortedSegmentMax")
+def unsorted_segment_max(
+    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
+) -> Tensor:
+    """Computes the max of tensor elements grouped by unsorted segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented max tensor
+    """
+    return _emit_segment_op("UnsortedSegmentMax", data, segment_ids, num_segments)
+
+
+@dispatch_eager("UnsortedSegmentMean")
+def unsorted_segment_mean(
+    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
+) -> Tensor:
+    """Computes the mean of tensor elements grouped by unsorted segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented mean tensor
+    """
+    return _emit_segment_op("UnsortedSegmentMean", data, segment_ids, num_segments)
+
+
+@dispatch_eager("UnsortedSegmentMin")
+def unsorted_segment_min(
+    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
+) -> Tensor:
+    """Computes the min of tensor elements grouped by unsorted segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented min tensor
+    """
+    return _emit_segment_op("UnsortedSegmentMin", data, segment_ids, num_segments)
+
+
+@dispatch_eager("UnsortedSegmentProd")
+def unsorted_segment_prod(
+    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
+) -> Tensor:
+    """Computes the prod of tensor elements grouped by unsorted segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented prod tensor
+    """
+    return _emit_segment_op("UnsortedSegmentProd", data, segment_ids, num_segments)
+
+
+@dispatch_eager("UnsortedSegmentSqrtN")
+def unsorted_segment_sqrt_n(
+    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
+) -> Tensor:
+    """Computes the sqrt_n of tensor elements grouped by unsorted segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented sqrt_n tensor
+    """
+    return _emit_segment_op("UnsortedSegmentSqrtN", data, segment_ids, num_segments)
+
+
+@dispatch_eager("UnsortedSegmentSum")
+def unsorted_segment_sum(
+    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
+) -> Tensor:
+    """Computes the sum of tensor elements grouped by unsorted segment_ids.
+
+    Args:
+        data (Tensor): The data tensor
+        segment_ids (Tensor): The segment indices
+        num_segments (int | None): The number of segments. Optional
+
+    Returns:
+        Tensor: The segmented sum tensor
+    """
+    return _emit_segment_op("UnsortedSegmentSum", data, segment_ids, num_segments)
+
+
+@dispatch_eager("ApproxMaxK")
+def approx_max_k(
+    operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95
+) -> tuple[Tensor, Tensor]:
+    """Computes approximate top-k max elements and their indices.
+
+    Args:
+        operand (Tensor): The input tensor
+        k (int): Number of top elements to look for along the last dimension
+        reduction_dimension (int): The dimension to reduce along
+        recall_target (float): The target recall
+
+    Returns:
+        tuple[Tensor, Tensor]: A tuple of (values, indices)
+    """
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    attributes = {
+        "k": k,
+        "reduction_dimension": reduction_dimension,
+        "recall_target": recall_target,
+    }
+
+    val = _emit_reduction_node("ApproxMaxK", [operand], attributes, (), operand.dtype)
+    idx = _emit_reduction_node("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
+    return val, idx
+
+
+@dispatch_eager("ApproxMinK")
+def approx_min_k(
+    operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95
+) -> tuple[Tensor, Tensor]:
+    """Computes approximate top-k min elements and their indices.
+
+    Args:
+        operand (Tensor): The input tensor
+        k (int): Number of top elements to look for along the last dimension
+        reduction_dimension (int): The dimension to reduce along
+        recall_target (float): The target recall
+
+    Returns:
+        tuple[Tensor, Tensor]: A tuple of (values, indices)
+    """
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    attributes = {
+        "k": k,
+        "reduction_dimension": reduction_dimension,
+        "recall_target": recall_target,
+    }
+
+    val = _emit_reduction_node("ApproxMinK", [operand], attributes, (), operand.dtype)
+    idx = _emit_reduction_node("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
+    return val, idx
 
 
 def ctc_loss(

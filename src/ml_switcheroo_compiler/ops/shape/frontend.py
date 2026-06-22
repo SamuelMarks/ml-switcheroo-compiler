@@ -18,6 +18,8 @@ from ml_switcheroo_compiler.ops.shape.dynamic_slicing import (
 from ml_switcheroo_compiler.ops.shape.indexing import (
     gather,
     gather_nd,
+    boolean_mask,
+    invert_permutation,
     scatter,
     scatter_add,
     scatter_nd,
@@ -113,6 +115,8 @@ __all__ = [
     "flatten",
     "gather",
     "gather_nd",
+    "boolean_mask",
+    "invert_permutation",
     "hsplit",
     "hstack",
     "image_resize",

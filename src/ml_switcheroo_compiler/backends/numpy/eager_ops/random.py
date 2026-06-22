@@ -60,24 +60,36 @@ def _np_randint(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Dropout")
-def dropout(np_mod: object, x: object, rate: object, seed: object = None) -> object:
+def dropout(
+    np_mod: object,
+    x: object,
+    rate: object,
+    noise_shape: object = None,
+    training: object = True,
+    seed: object = None,
+) -> object:
     """Execute Dropout eager op.
 
     Args:
         np_mod: Numpy module
         x: Input array
         rate: Dropout rate
+        noise_shape: Noise shape
+        training: Training boolean
         seed: Random seed
 
     Returns:
         Resulting array
     """
-    if rate == 0.0:
+    if rate == 0.0 or not training:
         return x
     keep_prob = 1.0 - rate
     if seed is not None:
         rng = np_mod.random.RandomState(seed)
     else:
         rng = np_mod.random
-    mask = rng.binomial(1, keep_prob, size=x.shape).astype(x.dtype)
+    shape = noise_shape if noise_shape is not None else getattr(x, "shape", ())
+    mask = rng.binomial(1, keep_prob, size=shape)
+    if hasattr(x, "dtype"):
+        mask = mask.astype(x.dtype)
     return (x * mask) / keep_prob

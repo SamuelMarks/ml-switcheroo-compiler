@@ -363,6 +363,51 @@ class Equal(BinaryMathOp):
 
 @register_op("Xlogy")
 class Xlogy(BinaryMathOp):
-    """Computes x * log(y) returning 0 if x is 0 element-wise."""
+    """An operation class for computing x * log(y)."""
 
     op_name = "Xlogy"
+
+
+@register_op("Igamma")
+class Igamma(BinaryMathOp):
+    """An operation class for computing the regularized lower incomplete gamma function."""
+
+    op_name = "Igamma"
+
+
+@register_op("Igammac")
+class Igammac(BinaryMathOp):
+    """An operation class for computing the regularized upper incomplete gamma function."""
+
+    op_name = "Igammac"
+
+
+@register_op("Zeta")
+class Zeta(BinaryMathOp):
+    """An operation class for computing the Hurwitz zeta function."""
+
+    op_name = "Zeta"
+
+
+@register_op("Polygamma")
+class Polygamma(BinaryMathOp):
+    """An operation class for computing the polygamma function."""
+
+    op_name = "Polygamma"
+
+
+@register_op("Betainc")
+class Betainc(OpDef):
+    """Regularized incomplete beta function."""
+
+    op_name = "Betainc"
+
+    def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
+        """Infer shape."""
+        # Simple broadcasting
+        from ml_switcheroo_compiler.ops.shape.broadcasting import broadcast_shapes
+
+        shape_a = getattr(a, "shape", ())
+        shape_b = getattr(b, "shape", ())
+        shape_x = getattr(x, "shape", ()) if x is not None else ()
+        return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)

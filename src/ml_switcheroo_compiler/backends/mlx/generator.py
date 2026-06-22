@@ -8,7 +8,10 @@ from ml_switcheroo_compiler.backends.generator_utils import (
 """MLX Target Emission."""
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+from ml_switcheroo_compiler.backends.common.generator_mixins import (
+    SharedASTGeneratorMixin,
+    GroupNormConfig,
+)
 from ml_switcheroo_compiler.backends.formatters import OpFormatter
 from ml_switcheroo_compiler.backends.registry import register_backend
 
@@ -262,20 +265,9 @@ class MLXCodeGenerator(
     _forward_method_name = "__call__"
 
     def _get_prefix_code(self) -> list[str]:
-        return [
+        res = [
             "import mlx.core as mx",
             "import mlx.nn as nn\n",
-            "def mx_group_norm(x, groups, weight=None, bias=None, axis=-1, epsilon=1e-5):",
-            "    import mlx.core as mx",
-            "    B, C = x.shape[0], x.shape[axis]",
-            "    x = mx.reshape(x, (B, groups, C // groups, -1))",
-            "    mean = mx.mean(x, axis=[2, 3], keepdims=True)",
-            "    var = mx.var(x, axis=[2, 3], keepdims=True)",
-            "    x = (x - mean) / mx.sqrt(var + epsilon)",
-            "    x = mx.reshape(x, (B, -1, C) if axis == -1 else (B, C, -1, -1))",
-            "    if weight is not None: x = x * weight",
-            "    if bias is not None: x = x + bias",
-            "    return x",
             "def mlx_resize(images, size, interpolation, align_corners):",
             "    import mlx.core as mx",
             "    from ml_switcheroo_compiler.backends.eager.vision_geometric import resize_eager",
@@ -329,3 +321,18 @@ class MLXCodeGenerator(
             "    sigma = mx.matmul(mx.swapaxes(u_final, -1, -2), mx.matmul(w, v_final))",
             "    return mx.squeeze(v_final, -1), mx.squeeze(u_final, -1), mx.squeeze(mx.squeeze(sigma, -1), -1)",
         ]
+        res.extend(
+            self._get_group_norm_code(
+                GroupNormConfig(
+                    "mx",
+                    "mlx.core as mx",
+                    "mx.reshape",
+                    "mx.mean",
+                    "mx.var",
+                    "mx.sqrt",
+                    dim_arg="axis",
+                    keepdim_arg="keepdims",
+                )
+            )
+        )
+        return res

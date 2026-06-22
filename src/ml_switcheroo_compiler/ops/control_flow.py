@@ -318,6 +318,89 @@ def _scan_tracing(f: Callable, init: object, xs: object) -> tuple[object, object
     return init, out_tensor
 
 
+def map_fn(
+    fn: Callable[[Any], Any],
+    elems: Tensor,
+    dtype: DType | None = None,
+) -> Tensor:
+    """Map on the list of tensors unpacked from `elems` on dimension 0.
+
+    In eager mode, this sequentially applies the function along the 0-th dimension
+    of the input sequence. In tracing mode, it emits a 'Map' logical node
+
+    Args:
+        fn (Callable[[Any], Any]): A function mapping `x` to `y`
+        elems (Tensor): The sequence of values to map over
+        dtype (DType | None): The optional output data type
+
+    Returns:
+    Tensor: The stacked outputs (ys) from each step
+
+    Raises:
+    RuntimeError: If called outside of a tracing context when eager mode is
+    disabled
+    """
+    if config.eager_mode:
+        return _map_eager(fn, elems, dtype)
+
+    return _map_tracing(fn, elems, dtype)
+
+
+def _map_eager(fn: Callable, elems: Tensor, dtype: DType | None) -> Tensor:
+    ys = []
+    length = elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
+    for i in range(length):
+        x = Tensor(elems.data[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
+        y = fn(x)
+        ys.append(y.data if hasattr(y, "data") else y)
+
+    if len(ys) > 0 and isinstance(ys[0], tuple):
+        stacked_ys = get_active_backend().execute_op("Stack", ys)
+        return Tensor(
+            stacked_ys,
+            TensorConfig(
+                stacked_ys.shape,
+                elems.dtype,
+                elems.device,
+            ),
+        )
+    else:
+        stacked_ys = get_active_backend().array(ys)
+        out_dtype = dtype if dtype is not None else DType(str(stacked_ys.dtype))
+        return Tensor(
+            stacked_ys,
+            TensorConfig(stacked_ys.shape, out_dtype, elems.device),
+        )
+
+
+def _map_tracing(fn: Callable, elems: Tensor, dtype: DType | None) -> Tensor:
+    if not _tracer.is_tracing:
+        msg = "Cannot emit Map node outside of a tracing context."
+        raise RuntimeError(msg)
+
+    # Need a dummy x for tracing `f`
+    x_shape = elems.shape[1:] if elems is not None and len(elems.shape) > 0 else ()
+    proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=elems.dtype.value)
+    dummy_x = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
+
+    body_graph = _trace_function(fn, (dummy_x,), "map_body")
+
+    out_id = str(uuid.uuid4())
+    node = LogicalNode(
+        id=out_id,
+        op_type="Map",
+        inputs=[elems.data.id],
+        attributes={"body": body_graph},
+        shape_metadata=(),
+    )
+    _tracer.add_node(node)
+
+    out_dtype = dtype if dtype is not None else elems.dtype
+    out_shape = (elems.shape[0],)
+    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
+    return Tensor(proxy, TensorConfig(out_shape, out_dtype, elems.device))
+
+
 def _create_pmap_dummy_args(args: tuple[object, ...]) -> list[object]:
     dummy_args = []
     for a in args:

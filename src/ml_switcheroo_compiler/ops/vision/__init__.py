@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Auto-generated ml_switcheroo_compiler.ops.vision module exports."""
 
 from ml_switcheroo_compiler.ops.vision.affine import (
@@ -9,8 +10,11 @@ from ml_switcheroo_compiler.ops.vision.affine import (
     annotations,
     config,
     random_crop,
+    random_elastic_transform,
     random_flip,
+    random_perspective,
     random_rotation,
+    random_shear,
     random_translation,
     random_zoom,
 )
@@ -44,6 +48,8 @@ from ml_switcheroo_compiler.ops.vision.filtering import (
     iou,
     median_filter,
     non_max_suppression,
+    random_gaussian_blur,
+    random_sharpness,
     sharpen,
 )
 from ml_switcheroo_compiler.ops.vision.interpolation import (
@@ -99,9 +105,14 @@ __all__ = [
     "rand_augment",
     "random_color_jitter",
     "random_crop",
+    "random_elastic_transform",
     "random_erasing",
     "random_flip",
+    "random_gaussian_blur",
+    "random_perspective",
     "random_rotation",
+    "random_sharpness",
+    "random_shear",
     "random_translation",
     "random_zoom",
     "resize_bicubic",

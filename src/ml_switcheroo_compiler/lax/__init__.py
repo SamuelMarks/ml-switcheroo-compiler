@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Auto-generated ml_switcheroo_compiler.lax module exports."""
 
 from ml_switcheroo_compiler.lax.array import (

@@ -213,3 +213,87 @@ def sharpen(images: Tensor, factor: float = 1.0) -> Tensor:
 
     kwargs = {"factor": factor}
     return get_op("Sharpen")()(images, **kwargs)
+
+
+def random_gaussian_blur(
+    images: Tensor,
+    kernel_size: int | tuple[int, int],
+    sigma: float | tuple[float, float],
+    **kwargs: object,
+) -> Tensor:
+    """Randomly apply Gaussian blur.
+
+    Args:
+        images (Tensor): Input images.
+        kernel_size (int | tuple[int, int]): Size of the filter.
+        sigma (float | tuple[float, float]): Standard deviation.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: Blurred images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "RandomGaussianBlur",
+            images.data,
+            kernel_size=kernel_size,
+            sigma=sigma,
+            **kwargs,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "RandomGaussianBlur",
+        [images],
+        {
+            "kernel_size": kernel_size,
+            "sigma": sigma,
+            **kwargs,
+        },
+        (),
+        images.dtype,
+    )
+
+
+def random_sharpness(
+    images: Tensor, factor: float | tuple[float, float], **kwargs: object
+) -> Tensor:
+    """Randomly adjust sharpness.
+
+    Args:
+        images (Tensor): Input images.
+        factor (float | tuple[float, float]): Sharpness factor.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: Sharpened images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "RandomSharpness",
+            images.data,
+            factor=factor,
+            **kwargs,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "RandomSharpness",
+        [images],
+        {
+            "factor": factor,
+            **kwargs,
+        },
+        (),
+        images.dtype,
+    )

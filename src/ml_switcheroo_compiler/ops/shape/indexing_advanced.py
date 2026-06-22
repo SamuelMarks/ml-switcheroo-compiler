@@ -462,3 +462,28 @@ class DiagIndicesFrom(OpDef):
     def infer_shape(self, arr: object, **kwargs: object) -> object:
         """Infer the output shape."""
         return (None,)
+
+
+@register_op("BooleanMask")
+class BooleanMask(OpDef):
+    """BooleanMask operation."""
+
+    op_name = "BooleanMask"
+
+    def infer_shape(
+        self, tensor: object, mask: object, axis: object = None, **kwargs: object
+    ) -> object:
+        """Infer shape."""
+        # Typically dynamic size
+        return (None,)
+
+
+@register_op("InvertPermutation")
+class InvertPermutation(OpDef):
+    """InvertPermutation operation."""
+
+    op_name = "InvertPermutation"
+
+    def infer_shape(self, x: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(x, "shape", ())

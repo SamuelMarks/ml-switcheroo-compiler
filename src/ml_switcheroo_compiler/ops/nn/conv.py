@@ -400,3 +400,53 @@ def depthwise_conv2d(
     rhs_reshaped = reshape(rhs, new_rhs_shape)
 
     return conv_general_dilated(lhs, rhs_reshaped, config_obj)
+
+
+def separable_conv1d(
+    lhs: Tensor,
+    depthwise_filter: Tensor,
+    pointwise_filter: Tensor,
+    strides: Union[Sequence[int], int] = 1,
+    padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
+    **kwargs: object,
+) -> Tensor:
+    """1D Separable Convolution.
+
+    Args:
+        lhs (Tensor): Left-hand side tensor (batch, length, in_channels).
+        depthwise_filter (Tensor): Depthwise filter tensor.
+        pointwise_filter (Tensor): Pointwise filter tensor.
+        strides (Union[Sequence[int], int]): Strides.
+        padding (Union[str, Sequence[tuple[int, int]]]): Padding.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: The result of the separable convolution.
+    """
+    dw_out = depthwise_conv1d(lhs, depthwise_filter, strides=strides, padding=padding, **kwargs)
+    return conv1d(dw_out, pointwise_filter, strides=1, padding="VALID")
+
+
+def separable_conv2d(
+    lhs: Tensor,
+    depthwise_filter: Tensor,
+    pointwise_filter: Tensor,
+    strides: Union[Sequence[int], int] = 1,
+    padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
+    **kwargs: object,
+) -> Tensor:
+    """2D Separable Convolution.
+
+    Args:
+        lhs (Tensor): Left-hand side tensor (batch, height, width, in_channels).
+        depthwise_filter (Tensor): Depthwise filter tensor.
+        pointwise_filter (Tensor): Pointwise filter tensor.
+        strides (Union[Sequence[int], int]): Strides.
+        padding (Union[str, Sequence[tuple[int, int]]]): Padding.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: The result of the separable convolution.
+    """
+    dw_out = depthwise_conv2d(lhs, depthwise_filter, strides=strides, padding=padding, **kwargs)
+    return conv2d(dw_out, pointwise_filter, strides=1, padding="VALID")

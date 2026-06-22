@@ -27,6 +27,9 @@ from .decompositions import solve as solve
 from .decompositions import solve_triangular as solve_triangular
 from .decompositions import svd as svd
 from .fft import fft as fft
+from .fft import fft2d as fft2d
+from .fft import ifft as ifft
+from .fft import ifft2d as ifft2d
 from .fft import rfft as rfft
 from .frontend import convolve as convolve
 from .frontend import cross as cross
@@ -58,6 +61,9 @@ __all__ = [
     "eigvalsh",
     "einsum",
     "fft",
+    "fft2d",
+    "ifft",
+    "ifft2d",
     "inner",
     "inv",
     "lu",

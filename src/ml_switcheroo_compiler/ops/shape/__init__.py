@@ -129,6 +129,8 @@ from .frontend import update_slice as update_slice
 from .frontend import vsplit as vsplit
 from .frontend import vstack as vstack
 from .frontend import where as where
+from .frontend import boolean_mask as boolean_mask
+from .frontend import invert_permutation as invert_permutation
 
 __all__ = [
     "BroadcastInDim",
@@ -210,6 +212,8 @@ __all__ = [
     "vsplit",
     "vstack",
     "where",
+    "boolean_mask",
+    "invert_permutation",
     "Flatten",
     "Squeeze",
     "Where",

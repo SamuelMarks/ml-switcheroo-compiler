@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.base import OpDef, register_op, dispatch_eager, get_op
+from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
@@ -82,3 +83,43 @@ class Cov(OpDef):
     ) -> object:
         """Infer the output shape."""
         return (None, None)
+
+
+@register_op("TrapezoidalIntegral")
+class TrapezoidalIntegral(OpDef):
+    """TrapezoidalIntegral operation."""
+
+    def infer_shape(self, y: object, **kwargs: object) -> object:
+        """Infer shape."""
+        shape = list(y)
+        axis = kwargs.get("axis", -1)
+        if axis < 0:
+            axis += len(shape)
+        shape.pop(axis)
+        return tuple(shape)
+
+
+@dispatch_eager("TrapezoidalIntegral")
+def trapezoidal_integral(y: Tensor, x: Tensor = None, dx: float = 1.0, axis: int = -1) -> Tensor:
+    """Compute the trapezoidal integral along a given axis."""
+    return get_op("TrapezoidalIntegral")()(y, x=x, dx=dx, axis=axis)
+
+
+@register_op("ConfusionMatrix")
+class ConfusionMatrix(OpDef):
+    """ConfusionMatrix operation."""
+
+    def infer_shape(self, labels: object, predictions: object, **kwargs: object) -> object:
+        """Infer shape."""
+        num_classes = kwargs.get("num_classes", 0)
+        return (num_classes, num_classes)
+
+
+@dispatch_eager("ConfusionMatrix")
+def confusion_matrix(
+    labels: Tensor, predictions: Tensor, num_classes: int, weights: Tensor = None
+) -> Tensor:
+    """Compute confusion matrix."""
+    return get_op("ConfusionMatrix")()(
+        labels, predictions, num_classes=num_classes, weights=weights
+    )

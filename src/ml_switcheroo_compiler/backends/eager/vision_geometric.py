@@ -627,3 +627,168 @@ def random_translation_eager(  # pylint: disable=too-many-locals, too-many-argum
 
     out = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
+
+
+def _compute_shear_grid(
+    np_mod: object, H: int, W: int, rng: object, y_factor: object, x_factor: object
+) -> tuple[object, object]:
+    def get_factor(factor: object) -> float:
+        if isinstance(factor, (tuple, list)):
+            return rng.uniform(factor[0], factor[1])  # type: ignore
+        return rng.uniform(-factor, factor)  # type: ignore
+
+    sy = get_factor(y_factor)
+    sx = get_factor(x_factor) if x_factor is not None else 0.0
+
+    y_grid, x_grid = _generate_coordinate_grid(np_mod, H, W)
+    cy, cx = H / 2.0, W / 2.0
+
+    # Shear matrix
+    # [1, sx]
+    # [sy, 1]
+    # Inverted mapping:
+    # y_src = y_dst - sy * x_dst
+    # x_src = x_dst - sx * y_dst
+
+    y_shifted = y_grid - cy
+    x_shifted = x_grid - cx
+
+    y_src = y_shifted - sy * x_shifted
+    x_src = x_shifted - sx * y_shifted
+
+    return y_src + cy, x_src + cx
+
+
+def random_shear_eager(  # pylint: disable=too-many-locals, too-many-arguments
+    backend_module: object,
+    images: object,
+    y_factor: tuple[float, float] | float,
+    x_factor: tuple[float, float] | float | None = None,
+    **kwargs: object,
+) -> object:
+    """Evaluate random shear eagerly."""
+    fill_mode = str(kwargs.get("fill_mode", "reflect"))
+    interpolation = str(kwargs.get("interpolation", "bilinear"))
+    fill_value = float(kwargs.get("fill_value", 0.0))
+    seed = kwargs.get("seed", None)
+    data_format = kwargs.get("data_format", None)
+
+    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    new_y, new_x = _compute_shear_grid(ctx.np_mod, ctx.H, ctx.W, ctx.rng, y_factor, x_factor)
+
+    config = RotationConfig(
+        factor=0.0,
+        fill_mode=fill_mode,
+        interpolation=interpolation,
+        seed=seed,
+        fill_value=fill_value,
+        data_format=data_format,
+    )
+    out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
+
+    out = _from_channels_last(ctx.np_mod, out, data_format)
+    return _from_numpy_array(backend_module, out, "", images)
+
+
+def random_perspective_eager(
+    backend_module: object,
+    images: object,
+    factor: float | tuple[float, float],
+    **kwargs: object,
+) -> object:
+    """Evaluate random perspective eagerly."""
+    seed = kwargs.get("seed", None)
+    data_format = kwargs.get("data_format", None)
+    interpolation = str(kwargs.get("interpolation", "bilinear"))
+    fill_value = float(kwargs.get("fill_value", 0.0))
+
+    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    np_mod = ctx.np_mod
+    B, H, W = ctx.B, ctx.H, ctx.W
+
+    def get_factor(f: object) -> float:
+        if isinstance(f, (tuple, list)):
+            return ctx.rng.uniform(f[0], f[1])  # type: ignore
+        return ctx.rng.uniform(0, f)  # type: ignore
+
+    dist = get_factor(factor)
+
+    # We create random start/end points
+    src = np_mod.array([[0, 0], [W - 1, 0], [W - 1, H - 1], [0, H - 1]], dtype=np_mod.float32)
+    src = np_mod.broadcast_to(src, (B, 4, 2))
+
+    # Add random jitter bounded by dist * W or dist * H
+    dx = ctx.rng.uniform(-dist * W, dist * W, size=(B, 4, 1))
+    dy = ctx.rng.uniform(-dist * H, dist * H, size=(B, 4, 1))
+    jitter = np_mod.concatenate([dx, dy], axis=-1)
+    dst = src + jitter
+
+    h = _compute_perspective_matrix(np_mod, src, dst)
+
+    p_config = PerspectiveConfig(
+        interpolation=interpolation, fill_value=fill_value, data_format=data_format
+    )
+
+    out = _apply_perspective_batch(np_mod, ctx.imgs, h, p_config)
+
+    out = _from_channels_last(ctx.np_mod, out, data_format)
+    return _from_numpy_array(backend_module, out, "", images)
+
+
+def random_elastic_transform_eager(
+    backend_module: object,
+    images: object,
+    alpha: float | tuple[float, float],
+    sigma: float | tuple[float, float],
+    **kwargs: object,
+) -> object:
+    """Evaluate random elastic transform eagerly."""
+    seed = kwargs.get("seed", None)
+    data_format = kwargs.get("data_format", None)
+    interpolation = str(kwargs.get("interpolation", "bilinear"))
+    fill_value = float(kwargs.get("fill_value", 0.0))
+
+    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+    np_mod = ctx.np_mod
+    B, H, W = ctx.B, ctx.H, ctx.W
+
+    def get_factor(f: object) -> float:
+        if isinstance(f, (tuple, list)):
+            return ctx.rng.uniform(f[0], f[1])  # type: ignore
+        return f  # type: ignore
+
+    a = get_factor(alpha)
+    s = get_factor(sigma)
+
+    # Random displacement fields
+    dx = ctx.rng.uniform(-1, 1, size=(B, H, W))
+    dy = ctx.rng.uniform(-1, 1, size=(B, H, W))
+
+    # We should apply gaussian filter to dx, dy using scipy.ndimage or similar
+    # But for a backend agnostic numpy-only implementation without scipy:
+    # We can use our own gaussian_blur_eager or simple blur
+    from ml_switcheroo_compiler.backends.eager.signal import _np_gaussian_blur
+
+    # dx is (B, H, W)
+    dx_expanded = dx[..., None]
+    dy_expanded = dy[..., None]
+
+    dx_blurred = _np_gaussian_blur(np_mod, dx_expanded, (int(s * 4 + 1), int(s * 4 + 1)), (s, s))
+    dy_blurred = _np_gaussian_blur(np_mod, dy_expanded, (int(s * 4 + 1), int(s * 4 + 1)), (s, s))
+
+    dx_disp = dx_blurred[..., 0] * a
+    dy_disp = dy_blurred[..., 0] * a
+
+    disp = np_mod.stack([dy_disp, dx_disp], axis=-1)
+
+    new_y, new_x = _compute_elastic_grid(np_mod, H, W, B, disp)
+
+    order = 1 if interpolation == "bilinear" else 0
+    t_config = TransformInterpolationConfig(
+        new_y=new_y, new_x=new_x, order=order, fill_value=fill_value
+    )
+
+    out = _apply_elastic_batch(np_mod, ctx.imgs, t_config)
+
+    out = _from_channels_last(ctx.np_mod, out, data_format)
+    return _from_numpy_array(backend_module, out, "", images)

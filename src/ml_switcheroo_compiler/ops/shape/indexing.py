@@ -444,3 +444,65 @@ def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
         out_shape,
         tensor.dtype,
     )
+
+
+def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tensor:
+    """Apply boolean mask to tensor.
+
+    Args:
+        tensor (Tensor): N-D tensor.
+        mask (Tensor): K-D boolean tensor, K <= N.
+        axis (int | None): A 0-D int Tensor representing the axis in tensor to mask from.
+
+    Returns:
+        Tensor: (N-K+1)-dimensional tensor populated by entries in tensor
+        corresponding to True values in mask.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("BooleanMask", tensor.data, mask.data, axis=axis)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
+        )
+    inputs = [tensor, mask]
+    attributes = {"axis": axis}
+    out_shape = (None,) * (len(tensor.shape) - len(mask.shape) + 1)
+    return _emit_shape_node(
+        "BooleanMask",
+        inputs,
+        attributes,
+        out_shape,
+        tensor.dtype,
+    )
+
+
+def invert_permutation(x: Tensor) -> Tensor:
+    """Computes the inverse permutation of a tensor.
+
+    Args:
+        x (Tensor): 1-D int32 or int64 tensor.
+
+    Returns:
+        Tensor: 1-D tensor of the same type as x.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("InvertPermutation", x.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, x.dtype, x.device),
+        )
+    inputs = [x]
+    out_shape = x.shape
+    return _emit_shape_node(
+        "InvertPermutation",
+        inputs,
+        {},
+        out_shape,
+        x.dtype,
+    )

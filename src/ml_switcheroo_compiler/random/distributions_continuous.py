@@ -204,9 +204,20 @@ def f(*args: object, **kwargs: object) -> object:
     return _dispatch_random("f", *args, **kwargs)
 
 
-def gamma(*args: object, **kwargs: object) -> object:
-    """Execute gamma."""
-    return _dispatch_random("gamma", *args, **kwargs)
+def gamma(key: object, a: object, shape: object = (), dtype: object = None) -> object:
+    """Samples gamma random values from a given key."""
+    dtype = dtype or dtypes.DType.Float32
+    if config.eager_mode:
+        np_dtype = np.dtype(dtype.value)
+        a_val = getattr(a, "data", a)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
+        else:
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+        res = rng.gamma(a_val, size=shape).astype(np_dtype)
+        return Tensor(res, TensorConfig(shape, dtype, config.default_device))
+    return _emit_random_node("RandomGamma", [key, a], shape, dtype)
 
 
 def generalized_normal(*args: object, **kwargs: object) -> object:

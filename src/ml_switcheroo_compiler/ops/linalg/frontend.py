@@ -158,6 +158,30 @@ def tensordot(
     Returns:
     Tensor: The tensor dot product of the inputs
     """
+    # Support ops.einsum routing natively for deeply nested multidimensional cases.
+    if isinstance(axes, tuple) and len(a.shape) > 2 and len(b.shape) > 2:
+        axes_a, axes_b = axes
+        # Build einsum string
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+        a_letters = [alphabet[i] for i in range(len(a.shape))]
+        b_letters = [alphabet[i + len(a.shape)] for i in range(len(b.shape))]
+
+        for idx_a, idx_b in zip(axes_a, axes_b):
+            b_letters[idx_b] = a_letters[idx_a]
+
+        a_str = "".join(a_letters)
+        b_str = "".join(b_letters)
+
+        # Output letters are those not in both
+        contracted = set(a_letters[i] for i in axes_a)
+        out_str = "".join([let for let in a_letters if let not in contracted]) + "".join(
+            [let for let in b_letters if let not in contracted]
+        )
+
+        eq = f"{a_str},{b_str}->{out_str}"
+        return einsum(eq, a, b)
+
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 

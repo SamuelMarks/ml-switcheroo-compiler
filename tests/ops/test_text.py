@@ -51,3 +51,24 @@ def test_text_tracing_mode():
             lookup(img, img)
         finally:
             _tracer.stop_tracing()
+
+
+def test_text_new_ops() -> None:
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.ops.text import edit_distance, as_string
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
+
+    hypothesis = Tensor(
+        ProxyTensor(id="h", shape=(), dtype="string"), TensorConfig((), "string", None)
+    )
+    truth = Tensor(ProxyTensor(id="t", shape=(), dtype="string"), TensorConfig((), "string", None))
+    num_tensor = Tensor(
+        ProxyTensor(id="n", shape=(), dtype="float32"), TensorConfig((), "float32", None)
+    )
+
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        edit_distance(hypothesis, truth)
+        as_string(num_tensor)
+        _tracer.stop_tracing()

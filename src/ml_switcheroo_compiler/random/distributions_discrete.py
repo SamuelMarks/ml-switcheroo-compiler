@@ -100,17 +100,31 @@ def categorical(key: object, logits: object, axis: object = -1, shape: object = 
         probs = np.exp(logits_arr - np.max(logits_arr, axis=-1, keepdims=True))
         probs /= np.sum(probs, axis=-1, keepdims=True)
 
-        # Simplified sampling using numpy
-        def sample(p: object) -> object:
-            """Sample."""
-            return np.random.choice(len(p), p=p)
-
-        if probs.ndim > 1:
-            res = np.apply_along_axis(sample, -1, probs)
-        elif probs.ndim == 1:
-            res = sample(probs)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
         else:
-            res = np.zeros(out_shape, dtype=np.int32)
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+
+        # Draw multiple samples if the requested shape has an extra dimension
+
+        # We can use argmax on Gumbel-Max trick
+        num_classes = probs.shape[-1] if probs.ndim > 0 else 1
+        gumbel_noise = rng.gumbel(size=out_shape + (num_classes,))
+
+        # We need to broadcast logits to the target shape
+        # Actually, numpy does this if we add a dimension
+        if len(out_shape) > probs.ndim - 1:
+            logits_expanded = (
+                np.expand_dims(logits_arr, axis=-2)
+                if probs.ndim > 0
+                else np.expand_dims(logits_arr, axis=-1)
+            )
+        else:
+            logits_expanded = logits_arr
+
+        res = np.argmax(logits_expanded + gumbel_noise, axis=-1).astype(np.int32)
+
         return Tensor(res, TensorConfig(out_shape, dtypes.DType.Int32, config.default_device))
     inputs = [key]
     if isinstance(logits, Tensor):
@@ -184,16 +198,28 @@ def choice(
     )
 
 
-def binomial(*args: object, **kwargs: object) -> object:
-    """Execute binomial."""
+def binomial(
+    key: object, n: object, p: object, shape: object = None, dtype: object = None
+) -> object:
+    """Samples binomial random values from a given key."""
+    dtype = dtype or dtypes.DType.Int32
     if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(backend.module.random, "binomial"):
-            return backend.module.random.binomial(*args, **kwargs)
-        raise NotImplementedError(
-            "binomial is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("binomial is not fully supported in tracing mode.")
+        np_dtype = np.dtype(dtype.value)
+        n_val = getattr(n, "data", n)
+        p_val = getattr(p, "data", p)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
+        else:
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+        if shape is None:
+            if hasattr(n_val, "shape"):
+                shape = n_val.shape
+            else:
+                shape = ()
+        res = rng.binomial(n_val, p_val, size=shape).astype(np_dtype)
+        return Tensor(res, TensorConfig(shape, dtype, config.default_device))
+    return _emit_random_node("RandomBinomial", [key], shape, dtype)
 
 
 def geometric(*args: object, **kwargs: object) -> object:

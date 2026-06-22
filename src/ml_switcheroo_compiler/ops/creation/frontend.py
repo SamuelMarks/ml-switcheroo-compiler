@@ -437,12 +437,17 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    device = input.device
-    dtype = input.dtype
+    device = getattr(input, "device", None)
+    dtype = getattr(input, "dtype", None)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Diag", input.data, k=diagonal)
-        return Tensor(data, TensorConfig(data.shape, dtype, device))
+        data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
+        shape = data.shape if hasattr(data, "shape") else ()
+        from ml_switcheroo_compiler.core.dtype import DType
+
+        if dtype is None:
+            dtype = getattr(data, "dtype", DType.Float32)
+        return Tensor(data, TensorConfig(shape, dtype, device))
     if len(input.shape) == 1:
         n = input.shape[0] + abs(diagonal)
         shape = (n, n)

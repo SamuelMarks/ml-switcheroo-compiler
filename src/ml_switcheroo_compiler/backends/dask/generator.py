@@ -9,12 +9,37 @@ from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
+from ml_switcheroo_compiler.backends.common.generator_mixins import (
+    SharedASTGeneratorMixin,
+    GroupNormConfig,
+)
+
+
 @register_backend("dask")
-class DaskGenerator(PythonStringGenerator):
+class DaskGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
     """Generates Dask python code from IR."""
 
     def _get_backend_prefix(self) -> str:
         return "da"
+
+    def get_helper_functions(self) -> list[str]:
+        """Get helper functions."""
+        res = super().get_helper_functions()
+        res.extend(
+            self._get_group_norm_code(
+                GroupNormConfig(
+                    "da",
+                    "dask.array as da",
+                    "da.reshape",
+                    "da.mean",
+                    "da.var",
+                    "da.sqrt",
+                    dim_arg="axis",
+                    keepdim_arg="keepdims",
+                )
+            )
+        )
+        return res
 
     _import_header = "import dask.array as da"
     _func_name = "evaluate"

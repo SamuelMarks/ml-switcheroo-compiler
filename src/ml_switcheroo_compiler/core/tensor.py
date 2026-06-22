@@ -438,13 +438,17 @@ class Variable(Tensor):
         from ml_switcheroo_compiler.core.config import config
 
         if config.eager_mode:
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
+
             backend = get_active_backend()
             # Eager implementation: just update self._data
             self._data = backend.execute_op("Add", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+            from ml_switcheroo_compiler.ops.binary import add
 
-            _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
+            new_val = add(self, value)
+            _emit_shape_node("Assign", [self, new_val], {}, self.shape, self.dtype)
         return self
 
     def assign_sub(self, value: Tensor) -> "Variable":
@@ -459,13 +463,17 @@ class Variable(Tensor):
         from ml_switcheroo_compiler.core.config import config
 
         if config.eager_mode:
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
+
             backend = get_active_backend()
             # Eager implementation: just update self._data
             self._data = backend.execute_op("Subtract", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+            from ml_switcheroo_compiler.ops.binary import subtract
 
-            _emit_shape_node("AssignSub", [self, value], {}, self.shape, self.dtype)
+            new_val = subtract(self, value)
+            _emit_shape_node("Assign", [self, new_val], {}, self.shape, self.dtype)
         return self
 
 

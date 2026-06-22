@@ -107,6 +107,10 @@ if __name__ == "__main__":
         "text",
         "unary",
         "vision",
+        "sparse",
+        "ragged",
+        "tensor_array",
+        "random_ops",
         "state",
     ]
     ops_extra = [

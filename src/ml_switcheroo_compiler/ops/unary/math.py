@@ -221,6 +221,20 @@ class Erf(UnaryMathOp):
     np_op_name = "erf"
 
 
+@register_op("BesselI0e")
+class BesselI0e(UnaryMathOp):
+    """An operation class for computing the exponentially scaled modified Bessel function of order 0."""
+
+    op_name = "BesselI0e"
+
+
+@register_op("BesselI1e")
+class BesselI1e(UnaryMathOp):
+    """An operation class for computing the exponentially scaled modified Bessel function of order 1."""
+
+    op_name = "BesselI1e"
+
+
 @register_op("Erfc")
 class Erfc(UnaryMathOp):
     """Computes the complementary error function element-wise."""
@@ -458,3 +472,46 @@ class BitwiseCount(UnaryMathOp):
 
     op_name = "BitwiseCount"
     np_op_name = "bitwise_count"
+
+
+@register_op("BesselI0")
+class BesselI0(UnaryMathOp):
+    """Modified Bessel function of order 0."""
+
+    op_name = "BesselI0"
+    np_op_name = "i0"
+
+
+@register_op("BesselI1")
+class BesselI1(UnaryMathOp):
+    """Modified Bessel function of order 1."""
+
+    op_name = "BesselI1"
+
+
+@register_op("Erfcinv")
+class Erfcinv(UnaryMathOp):
+    """Inverse complementary error function."""
+
+    op_name = "Erfcinv"
+
+
+@register_op("Ndtri")
+class Ndtri(UnaryMathOp):
+    """Inverse standard normal CDF."""
+
+    op_name = "Ndtri"
+
+
+@register_op("Lbeta")
+class Lbeta(OpDef):
+    """Log of the absolute value of the beta function."""
+
+    op_name = "Lbeta"
+
+    def infer_shape(self, x: object, **kwargs: object) -> object:
+        """Infer shape."""
+        shape = getattr(x, "shape", ())
+        if len(shape) > 0:
+            return shape[:-1]
+        return ()

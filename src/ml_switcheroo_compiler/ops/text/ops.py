@@ -80,6 +80,33 @@ class TextVectorization(OpDef):
         return args[0]
 
 
+@register_op("StringToNumber")
+class StringToNumber(OpDef):
+    """StringToNumber op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+@register_op("StringLower")
+class StringLower(OpDef):
+    """StringLower op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+@register_op("StringUpper")
+class StringUpper(OpDef):
+    """StringUpper op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
 def string_to_hash(inputs: "Tensor", **kwargs: object) -> "Tensor":
     """String to hash.
 
@@ -156,3 +183,21 @@ def text_vectorization(inputs: "Tensor", **kwargs: object) -> "Tensor":
     from ml_switcheroo_compiler.ops.base import get_op
 
     return get_op("TextVectorization")()(inputs, **kwargs)
+
+
+@register_op("EditDistance")
+class EditDistance(OpDef):
+    """EditDistance op."""
+
+    def infer_shape(self, hypothesis: object, truth: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(hypothesis, "shape", ())
+
+
+@register_op("AsString")
+class AsString(OpDef):
+    """AsString op."""
+
+    def infer_shape(self, input_tensor: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(input_tensor, "shape", ())

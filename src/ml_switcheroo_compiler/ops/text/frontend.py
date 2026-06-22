@@ -179,3 +179,157 @@ def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
         input_tensor.shape,
         DType.Int32,
     )
+
+
+def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tensor:
+    """Parses numeric values from string tensors.
+
+    Args:
+        input_tensor (Tensor): Input string tensor.
+        dtype (DType): Target numeric type.
+
+    Returns:
+        Tensor: Parsed numeric tensor.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, dtype, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "StringToNumber",
+        [input_tensor],
+        {"dtype": dtype},
+        input_tensor.shape,
+        dtype,
+    )
+
+
+def string_lower(input_tensor: Tensor) -> Tensor:
+    """Converts string tensors to lowercase.
+
+    Args:
+        input_tensor (Tensor): Input string tensor.
+
+    Returns:
+        Tensor: Lowercased string tensor.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("StringLower", input_tensor.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "StringLower",
+        [input_tensor],
+        {},
+        input_tensor.shape,
+        DType.String,
+    )
+
+
+def string_upper(input_tensor: Tensor) -> Tensor:
+    """Converts string tensors to uppercase.
+
+    Args:
+        input_tensor (Tensor): Input string tensor.
+
+    Returns:
+        Tensor: Uppercased string tensor.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("StringUpper", input_tensor.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "StringUpper",
+        [input_tensor],
+        {},
+        input_tensor.shape,
+        DType.String,
+    )
+
+
+def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Tensor:
+    """Computes the Levenshtein distance between sequences.
+
+    Args:
+        hypothesis (Tensor): The hypothesis sequences.
+        truth (Tensor): The truth sequences.
+        normalize (bool): Whether to normalize the distance by truth length.
+
+    Returns:
+        Tensor: The edit distances.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Float32, hypothesis.device),
+        )
+    return _emit_shape_node(
+        "EditDistance",
+        [hypothesis, truth],
+        {"normalize": normalize},
+        hypothesis.shape,
+        DType.Float32,
+    )
+
+
+def as_string(
+    input_tensor: Tensor,
+    precision: int = -1,
+    scientific: bool = False,
+    shortest: bool = False,
+    width: int = -1,
+    fill: str = "",
+) -> Tensor:
+    """Converts a numeric tensor to a string tensor.
+
+    Args:
+        input_tensor (Tensor): A numeric tensor.
+        precision (int): The post-decimal precision to use.
+        scientific (bool): Whether to use scientific notation.
+        shortest (bool): Whether to use the shortest representation.
+        width (int): The width to pad the output to.
+        fill (str): The padding character.
+
+    Returns:
+        Tensor: A string tensor of the same shape.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "AsString",
+            input_tensor.data,
+            precision=precision,
+            scientific=scientific,
+            shortest=shortest,
+            width=width,
+            fill=fill,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "AsString",
+        [input_tensor],
+        {
+            "precision": precision,
+            "scientific": scientific,
+            "shortest": shortest,
+            "width": width,
+            "fill": fill,
+        },
+        input_tensor.shape,
+        DType.String,
+    )

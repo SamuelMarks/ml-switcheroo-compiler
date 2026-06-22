@@ -123,3 +123,83 @@ def avg_pool(
     counts = reduce_window(ones, init_val, "sum", config)
 
     return divide(sum_pooled, counts)
+
+
+def pool1d(
+    operand: Tensor,
+    window_shape: int,
+    strides: Optional[int] = None,
+    padding: Union[str, tuple[tuple[int, int], ...]] = "VALID",
+    pool_mode: str = "max",
+) -> Tensor:
+    """1D Pooling.
+
+    Args:
+        operand (Tensor): The input tensor.
+        window_shape (int): The shape of the window.
+        strides (Optional[int]): The strides of the window.
+        padding (Union[str, tuple[tuple[int, int], ...]]): The padding to use.
+        pool_mode (str): The pooling mode ('max' or 'avg').
+
+    Returns:
+        Tensor: The pooled tensor.
+    """
+    shape = (window_shape,)
+    stride = (strides,) if strides is not None else None
+    if pool_mode == "max":
+        return max_pool(operand, shape, stride, padding)
+    elif pool_mode == "avg":
+        return avg_pool(operand, shape, stride, padding)
+    raise ValueError(f"Unknown pool_mode: {pool_mode}")
+
+
+def pool2d(
+    operand: Tensor,
+    window_shape: tuple[int, int],
+    strides: Optional[tuple[int, int]] = None,
+    padding: Union[str, tuple[tuple[int, int], ...]] = "VALID",
+    pool_mode: str = "max",
+) -> Tensor:
+    """2D Pooling.
+
+    Args:
+        operand (Tensor): The input tensor.
+        window_shape (tuple[int, int]): The shape of the window.
+        strides (Optional[tuple[int, int]]): The strides of the window.
+        padding (Union[str, tuple[tuple[int, int], ...]]): The padding to use.
+        pool_mode (str): The pooling mode ('max' or 'avg').
+
+    Returns:
+        Tensor: The pooled tensor.
+    """
+    if pool_mode == "max":
+        return max_pool(operand, window_shape, strides, padding)
+    elif pool_mode == "avg":
+        return avg_pool(operand, window_shape, strides, padding)
+    raise ValueError(f"Unknown pool_mode: {pool_mode}")
+
+
+def pool3d(
+    operand: Tensor,
+    window_shape: tuple[int, int, int],
+    strides: Optional[tuple[int, int, int]] = None,
+    padding: Union[str, tuple[tuple[int, int], ...]] = "VALID",
+    pool_mode: str = "max",
+) -> Tensor:
+    """3D Pooling.
+
+    Args:
+        operand (Tensor): The input tensor.
+        window_shape (tuple[int, int, int]): The shape of the window.
+        strides (Optional[tuple[int, int, int]]): The strides of the window.
+        padding (Union[str, tuple[tuple[int, int], ...]]): The padding to use.
+        pool_mode (str): The pooling mode ('max' or 'avg').
+
+    Returns:
+        Tensor: The pooled tensor.
+    """
+    if pool_mode == "max":
+        return max_pool(operand, window_shape, strides, padding)
+    elif pool_mode == "avg":
+        return avg_pool(operand, window_shape, strides, padding)
+    raise ValueError(f"Unknown pool_mode: {pool_mode}")

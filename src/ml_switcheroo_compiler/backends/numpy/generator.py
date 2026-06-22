@@ -16,12 +16,37 @@ from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
+from ml_switcheroo_compiler.backends.common.generator_mixins import (
+    SharedASTGeneratorMixin,
+    GroupNormConfig,
+)
+
+
 @register_backend("numpy")
-class NumpyGenerator(PythonStringGenerator):
+class NumpyGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
     """Generates NumPy python code from IR."""
 
     def _get_backend_prefix(self) -> str:
         return "np"
+
+    def get_helper_functions(self) -> list[str]:
+        """Get helper functions."""
+        res = super().get_helper_functions()
+        res.extend(
+            self._get_group_norm_code(
+                GroupNormConfig(
+                    "np",
+                    "numpy as np",
+                    "np.reshape",
+                    "np.mean",
+                    "np.var",
+                    "np.sqrt",
+                    dim_arg="axis",
+                    keepdim_arg="keepdims",
+                )
+            )
+        )
+        return res
 
     _import_header = (
         "import numpy as np",

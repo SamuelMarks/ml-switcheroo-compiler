@@ -9,7 +9,6 @@ from ml_switcheroo_compiler.backends.formatters import OpFormatter
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 
-@register_backend("pytorch")
 class PyTorchVisionVisitor:
     """Handles vision ops for PyTorch."""
 
@@ -68,6 +67,7 @@ class PyTorchAudioVisitor:
         return handler(input_vars) if handler else ""
 
 
+@register_backend("pytorch")
 class PyTorchCodeGenerator(SharedASTGeneratorMixin, ClassBasedGenerator):
     """PyTorch code generator."""
 

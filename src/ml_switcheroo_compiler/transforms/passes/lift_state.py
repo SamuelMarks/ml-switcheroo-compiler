@@ -58,8 +58,11 @@ def _lift_node(node: IRNode, block: object) -> bool:
     if node.op_type == "ReadVariable":
         node.op_type = "Input"
         return True
-    if node.op_type == "AssignVariable":
+    if node.op_type in ("AssignVariable", "Assign"):
         node.op_type = "Output"
+        if len(node.inputs) > 1:
+            # For Assign(var, value), we only want to output the new value
+            node.inputs = [node.inputs[1]]
         if hasattr(block, "outputs") and node.id not in block.outputs:
             block.outputs.append(node.id)
         return True

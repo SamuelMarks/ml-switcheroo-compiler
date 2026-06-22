@@ -124,14 +124,8 @@ class Cumsum(ReductionOp):
     np_op_name = "cumsum"
 
 
-@register_op("SegmentSum")
-class SegmentSum(OpDef):
-    """SegmentSum operation.
-
-    Computes the sum of tensor elements grouped by segment_ids.
-    """
-
-    op_name = "SegmentSum"
+class SegmentOp(OpDef):
+    """Base class for Segment Operations."""
 
     def infer_shape(
         self,
@@ -140,80 +134,166 @@ class SegmentSum(OpDef):
         num_segments: object = None,
         **kwargs: object,
     ) -> object:
-        """Infer shape.
-
-        Args:
-            data (object): The data parameter for the operation.
-            segment_ids (object): The segment_ids parameter for the operation.
-            num_segments (object): The num_segments parameter for the operation.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
+        """Infer shape."""
         # Simple heuristic: replace first dimension with num_segments
-        # If num_segments is unknown or None, we might return symbolic or ()
         return ()
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented SegmentSum"
+        """Emit jax."""
+        return f"Not implemented {self.__class__.__name__}"
 
     def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented SegmentSum"
+        """Emit keras."""
+        return f"Not implemented {self.__class__.__name__}"
 
     def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented SegmentSum"
+        """Emit mlx."""
+        return f"Not implemented {self.__class__.__name__}"
 
     def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented SegmentSum"
+        """Emit pytorch."""
+        return f"Not implemented {self.__class__.__name__}"
 
     def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
+        """Emit tensorflow."""
+        return f"Not implemented {self.__class__.__name__}"
 
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
 
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented SegmentSum"
+@register_op("SegmentSum")
+class SegmentSum(SegmentOp):
+    """SegmentSum operation."""
+
+    op_name = "SegmentSum"
+
+
+@register_op("SegmentMax")
+class SegmentMax(SegmentOp):
+    """SegmentMax operation."""
+
+    op_name = "SegmentMax"
+
+
+@register_op("SegmentMean")
+class SegmentMean(SegmentOp):
+    """SegmentMean operation."""
+
+    op_name = "SegmentMean"
+
+
+@register_op("SegmentMin")
+class SegmentMin(SegmentOp):
+    """SegmentMin operation."""
+
+    op_name = "SegmentMin"
+
+
+@register_op("SegmentProd")
+class SegmentProd(SegmentOp):
+    """SegmentProd operation."""
+
+    op_name = "SegmentProd"
+
+
+@register_op("UnsortedSegmentMax")
+class UnsortedSegmentMax(SegmentOp):
+    """UnsortedSegmentMax operation."""
+
+    op_name = "UnsortedSegmentMax"
+
+
+@register_op("UnsortedSegmentMean")
+class UnsortedSegmentMean(SegmentOp):
+    """UnsortedSegmentMean operation."""
+
+    op_name = "UnsortedSegmentMean"
+
+
+@register_op("UnsortedSegmentMin")
+class UnsortedSegmentMin(SegmentOp):
+    """UnsortedSegmentMin operation."""
+
+    op_name = "UnsortedSegmentMin"
+
+
+@register_op("UnsortedSegmentProd")
+class UnsortedSegmentProd(SegmentOp):
+    """UnsortedSegmentProd operation."""
+
+    op_name = "UnsortedSegmentProd"
+
+
+@register_op("UnsortedSegmentSqrtN")
+class UnsortedSegmentSqrtN(SegmentOp):
+    """UnsortedSegmentSqrtN operation."""
+
+    op_name = "UnsortedSegmentSqrtN"
+
+
+@register_op("UnsortedSegmentSum")
+class UnsortedSegmentSum(SegmentOp):
+    """UnsortedSegmentSum operation."""
+
+    op_name = "UnsortedSegmentSum"
+
+
+class ApproxKOp(OpDef):
+    """Base class for ApproxK Operations."""
+
+    def infer_shape(
+        self,
+        operand: object,
+        **kwargs: object,
+    ) -> object:
+        """Infer shape."""
+        return ()
+
+    def emit_jax(self, *args: object, **kwargs: object) -> object:
+        """Emit jax."""
+        return f"Not implemented {self.__class__.__name__}"
+
+    def emit_keras(self, *args: object, **kwargs: object) -> object:
+        """Emit keras."""
+        return f"Not implemented {self.__class__.__name__}"
+
+    def emit_mlx(self, *args: object, **kwargs: object) -> object:
+        """Emit mlx."""
+        return f"Not implemented {self.__class__.__name__}"
+
+    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
+        """Emit pytorch."""
+        return f"Not implemented {self.__class__.__name__}"
+
+    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
+        """Emit tensorflow."""
+        return f"Not implemented {self.__class__.__name__}"
+
+
+@register_op("ApproxMaxK")
+class ApproxMaxK(ApproxKOp):
+    """ApproxMaxK operation."""
+
+    op_name = "ApproxMaxK"
+
+
+@register_op("ApproxMinK")
+class ApproxMinK(ApproxKOp):
+    """ApproxMinK operation."""
+
+    op_name = "ApproxMinK"
+
+
+@register_op("ApproxMaxKIndices")
+class ApproxMaxKIndices(ApproxKOp):
+    """ApproxMaxKIndices operation."""
+
+    op_name = "ApproxMaxKIndices"
+
+
+@register_op("ApproxMinKIndices")
+class ApproxMinKIndices(ApproxKOp):
+    """ApproxMinKIndices operation."""
+
+    op_name = "ApproxMinKIndices"
 
 
 @register_op("ReduceWindow")

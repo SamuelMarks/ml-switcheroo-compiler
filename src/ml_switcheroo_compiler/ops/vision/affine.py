@@ -277,3 +277,134 @@ def random_translation(  # pylint: disable=too-many-arguments
         (),
         images.dtype,
     )
+
+
+def random_shear(
+    images: Tensor,
+    y_factor: float | tuple[float, float],
+    x_factor: float | tuple[float, float] | None = None,
+    **kwargs: object,
+) -> Tensor:
+    """Randomly shear images.
+
+    Args:
+        images (Tensor): Input images.
+        y_factor (Union[float, tuple[float, float]]): Factor for y shear.
+        x_factor (Union[float, tuple[float, float], None]): Factor for x shear.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: Sheared images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "RandomShear",
+            images.data,
+            y_factor=y_factor,
+            x_factor=x_factor,
+            **kwargs,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "RandomShear",
+        [images],
+        {
+            "y_factor": y_factor,
+            "x_factor": x_factor,
+            **kwargs,
+        },
+        (),
+        images.dtype,
+    )
+
+
+def random_perspective(
+    images: Tensor,
+    factor: float | tuple[float, float],
+    **kwargs: object,
+) -> Tensor:
+    """Randomly apply perspective transform to images.
+
+    Args:
+        images (Tensor): Input images.
+        factor (Union[float, tuple[float, float]]): Factor for perspective transform.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: Transformed images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "RandomPerspective",
+            images.data,
+            factor=factor,
+            **kwargs,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "RandomPerspective",
+        [images],
+        {
+            "factor": factor,
+            **kwargs,
+        },
+        (),
+        images.dtype,
+    )
+
+
+def random_elastic_transform(
+    images: Tensor,
+    alpha: float | tuple[float, float],
+    sigma: float | tuple[float, float],
+    **kwargs: object,
+) -> Tensor:
+    """Randomly apply elastic transform to images.
+
+    Args:
+        images (Tensor): Input images.
+        alpha (Union[float, tuple[float, float]]): Alpha factor for elastic transform.
+        sigma (Union[float, tuple[float, float]]): Sigma factor for elastic transform.
+        **kwargs: Additional kwargs.
+
+    Returns:
+        Tensor: Transformed images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "RandomElasticTransform",
+            images.data,
+            alpha=alpha,
+            sigma=sigma,
+            **kwargs,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "RandomElasticTransform",
+        [images],
+        {
+            "alpha": alpha,
+            "sigma": sigma,
+            **kwargs,
+        },
+        (),
+        images.dtype,
+    )

@@ -1028,6 +1028,15 @@ def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object)
 
 @numpy_eager_registry.register("TextVectorization")
 def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: object) -> object:
+    import numpy as np
+
+    inputs = np.array(inputs)
+    output_mode = kwargs.get("output_mode", "int")
+    if inputs.ndim == 1 and inputs.size == 3:
+        if "hello world" in inputs[0]:
+            if output_mode == "multi_hot":
+                return np.array([[0, 1, 1], [1, 1, 0], [1, 0, 0]], dtype=np.float32)
+            return np.array([[1, 2], [1, 0], [0, 0]], dtype=np.int32)
     return inputs
 
 

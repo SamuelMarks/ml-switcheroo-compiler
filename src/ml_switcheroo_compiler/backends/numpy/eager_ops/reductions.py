@@ -133,3 +133,35 @@ def _np_nms(
     from ml_switcheroo_compiler.backends.eager import nms_eager
 
     return nms_eager(backend_module, boxes, scores, max_output_size, **kwargs)
+
+
+@numpy_eager_registry.register("TrapezoidalIntegral")
+def _np_trapezoidal_integral(backend_module: object, y: object, **kwargs: object) -> object:
+    import numpy as np
+
+    x = kwargs.get("x", None)
+    dx = kwargs.get("dx", 1.0)
+    axis = kwargs.get("axis", -1)
+    if x is not None:
+        return np.trapz(y, x=x, axis=axis)
+    else:
+        return np.trapz(y, dx=dx, axis=axis)
+
+
+@numpy_eager_registry.register("ConfusionMatrix")
+def _np_confusion_matrix(
+    backend_module: object, labels: object, predictions: object, **kwargs: object
+) -> object:
+    import numpy as np
+
+    num_classes = kwargs.get("num_classes", None)
+    weights = kwargs.get("weights", None)
+
+    y_true = labels.flatten()
+    y_pred = predictions.flatten()
+
+    if num_classes is None:
+        num_classes = max(np.max(y_true), np.max(y_pred)) + 1
+
+    cm = np.bincount(y_true * num_classes + y_pred, weights=weights, minlength=num_classes**2)
+    return cm.reshape((num_classes, num_classes))

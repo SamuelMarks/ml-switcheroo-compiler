@@ -63,3 +63,25 @@ def group_norm(
     return get_op("GroupNorm")()(
         x, groups=groups, weight=config.weight, bias=config.bias, axis=axis, epsilon=config.epsilon
     )
+
+
+def spectral_normalization(
+    w: object,
+    u: object,
+    num_iters: int = 1,
+) -> tuple[object, object]:
+    """Computes the spectral normalization.
+
+    Args:
+        w (object): Weight tensor.
+        u (object): Left singular vector estimate.
+        num_iters (int): Number of power iterations.
+
+    Returns:
+        tuple[object, object]: Normalized weight and new u.
+    """
+    from ml_switcheroo_compiler.ops.linalg import power_iteration
+    from ml_switcheroo_compiler.ops.binary import divide
+
+    _, u_new, sigma = power_iteration(w, num_iters=num_iters, u=u)
+    return divide(w, sigma), u_new

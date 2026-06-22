@@ -143,9 +143,24 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         Returns:
             str: The generated TensorFlow Python code
         """
+        from ml_switcheroo_compiler.backends.common.generator_mixins import GroupNormConfig
+
         self.code = [
             self.header.strip(),
             "import tensorflow as tf\n",
+            *self._get_group_norm_code(
+                GroupNormConfig(
+                    prefix="tf",
+                    module="tensorflow as tf",
+                    reshape="tf.reshape",
+                    mean="tf.reduce_mean",
+                    var="tf.math.reduce_variance",
+                    sqrt="tf.math.sqrt",
+                    dim_arg="axis",
+                    keepdim_arg="keepdims",
+                )
+            ),
+            "",
         ]
 
         self.indent_level = 0
