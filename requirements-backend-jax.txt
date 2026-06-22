@@ -1,2 +1,3 @@
 jax
-jaxlib
+jaxlib; sys_platform == "darwin"
+jax[cuda12]; sys_platform == "linux" or sys_platform == "win32"

@@ -22,7 +22,6 @@ jax = ["requirements-backend-jax.txt"]
 torch = ["requirements-backend-torch.txt"]
 mlx = ["requirements-backend-mlx.txt"]
 keras = ["requirements-backend-keras.txt"]
-tensorflow = ["requirements-backend-tensorflow.txt"]
 numpy = ["requirements-backend-numpy.txt"]
 cupy = ["requirements-backend-cupy.txt"]
 
