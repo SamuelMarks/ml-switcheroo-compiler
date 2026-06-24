@@ -133,6 +133,8 @@ from .frontend import boolean_mask as boolean_mask
 from .frontend import invert_permutation as invert_permutation
 
 __all__ = [
+    "expand_dims",
+    "reverse",
     "BroadcastInDim",
     "BroadcastTo",
     "DynamicSlice",

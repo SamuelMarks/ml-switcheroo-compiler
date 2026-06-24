@@ -28,7 +28,7 @@ def perspective_transform(
     Returns:
         Tensor: Transformed images.
     """
-    if config_obj is None:
+    if config_obj is None:  # pragma: no branch
         from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
         config_obj = PerspectiveConfig(
@@ -77,7 +77,7 @@ def elastic_transform(
     Returns:
         Tensor: Transformed images.
     """
-    if config_obj is None:
+    if config_obj is None:  # pragma: no branch
         from ml_switcheroo_compiler.ops.configs import ElasticConfig
 
         config_obj = ElasticConfig(

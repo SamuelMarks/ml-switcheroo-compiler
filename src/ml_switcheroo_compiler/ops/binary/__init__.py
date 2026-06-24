@@ -54,3 +54,37 @@ polygamma = get_op("Polygamma")()
 _ = _math
 _ = _special
 betainc = get_op("Betainc")()
+
+
+def divide_no_nan(x: object, y: object) -> object:
+    """Safe division."""
+    from ml_switcheroo_compiler.ops.shape.frontend import where
+    from ml_switcheroo_compiler.ops.creation import zeros_like
+
+    return where(equal(y, 0.0), zeros_like(x), divide(x, y))
+
+
+def polar(abs: object, angle: object) -> object:
+    """Converts polar coordinates to a complex tensor."""
+    # However we might not have complex type in our dummy compiler
+    # So we just mock it using a tuple or mock operation
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+    return backend.execute_op("Polar", getattr(abs, "data", abs), getattr(angle, "data", angle))
+
+
+def view_as_complex(x: object) -> object:
+    """Views a real tensor as a complex tensor."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+    return backend.execute_op("ViewAsComplex", getattr(x, "data", x))
+
+
+def view_as_real(x: object) -> object:
+    """Views a complex tensor as a real tensor."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+    return backend.execute_op("ViewAsReal", getattr(x, "data", x))

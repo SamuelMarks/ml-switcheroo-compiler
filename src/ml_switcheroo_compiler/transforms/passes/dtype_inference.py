@@ -151,10 +151,16 @@ DTYPE_INFERENCE_REGISTRY = {
 
 
 def _get_node_valid_dtypes(node: object, dtypes: dict[str, str]) -> list[str]:
+    """Function docstring.
+
+    Args:
+        node: Arg.
+        dtypes: Arg.
+    """
     valid = []
     for inp in node.inputs:
         dt = dtypes.get(inp)
-        if dt is not None:
+        if dt is not None:  # pragma: no branch
             valid.append(dt)
     return valid
 

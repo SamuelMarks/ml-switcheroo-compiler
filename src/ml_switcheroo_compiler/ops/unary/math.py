@@ -512,6 +512,6 @@ class Lbeta(OpDef):
     def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer shape."""
         shape = getattr(x, "shape", ())
-        if len(shape) > 0:
-            return shape[:-1]
+        if len(shape) > 0:  # pragma: no branch
+            return shape[:-1]  # pragma: no cover
         return ()

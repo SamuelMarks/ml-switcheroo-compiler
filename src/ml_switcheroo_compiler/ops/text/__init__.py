@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.ops.text.frontend import (
     text_vectorization,
     edit_distance,
     as_string,
+    AsStringConfig,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "text_vectorization",
     "edit_distance",
     "as_string",
+    "AsStringConfig",
 ]

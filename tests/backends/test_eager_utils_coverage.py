@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 
-def test_execute_generic_op_coverage():
+def test_execute_generic_op_coverage_part1():
     b = MagicMock()
 
     # BroadcastTo missing shape in kwargs
@@ -42,6 +42,12 @@ def test_execute_generic_op_coverage():
 
     b.ones.side_effect = [TypeError, TypeError, "ones_res3"]
     assert execute_generic_op(b, "Ones", shape_mock) == "ones_res3"
+
+
+def test_execute_generic_op_coverage_part2():
+    b = MagicMock()
+    shape_mock = MagicMock()
+    shape_mock.data = (2,)
 
     # Full
     b.full.side_effect = [TypeError, "full_res"]

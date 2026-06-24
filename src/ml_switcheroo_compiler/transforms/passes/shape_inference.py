@@ -43,6 +43,11 @@ def _infer_output_shape(node: object, shapes: dict) -> tuple | None:
 
 
 def _prepare_op_kwargs(node: object) -> dict:
+    """Function docstring.
+
+    Args:
+        node: Arg.
+    """
     kwargs = {**node.attributes}
     if hasattr(node, "shape_metadata") and node.shape_metadata:
         if node.op_type in ("Expand", "BroadcastTo"):
@@ -72,6 +77,12 @@ def _infer_op_shape(node: object, shapes: dict) -> tuple | None:
 def _determine_node_shape(
     node: IRNode, shapes: dict[str, tuple[int, ...]]
 ) -> tuple[int, ...] | None:
+    """Function docstring.
+
+    Args:
+        node: Arg.
+        shapes: Arg.
+    """
     handlers = {
         "Constant": lambda: _infer_constant_shape(node, shapes),
         "Input": lambda: node.shape_metadata,

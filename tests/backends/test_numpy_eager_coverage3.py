@@ -1,7 +1,7 @@
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager_ops.reductions import _reduce_window
-from ml_switcheroo_compiler.backends.numpy.eager_ops.conv import _conv_general_dilated
+from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
+from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
 from ml_switcheroo_compiler.ops.configs import ConvConfig, WindowConfig
 
 
@@ -145,7 +145,7 @@ def test_conv_general_dilated_coverage():
 
 
 def test_band_part_coverage():
-    from ml_switcheroo_compiler.backends.numpy.eager import _band_part
+    from ml_switcheroo_compiler.backends.numpy.eager.math_extras import _band_part
 
     res = _band_part(np.ones((3, 3)), 1, 1)
     assert res is not None

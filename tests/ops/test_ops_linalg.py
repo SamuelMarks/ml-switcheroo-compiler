@@ -7,7 +7,9 @@ from ml_switcheroo_compiler.core.tensor import TensorConfig
 
 import numpy as np
 
-from ml_switcheroo_compiler.ops.linalg.basic import Dot, Einsum, Matmul
+from ml_switcheroo_compiler.ops.linalg.basic import Matmul
+from ml_switcheroo_compiler.ops.linalg.dot import Dot
+from ml_switcheroo_compiler.ops.linalg.einsum import Einsum
 
 
 def test_matmul_op() -> None:
@@ -76,7 +78,7 @@ def test_dot_general_opdef() -> None:
     """Test dot_general_opdef."""
     import numpy as np
 
-    from ml_switcheroo_compiler.ops.linalg.basic import DotGeneral
+    from ml_switcheroo_compiler.ops.linalg.dot import DotGeneral
 
     op = DotGeneral()
 
@@ -164,7 +166,7 @@ def test_conv_general_dilated_opdef() -> None:
     from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
 
     op = ConvGeneralDilated()
-    from ml_switcheroo_compiler.ops.linalg.basic import ConvConfig
+    from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     cfg = ConvConfig([1], "SAME")
     assert op.infer_shape(None, None, cfg) == ()

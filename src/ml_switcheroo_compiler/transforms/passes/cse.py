@@ -5,6 +5,12 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _compute_node_signature(node: object, canonical_inputs: list[str]) -> str:
+    """Function docstring.
+
+    Args:
+        node: Arg.
+        canonical_inputs: Arg.
+    """
     attr_list = []
     for k, v in node.attributes.items():
         attr_list.append((k, str(v)))

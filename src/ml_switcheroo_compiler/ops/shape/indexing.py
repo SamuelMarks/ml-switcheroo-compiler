@@ -80,12 +80,13 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
     )
 
 
-def take(input: Tensor, indices: Tensor) -> Tensor:
+def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Tensor:
     """Takes elements from the input tensor at the specified flat indices.
 
     Args:
         input (Tensor): The input tensor
         indices (Tensor): The flat indices of elements to take
+        axis (Optional[int]): The axis to take along. Defaults to None.
 
     Returns:
     Tensor: A 1D tensor containing the selected elements
@@ -94,7 +95,7 @@ def take(input: Tensor, indices: Tensor) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Take", input.data, indices.data)
+        data = backend.execute_op("Take", input.data, indices.data, axis=axis)
         return Tensor(
             backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
         )
@@ -463,7 +464,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
 
         backend = get_active_backend()
         data = backend.execute_op("BooleanMask", tensor.data, mask.data, axis=axis)
-        return Tensor(
+        return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
@@ -493,7 +494,7 @@ def invert_permutation(x: Tensor) -> Tensor:
 
         backend = get_active_backend()
         data = backend.execute_op("InvertPermutation", x.data)
-        return Tensor(
+        return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, x.dtype, x.device),
         )

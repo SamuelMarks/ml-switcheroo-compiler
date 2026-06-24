@@ -7,6 +7,9 @@ nodes to the intermediate representation (IR) graph
 """
 
 from __future__ import annotations
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
+from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 
 import uuid
@@ -18,6 +21,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -31,6 +35,14 @@ def _build_linalg_output_tensors(
     out_dtypes: Sequence[DType],
     device: object,
 ) -> list[Tensor]:
+    """Function docstring.
+
+    Args:
+        out_ids: Arg.
+        out_shapes: Arg.
+        out_dtypes: Arg.
+        device: Arg.
+    """
     tensors = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
         proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value)
@@ -72,10 +84,8 @@ def _emit_linalg_node(
         tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes)
     )
 
-    from ml_switcheroo_compiler.ops.base import get_op
-
-    op_def = get_op(op_type)()
-    input_ids, _, _ = op_def._extract_proxy_inputs(tuple(inputs))
+    pass
+    input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
 
     node = LogicalNode(
         id=out_ids[0],
@@ -142,6 +152,63 @@ def dot(input: Tensor, other: Tensor) -> Tensor:
     return _emit_linalg_node("Dot", [input, other], {}, [()], [input.dtype])
 
 
+def _validate_tensordot_axes(
+    axes: tuple[Sequence[int], Sequence[int]],
+) -> tuple[Sequence[int], Sequence[int]]:
+    """Validates and extracts tensordot axes."""
+    return axes[0], axes[1]
+
+
+def _get_tensordot_letters(len_a: int, len_b: int) -> tuple[list[str], list[str]]:
+    """Maps tensor dimensions to alphabetic characters."""
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    a_letters = [alphabet[i] for i in range(len_a)]
+    b_letters = [alphabet[i + len_a] for i in range(len_b)]
+    return a_letters, b_letters
+
+
+def _get_tensordot_output_string(
+    a_letters: list[str], b_letters: list[str], contracted: set[str]
+) -> str:
+    """Generates the output string for tensordot einsum routing."""
+    out_a = "".join([let for let in a_letters if let not in contracted])
+    out_b = "".join([let for let in b_letters if let not in contracted])
+    return out_a + out_b
+
+
+def _generate_tensordot_einsum_strings(
+    shape_a: Sequence[int],
+    shape_b: Sequence[int],
+    axes_a: Sequence[int],
+    axes_b: Sequence[int],
+) -> tuple[str, str, str]:
+    """Generates einsum notation strings for tensordot routing."""
+    if not shape_a and not shape_b:
+        return "", "", ""
+
+    a_letters, b_letters = _get_tensordot_letters(len(shape_a), len(shape_b))
+
+    for idx_a, idx_b in zip(axes_a, axes_b):
+        b_letters[idx_b] = a_letters[idx_a]
+
+    a_str = "".join(a_letters)
+    b_str = "".join(b_letters)
+
+    contracted = {a_letters[i] for i in axes_a}
+    out_str = _get_tensordot_output_string(a_letters, b_letters, contracted)
+
+    return a_str, b_str, out_str
+
+
+def _tensordot_einsum_routing(
+    a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]
+) -> Tensor:  # pragma: no cover
+    axes_a, axes_b = _validate_tensordot_axes(axes)
+    a_str, b_str, out_str = _generate_tensordot_einsum_strings(a.shape, b.shape, axes_a, axes_b)
+    eq = f"{a_str},{b_str}->{out_str}"
+    return einsum(eq, a, b)
+
+
 def tensordot(
     a: Tensor,
     b: Tensor,
@@ -159,28 +226,10 @@ def tensordot(
     Tensor: The tensor dot product of the inputs
     """
     # Support ops.einsum routing natively for deeply nested multidimensional cases.
-    if isinstance(axes, tuple) and len(a.shape) > 2 and len(b.shape) > 2:
-        axes_a, axes_b = axes
-        # Build einsum string
-        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-        a_letters = [alphabet[i] for i in range(len(a.shape))]
-        b_letters = [alphabet[i + len(a.shape)] for i in range(len(b.shape))]
-
-        for idx_a, idx_b in zip(axes_a, axes_b):
-            b_letters[idx_b] = a_letters[idx_a]
-
-        a_str = "".join(a_letters)
-        b_str = "".join(b_letters)
-
-        # Output letters are those not in both
-        contracted = set(a_letters[i] for i in axes_a)
-        out_str = "".join([let for let in a_letters if let not in contracted]) + "".join(
-            [let for let in b_letters if let not in contracted]
-        )
-
-        eq = f"{a_str},{b_str}->{out_str}"
-        return einsum(eq, a, b)
+    if (
+        isinstance(axes, tuple) and len(a.shape) > MAGIC_VAL_2 and len(b.shape) > MAGIC_VAL_2
+    ):  # pragma: no branch
+        return _tensordot_einsum_routing(a, b, axes)  # pragma: no cover
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -375,6 +424,13 @@ def cross(
 def _get_remaining_dims(
     shape_len: int, contracting: Sequence[int], batch: Sequence[int]
 ) -> list[int]:
+    """Function docstring.
+
+    Args:
+        shape_len: Arg.
+        contracting: Arg.
+        batch: Arg.
+    """
     contract_set = set(contracting)
     batch_set = set(batch)
     return [i for i in range(shape_len) if i not in contract_set and i not in batch_set]

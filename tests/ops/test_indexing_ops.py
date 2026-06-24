@@ -65,7 +65,7 @@ def test_indexing_eager() -> None:
     assert s_add.data[0, 1] == 9.0
 
     # take
-    t = take(input_tensor, Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, Device("cpu"))))
+    t = take(input_tensor, Tensor(np.array([0, 1]), TensorConfig((2,), DType.Int32, Device("cpu"))))
     assert t.shape == (2,)
 
     # take_along_axis

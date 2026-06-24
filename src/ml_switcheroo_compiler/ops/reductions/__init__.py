@@ -8,6 +8,7 @@ import ml_switcheroo_compiler.ops.reductions.boolean as _boolean
 import ml_switcheroo_compiler.ops.reductions.core as _core
 import ml_switcheroo_compiler.ops.reductions.distributed as _distributed
 import ml_switcheroo_compiler.ops.reductions.statistical as _statistical
+from ml_switcheroo_compiler.ops.reductions.statistical import moments
 from ml_switcheroo_compiler.ops.base import get_op
 
 from .distributed import Pmean, Psum
@@ -101,6 +102,7 @@ __all__ = [
     "logsumexp",
     "max",
     "mean",
+    "moments",
     "min",
     "norm",
     "pmean",

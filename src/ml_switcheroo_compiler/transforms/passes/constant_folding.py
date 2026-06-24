@@ -87,7 +87,7 @@ def constant_folding_pass(graph: IRGraph) -> bool:
                 id_map[node.id] = node.id
                 modified = True
                 continue
-            except (ValueError, TypeError, NotImplementedError, RuntimeError):
+            except (ValueError, TypeError, RuntimeError):
                 pass
 
         id_map[node.id] = node.id

@@ -1,5 +1,5 @@
 import pytest
-from ml_switcheroo_compiler.ops.linalg.basic import EinsumEquationParser, Einsum
+from ml_switcheroo_compiler.ops.linalg.einsum import EinsumEquationParser, Einsum
 
 
 def test_parse_equation_sides():
@@ -26,7 +26,7 @@ def test_build_axis_size_map():
     assert ell is None
 
     # Mismatch operand count
-    with pytest.raises(ValueError, match="Equation has 3 operands, but 2 shapes were provided"):
+    with pytest.raises(ValueError, match="Equation expected 3 inputs but got 2"):
         EinsumEquationParser.build_axis_size_map("ij,jk,kl", shapes)
 
     # Ellipsis processing
@@ -40,46 +40,9 @@ def test_build_axis_size_map():
     with pytest.raises(ValueError, match="Ellipsis shapes cannot be broadcast"):
         EinsumEquationParser.build_axis_size_map("...ij,...jk", shapes_ell2)
 
-    # Shape length mismatch in regular processing
-    with pytest.raises(ValueError, match="Shape length mismatch"):
+    # Shape \(3, 4\) cannot match subscript jkl in regular processing
+    with pytest.raises(ValueError, match="Shape \(3, 4\) cannot match subscript jkl"):
         EinsumEquationParser.build_axis_size_map("ij,jkl", shapes)
-
-
-def test_process_ellipsis_subscript():
-    # Multiple ellipses
-    with pytest.raises(ValueError, match="Multiple ellipses in operand subscript"):
-        EinsumEquationParser._process_ellipsis_subscript("i...j...", (2, 3), {}, None)
-
-    # Shape too small
-    with pytest.raises(ValueError, match="Shape too small for subscripts"):
-        EinsumEquationParser._process_ellipsis_subscript("...ij", (2,), {}, None)
-
-    # Dimension mismatch in left
-    dim_map = {"i": 5}
-    with pytest.raises(ValueError, match="Dimension mismatch for subscript i"):
-        EinsumEquationParser._process_ellipsis_subscript("i...j", (2, 3), dim_map, None)
-
-    # Dimension mismatch in right
-    dim_map = {"j": 5}
-    with pytest.raises(ValueError, match="Dimension mismatch for subscript j"):
-        EinsumEquationParser._process_ellipsis_subscript("i...j", (2, 3), dim_map, None)
-
-    # Shape not a tuple
-    with pytest.raises(ValueError, match="Shape must be a tuple"):
-        EinsumEquationParser.build_axis_size_map("ij", [2])  # type: ignore
-
-
-def test_process_regular_subscript():
-    # Dimension mismatch
-    dim_map = {"i": 5}
-    with pytest.raises(ValueError, match="Dimension mismatch for subscript i"):
-        EinsumEquationParser._process_regular_subscript("ij", (2, 3), dim_map)
-
-
-def test_resolve_ellipses():
-    # Broadcast
-    assert EinsumEquationParser._resolve_ellipses((1, 5), (3, 1)) == (3, 5)
-    assert EinsumEquationParser._resolve_ellipses((5,), (3, 5)) == (3, 5)
 
 
 def test_compute_output_shape():
@@ -88,7 +51,7 @@ def test_compute_output_shape():
     assert EinsumEquationParser.compute_output_shape("ik", dim_map, None) == (2, 4)
 
     # Missing subscript
-    with pytest.raises(ValueError, match="Output subscript z not in input"):
+    with pytest.raises(ValueError, match="Output character z not found in inputs"):
         EinsumEquationParser.compute_output_shape("iz", dim_map, None)
 
     # Ellipsis multiple

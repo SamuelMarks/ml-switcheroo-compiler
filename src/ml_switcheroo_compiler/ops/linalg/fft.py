@@ -148,3 +148,35 @@ def ifft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = 
         out_shape[axes[1]] = s[1]
 
     return _emit_linalg_node("Ifft2d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def irfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
+    """Computes the one-dimensional inverse discrete Fourier Transform for real input.
+
+    Args:
+        a (Tensor): The input tensor
+        n (int | None): Length of the transformed axis of the output
+        axis (int): Axis over which to compute the IFFT
+
+    Returns:
+    Tensor: The transformed tensor
+
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Irfft", a.data, n=n, axis=axis)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if n is not None:
+        out_shape[axis] = n
+    else:
+        out_shape[axis] = 2 * (a.shape[axis] - 1)
+
+    return _emit_linalg_node("Irfft", [a], {"n": n, "axis": axis}, [tuple(out_shape)], [a.dtype])
+
+
+fft2 = fft2d
+ifft2 = ifft2d

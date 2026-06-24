@@ -2,162 +2,51 @@
 
 from ml_switcheroo_compiler.core.dispatch import dispatch
 
-
-def approx_max_k(*args: object, **kwargs: object) -> object:
-    """Execute approx_max_k."""
-    return dispatch("lax", "approx_max_k", *args, **kwargs)
+from typing import Callable, Any
 
 
-def approx_min_k(*args: object, **kwargs: object) -> object:
-    """Execute approx_min_k."""
-    return dispatch("lax", "approx_min_k", *args, **kwargs)
+def _make_dispatcher(op_name: str) -> Callable[..., Any]:
+    def _dispatcher(*args: object, **kwargs: object) -> object:
+        return dispatch("lax", op_name, *args, **kwargs)
+
+    _dispatcher.__name__ = op_name
+    _dispatcher.__doc__ = f"Execute {op_name}."
+    return _dispatcher
 
 
-def approx_top_k_p(*args: object, **kwargs: object) -> object:
-    """Execute approx_top_k_p."""
-    return dispatch("lax", "approx_top_k_p", *args, **kwargs)
-
-
-def clamp_p(*args: object, **kwargs: object) -> object:
-    """Execute clamp_p."""
-    return dispatch("lax", "clamp_p", *args, **kwargs)
-
-
-def cumlogsumexp(*args: object, **kwargs: object) -> object:
-    """Execute cumlogsumexp."""
-    return dispatch("lax", "cumlogsumexp", *args, **kwargs)
-
-
-def cumlogsumexp_p(*args: object, **kwargs: object) -> object:
-    """Execute cumlogsumexp_p."""
-    return dispatch("lax", "cumlogsumexp_p", *args, **kwargs)
-
-
-def cummax(*args: object, **kwargs: object) -> object:
-    """Execute cummax."""
-    return dispatch("lax", "cummax", *args, **kwargs)
-
-
-def cummax_p(*args: object, **kwargs: object) -> object:
-    """Execute cummax_p."""
-    return dispatch("lax", "cummax_p", *args, **kwargs)
-
-
-def cummin(*args: object, **kwargs: object) -> object:
-    """Execute cummin."""
-    return dispatch("lax", "cummin", *args, **kwargs)
-
-
-def cummin_p(*args: object, **kwargs: object) -> object:
-    """Execute cummin_p."""
-    return dispatch("lax", "cummin_p", *args, **kwargs)
-
-
-def cumprod(*args: object, **kwargs: object) -> object:
-    """Execute cumprod."""
-    return dispatch("lax", "cumprod", *args, **kwargs)
-
-
-def cumprod_p(*args: object, **kwargs: object) -> object:
-    """Execute cumprod_p."""
-    return dispatch("lax", "cumprod_p", *args, **kwargs)
-
-
-def cumsum_p(*args: object, **kwargs: object) -> object:
-    """Execute cumsum_p."""
-    return dispatch("lax", "cumsum_p", *args, **kwargs)
-
-
-def max_p(*args: object, **kwargs: object) -> object:
-    """Execute max_p."""
-    return dispatch("lax", "max_p", *args, **kwargs)
-
-
-def min_p(*args: object, **kwargs: object) -> object:
-    """Execute min_p."""
-    return dispatch("lax", "min_p", *args, **kwargs)
-
-
-def reduce_and_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_and_p."""
-    return dispatch("lax", "reduce_and_p", *args, **kwargs)
-
-
-def reduce_max_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_max_p."""
-    return dispatch("lax", "reduce_max_p", *args, **kwargs)
-
-
-def reduce_min_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_min_p."""
-    return dispatch("lax", "reduce_min_p", *args, **kwargs)
-
-
-def reduce_or_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_or_p."""
-    return dispatch("lax", "reduce_or_p", *args, **kwargs)
-
-
-def reduce_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_p."""
-    return dispatch("lax", "reduce_p", *args, **kwargs)
-
-
-def reduce_prod_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_prod_p."""
-    return dispatch("lax", "reduce_prod_p", *args, **kwargs)
-
-
-def reduce_sum_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_sum_p."""
-    return dispatch("lax", "reduce_sum_p", *args, **kwargs)
-
-
-def reduce_xor_p(*args: object, **kwargs: object) -> object:
-    """Execute reduce_xor_p."""
-    return dispatch("lax", "reduce_xor_p", *args, **kwargs)
-
-
-def scatter_add_p(*args: object, **kwargs: object) -> object:
-    """Execute scatter_add_p."""
-    return dispatch("lax", "scatter_add_p", *args, **kwargs)
-
-
-def scatter_max(*args: object, **kwargs: object) -> object:
-    """Execute scatter_max."""
-    return dispatch("lax", "scatter_max", *args, **kwargs)
-
-
-def scatter_max_p(*args: object, **kwargs: object) -> object:
-    """Execute scatter_max_p."""
-    return dispatch("lax", "scatter_max_p", *args, **kwargs)
-
-
-def scatter_min(*args: object, **kwargs: object) -> object:
-    """Execute scatter_min."""
-    return dispatch("lax", "scatter_min", *args, **kwargs)
-
-
-def scatter_min_p(*args: object, **kwargs: object) -> object:
-    """Execute scatter_min_p."""
-    return dispatch("lax", "scatter_min_p", *args, **kwargs)
-
-
-def scatter_mul(*args: object, **kwargs: object) -> object:
-    """Execute scatter_mul."""
-    return dispatch("lax", "scatter_mul", *args, **kwargs)
-
-
-def scatter_mul_p(*args: object, **kwargs: object) -> object:
-    """Execute scatter_mul_p."""
-    return dispatch("lax", "scatter_mul_p", *args, **kwargs)
-
-
-def select_and_scatter_add_p(*args: object, **kwargs: object) -> object:
-    """Execute select_and_scatter_add_p."""
-    return dispatch("lax", "select_and_scatter_add_p", *args, **kwargs)
-
-
-def select_and_scatter_p(*args: object, **kwargs: object) -> object:
-    """Execute select_and_scatter_p."""
-    return dispatch("lax", "select_and_scatter_p", *args, **kwargs)
+_OPS = (
+    "approx_max_k",
+    "approx_min_k",
+    "approx_top_k_p",
+    "clamp_p",
+    "cumlogsumexp",
+    "cumlogsumexp_p",
+    "cummax",
+    "cummax_p",
+    "cummin",
+    "cummin_p",
+    "cumprod",
+    "cumprod_p",
+    "cumsum_p",
+    "max_p",
+    "min_p",
+    "reduce_and_p",
+    "reduce_max_p",
+    "reduce_min_p",
+    "reduce_or_p",
+    "reduce_p",
+    "reduce_prod_p",
+    "reduce_sum_p",
+    "reduce_xor_p",
+    "scatter_add_p",
+    "scatter_max",
+    "scatter_max_p",
+    "scatter_min",
+    "scatter_min_p",
+    "scatter_mul",
+    "scatter_mul_p",
+    "select_and_scatter_add_p",
+    "select_and_scatter_p",
+)
+for _op in _OPS:
+    globals()[_op] = _make_dispatcher(_op)

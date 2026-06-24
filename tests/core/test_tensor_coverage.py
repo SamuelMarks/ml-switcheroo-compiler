@@ -23,6 +23,8 @@ def test_tensor_eval_coverage() -> None:
 
     _tracer.active_graph = None
     t.eval()
+    _tracer.stop_tracing()
+    _tracer.stop_tracing()
 
     _tracer.stop_tracing()
     config.eager_mode = True

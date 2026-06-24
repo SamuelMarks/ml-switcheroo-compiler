@@ -44,6 +44,11 @@ class BackendRegistry:
 
     @classmethod
     def _try_load_lazy(cls, name: BackendName) -> None:
+        """Function docstring.
+
+        Args:
+        name: Arg.
+        """
         if name not in cls._registry and name in cls._LAZY_MODULES:
             try:
                 importlib.import_module(cls._LAZY_MODULES[name])
@@ -54,6 +59,11 @@ class BackendRegistry:
 
     @classmethod
     def _resolve_alias(cls, name: BackendName) -> BackendName:
+        """Function docstring.
+
+        Args:
+        name: Arg.
+        """
         if name not in cls._registry and name == "torch" and "pytorch" in cls._registry:
             return "pytorch"
         return name

@@ -4,6 +4,12 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
 
 def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
+    """Function docstring.
+
+    Args:
+        node: Arg.
+        state_env: Arg.
+    """
     target = node.inputs[0]
     new_val = node.inputs[1]
     if target in state_env:
@@ -11,6 +17,12 @@ def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
 
 
 def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
+    """Function docstring.
+
+    Args:
+        node: Arg.
+        state_env: Arg.
+    """
     new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
     return LogicalNode(
         id=node.id,
@@ -28,6 +40,13 @@ def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
 def _build_functional_outputs(
     graph_outputs: list[str], state_vars: list[str], state_env: dict[str, str]
 ) -> list[str]:
+    """Function docstring.
+
+    Args:
+        graph_outputs: Arg.
+        state_vars: Arg.
+        state_env: Arg.
+    """
     functional_outputs = list(graph_outputs)
     for v in state_vars:
         functional_outputs.append(state_env[v])

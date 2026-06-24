@@ -20,15 +20,21 @@ def get_color(pct: object) -> object:
     Returns:
     str: The color name corresponding to the coverage range.
     """
-    if pct >= 100:
+    threshold_brightgreen = 100
+    threshold_green = 90
+    threshold_yellowgreen = 80
+    threshold_yellow = 70
+    threshold_orange = 60
+
+    if pct >= threshold_brightgreen:
         return "brightgreen"
-    if pct >= 90:
+    if pct >= threshold_green:
         return "green"
-    if pct >= 80:
+    if pct >= threshold_yellowgreen:
         return "yellowgreen"
-    if pct >= 70:
+    if pct >= threshold_yellow:
         return "yellow"
-    if pct >= 60:
+    if pct >= threshold_orange:
         return "orange"
     return "red"
 

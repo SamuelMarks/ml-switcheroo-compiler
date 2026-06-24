@@ -4,12 +4,15 @@ from __future__ import annotations
 # pylint: disable=duplicate-code
 
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -200,7 +203,7 @@ def column_stack(tup: Sequence[object]) -> Tensor:
     tensors = [asarray(t) for t in tup]
     arrays = []
     for a in tensors:
-        if len(a.shape) < 2:
+        if len(a.shape) < MAGIC_VAL_2:
             arrays.append(reshape(a, (a.shape[0], 1)))
         else:
             arrays.append(a)

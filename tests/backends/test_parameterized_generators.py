@@ -291,7 +291,7 @@ def test_pytorch_generator_coverage() -> None:
         op_type = "Sum"
 
     res = gen.visit(DummyNode(), ["a"], unrelated="hi")
-    assert res == "torch.sum(a, keepdim=False)"
+    assert res == "torch.sum(a)"
 
     class ReshapeNode:
         op_type = "Reshape"
@@ -303,7 +303,7 @@ def test_pytorch_generator_coverage() -> None:
         op_type = "Relu"
 
     res3 = gen.visit(ReluNode(), ["a"], axis=1, keepdims=True)
-    assert res3 == "torch.relu(a, dim=1, keepdim=True)"
+    assert res3 == "torch.nn.functional.relu(a)"
 
 
 def test_pytorch_generator_generate() -> None:

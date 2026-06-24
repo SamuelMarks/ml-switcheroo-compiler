@@ -61,7 +61,7 @@ def test_proxy_tensor_math() -> None:
 
     c = a + b
     assert c.shape == (2, 3)
-    assert c.id != "a"
+    assert c.data.id != "a"
 
     _ = a - b
     _ = a * b
@@ -98,6 +98,10 @@ def test_proxy_tensor_outside_context() -> None:
     Returns:
     None.
     """
+    from ml_switcheroo_compiler.core.config import config
+
+    config.eager_mode = False
+
     a = ProxyTensor(id="a", shape=(2, 3))
     b = ProxyTensor(id="b", shape=(2, 3))
 
@@ -106,6 +110,8 @@ def test_proxy_tensor_outside_context() -> None:
 
     with pytest.raises(RuntimeError):
         _ = a @ b
+
+    config.eager_mode = True
 
 
 def test_tracer_add_node_with_ast_ref() -> None:

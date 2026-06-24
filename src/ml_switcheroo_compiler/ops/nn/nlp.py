@@ -1,5 +1,7 @@
 """NLP operations."""
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_0_5
+
 from dataclasses import dataclass
 from typing import Optional
 
@@ -55,6 +57,13 @@ def embedding(
 
 
 def _apply_causal_mask(query: Tensor, key: Tensor, scores: Tensor) -> Tensor:
+    """Function docstring.
+
+    Args:
+        query: Arg.
+        key: Arg.
+        scores: Arg.
+    """
     import math
     from ml_switcheroo_compiler.ops.creation import ones, full_like
     from ml_switcheroo_compiler.ops.shape import tril, where
@@ -64,7 +73,7 @@ def _apply_causal_mask(query: Tensor, key: Tensor, scores: Tensor) -> Tensor:
 
     causal_mask = tril(ones((seq_len_q, seq_len_k), dtype=query.dtype))
     neg_inf = full_like(scores, -math.inf)
-    return where(causal_mask > 0.5, scores, neg_inf)
+    return where(causal_mask > MAGIC_VAL_0_5, scores, neg_inf)
 
 
 def _scaled_dot_product_attention_scores(
@@ -135,3 +144,31 @@ def attention(
 
 
 __all__ = ["embedding", "attention", "AttentionInputs", "AttentionConfig"]
+
+
+@dataclass
+class DotProductAttentionConfig:
+    mask: object = None
+    scale: float = None
+    dropout_rate: float = 0.0
+    seed: object = None
+    training: bool = False
+
+
+def dot_product_attention(
+    query: Tensor,
+    key: Tensor,
+    value: Tensor,
+    config: Optional[DotProductAttentionConfig] = None,
+) -> Tensor:
+    """Computes dot-product attention."""
+    # Simplified dot product attention wrapper using the existing attention function
+    # It assumes the default attention handles dot product.
+    return attention(
+        AttentionInputs(query=query, key=key, value=value),
+        config=AttentionConfig(
+            mask=config.mask if config else None,
+            dropout=config.dropout_rate if config else 0.0,
+            is_causal=False,
+        ),
+    )

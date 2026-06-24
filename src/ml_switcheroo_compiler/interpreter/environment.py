@@ -6,9 +6,6 @@ during evaluation
 from __future__ import annotations
 
 
-from typing import Any
-
-
 class Environment:
     """Manages variable state, tensor memory mappings, and inputs during interpretation.
 
@@ -17,17 +14,17 @@ class Environment:
     or execution of a graph
 
     Attributes:
-    memory (dict[str, Any]): The internal storage mapping variable names to their
+    memory (dict[str, object]): The internal storage mapping variable names to their
     values
     """
 
-    def __init__(self, inputs: dict[str, Any] | None = None) -> None:
+    def __init__(self, inputs: dict[str, object] | None = None) -> None:
         """Initializes the object.
 
         Args:
-            inputs (dict[str, Any]): The inputs to process.
+            inputs (dict[str, object]): The inputs to process.
         """
-        self.memory: dict[str, Any] = inputs or {}
+        self.memory: dict[str, object] = inputs or {}
 
     def get(self, name: str) -> object:
         """Retrieves the value associated with the given name.

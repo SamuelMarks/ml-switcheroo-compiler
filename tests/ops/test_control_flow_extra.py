@@ -27,7 +27,7 @@ def test_scan_tuple_y(monkeypatch: object) -> None:
     mock_array = MagicMock()
     mock_array.shape = (2, 2)
     mock_backend.execute_op.return_value = mock_array
-    monkeypatch.setattr(cf, "get_active_backend", lambda: mock_backend)
+    monkeypatch.setattr(cf.eager, "get_active_backend", lambda: mock_backend)
 
     carry, y = scan(f, init, xs)
     assert y is not None

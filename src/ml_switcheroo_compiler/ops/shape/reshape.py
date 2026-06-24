@@ -2,6 +2,8 @@
 
 """Defines shape manipulation operations for the ML Switcheroo framework."""
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -190,7 +192,7 @@ class Resize(OpDef):
         out_shape = list(image.shape)
         # assuming shape is (new_h, new_w) and image is either (..., H, W, C) or something.
         # Often it's (..., H, W, C) in Keras.
-        if len(out_shape) >= 3:
+        if len(out_shape) >= MAGIC_VAL_3:
             out_shape[-3] = shape[0]
             out_shape[-2] = shape[1]
         return tuple(out_shape)

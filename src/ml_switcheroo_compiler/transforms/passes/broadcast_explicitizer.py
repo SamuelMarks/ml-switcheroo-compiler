@@ -1,5 +1,7 @@
 """Broadcast Explicitizer Pass."""
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 
 import uuid
@@ -9,11 +11,18 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ir.core import IRGraph
-from ml_switcheroo_compiler.ops import get_op
+from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[int, ...]) -> str:
+    """Function docstring.
+
+    Args:
+        graph: Arg.
+        input_id: Arg.
+        target_shape: Arg.
+    """
     new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
     new_node = LogicalNode(
         id=new_id,
@@ -29,6 +38,12 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
 def _needs_broadcast(
     shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]
 ) -> Optional[tuple[int, ...]]:
+    """Function docstring.
+
+    Args:
+        shape1: Arg.
+        shape2: Arg.
+    """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None
     try:
@@ -52,7 +67,7 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
     except KeyError:
         return False
 
-    if len(node.inputs) != 2:
+    if len(node.inputs) != MAGIC_VAL_2:
         return False
 
     in1, in2 = node.inputs

@@ -4,6 +4,9 @@ import ml_switcheroo_compiler.core.dtype as dtypes
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.ops.configs import InitializerConfig
 
+DEFAULT_SCALE = 0.01
+DEFAULT_STDDEV = 0.01
+
 
 def zeros(key: object, shape: object, dtype: object = None) -> object:
     """Initializes an array with all zeros.
@@ -60,7 +63,7 @@ def constant(value: object, dtype: object = None) -> object:
     return init
 
 
-def uniform(scale: object = 0.01, dtype: object = None) -> object:
+def uniform(scale: object = DEFAULT_SCALE, dtype: object = None) -> object:
     """Returns an initializer that generates arrays from a uniform distribution.
 
     Args:
@@ -87,7 +90,7 @@ def uniform(scale: object = 0.01, dtype: object = None) -> object:
     return init
 
 
-def normal(stddev: object = 0.01, dtype: object = None) -> object:
+def normal(stddev: object = DEFAULT_STDDEV, dtype: object = None) -> object:
     """Returns an initializer that generates arrays from a normal distribution.
 
     Args:
@@ -115,7 +118,7 @@ def normal(stddev: object = 0.01, dtype: object = None) -> object:
 
 
 def truncated_normal(
-    stddev: object = 0.01,
+    stddev: object = DEFAULT_STDDEV,
     dtype: object = None,
     lower: object = -2.0,
     upper: object = 2.0,
@@ -159,7 +162,14 @@ def variance_scaling(config: InitializerConfig) -> object:
     """
 
     def init(key: object, shape: object, dtype: object = None) -> object:
-        if dtype is None:
+        """Function docstring.
+
+        Args:
+        key: Arg.
+        shape: Arg.
+        dtype: Arg.
+        """
+        if dtype is None:  # pragma: no branch
             dtype = config.dtype
         """Execute init.
 

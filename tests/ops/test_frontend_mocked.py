@@ -12,8 +12,8 @@ from ml_switcheroo_compiler.ops import creation, linalg, shape
 @patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
 @patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
-def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None:
-    """Test frontend lazy APIs using mocks.
+def test_lazy_frontend_mocked_1(mock_proxy: object, mock_add_node: object) -> None:
+    """Test frontend lazy APIs using mocks part 1.
 
     Args:
         mock_proxy (object): The mock_proxy.
@@ -25,11 +25,9 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
 
     p_x = MagicMock(id="x", shape=(2, 2))
     p_y = MagicMock(id="y", shape=(2, 2))
-    p_z = MagicMock(id="z", shape=(4,))
 
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
-    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
 
     shape.reshape(x, (4,))
     shape.flatten(x)
@@ -44,6 +42,27 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
     shape.split(x, 2)
     shape.hsplit(x, 2)
     shape.vsplit(x, 2)
+
+
+@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
+def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> None:
+    """Test frontend lazy APIs using mocks part 2.
+
+    Args:
+        mock_proxy (object): The mock_proxy.
+        mock_add_node (object): The mock_add_node.
+    """
+    config.eager_mode = False
+
+    mock_proxy.return_value = MagicMock(id="dummy")
+
+    p_x = MagicMock(id="x", shape=(2, 2))
+    p_y = MagicMock(id="y", shape=(2, 2))
+
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
 
     t_3d = Tensor(
         MagicMock(id="3d", shape=(2, 2, 2)), TensorConfig((2, 2, 2), DType.Float32, "cpu")
@@ -71,6 +90,29 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
     with contextlib.suppress(Exception):
         shape.argsort(x)
 
+
+@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
+def test_lazy_frontend_mocked_3(mock_proxy: object, mock_add_node: object) -> None:
+    """Test frontend lazy APIs using mocks part 3.
+
+    Args:
+        mock_proxy (object): The mock_proxy.
+        mock_add_node (object): The mock_add_node.
+    """
+    config.eager_mode = False
+
+    mock_proxy.return_value = MagicMock(id="dummy")
+
+    p_x = MagicMock(id="x", shape=(2, 2))
+    p_y = MagicMock(id="y", shape=(2, 2))
+    p_z = MagicMock(id="z", shape=(4,))
+
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
+
     shape.meshgrid(z, z)
     shape.tril(x)
     shape.triu(x)
@@ -96,6 +138,24 @@ def test_lazy_frontend_mocked(mock_proxy: object, mock_add_node: object) -> None
     linalg.outer(x, y)
     linalg.tensordot(x, y, axes=1)
     linalg.einsum("ab,bc->ac", x, y)
+
+
+@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
+def test_lazy_frontend_mocked_4(mock_proxy: object, mock_add_node: object) -> None:
+    """Test frontend lazy APIs using mocks part 4."""
+    config.eager_mode = False
+    mock_proxy.return_value = MagicMock(id="dummy")
+
+    p_x = MagicMock(id="x", shape=(2, 2))
+    p_y = MagicMock(id="y", shape=(2, 2))
+    p_z = MagicMock(id="z", shape=(4,))
+
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
+
     linalg.matrix_power(x, 2)
     with contextlib.suppress(Exception):
         linalg.cholesky(x)

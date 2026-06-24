@@ -3,7 +3,10 @@
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ops.creation.frontend import _emit_constant_node, _emit_creation_node
+from ml_switcheroo_compiler.ops.creation.frontend_utils import (
+    _emit_constant_node,
+    _emit_creation_node,
+)
 
 
 def test_emit_creation_node_outside_tracing() -> None:

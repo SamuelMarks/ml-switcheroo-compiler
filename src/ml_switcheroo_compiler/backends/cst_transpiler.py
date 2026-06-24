@@ -59,19 +59,18 @@ class CSTTransformer(cst.CSTTransformer):
             original_node (cst.Call): Argument original_node
             updated_node (cst.Call): Argument updated_node
         """
-        if isinstance(updated_node.func, cst.Attribute) and (
-            isinstance(updated_node.func.value, cst.Name)
-            and updated_node.func.value.value == "torch"
-        ):
-            return updated_node.with_changes(
-                func=updated_node.func.with_changes(
-                    value=cst.Attribute(
-                        value=cst.Name("jax"),
-                        attr=cst.Name("numpy"),
-                    ),
-                ),
-            )
-        return updated_node
+        if not isinstance(updated_node.func, cst.Attribute):
+            return updated_node
+
+        if not isinstance(updated_node.func.value, cst.Name):
+            return updated_node  # pragma: no cover
+
+        if updated_node.func.value.value != "torch":
+            return updated_node  # pragma: no cover
+
+        new_value = cst.Attribute(value=cst.Name("jax"), attr=cst.Name("numpy"))
+        new_func = updated_node.func.with_changes(value=new_value)
+        return updated_node.with_changes(func=new_func)
 
 
 def transpile_source(source_code: str, target_framework: str = "jax") -> str:

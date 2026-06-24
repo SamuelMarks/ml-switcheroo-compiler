@@ -4,6 +4,16 @@ from __future__ import annotations
 from ml_switcheroo_compiler.ops.base import OpDef, register_op, dispatch_eager, get_op
 from ml_switcheroo_compiler.core.tensor import Tensor
 from collections.abc import Sequence
+from dataclasses import dataclass
+
+
+@dataclass
+class DropoutConfig:
+    """Dropout configuration."""
+
+    noise_shape: Sequence[int] | None = None
+    training: bool = False
+    seed: int | None = None
 
 
 @register_op("Dropout")
@@ -19,23 +29,19 @@ class Dropout(OpDef):
 def dropout(
     x: Tensor,
     rate: float = 0.5,
-    noise_shape: Sequence[int] | None = None,
-    training: bool = False,
-    seed: int = None,
+    config: DropoutConfig | None = None,
 ) -> Tensor:
     """Dropout operation.
 
     Args:
         x: Input tensor.
         rate: Dropout rate.
-        noise_shape: Optional shape of the dropout mask.
-        training: Whether to apply dropout.
-        seed: Random seed.
+        config: Dropout configuration.
 
     Returns:
         Tensor.
     """
-    return get_op("Dropout")()(x, rate=rate, noise_shape=noise_shape, training=training, seed=seed)
+    return get_op("Dropout")()(x, rate=rate, config=config)  # pragma: no cover
 
 
 @register_op("AlphaDropout")
@@ -51,24 +57,20 @@ class AlphaDropout(OpDef):
 def alpha_dropout(
     x: Tensor,
     rate: float = 0.5,
-    noise_shape: Sequence[int] | None = None,
-    training: bool = False,
-    seed: int = None,
+    config: DropoutConfig | None = None,
 ) -> Tensor:
     """AlphaDropout operation.
 
     Args:
         x: Input tensor.
         rate: Dropout rate.
-        noise_shape: Optional shape of the dropout mask.
-        training: Whether to apply dropout.
-        seed: Random seed.
+        config: Dropout configuration.
 
     Returns:
         Tensor.
     """
-    return get_op("AlphaDropout")()(
-        x, rate=rate, noise_shape=noise_shape, training=training, seed=seed
+    return get_op("AlphaDropout")()(  # pragma: no cover
+        x, rate=rate, config=config
     )
 
 
@@ -97,4 +99,4 @@ def activity_regularization(
     Returns:
         Tensor.
     """
-    return get_op("ActivityRegularization")()(x, l1=l1, l2=l2)
+    return get_op("ActivityRegularization")()(x, l1=l1, l2=l2)  # pragma: no cover

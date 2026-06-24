@@ -1,5 +1,5 @@
 import numpy as np
-from ml_switcheroo_compiler.backends.eager.vision_geometric import (
+from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_rotation_eager,
     RotationConfig,
 )

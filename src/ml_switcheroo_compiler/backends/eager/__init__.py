@@ -1,51 +1,51 @@
 """Eager backend utilities."""
 
 from .audio import istft_eager, mel_filterbank_eager, mfcc_eager
-from .core import (
+from .core import execute_generic_op
+from .core_math_ops import (
     _allclose,
+    _einsum,
+    _erfinv,
+    _fft,
+    _fftn,
+    _nan_to_num,
+    _pmean,
+    _psum,
+    _rfft,
+    _segment_sum,
+    _true_divide,
+)
+from .core_tensor_ops import (
     _argsort,
     _broadcast_in_dim,
     _broadcast_to,
     _conv_general_dilated_fallback,
     _dynamic_update_slice,
-    _einsum,
-    _erfinv,
     _extract_shape_value,
-    _fft,
-    _fftn,
     _full,
-    _group_mean,
-    _group_norm,
-    _group_variance,
-    _nan_to_num,
     _normalize_shape,
     _ones,
     _parse_eager_shape,
     _permute,
-    _pmean,
-    _psum,
     _reshape,
     _resize,
-    _rfft,
-    _segment_sum,
     _sort,
     _tensor_scatter_add,
     _tensor_scatter_max,
     _tensor_scatter_min,
     _tensor_scatter_update,
     _top_k,
-    _true_divide,
     _zeros,
-    execute_generic_op,
     generic_array,
     generic_asarray,
     generic_item,
     generic_zeros,
 )
+from .core_group_ops import _group_mean, _group_norm, _group_variance
 from .linalg import _power_iteration
 from .signal import gaussian_blur_eager, median_filter_eager
 from .vision_filtering import extract_bounding_boxes_eager, iou_eager, nms_eager
-from .vision_geometric import elastic_transform_eager, perspective_transform_eager, resize_eager
+from .vision_transforms import elastic_transform_eager, perspective_transform_eager, resize_eager
 
 __all__ = [
     "perspective_transform_eager",

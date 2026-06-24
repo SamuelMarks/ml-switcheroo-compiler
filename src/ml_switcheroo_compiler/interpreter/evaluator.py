@@ -1,7 +1,5 @@
 """IR evaluator using the OpRegistry."""
 
-from typing import Any
-
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -9,7 +7,7 @@ from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.environment import Environment
 
 
-def evaluate_graph(graph: LogicalGraph, inputs: dict[str, Any]) -> dict[str, Any]:
+def evaluate_graph(graph: LogicalGraph, inputs: dict[str, object]) -> dict[str, object]:
     """Evaluate an IR graph eagerly.
 
     graph (LogicalGraph): The graph to evaluate
@@ -20,7 +18,7 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, Any]) -> dict[str, Any
 
     Args:
         graph (LogicalGraph): Argument graph
-        inputs (dict[str, Any]): Argument inputs
+        inputs (dict[str, object]): Argument inputs
     """
     env = Environment(inputs)
     sorted_nodes = topological_sort(graph)
@@ -84,7 +82,7 @@ def _get_op_alias(op_type: str) -> str:
     return op_alias.get(op_type, op_type)
 
 
-def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict:
+def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, object]:
     """Execute _prepare_node_kwargs.
 
     Args:

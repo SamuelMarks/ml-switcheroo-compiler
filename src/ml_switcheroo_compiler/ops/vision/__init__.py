@@ -2,13 +2,15 @@
 """Auto-generated ml_switcheroo_compiler.ops.vision module exports."""
 
 from ml_switcheroo_compiler.ops.vision.affine import (
+    AffineConfig,
     DType,
     Tensor,
     TensorConfig,
     affine_generator,
     affine_transform,
     annotations,
-    config,
+    dataclass,
+    global_config,
     random_crop,
     random_elastic_transform,
     random_flip,
@@ -19,6 +21,7 @@ from ml_switcheroo_compiler.ops.vision.affine import (
     random_zoom,
 )
 from ml_switcheroo_compiler.ops.vision.bbox import (
+    config,
     crop,
     crop_and_resize,
     extract_bounding_boxes,
@@ -70,6 +73,7 @@ from ml_switcheroo_compiler.ops.vision.transforms import (
 )
 
 __all__ = [
+    "AffineConfig",
     "DType",
     "Tensor",
     "TensorConfig",
@@ -86,6 +90,7 @@ __all__ = [
     "crop",
     "crop_and_resize",
     "cutmix",
+    "dataclass",
     "degeneration",
     "elastic_transform",
     "equalization",
@@ -93,6 +98,7 @@ __all__ = [
     "flip_left_right",
     "flip_up_down",
     "gaussian_blur",
+    "global_config",
     "hsv_to_rgb",
     "invert",
     "iou",

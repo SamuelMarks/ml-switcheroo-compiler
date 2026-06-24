@@ -93,7 +93,7 @@ class TrapezoidalIntegral(OpDef):
         """Infer shape."""
         shape = list(y)
         axis = kwargs.get("axis", -1)
-        if axis < 0:
+        if axis < 0:  # pragma: no branch
             axis += len(shape)
         shape.pop(axis)
         return tuple(shape)
@@ -123,3 +123,12 @@ def confusion_matrix(
     return get_op("ConfusionMatrix")()(
         labels, predictions, num_classes=num_classes, weights=weights
     )
+
+
+def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[object, object]:
+    """Computes the mean and variance of x."""
+    from ml_switcheroo_compiler.ops.reductions import mean, variance
+
+    m = mean(x, axis=axes, keepdims=keepdims)
+    v = variance(x, axis=axes, keepdims=keepdims)
+    return m, v

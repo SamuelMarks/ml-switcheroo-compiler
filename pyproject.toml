@@ -30,8 +30,8 @@ packages = ["src/ml_switcheroo_compiler"]
 
 [tool.ruff]
 line-length = 100
-lint.select = ["E", "F", "D", "ANN", "UP", "B"]
-lint.ignore = ["E501"]
+lint.select = ["E", "F", "D", "ANN", "UP", "B", "C901", "PLR", "PLC", "PLW"]
+lint.ignore = ["E501", "PLC0415", "PLW0603", "PLW0602", "PLW1641", "PLW0127", "PLR1714"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -40,4 +40,4 @@ convention = "google"
 disallow_untyped_defs = true
 ignore_missing_imports = true
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D", "ANN", "E501"]
+"tests/*" = ["D", "ANN", "E501", "PLR2004", "PLR0124", "PLW0108"]

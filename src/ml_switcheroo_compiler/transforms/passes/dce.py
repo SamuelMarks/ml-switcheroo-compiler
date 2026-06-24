@@ -5,11 +5,22 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _find_side_effect_nodes(graph: IRGraph) -> set[str]:
+    """Function docstring.
+
+    Args:
+        graph: Arg.
+    """
     side_effect_ops = {"Assert", "AssignVariable", "Print"}
     return {node.id for node in graph.nodes.values() if node.op_type in side_effect_ops}
 
 
 def _build_reachable_set(graph: IRGraph, initial_reachable: set[str]) -> set[str]:
+    """Function docstring.
+
+    Args:
+        graph: Arg.
+        initial_reachable: Arg.
+    """
     reachable = set(initial_reachable)
     sorted_nodes = DAGTopologicalSorter.sort(graph)
     for node in reversed(sorted_nodes):

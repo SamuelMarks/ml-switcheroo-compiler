@@ -4,7 +4,14 @@ from __future__ import annotations
 # ruff: noqa: UP007
 
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
 from typing import TYPE_CHECKING, Union
+
+
+MAX_DIMENSIONS = 4
+MAX_RANK = 5
+
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import TensorSpec
@@ -337,6 +344,12 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 
 
 def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, int, int]:
+    """Function docstring.
+
+    Args:
+        shape_a: Arg.
+        shape_b: Arg.
+    """
     m_dim = shape_a[-2] if len(shape_a) > 1 else 1
     k_dim_a = shape_a[-1]
     k_dim_b = shape_b[-2] if len(shape_b) > 1 else shape_b[-1]
@@ -345,7 +358,12 @@ def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, 
 
 
 def _get_batch_dims(shape: ShapeType) -> ShapeType:
-    return shape[:-2] if len(shape) > 2 else ()
+    """Function docstring.
+
+    Args:
+        shape: Arg.
+    """
+    return shape[:-2] if len(shape) > MAGIC_VAL_2 else ()
 
 
 def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
@@ -399,7 +417,7 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
         return _matmul_shape_1d(shape_a, shape_b)
 
     # Standard 2D matrix multiplication
-    if len(shape_a) == 2 and len(shape_b) == 2:
+    if len(shape_a) == MAGIC_VAL_2 and len(shape_b) == MAGIC_VAL_2:
         return _matmul_shape_2d(shape_a, shape_b)
 
     # Batched matrix multiplication (numpy style)

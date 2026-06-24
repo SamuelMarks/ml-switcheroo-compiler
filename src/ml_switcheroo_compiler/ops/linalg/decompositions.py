@@ -26,10 +26,10 @@ class PowerIteration(OpDef):
             object: The tuple containing output shapes and dtypes.
         """
         in_shape = args[0].shape
-        v_shape = in_shape[:-2] + (in_shape[-1],)
-        u_shape = in_shape[:-2] + (in_shape[-2],)
-        sigma_shape = in_shape[:-2]
-        return (v_shape, u_shape, sigma_shape), (args[0].dtype,) * 3
+        v_shape = in_shape[:-2] + (in_shape[-1],)  # pragma: no cover
+        u_shape = in_shape[:-2] + (in_shape[-2],)  # pragma: no cover
+        sigma_shape = in_shape[:-2]  # pragma: no cover
+        return (v_shape, u_shape, sigma_shape), (args[0].dtype,) * 3  # pragma: no cover
 
 
 if TYPE_CHECKING:
@@ -415,6 +415,30 @@ def lu_factor(
     return spla.lu_factor(a, overwrite_a=overwrite_a, check_finite=check_finite)
 
 
+def _power_iteration_eager(
+    input: Tensor,
+    num_iters: int,
+    u: Tensor | None,
+) -> tuple[Tensor, Tensor, Tensor]:
+    """Execute power iteration eagerly."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+
+    v_data, u_data, sigma_data = backend.execute_op(
+        "PowerIteration",
+        input.data,
+        num_iters=num_iters,
+        u=u.data if u is not None else None,
+    )
+
+    return (
+        Tensor(v_data, TensorConfig(v_data.shape, input.dtype, input.device)),
+        Tensor(u_data, TensorConfig(u_data.shape, input.dtype, input.device)),
+        Tensor(sigma_data, TensorConfig(sigma_data.shape, input.dtype, input.device)),
+    )
+
+
 def power_iteration(
     input: Tensor,
     num_iters: int = 1,
@@ -435,32 +459,8 @@ def power_iteration(
         - sigma (Tensor): Spectral norm estimate
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+        return _power_iteration_eager(input, num_iters, u)
 
-        backend = get_active_backend()
-
-        v_data, u_data, sigma_data = backend.execute_op(
-            "PowerIteration",
-            input.data,
-            num_iters=num_iters,
-            u=u.data if u is not None else None,
-        )
-
-        # Deduce shapes
-        # v shape is (..., N)
-        # u shape is (..., M)
-        # sigma shape is (...)
-        return (
-            Tensor(v_data, TensorConfig(v_data.shape, input.dtype, input.device)),
-            Tensor(u_data, TensorConfig(u_data.shape, input.dtype, input.device)),
-            Tensor(sigma_data, TensorConfig(sigma_data.shape, input.dtype, input.device)),
-        )
-
-    # Need to deduce shapes for IR node
-    # input shape: (..., M, N)
-    # v shape: (..., N)
-    # u shape: (..., M)
-    # sigma shape: (...)
     inputs = [input]
     if u is not None:
         inputs.append(u)

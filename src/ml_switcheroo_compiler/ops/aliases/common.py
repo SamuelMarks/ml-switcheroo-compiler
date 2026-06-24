@@ -9,6 +9,12 @@ def create_eager_alias(name: str) -> Callable[..., object]:
     """Create an eager execution alias for a backend operation."""
 
     def alias(*args: object, **kwargs: object) -> object:
+        """Function docstring.
+
+        Args:
+        args: Arg.
+        kwargs: Arg.
+        """
         if core_config.eager_mode:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 

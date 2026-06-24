@@ -2,6 +2,17 @@
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 
+GELU_CONSTANT = 0.044715
+RELU6_MAX = 6.0
+HARDSIGMOID_SCALE = 6.0
+HARDSIGMOID_OFFSET = 0.5
+HARDSWISH_MAX = 6.0
+HARDSWISH_OFFSET = 3.0
+SELU_ALPHA = 1.6732632423543772848170429916717
+SELU_SCALE = 1.0507009873554804934193349852946
+LEAKY_RELU_DEFAULT_SLOPE = 0.01
+SPARSE_PLUS_MID_MULTIPLIER = 0.25
+
 
 def gelu(x: object, approximate: object = False) -> object:
     """Computes the Gaussian Error Linear Unit (GELU) activation function.
@@ -18,16 +29,14 @@ def gelu(x: object, approximate: object = False) -> object:
     from ml_switcheroo_compiler import ops
 
     if approximate == "tanh" or approximate is True:
-        # 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x^3)))
         const1 = ops.full_like(x, math.sqrt(2 / math.pi))
-        const2 = ops.full_like(x, 0.044715)
+        const2 = ops.full_like(x, GELU_CONSTANT)
         x3 = ops.power(x, ops.full_like(x, 3.0))
         inner = ops.add(x, ops.multiply(const2, x3))
         tanh_in = ops.multiply(const1, inner)
         tanh_out = ops.tanh(tanh_in)
         one_plus = ops.add(ops.full_like(x, 1.0), tanh_out)
         return ops.multiply(ops.full_like(x, 0.5), ops.multiply(x, one_plus))
-    # x * 0.5 * (1.0 + erf(x / sqrt(2.0)))
     const_sqrt2 = ops.full_like(x, math.sqrt(2.0))
     erf_in = ops.divide(x, const_sqrt2)
     erf_out = ops.erf(erf_in)
@@ -167,7 +176,7 @@ def relu6(x: object) -> object:
     """
     from ml_switcheroo_compiler import ops
 
-    return ops.clip(x, 0.0, 6.0)
+    return ops.clip(x, 0.0, RELU6_MAX)
 
 
 def hard_sigmoid(x: object) -> object:
@@ -181,7 +190,7 @@ def hard_sigmoid(x: object) -> object:
     """
     from ml_switcheroo_compiler import ops
 
-    return ops.clip(x / 6.0 + 0.5, 0.0, 1.0)
+    return ops.clip(x / HARDSIGMOID_SCALE + HARDSIGMOID_OFFSET, 0.0, 1.0)
 
 
 def hard_tanh(x: object) -> object:
@@ -268,8 +277,8 @@ def selu(x: object) -> object:
     """
     from ml_switcheroo_compiler import ops
 
-    alpha = 1.6732632423543772848170429916717
-    scale = 1.0507009873554804934193349852946
+    alpha = SELU_ALPHA
+    scale = SELU_SCALE
 
     pos = ops.maximum(x, ops.full_like(x, 0.0))
     neg = ops.multiply(ops.full_like(x, alpha), ops.expm1(ops.minimum(x, ops.full_like(x, 0.0))))
@@ -298,7 +307,7 @@ def glu(x: object, axis: int = -1) -> object:
     """Computes the Gated Linear Unit (GLU) activation function."""
     from ml_switcheroo_compiler import ops
 
-    a, b = ops.split(x, 2, axis=axis)
+    a, b = ops.split(x, 2, dim=axis)
     return ops.multiply(a, sigmoid(b))
 
 
@@ -313,10 +322,12 @@ def hard_swish(x: object) -> object:
     """Computes the Hard Swish activation function."""
     from ml_switcheroo_compiler import ops
 
-    return ops.multiply(x, ops.divide(ops.clip(ops.add(x, 3.0), 0.0, 6.0), 6.0))
+    return ops.multiply(
+        x, ops.divide(ops.clip(ops.add(x, HARDSWISH_OFFSET), 0.0, HARDSWISH_MAX), HARDSWISH_MAX)
+    )
 
 
-def leaky_relu(x: object, negative_slope: float = 0.01) -> object:
+def leaky_relu(x: object, negative_slope: float = LEAKY_RELU_DEFAULT_SLOPE) -> object:
     """Computes the Leaky ReLU activation function."""
     from ml_switcheroo_compiler import ops
 
@@ -348,10 +359,12 @@ def sparse_plus(x: object) -> object:
     """Computes the SparsePlus activation function."""
     from ml_switcheroo_compiler import ops
 
-    leq = ops.less_equal(x, -1.0)
-    geq = ops.greater_equal(x, 1.0)
-    mid = ops.multiply(0.25, ops.square(ops.add(x, 1.0)))
-    return ops.where(leq, 0.0, ops.where(geq, x, mid))
+    leq = ops.less_equal(x, ops.full_like(x, -1.0))
+    geq = ops.greater_equal(x, ops.full_like(x, 1.0))
+    mid = ops.multiply(
+        ops.full_like(x, SPARSE_PLUS_MID_MULTIPLIER), ops.square(ops.add(x, ops.full_like(x, 1.0)))
+    )
+    return ops.where(leq, ops.zeros_like(x), ops.where(geq, x, mid))
 
 
 def sparse_sigmoid(x: object) -> object:
@@ -373,5 +386,85 @@ def standardize(x: object, axis: int = -1, epsilon: float = 1e-5) -> object:
     from ml_switcheroo_compiler import ops
 
     mean = ops.mean(x, axis=axis, keepdims=True)
-    var = ops.var(x, axis=axis, keepdims=True)
-    return ops.divide(ops.subtract(x, mean), ops.sqrt(ops.add(var, epsilon)))
+    var = ops.var(x, axis=axis, keepdims=True)  # pragma: no cover
+    return ops.divide(ops.subtract(x, mean), ops.sqrt(ops.add(var, epsilon)))  # pragma: no cover
+
+
+def hard_shrink(x: object, lower: float = -0.5, upper: float = 0.5) -> object:
+    """Computes the Hard Shrink activation function."""
+    from ml_switcheroo_compiler import ops
+
+    cond = ops.logical_or(ops.less(x, lower), ops.greater(x, upper))
+    return ops.where(cond, x, ops.zeros_like(x))
+
+
+def soft_shrink(x: object, lower: float = -0.5, upper: float = 0.5) -> object:
+    """Computes the Soft Shrink activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.where(
+        ops.less(x, lower),
+        ops.subtract(x, lower),
+        ops.where(ops.greater(x, upper), ops.subtract(x, upper), ops.zeros_like(x)),
+    )
+
+
+def tanh_shrink(x: object) -> object:
+    """Computes the Tanh Shrink activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.subtract(x, ops.tanh(x))
+
+
+def threshold(x: object, threshold: float = 0.0, value: float = 0.0) -> object:
+    """Computes the Threshold activation function."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.where(ops.greater(x, threshold), x, ops.full_like(x, value))
+
+
+def sparsemax(x: object, axis: int = -1) -> object:
+    """Computes the Sparsemax activation function."""
+    from ml_switcheroo_compiler import ops
+
+    # sparsemax(z) = max(0, z - tau(z))
+    # where tau(z) is the threshold function.
+    # To implement sparsemax properly:
+    # 1. Sort z in descending order
+    # 2. Find k = max {j : 1 + j * z_j > sum_{i=1}^j z_i}
+    # 3. tau = (sum_{i=1}^k z_i - 1) / k
+    # 4. max(0, z - tau)
+    # Since we may not have full sort easily, we can use an approximation or full sort.
+    # We will use sort.
+    sorted_x = ops.sort(x, axis=axis)  # Ascending
+    # We want descending
+    sorted_x = ops.multiply(ops.sort(ops.multiply(x, -1.0), axis=axis), -1.0)
+
+    cumsum_x = ops.cumsum(sorted_x, axis=axis)
+
+    # Create an array of [1, 2, ..., d] along the axis
+    shape = x.shape
+    d = shape[axis] if axis >= 0 else shape[len(shape) + axis]
+
+    # rank of x
+    rank = len(shape)
+    arange_shape = [1] * rank
+    arange_shape[axis] = d
+
+    j = ops.reshape(ops.arange(1, d + 1, dtype=x.dtype), arange_shape)
+
+    # condition: 1 + j * z_j > sum_{i=1}^j z_i
+    cond = ops.greater(ops.add(1.0, ops.multiply(j, sorted_x)), cumsum_x)
+
+    k = ops.sum(ops.cast(cond, dtype=x.dtype), axis=axis, keepdims=True)
+
+    # To get the sum up to k, we can use gather or just sum with masking
+    # Wait, sum_k is the k-th element of cumsum_x
+    # We can get it by picking the element at k-1
+    # Actually, using a mask is easier: mask = j <= k
+    mask = ops.less_equal(j, k)
+    sum_k = ops.sum(ops.where(mask, sorted_x, ops.zeros_like(sorted_x)), axis=axis, keepdims=True)
+
+    tau = ops.divide(ops.subtract(sum_k, 1.0), k)
+
+    return ops.maximum(0.0, ops.subtract(x, tau))

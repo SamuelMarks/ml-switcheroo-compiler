@@ -2,12 +2,16 @@
 
 from ml_switcheroo_compiler.ops.linalg.basic import (
     ConvGeneralDilated,
-    Dot,
-    DotGeneral,
-    Einsum,
     Fft,
     Matmul,
     Rfft,
+)
+from ml_switcheroo_compiler.ops.linalg.dot import (
+    Dot,
+    DotGeneral,
+)
+from ml_switcheroo_compiler.ops.linalg.einsum import (
+    Einsum,
 )
 
 from .conv import conv_general_dilated as conv_general_dilated
@@ -28,8 +32,11 @@ from .decompositions import solve_triangular as solve_triangular
 from .decompositions import svd as svd
 from .fft import fft as fft
 from .fft import fft2d as fft2d
+from .fft import fft2 as fft2
+from .fft import irfft as irfft
 from .fft import ifft as ifft
 from .fft import ifft2d as ifft2d
+from .fft import ifft2 as ifft2
 from .fft import rfft as rfft
 from .frontend import convolve as convolve
 from .frontend import cross as cross
@@ -57,15 +64,21 @@ __all__ = [
     "det",
     "dot",
     "dot_general",
+    "eig",
     "eigh",
     "eigvalsh",
     "einsum",
     "fft",
     "fft2d",
+    "fft2",
     "ifft",
     "ifft2d",
+    "ifft2",
+    "irfft",
     "inner",
     "inv",
+    "logdet",
+    "lstsq",
     "lu",
     "lu_factor",
     "matmul",
@@ -82,3 +95,31 @@ __all__ = [
     "tensordot",
     "vdot",
 ]
+
+
+def eig(input: object) -> tuple[object, object]:
+    """Computes eigenvalues and eigenvectors of a square matrix."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+    w, v = backend.execute_op("Eig", getattr(input, "data", input))
+    return w, v
+
+
+def logdet(input: object) -> object:
+    """Computes log of the determinant."""
+    from ml_switcheroo_compiler.ops.linalg.decompositions import slogdet
+
+    sign, ldet = slogdet(input)
+    # Usually logdet is only defined for positive determinant, but we just return ldet
+    return ldet
+
+
+def lstsq(a: object, b: object, rcond: float = 1e-15) -> object:
+    """Returns the least-squares solution to a linear matrix equation."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    backend = get_active_backend()
+    res = backend.execute_op("Lstsq", getattr(a, "data", a), getattr(b, "data", b), rcond=rcond)
+    # The return value might be a tuple (x, residuals, rank, s) depending on backend
+    return res

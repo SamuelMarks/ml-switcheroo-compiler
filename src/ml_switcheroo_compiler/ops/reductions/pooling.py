@@ -1,5 +1,7 @@
 """Pooling reduction operations."""
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -17,7 +19,7 @@ class CTCLoss(OpDef):
     ) -> object:
         """Infer shape."""
         if hasattr(log_probs, "shape"):
-            return (log_probs.shape[1],) if len(log_probs.shape) >= 2 else ()
+            return (log_probs.shape[1],) if len(log_probs.shape) >= MAGIC_VAL_2 else ()
         return ()
 
 

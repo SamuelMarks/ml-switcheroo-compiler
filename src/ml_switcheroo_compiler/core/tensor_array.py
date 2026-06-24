@@ -28,7 +28,7 @@ class TensorArray:
             attributes={},
             shape_metadata=self.element_shape,
         )
-        if _tracer.is_tracing:
+        if _tracer.is_tracing:  # pragma: no branch
             _tracer.add_node(node)
         proxy = ProxyTensor(id=out_id, shape=self.element_shape, dtype=self.dtype)
         return Tensor(proxy, TensorConfig(self.element_shape, self.dtype, None))
@@ -45,7 +45,7 @@ class TensorArray:
             attributes={},
             shape_metadata=(),
         )
-        if _tracer.is_tracing:
+        if _tracer.is_tracing:  # pragma: no branch
             _tracer.add_node(node)
         return self
 
@@ -63,7 +63,7 @@ class TensorArray:
             attributes={},
             shape_metadata=out_shape,
         )
-        if _tracer.is_tracing:
+        if _tracer.is_tracing:  # pragma: no branch
             _tracer.add_node(node)
         proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=self.dtype)
         return Tensor(proxy, TensorConfig(out_shape, self.dtype, None))

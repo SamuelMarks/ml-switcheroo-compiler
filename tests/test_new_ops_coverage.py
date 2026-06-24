@@ -199,50 +199,25 @@ def test_nn_activations_coverage():
     config.eager_mode = False
 
     t = Tensor(None, TensorConfig((2, 2), DType.Float32, None))
-    try:
-        activations.glu(t)
-    except Exception:
-        pass
-    try:
-        activations.hard_silu(t)
-    except Exception:
-        pass
-    try:
-        activations.hard_swish(t)
-    except Exception:
-        pass
-    try:
-        activations.leaky_relu(t)
-    except Exception:
-        pass
-    try:
-        activations.mish(t)
-    except Exception:
-        pass
-    try:
-        activations.soft_sign(t)
-    except Exception:
-        pass
-    try:
-        activations.softplus(t)
-    except Exception:
-        pass
-    try:
-        activations.sparse_plus(t)
-    except Exception:
-        pass
-    try:
-        activations.sparse_sigmoid(t)
-    except Exception:
-        pass
-    try:
-        activations.squareplus(t)
-    except Exception:
-        pass
-    try:
-        activations.standardize(t)
-    except Exception:
-        pass
+
+    fns = [
+        activations.glu,
+        activations.hard_silu,
+        activations.hard_swish,
+        activations.leaky_relu,
+        activations.mish,
+        activations.soft_sign,
+        activations.softplus,
+        activations.sparse_plus,
+        activations.sparse_sigmoid,
+        activations.squareplus,
+        activations.standardize,
+    ]
+    for fn in fns:
+        try:
+            fn(t)
+        except Exception:
+            pass
 
 
 def test_lax_coverage_eager():

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 
-def test_mlx_eager_coverage():
+def test_mlx_eager_coverage_part1():
     try:
         import mlx.core as mx
     except ImportError:
@@ -37,6 +37,23 @@ def test_mlx_eager_coverage():
 
     res = execute_op(cls, "Reshape", mx.array([1, 2]), newshape=(2,))
     assert res is not None
+
+
+def test_mlx_eager_coverage_part2():
+    try:
+        import mlx.core as mx
+    except ImportError:
+        pytest.skip("MLX not installed")
+
+    from ml_switcheroo_compiler.backends.mlx.eager import execute_op
+
+    class DummyBackend:
+        pass
+
+    cls = DummyBackend()
+    shape_mock = MagicMock()
+    shape_mock.data = [2]
+    shape_mock.tolist.return_value = [2]
 
     # Zeros
     res = execute_op(cls, "Zeros", 2)

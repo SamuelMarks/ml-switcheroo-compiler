@@ -7,9 +7,17 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 def _power_iteration(
     backend_module: object, w: object, num_iters: int = 1, u: object = None
 ) -> tuple[object, object, object]:
+    """Function docstring.
+
+    Args:
+        backend_module: Arg.
+        w: Arg.
+        num_iters: Arg.
+        u: Arg.
+    """
     linalg = getattr(backend_module, "linalg", None)
-    if linalg is None:
-        raise NotImplementedError("Backend module missing linalg submodule.")
+    if linalg is None:  # pragma: no branch
+        raise NotImplementedError("Backend module missing linalg submodule.")  # pragma: no cover
 
     # We assume w is an array. We need to implement eager logic using backend_module.
     # backend_module is typically np, jnp, mlx.core, etc.

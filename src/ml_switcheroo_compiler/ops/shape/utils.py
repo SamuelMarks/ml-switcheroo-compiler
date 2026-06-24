@@ -1,6 +1,7 @@
 """Utility functions for shape ops."""
 
 from __future__ import annotations
+from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 # pylint: disable=duplicate-code
 
 
@@ -38,10 +39,9 @@ def _emit_shape_node(
     Tensor: A new Tensor representing the output of the emitted node
     """
     out_id = str(uuid.uuid4())
-    from ml_switcheroo_compiler.ops.base import get_op
 
-    op_def = get_op(op_type)()
-    input_ids, _, _ = op_def._extract_proxy_inputs(tuple(inputs))
+    pass
+    input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
 
     node = LogicalNode(
         id=out_id,

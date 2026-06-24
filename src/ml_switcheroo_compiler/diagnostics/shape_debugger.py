@@ -12,7 +12,7 @@ from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.tracing.tracer import _tracer
 
 
-def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
+def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:  # noqa: ANN401
     """Traces the execution of a model function to debug and document tensor shapes.
 
     Generates a Markdown-formatted table containing the shape and data type of the

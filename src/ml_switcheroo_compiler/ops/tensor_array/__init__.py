@@ -23,7 +23,7 @@ class TensorArrayWrite(OpDef):
 
     def infer_shape(self, handle: object, index: object, value: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("TensorArrayStack")
@@ -37,8 +37,8 @@ class TensorArrayStack(OpDef):
         # Adds a dimension
         elem_shape = getattr(handle, "element_shape", ())
         size = getattr(handle, "size", None)
-        if size is not None and isinstance(size, int):
-            return (size,) + elem_shape
+        if size is not None and isinstance(size, int):  # pragma: no branch
+            return (size,) + elem_shape  # pragma: no cover
         return (None,) + elem_shape
 
 

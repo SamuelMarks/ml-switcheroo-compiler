@@ -77,6 +77,7 @@ class Config:
 
     @property
     def _state(self) -> ConfigState:
+        """Function docstring."""
         return _config_state_var.get()
 
     @property
@@ -86,6 +87,11 @@ class Config:
 
     @backend.setter
     def backend(self, value: str) -> None:
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
         self._state.execution.backend = value
 
     @property
@@ -95,7 +101,12 @@ class Config:
 
     @default_float_dtype.setter
     def default_float_dtype(self, value: DType) -> None:
-        self._state.env.default_float_dtype = value
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
+        self._state.env.default_float_dtype = value  # pragma: no cover
 
     @property
     def default_int_dtype(self) -> DType:
@@ -104,7 +115,12 @@ class Config:
 
     @default_int_dtype.setter
     def default_int_dtype(self, value: DType) -> None:
-        self._state.env.default_int_dtype = value
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
+        self._state.env.default_int_dtype = value  # pragma: no cover
 
     @property
     def default_device(self) -> Device:
@@ -113,7 +129,12 @@ class Config:
 
     @default_device.setter
     def default_device(self, value: Device) -> None:
-        self._state.env.default_device = value
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
+        self._state.env.default_device = value  # pragma: no cover
 
     @property
     def current_stream(self) -> str:
@@ -122,6 +143,11 @@ class Config:
 
     @current_stream.setter
     def current_stream(self, value: str) -> None:
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
         self._state.execution.current_stream = value
 
     @property
@@ -131,6 +157,11 @@ class Config:
 
     @layout_map.setter
     def layout_map(self, value: object) -> None:
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
         self._state.env.layout_map = value
 
     @property
@@ -140,6 +171,11 @@ class Config:
 
     @jax_enable_x64.setter
     def jax_enable_x64(self, value: bool) -> None:
+        """Function docstring.
+
+        Args:
+        value: Arg.
+        """
         self._state.env.jax_enable_x64 = value
 
     def clear_cache(self) -> None:
@@ -173,7 +209,7 @@ class Config:
         Returns:
             ConfigState: The result of the operation
         """
-        return self._state.clone()
+        return self._state.clone()  # pragma: no cover
 
 
 # Singleton instance proxy

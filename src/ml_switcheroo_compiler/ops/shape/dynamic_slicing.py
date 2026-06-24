@@ -4,6 +4,8 @@ from __future__ import annotations
 # pylint: disable=duplicate-code
 
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
@@ -11,6 +13,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -144,7 +147,7 @@ class DynamicSlice(OpDef):
         Returns:
             object: The evaluated output resulting from this operation.
         """
-        slice_sizes = args[2] if len(args) > 2 else kwargs["slice_sizes"]
+        slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)
 
     def emit_jax(self, *args: object, **kwargs: object) -> object:

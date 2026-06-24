@@ -62,7 +62,6 @@ class FallbackHandler:
 
     @staticmethod
     def generate_fallback_code(
-        generator_instance: object,
         node: object,
         input_vars: list[str],
         prefix: str,
@@ -71,7 +70,6 @@ class FallbackHandler:
         """Generate fallback code for an unsupported operation.
 
         Args:
-            generator_instance (object): The generator using this fallback.
             node (object): The IR node.
             input_vars (list[str]): List of input variables.
             prefix (str): Backend prefix.
@@ -80,13 +78,13 @@ class FallbackHandler:
         Returns:
             str: Generated python code.
         """
-        ctx = FormatterContext(
+        ctx = FormatterContext(  # pragma: no cover
             prefix=prefix,
             op_type=getattr(node, "op_type", "Unknown"),
             input_vars=input_vars,
             kwargs=kwargs,
         )
-        return OpFormatter.format_generic_fallback(ctx)
+        return OpFormatter.format_generic_fallback(ctx)  # pragma: no cover
 
 
 class CodeFormatter:

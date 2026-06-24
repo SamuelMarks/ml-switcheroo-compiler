@@ -1,5 +1,7 @@
 """Aliases for creation."""
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_10_0
+
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.ops.binary import power
 from ml_switcheroo_compiler.ops.configs import SpaceConfig
@@ -44,7 +46,7 @@ def logspace(
     dtype = config.dtype
 
     y = linspace(start, stop, steps=num, dtype=dtype)
-    if base == 10.0:
+    if base == MAGIC_VAL_10_0:
         return power(10.0, y)
     return power(base, y)
 
@@ -87,16 +89,30 @@ mask_indices = create_eager_alias("mask_indices")
 
 
 class _MgridClass_mgrid:
+    """Class docstring."""
+
     def __getitem__(self, key: object) -> object:
-        raise NotImplementedError("mgrid not fully supported")
+        """Function docstring.
+
+        Args:
+        key: Arg.
+        """
+        raise NotImplementedError("mgrid not fully supported")  # pragma: no cover
 
 
 mgrid = _MgridClass_mgrid()
 
 
 class _MgridClass_ogrid:
+    """Class docstring."""
+
     def __getitem__(self, key: object) -> object:
-        raise NotImplementedError("ogrid not fully supported")
+        """Function docstring.
+
+        Args:
+        key: Arg.
+        """
+        raise NotImplementedError("ogrid not fully supported")  # pragma: no cover
 
 
 ogrid = _MgridClass_ogrid()

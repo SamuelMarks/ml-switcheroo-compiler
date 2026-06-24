@@ -1,5 +1,7 @@
 """Type Promotion Explicitizer Pass."""
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
 import uuid
 from typing import Optional
 
@@ -12,6 +14,13 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
+    """Function docstring.
+
+    Args:
+        graph: Arg.
+        input_id: Arg.
+        target_dt: Arg.
+    """
     new_id = f"cast_{uuid.uuid4().hex[:6]}"
     new_node = LogicalNode(
         id=new_id,
@@ -25,6 +34,12 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
 
 
 def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
+    """Function docstring.
+
+    Args:
+        dt1: Arg.
+        dt2: Arg.
+    """
     if dt1 is None or dt2 is None or dt1 == dt2:
         return None
     try:
@@ -50,7 +65,7 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
     dtype_inference_pass(graph)
 
     for node in sorted_nodes:
-        if len(node.inputs) != 2:
+        if len(node.inputs) != MAGIC_VAL_2:
             continue
 
         in1, in2 = node.inputs

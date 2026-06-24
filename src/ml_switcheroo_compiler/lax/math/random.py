@@ -2,22 +2,18 @@
 
 from ml_switcheroo_compiler.core.dispatch import dispatch
 
-
-def rng_bit_generator(*args: object, **kwargs: object) -> object:
-    """Execute rng_bit_generator."""
-    return dispatch("lax", "rng_bit_generator", *args, **kwargs)
+from typing import Callable, Any
 
 
-def rng_bit_generator_p(*args: object, **kwargs: object) -> object:
-    """Execute rng_bit_generator_p."""
-    return dispatch("lax", "rng_bit_generator_p", *args, **kwargs)
+def _make_dispatcher(op_name: str) -> Callable[..., Any]:
+    def _dispatcher(*args: object, **kwargs: object) -> object:
+        return dispatch("lax", op_name, *args, **kwargs)
+
+    _dispatcher.__name__ = op_name
+    _dispatcher.__doc__ = f"Execute {op_name}."
+    return _dispatcher
 
 
-def rng_uniform(*args: object, **kwargs: object) -> object:
-    """Execute rng_uniform."""
-    return dispatch("lax", "rng_uniform", *args, **kwargs)
-
-
-def rng_uniform_p(*args: object, **kwargs: object) -> object:
-    """Execute rng_uniform_p."""
-    return dispatch("lax", "rng_uniform_p", *args, **kwargs)
+_OPS = ("rng_bit_generator", "rng_bit_generator_p", "rng_uniform", "rng_uniform_p")
+for _op in _OPS:
+    globals()[_op] = _make_dispatcher(_op)

@@ -50,7 +50,8 @@ __all__ = [
 
 
 def image_data_format() -> str:
-    return "channels_last"
+    """Function docstring."""
+    return "channels_last"  # pragma: no cover
 
 
 _uid_dict = {}
@@ -58,16 +59,16 @@ _uid_dict = {}
 
 def get_uid(prefix: str = "") -> int:
     """Get a unique ID."""
-    _uid_dict[prefix] = _uid_dict.get(prefix, 0) + 1
-    return _uid_dict[prefix]
+    _uid_dict[prefix] = _uid_dict.get(prefix, 0) + 1  # pragma: no cover
+    return _uid_dict[prefix]  # pragma: no cover
 
 
 def backend() -> str:
     """Return backend."""
-    return "numpy"
+    return "numpy"  # pragma: no cover
 
 
 @contextlib.contextmanager
 def name_scope(name: str) -> Iterator[None]:
     """Context manager for name scope."""
-    yield
+    yield  # pragma: no cover

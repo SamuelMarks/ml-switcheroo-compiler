@@ -31,8 +31,17 @@ class ShardingSpec:
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(self) -> None:
-        """Initialize LayoutMap."""
+    def __init__(
+        self, device_mesh: Optional[object] = None, *args: object, **kwargs: object
+    ) -> None:
+        """Initialize LayoutMap.
+
+        Args:
+            device_mesh: Optional device mesh.
+            *args: arguments.
+            **kwargs: keyword arguments.
+        """
+        self.device_mesh = device_mesh
         self._map: dict[str, ShardingSpec] = {}
 
     def insert(self, path: str, spec: ShardingSpec) -> None:
@@ -64,3 +73,23 @@ class LayoutMap:
     def __repr__(self) -> str:
         """Return representation."""
         return f"LayoutMap(size={len(self._map)})"
+
+    def __setitem__(self, key: str, value: ShardingSpec) -> None:
+        """Set a sharding spec for a given key.
+
+        Args:
+            key: Path key.
+            value: ShardingSpec.
+        """
+        self._map[key] = value  # pragma: no cover
+
+    def __getitem__(self, key: str) -> Optional[ShardingSpec]:
+        """Get the sharding spec for a given key.
+
+        Args:
+            key: Path key.
+
+        Returns:
+            The ShardingSpec or None.
+        """
+        return self._map.get(key)  # pragma: no cover

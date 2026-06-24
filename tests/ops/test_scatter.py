@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops import (
+from ml_switcheroo_compiler.ops.shape import (
     tensor_scatter_add,
     tensor_scatter_max,
     tensor_scatter_min,

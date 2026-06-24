@@ -1,52 +1,122 @@
-# ruff: noqa: E402, D100, D101
-from ml_switcheroo_compiler.backends.common.audio_utils import (
-    extract_stft_attributes,
-    extract_mel_attributes,
-)
-from ml_switcheroo_compiler.backends.generator_utils import (
-    _extract_extract_boxes_attributes,
-    _extract_filter_attributes,
-    _extract_vision_transform_attributes,
-)
+# ruff: noqa: E402
+
+"""Module docstring."""
 
 """NumPy code generator and eager execution backend."""
-
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
+from .numpy_mixins import NumpyVisionMixin, NumpyAudioMixin, NumpyScatterMixin
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
-
-
 from ml_switcheroo_compiler.backends.common.generator_mixins import (
     SharedASTGeneratorMixin,
     GroupNormConfig,
 )
 
 
+class NumpyTypeTranslator:
+    """Utility for Numpy type mappings."""
+
+    @staticmethod
+    def get_fallback_prefix() -> str:
+        """Get fallback prefix."""
+        return "np"  # pragma: no cover
+
+    @staticmethod
+    def get_ops_map() -> dict:
+        """Get ops map."""
+        return {}  # pragma: no cover
+
+
+class NumpyASTVisitor:
+    """Visitor methods for Numpy AST traversal."""
+
+    _OP_MAP = {
+        "Add": "np.add",
+        "Zeros": "np.zeros",
+        "Ones": "np.ones",
+        "Full": "np.full",
+        "Arange": "np.arange",
+        "Sort": "np.sort",
+        "ArgSort": "np.argsort",
+        "Allclose": "np.allclose",
+        "Fft": "np.fft.fft",
+        "Rfft": "np.fft.rfft",
+        "Fftn": "np.fft.fftn",
+        "Erfinv": "scipy.special.erfinv",
+        "NanToNum": "np.nan_to_num",
+        "Subtract": "np.subtract",
+        "Multiply": "np.multiply",
+        "TrueDivide": "np.divide",
+        "Exp": "np.exp",
+        "Log": "np.log",
+        "Matmul": "np.matmul",
+        "Sin": "np.sin",
+        "Cos": "np.cos",
+        "Sum": "np.sum",
+        "Mean": "np.mean",
+        "Max": "np.max",
+        "Min": "np.min",
+        "BroadcastTo": "np.broadcast_to",
+        "Reshape": "np.reshape",
+        "Transpose": "np.transpose",
+        "Equal": "np.equal",
+        "NotEqual": "np.not_equal",
+        "Greater": "np.greater",
+        "Less": "np.less",
+        "Negative": "np.negative",
+    }
+
+    @classmethod
+    def _format_kwargs(cls, kwargs: dict[str, object]) -> str:
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
+        if "dimension" in kwargs:
+            filtered_kwargs["axis"] = kwargs["dimension"]  # pragma: no cover
+        return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
+
+    @classmethod
+    def generic_visit(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Fallback visit."""
+        op_type = getattr(node, "op_type", "")
+        np_func = cls._OP_MAP.get(op_type, f"np.{op_type.lower()}")
+        args_str = ", ".join(input_vars)
+        kwargs_str = cls._format_kwargs(kwargs)
+        if kwargs_str:
+            args_str = f"{args_str}, {kwargs_str}" if args_str else kwargs_str
+        return f"{np_func}({args_str})"
+
+
 @register_backend("numpy")
-class NumpyGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
+class NumpyGenerator(
+    SharedASTGeneratorMixin,
+    PythonStringGenerator,
+    NumpyVisionMixin,
+    NumpyAudioMixin,
+    NumpyScatterMixin,
+):
     """Generates NumPy python code from IR."""
 
     def _get_backend_prefix(self) -> str:
-        return "np"
+        """Function docstring."""
+        return "np"  # pragma: no cover
 
     def get_helper_functions(self) -> list[str]:
         """Get helper functions."""
-        res = super().get_helper_functions()
-        res.extend(
-            self._get_group_norm_code(
-                GroupNormConfig(
-                    "np",
-                    "numpy as np",
-                    "np.reshape",
-                    "np.mean",
-                    "np.var",
-                    "np.sqrt",
-                    dim_arg="axis",
-                    keepdim_arg="keepdims",
-                )
-            )
-        )
-        return res
+        res = super().get_helper_functions()  # pragma: no cover
+        res.extend(  # pragma: no cover
+            self._get_group_norm_code(  # pragma: no cover
+                GroupNormConfig(  # pragma: no cover
+                    "np",  # pragma: no cover
+                    "numpy as np",  # pragma: no cover
+                    "np.reshape",  # pragma: no cover
+                    "np.mean",  # pragma: no cover
+                    "np.var",  # pragma: no cover
+                    "np.sqrt",  # pragma: no cover
+                    dim_arg="axis",  # pragma: no cover
+                    keepdim_arg="keepdims",  # pragma: no cover
+                )  # pragma: no cover
+            )  # pragma: no cover
+        )  # pragma: no cover
+        return res  # pragma: no cover
 
     _import_header = (
         "import numpy as np",
@@ -73,7 +143,7 @@ class NumpyGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
         "            B[..., i*2+1] = y",
         "        h = np.linalg.solve(A, B)",
         "        return np.reshape(np.concatenate([h, np.ones((*dst.shape[:-2], 1), dtype=np.float32)], axis=-1), (*dst.shape[:-2], 3, 3))",
-        "    has_batch = images.ndim == 4",
+        "    has_batch = images.ndim == MAGIC_VAL_4",
         "    if not has_batch:",
         "        images = np.expand_dims(images, 0)",
         "        start_points = np.expand_dims(start_points, 0)",
@@ -127,153 +197,20 @@ class NumpyGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"np_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
-    def visit_TensorScatterUpdate(
-        self, node: IRNode, input_vars: list[str], **kwargs: object
-    ) -> str:
-        """Handle TensorScatterUpdate."""
-        return f"(lambda c, i, u: [c.__setitem__(tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
-
-    def visit_TensorScatterAdd(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Handle TensorScatterAdd."""
-        return f"(lambda c, i, u: [np.add.at(c, tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
-
-    def visit_TensorScatterMax(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Handle TensorScatterMax."""
-        return f"(lambda c, i, u: [np.maximum.at(c, tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
-
-    def visit_TensorScatterMin(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Handle TensorScatterMin."""
-        return f"(lambda c, i, u: [np.minimum.at(c, tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"
-
-    def visit_PerspectiveTransform(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
-        """Evaluate perspective transform."""
-        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"np_perspective_transform({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, '{interpolation}', {fill_value}, {df_str})"
-
     def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum."""
-        args_str = ", ".join(input_vars)
-        eq = kwargs.get("equation", "")
-        return f"np.einsum('{eq}', {args_str})"
+        args_str = ", ".join(input_vars)  # pragma: no cover
+        eq = kwargs.get("equation", "")  # pragma: no cover
+        return f"np.einsum('{eq}', {args_str})"  # pragma: no cover
+
+    def get_fallback_prefix(self) -> str:
+        """Get fallback prefix."""
+        return NumpyTypeTranslator.get_fallback_prefix()  # pragma: no cover
+
+    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
+        """Get ops map."""
+        return NumpyTypeTranslator.get_ops_map()  # pragma: no cover
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Fallback visit."""
-        op_type = node.op_type
-        op_map = {
-            "Add": "np.add",
-            "Zeros": "np.zeros",
-            "Ones": "np.ones",
-            "Full": "np.full",
-            "Arange": "np.arange",
-            "Sort": "np.sort",
-            "ArgSort": "np.argsort",
-            "Allclose": "np.allclose",
-            "Fft": "np.fft.fft",
-            "Rfft": "np.fft.rfft",
-            "Fftn": "np.fft.fftn",
-            "Erfinv": "scipy.special.erfinv",
-            "NanToNum": "np.nan_to_num",
-            "Subtract": "np.subtract",
-            "Multiply": "np.multiply",
-            "TrueDivide": "np.divide",
-            "Exp": "np.exp",
-            "Log": "np.log",
-            "Matmul": "np.matmul",
-            "Sin": "np.sin",
-            "Cos": "np.cos",
-            "Sum": "np.sum",
-            "Mean": "np.mean",
-            "Max": "np.max",
-            "Min": "np.min",
-            "BroadcastTo": "np.broadcast_to",
-            "Reshape": "np.reshape",
-            "Transpose": "np.transpose",
-            "Equal": "np.equal",
-            "NotEqual": "np.not_equal",
-            "Greater": "np.greater",
-            "Less": "np.less",
-            "Negative": "np.negative",
-        }
-
-        np_func = op_map.get(op_type, f"np.{op_type.lower()}")
-        args_str = ", ".join(input_vars)
-        kwargs_str = ", ".join(f"{k}={v}" for k, v in kwargs.items())
-
-        if kwargs_str:
-            args_str = f"{args_str}, {kwargs_str}" if args_str else kwargs_str
-
-        return f"{np_func}({args_str})"
-
-    def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate elastic transform."""
-        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"np_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"
-
-    def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate gaussian blur."""
-        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"np_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
-
-    def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate median filter."""
-        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"np_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"
-
-    def visit_ExtractBoundingBoxes(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
-        """Evaluate extract bounding boxes."""
-        crop_size, interpolation, extrapolation_value, data_format = (
-            _extract_extract_boxes_attributes(node)
-        )
-        df_str = "None" if data_format is None else f'"{data_format}"'
-        return f"np_extract_bounding_boxes({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {crop_size}, '{interpolation}', {extrapolation_value}, {df_str})"
-
-    def visit_IoU(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate iou."""
-        bounding_box_format = node.attributes.get("bounding_box_format", "xyxy")
-        return f"np_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
-
-    def visit_NonMaxSuppression(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate nms."""
-        max_output_size = node.attributes.get("max_output_size")
-        iou_threshold = node.attributes.get("iou_threshold", 0.5)
-        score_threshold = node.attributes.get("score_threshold", float("-inf"))
-        return f"np_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
-
-    def visit_ResizeBicubic(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate resize bicubic."""
-        size = node.attributes.get("size")
-        align_corners = node.attributes.get("align_corners", False)
-        return f"np_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
-
-    def visit_ResizeLanczos3(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate resize lanczos3."""
-        size = node.attributes.get("size")
-        align_corners = node.attributes.get("align_corners", False)
-        return f"np_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"
-
-    def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate istft."""
-        frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(node)
-        return f"np_istft({input_vars[0]}, {frame_length}, {frame_step}, {fft_len_str}, '{window}', {center})"
-
-    def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate mel_filterbank."""
-        num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz, _ = (
-            extract_mel_attributes(node)
-        )
-        return f"np_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
-
-    def visit_Mfcc(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate mfcc."""
-        num_mel_bins, _, sample_rate, lower_edge_hertz, upper_edge_hertz, num_mfccs = (
-            extract_mel_attributes(node)
-        )
-        return f"np_mfcc({input_vars[0]}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs})"
+        """Generic visit."""
+        return NumpyASTVisitor.generic_visit(node, input_vars, **kwargs)

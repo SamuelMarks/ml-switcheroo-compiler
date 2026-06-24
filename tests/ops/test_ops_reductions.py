@@ -160,7 +160,7 @@ def test_reduce_window_frontend() -> None:
     from ml_switcheroo_compiler.core.device import Device, DeviceType
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.reductions.frontend import WindowConfig, reduce_window
+    from ml_switcheroo_compiler.ops.reductions.frontend_utils import WindowConfig, reduce_window
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)

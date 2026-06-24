@@ -9,17 +9,15 @@ from ml_switcheroo_compiler.ops import creation, linalg, shape
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 
-def test_lazy_frontend_direct() -> None:
-    """Test frontend lazy APIs."""
+def test_lazy_frontend_direct_1() -> None:
+    """Test frontend lazy APIs part 1."""
     config.eager_mode = False
 
     p_x = ProxyTensor(id="x", shape=(2, 2), dtype=DType.Float32)
     p_y = ProxyTensor(id="y", shape=(2, 2), dtype=DType.Float32)
-    p_z = ProxyTensor(id="z", shape=(4,), dtype=DType.Float32)
 
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
-    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
 
     _tracer.start_tracing()
     try:
@@ -36,7 +34,22 @@ def test_lazy_frontend_direct() -> None:
         shape.split(x, 2)
         shape.hsplit(x, 2)
         shape.vsplit(x, 2)
+    finally:
+        _tracer.stop_tracing()
 
+
+def test_lazy_frontend_direct_2() -> None:
+    """Test frontend lazy APIs part 2."""
+    config.eager_mode = False
+
+    p_x = ProxyTensor(id="x", shape=(2, 2), dtype=DType.Float32)
+    p_y = ProxyTensor(id="y", shape=(2, 2), dtype=DType.Float32)
+
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+
+    _tracer.start_tracing()
+    try:
         p_3d = ProxyTensor(id="3d", shape=(2, 2, 2), dtype=DType.Float32)
         t_3d = Tensor(p_3d, TensorConfig((2, 2, 2), DType.Float32, "cpu"))
         shape.dsplit(t_3d, 2)
@@ -64,11 +77,29 @@ def test_lazy_frontend_direct() -> None:
         with contextlib.suppress(Exception):
             shape.argsort(x)
 
+        p_z = ProxyTensor(id="z", shape=(4,), dtype=DType.Float32)
+        z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
+
         shape.meshgrid(z, z)
         shape.tril(x)
         shape.triu(x)
         creation.diag(z)
+    finally:
+        _tracer.stop_tracing()
 
+
+def test_lazy_frontend_direct_3() -> None:
+    """Test frontend lazy APIs part 3."""
+    config.eager_mode = False
+
+    p_x = ProxyTensor(id="x", shape=(2, 2), dtype=DType.Float32)
+    p_y = ProxyTensor(id="y", shape=(2, 2), dtype=DType.Float32)
+
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+
+    _tracer.start_tracing()
+    try:
         creation.zeros((2, 2))
         creation.zeros_like(x)
         creation.ones((2, 2))
@@ -89,6 +120,24 @@ def test_lazy_frontend_direct() -> None:
         linalg.outer(x, y)
         linalg.tensordot(x, y, axes=1)
         linalg.einsum("ab,bc->ac", x, y)
+    finally:
+        _tracer.stop_tracing()
+
+
+def test_lazy_frontend_direct_4() -> None:
+    """Test frontend lazy APIs part 4."""
+    config.eager_mode = False
+
+    p_x = ProxyTensor(id="x", shape=(2, 2), dtype=DType.Float32)
+    p_y = ProxyTensor(id="y", shape=(2, 2), dtype=DType.Float32)
+    p_z = ProxyTensor(id="z", shape=(4,), dtype=DType.Float32)
+
+    x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
+    y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
+    z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
+
+    _tracer.start_tracing()
+    try:
         linalg.matrix_power(x, 2)
         with contextlib.suppress(Exception):
             linalg.cholesky(x)

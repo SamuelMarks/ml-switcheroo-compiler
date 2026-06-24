@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 from __future__ import annotations
-from ml_switcheroo_compiler.core.config import config
+
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from dataclasses import dataclass
+
+
+@dataclass
+class AffineConfig:
+    """Affine Config."""
+
+    fill_mode: str = "reflect"
+    interpolation: str = "bilinear"
+    seed: int = None
+    fill_value: float = 0.0
+    data_format: str = None
 
 
 def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Tensor:
@@ -20,7 +33,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     Returns:
         Tensor: Transformed images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -47,7 +60,7 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
     Returns:
         Tensor: Generated affine matrices.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -81,7 +94,7 @@ def random_flip(
     Returns:
         Tensor: Flipped images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -96,14 +109,10 @@ def random_flip(
     return get_op("RandomFlip")()(images, **kwargs)
 
 
-def random_rotation(  # pylint: disable=too-many-arguments
+def random_rotation(
     images: Tensor,
     factor: float,
-    fill_mode: str = "reflect",
-    interpolation: str = "bilinear",
-    seed: int = None,
-    fill_value: float = 0.0,
-    data_format: str = None,
+    config: AffineConfig | None = None,
     **kwargs: object,
 ) -> Tensor:
     """Randomly rotate images.
@@ -111,17 +120,13 @@ def random_rotation(  # pylint: disable=too-many-arguments
     Args:
         images (Tensor): Input images.
         factor (float): A float represented as fraction of 2 Pi.
-        fill_mode (str): Points outside boundaries are filled according to mode.
-        interpolation (str): Interpolation method.
-        seed (int): Random seed.
-        fill_value (float): Fill value.
-        data_format (str): Data format.
+        config: Config.
         **kwargs: Additional kwargs.
 
     Returns:
         Tensor: Rotated images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -159,7 +164,7 @@ def random_crop(images: Tensor, size: tuple, seed: int = None, **kwargs: object)
     Returns:
         Tensor: Cropped images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -186,17 +191,13 @@ def random_zoom(
         images (Tensor): Input images.
         height_factor (Union[tuple[float, float], float]): Factor for zooming height.
         width_factor (Union[tuple[float, float], float, None]): Factor for zooming width.
-        fill_mode (str): Points outside boundaries are filled according to mode.
-        interpolation (str): Interpolation method.
-        seed (int): Random seed.
-        fill_value (float): Fill value.
-        data_format (str): Data format.
+        config: Config.
         **kwargs: Additional kwargs.
 
     Returns:
         Tensor: Zoomed images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -224,15 +225,11 @@ def random_zoom(
     )
 
 
-def random_translation(  # pylint: disable=too-many-arguments
+def random_translation(
     images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
-    fill_mode: str = "reflect",
-    interpolation: str = "bilinear",
-    seed: int = None,
-    fill_value: float = 0.0,
-    data_format: str = None,
+    config: AffineConfig | None = None,
     **kwargs: object,
 ) -> Tensor:
     """Randomly translate images.
@@ -241,17 +238,13 @@ def random_translation(  # pylint: disable=too-many-arguments
         images (Tensor): Input images.
         height_factor (Union[tuple[float, float], float]): Factor for translating height.
         width_factor (Union[tuple[float, float], float]): Factor for translating width.
-        fill_mode (str): Points outside boundaries are filled according to mode.
-        interpolation (str): Interpolation method.
-        seed (int): Random seed.
-        fill_value (float): Fill value.
-        data_format (str): Data format.
+        config: Config.
         **kwargs: Additional kwargs.
 
     Returns:
         Tensor: Translated images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -296,7 +289,7 @@ def random_shear(
     Returns:
         Tensor: Sheared images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -339,7 +332,7 @@ def random_perspective(
     Returns:
         Tensor: Transformed images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -382,7 +375,7 @@ def random_elastic_transform(
     Returns:
         Tensor: Transformed images.
     """
-    if config.eager_mode:
+    if global_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()

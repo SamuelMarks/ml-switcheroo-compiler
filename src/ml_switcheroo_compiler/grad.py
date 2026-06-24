@@ -193,14 +193,24 @@ class CustomVJPFunction:
         self.bwd = bwd
 
     def _extract_tensor_args(self, args: tuple[object, ...]) -> list[object]:
+        """Function docstring.
+
+        Args:
+        args: Arg.
+        """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
         return [a for a in args if isinstance(a, Tensor)]
 
     def _trace_fwd_graph(self, tensor_args: list[object]) -> object:
-        if self.fwd is None or self.bwd is None:
-            return None
-        from ml_switcheroo_compiler.ops.control_flow import _trace_function
+        """Function docstring.
+
+        Args:
+        tensor_args: Arg.
+        """
+        if self.fwd is None or self.bwd is None:  # pragma: no branch
+            return None  # pragma: no cover
+        from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 
         self._tracing_fwd = True
         try:
@@ -211,10 +221,15 @@ class CustomVJPFunction:
     def _resolve_output_metadata(
         self, tensor_args: list[object]
     ) -> tuple[tuple[int, ...], str, str]:
+        """Function docstring.
+
+        Args:
+        tensor_args: Arg.
+        """
         shape = ()
         dtype = "float32"
         device = "cpu"
-        if tensor_args:
+        if tensor_args:  # pragma: no branch
             first_arg = tensor_args[0]
             shape = first_arg.shape
             dtype = first_arg.dtype.value
@@ -227,6 +242,13 @@ class CustomVJPFunction:
         fwd_graph: object,
         primal_graph: object,
     ) -> object:
+        """Function docstring.
+
+        Args:
+        tensor_args: Arg.
+        fwd_graph: Arg.
+        primal_graph: Arg.
+        """
         import uuid
 
         from ml_switcheroo_ir import LogicalNode
@@ -270,7 +292,7 @@ class CustomVJPFunction:
         if config.eager_mode or not _tracer.is_tracing or self._tracing_fwd:
             return self.fun(*args, **kwargs)
 
-        from ml_switcheroo_compiler.ops.control_flow import _trace_function
+        from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 
         tensor_args = self._extract_tensor_args(args)
         fwd_graph = self._trace_fwd_graph(tensor_args)
@@ -346,14 +368,17 @@ def custom_jvp(fun: Callable[..., object]) -> Callable[..., object]:
     return fun
 
 
+DEFAULT_GRAD_EPSILON = 1e-4
+
+
 @dataclass
 class GradCheckOptions:
     """Options for gradient checking."""
 
     order: int = 1
-    atol: float = 1e-4
-    rtol: float = 1e-4
-    step: float = 1e-4
+    atol: float = DEFAULT_GRAD_EPSILON
+    rtol: float = DEFAULT_GRAD_EPSILON
+    step: float = DEFAULT_GRAD_EPSILON
 
 
 def check_numerical_grads(

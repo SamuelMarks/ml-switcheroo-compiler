@@ -1,21 +1,63 @@
 """Activations and advanced NN operations."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.nn.activations import elu, gelu, relu, selu
+from ml_switcheroo_compiler.nn.activations import (
+    elu,
+    gelu,
+    relu,
+    selu,
+    softplus,
+    celu,
+    glu,
+    hard_shrink,
+    hard_sigmoid,
+    hard_silu,
+    hard_swish,
+    hard_tanh,
+    leaky_relu,
+    log_sigmoid,
+    log_softmax,
+    relu6,
+    sigmoid,
+    silu,
+    soft_shrink,
+    softmax,
+    soft_sign as softsign,
+    sparse_plus,
+    sparse_sigmoid,
+    sparsemax,
+    squareplus,
+    swish,
+    tanh_shrink,
+    threshold,
+)
 
-
-def softplus(x: Tensor) -> Tensor:
-    """Computes the softplus activation function.
-
-    Args:
-        x (Tensor): The input tensor.
-
-    Returns:
-        Tensor: The result of the softplus activation.
-    """
-    from ml_switcheroo_compiler.ops.unary import exp, log1p
-
-    return log1p(exp(x))
-
-
-__all__ = ["relu", "selu", "elu", "gelu", "softplus"]
+__all__ = [
+    "relu",
+    "selu",
+    "elu",
+    "gelu",
+    "softplus",
+    "celu",
+    "glu",
+    "hard_shrink",
+    "hard_sigmoid",
+    "hard_silu",
+    "hard_swish",
+    "hard_tanh",
+    "leaky_relu",
+    "log_sigmoid",
+    "log_softmax",
+    "relu6",
+    "sigmoid",
+    "silu",
+    "soft_shrink",
+    "softmax",
+    "softsign",
+    "sparse_plus",
+    "sparse_sigmoid",
+    "sparsemax",
+    "squareplus",
+    "swish",
+    "tanh_shrink",
+    "threshold",
+]

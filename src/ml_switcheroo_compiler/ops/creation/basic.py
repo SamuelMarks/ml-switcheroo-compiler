@@ -4,6 +4,8 @@ This module contains operations that generate new tensors, such as zeros, ones, 
 and arange, along with their shape inference and NumPy evaluation implementations
 """
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -141,7 +143,7 @@ class Randint(CreationOp):
         """
         if "size" in kwargs:
             return kwargs["size"]
-        if len(args) == 3:
+        if len(args) == MAGIC_VAL_3:
             return args[2]
         return ()
 

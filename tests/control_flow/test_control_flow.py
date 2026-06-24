@@ -149,7 +149,7 @@ def test_trace_function_type_error() -> None:
     """
     import pytest
 
-    from ml_switcheroo_compiler.ops.control_flow import _trace_function
+    from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
     from ml_switcheroo_compiler.tracing.tracer import _tracer
 
     def bad_func(*args: object) -> int:
@@ -294,3 +294,47 @@ def test_vmap_tuple_axes() -> None:
         x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
         y = vmap_f(x)
         assert np.array_equal(y.data, np.array([-1, -2]))
+
+
+def test_new_control_flow():
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler import ops
+
+    config.eager_mode = True
+
+    # test fori_loop
+    def body_fun(i, x):
+        return ops.add(x, 1.0)
+
+    init_val = ops.array(np.array(0.0).astype(np.float32))
+    lower = ops.array(np.array(0).astype(np.int32))
+    upper = ops.array(np.array(5).astype(np.int32))
+
+    res = ops.fori_loop(lower, upper, body_fun, init_val)
+    assert res is not None
+
+    # test map and vectorized_map
+    elems = ops.array(np.array([1.0, 2.0, 3.0]).astype(np.float32))
+    res_map = ops.map(lambda x: ops.multiply(x, 2.0), elems)
+    res_vmap = ops.vectorized_map(lambda x: ops.multiply(x, 2.0), elems)
+    assert res_map is not None
+    assert res_vmap is not None
+
+    # test switch
+    index = ops.array(np.array(1).astype(np.int32))
+    branches = [
+        lambda x: ops.multiply(x, 1.0),
+        lambda x: ops.multiply(x, 2.0),
+        lambda x: ops.multiply(x, 3.0),
+    ]
+    arg = ops.array(np.array(10.0).astype(np.float32))
+    res_switch = ops.switch(index, branches, arg)
+    assert res_switch is not None
+
+    # test custom_gradient
+    @ops.custom_gradient
+    def my_fn(x):
+        return ops.multiply(x, 2.0), lambda g: ops.multiply(g, 2.0)
+
+    res_custom = my_fn(arg)
+    assert res_custom is not None
