@@ -307,7 +307,7 @@ def glu(x: object, axis: int = -1) -> object:
     """Computes the Gated Linear Unit (GLU) activation function."""
     from ml_switcheroo_compiler import ops
 
-    a, b = ops.split(x, 2, dim=axis)
+    a, b = ops.shape.split(x, 2, dim=axis)
     return ops.multiply(a, sigmoid(b))
 
 

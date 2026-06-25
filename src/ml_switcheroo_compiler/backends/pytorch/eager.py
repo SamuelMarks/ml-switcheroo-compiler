@@ -142,6 +142,8 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         "Subtract": torch.sub,
         "Multiply": torch.mul,
         "TrueDivide": torch.div,
+        "TruncateDiv": lambda x, y: torch.trunc(torch.div(x, y)),
+        "TruncateMod": torch.fmod,
         "Exp": torch.exp,
         "Log": torch.log,
         "Matmul": torch.matmul,

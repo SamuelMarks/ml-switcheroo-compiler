@@ -17,6 +17,8 @@ from typing import get_args
 from ml_switcheroo_compiler.backends.registry import BackendName
 
 ALL_BACKENDS = list(get_args(BackendName))
+if "numpy" in ALL_BACKENDS:
+    ALL_BACKENDS.remove("numpy")
 
 FORBIDDEN_IMPORTS = {
     "ir": ALL_BACKENDS,

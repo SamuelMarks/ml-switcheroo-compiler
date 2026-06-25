@@ -33,6 +33,8 @@ def uniform(
     """
     dtype = dtype or dtypes.DType.Float32
     if config.eager_mode:
+        import numpy as np
+
         np_dtype = np.dtype(dtype.value)
         minv = getattr(minval, "data", minval)
         maxv = getattr(maxval, "data", maxval)
@@ -68,6 +70,8 @@ def normal(key: object, shape: object = (), dtype: object = None) -> object:
     """
     dtype = dtype or dtypes.DType.Float32
     if config.eager_mode:
+        import numpy as np
+
         np_dtype = np.dtype(dtype.value)
         key_data = getattr(key, "data", key)
         seed = [int(x) for x in np.asarray(key_data).ravel()] if np.ndim(key_data) > 0 else None
@@ -154,6 +158,8 @@ def beta(key: object, a: object, b: object, shape: object = None, dtype: object 
         shape = ()
     dtype = dtype or dtypes.DType.Float32
     if config.eager_mode:
+        import numpy as np
+
         np_dtype = np.dtype(dtype.value)
         a_val = getattr(a, "data", a)
         b_val = getattr(b, "data", b)
@@ -192,6 +198,8 @@ def dirichlet(key: object, alpha: object, shape: object = None, dtype: object = 
         shape = ()
     dtype = dtype or dtypes.DType.Float32
     if config.eager_mode:
+        import numpy as np
+
         np_dtype = np.dtype(dtype.value)
         alpha_val = getattr(alpha, "data", alpha)
         if isinstance(key, Tensor):
@@ -241,7 +249,9 @@ def gamma(key: object, a: object, shape: object = (), dtype: object = None) -> o
     """Samples gamma random values from a given key."""
     dtype = dtype or dtypes.DType.Float32  # pragma: no cover
     if config.eager_mode:  # pragma: no cover
-        np_dtype = np.dtype(dtype.value)  # pragma: no cover
+        import numpy as np
+
+        np_dtype = np.dtype(dtype.value)
         a_val = getattr(a, "data", a)  # pragma: no cover
         if isinstance(key, Tensor):  # pragma: no cover
             seed_val = int(key.data[1])  # pragma: no cover

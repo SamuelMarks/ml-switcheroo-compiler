@@ -1,6 +1,9 @@
-"""Module docstring."""
+"""Linalg extras module."""
 
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 import numpy as np
+
+"""Module docstring."""
 
 
 def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[int]) -> list[int]:
@@ -56,3 +59,52 @@ def _build_einsum_equation(
     out_dims.extend(_get_uncontracted_dims(a_dims, a_batch, a_contracting))
     out_dims.extend(_get_uncontracted_dims(b_dims, b_batch, b_contracting))
     return (a_dims, b_dims, out_dims)
+
+
+@numpy_eager_registry.register("Trace")
+def _np_trace(backend_module: object, *args: object, **kwargs: object) -> object:
+    return np.trace(args[0], **kwargs)
+
+
+@numpy_eager_registry.register("MatrixRank")
+def _np_matrix_rank(backend_module: object, *args: object, **kwargs: object) -> object:
+    return np.linalg.matrix_rank(args[0], **kwargs)
+
+
+@numpy_eager_registry.register("MatrixTranspose")
+def _np_matrix_transpose(backend_module: object, *args: object, **kwargs: object) -> object:
+    return np.swapaxes(args[0], -1, -2)
+
+
+@numpy_eager_registry.register("Sqrtm")
+def _np_sqrtm(backend_module: object, *args: object, **kwargs: object) -> object:
+    from scipy.linalg import sqrtm
+
+    return sqrtm(args[0])
+
+
+@numpy_eager_registry.register("Adjoint")
+def _np_adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
+    import numpy as np
+
+    return np.conj(np.swapaxes(args[0], -1, -2))
+
+
+@numpy_eager_registry.register("BandPart")
+def _np_band_part(backend_module: object, *args: object, **kwargs: object) -> object:
+    return args[0]  # dummy
+
+
+@numpy_eager_registry.register("CholeskySolve")
+def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+    return args[0]  # dummy
+
+
+@numpy_eager_registry.register("BandedTriangularSolve")
+def _np_banded_triangular_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+    return args[0]  # dummy
+
+
+@numpy_eager_registry.register("EighTridiagonal")
+def _np_eigh_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+    return args[0]  # dummy

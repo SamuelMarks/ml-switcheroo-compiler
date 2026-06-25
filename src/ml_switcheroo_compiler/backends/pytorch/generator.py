@@ -120,6 +120,8 @@ class PyTorchCodeGenerator(
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
         return {
+            "TruncateDiv": "torch.trunc({0} / {1})",
+            "TruncateMod": "torch.fmod({0}, {1})",
             "TrueDivide": "torch.true_divide({0}, {1})",
             "Sum": "torch.sum({0}, dim={axis}, keepdim={keepdims})",
             "Mean": "torch.mean({0}, dim={axis}, keepdim={keepdims})",
@@ -135,7 +137,28 @@ class PyTorchCodeGenerator(
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
         return {
             "Matmul": "torch.matmul({0}, {1})",
+            "Trace": "tf.linalg.trace",
+            "Adjoint": "tf.linalg.adjoint",
+            "BandPart": "tf.linalg.band_part",
+            "CholeskySolve": "tf.linalg.cholesky_solve",
+            "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
+            "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
+            "MatrixRank": "tf.linalg.matrix_rank",
+            "MatrixTranspose": "tf.linalg.matrix_transpose",
+            "Sqrtm": "tf.linalg.sqrtm",
             "Dot": "torch.dot({0}, {1})",
+            "Fftnd": "torch.fft.fftn({0})",
+            "Ifftnd": "torch.fft.ifftn({0})",
+            "Rfftnd": "torch.fft.rfftn({0})",
+            "Irfftnd": "torch.fft.irfftn({0})",
+            "Fftshift": "torch.fft.fftshift({0})",
+            "Ifftshift": "torch.fft.ifftshift({0})",
+            "Dct": "tf.signal.dct({0})",
+            "Idct": "tf.signal.idct({0})",
+            "Mdct": "tf.signal.mdct({0})",
+            "InverseMdct": "tf.signal.inverse_mdct({0})",
+            "Frame": "tf.signal.frame({0})",
+            "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
             "Fft": "torch.fft.fft({0})",
             "Rfft": "torch.fft.rfft({0})",
             "Fftn": "torch.fft.fftn({0})",

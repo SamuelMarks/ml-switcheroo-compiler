@@ -4,6 +4,7 @@ from __future__ import annotations
 
 
 from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -363,3 +364,99 @@ fft2 = fft2d
 ifft2 = ifft2d
 fft3 = fft3d
 ifft3 = ifft3d
+
+
+def fftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
+    """Computes the n-dimensional discrete Fourier Transform."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Fftnd", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Fftnd
+
+    op = Fftnd()
+    out_shape = op.infer_shape(a, s=s, axes=axes)
+    return _emit_linalg_node("Fftnd", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def ifftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
+    """Computes the n-dimensional inverse discrete Fourier Transform."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftnd", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Ifftnd
+
+    op = Ifftnd()
+    out_shape = op.infer_shape(a, s=s, axes=axes)
+    return _emit_linalg_node("Ifftnd", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def rfftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
+    """Computes the n-dimensional discrete Fourier Transform of real input."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftnd", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Rfftnd
+
+    op = Rfftnd()
+    out_shape = op.infer_shape(a, s=s, axes=axes)
+    return _emit_linalg_node("Rfftnd", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def irfftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
+    """Computes the inverse n-dimensional discrete Fourier Transform of real input."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Irfftnd", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Irfftnd
+
+    op = Irfftnd()
+    out_shape = op.infer_shape(a, s=s, axes=axes)
+    return _emit_linalg_node("Irfftnd", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def fftshift(a: Tensor, axes: Sequence[int] | None = None) -> Tensor:
+    """Shift the zero-frequency component to the center of the spectrum."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Fftshift", a.data, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Fftshift
+
+    op = Fftshift()
+    out_shape = op.infer_shape(a, axes=axes)
+    return _emit_linalg_node("Fftshift", [a], {"axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def ifftshift(a: Tensor, axes: Sequence[int] | None = None) -> Tensor:
+    """The inverse of fftshift."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftshift", a.data, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    from ml_switcheroo_compiler.ops.linalg.basic import Ifftshift
+
+    op = Ifftshift()
+    out_shape = op.infer_shape(a, axes=axes)
+    return _emit_linalg_node("Ifftshift", [a], {"axes": axes}, [tuple(out_shape)], [a.dtype])

@@ -20,9 +20,7 @@ from .decompositions import det as det
 from .decompositions import eigh as eigh
 from .decompositions import eigvalsh as eigvalsh
 from .decompositions import inv as inv
-from .decompositions import lu as lu
 from .decompositions import lu_factor as lu_factor
-from .decompositions import lu_solve as lu_solve
 from .decompositions import norm as norm
 from .decompositions import matrix_exponential as matrix_exponential
 from .decompositions import matrix_power as matrix_power
@@ -37,6 +35,65 @@ from .fft import fft as fft
 from .fft import fft2d as fft2d
 from .fft import fft2 as fft2
 from .fft import irfft as irfft
+from .frontend import trace as trace
+from .frontend import matrix_rank as matrix_rank
+from .frontend import matrix_transpose as matrix_transpose
+from .frontend import sqrtm as sqrtm
+from .frontend import adjoint as adjoint
+from .frontend import band_part as band_part
+from .frontend import cholesky_solve as cholesky_solve
+from .frontend import banded_triangular_solve as banded_triangular_solve
+from .frontend import eigh_tridiagonal as eigh_tridiagonal
+
+from .frontend import tensor_diag as tensor_diag
+from .frontend import tensor_diag_part as tensor_diag_part
+
+from .frontend import (
+    LinearOperator as LinearOperator,
+    LinearOperatorAdjoint as LinearOperatorAdjoint,
+    LinearOperatorBlockDiag as LinearOperatorBlockDiag,
+    LinearOperatorBlockLowerTriangular as LinearOperatorBlockLowerTriangular,
+    LinearOperatorCirculant as LinearOperatorCirculant,
+    LinearOperatorCirculant2D as LinearOperatorCirculant2D,
+    LinearOperatorCirculant3D as LinearOperatorCirculant3D,
+    LinearOperatorComposition as LinearOperatorComposition,
+    LinearOperatorDiag as LinearOperatorDiag,
+    LinearOperatorFullMatrix as LinearOperatorFullMatrix,
+    LinearOperatorHouseholder as LinearOperatorHouseholder,
+    LinearOperatorIdentity as LinearOperatorIdentity,
+    LinearOperatorInversion as LinearOperatorInversion,
+    LinearOperatorKronecker as LinearOperatorKronecker,
+    LinearOperatorLowRankUpdate as LinearOperatorLowRankUpdate,
+    LinearOperatorLowerTriangular as LinearOperatorLowerTriangular,
+    LinearOperatorPermutation as LinearOperatorPermutation,
+    LinearOperatorScaledIdentity as LinearOperatorScaledIdentity,
+    LinearOperatorToeplitz as LinearOperatorToeplitz,
+    LinearOperatorTridiag as LinearOperatorTridiag,
+    LinearOperatorZeros as LinearOperatorZeros,
+    conjugate_gradient as conjugate_gradient,
+    expm as expm,
+    global_norm as global_norm,
+    logdet as logdet,
+    logm as logm,
+    lstsq as lstsq,
+    lu as lu,
+    lu_matrix_inverse as lu_matrix_inverse,
+    lu_reconstruct as lu_reconstruct,
+    lu_solve as lu_solve,
+    matvec as matvec,
+    normalize as normalize,
+    set_diag as set_diag,
+    triangular_solve as triangular_solve,
+    tridiagonal_matmul as tridiagonal_matmul,
+    tridiagonal_solve as tridiagonal_solve,
+)
+
+from .frontend import diag_part as diag_part
+from .basic import Trace as Trace
+from .basic import MatrixRank as MatrixRank
+from .basic import MatrixTranspose as MatrixTranspose
+from .basic import Sqrtm as Sqrtm
+
 from .fft import ifft as ifft
 from .fft import ifft2d as ifft2d
 from .fft import ifft2 as ifft2
@@ -49,6 +106,13 @@ from .fft import rfft3d as rfft3d
 from .fft import irfft2d as irfft2d
 from .fft import irfft3d as irfft3d
 from .fft import rfft as rfft
+from .fft import fftnd as fftnd
+from .fft import ifftnd as ifftnd
+from .fft import rfftnd as rfftnd
+from .fft import irfftnd as irfftnd
+from .fft import fftshift as fftshift
+from .fft import ifftshift as ifftshift
+
 from .frontend import convolve as convolve
 from .frontend import cross as cross
 from .frontend import dot as dot
@@ -70,68 +134,95 @@ def eig(input: object) -> tuple[object, object]:
     return w, v
 
 
-def logdet(input: object) -> object:
-    """Computes log of the determinant."""
-    from ml_switcheroo_compiler.ops.linalg.decompositions import slogdet
-
-    sign, ldet = slogdet(input)
-    # Usually logdet is only defined for positive determinant, but we just return ldet
-    return ldet
-
-
-def lstsq(a: object, b: object, rcond: float = 1e-15) -> object:
-    """Returns the least-squares solution to a linear matrix equation."""
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-    backend = get_active_backend()
-    res = backend.execute_op("Lstsq", getattr(a, "data", a), getattr(b, "data", b), rcond=rcond)
-    # The return value might be a tuple (x, residuals, rank, s) depending on backend
-    return res
-
-
 __all__ = [
     "ConvGeneralDilated",
     "Dot",
     "DotGeneral",
     "Einsum",
     "Fft",
+    "LinearOperator",
+    "LinearOperatorAdjoint",
+    "LinearOperatorBlockDiag",
+    "LinearOperatorBlockLowerTriangular",
+    "LinearOperatorCirculant",
+    "LinearOperatorCirculant2D",
+    "LinearOperatorCirculant3D",
+    "LinearOperatorComposition",
+    "LinearOperatorDiag",
+    "LinearOperatorFullMatrix",
+    "LinearOperatorHouseholder",
+    "LinearOperatorIdentity",
+    "LinearOperatorInversion",
+    "LinearOperatorKronecker",
+    "LinearOperatorLowRankUpdate",
+    "LinearOperatorLowerTriangular",
+    "LinearOperatorPermutation",
+    "LinearOperatorScaledIdentity",
+    "LinearOperatorToeplitz",
+    "LinearOperatorTridiag",
+    "LinearOperatorZeros",
     "Matmul",
+    "MatrixRank",
+    "MatrixTranspose",
     "Rfft",
+    "Sqrtm",
+    "Trace",
+    "adjoint",
+    "band_part",
+    "banded_triangular_solve",
     "cholesky",
+    "cholesky_solve",
+    "conjugate_gradient",
     "conv_general_dilated",
     "convolve",
     "cross",
     "det",
+    "diag_part",
     "dot",
     "dot_general",
     "eig",
     "eigh",
+    "eigh_tridiagonal",
     "eigvalsh",
     "einsum",
+    "expm",
     "fft",
     "fft2",
     "fft2d",
     "fft3",
     "fft3d",
+    "fftnd",
+    "fftshift",
+    "global_norm",
     "ifft",
     "ifft2",
     "ifft2d",
     "ifft3",
     "ifft3d",
+    "ifftnd",
+    "ifftshift",
     "inner",
     "inv",
     "irfft",
     "irfft2d",
     "irfft3d",
+    "irfftnd",
     "logdet",
+    "logm",
     "lstsq",
     "lu",
     "lu_factor",
+    "lu_matrix_inverse",
+    "lu_reconstruct",
     "lu_solve",
     "matmul",
     "matrix_exponential",
     "matrix_power",
+    "matrix_rank",
+    "matrix_transpose",
+    "matvec",
     "norm",
+    "normalize",
     "outer",
     "pinv",
     "power_iteration",
@@ -139,10 +230,19 @@ __all__ = [
     "rfft",
     "rfft2d",
     "rfft3d",
+    "rfftnd",
+    "set_diag",
     "slogdet",
     "solve",
     "solve_triangular",
+    "sqrtm",
     "svd",
+    "tensor_diag",
+    "tensor_diag_part",
     "tensordot",
+    "trace",
+    "triangular_solve",
+    "tridiagonal_matmul",
+    "tridiagonal_solve",
     "vdot",
 ]

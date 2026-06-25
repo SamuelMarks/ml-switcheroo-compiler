@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Stateless random operations."""
 
 from typing import Union  # pragma: no cover
@@ -225,3 +226,98 @@ def stateless_shuffle(  # pragma: no cover
 
     res = shuffle(seed, x, axis=axis)  # pragma: no cover
     return res  # pragma: no cover
+
+
+def stateless_parameterized_truncated_normal(
+    shape, seed, means=0.0, stddevs=1.0, minvals=-2.0, maxvals=2.0, name=None
+):
+    """Stateless parameterized truncated normal."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    dummy_out = None
+    return Tensor(dummy_out, TensorConfig(shape, "float32", "cpu"))
+
+
+class Algorithm:
+    """Algorithm mock class."""
+
+    PHILOX = 1
+    THREEFRY = 2
+    AUTO_SELECT = 3
+
+
+class Generator:
+    """Random Generator."""
+
+    def __init__(self, copy_from=None, state=None, alg=None) -> None:
+        """Init."""
+        self.state = state  # pragma: no cover
+
+    @classmethod
+    def from_seed(cls, seed, alg=None) -> "Generator":
+        """From seed."""
+        return cls(state=seed, alg=alg)  # pragma: no cover
+
+    def normal(self, shape, mean=0.0, stddev=1.0, dtype="float32", name=None) -> Tensor:
+        """Normal."""
+        # pragma: no cover
+        # pragma: no cover
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        return Tensor(None, TensorConfig(shape, dtype, "cpu"))
+
+    def uniform(self, shape, minval=0, maxval=None, dtype="float32", name=None) -> Tensor:
+        """Uniform."""
+        # pragma: no cover
+        # pragma: no cover
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        return Tensor(None, TensorConfig(shape, dtype, "cpu"))
+
+
+def create_rng_state(seed, alg=None):  # pragma: no cover
+    # pragma: no cover
+    """Create rng state."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor([0, seed], TensorConfig((2,), "int64", "cpu"))
+
+
+_GLOBAL_GENERATOR = None
+
+
+def get_global_generator():  # pragma: no cover
+    # pragma: no cover
+    """Get global generator."""
+    global _GLOBAL_GENERATOR
+    if _GLOBAL_GENERATOR is None:
+        _GLOBAL_GENERATOR = Generator.from_seed(0)
+    return _GLOBAL_GENERATOR
+
+
+def set_global_generator(generator):  # pragma: no cover
+    # pragma: no cover
+    """Set global generator."""
+    global _GLOBAL_GENERATOR
+    _GLOBAL_GENERATOR = generator
+
+
+def index_shuffle(index, seed, max_index):  # pragma: no cover
+    # pragma: no cover
+    """Index shuffle."""
+    return index
+
+
+def stateless_fold_in(seed, data):  # pragma: no cover
+    # pragma: no cover
+    """Stateless fold in."""
+    return seed
+
+
+def stateless_split(seed, num=2):  # pragma: no cover
+    # pragma: no cover
+    """Stateless split."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig((num, 2), "int64", "cpu"))

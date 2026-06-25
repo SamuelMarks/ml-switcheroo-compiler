@@ -137,6 +137,12 @@ from .frontend import unravel_index as unravel_index
 from .frontend import boolean_mask as boolean_mask
 from .frontend import invert_permutation as invert_permutation
 from .frontend import dynamic_shape as dynamic_shape
+from .manipulation import (
+    depth_to_space as depth_to_space,
+    space_to_depth as space_to_depth,
+    space_to_batch as space_to_batch,
+    with_space_to_batch as with_space_to_batch,
+)
 
 # pylint: disable=duplicate-code
 
@@ -208,6 +214,7 @@ __all__ = [
     "compress",
     "concatenate",
     "delete",
+    "depth_to_space",
     "diag_indices",
     "diag_indices_from",
     "diagflat",
@@ -247,6 +254,8 @@ __all__ = [
     "select",
     "slice",
     "sort",
+    "space_to_batch",
+    "space_to_depth",
     "split",
     "squeeze",
     "stack",
@@ -271,4 +280,5 @@ __all__ = [
     "vsplit",
     "vstack",
     "where",
+    "with_space_to_batch",
 ]

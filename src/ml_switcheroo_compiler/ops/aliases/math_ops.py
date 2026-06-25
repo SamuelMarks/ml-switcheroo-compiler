@@ -147,3 +147,7 @@ fresnel_sin = get_op("FresnelSin")()
 spence = get_op("Spence")()
 scalar_mul = get_op("Multiply")()
 reduce_logsumexp = get_op("Logsumexp")()
+
+truediv = get_op("TrueDivide")()
+truncatediv = get_op("TruncateDiv")()
+truncatemod = get_op("TruncateMod")()

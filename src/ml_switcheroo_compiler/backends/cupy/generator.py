@@ -51,6 +51,16 @@ class CupyGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
         eq = kwargs.get("equation", "")  # pragma: no cover
         return f"cupy.einsum('{eq}', {args_str})"  # pragma: no cover
 
+    def visit_TruncateDiv(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generate code for TruncateDiv."""
+        x, y = input_vars
+        return f"cp.trunc(cp.divide({x}, {y}))"
+
+    def visit_TruncateMod(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generate code for TruncateMod."""
+        x, y = input_vars
+        return f"cp.fmod({x}, {y})"
+
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Fallback for generic nodes.
 

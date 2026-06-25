@@ -147,3 +147,33 @@ def _np_irfft2(backend_module: object, *args: object, **kwargs: object) -> objec
         kwargs: Arg.
     """
     return backend_module.fft.irfft2(*args, **kwargs)  # pragma: no cover
+
+
+@numpy_eager_registry.register("Fftnd")
+def _np_fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.fftn(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Ifftnd")
+def _np_ifftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.ifftn(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Rfftnd")
+def _np_rfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.rfftn(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Irfftnd")
+def _np_irfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.irfftn(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Fftshift")
+def _np_fftshift(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.fftshift(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Ifftshift")
+def _np_ifftshift(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.ifftshift(*args, **kwargs)

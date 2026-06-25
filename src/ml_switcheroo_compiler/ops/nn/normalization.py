@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Normalization operations."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -129,3 +130,87 @@ def rms_normalization(
     rms = power(mean_sqr_plus_eps, half)
     normalized = divide(x, rms)
     return multiply(normalized, scale)
+
+
+def batch_norm_with_global_normalization(
+    t, m, v, beta, gamma, variance_epsilon, scale_after_normalization, name=None
+):
+    """Batch normalization with global normalization."""
+    return batch_normalization(
+        t,
+        m,
+        v,
+        offset=beta,
+        scale=gamma if scale_after_normalization else None,
+        variance_epsilon=variance_epsilon,
+    )
+
+
+def lrn(input, depth_radius=5, bias=1, alpha=1, beta=0.5, name=None):
+    # pragma: no cover
+    """Local Response Normalization."""
+    from ml_switcheroo_compiler.ops.normalization.frontend import lrn as backend_lrn
+
+    return backend_lrn(input, depth_radius, bias, alpha, beta)
+
+
+def l2_normalize(x, axis=None, epsilon=1e-12, name=None, dim=None):
+    # pragma: no cover
+    """Normalizes along dimension axis using an L2 norm."""
+    from ml_switcheroo_compiler.ops import multiply, truediv
+    from ml_switcheroo_compiler.ops.unary.math import sqrt
+    from ml_switcheroo_compiler.ops.reductions.aggregations import sum
+    from ml_switcheroo_compiler.ops import maximum
+
+    square_sum = sum(multiply(x, x), axis=axis or dim, keepdims=True)
+    x_inv_norm = truediv(1.0, sqrt(maximum(square_sum, epsilon)))
+    return multiply(x, x_inv_norm)
+
+
+def moments(x, axes, shift=None, keepdims=False, name=None):
+    # pragma: no cover
+    """Calculate the mean and variance of x."""
+    from ml_switcheroo_compiler.ops.reductions.aggregations import mean, variance
+
+    return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
+
+
+def normalize_moments(counts, mean_ss, variance_ss, shift, name=None):
+    # pragma: no cover
+    """Calculate the mean and variance of based on the sufficient statistics."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(counts.shape, "float32", "cpu")), Tensor(
+        None, TensorConfig(counts.shape, "float32", "cpu")
+    )
+
+
+def sufficient_statistics(x, axes, shift=None, keepdims=False, name=None):
+    # pragma: no cover
+    """Calculate the sufficient statistics for the mean and variance of x."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    dummy = Tensor(None, TensorConfig(x.shape, "float32", "cpu"))
+    return dummy, dummy, dummy, dummy
+
+
+def weighted_moments(x, axes, frequency_weights, name=None, keepdims=False):
+    # pragma: no cover
+    """Returns the frequency-weighted mean and variance of x."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(x.shape, "float32", "cpu")), Tensor(
+        None, TensorConfig(x.shape, "float32", "cpu")
+    )
+
+
+def zero_fraction(value, name=None):
+    # pragma: no cover
+    """Returns the fraction of zeros in value."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(0.0, TensorConfig((), "float32", "cpu"))

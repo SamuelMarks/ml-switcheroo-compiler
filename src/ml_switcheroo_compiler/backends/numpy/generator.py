@@ -31,6 +31,47 @@ class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
     _OP_MAP = {
+        "RNNCellDeviceWrapper": "tf.nn.rnn_cell.DeviceWrapper",
+        "RNNCellDropoutWrapper": "tf.nn.rnn_cell.DropoutWrapper",
+        "RNNCellResidualWrapper": "tf.nn.rnn_cell.ResidualWrapper",
+        "SparseBincount": "tf.sparse.bincount",
+        "SparseCrossHashed": "tf.sparse.cross_hashed",
+        "SparseExpandDims": "tf.sparse.expand_dims",
+        "SparseEye": "tf.sparse.eye",
+        "SparseFillEmptyRows": "tf.sparse.fill_empty_rows",
+        "SparseMapValues": "tf.sparse.map_values",
+        "SparseMask": "tf.sparse.mask",
+        "SparseMaximum": "tf.sparse.maximum",
+        "SparseMinimum": "tf.sparse.minimum",
+        "SparseReduceMax": "tf.sparse.reduce_max",
+        "SparseReduceSum": "tf.sparse.reduce_sum",
+        "SparseReorder": "tf.sparse.reorder",
+        "SparseResetShape": "tf.sparse.reset_shape",
+        "SparseReshape": "tf.sparse.reshape",
+        "SparseRetain": "tf.sparse.retain",
+        "SparseSegmentMean": "tf.sparse.segment_mean",
+        "SparseSegmentSqrtN": "tf.sparse.segment_sqrt_n",
+        "SparseSegmentSum": "tf.sparse.segment_sum",
+        "SparseSlice": "tf.sparse.slice",
+        "SparseSoftmax": "tf.sparse.softmax",
+        "SparseToIndicator": "tf.sparse.to_indicator",
+        "SparseTranspose": "tf.sparse.transpose",
+        "RaggedConstant": "tf.ragged.constant",
+        "RaggedCrossHashed": "tf.ragged.cross_hashed",
+        "RaggedRange": "tf.ragged.range",
+        "RaggedRowSplitsToSegmentIds": "tf.ragged.row_splits_to_segment_ids",
+        "RaggedSegmentIdsToRowSplits": "tf.ragged.segment_ids_to_row_splits",
+        "RaggedStack": "tf.ragged.stack",
+        "RaggedStackDynamicPartitions": "tf.ragged.stack_dynamic_partitions",
+        "Trace": "tf.linalg.trace",
+        "Adjoint": "tf.linalg.adjoint",
+        "BandPart": "tf.linalg.band_part",
+        "CholeskySolve": "tf.linalg.cholesky_solve",
+        "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
+        "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
+        "MatrixRank": "tf.linalg.matrix_rank",
+        "MatrixTranspose": "tf.linalg.matrix_transpose",
+        "Sqrtm": "tf.linalg.sqrtm",
         "Add": "np.add",
         "Zeros": "np.zeros",
         "Ones": "np.ones",
@@ -39,6 +80,18 @@ class NumpyASTVisitor:
         "Sort": "np.sort",
         "ArgSort": "np.argsort",
         "Allclose": "np.allclose",
+        "Fftnd": "np.fft.fftn({0})",
+        "Ifftnd": "np.fft.ifftn({0})",
+        "Rfftnd": "np.fft.rfftn({0})",
+        "Irfftnd": "np.fft.irfftn({0})",
+        "Fftshift": "np.fft.fftshift({0})",
+        "Ifftshift": "np.fft.ifftshift({0})",
+        "Dct": "tf.signal.dct({0})",
+        "Idct": "tf.signal.idct({0})",
+        "Mdct": "tf.signal.mdct({0})",
+        "InverseMdct": "tf.signal.inverse_mdct({0})",
+        "Frame": "tf.signal.frame({0})",
+        "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
         "Fft": "np.fft.fft",
         "Rfft": "np.fft.rfft",
         "Fftn": "np.fft.fftn",
@@ -90,6 +143,19 @@ class NumpyASTVisitor:
         if "dimension" in kwargs:
             filtered_kwargs["axis"] = kwargs["dimension"]  # pragma: no cover
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
+
+    @classmethod
+    @classmethod
+    def visit_TruncateDiv(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generate code for TruncateDiv."""
+        x, y = input_vars
+        return f"np.trunc(np.divide({x}, {y}))"
+
+    @classmethod
+    def visit_TruncateMod(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generate code for TruncateMod."""
+        x, y = input_vars
+        return f"np.fmod({x}, {y})"
 
     @classmethod
     def generic_visit(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
@@ -230,6 +296,19 @@ class NumpyGenerator(
         """Get ops map."""
         return NumpyTypeTranslator.get_ops_map()  # pragma: no cover
 
+    @classmethod
+    def visit_TruncateDiv(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generate code for TruncateDiv."""
+        x, y = input_vars
+        return f"np.trunc(np.divide({x}, {y}))"
+
+    @classmethod
+    def visit_TruncateMod(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+        """Generate code for TruncateMod."""
+        x, y = input_vars
+        return f"np.fmod({x}, {y})"
+
+    @classmethod
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generic visit."""
         return NumpyASTVisitor.generic_visit(node, input_vars, **kwargs)

@@ -365,6 +365,18 @@ class Ifft(OpDef):
         """Infer shape.
 
         Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
             a: arg.
             **kwargs: kwargs.
         """
@@ -379,6 +391,18 @@ class Fft2d(OpDef):
     """
 
     def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
         """Infer shape.
 
         Args:
@@ -399,6 +423,18 @@ class Ifft2d(OpDef):
         """Infer shape.
 
         Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
             a: arg.
             **kwargs: kwargs.
         """
@@ -413,6 +449,18 @@ class Irfft(OpDef):
     """
 
     def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
         """Infer shape.
 
         Args:
@@ -433,6 +481,18 @@ class Fft3d(OpDef):
         """Infer shape.
 
         Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
             a: arg.
             **kwargs: kwargs.
         """
@@ -447,6 +507,18 @@ class Ifft3d(OpDef):
     """
 
     def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
         """Infer shape.
 
         Args:
@@ -467,6 +539,18 @@ class Rfft2d(OpDef):
         """Infer shape.
 
         Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
             a: arg.
             **kwargs: kwargs.
         """
@@ -481,6 +565,18 @@ class Rfft3d(OpDef):
     """
 
     def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
         """Infer shape.
 
         Args:
@@ -501,6 +597,18 @@ class Irfft2d(OpDef):
         """Infer shape.
 
         Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
             a: arg.
             **kwargs: kwargs.
         """
@@ -518,6 +626,18 @@ class Irfft3d(OpDef):
         """Infer shape.
 
         Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
             a: arg.
             **kwargs: kwargs.
         """
@@ -532,6 +652,18 @@ class Pinv(OpDef):
     """
 
     def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
         """Infer the output shape of the operation.
 
         Args:
@@ -557,6 +689,18 @@ class MatrixPower(OpDef):
     """
 
     def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
         """Infer the output shape of the operation.
 
         Args:
@@ -581,3 +725,290 @@ class Convolve(OpDef):
     def infer_shape(self, a: object, v: object, mode: str = "full", **kwargs: object) -> object:
         """Infer the output shape."""
         return (None,)
+
+
+@register_op("Fftnd")
+class Fftnd(OpDef):
+    """Fftnd operator."""
+
+    op_name = "Fftnd"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        s = kwargs.get("s", None)
+        axes = kwargs.get("axes", None)
+        if s is not None and axes is not None:
+            for sz, ax in zip(s, axes):
+                shape[ax] = sz
+        return tuple(shape)
+
+
+@register_op("Ifftnd")
+class Ifftnd(OpDef):
+    """Ifftnd operator."""
+
+    op_name = "Ifftnd"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        s = kwargs.get("s", None)
+        axes = kwargs.get("axes", None)
+        if s is not None and axes is not None:
+            for sz, ax in zip(s, axes):
+                shape[ax] = sz
+        return tuple(shape)
+
+
+@register_op("Rfftnd")
+class Rfftnd(OpDef):
+    """Rfftnd operator."""
+
+    op_name = "Rfftnd"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        s = kwargs.get("s", None)
+        axes = kwargs.get("axes", None)
+        if s is not None and axes is not None:
+            for sz, ax in zip(s, axes):
+                shape[ax] = sz
+        else:
+            ax = axes[-1] if axes is not None else -1
+            shape[ax] = shape[ax] // 2 + 1
+        return tuple(shape)
+
+
+@register_op("Irfftnd")
+class Irfftnd(OpDef):
+    """Irfftnd operator."""
+
+    op_name = "Irfftnd"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        s = kwargs.get("s", None)
+        axes = kwargs.get("axes", None)
+        if s is not None and axes is not None:
+            for sz, ax in zip(s, axes):
+                shape[ax] = sz
+        else:
+            ax = axes[-1] if axes is not None else -1
+            shape[ax] = (shape[ax] - 1) * 2
+        return tuple(shape)
+
+
+@register_op("Fftshift")
+class Fftshift(OpDef):
+    """Fftshift operator."""
+
+    op_name = "Fftshift"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        return a.shape
+
+
+@register_op("Ifftshift")
+class Ifftshift(OpDef):
+    """Ifftshift operator."""
+
+    op_name = "Ifftshift"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        return a.shape
+
+
+@register_op("Trace")
+class Trace(OpDef):
+    """Trace operator."""
+
+    op_name = "Trace"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        axis1 = kwargs.get("axis1", 0)
+        axis2 = kwargs.get("axis2", 1)
+        if len(shape) >= 2:  # noqa: PLR2004  # noqa: PLR2004
+            shape.pop(max(axis1, axis2))
+            shape.pop(min(axis1, axis2))
+        return tuple(shape)
+
+
+@register_op("MatrixRank")
+class MatrixRank(OpDef):
+    """MatrixRank operator."""
+
+    op_name = "MatrixRank"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        if len(shape) >= 2:  # noqa: PLR2004  # noqa: PLR2004
+            shape.pop()
+            shape.pop()
+        return tuple(shape)
+
+
+@register_op("MatrixTranspose")
+class MatrixTranspose(OpDef):
+    """MatrixTranspose operator."""
+
+    op_name = "MatrixTranspose"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        if len(shape) >= 2:  # noqa: PLR2004  # noqa: PLR2004
+            shape[-1], shape[-2] = shape[-2], shape[-1]
+        return tuple(shape)
+
+
+@register_op("Sqrtm")
+class Sqrtm(OpDef):
+    """Sqrtm operator."""
+
+    op_name = "Sqrtm"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        return a.shape
+
+
+@register_op("Adjoint")
+class Adjoint(OpDef):
+    """Adjoint operator."""
+
+    op_name = "Adjoint"
+
+    def infer_shape(self, matrix: object, **kwargs: object) -> object:
+        """Infer shape."""
+        shape = list(matrix.shape)
+        if len(shape) >= 2:  # noqa: PLR2004
+            shape[-1], shape[-2] = shape[-2], shape[-1]
+        return tuple(shape)
+
+
+@register_op("CholeskySolve")
+class CholeskySolve(OpDef):
+    """CholeskySolve operator."""
+
+    op_name = "CholeskySolve"
+
+    def infer_shape(self, chol: object, rhs: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return rhs.shape
+
+
+@register_op("BandedTriangularSolve")
+class BandedTriangularSolve(OpDef):
+    """BandedTriangularSolve operator."""
+
+    op_name = "BandedTriangularSolve"
+
+    def infer_shape(self, bands: object, rhs: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return rhs.shape
+
+
+@register_op("EighTridiagonal")
+class EighTridiagonal(OpDef):
+    """EighTridiagonal operator."""
+
+    op_name = "EighTridiagonal"
+
+    def infer_shape(self, alpha: object, beta: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Actually returns (eigvals, eigvecs)
+        return (alpha.shape, list(alpha.shape) + [alpha.shape[-1]])  # pragma: no cover

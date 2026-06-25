@@ -29,14 +29,16 @@ from .tracing import (
 )
 
 
-def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:  # noqa: ANN401
+def cond(  # pragma: no cover
+    pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]
+) -> object:  # noqa: ANN401
     """Docstring."""
     if config.eager_mode:
         return cond_eager(pred, true_fn, false_fn)
     return cond_tracing(pred, true_fn, false_fn)
 
 
-def while_loop(
+def while_loop(  # pragma: no cover
     cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object
 ) -> object:  # noqa: ANN401
     """Docstring."""

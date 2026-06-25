@@ -565,3 +565,19 @@ def _np_rsqrt(backend_module: object, x: object, *args: object, **kwargs: object
     # To be extremely robust to 0 or negatives producing uncatchable warnings:
     with np.errstate(divide="ignore", invalid="ignore"):
         return 1.0 / np.sqrt(x)
+
+
+@numpy_eager_registry.register("TruncateDiv")
+def _np_truncate_div(backend_module: object, *args: object, **kwargs: object) -> object:
+    import numpy as np
+
+    x, y = args
+    return np.trunc(np.divide(x, y))
+
+
+@numpy_eager_registry.register("TruncateMod")
+def _np_truncate_mod(backend_module: object, *args: object, **kwargs: object) -> object:
+    import numpy as np
+
+    x, y = args
+    return np.fmod(x, y)

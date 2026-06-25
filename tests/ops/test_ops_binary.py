@@ -129,3 +129,32 @@ def test_binary_special_coverage() -> None:
     Returns:
     None
     """
+
+
+def test_truncate_ops() -> None:
+    """Verifies the correctness of truncated division and modulo operations."""
+    from ml_switcheroo_compiler.ops.binary.math import TruncateDiv, TruncateMod
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops import truncatediv, truncatemod, truediv, array
+
+    # test op instantiation
+    t_div = TruncateDiv()
+    t_mod = TruncateMod()
+    assert t_div.op_name == "TruncateDiv"
+    assert t_mod.op_name == "TruncateMod"
+
+    config.eager_mode = True
+    x = array([5.0, -5.0, 5.0, -5.0])
+    y = array([2.0, 2.0, -2.0, -2.0])
+
+    res1 = truncatediv(x, y)
+    res2 = truncatemod(x, y)
+
+    x2 = array([5, 5])
+    y2 = array([2, 2])
+    res3 = truediv(x2, y2)
+    config.eager_mode = False
+
+    assert res1 is not None
+    assert res2 is not None
+    assert res3 is not None

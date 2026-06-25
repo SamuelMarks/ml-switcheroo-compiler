@@ -67,6 +67,8 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
         return {
+            "TruncateDiv": "tf.math.truncatediv({0}, {1})",
+            "TruncateMod": "tf.math.truncatemod({0}, {1})",
             "TrueDivide": "tf.math.truediv({0}, {1})",
             "Sum": "tf.reduce_sum({0}, axis={axis}, keepdims={keepdims})",
             "Mean": "tf.reduce_mean({0}, axis={axis}, keepdims={keepdims})",
@@ -82,7 +84,28 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
         return {
             "Matmul": "tf.linalg.matmul({0}, {1})",
+            "Trace": "tf.linalg.trace",
+            "Adjoint": "tf.linalg.adjoint",
+            "BandPart": "tf.linalg.band_part",
+            "CholeskySolve": "tf.linalg.cholesky_solve",
+            "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
+            "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
+            "MatrixRank": "tf.linalg.matrix_rank",
+            "MatrixTranspose": "tf.linalg.matrix_transpose",
+            "Sqrtm": "tf.linalg.sqrtm",
             "Dot": "tf.tensordot({0}, {1}, axes=1)",
+            "Fftnd": "tf.signal.fftn({0})",
+            "Ifftnd": "tf.signal.ifftn({0})",
+            "Rfftnd": "tf.signal.rfftn({0})",
+            "Irfftnd": "tf.signal.irfftn({0})",
+            "Fftshift": "tf.signal.fftshift({0})",
+            "Ifftshift": "tf.signal.ifftshift({0})",
+            "Dct": "tf.signal.dct({0})",
+            "Idct": "tf.signal.idct({0})",
+            "Mdct": "tf.signal.mdct({0})",
+            "InverseMdct": "tf.signal.inverse_mdct({0})",
+            "Frame": "tf.signal.frame({0})",
+            "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
             "Fft": "tf.signal.fft({0})",
             "Rfft": "tf.signal.rfft({0})",
             "Fftn": "tf.signal.fftNd({0})",

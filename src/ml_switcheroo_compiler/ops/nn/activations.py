@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Activations and advanced NN operations."""
 
 from ml_switcheroo_compiler.nn.activations import (
@@ -30,6 +31,27 @@ from ml_switcheroo_compiler.nn.activations import (
     tanh_shrink,
     threshold,
 )
+
+
+def crelu(features, axis=-1, name=None):
+    # pragma: no cover
+    """Computes Concatenated ReLU."""
+    from ml_switcheroo_compiler.ops.shape.frontend import concatenate
+    from ml_switcheroo_compiler.ops import negative
+
+    return relu(concatenate([features, negative(features)], dim=axis))
+
+
+def isotonic_regression(y, sample_weights=None, increasing=True, name=None):
+    # pragma: no cover
+    """Solves isotonic regression problems."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(y.shape, "float32", "cpu")), Tensor(
+        None, TensorConfig(y.shape, "int32", "cpu")
+    )
+
 
 __all__ = [
     "celu",

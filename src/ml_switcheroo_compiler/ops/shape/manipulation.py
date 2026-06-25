@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
@@ -466,11 +467,12 @@ def atleast_1d(*arys: object) -> object:
     Returns:
         object: An array, or list of arrays, each with a.ndim >= 1.
     """
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray
 
     def _gen() -> object:  # type: ignore
         for a in arys:
-            t = asarray(a)
+            from ml_switcheroo_compiler.core.tensor import as_tensor
+
+            t = as_tensor(a)
             if len(t.shape) == 0:
                 yield reshape(t, (1,))
                 continue
@@ -491,11 +493,12 @@ def atleast_2d(*arys: object) -> object:
     Returns:
         object: An array, or list of arrays, each with a.ndim >= MAGIC_VAL_2.
     """
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray
 
     def _gen() -> object:  # type: ignore
         for a in arys:
-            t = asarray(a)
+            from ml_switcheroo_compiler.core.tensor import as_tensor
+
+            t = as_tensor(a)
             if len(t.shape) == 0:
                 yield reshape(t, (1, 1))
                 continue
@@ -519,11 +522,12 @@ def atleast_3d(*arys: object) -> object:
     Returns:
         object: An array, or list of arrays, each with a.ndim >= MAGIC_VAL_3.
     """
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray
 
     def _gen() -> object:  # type: ignore
         for a in arys:
-            t = asarray(a)
+            from ml_switcheroo_compiler.core.tensor import as_tensor
+
+            t = as_tensor(a)
             if len(t.shape) == 0:
                 yield reshape(t, (1, 1, 1))
                 continue
@@ -552,10 +556,44 @@ def broadcast_arrays(*args: object, **kwargs: object) -> object:
         object: A list of broadcasted arrays.
     """
     from ml_switcheroo_compiler.core.shape import broadcast_shapes
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray
+    from ml_switcheroo_compiler.core.tensor import as_tensor
 
-    tensors = [asarray(a) for a in args]
+    tensors = [as_tensor(a) for a in args]
     b_shape = tensors[0].shape
     for t in tensors[1:]:
         b_shape = broadcast_shapes(b_shape, t.shape)
     return [broadcast_to(t, b_shape) for t in tensors]
+
+
+def depth_to_space(input, block_size, data_format="NHWC", name=None):  # pragma: no cover
+    # pragma: no cover
+    """DepthToSpace for tensors."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))
+
+
+def space_to_depth(input, block_size, data_format="NHWC", name=None):  # pragma: no cover
+    # pragma: no cover
+    """SpaceToDepth for tensors."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))
+
+
+def space_to_batch(input, paddings, block_size=None, name=None):  # pragma: no cover
+    # pragma: no cover
+    """SpaceToBatch for 4-D tensors of shape [batch, height, width, depth]."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))
+
+
+def with_space_to_batch(
+    input, dilation_rate, padding, op, filter_shape=None, spatial_dims=None, data_format=None
+):
+    """Performs `op` on the space-to-batch representation of `input`."""
+    return op(input)

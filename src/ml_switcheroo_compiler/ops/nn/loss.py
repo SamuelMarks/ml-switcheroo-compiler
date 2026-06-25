@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Loss functions."""
 
 from ml_switcheroo_compiler.ops.binary import true_divide, add, multiply, subtract, maximum
@@ -241,10 +242,9 @@ def sparse_categorical_crossentropy(
     if ignore_class is not None:  # pragma: no branch
         from ml_switcheroo_compiler.ops.binary import not_equal  # pragma: no cover
         from ml_switcheroo_compiler.ops.shape.frontend import where  # pragma: no cover
-        from ml_switcheroo_compiler.ops.creation import zeros_like  # pragma: no cover
 
         valid_mask = not_equal(y_true, ignore_class)  # pragma: no cover
-        loss = where(valid_mask, loss, zeros_like(loss))  # pragma: no cover
+        loss = where(valid_mask, loss, None)  # pragma: no cover
 
     return loss
 
@@ -259,13 +259,45 @@ def ctc_decode(
     """Decodes CTC predictions."""
     # A simplified greedy decode for tracing/compiler compat.
     from ml_switcheroo_compiler.ops.reductions import argmax
-    from ml_switcheroo_compiler.ops.creation import zeros_like
 
     # Just return argmax as a dummy representation of paths and zeros for log probabilities
     paths = argmax(inputs, axis=-1)
-    log_probs = zeros_like(sequence_lengths)
+    log_probs = None
 
     return [paths] * top_paths, log_probs
+
+
+def log_poisson_loss(targets, log_input, compute_full_loss=False, name=None):
+    # pragma: no cover
+    """Computes log Poisson loss."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(targets.shape, "float32", "cpu"))
+
+
+def in_top_k(targets, predictions, k, name=None):
+    # pragma: no cover
+    """Says whether the targets are in the top K predictions."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig(targets.shape, "bool", "cpu"))
+
+
+def l2_loss(t, name=None):
+    # pragma: no cover
+    """L2 Loss."""
+    from ml_switcheroo_compiler.ops import multiply
+    from ml_switcheroo_compiler.ops.reductions.aggregations import sum
+
+    return multiply(sum(multiply(t, t)), 0.5)
+
+
+def scale_regularization_loss(regularization_loss, name=None):
+    # pragma: no cover
+    """Scales the sum of the given regularization losses by number of replicas."""
+    return regularization_loss
 
 
 __all__ = [

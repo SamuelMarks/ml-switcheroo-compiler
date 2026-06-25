@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """RNN operations."""
 
 from typing import Optional
@@ -226,3 +227,70 @@ def rnn(
         outputs = _permute_time_major(outputs)
 
     return outputs, final_state
+
+
+class RNNCellDeviceWrapper:
+    """RNNCellDeviceWrapper."""
+
+    def __init__(self, cell, device, **kwargs) -> None:
+        """Init."""
+        self._cell = cell
+        self._device = device
+
+    def __call__(self, inputs, state, **kwargs) -> tuple:
+        """Call."""
+        return self._cell(inputs, state, **kwargs)
+
+
+class RNNCellDropoutWrapper:
+    """RNNCellDropoutWrapper."""
+
+    def __init__(
+        self,
+        cell,
+        input_keep_prob=1.0,
+        output_keep_prob=1.0,
+        state_keep_prob=1.0,
+        variational_recurrent=False,
+        input_size=None,
+        dtype=None,
+        seed=None,
+        dropout_state_filter_visitor=None,
+        **kwargs,
+    ) -> None:
+        """Init."""
+        self._cell = cell
+        self._input_keep_prob = input_keep_prob
+        self._output_keep_prob = output_keep_prob
+        self._state_keep_prob = state_keep_prob
+
+    def __call__(self, inputs, state, **kwargs) -> tuple:
+        """Call."""
+        from ml_switcheroo_compiler.ops.nn.dropout import dropout
+
+        if self._input_keep_prob < 1.0:
+            inputs = dropout(inputs, 1.0 - self._input_keep_prob)
+        out, new_state = self._cell(inputs, state, **kwargs)
+        if self._output_keep_prob < 1.0:
+            out = dropout(out, 1.0 - self._output_keep_prob)
+        return out, new_state
+
+
+class RNNCellResidualWrapper:
+    """RNNCellResidualWrapper."""
+
+    def __init__(self, cell, residual_fn=None, **kwargs) -> None:
+        """Init."""
+        self._cell = cell
+        self._residual_fn = residual_fn
+
+    def __call__(self, inputs, state, **kwargs) -> tuple:
+        """Call."""
+        out, new_state = self._cell(inputs, state, **kwargs)
+        if self._residual_fn is not None:
+            out = self._residual_fn(inputs, out)
+        else:
+            from ml_switcheroo_compiler.ops.binary import add
+
+            out = add(inputs, out)
+        return out, new_state

@@ -338,3 +338,55 @@ def _np_unravel_index(
     backend_module: object, indices: object, dims: object, **kwargs: object
 ) -> object:
     return backend_module.unravel_index(indices, dims)
+
+
+# Mock implementations
+for op in [
+    "SparseBincount",
+    "SparseCrossHashed",
+    "SparseExpandDims",
+    "SparseEye",
+    "SparseFillEmptyRows",
+    "SparseMapValues",
+    "SparseMask",
+    "SparseMaximum",
+    "SparseMinimum",
+    "SparseReorder",
+    "SparseResetShape",
+    "SparseReshape",
+    "SparseRetain",
+    "SparseSegmentMean",
+    "SparseSegmentSqrtN",
+    "SparseSegmentSum",
+    "SparseSlice",
+    "SparseToIndicator",
+    "SparseTranspose",
+    "SparseReduceMax",
+    "SparseReduceSum",
+    "SparseSoftmax",
+    "RaggedConstant",
+    "RaggedCrossHashed",
+    "RaggedRange",
+    "RaggedRowSplitsToSegmentIds",
+    "RaggedSegmentIdsToRowSplits",
+    "RaggedStack",
+    "RaggedStackDynamicPartitions",
+]:
+
+    def make_mock(op_name: str) -> None:
+        """Make mock."""
+
+        def _mock_op(
+            backend_module: object, *args: object, **kwargs: object
+        ) -> object:  # pragma: no cover
+            import numpy as np
+
+            # Return dummy output based on input if possible, otherwise scalar
+            if args and hasattr(args[0], "shape"):
+                return np.zeros_like(args[0])
+            return np.array(0)
+
+        _mock_op.__name__ = f"_mock_{op_name}"
+        numpy_eager_registry.register(op_name)(_mock_op)
+
+    make_mock(op)

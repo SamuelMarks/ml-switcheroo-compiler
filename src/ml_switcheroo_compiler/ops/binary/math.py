@@ -77,7 +77,7 @@ class Divide(BinaryMathOp):
 class TrueDivide(Divide):
     """Binary operation for element-wise true division of the first operand by the second."""
 
-    op_name = "True_Divide"
+    op_name = "TrueDivide"
 
 
 @register_op("Power")
@@ -446,3 +446,17 @@ class Xlog1py(BinaryMathOp):
     """Xlog1py operation."""
 
     op_name = "Xlog1py"
+
+
+@register_op("TruncateDiv")
+class TruncateDiv(BinaryMathOp):
+    """Binary operation for element-wise truncated division."""
+
+    op_name = "TruncateDiv"
+
+
+@register_op("TruncateMod")
+class TruncateMod(BinaryMathOp):
+    """Binary operation for element-wise truncated modulo."""
+
+    op_name = "TruncateMod"

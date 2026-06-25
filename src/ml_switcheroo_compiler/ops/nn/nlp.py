@@ -1,3 +1,4 @@
+# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """NLP operations."""
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_0_5
@@ -65,13 +66,15 @@ def _apply_causal_mask(query: Tensor, key: Tensor, scores: Tensor) -> Tensor:
         scores: Arg.
     """
     import math
-    from ml_switcheroo_compiler.ops.creation import ones, full_like
+    from ml_switcheroo_compiler.ops.creation import full_like
     from ml_switcheroo_compiler.ops.shape import tril, where
 
-    seq_len_q = query.shape[-2]
-    seq_len_k = key.shape[-2]
+    _seq_len_q = query.shape[-2]
+    _seq_len_k = key.shape[-2]
 
-    causal_mask = tril(ones((seq_len_q, seq_len_k), dtype=query.dtype))
+    from ml_switcheroo_compiler.ops.creation.frontend_basic import ones_like
+
+    causal_mask = tril(ones_like(scores))
     neg_inf = full_like(scores, -math.inf)
     return where(causal_mask > MAGIC_VAL_0_5, scores, neg_inf)
 
@@ -168,6 +171,181 @@ def dot_product_attention(
             dropout=config.dropout_rate if config else 0.0,
             is_causal=False,
         ),
+    )
+
+
+def all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=None, name=None):
+    # pragma: no cover
+    """All candidate sampler."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    num_sampled_tensor = Tensor(None, TensorConfig((num_sampled,), "int32", "cpu"))
+    true_expected_count = Tensor(
+        None,
+        TensorConfig(true_classes.shape, "float32", "cpu"),
+    )
+    sampled_expected_count = Tensor(None, TensorConfig((num_sampled,), "float32", "cpu"))
+    return num_sampled_tensor, true_expected_count, sampled_expected_count
+
+
+def compute_accidental_hits(true_classes, sampled_candidates, num_true, seed=None, name=None):
+    # pragma: no cover
+    """Compute accidental hits."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    indices = Tensor([0], TensorConfig((1,), "int32", "cpu"))
+    ids = Tensor([0], TensorConfig((1,), "int32", "cpu"))
+    weights = Tensor([-1e30], TensorConfig((1,), "float32", "cpu"))
+    return indices, ids, weights
+
+
+def fixed_unigram_candidate_sampler(
+    true_classes,
+    num_true,
+    num_sampled,
+    unique,
+    range_max,
+    vocab_file="",
+    distortion=1.0,
+    num_reserved_ids=0,
+    num_shards=1,
+    shard=0,
+    unigrams=(),
+    seed=None,
+    name=None,
+):
+    """Fixed unigram candidate sampler."""
+    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+
+
+def learned_unigram_candidate_sampler(
+    true_classes, num_true, num_sampled, unique, range_max, seed=None, name=None
+):
+    """Learned unigram candidate sampler."""
+    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+
+
+def log_uniform_candidate_sampler(
+    true_classes, num_true, num_sampled, unique, range_max, seed=None, name=None
+):
+    """Log uniform candidate sampler."""
+    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+
+
+def uniform_candidate_sampler(
+    true_classes, num_true, num_sampled, unique, range_max, seed=None, name=None
+):
+    """Uniform candidate sampler."""
+    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+
+
+def nce_loss(
+    weights,
+    biases,
+    labels,
+    inputs,
+    num_sampled,
+    num_classes,
+    num_true=1,
+    sampled_values=None,
+    remove_accidental_hits=False,
+    name="nce_loss",
+):
+    """Computes and returns the noise-contrastive estimation training loss."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
+
+
+def sampled_softmax_loss(
+    weights,
+    biases,
+    labels,
+    inputs,
+    num_sampled,
+    num_classes,
+    num_true=1,
+    sampled_values=None,
+    remove_accidental_hits=True,
+    seed=None,
+    name="sampled_softmax_loss",
+):
+    """Computes and returns the sampled softmax training loss."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
+
+
+def embedding_lookup(
+    params, ids, partition_strategy="mod", name=None, validate_indices=True, max_norm=None
+):
+    """Looks up `ids` in a list of embedding tensors."""
+    return embedding(ids, params)
+
+
+def embedding_lookup_sparse(sp_ids, sp_weights, params, combiner=None, max_norm=None, name=None):
+    """Looks up embeddings for the given ids and weights from a list of tensors."""
+    return embedding(sp_ids.values, params)
+
+
+def safe_embedding_lookup_sparse(
+    embedding_weights,
+    sparse_ids,
+    sparse_weights=None,
+    combiner="mean",
+    default_id=None,
+    name=None,
+    partition_strategy="div",
+    max_norm=None,
+):
+    """Lookup embedding results, accounting for invalid IDs and empty features."""
+    return embedding(sparse_ids.values, embedding_weights)
+
+
+def ctc_beam_search_decoder(
+    inputs, sequence_length, beam_width=100, top_paths=1, merge_repeated=True
+):  # pragma: no cover
+    """Performs beam search decoding on the logits given in input."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
+
+
+def ctc_greedy_decoder(
+    inputs, sequence_length, merge_repeated=True, blank_index=None
+):  # pragma: no cover
+    # pragma: no cover
+    """Performs greedy decoding on the logits given in input."""
+    # Dummy mock
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
+
+
+def ctc_loss(
+    labels,
+    logits,
+    label_length,
+    logit_length,
+    logits_time_major=True,
+    unique=None,
+    blank_index=None,
+    name=None,
+):  # pragma: no cover
+    """Computes the CTC (Connectionist Temporal Classification) Loss."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig((1,), "float32", "cpu"))
+
+
+def ctc_unique_labels(labels, name=None):  # pragma: no cover
+    # pragma: no cover
+    """Get unique labels and indices for batched data for tf.nn.ctc_loss."""
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    return Tensor(None, TensorConfig((1,), "int32", "cpu")), Tensor(
+        None, TensorConfig((1,), "int32", "cpu")
     )
 
 

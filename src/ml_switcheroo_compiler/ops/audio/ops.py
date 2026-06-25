@@ -82,3 +82,121 @@ class KaiserWindow(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
+
+
+@register_op("Dct")
+class Dct(OpDef):
+    """Dct operator."""
+
+    op_name = "Dct"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        return a.shape
+
+
+@register_op("Idct")
+class Idct(OpDef):
+    """Idct operator."""
+
+    op_name = "Idct"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        return a.shape
+
+
+@register_op("Mdct")
+class Mdct(OpDef):
+    """Mdct operator."""
+
+    op_name = "Mdct"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        # Dummy infer_shape for now
+        shape = list(a.shape)
+        if len(shape) > 0:
+            shape[-1] = shape[-1] // 2
+        return tuple(shape)
+
+
+@register_op("InverseMdct")
+class InverseMdct(OpDef):
+    """InverseMdct operator."""
+
+    op_name = "InverseMdct"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        if len(shape) > 0:
+            shape[-1] = shape[-1] * 2
+        return tuple(shape)
+
+
+@register_op("Frame")
+class Frame(OpDef):
+    """Frame operator."""
+
+    op_name = "Frame"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        # Dummy infer_shape for now
+        shape = list(a.shape)
+        frame_length = kwargs.get("frame_length", 1)
+        frame_step = kwargs.get("frame_step", 1)
+        if len(shape) > 0:
+            num_frames = max(0, (shape[-1] - frame_length) // frame_step + 1)
+            shape[-1] = num_frames
+            shape.append(frame_length)
+        return tuple(shape)
+
+
+@register_op("OverlapAndAdd")
+class OverlapAndAdd(OpDef):
+    """OverlapAndAdd operator."""
+
+    op_name = "OverlapAndAdd"
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: Arg.
+            **kwargs: Kwargs.
+        """
+        shape = list(a.shape)
+        frame_step = kwargs.get("frame_step", 1)
+        if len(shape) >= 2:  # noqa: PLR2004
+            num_frames = shape[-2]
+            frame_length = shape[-1]
+            shape.pop()
+            shape[-1] = (num_frames - 1) * frame_step + frame_length
+        return tuple(shape)
