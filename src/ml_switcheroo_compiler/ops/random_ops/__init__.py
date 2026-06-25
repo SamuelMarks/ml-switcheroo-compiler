@@ -3,4 +3,7 @@
 from .frontend import sobol_sample
 from .sobol import SobolSample
 
-__all__ = ["sobol_sample", "SobolSample"]
+__all__ = [
+    "SobolSample",
+    "sobol_sample",
+]

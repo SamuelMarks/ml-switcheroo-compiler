@@ -21,25 +21,6 @@ def _get_exports_from_submodule(modname: str) -> list[str]:
     return sorted(list(set([n for n in dir(mod) if not n.startswith("_")])))
 
 
-def _get_existing_all(filepath: str) -> Optional[list[str]]:
-    try:
-        with open(filepath) as f:
-            tree = ast.parse(f.read())
-        for node in tree.body:
-            if isinstance(node, ast.Assign):
-                for target in node.targets:
-                    if isinstance(target, ast.Name) and target.id == "__all__":
-                        if isinstance(node.value, (ast.List, ast.Tuple)):
-                            return [
-                                elt.value
-                                for elt in node.value.elts
-                                if isinstance(elt, ast.Constant)
-                            ]
-    except Exception:
-        pass
-    return None
-
-
 def _append_import_lines(
     modname: str,
     exports: list[str],
@@ -85,30 +66,115 @@ def generate_init(
             _append_import_lines(modname, exports, imported_symbols, import_lines, all_exports)
 
     all_exports = sorted(list(set(all_exports)))
-    existing_all = _get_existing_all(filepath)
 
-    if existing_all is not None and existing_all == all_exports:
-        return
+    with open(filepath) as f:
+        old_source = f.read()
 
-    content = (
+    new_source = (
         f'# pylint: disable=too-many-lines\n"""Auto-generated {module_name} module exports."""\n\n'
     )
-    content += "\n".join(import_lines) + "\n\n"
-    content += "__all__ = [\n"
+    new_source += "\n".join(import_lines) + "\n\n"
+    new_source += "__all__ = [\n"
     for e in all_exports:
-        content += f'    "{e}",\n'
-    content += "]\n"
+        new_source += f'    "{e}",\n'
+    new_source += "]\n"
 
-    with open(filepath, "w") as f:
-        f.write(content)
+    try:
+        if ast.dump(ast.parse(old_source)) != ast.dump(ast.parse(new_source)):
+            with open(filepath, "w") as f:
+                f.write(new_source)
+            print(f"Updated {filepath}")
+    except Exception as e:
+        print(f"Failed to parse AST for {filepath}: {e}")
+
+
+def process_file(filepath: str) -> None:  # noqa: C901, PLR0912, PLR0915
+    """Process a single file to update its __all__ exports."""
+    abs_path = os.path.abspath(filepath)
+    src_dir = os.path.abspath("src")
+    if not abs_path.startswith(src_dir):
+        return
+
+    rel_path = os.path.relpath(abs_path, src_dir)
+    modname = rel_path.replace(os.path.sep, ".")
+    if modname.endswith(".py"):
+        modname = modname[:-3]
+    if modname.endswith(".__init__"):
+        modname = modname[:-9]
+
+    try:
+        mod = importlib.import_module(modname)
+    except Exception as e:
+        print(f"Skipping {filepath} due to import error: {e}")
+        return
+
+    exports = getattr(mod, "__all__", None)
+    if exports is None:
+        exports = [n for n in dir(mod) if not n.startswith("_")]
+
+    exports = sorted(list(set(exports)))
+
+    with open(filepath) as f:
+        source = f.read()
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return
+
+    lines_to_remove = set()
+    for node in ast.walk(tree):
+        is_target = False
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    is_target = True
+        elif isinstance(node, ast.Expr):
+            if isinstance(node.value, ast.Call):
+                func = node.value.func
+                if (
+                    isinstance(func, ast.Attribute)
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id == "__all__"
+                ):
+                    if func.attr in ("extend", "append"):
+                        is_target = True
+
+        if is_target:
+            for line_num in range(node.lineno, node.end_lineno + 1):
+                lines_to_remove.add(line_num)
+
+    if not lines_to_remove and not getattr(mod, "__all__", None):
+        return
+
+    old_lines = source.split("\n")
+    new_lines = []
+    for i, line in enumerate(old_lines, 1):
+        if i not in lines_to_remove:
+            new_lines.append(line)
+
+    while new_lines and new_lines[-1].strip() == "":
+        new_lines.pop()
+
+    new_source = "\n".join(new_lines) + "\n\n__all__ = [\n"
+    for e in exports:
+        new_source += f'    "{e}",\n'
+    new_source += "]\n"
+
+    try:
+        old_dump = ast.dump(ast.parse(source))
+        new_dump = ast.dump(ast.parse(new_source))
+    except Exception as e:
+        print(f"Error parsing new source for {filepath}: {e}")
+        return
+
+    if old_dump != new_dump:
+        with open(filepath, "w") as f:
+            f.write(new_source)
+        print(f"Updated {filepath}")
 
 
 if __name__ == "__main__":
-    lax_subs = ["array", "control_flow", "linalg", "math", "neural_network", "parallel"]
-    generate_init(
-        "src/ml_switcheroo_compiler/lax/__init__.py", "ml_switcheroo_compiler.lax", lax_subs
-    )
-
     vision_subs = [
         "affine",
         "bbox",
@@ -118,10 +184,26 @@ if __name__ == "__main__":
         "mixing",
         "transforms",
     ]
+    # First, generate vision exports specifically
     generate_init(
         "src/ml_switcheroo_compiler/ops/vision/__init__.py",
         "ml_switcheroo_compiler.ops.vision",
         vision_subs,
     )
 
-    print("Successfully generated explicit __all__ exports.")
+    # Then process all files to convert __all__ to literal strings
+    files_to_check = []
+    for root, _, files in os.walk("src/ml_switcheroo_compiler"):
+        for file in files:
+            if file.endswith(".py"):
+                fpath = os.path.join(root, file)
+                if fpath != "src/ml_switcheroo_compiler/ops/vision/__init__.py":
+                    files_to_check.append(fpath)
+
+    for f in files_to_check:
+        with open(f) as file_obj:
+            content = file_obj.read()
+        if "__all__" in content:
+            process_file(f)
+
+    print("Successfully normalized __all__ exports across the codebase.")

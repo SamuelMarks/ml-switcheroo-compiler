@@ -7,12 +7,20 @@ from ml_switcheroo_compiler.ops.audio.frontend import (
     mel_spectrogram,
     mfcc,
     stft,
+    mfccs_from_log_mel_spectrograms,
+    hann_window,
+    hamming_window,
+    kaiser_window,
 )
 
 __all__ = [
-    "stft",
-    "mel_spectrogram",
+    "hamming_window",
+    "hann_window",
     "istft",
+    "kaiser_window",
     "mel_filterbank",
+    "mel_spectrogram",
     "mfcc",
+    "mfccs_from_log_mel_spectrograms",
+    "stft",
 ]

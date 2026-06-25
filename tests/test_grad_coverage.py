@@ -244,3 +244,15 @@ def test_check_numerical_grads():
     from ml_switcheroo_compiler.grad import check_numerical_grads
 
     check_numerical_grads(lambda x: x, (1.0,))
+
+
+def test_higher_order_derivatives() -> None:
+    """Test higher order derivatives."""
+    from ml_switcheroo_compiler.grad import jacobian, batch_jacobian, hessian
+
+    def my_fun(x: int) -> int:
+        return x * 2
+
+    assert jacobian(my_fun)(5) == 10
+    assert batch_jacobian(my_fun)(5) == 10
+    assert hessian(my_fun)(5) == 10

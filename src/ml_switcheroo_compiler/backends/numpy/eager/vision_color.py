@@ -176,4 +176,24 @@ def _np_solarize(backend_module: object, images: object, **kwargs: object) -> ob
     return np.where(images >= threshold, value_range[1] - images + value_range[0], images)
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_adjust_brightness",
+    "_np_adjust_contrast",
+    "_np_adjust_hue",
+    "_np_adjust_saturation",
+    "_np_auto_contrast",
+    "_np_equalization",
+    "_np_invert",
+    "_np_posterize",
+    "_np_rgb_to_grayscale",
+    "_np_solarize",
+    "np",
+    "numpy_eager_registry",
+]

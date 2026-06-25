@@ -429,3 +429,87 @@ def equalization(images: Tensor) -> Tensor:
     from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     return get_op("Equalization")()(images)  # pragma: no cover
+
+
+def rgb_to_yiq(images: Tensor) -> Tensor:
+    """Converts one or more images from RGB to YIQ.
+
+    Args:
+        images (Tensor): Input images.
+
+    Returns:
+    Tensor: Images in YIQ space.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("RgbToYiq", images.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node("RgbToYiq", [images], {}, (), images.dtype)
+
+
+def yiq_to_rgb(images: Tensor) -> Tensor:
+    """Converts one or more images from YIQ to RGB.
+
+    Args:
+        images (Tensor): Input images.
+
+    Returns:
+    Tensor: Images in RGB space.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("YiqToRgb", images.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node("YiqToRgb", [images], {}, (), images.dtype)
+
+
+def rgb_to_yuv(images: Tensor) -> Tensor:
+    """Converts one or more images from RGB to YUV.
+
+    Args:
+        images (Tensor): Input images.
+
+    Returns:
+    Tensor: Images in YUV space.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("RgbToYuv", images.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node("RgbToYuv", [images], {}, (), images.dtype)
+
+
+def yuv_to_rgb(images: Tensor) -> Tensor:
+    """Converts one or more images from YUV to RGB.
+
+    Args:
+        images (Tensor): Input images.
+
+    Returns:
+    Tensor: Images in RGB space.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("YuvToRgb", images.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node("YuvToRgb", [images], {}, (), images.dtype)

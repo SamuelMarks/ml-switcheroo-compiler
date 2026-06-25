@@ -9,6 +9,7 @@ and emitting logical nodes to a graph)
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.dynamic_slicing import (
     dynamic_slice,
@@ -84,84 +85,6 @@ from ml_switcheroo_compiler.ops.shape.splitting import (
     vsplit,
 )
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-__all__ = [
-    "_emit_shape_node",
-    "array_split",
-    "atleast_1d",
-    "atleast_2d",
-    "atleast_3d",
-    "append",
-    "broadcast_in_dim",
-    "broadcast_arrays",
-    "broadcast_to",
-    "choose",
-    "concatenate",
-    "column_stack",
-    "compress",
-    "delete",
-    "diff",
-    "diagonal",
-    "diagflat",
-    "diag_indices",
-    "diag_indices_from",
-    "digitize",
-    "dsplit",
-    "dstack",
-    "dynamic_slice",
-    "dynamic_update_slice",
-    "expand",
-    "expand_dims",
-    "flatten",
-    "gather",
-    "gather_nd",
-    "boolean_mask",
-    "invert_permutation",
-    "hsplit",
-    "hstack",
-    "image_resize",
-    "meshgrid",
-    "moveaxis",
-    "pad",
-    "partition",
-    "permute",
-    "repeat",
-    "reshape",
-    "roll",
-    "scatter",
-    "scatter_add",
-    "scatter_nd",
-    "tensor_scatter_update",
-    "tensor_scatter_add",
-    "tensor_scatter_max",
-    "tensor_scatter_min",
-    "searchsorted",
-    "select",
-    "slice",
-    "sort",
-    "argpartition",
-    "argsort",
-    "argwhere",
-    "split",
-    "squeeze",
-    "stack",
-    "strided_slice",
-    "swapaxes",
-    "reverse",
-    "take",
-    "take_along_axis",
-    "tile",
-    "top_k",
-    "transpose",
-    "tril",
-    "triu",
-    "unsqueeze",
-    "unstack",
-    "update_slice",
-    "vsplit",
-    "vstack",
-    "where",
-]
 
 
 def argwhere(a: object) -> Tensor:
@@ -352,3 +275,149 @@ def diag_indices_from(arr: object) -> tuple[Tensor, ...]:
             Tensor(d, TensorConfig(d.shape, "int64", getattr(arr, "device", None))) for d in data
         )
     return (_emit_shape_node("DiagIndicesFrom", [arr], {}, (None,), "int64"),)
+
+
+def dynamic_partition(data: Tensor, partitions: Tensor, num_partitions: int) -> list[Tensor]:
+    """dynamic_partition."""
+    from ml_switcheroo_compiler.ops.base import dispatch_op
+
+    # Returns list of tensors, but IR node produces multiple outputs or a list.
+    # For now, we'll return what dispatch_op returns.
+    return dispatch_op("DynamicPartition", data, partitions, num_partitions=num_partitions)
+
+
+def dynamic_stitch(indices: list[Tensor], data: list[Tensor]) -> Tensor:
+    """dynamic_stitch."""
+    from ml_switcheroo_compiler.ops.base import dispatch_op
+
+    return dispatch_op("DynamicStitch", indices, data)
+
+
+def tensor_scatter_sub(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
+    """tensor_scatter_sub."""
+    from ml_switcheroo_compiler.ops.base import dispatch_op
+
+    return dispatch_op("TensorScatterSub", tensor, indices, updates)
+
+
+def extract_volume_patches(
+    input: Tensor, ksizes: list[int], strides: list[int], padding: str
+) -> Tensor:
+    """extract_volume_patches."""
+    from ml_switcheroo_compiler.ops.base import dispatch_op
+
+    return dispatch_op(
+        "ExtractVolumePatches", input, ksizes=ksizes, strides=strides, padding=padding
+    )
+
+
+def unravel_index(indices: Tensor, dims: Tensor) -> Tensor:
+    """unravel_index."""
+    from ml_switcheroo_compiler.ops.base import dispatch_op
+
+    return dispatch_op("UnravelIndex", indices, dims)
+
+
+def dynamic_shape(x: Tensor) -> Tensor:
+    """Returns the dynamic shape of the tensor.
+
+    Args:
+        x (Tensor): The input tensor.
+
+    Returns:
+        Tensor: The dynamic shape.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("DynamicShape", x.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Int32, x.device),
+        )
+    return _emit_shape_node("DynamicShape", [x], {}, (len(x.shape),), DType.Int32)
+
+
+__all__ = [
+    "_emit_shape_node",
+    "append",
+    "argpartition",
+    "argsort",
+    "argwhere",
+    "array_split",
+    "atleast_1d",
+    "atleast_2d",
+    "atleast_3d",
+    "boolean_mask",
+    "broadcast_arrays",
+    "broadcast_in_dim",
+    "broadcast_to",
+    "choose",
+    "column_stack",
+    "compress",
+    "concatenate",
+    "delete",
+    "diag_indices",
+    "diag_indices_from",
+    "diagflat",
+    "diagonal",
+    "diff",
+    "digitize",
+    "dsplit",
+    "dstack",
+    "dynamic_partition",
+    "dynamic_slice",
+    "dynamic_stitch",
+    "dynamic_update_slice",
+    "expand",
+    "expand_dims",
+    "extract_volume_patches",
+    "flatten",
+    "gather",
+    "gather_nd",
+    "hsplit",
+    "hstack",
+    "image_resize",
+    "invert_permutation",
+    "meshgrid",
+    "moveaxis",
+    "pad",
+    "partition",
+    "permute",
+    "repeat",
+    "reshape",
+    "reverse",
+    "roll",
+    "scatter",
+    "scatter_add",
+    "scatter_nd",
+    "searchsorted",
+    "select",
+    "slice",
+    "sort",
+    "split",
+    "squeeze",
+    "stack",
+    "strided_slice",
+    "swapaxes",
+    "take",
+    "take_along_axis",
+    "tensor_scatter_add",
+    "tensor_scatter_max",
+    "tensor_scatter_min",
+    "tensor_scatter_sub",
+    "tensor_scatter_update",
+    "tile",
+    "top_k",
+    "transpose",
+    "tril",
+    "triu",
+    "unravel_index",
+    "unsqueeze",
+    "unstack",
+    "update_slice",
+    "vsplit",
+    "vstack",
+    "where",
+]

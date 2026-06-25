@@ -503,3 +503,33 @@ def test_slicing_eager_strided() -> None:
     except Exception:
         pass
     config.eager_mode = False
+
+
+def test_dynamic_shape():
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    import numpy as np
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.shape.frontend import dynamic_shape
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from unittest.mock import patch
+
+    x = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Int32, None))
+
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend,
+    ):
+        mock_backend.return_value.execute_op.return_value = np.array([2, 2])
+        mock_backend.return_value.array.return_value = np.array([2, 2])
+        res = dynamic_shape(x)
+        assert hasattr(res, "shape")
+
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            p_x = Tensor("mock_x", TensorConfig((2, 2), DType.Int32, None))
+            res = dynamic_shape(p_x)
+            assert res is not None
+        finally:
+            _tracer.stop_tracing()

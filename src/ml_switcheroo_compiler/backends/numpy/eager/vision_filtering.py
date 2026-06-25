@@ -74,4 +74,17 @@ def _np_sharpen(backend_module: object, images: object, **kwargs: object) -> obj
     return images
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_degeneration",
+    "_np_gaussian_blur",
+    "_np_median_filter",
+    "_np_sharpen",
+    "numpy_eager_registry",
+]

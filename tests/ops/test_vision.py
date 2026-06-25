@@ -1028,3 +1028,396 @@ def test_lazy_vision_filtering_ops():
             assert res is not None
         finally:
             _tracer.stop_tracing()
+
+
+def test_vision_eager_extra() -> None:  # noqa: PLR0915
+    """Test eager evaluation for new vision ops."""
+    import numpy as np
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    device = Device("cpu")
+    with ConfigContext(eager_mode=True):
+        from unittest.mock import patch
+
+        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+            mock_backend.return_value.execute_op.return_value = np.zeros((1,))
+            mock_backend.return_value.array.return_value = np.zeros((1,))
+
+            from ml_switcheroo_compiler.ops.vision.affine import affine_grid, grid_sample
+            from ml_switcheroo_compiler.ops.vision.bbox import draw_bounding_boxes
+            from ml_switcheroo_compiler.ops.vision.color import (
+                rgb_to_yiq,
+                yiq_to_rgb,
+                rgb_to_yuv,
+                yuv_to_rgb,
+            )
+            from ml_switcheroo_compiler.ops.vision.interpolation import resize
+
+            t_4d = Tensor(
+                np.zeros((1, 3, 4, 4), dtype=np.float32),
+                TensorConfig((1, 3, 4, 4), DType.Float32, device),
+            )
+            t_theta = Tensor(
+                np.zeros((1, 2, 3), dtype=np.float32),
+                TensorConfig((1, 2, 3), DType.Float32, device),
+            )
+            t_grid = Tensor(
+                np.zeros((1, 4, 4, 2), dtype=np.float32),
+                TensorConfig((1, 4, 4, 2), DType.Float32, device),
+            )
+
+            try:
+                affine_grid(t_theta, size=(1, 3, 4, 4))
+            except Exception:
+                pass
+
+            try:
+                grid_sample(t_4d, t_grid)
+            except Exception:
+                pass
+
+            try:
+                resize(t_4d, size=(2, 2))
+            except Exception:
+                pass
+
+            t_img = Tensor(
+                np.zeros((1, 4, 4, 3), dtype=np.float32),
+                TensorConfig((1, 4, 4, 3), DType.Float32, device),
+            )
+            t_boxes = Tensor(
+                np.zeros((1, 4), dtype=np.float32), TensorConfig((1, 4), DType.Float32, device)
+            )
+
+            try:
+                draw_bounding_boxes(t_img, t_boxes)
+            except Exception:
+                pass
+            try:
+                draw_bounding_boxes(t_img, t_boxes, colors=t_boxes)
+            except Exception:
+                pass
+
+            try:
+                rgb_to_yiq(t_img)
+            except Exception:
+                pass
+            try:
+                yiq_to_rgb(t_img)
+            except Exception:
+                pass
+            try:
+                rgb_to_yuv(t_img)
+            except Exception:
+                pass
+            try:
+                yuv_to_rgb(t_img)
+            except Exception:
+                pass
+
+
+def test_vision_tracing_extra() -> None:
+    """Test tracing evaluation for new vision ops."""
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.tracing import _tracer
+
+    device = Device("cpu")
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            from ml_switcheroo_compiler.ops.vision.affine import affine_grid, grid_sample
+            from ml_switcheroo_compiler.ops.vision.bbox import draw_bounding_boxes
+            from ml_switcheroo_compiler.ops.vision.color import (
+                rgb_to_yiq,
+                yiq_to_rgb,
+                rgb_to_yuv,
+                yuv_to_rgb,
+            )
+            from ml_switcheroo_compiler.ops.vision.interpolation import resize
+
+            t_4d = Tensor("dummy_4d", TensorConfig((1, 3, 4, 4), DType.Float32, device))
+            t_theta = Tensor("dummy_th", TensorConfig((1, 2, 3), DType.Float32, device))
+            t_grid = Tensor("dummy_g", TensorConfig((1, 4, 4, 2), DType.Float32, device))
+
+            affine_grid(t_theta, size=(1, 3, 4, 4))
+            grid_sample(t_4d, t_grid)
+            resize(t_4d, size=(2, 2))
+
+            t_img = Tensor("dummy_i", TensorConfig((1, 4, 4, 3), DType.Float32, device))
+            t_boxes = Tensor("dummy_b", TensorConfig((1, 4), DType.Float32, device))
+
+            draw_bounding_boxes(t_img, t_boxes)
+            draw_bounding_boxes(t_img, t_boxes, colors=t_boxes)
+
+            rgb_to_yiq(t_img)
+            yiq_to_rgb(t_img)
+            rgb_to_yuv(t_img)
+            yuv_to_rgb(t_img)
+        finally:
+            _tracer.stop_tracing()
+
+
+def test_new_vision_infer_shapes():
+    from ml_switcheroo_compiler.ops.vision.ops import (
+        RgbToYiq,
+        YiqToRgb,
+        RgbToYuv,
+        YuvToRgb,
+        AffineGrid,
+        GridSample,
+        Resize,
+        DrawBoundingBoxes,
+    )
+
+    assert RgbToYiq().infer_shape(None) == ()
+    assert YiqToRgb().infer_shape(None) == ()
+    assert RgbToYuv().infer_shape(None) == ()
+    assert YuvToRgb().infer_shape(None) == ()
+    assert AffineGrid().infer_shape(None) == ()
+    assert GridSample().infer_shape(None) == ()
+    assert Resize().infer_shape(None) == ()
+    assert DrawBoundingBoxes().infer_shape(None) == ()
+
+
+def test_all_vision_infer_shapes():
+    from ml_switcheroo_compiler.ops.vision.ops import (
+        RandomRotationOp,
+        RgbToGrayscaleOp,
+        Mixup,
+        Cutmix,
+        AugMix,
+        AutoContrast,
+        RandAugment,
+        RandomErasing,
+        Equalization,
+        RandomZoomOp,
+        RandomShearOp,
+        RandomTranslationOp,
+        RandomPerspectiveOp,
+        RandomElasticTransformOp,
+        RandomGaussianBlurOp,
+        RandomSharpnessOp,
+    )
+
+    assert RandomRotationOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RgbToGrayscaleOp().infer_shape((1, 2, 2, 3), data_format="channels_first") == (
+        1,
+        1,
+        2,
+        3,
+    )
+    assert Mixup().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert Cutmix().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert AugMix().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert AutoContrast().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandAugment().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomErasing().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert Equalization().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomZoomOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomShearOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomTranslationOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomPerspectiveOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomElasticTransformOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomGaussianBlurOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+    assert RandomSharpnessOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
+
+
+def test_random_crop_op_infer_shape_branch():
+    from ml_switcheroo_compiler.ops.vision.ops import RandomCropOp
+
+    op = RandomCropOp()
+    # length 3 branch
+    assert op.infer_shape((10, 10, 3), size=(5, 5)) == (5, 5, 3)
+
+
+def test_rgb_to_grayscale_op_infer_shape_branch():
+    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
+
+    op = RgbToGrayscaleOp()
+    assert op.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
+
+
+def test_random_crop_op_infer_shape_branch2():
+    from ml_switcheroo_compiler.ops.vision.ops import RandomCropOp, RgbToGrayscaleOp
+
+    op = RandomCropOp()
+    assert op.infer_shape((10, 10, 3, 4), size=(5, 5)) == (10, 5, 5, 4)
+
+    op2 = RgbToGrayscaleOp()
+    assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
+
+
+def test_random_crop_op_infer_shape_branch3():
+    from ml_switcheroo_compiler.ops.vision.ops import RandomCropOp, RgbToGrayscaleOp
+
+    op = RandomCropOp()
+    assert op.infer_shape((10, 10, 3), size=(5, 5)) == (5, 5, 3)
+
+    op2 = RgbToGrayscaleOp()
+    assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
+
+
+def test_random_crop_op_infer_shape_branch4():
+    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
+
+    op2 = RgbToGrayscaleOp()
+    assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
+
+
+def test_rgb_to_grayscale_op_infer_shape_branch5():
+    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
+
+    op2 = RgbToGrayscaleOp()
+    assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
+
+
+def test_rgb_to_grayscale_op_infer_shape_branch6():
+    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp, RandomCropOp
+
+    op2 = RgbToGrayscaleOp()
+    assert op2.infer_shape((10, 10, 10, 3), data_format="channels_last") == (10, 10, 10, 1)
+
+    op = RandomCropOp()
+    assert op.infer_shape((10, 10, 3), size=(5, 5)) == (5, 5, 3)
+
+
+def test_rgb_to_grayscale_op_infer_shape_branch7():
+    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
+
+    op2 = RgbToGrayscaleOp()
+    assert op2.infer_shape((10, 3, 10, 10), data_format="something_else") == (10, 1, 10, 10)
+
+
+def test_random_color_jitter_op_infer_shape_branch():
+    from ml_switcheroo_compiler.ops.vision.ops import RandomColorJitter
+
+    op = RandomColorJitter()
+    assert op.infer_shape((10, 10, 3)) == (10, 10, 3)
+
+
+def test_crop_images():
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    import numpy as np
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.vision.bbox import crop_images
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from unittest.mock import patch
+
+    img = Tensor(np.array([[[[1.0]]]]), TensorConfig((1, 1, 1, 1), DType.Float32, None))
+
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend,
+    ):
+        mock_backend.return_value.execute_op.return_value = np.array([[[[1.0]]]])
+        mock_backend.return_value.array.return_value = np.array([[[[1.0]]]])
+        res = crop_images(img, 0, 0, 0, 0)
+        assert hasattr(res, "shape")
+
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            p_img = Tensor("mock_img", TensorConfig((1, 1, 1, 1), DType.Float32, None))
+            res = crop_images(p_img, 0, 0, 0, 0)
+            assert res is not None
+        finally:
+            _tracer.stop_tracing()
+
+
+def test_extract_patches():
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    import numpy as np
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.vision.bbox import extract_patches
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from unittest.mock import patch
+
+    img = Tensor(np.array([[[[1.0]]]]), TensorConfig((1, 1, 1, 1), DType.Float32, None))
+
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend,
+    ):
+        mock_backend.return_value.execute_op.return_value = np.array([[[[1.0]]]])
+        mock_backend.return_value.array.return_value = np.array([[[[1.0]]]])
+        res = extract_patches(img, size=1)
+        assert hasattr(res, "shape")
+
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            p_img = Tensor("mock_img", TensorConfig((1, 1, 1, 1), DType.Float32, None))
+            res = extract_patches(p_img, size=1)
+            assert res is not None
+        finally:
+            _tracer.stop_tracing()
+
+
+def test_pad_images():
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    import numpy as np
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.vision.bbox import pad_images
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from unittest.mock import patch
+
+    img = Tensor(np.array([[[[1.0]]]]), TensorConfig((1, 1, 1, 1), DType.Float32, None))
+
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend,
+    ):
+        mock_backend.return_value.execute_op.return_value = np.array([[[[1.0]]]])
+        mock_backend.return_value.array.return_value = np.array([[[[1.0]]]])
+        res = pad_images(img, 1, 1, 1, 1)
+        assert hasattr(res, "shape")
+
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            p_img = Tensor("mock_img", TensorConfig((1, 1, 1, 1), DType.Float32, None))
+            res = pad_images(p_img, 1, 1, 1, 1)
+            assert res is not None
+        finally:
+            _tracer.stop_tracing()
+
+
+def test_map_coordinates():
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    import numpy as np
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.ops.vision.interpolation import map_coordinates
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from unittest.mock import patch
+
+    img = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), DType.Float32, None))
+    coords = Tensor(np.array([[0.5, 0.5]]), TensorConfig((1, 2), DType.Float32, None))
+
+    with (
+        ConfigContext(eager_mode=True),
+        patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend,
+    ):
+        mock_backend.return_value.execute_op.return_value = np.array([[[[1.0]]]])
+        mock_backend.return_value.array.return_value = np.array([[[[1.0]]]])
+        res = map_coordinates(img, coords, order=1)
+        assert hasattr(res, "shape")
+
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            p_img = Tensor("mock_img", TensorConfig((2, 2), DType.Float32, None))
+            p_coords = Tensor("mock_coords", TensorConfig((1, 2), DType.Float32, None))
+            res = map_coordinates(p_img, p_coords, order=1)
+            assert res is not None
+        finally:
+            _tracer.stop_tracing()

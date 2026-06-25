@@ -10,9 +10,9 @@ from ml_switcheroo_compiler.diagnostics.shape_debugger import debug_shapes, to_g
 
 __all__ = [
     "check_numerical_anomaly",
-    "format_traceback",
     "debug_shapes",
     "estimate_flops",
+    "format_traceback",
     "memory_profiler",
     "to_graphviz",
     "to_html",

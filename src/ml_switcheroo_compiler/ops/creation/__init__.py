@@ -2,37 +2,6 @@
 
 from ml_switcheroo_compiler.ops.creation.basic import Arange, CreationOp, Full, Ones, Zeros
 
-__all__ = [
-    "Arange",
-    "CreationOp",
-    "Full",
-    "Ones",
-    "Zeros",
-    "blackman",
-    "bartlett",
-    "hamming",
-    "hanning",
-    "kaiser",
-    "arange",
-    "array",
-    "asarray",
-    "diag",
-    "empty",
-    "empty_like",
-    "eye",
-    "full",
-    "full_like",
-    "identity",
-    "linspace",
-    "manual_seed",
-    "ones",
-    "ones_like",
-    "rand",
-    "randint",
-    "randn",
-    "zeros",
-    "zeros_like",
-]
 from .frontend import arange as arange
 from .frontend import array as array
 from .frontend import asarray as asarray
@@ -57,3 +26,35 @@ from .frontend import randint as randint
 from .frontend import randn as randn
 from .frontend import zeros as zeros
 from .frontend import zeros_like as zeros_like
+
+__all__ = [
+    "Arange",
+    "CreationOp",
+    "Full",
+    "Ones",
+    "Zeros",
+    "arange",
+    "array",
+    "asarray",
+    "bartlett",
+    "blackman",
+    "diag",
+    "empty",
+    "empty_like",
+    "eye",
+    "full",
+    "full_like",
+    "hamming",
+    "hanning",
+    "identity",
+    "kaiser",
+    "linspace",
+    "manual_seed",
+    "ones",
+    "ones_like",
+    "rand",
+    "randint",
+    "randn",
+    "zeros",
+    "zeros_like",
+]

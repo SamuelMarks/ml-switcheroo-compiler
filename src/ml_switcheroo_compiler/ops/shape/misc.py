@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import dispatch_eager
+from ml_switcheroo_compiler.ops.base import dispatch_eager, OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
@@ -324,3 +324,12 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
         out_shape,
         image.dtype,
     )
+
+
+@register_op("DynamicShape")
+class DynamicShape(OpDef):
+    """DynamicShape op."""
+
+    def infer_shape(self, x: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return (len(getattr(x, "shape", ())),)

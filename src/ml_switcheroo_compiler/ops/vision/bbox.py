@@ -220,3 +220,208 @@ def pad_to_bounding_box(
         (),
         images.dtype,
     )
+
+
+def draw_bounding_boxes(
+    images: Tensor,
+    boxes: Tensor,
+    colors: Tensor | None = None,
+    texts: list[str] | None = None,
+) -> Tensor:
+    """Draw bounding boxes on a batch of images.
+
+    Args:
+        images (Tensor): The input images.
+        boxes (Tensor): The bounding boxes.
+        colors (Tensor | None): The colors for the boxes.
+        texts (list[str] | None): The texts for the boxes.
+
+    Returns:
+    Tensor: The images with bounding boxes drawn.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        colors_data = colors.data if colors is not None else None
+        data = backend.execute_op(
+            "DrawBoundingBoxes", images.data, boxes.data, colors=colors_data, texts=texts
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "DrawBoundingBoxes",
+        [images, boxes] + ([colors] if colors is not None else []),
+        {"texts": texts},
+        (),
+        images.dtype,
+    )
+
+
+def crop_images(  # noqa: PLR0913
+    images: Tensor,
+    top_cropping: int,
+    bottom_cropping: int,
+    left_cropping: int,
+    right_cropping: int,
+    data_format: str | None = None,
+) -> Tensor:
+    """Crops images.
+
+    Args:
+        images: Input images.
+        top_cropping: Top cropping.
+        bottom_cropping: Bottom cropping.
+        left_cropping: Left cropping.
+        right_cropping: Right cropping.
+        data_format: Data format.
+
+    Returns:
+        Tensor: Cropped images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "CropImages",
+            images.data,
+            top_cropping=top_cropping,
+            bottom_cropping=bottom_cropping,
+            left_cropping=left_cropping,
+            right_cropping=right_cropping,
+            data_format=data_format,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "CropImages",
+        [images],
+        {
+            "top_cropping": top_cropping,
+            "bottom_cropping": bottom_cropping,
+            "left_cropping": left_cropping,
+            "right_cropping": right_cropping,
+            "data_format": data_format,
+        },
+        (),
+        images.dtype,
+    )
+
+
+def extract_patches(  # noqa: PLR0913
+    images: Tensor,
+    size: int | tuple[int, int] | list[int],
+    strides: int | tuple[int, int] | list[int] | None = None,
+    dilation_rate: int | tuple[int, int] | list[int] | None = None,
+    padding: str = "valid",
+    data_format: str | None = None,
+) -> Tensor:
+    """Extracts patches from images.
+
+    Args:
+        images: Input images.
+        size: Patch size.
+        strides: Strides.
+        dilation_rate: Dilation rate.
+        padding: Padding.
+        data_format: Data format.
+
+    Returns:
+        Tensor: Patches.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "ExtractPatches",
+            images.data,
+            size=size,
+            strides=strides,
+            dilation_rate=dilation_rate,
+            padding=padding,
+            data_format=data_format,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "ExtractPatches",
+        [images],
+        {
+            "size": size,
+            "strides": strides,
+            "dilation_rate": dilation_rate,
+            "padding": padding,
+            "data_format": data_format,
+        },
+        (),
+        images.dtype,
+    )
+
+
+def pad_images(  # noqa: PLR0913
+    images: Tensor,
+    top_padding: int,
+    bottom_padding: int,
+    left_padding: int,
+    right_padding: int,
+    target_height: int | None = None,
+    target_width: int | None = None,
+    data_format: str | None = None,
+) -> Tensor:
+    """Pads images.
+
+    Args:
+        images: Input images.
+        top_padding: Top padding.
+        bottom_padding: Bottom padding.
+        left_padding: Left padding.
+        right_padding: Right padding.
+        target_height: Target height.
+        target_width: Target width.
+        data_format: Data format.
+
+    Returns:
+        Tensor: Padded images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "PadImages",
+            images.data,
+            top_padding=top_padding,
+            bottom_padding=bottom_padding,
+            left_padding=left_padding,
+            right_padding=right_padding,
+            target_height=target_height,
+            target_width=target_width,
+            data_format=data_format,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "PadImages",
+        [images],
+        {
+            "top_padding": top_padding,
+            "bottom_padding": bottom_padding,
+            "left_padding": left_padding,
+            "right_padding": right_padding,
+            "target_height": target_height,
+            "target_width": target_width,
+            "data_format": data_format,
+        },
+        (),
+        images.dtype,
+    )

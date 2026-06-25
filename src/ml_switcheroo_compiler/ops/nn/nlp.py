@@ -143,9 +143,6 @@ def attention(
     return matmul(attn_weights, inputs.value)
 
 
-__all__ = ["embedding", "attention", "AttentionInputs", "AttentionConfig"]
-
-
 @dataclass
 class DotProductAttentionConfig:
     mask: object = None
@@ -172,3 +169,11 @@ def dot_product_attention(
             is_causal=False,
         ),
     )
+
+
+__all__ = [
+    "AttentionConfig",
+    "AttentionInputs",
+    "attention",
+    "embedding",
+]

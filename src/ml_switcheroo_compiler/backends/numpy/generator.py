@@ -64,6 +64,24 @@ class NumpyASTVisitor:
         "Greater": "np.greater",
         "Less": "np.less",
         "Negative": "np.negative",
+        "Cholesky": "np.linalg.cholesky",
+        "Svd": "np.linalg.svd",
+        "Qr": "np.linalg.qr",
+        "Inv": "np.linalg.inv",
+        "Pinv": "np.linalg.pinv",
+        "Det": "np.linalg.det",
+        "Slogdet": "np.linalg.slogdet",
+        "Eigh": "np.linalg.eigh",
+        "Eigvalsh": "np.linalg.eigvalsh",
+        "MatrixPower": "np.linalg.matrix_power",
+        "Solve": "np.linalg.solve",
+        "TriangularSolve": "scipy.linalg.solve_triangular",
+        "Lu": "scipy.linalg.lu",
+        "LuFactor": "scipy.linalg.lu_factor",
+        "LuSolve": "scipy.linalg.lu_solve",
+        "Norm": "np.linalg.norm",
+        "MatrixExponential": "scipy.linalg.expm",
+        "Cross": "np.cross",
     }
 
     @classmethod
@@ -121,6 +139,7 @@ class NumpyGenerator(
     _import_header = (
         "import numpy as np",
         "import scipy.special",
+        "import scipy.linalg",
         "",
         "def np_perspective_transform(images, start_points, end_points, interpolation, fill_value, data_format):",
         "    def get_h(src, dst):",

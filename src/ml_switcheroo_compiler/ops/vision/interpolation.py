@@ -121,3 +121,85 @@ def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool =
         (),
         images.dtype,
     )
+
+
+def resize(
+    images: Tensor, size: tuple[int, int], method: str = "bilinear", antialias: bool = False
+) -> Tensor:
+    """Resize images to size using the specified method.
+
+    Args:
+        images (Tensor): The input images.
+        size (tuple[int, int]): The new size (height, width).
+        method (str): Interpolation method (bilinear, nearest, bicubic, lanczos3, lanczos5).
+        antialias (bool): Whether to apply antialiasing.
+
+    Returns:
+        Tensor: The resized images.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "Resize", images.data, size=size, method=method, antialias=antialias
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, images.dtype, images.device),
+        )
+    return _emit_shape_node(
+        "Resize",
+        [images],
+        {"size": size, "method": method, "antialias": antialias},
+        (),
+        images.dtype,
+    )
+
+
+def map_coordinates(
+    input: Tensor,
+    coordinates: Tensor,
+    order: int,
+    fill_mode: str = "half_pixel",
+    cval: float = 0.0,
+) -> Tensor:
+    """Map coordinates.
+
+    Args:
+        input: Input tensor.
+        coordinates: Coordinates tensor.
+        order: Interpolation order.
+        fill_mode: Fill mode.
+        cval: Constant value for fill.
+
+    Returns:
+        Tensor: Interpolated tensor.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "MapCoordinates",
+            input.data,
+            coordinates.data,
+            order=order,
+            fill_mode=fill_mode,
+            cval=cval,
+        )
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, input.dtype, input.device),
+        )
+    return _emit_shape_node(
+        "MapCoordinates",
+        [input, coordinates],
+        {
+            "order": order,
+            "fill_mode": fill_mode,
+            "cval": cval,
+        },
+        (),
+        input.dtype,
+    )

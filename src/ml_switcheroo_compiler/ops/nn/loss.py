@@ -42,9 +42,6 @@ def dice_loss(
     return subtract(1.0, dice_coeff)
 
 
-__all__ = ["ctc_loss", "dice_loss", "categorical_generalized_cross_entropy", "circle_loss"]
-
-
 def categorical_generalized_cross_entropy(
     y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1
 ) -> Tensor:
@@ -269,3 +266,11 @@ def ctc_decode(
     log_probs = zeros_like(sequence_lengths)
 
     return [paths] * top_paths, log_probs
+
+
+__all__ = [
+    "categorical_generalized_cross_entropy",
+    "circle_loss",
+    "ctc_loss",
+    "dice_loss",
+]

@@ -148,9 +148,23 @@ def ball(*args: object, **kwargs: object) -> object:
     return _dispatch_random("ball", *args, **kwargs)
 
 
-def beta(*args: object, **kwargs: object) -> object:
-    """Execute beta."""
-    return _dispatch_random("beta", *args, **kwargs)
+def beta(key: object, a: object, b: object, shape: object = None, dtype: object = None) -> object:
+    """Samples beta random values from a given key."""
+    if shape is None:
+        shape = ()
+    dtype = dtype or dtypes.DType.Float32
+    if config.eager_mode:
+        np_dtype = np.dtype(dtype.value)
+        a_val = getattr(a, "data", a)
+        b_val = getattr(b, "data", b)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
+        else:
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+        res = rng.beta(a_val, b_val, size=shape).astype(np_dtype)
+        return Tensor(res, TensorConfig(getattr(res, "shape", ()), dtype, config.default_device))
+    return _emit_random_node("RandomBeta", [key, a, b], shape, dtype)
 
 
 def cauchy(*args: object, **kwargs: object) -> object:
@@ -172,18 +186,22 @@ def chisquare(*args: object, **kwargs: object) -> object:
     raise NotImplementedError("chisquare is not fully supported in tracing mode.")
 
 
-def dirichlet(*args: object, **kwargs: object) -> object:
-    """Execute dirichlet."""
+def dirichlet(key: object, alpha: object, shape: object = None, dtype: object = None) -> object:
+    """Samples dirichlet random values from a given key."""
+    if shape is None:
+        shape = ()
+    dtype = dtype or dtypes.DType.Float32
     if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, "dirichlet"
-        ):  # pragma: no branch
-            return backend.module.random.dirichlet(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            "dirichlet is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("dirichlet is not fully supported in tracing mode.")
+        np_dtype = np.dtype(dtype.value)
+        alpha_val = getattr(alpha, "data", alpha)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
+        else:
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+        res = rng.dirichlet(alpha_val, size=shape).astype(np_dtype)
+        return Tensor(res, TensorConfig(getattr(res, "shape", ()), dtype, config.default_device))
+    return _emit_random_node("RandomDirichlet", [key, alpha], shape, dtype)
 
 
 def double_sided_maxwell(*args: object, **kwargs: object) -> object:

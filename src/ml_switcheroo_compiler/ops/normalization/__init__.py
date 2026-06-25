@@ -8,10 +8,10 @@ from .frontend import NormConfig, group_mean, group_norm, group_variance, spectr
 _ = _basic
 
 __all__ = [
-    "group_mean",
-    "group_variance",
-    "group_norm",
-    "spectral_normalization",
     "NormConfig",
     "get_op",
+    "group_mean",
+    "group_norm",
+    "group_variance",
+    "spectral_normalization",
 ]

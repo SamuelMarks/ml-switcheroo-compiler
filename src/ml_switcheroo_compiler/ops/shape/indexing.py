@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -507,3 +508,66 @@ def invert_permutation(x: Tensor) -> Tensor:
         out_shape,
         x.dtype,
     )
+
+
+@register_op("DynamicPartition")
+class DynamicPartition(OpDef):
+    """DynamicPartition operation."""
+
+    op_name = "DynamicPartition"
+
+    def infer_shape(
+        self, data: object, partitions: object, num_partitions: int, **kwargs: object
+    ) -> object:
+        """Infer shape."""
+        # returns list of tensors, hard to represent simply here
+        return ()
+
+
+@register_op("DynamicStitch")
+class DynamicStitch(OpDef):
+    """DynamicStitch operation."""
+
+    op_name = "DynamicStitch"
+
+    def infer_shape(self, indices: object, data: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("TensorScatterSub")
+class TensorScatterSub(OpDef):
+    """TensorScatterSub operation."""
+
+    op_name = "TensorScatterSub"
+
+    def infer_shape(
+        self, tensor: object, indices: object, updates: object, **kwargs: object
+    ) -> object:
+        """Infer shape."""
+        return getattr(tensor, "shape", ())
+
+
+@register_op("ExtractVolumePatches")
+class ExtractVolumePatches(OpDef):
+    """ExtractVolumePatches operation."""
+
+    op_name = "ExtractVolumePatches"
+
+    def infer_shape(
+        self, input: object, ksizes: list[int], strides: list[int], padding: str, **kwargs: object
+    ) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("UnravelIndex")
+class UnravelIndex(OpDef):
+    """UnravelIndex operation."""
+
+    op_name = "UnravelIndex"
+
+    def infer_shape(self, indices: object, dims: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # unravel_index returns a tuple of tensors
+        return ()

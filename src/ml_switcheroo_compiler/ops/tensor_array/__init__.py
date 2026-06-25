@@ -42,4 +42,8 @@ class TensorArrayStack(OpDef):
         return (None,) + elem_shape
 
 
-__all__ = ["TensorArrayRead", "TensorArrayWrite", "TensorArrayStack"]
+__all__ = [
+    "TensorArrayRead",
+    "TensorArrayStack",
+    "TensorArrayWrite",
+]

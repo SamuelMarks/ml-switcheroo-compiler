@@ -13,10 +13,12 @@ The `ml-switcheroo-compiler` is the universal hub and core execution engine for 
 
 ## Architectural Vision
 
-The compiler resolves the impedance mismatch between different machine learning paradigms, operating as a centralized hub with two primary targets:
+The compiler resolves the impedance mismatch between different machine learning paradigms, operating as a strictly decoupled, purely functional computational hub (Tier 2) with two primary targets:
 
-1. **Source-to-Source (AST-to-AST) Transpilation:** Seamlessly convert ML logic between frameworks like PyTorch, Keras, JAX, and MLX. This includes state lifting/lowering, explicit broadcasting rules, and mapping ecosystem-specific quirks.
+1. **Source-to-Source (AST-to-AST) Transpilation:** Seamlessly convert ML logic between frameworks like PyTorch, Keras, JAX, and MLX. This includes state lifting/lowering, explicit broadcasting rules, and mapping ecosystem-specific quirks using our universal Intermediate Representation (IR).
 2. **Direct-to-Edge Compilation:** Bypass Python deployment entirely by lowering the Unified IR down to highly optimized browser and edge executables powered by **WebGPU** and **WASM SIMD**.
+
+**Strict Decoupling Rule ("No Math in Frontends"):** The `ml-switcheroo-compiler` repository is exclusively responsible for all math, Automatic Differentiation (AD), and transformations. Frontend repositories (like `zero-pytorch` or `zero-jax`) contain NO math implementations; they are purely Tier 3/4 lightweight API shells that route inputs and lift object-oriented state into this compiler. Likewise, this compiler strictly forbids any framework-specific API mimicry.
 
 Please refer to [`ARCHITECTURE.md`](ARCHITECTURE.md) for an in-depth dive into the compiler's architecture, including its intermediate representation, execution engine modes, and transformation pipeline.
 

@@ -6,8 +6,6 @@ from collections.abc import Iterator
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
 
-__all__ = ["DeviceMesh", "LayoutMap", "ShardingSpec"]
-
 
 class DataParallel:
     """DataParallel strategy for distributed execution."""
@@ -157,3 +155,10 @@ def distribute_tensor(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops import distributed  # pragma: no cover
 
     return distributed.shard_tensor(*args, **kwargs)  # pragma: no cover
+
+
+__all__ = [
+    "DeviceMesh",
+    "LayoutMap",
+    "ShardingSpec",
+]

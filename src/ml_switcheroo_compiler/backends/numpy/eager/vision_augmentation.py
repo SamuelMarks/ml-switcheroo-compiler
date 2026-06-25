@@ -206,4 +206,24 @@ def _np_random_zoom(
     )
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_augmix",
+    "_np_cutmix",
+    "_np_mixup",
+    "_np_rand_augment",
+    "_np_random_color_jitter",
+    "_np_random_crop",
+    "_np_random_erasing",
+    "_np_random_flip",
+    "_np_random_rotation",
+    "_np_random_translation",
+    "_np_random_zoom",
+    "numpy_eager_registry",
+]

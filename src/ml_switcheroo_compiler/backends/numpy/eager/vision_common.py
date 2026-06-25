@@ -105,4 +105,19 @@ def _np_stft(
     return stft_eager(np, input_tensor, **kwargs)
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_istft",
+    "_np_mel_filterbank",
+    "_np_mfcc",
+    "_np_power_iteration",
+    "_np_stft",
+    "np",
+    "numpy_eager_registry",
+]

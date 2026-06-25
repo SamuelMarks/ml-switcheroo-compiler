@@ -1,6 +1,7 @@
 """Module docstring."""
 
 from unittest.mock import MagicMock
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 import numpy as np
 
@@ -8,7 +9,6 @@ import ml_switcheroo_compiler.ops.linalg.frontend as lf
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg import lu, lu_factor, pinv, solve_triangular
 
 
@@ -42,46 +42,25 @@ def test_pinv_lazy(monkeypatch: object) -> None:
         config.eager_mode = True
 
 
-def test_solve_triangular(monkeypatch: object) -> None:
+def test_solve_triangular() -> None:
     """Docstring."""
-    import sys
-
-    scipy = MagicMock()
-    scipy.linalg.solve_triangular.return_value = "solved"
-    monkeypatch.setitem(sys.modules, "scipy", scipy)
-    monkeypatch.setitem(sys.modules, "scipy.linalg", scipy.linalg)
-
-    a = np.array([[3, 0, 0], [2, 1, 0], [1, 0, 1]])
-    b = np.array([4, 2, 4])
+    a = Tensor(np.array([[3, 0, 0], [2, 1, 0], [1, 0, 1]]), TensorConfig((3, 3), "float32", "cpu"))
+    b = Tensor(np.array([4, 2, 4]), TensorConfig((3,), "float32", "cpu"))
     from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
 
     res = solve_triangular(a, b, TriangularSolveOptions(lower=True))
-    assert res == "solved"
+    assert res.shape == (3,)
 
 
-def test_lu(monkeypatch: object) -> None:
+def test_lu() -> None:
     """Docstring."""
-    import sys
-
-    scipy = MagicMock()
-    scipy.linalg.lu.return_value = ("p", "l", "u")
-    monkeypatch.setitem(sys.modules, "scipy", scipy)
-    monkeypatch.setitem(sys.modules, "scipy.linalg", scipy.linalg)
-
-    a = np.array([[1.0, 2.0], [3.0, 4.0]])
+    a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     p, l_, u = lu(a)
-    assert p == "p"
+    assert p.shape == (2, 2)
 
 
-def test_lu_factor(monkeypatch: object) -> None:
+def test_lu_factor() -> None:
     """Docstring."""
-    import sys
-
-    scipy = MagicMock()
-    scipy.linalg.lu_factor.return_value = ("lu", "piv")
-    monkeypatch.setitem(sys.modules, "scipy", scipy)
-    monkeypatch.setitem(sys.modules, "scipy.linalg", scipy.linalg)
-
-    a = np.array([[1.0, 2.0], [3.0, 4.0]])
+    a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     lu_arr, piv = lu_factor(a)
-    assert lu_arr == "lu"
+    assert lu_arr.shape == (2, 2)

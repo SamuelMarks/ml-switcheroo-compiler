@@ -411,3 +411,38 @@ class Betainc(OpDef):
         shape_b = getattr(b, "shape", ())  # pragma: no cover
         shape_x = getattr(x, "shape", ()) if x is not None else ()  # pragma: no cover
         return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)  # pragma: no cover
+
+
+@register_op("DivideNoNan")
+class DivideNoNan(BinaryMathOp):
+    """DivideNoNan operation."""
+
+    op_name = "DivideNoNan"
+
+
+@register_op("MultiplyNoNan")
+class MultiplyNoNan(BinaryMathOp):
+    """MultiplyNoNan operation."""
+
+    op_name = "MultiplyNoNan"
+
+
+@register_op("SquaredDifference")
+class SquaredDifference(BinaryMathOp):
+    """SquaredDifference operation."""
+
+    op_name = "SquaredDifference"
+
+
+@register_op("Xdivy")
+class Xdivy(BinaryMathOp):
+    """Xdivy operation."""
+
+    op_name = "Xdivy"
+
+
+@register_op("Xlog1py")
+class Xlog1py(BinaryMathOp):
+    """Xlog1py operation."""
+
+    op_name = "Xlog1py"

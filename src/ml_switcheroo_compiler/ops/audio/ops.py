@@ -46,3 +46,39 @@ class Mfcc(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
+
+
+@register_op("MfccsFromLogMelSpectrograms")
+class MfccsFromLogMelSpectrograms(OpDef):
+    """MfccsFromLogMelSpectrograms op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("HannWindow")
+class HannWindow(OpDef):
+    """HannWindow op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("HammingWindow")
+class HammingWindow(OpDef):
+    """HammingWindow op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("KaiserWindow")
+class KaiserWindow(OpDef):
+    """KaiserWindow op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()

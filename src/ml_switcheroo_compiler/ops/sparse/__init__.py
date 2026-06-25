@@ -37,4 +37,32 @@ class SparseReduceSum(OpDef):
         return ()
 
 
-__all__ = ["SparseDenseMatMul", "SparseAdd", "SparseReduceSum"]
+@register_op("SparseSoftmax")
+class SparseSoftmax(OpDef):
+    """SparseSoftmax operation."""
+
+    op_name = "SparseSoftmax"
+
+    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(sp_input, "dense_shape", ())
+
+
+@register_op("SparseReduceMax")
+class SparseReduceMax(OpDef):
+    """SparseReduceMax operation."""
+
+    op_name = "SparseReduceMax"
+
+    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+__all__ = [
+    "SparseAdd",
+    "SparseDenseMatMul",
+    "SparseReduceMax",
+    "SparseReduceSum",
+    "SparseSoftmax",
+]

@@ -243,39 +243,6 @@ def load_model(
     pass  # pragma: no cover
 
 
-__all__ = [
-    "graph_to_json",
-    "json_to_graph",
-    "graph_to_protobuf",
-    "graph_to_flatbuffers",
-    "_extract_numpy_weights",
-    "to_numpy",
-    "concatenate_arrays",
-    "is_numpy_array",
-    "get_npz_bytes",
-    "load_npz",
-    "H5WeightFormat",
-    "SafetensorsWeightFormat",
-    "NpzWeightFormat",
-    "PickleWeightFormat",
-    "_save_as_h5",
-    "_save_as_safetensors",
-    "_load_h5_weights",
-    "_load_safetensors_weights",
-    "_load_npz_weights",
-    "_load_pickle_weights",
-    "_infer_weight_format",
-    "_validate_and_map_weights",
-    "load_weights",
-    "save_weights",
-    "export_to_onnx",
-    "export_to_tflite",
-    "export_model_topology",
-    "save_model",
-    "load_model",
-]
-
-
 def register_keras_serializable(
     package: str = "Custom", name: Optional[str] = None
 ) -> Callable[[T], T]:
@@ -338,3 +305,36 @@ def get_registered_object(*args: object, **kwargs: object) -> object:
 def serialize_keras_object(*args: object, **kwargs: object) -> object:
     """Serialize a Keras object."""
     pass  # pragma: no cover
+
+
+__all__ = [
+    "H5WeightFormat",
+    "NpzWeightFormat",
+    "PickleWeightFormat",
+    "SafetensorsWeightFormat",
+    "_extract_numpy_weights",
+    "_infer_weight_format",
+    "_load_h5_weights",
+    "_load_npz_weights",
+    "_load_pickle_weights",
+    "_load_safetensors_weights",
+    "_save_as_h5",
+    "_save_as_safetensors",
+    "_validate_and_map_weights",
+    "concatenate_arrays",
+    "export_model_topology",
+    "export_to_onnx",
+    "export_to_tflite",
+    "get_npz_bytes",
+    "graph_to_flatbuffers",
+    "graph_to_json",
+    "graph_to_protobuf",
+    "is_numpy_array",
+    "json_to_graph",
+    "load_model",
+    "load_npz",
+    "load_weights",
+    "save_model",
+    "save_weights",
+    "to_numpy",
+]

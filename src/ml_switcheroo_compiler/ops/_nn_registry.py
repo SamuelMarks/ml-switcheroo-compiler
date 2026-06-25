@@ -1,3 +1,4 @@
+# ruff: noqa: F822
 # ruff: noqa: F403
 
 """NN registry."""
@@ -5,14 +6,103 @@
 import ml_switcheroo_compiler.ops.nn as _nn
 import ml_switcheroo_compiler.ops.normalization as _normalization
 
-__all__ = []
-__all__.extend(getattr(_nn, "__all__", [n for n in dir(_nn) if not n.startswith("_")]))
-__all__.extend(
-    getattr(_normalization, "__all__", [n for n in dir(_normalization) if not n.startswith("_")])
-)
-__all__ = list(set(__all__))
 
 # Inject attributes into globals
 for _mod in [_nn, _normalization]:
     for _name in getattr(_mod, "__all__", [n for n in dir(_mod) if not n.startswith("_")]):
         globals()[_name] = getattr(_mod, _name)
+
+__all__ = [
+    "AttentionConfig",
+    "AttentionInputs",
+    "BatchNormConfig",
+    "BidirectionalConfig",
+    "BidirectionalInputs",
+    "ConvLSTMConfig",
+    "DotProductAttentionConfig",
+    "GenericConvConfig",
+    "NormConfig",
+    "RNNConfig",
+    "RNNWeights",
+    "ScanConfig",
+    "activity_regularization",
+    "attention",
+    "average_pool",
+    "avg_pool",
+    "batch_normalization",
+    "bidirectional",
+    "binary_crossentropy",
+    "categorical_crossentropy",
+    "categorical_generalized_cross_entropy",
+    "celu",
+    "circle_loss",
+    "conv",
+    "conv1d",
+    "conv1d_lstm_cell",
+    "conv1d_transpose",
+    "conv2d",
+    "conv2d_lstm_cell",
+    "conv2d_transpose",
+    "conv3d",
+    "conv3d_lstm_cell",
+    "conv3d_transpose",
+    "conv_lstm_cell",
+    "conv_transpose",
+    "ctc_decode",
+    "ctc_loss",
+    "depthwise_conv",
+    "depthwise_conv1d",
+    "depthwise_conv2d",
+    "dice_loss",
+    "dot_product_attention",
+    "dropout",
+    "elu",
+    "embedding",
+    "gelu",
+    "get_op",
+    "glu",
+    "group_mean",
+    "group_norm",
+    "group_variance",
+    "gru_cell",
+    "hard_shrink",
+    "hard_sigmoid",
+    "hard_silu",
+    "hard_swish",
+    "hard_tanh",
+    "leaky_relu",
+    "local_response_normalization",
+    "log_sigmoid",
+    "log_softmax",
+    "lstm_cell",
+    "max_pool",
+    "pool1d",
+    "pool2d",
+    "pool3d",
+    "relu",
+    "relu6",
+    "rms_normalization",
+    "rnn",
+    "scan",
+    "selu",
+    "separable_conv",
+    "separable_conv1d",
+    "separable_conv2d",
+    "sigmoid",
+    "silu",
+    "simple_rnn_cell",
+    "soft_shrink",
+    "softmax",
+    "softplus",
+    "softsign",
+    "sparse_categorical_crossentropy",
+    "sparse_plus",
+    "sparse_sigmoid",
+    "sparsemax",
+    "spectral_normalization",
+    "squareplus",
+    "swish",
+    "tanh_shrink",
+    "threshold",
+    "time_distributed",
+]

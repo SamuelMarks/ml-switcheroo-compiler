@@ -18,6 +18,8 @@ from ml_switcheroo_compiler.backends.eager.utils import (
 
 @dataclass
 class RandomCropConfig:
+    """RandomCropConfig."""
+
     crop_h: int
     crop_w: int
     b: int
@@ -29,6 +31,8 @@ class RandomCropConfig:
 
 @dataclass
 class GeometricGridConfig:
+    """GeometricGridConfig."""
+
     H: int
     W: int
     rng: object
@@ -93,6 +97,8 @@ class ResizeContext:
 
 @dataclass
 class MapCoordsContext:
+    """MapCoordsContext."""
+
     np_mod: object
     image: object
     y: object
@@ -244,6 +250,8 @@ class PerspectiveContext:
 
 @dataclass
 class PerspectiveChannelContext:
+    """PerspectiveChannelContext."""
+
     np_mod: object
     imgs: object
     out: object
@@ -294,4 +302,34 @@ def _apply_perspective_batch(
     return out  # pragma: no cover
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "EagerTransformContext",
+    "GeometricGridConfig",
+    "MapCoordsContext",
+    "PerspectiveChannelContext",
+    "PerspectiveConfig",
+    "PerspectiveContext",
+    "RandomCropConfig",
+    "ResizeContext",
+    "TransformInterpolationConfig",
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_apply_perspective_batch",
+    "_apply_perspective_channel",
+    "_compute_perspective_matrix",
+    "_generate_perspective_coords",
+    "_generate_perspective_grid",
+    "_map_coords_bilinear",
+    "_map_coords_nearest",
+    "_np_map_coordinates",
+    "_prepare_eager_transform",
+    "_to_channels_last",
+    "_to_numpy_array",
+    "annotations",
+    "dataclass",
+]

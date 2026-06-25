@@ -78,7 +78,9 @@ The universal, canonical dialect. Defines `LogicalNode` and `LogicalGraph`. Cont
 The computational heart of the ecosystem. See [Compiler Architecture Deep Dive](#compiler-architecture-deep-dive) below.
 
 ### 3. Frontends (`zero-*`) (Tiers 3 & 4)
-**Crucial Architecture Note regarding `zero-*` repositories:** The existing `zero-*` codebases will be retained as independent, lightweight frontend API shells. Every `zero-*` repository depends on `ml-switcheroo-compiler` as its core backend dependency. All mathematical implementations, array allocations, and computation graph logic inside the `zero-*` repos are replaced with delegations to the compiler. The `zero-*` repos purely handle framework-specific API routing, argument parsing (handling kwargs like `dim` vs `axis`), and syntactic sugar.
+**Crucial Architecture Note regarding `zero-*` repositories:** The existing `zero-*` codebases will be retained as independent, lightweight frontend API shells. Every `zero-*` repository depends on `ml-switcheroo-compiler` as its core backend dependency.
+
+**The "No Math in Frontends" Rule:** All mathematical implementations, array allocations, gradient tracking logic, and computation graph building inside the `zero-*` repos are forbidden and must be replaced with delegations to the compiler. The `zero-*` repos purely handle framework-specific API routing, argument parsing (handling kwargs like `dim` vs `axis`), exception mimicry, and syntactic sugar.
 
 * **`zero-jax`**: Mimics the JAX API (`jnp`, `lax`, `jit`, `grad`, `vmap`). Uses Pytree flattening to route state safely into the compiler tape.
 * **`zero-pytorch`, `zero-keras`, `zero-tensorflow`, `zero-mlx`**: Mimic eager, object-oriented, and stateful semantics. They dynamically lift mutable states (like `nn.Parameter` or `tf.Variable`) into purely functional graph inputs/outputs via the compiler's internal `lift_state` pass.
@@ -124,7 +126,7 @@ The tracing engine includes a comprehensive AutoDiff system:
 - Mapped transparently to `zero_torch.autograd.backward` and `zero_jax.grad`.
 
 ### Higher-Order Control Flow
-Implements `ml_switcheroo_compiler.control_flow` primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`), mapping seamlessly to JAX `lax` constructs and PyTorch looping logic without Python runtime unrolling penalties.
+Implements universal cross-framework primitives (`cond`, `while_loop`, `scan`, `vmap`, `pmap`), mapping seamlessly from frontend loops and conditions down to IR blocks without Python runtime unrolling penalties.
 
 ## 3. Unified Intermediate Representation (IR) Schema
 
@@ -238,7 +240,8 @@ sequenceDiagram
 ### Trace-to-AST Linking
 To provide clear error messages and allow for framework-specific syntactic rewrites, the compiler dynamically links trace operations to the original Python syntax trees. Leveraging `inspect.currentframe()`, every `LogicalNode` emitted into the IR captures a `source_ast_ref` binding it back to the exact file path, line number, and AST ID in the user's source code.
 
-## 6. Rearchitecture 2026: Backend Focused Rewrite
-In 2026, the architecture was upgraded to enforce a backend-focused paradigm:
-- **Core Ops and Generators**: The compiler focuses on robust operation definitions (`ml_switcheroo_compiler.ops`), frontend compatibility layers (Flax, Chex, Grain), and backend generators, relegating framework-specific API mimicry (PyTorch, JAX, Keras, etc.) to `zero-*` repositories.
+## 6. Rearchitecture 2026: Strict Architectural Separation
+In 2026, the architecture was upgraded to enforce a strict backend-focused decoupling paradigm:
+- **Frontend Independence (The "No API Shell" Rule):** The compiler engine (`ml-switcheroo-compiler`) was stripped of all Tier 3/4 framework mimicry. Mock layers for Flax, Orbax, JAX's `lax` namespace, and Keras abstractions were fully purged. The compiler strictly defines universal, backend-agnostic mathematical operations (`ml_switcheroo_compiler.ops`).
+- **N-to-M Universal Utility:** Any operation or transformation pass added to the compiler must be fundamentally useful to multiple frontends. Foreign operations are now represented by a universal `ForeignCall` proxy.
 - **Pluggable Backend Registry**: The compiler backends are fully decoupled via `ml_switcheroo_compiler.backends.registry.BackendRegistry`. Backends (including `numpy`, `jax`, `mlx`, `cupy`, `dusk`, `torch`, and `keras`) are registered dynamically using the `@register_backend("name")` decorator. This $N \times M$ architecture allows adding new target emitters without modifying the core compiler code.

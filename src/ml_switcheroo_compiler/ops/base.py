@@ -18,7 +18,6 @@ from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 T = TypeVar("T", bound="OpDef")
 
 # Global operation registry
-__all__ = ["OpDef", "register_op", "get_op", "emit_ir_node", "dispatch_eager"]
 
 _OP_REGISTRY: dict[str, type[OpDef]] = {}
 
@@ -122,3 +121,12 @@ def dispatch_eager(op_name: str) -> Callable:
         return wrapper
 
     return decorator
+
+
+__all__ = [
+    "OpDef",
+    "dispatch_eager",
+    "emit_ir_node",
+    "get_op",
+    "register_op",
+]

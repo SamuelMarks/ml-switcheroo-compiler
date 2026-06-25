@@ -287,8 +287,8 @@ class RgbToGrayscaleOp(OpDef):
         data_format = kwargs.get("data_format", "channels_last")
         if data_format == "channels_last":  # pragma: no branch
             shape[-1] = 1
-        else:
-            shape[-3] = 1  # pragma: no cover
+        else:  # pragma: no cover
+            shape[-3] = 1
         return tuple(shape)
 
 
@@ -470,3 +470,111 @@ class RandomSharpnessOp(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         return args[0]
+
+
+@register_op("RgbToYiq")
+class RgbToYiq(OpDef):
+    """RgbToYiq op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("YiqToRgb")
+class YiqToRgb(OpDef):
+    """YiqToRgb op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("RgbToYuv")
+class RgbToYuv(OpDef):
+    """RgbToYuv op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("YuvToRgb")
+class YuvToRgb(OpDef):
+    """YuvToRgb op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("AffineGrid")
+class AffineGrid(OpDef):
+    """AffineGrid op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("GridSample")
+class GridSample(OpDef):
+    """GridSample op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("Resize")
+class Resize(OpDef):
+    """Resize op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("DrawBoundingBoxes")
+class DrawBoundingBoxes(OpDef):
+    """DrawBoundingBoxes op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("CropImages")
+class CropImages(OpDef):
+    """CropImages op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("ExtractPatches")
+class ExtractPatches(OpDef):
+    """ExtractPatches op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("MapCoordinates")
+class MapCoordinates(OpDef):
+    """MapCoordinates op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("PadImages")
+class PadImages(OpDef):
+    """PadImages op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()

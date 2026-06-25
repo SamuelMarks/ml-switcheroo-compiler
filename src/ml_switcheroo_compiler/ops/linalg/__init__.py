@@ -22,6 +22,9 @@ from .decompositions import eigvalsh as eigvalsh
 from .decompositions import inv as inv
 from .decompositions import lu as lu
 from .decompositions import lu_factor as lu_factor
+from .decompositions import lu_solve as lu_solve
+from .decompositions import norm as norm
+from .decompositions import matrix_exponential as matrix_exponential
 from .decompositions import matrix_power as matrix_power
 from .decompositions import pinv as pinv
 from .decompositions import power_iteration as power_iteration
@@ -37,6 +40,14 @@ from .fft import irfft as irfft
 from .fft import ifft as ifft
 from .fft import ifft2d as ifft2d
 from .fft import ifft2 as ifft2
+from .fft import fft3d as fft3d
+from .fft import fft3 as fft3
+from .fft import ifft3d as ifft3d
+from .fft import ifft3 as ifft3
+from .fft import rfft2d as rfft2d
+from .fft import rfft3d as rfft3d
+from .fft import irfft2d as irfft2d
+from .fft import irfft3d as irfft3d
 from .fft import rfft as rfft
 from .frontend import convolve as convolve
 from .frontend import cross as cross
@@ -48,53 +59,6 @@ from .frontend import matmul as matmul
 from .frontend import outer as outer
 from .frontend import tensordot as tensordot
 from .frontend import vdot as vdot
-
-__all__ = [
-    "ConvGeneralDilated",
-    "Dot",
-    "DotGeneral",
-    "Einsum",
-    "Fft",
-    "Matmul",
-    "Rfft",
-    "cholesky",
-    "convolve",
-    "conv_general_dilated",
-    "cross",
-    "det",
-    "dot",
-    "dot_general",
-    "eig",
-    "eigh",
-    "eigvalsh",
-    "einsum",
-    "fft",
-    "fft2d",
-    "fft2",
-    "ifft",
-    "ifft2d",
-    "ifft2",
-    "irfft",
-    "inner",
-    "inv",
-    "logdet",
-    "lstsq",
-    "lu",
-    "lu_factor",
-    "matmul",
-    "matrix_power",
-    "outer",
-    "pinv",
-    "power_iteration",
-    "qr",
-    "rfft",
-    "slogdet",
-    "solve",
-    "solve_triangular",
-    "svd",
-    "tensordot",
-    "vdot",
-]
 
 
 def eig(input: object) -> tuple[object, object]:
@@ -123,3 +87,62 @@ def lstsq(a: object, b: object, rcond: float = 1e-15) -> object:
     res = backend.execute_op("Lstsq", getattr(a, "data", a), getattr(b, "data", b), rcond=rcond)
     # The return value might be a tuple (x, residuals, rank, s) depending on backend
     return res
+
+
+__all__ = [
+    "ConvGeneralDilated",
+    "Dot",
+    "DotGeneral",
+    "Einsum",
+    "Fft",
+    "Matmul",
+    "Rfft",
+    "cholesky",
+    "conv_general_dilated",
+    "convolve",
+    "cross",
+    "det",
+    "dot",
+    "dot_general",
+    "eig",
+    "eigh",
+    "eigvalsh",
+    "einsum",
+    "fft",
+    "fft2",
+    "fft2d",
+    "fft3",
+    "fft3d",
+    "ifft",
+    "ifft2",
+    "ifft2d",
+    "ifft3",
+    "ifft3d",
+    "inner",
+    "inv",
+    "irfft",
+    "irfft2d",
+    "irfft3d",
+    "logdet",
+    "lstsq",
+    "lu",
+    "lu_factor",
+    "lu_solve",
+    "matmul",
+    "matrix_exponential",
+    "matrix_power",
+    "norm",
+    "outer",
+    "pinv",
+    "power_iteration",
+    "qr",
+    "rfft",
+    "rfft2d",
+    "rfft3d",
+    "slogdet",
+    "solve",
+    "solve_triangular",
+    "svd",
+    "tensordot",
+    "vdot",
+]

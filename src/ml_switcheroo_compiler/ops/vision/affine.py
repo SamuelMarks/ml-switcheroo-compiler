@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from __future__ import annotations
+from ml_switcheroo_compiler.core.config import config
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.config import config as global_config
@@ -400,4 +400,71 @@ def random_elastic_transform(
         },
         (),
         images.dtype,
+    )
+
+
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Tensor:
+    """Generates a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
+
+    Args:
+        theta (Tensor): input batch of affine matrices with shape (N, 2, 3) for 2D or (N, 3, 4) for 3D
+        size (tuple[int, ...]): the target output image size
+        align_corners (bool): if True, consider -1 and 1 to refer to the centers of the corner pixels
+
+    Returns:
+    Tensor: output Tensor of size (N, H, W, 2)
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("AffineGrid", theta.data, size=size, align_corners=align_corners)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, theta.dtype, theta.device)
+        )
+    return _emit_shape_node(
+        "AffineGrid", [theta], {"size": size, "align_corners": align_corners}, (), theta.dtype
+    )
+
+
+def grid_sample(
+    input: Tensor,
+    grid: Tensor,
+    mode: str = "bilinear",
+    padding_mode: str = "zeros",
+    align_corners: bool = False,
+) -> Tensor:
+    """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
+
+    Args:
+        input (Tensor): input of shape (N, C, H_in, W_in)
+        grid (Tensor): flow-field of shape (N, H_out, W_out, 2)
+        mode (str): interpolation mode to calculate output values 'bilinear' | 'nearest' | 'bicubic'
+        padding_mode (str): padding mode for outside grid values 'zeros' | 'border' | 'reflection'
+        align_corners (bool): Geometrically, we consider the pixels of the input as squares rather than points.
+
+    Returns:
+    Tensor: output Tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "GridSample",
+            input.data,
+            grid.data,
+            mode=mode,
+            padding_mode=padding_mode,
+            align_corners=align_corners,
+        )
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
+        )
+    return _emit_shape_node(
+        "GridSample",
+        [input, grid],
+        {"mode": mode, "padding_mode": padding_mode, "align_corners": align_corners},
+        (),
+        input.dtype,
     )

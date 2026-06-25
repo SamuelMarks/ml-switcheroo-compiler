@@ -182,4 +182,24 @@ def _np_resize_nearest(
     return images
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_np_affine_generator",
+    "_np_affine_transform",
+    "_np_elastic_transform",
+    "_np_extract_bounding_boxes",
+    "_np_iou",
+    "_np_nms",
+    "_np_perspective_transform",
+    "_np_resize_bicubic",
+    "_np_resize_lanczos3",
+    "_np_resize_nearest",
+    "np",
+    "numpy_eager_registry",
+]

@@ -136,7 +136,4 @@ triu_indices = create_eager_alias("triu_indices")
 triu_indices_from = create_eager_alias("triu_indices_from")
 
 
-unravel_index = create_eager_alias("unravel_index")
-
-
 vander = create_eager_alias("vander")

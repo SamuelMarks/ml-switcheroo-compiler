@@ -306,7 +306,7 @@ def _apply_conv_padding_helper(
         config: Arg.
     """
     pad_list = _calculate_conv_padding(config, lhs_c.shape, rhs_c.shape)
-    pad_width = [(0, 0), (0, 0)] + pad_list
+    pad_width = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
     return np.pad(lhs_c, pad_width, mode="constant", constant_values=0)
 
 

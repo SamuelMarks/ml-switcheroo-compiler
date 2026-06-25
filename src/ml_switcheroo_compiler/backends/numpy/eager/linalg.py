@@ -311,3 +311,40 @@ def _np_ifft2d(backend_module: object, *args: object, **kwargs: object) -> objec
     import numpy as np
 
     return np.fft.ifft2(*args, **kwargs)
+
+
+@numpy_eager_registry.register("TriangularSolve")
+def _np_triangular_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.linalg
+
+    return scipy.linalg.solve_triangular(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Lu")
+def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.linalg
+
+    return scipy.linalg.lu(*args, **kwargs)
+
+
+@numpy_eager_registry.register("LuFactor")
+def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.linalg
+
+    return scipy.linalg.lu_factor(*args, **kwargs)
+
+
+@numpy_eager_registry.register("LuSolve")
+def _np_lu_solve(
+    backend_module: object, lu: object, piv: object, b: object, **kwargs: object
+) -> object:
+    import scipy.linalg
+
+    return scipy.linalg.lu_solve((lu, piv), b, **kwargs)
+
+
+@numpy_eager_registry.register("MatrixExponential")
+def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.linalg
+
+    return scipy.linalg.expm(*args, **kwargs)

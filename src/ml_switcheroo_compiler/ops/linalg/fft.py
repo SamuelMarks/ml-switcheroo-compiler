@@ -178,5 +178,188 @@ def irfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     return _emit_linalg_node("Irfft", [a], {"n": n, "axis": axis}, [tuple(out_shape)], [a.dtype])
 
 
+def fft3d(
+    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
+) -> Tensor:
+    """Computes the 3-dimensional discrete Fourier Transform.
+
+    Args:
+        a (Tensor): The input tensor
+        s (tuple[int, int, int] | None): Shape of the result
+        axes (tuple[int, int, int]): Axes over which to compute the FFT
+
+    Returns:
+    Tensor: The transformed tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Fft3d", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if s is not None:
+        out_shape[axes[0]] = s[0]
+        out_shape[axes[1]] = s[1]
+        out_shape[axes[2]] = s[2]
+
+    return _emit_linalg_node("Fft3d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def ifft3d(
+    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
+) -> Tensor:
+    """Computes the 3-dimensional inverse discrete Fourier Transform.
+
+    Args:
+        a (Tensor): The input tensor
+        s (tuple[int, int, int] | None): Shape of the result
+        axes (tuple[int, int, int]): Axes over which to compute the IFFT
+
+    Returns:
+    Tensor: The transformed tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Ifft3d", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if s is not None:
+        out_shape[axes[0]] = s[0]
+        out_shape[axes[1]] = s[1]
+        out_shape[axes[2]] = s[2]
+
+    return _emit_linalg_node("Ifft3d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def rfft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = (-2, -1)) -> Tensor:
+    """Computes the 2-dimensional discrete Fourier Transform for real input.
+
+    Args:
+        a (Tensor): The input tensor
+        s (tuple[int, int] | None): Shape of the result
+        axes (tuple[int, int]): Axes over which to compute the FFT
+
+    Returns:
+    Tensor: The transformed tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Rfft2d", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if s is not None:
+        out_shape[axes[0]] = s[0]
+        out_shape[axes[1]] = s[1] // 2 + 1
+    else:
+        out_shape[axes[1]] = out_shape[axes[1]] // 2 + 1
+
+    return _emit_linalg_node("Rfft2d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def rfft3d(
+    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
+) -> Tensor:
+    """Computes the 3-dimensional discrete Fourier Transform for real input.
+
+    Args:
+        a (Tensor): The input tensor
+        s (tuple[int, int, int] | None): Shape of the result
+        axes (tuple[int, int, int]): Axes over which to compute the FFT
+
+    Returns:
+    Tensor: The transformed tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Rfft3d", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if s is not None:
+        out_shape[axes[0]] = s[0]
+        out_shape[axes[1]] = s[1]
+        out_shape[axes[2]] = s[2] // 2 + 1
+    else:
+        out_shape[axes[2]] = out_shape[axes[2]] // 2 + 1
+
+    return _emit_linalg_node("Rfft3d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def irfft2d(
+    a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = (-2, -1)
+) -> Tensor:
+    """Computes the 2-dimensional inverse discrete Fourier Transform for real input.
+
+    Args:
+        a (Tensor): The input tensor
+        s (tuple[int, int] | None): Shape of the result
+        axes (tuple[int, int]): Axes over which to compute the IFFT
+
+    Returns:
+    Tensor: The transformed tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Irfft2d", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if s is not None:
+        out_shape[axes[0]] = s[0]
+        out_shape[axes[1]] = s[1]
+    else:
+        out_shape[axes[1]] = 2 * (out_shape[axes[1]] - 1)
+
+    return _emit_linalg_node("Irfft2d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def irfft3d(
+    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
+) -> Tensor:
+    """Computes the 3-dimensional inverse discrete Fourier Transform for real input.
+
+    Args:
+        a (Tensor): The input tensor
+        s (tuple[int, int, int] | None): Shape of the result
+        axes (tuple[int, int, int]): Axes over which to compute the IFFT
+
+    Returns:
+    Tensor: The transformed tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Irfft3d", a.data, s=s, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if s is not None:
+        out_shape[axes[0]] = s[0]
+        out_shape[axes[1]] = s[1]
+        out_shape[axes[2]] = s[2]
+    else:
+        out_shape[axes[2]] = 2 * (out_shape[axes[2]] - 1)
+
+    return _emit_linalg_node("Irfft3d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+fft3 = fft3d
+ifft3 = ifft3d
+
 fft2 = fft2d
 ifft2 = ifft2d
+fft3 = fft3d
+ifft3 = ifft3d

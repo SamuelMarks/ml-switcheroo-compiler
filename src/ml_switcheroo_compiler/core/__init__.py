@@ -17,36 +17,9 @@ from .errors import (
     UnimplementedMathError,
 )
 from .tensor import Tensor
-from .sparse_tensor import SparseTensor
+from .sparse_tensor import SparseTensor, SparseTensorCOO, SparseTensorCSR
 from .ragged_tensor import RaggedTensor
 from .tensor_array import TensorArray
-
-__all__ = [
-    "BackendNotSupportedError",
-    "CompilationError",
-    "ConfigContext",
-    "DType",
-    "Dataset",
-    "DTypePromotionError",
-    "Device",
-    "DeviceType",
-    "EagerMode",
-    "QuantDType",
-    "ShapeMismatchError",
-    "SwitcherooError",
-    "Tensor",
-    "SparseTensor",
-    "RaggedTensor",
-    "TensorArray",
-    "TracingError",
-    "UnimplementedMathError",
-    "clear_assertions",
-    "config",
-    "evaluate_assertions",
-    "record_assertion",
-    "backend",
-    "get_uid",
-]
 
 
 def image_data_format() -> str:
@@ -72,3 +45,33 @@ def backend() -> str:
 def name_scope(name: str) -> Iterator[None]:
     """Context manager for name scope."""
     yield  # pragma: no cover
+
+
+__all__ = [
+    "BackendNotSupportedError",
+    "CompilationError",
+    "ConfigContext",
+    "DType",
+    "DTypePromotionError",
+    "Dataset",
+    "Device",
+    "DeviceType",
+    "EagerMode",
+    "QuantDType",
+    "RaggedTensor",
+    "ShapeMismatchError",
+    "SparseTensor",
+    "SparseTensorCOO",
+    "SparseTensorCSR",
+    "SwitcherooError",
+    "Tensor",
+    "TensorArray",
+    "TracingError",
+    "UnimplementedMathError",
+    "backend",
+    "clear_assertions",
+    "config",
+    "evaluate_assertions",
+    "get_uid",
+    "record_assertion",
+]

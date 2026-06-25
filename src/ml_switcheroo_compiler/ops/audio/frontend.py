@@ -239,3 +239,126 @@ def mfcc(spectrogram: Tensor, config_obj: MFCCConfig | None = None, **kwargs: ob
         (),
         DType.Float32,
     )
+
+
+def mfccs_from_log_mel_spectrograms(log_mel_spectrograms: Tensor, num_mfccs: int = 13) -> Tensor:
+    """Computes MFCCs from log mel spectrograms.
+
+    Args:
+        log_mel_spectrograms (Tensor): Log mel spectrograms.
+        num_mfccs (int): Number of MFCCs to compute.
+
+    Returns:
+    Tensor: MFCCs.
+    """
+    if config.eager_mode:
+        backend = get_active_backend()  # pragma: no cover
+        data = backend.execute_op(
+            "MfccsFromLogMelSpectrograms", log_mel_spectrograms.data, num_mfccs=num_mfccs
+        )  # pragma: no cover
+        return Tensor(
+            data, TensorConfig(data.shape, log_mel_spectrograms.dtype, log_mel_spectrograms.device)
+        )  # pragma: no cover
+
+    out_shape = list(log_mel_spectrograms.shape)
+    if len(out_shape) > 0:
+        out_shape[-1] = num_mfccs
+    return _emit_shape_node(
+        "MfccsFromLogMelSpectrograms",
+        [log_mel_spectrograms],
+        {"num_mfccs": num_mfccs},
+        tuple(out_shape),
+        log_mel_spectrograms.dtype,
+    )
+
+
+def hann_window(window_length: int, periodic: bool = True) -> Tensor:
+    """Hann window.
+
+    Args:
+        window_length (int): the size of the window.
+        periodic (bool): If True, returns a window to be used as periodic function.
+
+    Returns:
+    Tensor: the window.
+    """
+    if config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()  # pragma: no cover
+        data = backend.execute_op(
+            "HannWindow", window_length=window_length, periodic=periodic
+        )  # pragma: no cover
+
+        return Tensor(
+            data, TensorConfig(data.shape, DType.Float32, Device("cpu"))
+        )  # pragma: no cover
+
+    return _emit_shape_node(  # pragma: no cover
+        "HannWindow",
+        [],
+        {"window_length": window_length, "periodic": periodic},
+        (window_length,),
+        DType.Float32,
+    )
+
+
+def hamming_window(
+    window_length: int, periodic: bool = True, alpha: float = 0.54, beta: float = 0.46
+) -> Tensor:
+    """Hamming window.
+
+    Args:
+        window_length (int): the size of the window.
+        periodic (bool): If True, returns a window to be used as periodic function.
+        alpha (float): The coefficient alpha.
+        beta (float): The coefficient beta.
+
+    Returns:
+    Tensor: the window.
+    """
+    if config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()  # pragma: no cover
+        data = backend.execute_op(
+            "HammingWindow", window_length=window_length, periodic=periodic, alpha=alpha, beta=beta
+        )  # pragma: no cover
+
+        return Tensor(
+            data, TensorConfig(data.shape, DType.Float32, Device("cpu"))
+        )  # pragma: no cover
+
+    return _emit_shape_node(  # pragma: no cover
+        "HammingWindow",
+        [],
+        {"window_length": window_length, "periodic": periodic, "alpha": alpha, "beta": beta},
+        (window_length,),
+        DType.Float32,
+    )
+
+
+def kaiser_window(window_length: int, periodic: bool = True, beta: float = 12.0) -> Tensor:
+    """Kaiser window.
+
+    Args:
+        window_length (int): the size of the window.
+        periodic (bool): If True, returns a window to be used as periodic function.
+        beta (float): Shape parameter.
+
+    Returns:
+    Tensor: the window.
+    """
+    if config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()  # pragma: no cover
+        data = backend.execute_op(
+            "KaiserWindow", window_length=window_length, periodic=periodic, beta=beta
+        )  # pragma: no cover
+
+        return Tensor(
+            data, TensorConfig(data.shape, DType.Float32, Device("cpu"))
+        )  # pragma: no cover
+
+    return _emit_shape_node(  # pragma: no cover
+        "KaiserWindow",
+        [],
+        {"window_length": window_length, "periodic": periodic, "beta": beta},
+        (window_length,),
+        DType.Float32,
+    )

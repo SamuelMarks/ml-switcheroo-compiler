@@ -192,4 +192,22 @@ def _group_norm(backend_module: object, *args: object, **kwargs: object) -> obje
     return _apply_affine_transform(backend_module, out, axis, weight=weight, bias=bias)
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_apply_affine_transform",
+    "_apply_grouped_reduction",
+    "_compute_group_norm",
+    "_get_reduction_axes",
+    "_group_mean",
+    "_group_norm",
+    "_group_variance",
+    "_invoke_grouped_op",
+    "_parse_group_norm_args",
+    "global_eager_registry",
+]

@@ -500,3 +500,42 @@ class Bincount(ReductionOp):
 
     op_name = "Bincount"
     np_op_name = "bincount"
+
+
+class NaryMathOp(OpDef):
+    """Base class for N-ary mathematical operations (operations taking a list of tensors)."""
+
+    def infer_shape(self, inputs: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Assume all inputs have the same shape
+        if isinstance(inputs, (list, tuple)) and len(inputs) > 0:
+            return getattr(inputs[0], "shape", ())
+        return ()
+
+
+@register_op("AddN")
+class AddN(NaryMathOp):
+    """AddN operation."""
+
+    op_name = "AddN"
+
+
+@register_op("AccumulateN")
+class AccumulateN(NaryMathOp):
+    """AccumulateN operation."""
+
+    op_name = "AccumulateN"
+
+
+@register_op("CumulativeLogsumexp")
+class CumulativeLogsumexp(ReductionOp):
+    """Cumulative log-sum-exp reduction operation."""
+
+    op_name = "CumulativeLogsumexp"
+
+
+@register_op("ReduceEuclideanNorm")
+class ReduceEuclideanNorm(ReductionOp):
+    """ReduceEuclideanNorm operation."""
+
+    op_name = "ReduceEuclideanNorm"

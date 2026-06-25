@@ -354,6 +354,176 @@ class Rfft(OpDef):
         return "Not implemented Rfft"
 
 
+@register_op("Ifft")
+class Ifft(OpDef):
+    """Ifft operator.
+
+    Computes the IFFT.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Fft2d")
+class Fft2d(OpDef):
+    """Fft2d operator.
+
+    Computes the Fft2d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Ifft2d")
+class Ifft2d(OpDef):
+    """Ifft2d operator.
+
+    Computes the Ifft2d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Irfft")
+class Irfft(OpDef):
+    """Irfft operator.
+
+    Computes the Irfft.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Fft3d")
+class Fft3d(OpDef):
+    """Fft3d operator.
+
+    Computes the Fft3d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Ifft3d")
+class Ifft3d(OpDef):
+    """Ifft3d operator.
+
+    Computes the Ifft3d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Rfft2d")
+class Rfft2d(OpDef):
+    """Rfft2d operator.
+
+    Computes the Rfft2d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Rfft3d")
+class Rfft3d(OpDef):
+    """Rfft3d operator.
+
+    Computes the Rfft3d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Irfft2d")
+class Irfft2d(OpDef):
+    """Irfft2d operator.
+
+    Computes the Irfft2d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
+@register_op("Irfft3d")
+class Irfft3d(OpDef):
+    """Irfft3d operator.
+
+    Computes the Irfft3d.
+    """
+
+    def infer_shape(self, a: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            a: arg.
+            **kwargs: kwargs.
+        """
+        return a.shape
+
+
 @register_op("Pinv")
 class Pinv(OpDef):
     """Pseudo-inverse operator.

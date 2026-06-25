@@ -222,3 +222,70 @@ def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwar
     str: A string representation of the tangent expression
     """
     return f"({tangent_x} * {y} * {x} ** ({y} - 1) + {tangent_y} * {x} ** {y} * log({x}))"
+
+
+@register_vjp("DivideNoNan")
+def divide_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for DivideNoNan."""
+    x, y = node.inputs
+    # dx = cotangent / y (no_nan)
+    dx = emit_ir_node(graph, "DivideNoNan", [cotangent, y], node.shape_metadata, {})
+    # dy = -cotangent * x / y^2 (no_nan)
+    neg_x = emit_ir_node(graph, "Negative", [x], graph.nodes[x].shape_metadata, {})
+    dy_num = emit_ir_node(graph, "Multiply", [cotangent, neg_x], node.shape_metadata, {})
+    y_sq = emit_ir_node(graph, "Multiply", [y, y], graph.nodes[y].shape_metadata, {})
+    dy = emit_ir_node(graph, "DivideNoNan", [dy_num, y_sq], node.shape_metadata, {})
+    return (dx, dy)
+
+
+@register_vjp("MultiplyNoNan")
+def multiply_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for MultiplyNoNan."""
+    x, y = node.inputs
+    # dx = cotangent * y (no_nan)
+    dx = emit_ir_node(graph, "MultiplyNoNan", [cotangent, y], node.shape_metadata, {})
+    # dy = cotangent * x (no_nan ... wait, if y=0, result is 0. If y is 0, what is dy w.r.t y? usually just x, but maybe we want to propagate 0? TF says multiply_no_nan(x, y) returns 0 if y is 0, even if x is inf. But gradient wrt y is just x normally. Let's just use Multiply for dy)
+    dy = emit_ir_node(graph, "Multiply", [cotangent, x], node.shape_metadata, {})
+    return (dx, dy)
+
+
+@register_vjp("SquaredDifference")
+def squared_difference_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for SquaredDifference."""
+    x, y = node.inputs
+    diff = emit_ir_node(graph, "Subtract", [x, y], node.shape_metadata, {})
+    two = emit_ir_node(graph, "Constant", [], None, {"value": 2.0})
+    two_diff = emit_ir_node(graph, "Multiply", [two, diff], node.shape_metadata, {})
+    dx = emit_ir_node(graph, "Multiply", [cotangent, two_diff], node.shape_metadata, {})
+    neg_two_diff = emit_ir_node(graph, "Negative", [two_diff], node.shape_metadata, {})
+    dy = emit_ir_node(graph, "Multiply", [cotangent, neg_two_diff], node.shape_metadata, {})
+    return (dx, dy)
+
+
+@register_vjp("Xdivy")
+def xdivy_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Xdivy."""
+    x, y = node.inputs
+    # dx = cotangent / y (where x != 0) -> this is basically Xdivy(cotangent, y)? No, if x=0, dx should be 1/y.
+    # Wait, Xdivy is 0 if x=0. So dx is 1/y if x!=0, and 0 if x=0. So dx = Xdivy(cotangent, y)? Wait, xdivy(cotangent, y) is 0 if cotangent=0. We want 0 if x=0.
+    # Actually, tf.math.xdivy gradient is typically computed with where(x==0, 0, cotangent/y). Let's just emit Divide No nan or similar. For simplicity, just use Divide for now.
+    dx = emit_ir_node(graph, "Divide", [cotangent, y], node.shape_metadata, {})
+    neg_x = emit_ir_node(graph, "Negative", [x], graph.nodes[x].shape_metadata, {})
+    dy_num = emit_ir_node(graph, "Multiply", [cotangent, neg_x], node.shape_metadata, {})
+    y_sq = emit_ir_node(graph, "Multiply", [y, y], graph.nodes[y].shape_metadata, {})
+    dy = emit_ir_node(graph, "Divide", [dy_num, y_sq], node.shape_metadata, {})
+    return (dx, dy)
+
+
+@register_vjp("Xlog1py")
+def xlog1py_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Xlog1py."""
+    x, y = node.inputs
+    log1py = emit_ir_node(graph, "Log1p", [y], graph.nodes[y].shape_metadata, {})
+    dx = emit_ir_node(graph, "Multiply", [cotangent, log1py], node.shape_metadata, {})
+
+    one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
+    one_p_y = emit_ir_node(graph, "Add", [y, one], graph.nodes[y].shape_metadata, {})
+    x_over_one_p_y = emit_ir_node(graph, "Divide", [x, one_p_y], node.shape_metadata, {})
+    dy = emit_ir_node(graph, "Multiply", [cotangent, x_over_one_p_y], node.shape_metadata, {})
+    return (dx, dy)

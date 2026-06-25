@@ -159,3 +159,64 @@ def _np_cumsum(backend_module: object, *args: object, **kwargs: object) -> objec
         kwargs: Arg.
     """
     return backend_module.cumsum(*args, **kwargs)
+
+
+@numpy_eager_registry.register("AddN")
+def _np_add_n(backend_module: object, inputs: list, **kwargs: object) -> object:
+    """Execute _np_add_n.
+
+    Args:
+        backend_module: The backend module.
+        inputs: List of tensors.
+        kwargs: Additional arguments.
+
+    Returns:
+        The sum of the tensors.
+    """
+    if not inputs:
+        raise ValueError("inputs must not be empty")
+    res = inputs[0]
+    for i in range(1, len(inputs)):
+        res = backend_module.add(res, inputs[i])
+    return res
+
+
+@numpy_eager_registry.register("AccumulateN")
+def _np_accumulate_n(backend_module: object, inputs: list, **kwargs: object) -> object:
+    """Execute _np_accumulate_n.
+
+    Args:
+        backend_module: The backend module.
+        inputs: List of tensors.
+        kwargs: Additional arguments.
+
+    Returns:
+        The accumulated sum.
+    """
+    if not inputs:
+        raise ValueError("inputs must not be empty")
+    res = inputs[0]
+    for i in range(1, len(inputs)):
+        res = backend_module.add(res, inputs[i])
+    return res
+
+
+@numpy_eager_registry.register("CumulativeLogsumexp")
+def _np_cumulative_logsumexp(
+    backend_module: object, x: object, axis: int = 0, **kwargs: object
+) -> object:
+    """Execute _np_cumulative_logsumexp.
+
+    Args:
+        backend_module: The backend module.
+        x: The input tensor.
+        axis: The axis to compute.
+        kwargs: Additional arguments.
+
+    Returns:
+        The cumulative logsumexp.
+    """
+    # log(cumsum(exp(x)))
+    exp_x = backend_module.exp(x)
+    cumsum_exp = backend_module.cumsum(exp_x, axis=axis)
+    return backend_module.log(cumsum_exp)

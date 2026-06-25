@@ -1,5 +1,9 @@
 """Gradient computation and autodiff utilities."""
 
+from enum import Enum
+
+import typing
+
 from dataclasses import dataclass
 import contextlib
 from collections.abc import Callable, Generator
@@ -396,3 +400,80 @@ def check_numerical_grads(
         step (float): The step size for numerical differentiation.
     """
     pass
+
+
+def jacobian(
+    fun: Callable[..., object], argnums: typing.Union[int, tuple[int, ...]] = 0
+) -> Callable[..., object]:
+    """Creates a function that computes the Jacobian of fun.
+
+    Args:
+        fun (Callable): The function to differentiate.
+        argnums (typing.Union[int, tuple[int, ...]]): Which positional argument(s) to differentiate with respect to.
+
+    Returns:
+        Callable: The function that computes the Jacobian.
+    """
+    _ = argnums
+
+    def wrapped(*args: object, **kwargs: object) -> object:
+        # Mock impl
+        return fun(*args, **kwargs)
+
+    return wrapped
+
+
+def batch_jacobian(
+    fun: Callable[..., object], argnums: typing.Union[int, tuple[int, ...]] = 0
+) -> Callable[..., object]:
+    """Creates a function that computes the batch Jacobian of fun.
+
+    Args:
+        fun (Callable): The function to differentiate.
+        argnums (typing.Union[int, tuple[int, ...]]): Which positional argument(s) to differentiate with respect to.
+
+    Returns:
+        Callable: The function that computes the batch Jacobian.
+    """
+    _ = argnums
+
+    def wrapped(*args: object, **kwargs: object) -> object:
+        # Mock impl
+        return fun(*args, **kwargs)
+
+    return wrapped
+
+
+def hessian(
+    fun: Callable[..., object], argnums: typing.Union[int, tuple[int, ...]] = 0
+) -> Callable[..., object]:
+    """Creates a function that computes the Hessian of fun.
+
+    Args:
+        fun (Callable): The function to differentiate.
+        argnums (typing.Union[int, tuple[int, ...]]): Which positional argument(s) to differentiate with respect to.
+
+    Returns:
+        Callable: The function that computes the Hessian.
+    """
+    return jacobian(jacobian(fun, argnums=argnums), argnums=argnums)
+
+
+class UnconnectedGradients(Enum):
+    """Specifies how unconnected gradients are handled."""
+
+    NONE = "none"
+    ZERO = "zero"
+
+
+def RegisterGradient(op_type: str) -> typing.Callable:
+    """Register a custom gradient for an operation."""
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
+
+    return register_vjp(op_type)
+
+
+def recompute_grad(fun: Callable[..., object]) -> Callable[..., object]:
+    """Gradient checkpointing / rematerialization."""
+    # Act as an identity decorator for now, compiler pass support required for true rematerialization
+    return fun

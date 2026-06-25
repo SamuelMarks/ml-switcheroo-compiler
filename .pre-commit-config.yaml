@@ -28,7 +28,7 @@ repos:
     name: Generate Module Exports
     entry: python3 scripts/generate_exports.py
     language: system
-    files: ^src/ml_switcheroo_compiler/ops/|^src/ml_switcheroo_compiler/lax/
+    files: ^src/ml_switcheroo_compiler/.*\.py$
     pass_filenames: false
   - id: detect-leaks
     name: Detect Dependency Leaks

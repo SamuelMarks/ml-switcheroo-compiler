@@ -32,12 +32,9 @@ from ml_switcheroo_compiler.nn.activations import (
 )
 
 __all__ = [
-    "relu",
-    "selu",
+    "celu",
     "elu",
     "gelu",
-    "softplus",
-    "celu",
     "glu",
     "hard_shrink",
     "hard_sigmoid",
@@ -47,11 +44,14 @@ __all__ = [
     "leaky_relu",
     "log_sigmoid",
     "log_softmax",
+    "relu",
     "relu6",
+    "selu",
     "sigmoid",
     "silu",
     "soft_shrink",
     "softmax",
+    "softplus",
     "softsign",
     "sparse_plus",
     "sparse_sigmoid",

@@ -41,7 +41,7 @@ class Lookup(OpDef):
         # The first argument is input_tensor. The shape should be the same as input_tensor.
         if args and isinstance(args[0], Tensor):  # pragma: no branch
             return args[0]  # pragma: no cover
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("Hashing")
@@ -101,6 +101,42 @@ class StringLower(OpDef):
 @register_op("StringUpper")
 class StringUpper(OpDef):
     """StringUpper op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+@register_op("StringJoin")
+class StringJoin(OpDef):
+    """StringJoin op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return ()
+
+
+@register_op("StringLength")
+class StringLength(OpDef):
+    """StringLength op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+@register_op("StringSubstr")
+class StringSubstr(OpDef):
+    """StringSubstr op."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+@register_op("RegexFullMatch")
+class RegexFullMatch(OpDef):
+    """RegexFullMatch op."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""

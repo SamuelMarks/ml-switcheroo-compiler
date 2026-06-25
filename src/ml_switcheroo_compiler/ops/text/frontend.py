@@ -79,6 +79,110 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
     )
 
 
+def regex_full_match(input_tensor: Tensor, pattern: str) -> Tensor:
+    """Checks if each string fully matches the regex pattern.
+
+    Args:
+        input_tensor (Tensor): Input string tensor.
+        pattern (str): Regex pattern.
+
+    Returns:
+        Tensor: Boolean tensor of matches.
+    """
+    if global_config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()
+        data = backend.execute_op("RegexFullMatch", input_tensor.data, pattern=pattern)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Bool, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "RegexFullMatch",
+        [input_tensor],
+        {"pattern": pattern},
+        input_tensor.shape,
+        DType.Bool,
+    )
+
+
+def string_join(inputs: list[Tensor], separator: str = "") -> Tensor:
+    """Joins strings in a list of tensors.
+
+    Args:
+        inputs (list[Tensor]): List of string tensors.
+        separator (str): Separator to use.
+
+    Returns:
+        Tensor: Joined string tensor.
+    """
+    if global_config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()
+        data = backend.execute_op("StringJoin", [t.data for t in inputs], separator=separator)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.String, inputs[0].device),
+        )
+    return _emit_shape_node(
+        "StringJoin",
+        inputs,
+        {"separator": separator},
+        inputs[0].shape,
+        DType.String,
+    )
+
+
+def string_length(input_tensor: Tensor) -> Tensor:
+    """Computes the length of each string.
+
+    Args:
+        input_tensor (Tensor): Input string tensor.
+
+    Returns:
+        Tensor: Lengths (Int32).
+    """
+    if global_config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()
+        data = backend.execute_op("StringLength", input_tensor.data)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "StringLength",
+        [input_tensor],
+        {},
+        input_tensor.shape,
+        DType.Int32,
+    )
+
+
+def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
+    """Returns substrings.
+
+    Args:
+        input_tensor (Tensor): Input string tensor.
+        pos (int): Starting position.
+        len (int): Length of the substring.
+
+    Returns:
+        Tensor: Substrings.
+    """
+    if global_config.eager_mode:  # pragma: no cover
+        backend = get_active_backend()
+        data = backend.execute_op("StringSubstr", input_tensor.data, pos=pos, len=len)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
+        )
+    return _emit_shape_node(
+        "StringSubstr",
+        [input_tensor],
+        {"pos": pos, "len": len},
+        input_tensor.shape,
+        DType.String,
+    )
+
+
 def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
     """Function docstring.
 

@@ -515,3 +515,129 @@ class Lbeta(OpDef):
         if len(shape) > 0:  # pragma: no branch
             return shape[:-1]  # pragma: no cover
         return ()
+
+
+@register_op("ReciprocalNoNan")
+class ReciprocalNoNan(UnaryMathOp):
+    """ReciprocalNoNan operation."""
+
+    op_name = "ReciprocalNoNan"
+
+
+@register_op("IsNonDecreasing")
+class IsNonDecreasing(UnaryMathOp):
+    """IsNonDecreasing operation."""
+
+    op_name = "IsNonDecreasing"
+
+
+@register_op("IsStrictlyIncreasing")
+class IsStrictlyIncreasing(UnaryMathOp):
+    """IsStrictlyIncreasing operation."""
+
+    op_name = "IsStrictlyIncreasing"
+
+
+@register_op("L2Normalize")
+class L2Normalize(UnaryMathOp):
+    """L2Normalize operation."""
+
+    op_name = "L2Normalize"
+
+
+@register_op("ZeroFraction")
+class ZeroFraction(UnaryMathOp):
+    """ZeroFraction operation."""
+
+    op_name = "ZeroFraction"
+
+
+@register_op("BesselJ0")
+class BesselJ0(UnaryMathOp):
+    """BesselJ0 operation."""
+
+    op_name = "BesselJ0"
+
+
+@register_op("BesselJ1")
+class BesselJ1(UnaryMathOp):
+    """BesselJ1 operation."""
+
+    op_name = "BesselJ1"
+
+
+@register_op("BesselK0")
+class BesselK0(UnaryMathOp):
+    """BesselK0 operation."""
+
+    op_name = "BesselK0"
+
+
+@register_op("BesselK0e")
+class BesselK0e(UnaryMathOp):
+    """BesselK0e operation."""
+
+    op_name = "BesselK0e"
+
+
+@register_op("BesselK1")
+class BesselK1(UnaryMathOp):
+    """BesselK1 operation."""
+
+    op_name = "BesselK1"
+
+
+@register_op("BesselK1e")
+class BesselK1e(UnaryMathOp):
+    """BesselK1e operation."""
+
+    op_name = "BesselK1e"
+
+
+@register_op("BesselY0")
+class BesselY0(UnaryMathOp):
+    """BesselY0 operation."""
+
+    op_name = "BesselY0"
+
+
+@register_op("BesselY1")
+class BesselY1(UnaryMathOp):
+    """BesselY1 operation."""
+
+    op_name = "BesselY1"
+
+
+@register_op("Dawsn")
+class Dawsn(UnaryMathOp):
+    """Dawsn operation."""
+
+    op_name = "Dawsn"
+
+
+@register_op("Expint")
+class Expint(UnaryMathOp):
+    """Expint operation."""
+
+    op_name = "Expint"
+
+
+@register_op("FresnelCos")
+class FresnelCos(UnaryMathOp):
+    """FresnelCos operation."""
+
+    op_name = "FresnelCos"
+
+
+@register_op("FresnelSin")
+class FresnelSin(UnaryMathOp):
+    """FresnelSin operation."""
+
+    op_name = "FresnelSin"
+
+
+@register_op("Spence")
+class Spence(UnaryMathOp):
+    """Spence operation."""
+
+    op_name = "Spence"

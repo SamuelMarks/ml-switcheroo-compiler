@@ -45,7 +45,9 @@ def _build_linalg_output_tensors(
     """
     tensors = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
-        proxy = ProxyTensor(id=out_id, shape=tuple(shape), dtype=dtype.value)
+        proxy = ProxyTensor(
+            id=out_id, shape=tuple(shape), dtype=dtype.value if hasattr(dtype, "value") else dtype
+        )
         tensors.append(
             Tensor(proxy, TensorConfig(tuple(shape), dtype, device)),
         )
@@ -396,29 +398,44 @@ def diag(input: Tensor, k: int = 0) -> Tensor:
     return _emit_linalg_node("Diag", [input], {"k": k}, [()], [input.dtype])
 
 
-def cross(
-    a: object,
-    b: object,
-    **kwargs: object,
-) -> object:
+def cross(  # noqa: PLR0913
+    a: Tensor,
+    b: Tensor,
+    axisa: int = -1,
+    axisb: int = -1,
+    axisc: int = -1,
+    axis: int | None = None,
+) -> Tensor:
     """Computes the vector cross product of two arrays.
 
     Args:
-        a (object): The first input vector or array of vectors
-        b (object): The second input vector or array of vectors
-        **kwargs (object): Optional arguments axisa, axisb, axisc, axis.
+        a (Tensor): The first input vector or array of vectors
+        b (Tensor): The second input vector or array of vectors
+        axisa (int): Axis of a that defines the vector(s). By default, the last axis.
+        axisb (int): Axis of b that defines the vector(s). By default, the last axis.
+        axisc (int): Axis of c containing the cross product vector(s). By default, the last axis.
+        axis (int | None): If defined, the axis of a, b and c that defines the vector(s) and cross product(s).
 
     Returns:
-    object: The cross product of the input vectors
+    Tensor: The cross product of the input vectors
     """
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
-    axisa = kwargs.get("axisa", -1)
-    axisb = kwargs.get("axisb", -1)
-    axisc = kwargs.get("axisc", -1)
-    axis = kwargs.get("axis", None)
-    return backend.execute_op("Cross", a, b, axisa=axisa, axisb=axisb, axisc=axisc, axis=axis)
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "Cross", a.data, b.data, axisa=axisa, axisb=axisb, axisc=axisc, axis=axis
+        )
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = a.shape  # simplified
+    return _emit_linalg_node(
+        "Cross",
+        [a, b],
+        {"axisa": axisa, "axisb": axisb, "axisc": axisc, "axis": axis},
+        [out_shape],
+        [a.dtype],
+    )
 
 
 def _get_remaining_dims(

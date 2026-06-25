@@ -1,20 +1,8 @@
-from ml_switcheroo_compiler import lax, random
+from ml_switcheroo_compiler import random
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import TensorConfig
 from ml_switcheroo_compiler.nn import activations
 from ml_switcheroo_compiler.ops import aliases
-
-
-def test_lax_coverage():
-    config.eager_mode = False
-    for op in lax.__all__:
-        if op == "dtype":
-            continue
-        func = getattr(lax, op)
-        try:
-            func()
-        except Exception:
-            pass
 
 
 def test_random_coverage():
@@ -216,18 +204,6 @@ def test_nn_activations_coverage():
     for fn in fns:
         try:
             fn(t)
-        except Exception:
-            pass
-
-
-def test_lax_coverage_eager():
-    config.eager_mode = True
-    for op in lax.__all__:
-        if op == "dtype":
-            continue
-        func = getattr(lax, op)
-        try:
-            func()
         except Exception:
             pass
 

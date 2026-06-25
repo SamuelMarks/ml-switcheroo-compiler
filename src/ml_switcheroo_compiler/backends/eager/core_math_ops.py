@@ -192,4 +192,25 @@ def _segment_sum(backend_module: object, *args: object, **kwargs: object) -> obj
     return None  # pragma: no cover
 
 
-__all__ = [n for n in globals().keys() if n != "__builtins__"]
+__all__ = [
+    "__cached__",
+    "__doc__",
+    "__file__",
+    "__loader__",
+    "__name__",
+    "__package__",
+    "__spec__",
+    "_allclose",
+    "_einsum",
+    "_erfinv",
+    "_fft",
+    "_fftn",
+    "_nan_to_num",
+    "_pmean",
+    "_psum",
+    "_rfft",
+    "_segment_sum",
+    "_true_divide",
+    "global_eager_registry",
+    "scipy",
+]

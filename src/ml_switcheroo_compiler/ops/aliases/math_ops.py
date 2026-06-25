@@ -1,5 +1,6 @@
 """Aliases for math_ops."""
 
+from ml_switcheroo_compiler.ops.base import get_op
 import math
 
 from ml_switcheroo_compiler.ops.binary import left_shift, maximum, minimum, power, right_shift
@@ -116,3 +117,33 @@ invert = bitwise_invert
 pow = power
 
 inf = float("inf")
+
+add_n = get_op("AddN")()
+accumulate_n = get_op("AccumulateN")()
+cumulative_logsumexp = get_op("CumulativeLogsumexp")()
+divide_no_nan = get_op("DivideNoNan")()
+multiply_no_nan = get_op("MultiplyNoNan")()
+squared_difference = get_op("SquaredDifference")()
+xdivy = get_op("Xdivy")()
+xlog1py = get_op("Xlog1py")()
+reciprocal_no_nan = get_op("ReciprocalNoNan")()
+reduce_euclidean_norm = get_op("ReduceEuclideanNorm")()
+l2_normalize = get_op("L2Normalize")()
+zero_fraction = get_op("ZeroFraction")()
+is_non_decreasing = get_op("IsNonDecreasing")()
+is_strictly_increasing = get_op("IsStrictlyIncreasing")()
+bessel_j0 = get_op("BesselJ0")()
+bessel_j1 = get_op("BesselJ1")()
+bessel_k0 = get_op("BesselK0")()
+bessel_k0e = get_op("BesselK0e")()
+bessel_k1 = get_op("BesselK1")()
+bessel_k1e = get_op("BesselK1e")()
+bessel_y0 = get_op("BesselY0")()
+bessel_y1 = get_op("BesselY1")()
+dawsn = get_op("Dawsn")()
+expint = get_op("Expint")()
+fresnel_cos = get_op("FresnelCos")()
+fresnel_sin = get_op("FresnelSin")()
+spence = get_op("Spence")()
+scalar_mul = get_op("Multiply")()
+reduce_logsumexp = get_op("Logsumexp")()

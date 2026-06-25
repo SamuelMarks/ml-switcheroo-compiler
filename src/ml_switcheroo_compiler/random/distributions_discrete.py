@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-from ml_switcheroo_compiler.random.state import _emit_random_node, _dispatch_random
+from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
 def randint(
@@ -212,6 +212,8 @@ def binomial(
     key: object, n: object, p: object, shape: object = None, dtype: object = None
 ) -> object:
     """Samples binomial random values from a given key."""
+    if shape is None:
+        shape = ()
     dtype = dtype or dtypes.DType.Int32  # pragma: no cover
     if config.eager_mode:  # pragma: no cover
         np_dtype = np.dtype(dtype.value)  # pragma: no cover
@@ -246,9 +248,22 @@ def geometric(*args: object, **kwargs: object) -> object:
     raise NotImplementedError("geometric is not fully supported in tracing mode.")
 
 
-def poisson(*args: object, **kwargs: object) -> object:
-    """Execute poisson."""
-    return _dispatch_random("poisson", *args, **kwargs)
+def poisson(key: object, lam: object, shape: object = None, dtype: object = None) -> object:
+    """Samples poisson random values from a given key."""
+    if shape is None:
+        shape = ()
+    dtype = dtype or dtypes.DType.Int32
+    if config.eager_mode:
+        np_dtype = np.dtype(dtype.value)
+        lam_val = getattr(lam, "data", lam)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
+        else:
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+        res = rng.poisson(lam_val, size=shape).astype(np_dtype)
+        return Tensor(res, TensorConfig(getattr(res, "shape", ()), dtype, config.default_device))
+    return _emit_random_node("RandomPoisson", [key, lam], shape, dtype)
 
 
 def rademacher(*args: object, **kwargs: object) -> object:
@@ -263,3 +278,31 @@ def rademacher(*args: object, **kwargs: object) -> object:
             "rademacher is not supported in eager mode without backend support."
         )
     raise NotImplementedError("rademacher is not fully supported in tracing mode.")
+
+
+def multinomial(key: object, n: int, pvals: object, shape: object = None) -> object:
+    """Samples from multinomial distribution.
+
+    Args:
+        key (object): The PRNG key.
+        n (int): Number of experiments.
+        pvals (object): Probabilities of each of the p different outcomes.
+        shape (object): Target shape.
+
+    Returns:
+        object: The evaluated output resulting from this operation.
+    """
+    if shape is None:
+        shape = ()
+    if config.eager_mode:
+        p_arr = getattr(pvals, "data", pvals)
+        if isinstance(key, Tensor):
+            seed_val = int(key.data[1])
+        else:
+            seed_val = 0
+        rng = np.random.default_rng(seed_val)
+        res = rng.multinomial(n, p_arr, size=shape)
+        return Tensor(
+            res, TensorConfig(getattr(res, "shape", ()), dtypes.DType.Int32, config.default_device)
+        )
+    return _emit_random_node("RandomMultinomial", [key, pvals], shape, dtypes.DType.Int32, {"n": n})

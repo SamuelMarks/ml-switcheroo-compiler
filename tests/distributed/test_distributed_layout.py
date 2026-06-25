@@ -5,8 +5,8 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 
 
-def test_keras_distribution_mock():
-    # Mimic keras.distribution setup
+def test_distributed_layout():
+    # Setup DeviceMesh and LayoutMap
     mesh = DeviceMesh(shape=(2, 4), axis_names=("data", "model"))
     spec = ShardingSpec(mesh, ("data", None))
 

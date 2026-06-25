@@ -178,3 +178,50 @@ def stateless_gamma(  # pragma: no cover
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
     res = gamma(seed, alpha, tuple(shape), dtype_enum)  # pragma: no cover
     return res  # pragma: no cover
+
+
+def stateless_beta(  # pragma: no cover
+    shape: Sequence[int],
+    seed: Tensor,
+    alpha: Tensor,
+    beta_param: Tensor,
+    dtype: str = "float32",
+) -> Tensor:
+    """Stateless random beta distribution.
+
+    Args:
+        shape (Sequence[int]): The shape of the output tensor.
+        seed (Tensor): The seed tensor.
+        alpha (Tensor): The alpha parameter.
+        beta_param (Tensor): The beta parameter.
+        dtype (str): The data type.
+
+    Returns:
+        Tensor: The generated tensor.
+    """
+    from ml_switcheroo_compiler.random.distributions_continuous import beta  # pragma: no cover
+
+    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
+    res = beta(seed, alpha, beta_param, tuple(shape), dtype_enum)  # pragma: no cover
+    return res  # pragma: no cover
+
+
+def stateless_shuffle(  # pragma: no cover
+    x: Tensor,
+    seed: Tensor,
+    axis: int = 0,
+) -> Tensor:
+    """Stateless random shuffle.
+
+    Args:
+        x (Tensor): The input tensor to shuffle.
+        seed (Tensor): The seed tensor.
+        axis (int): The axis to shuffle along.
+
+    Returns:
+        Tensor: The shuffled tensor.
+    """
+    from ml_switcheroo_compiler.random.transformations import shuffle  # pragma: no cover
+
+    res = shuffle(seed, x, axis=axis)  # pragma: no cover
+    return res  # pragma: no cover

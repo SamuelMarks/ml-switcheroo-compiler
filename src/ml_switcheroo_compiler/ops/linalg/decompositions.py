@@ -11,6 +11,278 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
 
 
+@register_op("Cholesky")
+class Cholesky(OpDef):
+    """Cholesky Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Svd")
+class Svd(OpDef):
+    """Svd Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Qr")
+class Qr(OpDef):
+    """Qr Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Inv")
+class Inv(OpDef):
+    """Inv Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Det")
+class Det(OpDef):
+    """Det Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Slogdet")
+class Slogdet(OpDef):
+    """Slogdet Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Eigh")
+class Eigh(OpDef):
+    """Eigh Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Eigvalsh")
+class Eigvalsh(OpDef):
+    """Eigvalsh Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Solve")
+class Solve(OpDef):
+    """Solve Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("TriangularSolve")
+class TriangularSolve(OpDef):
+    """TriangularSolve Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Lu")
+class Lu(OpDef):
+    """Lu Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("LuFactor")
+class LuFactor(OpDef):
+    """LuFactor Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("LuSolve")
+class LuSolve(OpDef):
+    """LuSolve Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Norm")
+class Norm(OpDef):
+    """Norm Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("MatrixExponential")
+class MatrixExponential(OpDef):
+    """MatrixExponential Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+@register_op("Cross")
+class Cross(OpDef):
+    """Cross Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
 @register_op("PowerIteration")
 class PowerIteration(OpDef):
     """Power Iteration Operation Definition."""
@@ -55,7 +327,7 @@ def cholesky(input: Tensor) -> Tensor:
         return Tensor(
             backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
         )
-    return _emit_linalg_node("Cholesky", [input], {}, [()], [input.dtype])
+    return _emit_linalg_node("Cholesky", [input], {}, [input.shape], [input.dtype])
 
 
 def svd(
@@ -98,7 +370,7 @@ def svd(
         "Svd",
         [input],
         {"full_matrices": full_matrices, "compute_uv": compute_uv},
-        [(), (), ()],
+        [input.shape, input.shape[:-1], input.shape],
         [input.dtype] * 3,
     )
 
@@ -126,11 +398,7 @@ def qr(input: Tensor, mode: str = "reduced") -> tuple[Tensor, Tensor]:
             Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
         )
     return _emit_linalg_node(
-        "Qr",
-        [input],
-        {"mode": mode},
-        [(), ()],
-        [input.dtype] * 2,
+        "Qr", [input], {"mode": mode}, [input.shape, input.shape], [input.dtype] * 2
     )
 
 
@@ -151,7 +419,7 @@ def inv(input: Tensor) -> Tensor:
         return Tensor(
             backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
         )
-    return _emit_linalg_node("Inv", [input], {}, [()], [input.dtype])
+    return _emit_linalg_node("Inv", [input], {}, [input.shape], [input.dtype])
 
 
 def pinv(input: Tensor, rcond: float = 1e-15) -> Tensor:
@@ -170,13 +438,7 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> Tensor:
         backend = get_active_backend()
         data = backend.execute_op("Pinv", input.data, rcond=rcond)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    return _emit_linalg_node(
-        "Pinv",
-        [input],
-        {"rcond": rcond},
-        [()],
-        [input.dtype],
-    )
+    return _emit_linalg_node("Pinv", [input], {"rcond": rcond}, [input.shape], [input.dtype])
 
 
 def det(input: Tensor) -> Tensor:
@@ -254,11 +516,7 @@ def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
             Tensor(v, TensorConfig(v.shape, input.dtype, input.device)),
         )
     return _emit_linalg_node(
-        "Eigh",
-        [input],
-        {"UPLO": UPLO},
-        [(), ()],
-        [input.dtype] * 2,
+        "Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [input.dtype] * 2
     )
 
 
@@ -281,13 +539,7 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> Tensor:
         return Tensor(
             backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
         )
-    return _emit_linalg_node(
-        "Eigvalsh",
-        [input],
-        {"UPLO": UPLO},
-        [()],
-        [input.dtype],
-    )
+    return _emit_linalg_node("Eigvalsh", [input], {"UPLO": UPLO}, [input.shape[:-1]], [input.dtype])
 
 
 def matrix_power(input: Tensor, n: int) -> Tensor:
@@ -306,113 +558,204 @@ def matrix_power(input: Tensor, n: int) -> Tensor:
         backend = get_active_backend()
         data = backend.execute_op("MatrixPower", input.data, n)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [()], [input.dtype])
+    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [input.dtype])
 
 
-def solve(a: object, b: object) -> object:
+def solve(a: Tensor, b: Tensor) -> Tensor:
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
-        a (object): Coefficient matrix
-        b (object): Ordinate or 'dependent variable' values
+        a (Tensor): Coefficient matrix
+        b (Tensor): Ordinate or 'dependent variable' values
 
     Returns:
-    object: Solution to the system of linear equations
+    Tensor: Solution to the system of linear equations
     """
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    backend = get_active_backend()
-    return backend.execute_op(
-        "Solve",
-        (a.data if hasattr(a, "device") else a),
-        (b.data if hasattr(b, "device") else b),
-    )
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "Solve",
+            (a.data if hasattr(a, "device") else a),
+            (b.data if hasattr(b, "device") else b),
+        )
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+    return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
 
 
 def solve_triangular(
-    a: object,
-    b: object,
-    options: object = None,
-) -> object:
+    a: Tensor,
+    b: Tensor,
+    lower: bool = False,
+    unit_diagonal: bool = False,
+) -> Tensor:
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:
-        a (object): Triangular coefficient matrix
-        b (object): Right-hand side matrix or vector
-        options (object, optional): A TriangularSolveOptions instance. Defaults to None.
+        a (Tensor): Triangular coefficient matrix
+        b (Tensor): Right-hand side matrix or vector
+        lower (bool): Use only data contained in the lower triangle of a. Default is to use upper triangle.
+        unit_diagonal (bool): If True, diagonal elements of a are assumed to be 1.
 
     Returns:
-    object: The solution matrix `x`
+    Tensor: The solution matrix `x`
     """
-    import scipy.linalg as spla
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
-
-    if options is None:
-        options = TriangularSolveOptions()
-
-    from typing import cast, Any
-
-    return spla.solve_triangular(
-        a,
-        b,
-        trans=cast(Any, options.trans),
-        lower=cast(Any, options.lower),
-        unit_diagonal=cast(Any, options.unit_diagonal),
-        overwrite_b=cast(Any, options.overwrite_b),
-        check_finite=cast(Any, options.check_finite),
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "TriangularSolve",
+            a.data,
+            b.data,
+            lower=lower,
+            unit_diagonal=unit_diagonal,
+        )
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+    return _emit_linalg_node(
+        "TriangularSolve",
+        [a, b],
+        {"lower": lower, "unit_diagonal": unit_diagonal},
+        [b.shape],
+        [a.dtype],
     )
 
 
-def lu(
-    a: object,
-    permute_l: bool = False,
-    overwrite_a: bool = False,
-    check_finite: bool = True,
-) -> object:
+def lu(a: Tensor) -> tuple[Tensor, Tensor, Tensor]:
     """Computes the LU decomposition of a matrix.
 
     Args:
-        a (object): The input matrix to decompose
-        permute_l (bool): If True, perform the multiplication P * L and return
-        only PL and U. Defaults to False
-        overwrite_a (bool): Allow overwriting data in `a` for speed. Defaults to False
-        check_finite (bool): Whether to check that the input matrix contains only
-        finite numbers. Defaults to True
+        a (Tensor): The input matrix to decompose
 
     Returns:
-    object: The LU decomposition components (P, L, U) or (PL, U) depending on
-    `permute_l`
+    tuple[Tensor, Tensor, Tensor]: The LU decomposition components (P, L, U)
     """
-    import scipy.linalg as spla
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return spla.lu(
-        a,
-        permute_l=permute_l,
-        overwrite_a=overwrite_a,
-        check_finite=check_finite,
-    )
+        backend = get_active_backend()
+        p, l_mat, u = backend.execute_op("Lu", a.data)
+        return (
+            Tensor(p, TensorConfig(p.shape, a.dtype, a.device)),
+            Tensor(l_mat, TensorConfig(l_mat.shape, a.dtype, a.device)),
+            Tensor(u, TensorConfig(u.shape, a.dtype, a.device)),
+        )
+    return _emit_linalg_node("Lu", [a], {}, [a.shape, a.shape, a.shape], [a.dtype] * 3)
 
 
-def lu_factor(
-    a: object,
-    overwrite_a: bool = False,
-    check_finite: bool = True,
-) -> object:
+def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
     """Computes pivoted LU decomposition of a matrix for use in `lu_solve`.
 
     Args:
-        a (object): The input matrix to decompose
-        overwrite_a (bool): Allow overwriting data in `a` for speed. Defaults to False
-        check_finite (bool): Whether to check that the input matrix contains only
-        finite numbers. Defaults to True
+        a (Tensor): The input matrix to decompose
 
     Returns:
-    object: A tuple (lu, piv) containing the LU factorization and pivot indices
+    tuple[Tensor, Tensor]: A tuple (lu, piv) containing the LU factorization and pivot indices
     """
-    import scipy.linalg as spla
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return spla.lu_factor(a, overwrite_a=overwrite_a, check_finite=check_finite)
+        backend = get_active_backend()
+        lu, piv = backend.execute_op("LuFactor", a.data)
+        piv_dtype = a.dtype
+        return (
+            Tensor(lu, TensorConfig(lu.shape, a.dtype, a.device)),
+            Tensor(piv, TensorConfig(piv.shape, piv_dtype, a.device)),
+        )
+
+    piv_shape = a.shape[:-1]
+    return _emit_linalg_node("LuFactor", [a], {}, [a.shape, piv_shape], [a.dtype, a.dtype])
+
+
+def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Tensor:
+    """Solve an equation system, a x = b, given the LU factorization of a.
+
+    Args:
+        lu_and_piv (tuple[Tensor, Tensor]): LU factorization and pivot indices from lu_factor.
+        b (Tensor): Right-hand side matrix or vector.
+
+    Returns:
+    Tensor: The solution matrix `x`
+    """
+    lu, piv = lu_and_piv
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("LuSolve", lu.data, piv.data, b.data)
+        return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
+    return _emit_linalg_node("LuSolve", [lu, piv, b], {}, [b.shape], [b.dtype])
+
+
+def norm(
+    x: Tensor,
+    ord: int | str | None = None,
+    axis: int | tuple[int, ...] | None = None,
+    keepdims: bool = False,
+) -> Tensor:
+    """Matrix or vector norm.
+
+    Args:
+        x (Tensor): Input tensor.
+        ord (int | str | None): Order of the norm.
+        axis (int | tuple[int, ...] | None): If axis is an integer, it specifies the axis of x along which to compute the vector norms.
+        keepdims (bool): If True, the axes which are reduced are left in the result as dimensions with size one.
+
+    Returns:
+    Tensor: Norm of the matrix or vector(s).
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Norm", x.data, ord=ord, axis=axis, keepdims=keepdims)
+
+        # Calculate shape
+        if axis is None:
+            out_shape = () if not keepdims else tuple(1 for _ in x.shape)
+        else:
+            axes = (axis,) if isinstance(axis, int) else axis
+            out_shape = tuple(
+                1 if i in axes and keepdims else s
+                for i, s in enumerate(x.shape)
+                if i not in axes or keepdims
+            )
+
+        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
+
+    # Simple shape calculation for tracing
+    if axis is None:
+        out_shape = () if not keepdims else tuple(1 for _ in x.shape)
+    else:
+        axes = (axis,) if isinstance(axis, int) else axis
+        out_shape = tuple(
+            1 if i in axes and keepdims else s
+            for i, s in enumerate(x.shape)
+            if i not in axes or keepdims
+        )
+
+    return _emit_linalg_node(
+        "Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [x.dtype]
+    )
+
+
+def matrix_exponential(a: Tensor) -> Tensor:
+    """Compute the matrix exponential of a square matrix.
+
+    Args:
+        a (Tensor): The input square matrix.
+
+    Returns:
+    Tensor: The matrix exponential.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("MatrixExponential", a.data)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [a.dtype])
 
 
 def _power_iteration_eager(

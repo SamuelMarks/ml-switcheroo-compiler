@@ -180,3 +180,63 @@ def test_audio_infer_shapes():
     assert MelSpectrogram().infer_shape(None) == ()
     assert MelFilterbank().infer_shape() == ()
     assert Mfcc().infer_shape(None) == ()
+
+
+def test_new_audio_tracing():
+    from ml_switcheroo_compiler.ops.audio.frontend import (
+        mfccs_from_log_mel_spectrograms,
+        stft,
+        istft,
+    )
+
+    device = Device(DeviceType.CPU, 0)
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            spec = Tensor("dummy", TensorConfig((2, 65, 40), DType.Float32, device))
+            mfccs_from_log_mel_spectrograms(spec, num_mfccs=13)
+            # already covered above
+
+            x = Tensor("dummy_x", TensorConfig((10000,), DType.Float32, device))
+            stft(x)
+
+            c = Tensor("dummy_c", TensorConfig((513, 100), DType.Complex64, device))
+            istft(c)
+        finally:
+            _tracer.stop_tracing()
+
+
+def test_new_audio_infer_shapes():
+    from ml_switcheroo_compiler.ops.audio.ops import (
+        MfccsFromLogMelSpectrograms,
+        HannWindow,
+        HammingWindow,
+        KaiserWindow,
+    )
+
+    assert MfccsFromLogMelSpectrograms().infer_shape(None) == ()
+    assert HannWindow().infer_shape() == ()
+    assert HammingWindow().infer_shape() == ()
+    assert KaiserWindow().infer_shape() == ()
+
+
+def test_audio_eager_extra():
+    device = Device(DeviceType.CPU, 0)
+    with ConfigContext(eager_mode=True):
+        from unittest.mock import patch
+
+        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+            mock_backend.return_value.execute_op.return_value = np.zeros((1,))
+            mock_backend.return_value.array.return_value = np.zeros((1,))
+
+            from ml_switcheroo_compiler.ops.audio.frontend import mfccs_from_log_mel_spectrograms
+
+            spec = Tensor(
+                np.zeros((2, 65, 40), dtype=np.float32),
+                TensorConfig((2, 65, 40), DType.Float32, device),
+            )
+            try:
+                mfccs_from_log_mel_spectrograms(spec, num_mfccs=13)
+            except Exception:
+                pass
+            # already covered above

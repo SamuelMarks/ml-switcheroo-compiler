@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, Any
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.vmap import vmap as vmap
@@ -178,3 +178,58 @@ def custom_gradient(func: Callable) -> Callable:
         return val
 
     return wrapper
+
+
+def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Callable = None) -> object:
+    """Execute case.
+
+    Args:
+        pred_fn_pairs: List of (predicate, callable) pairs.
+        default: Optional callable for default case.
+
+    Returns:
+        The result of the evaluated callable.
+    """
+    if not pred_fn_pairs:
+        if default is not None:
+            return default()
+        raise ValueError("case requires at least one (pred, fn) pair or a default")
+
+    def _build_case(idx: int) -> Callable:
+        if idx == len(pred_fn_pairs):
+            return default if default is not None else lambda: None
+        pred, fn = pred_fn_pairs[idx]
+        return lambda: cond(pred, fn, _build_case(idx + 1))
+
+    return _build_case(0)()
+
+
+def switch_case(
+    branch_index: Tensor, branch_fns: dict[int, Callable], default: Callable = None
+) -> object:
+    """Execute switch_case.
+
+    Args:
+        branch_index: The branch index tensor.
+        branch_fns: Dictionary mapping indices to callables.
+        default: Optional callable for default case.
+
+    Returns:
+        The result of the evaluated callable.
+    """
+    if not branch_fns:
+        if default is not None:
+            return default()
+        raise ValueError("switch_case requires at least one branch or a default")
+
+    # Build pred_fn_pairs from branch_fns
+    from ml_switcheroo_compiler.ops.binary import equal
+
+    pred_fn_pairs = []
+    # Sort keys to ensure deterministic ordering (not strictly necessary but good practice)
+    for key in sorted(branch_fns.keys()):
+        key_tensor = Tensor(key, TensorConfig((), branch_index.dtype, branch_index.device))
+        pred = equal(branch_index, key_tensor)
+        pred_fn_pairs.append((pred, branch_fns[key]))
+
+    return case(pred_fn_pairs, default)

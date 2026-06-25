@@ -31,6 +31,21 @@ def test_text_eager_mode_exceptions():
             except Exception:
                 pass
 
+            from ml_switcheroo_compiler.ops.text import (
+                regex_full_match,
+                string_join,
+                string_length,
+                string_substr,
+            )
+
+            try:
+                regex_full_match(img, "pattern")
+                string_join([img, img])
+                string_length(img)
+                string_substr(img, 0, 1)
+            except Exception:
+                pass
+
 
 def test_text_tracing_mode():
     device = Device(DeviceType.CPU, 0)
@@ -55,7 +70,14 @@ def test_text_tracing_mode():
 
 def test_text_new_ops() -> None:
     from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.ops.text import edit_distance, as_string
+    from ml_switcheroo_compiler.ops.text import (
+        edit_distance,
+        as_string,
+        regex_full_match,
+        string_join,
+        string_length,
+        string_substr,
+    )
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
 
@@ -71,4 +93,8 @@ def test_text_new_ops() -> None:
         _tracer.start_tracing()
         edit_distance(hypothesis, truth)
         as_string(num_tensor)
+        regex_full_match(hypothesis, pattern="^test")
+        string_join([hypothesis, truth], separator=",")
+        string_length(hypothesis)
+        string_substr(hypothesis, pos=0, len=1)
         _tracer.stop_tracing()

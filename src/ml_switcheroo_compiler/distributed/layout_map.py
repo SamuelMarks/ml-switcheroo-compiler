@@ -31,15 +31,11 @@ class ShardingSpec:
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(
-        self, device_mesh: Optional[object] = None, *args: object, **kwargs: object
-    ) -> None:
+    def __init__(self, device_mesh: Optional[object] = None) -> None:
         """Initialize LayoutMap.
 
         Args:
             device_mesh: Optional device mesh.
-            *args: arguments.
-            **kwargs: keyword arguments.
         """
         self.device_mesh = device_mesh
         self._map: dict[str, ShardingSpec] = {}

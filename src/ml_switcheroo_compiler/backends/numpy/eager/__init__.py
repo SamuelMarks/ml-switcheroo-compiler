@@ -8,7 +8,6 @@ import re
 
 
 # Auto-discover all modules in this package to run their @register decorators
-__all__ = ["execute_op"]
 
 for _, module_name, _ in pkgutil.iter_modules(__path__):
     importlib.import_module(f"{__name__}.{module_name}")
@@ -39,3 +38,8 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         raise NotImplementedError(msg) from None
 
     return func(*args, **kwargs)
+
+
+__all__ = [
+    "execute_op",
+]

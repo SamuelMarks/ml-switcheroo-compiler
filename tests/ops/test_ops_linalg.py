@@ -413,3 +413,146 @@ def test_decompositions_eager_pinv() -> None:
     ):
         pinv(inp)
     config.eager_mode = False
+
+
+def test_all_ffts() -> None:
+    """Test all ffts."""
+    from ml_switcheroo_compiler.ops.linalg import (
+        fft,
+        fft2d,
+        fft3d,
+        ifft,
+        ifft2d,
+        ifft3d,
+        rfft,
+        rfft2d,
+        rfft3d,
+        irfft,
+        irfft2d,
+        irfft3d,
+    )
+    from ml_switcheroo_compiler.ops.linalg.basic import (
+        Ifft,
+        Fft2d,
+        Ifft2d,
+        Fft3d,
+        Ifft3d,
+        Rfft2d,
+        Rfft3d,
+        Irfft,
+        Irfft2d,
+        Irfft3d,
+    )
+
+    from ml_switcheroo_compiler.core.tensor import TensorConfig
+
+    assert Ifft().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Fft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Ifft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Fft3d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Ifft3d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Rfft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Rfft3d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Irfft().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Irfft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+    assert Irfft3d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
+
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.tracing import _tracer
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+    device = Device("cpu")
+    with ConfigContext(eager_mode=False):
+        _tracer.start_tracing()
+        try:
+            a = Tensor("dummy", TensorConfig((4, 4, 4), DType.Float32, device))
+            fft(a)
+            fft2d(a)
+            fft3d(a)
+            ifft(a)
+            ifft2d(a)
+            ifft3d(a)
+            rfft(a)
+            rfft2d(a)
+            rfft3d(a)
+            irfft(a)
+            irfft2d(a)
+            irfft3d(a)
+
+            # with shapes specified
+            fft2d(a, s=(2, 2))
+            fft3d(a, s=(2, 2, 2))
+            ifft2d(a, s=(2, 2))
+            ifft3d(a, s=(2, 2, 2))
+            rfft2d(a, s=(2, 2))
+            rfft3d(a, s=(2, 2, 2))
+            irfft(a, n=2)
+            irfft2d(a, s=(2, 2))
+            irfft3d(a, s=(2, 2, 2))
+        finally:
+            _tracer.stop_tracing()
+
+
+def test_all_ffts_eager_extra() -> None:
+    """Test all ffts eager."""
+    from ml_switcheroo_compiler.ops.linalg import (
+        fft,
+        fft2d,
+        fft3d,
+        ifft,
+        ifft2d,
+        ifft3d,
+        rfft,
+        rfft2d,
+        rfft3d,
+        irfft,
+        irfft2d,
+        irfft3d,
+    )
+    from ml_switcheroo_compiler.core.tensor import Tensor
+
+    import numpy as np
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.config import ConfigContext
+    from ml_switcheroo_compiler.core.tensor import TensorConfig
+
+    device = Device("cpu")
+    with ConfigContext(eager_mode=True):
+        from unittest.mock import patch
+
+        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+            mock_backend.return_value.execute_op.return_value = np.zeros((1,))
+            mock_backend.return_value.array.return_value = np.zeros((1,))
+            a = Tensor(
+                np.zeros((4, 4, 4), dtype=np.float32),
+                TensorConfig((4, 4, 4), DType.Float32, device),
+            )
+
+            fft(a, n=2)
+            fft2d(a, s=(2, 2))
+            fft3d(a, s=(2, 2, 2))
+            ifft(a, n=2)
+            ifft2d(a, s=(2, 2))
+            ifft3d(a, s=(2, 2, 2))
+            rfft(a, n=2)
+            rfft2d(a, s=(2, 2))
+            rfft3d(a, s=(2, 2, 2))
+            irfft(a, n=2)
+            irfft2d(a, s=(2, 2))
+            irfft3d(a, s=(2, 2, 2))
+
+            fft(a)
+            fft2d(a)
+            fft3d(a)
+            ifft(a)
+            ifft2d(a)
+            ifft3d(a)
+            rfft(a)
+            rfft2d(a)
+            rfft3d(a)
+            irfft(a)
+            irfft2d(a)
+            irfft3d(a)

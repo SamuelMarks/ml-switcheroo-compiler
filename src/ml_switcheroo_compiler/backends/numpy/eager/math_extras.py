@@ -553,3 +553,208 @@ def _band_part(input: object, num_lower: object, num_upper: object) -> object:
     m, n = input.shape[-2:]
     res = np.copy(input)
     return res
+
+
+@numpy_eager_registry.register("DivideNoNan")
+def _np_divide_no_nan(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+    """DivideNoNan."""
+    return backend_module.divide(
+        x,
+        y,
+        out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)),
+        where=(y != 0),
+    )
+
+
+@numpy_eager_registry.register("MultiplyNoNan")
+def _np_multiply_no_nan(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+    """MultiplyNoNan."""
+    return backend_module.multiply(
+        x,
+        y,
+        out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)),
+        where=(y != 0),
+    )
+
+
+@numpy_eager_registry.register("SquaredDifference")
+def _np_squared_difference(
+    backend_module: object, x: object, y: object, **kwargs: object
+) -> object:
+    """SquaredDifference."""
+    diff = backend_module.subtract(x, y)
+    return backend_module.square(diff)
+
+
+@numpy_eager_registry.register("Xdivy")
+def _np_xdivy(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+    """Xdivy."""
+    return backend_module.divide(
+        x,
+        y,
+        out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)),
+        where=(x != 0),
+    )
+
+
+@numpy_eager_registry.register("Xlog1py")
+def _np_xlog1py(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+    """Xlog1py."""
+    return backend_module.multiply(
+        x,
+        backend_module.log1p(y),
+        out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)),
+        where=(x != 0),
+    )
+
+
+@numpy_eager_registry.register("ReciprocalNoNan")
+def _np_reciprocal_no_nan(backend_module: object, x: object, **kwargs: object) -> object:
+    """ReciprocalNoNan."""
+    return backend_module.divide(
+        1.0,
+        x,
+        out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, 1.0)),
+        where=(x != 0),
+    )
+
+
+@numpy_eager_registry.register("IsNonDecreasing")
+def _np_is_non_decreasing(backend_module: object, x: object, **kwargs: object) -> object:
+    """IsNonDecreasing."""
+    if backend_module.size(x) <= 1:
+        return backend_module.array(True)
+    diffs = backend_module.diff(x)
+    return backend_module.all(diffs >= 0)
+
+
+@numpy_eager_registry.register("IsStrictlyIncreasing")
+def _np_is_strictly_increasing(backend_module: object, x: object, **kwargs: object) -> object:
+    """IsStrictlyIncreasing."""
+    if backend_module.size(x) <= 1:
+        return backend_module.array(True)
+    diffs = backend_module.diff(x)
+    return backend_module.all(diffs > 0)
+
+
+@numpy_eager_registry.register("L2Normalize")
+def _np_l2_normalize(
+    backend_module: object, x: object, axis: int = None, epsilon: float = 1e-12, **kwargs: object
+) -> object:
+    """L2Normalize."""
+    square_sum = backend_module.sum(backend_module.square(x), axis=axis, keepdims=True)
+    x_inv_norm = backend_module.divide(
+        1.0, backend_module.sqrt(backend_module.maximum(square_sum, epsilon))
+    )
+    return backend_module.multiply(x, x_inv_norm)
+
+
+@numpy_eager_registry.register("ZeroFraction")
+def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> object:
+    """ZeroFraction."""
+    num_zeros = backend_module.sum(backend_module.equal(x, 0))
+    total_elements = backend_module.size(x)
+    if total_elements == 0:
+        return backend_module.array(float("nan"))
+    return backend_module.divide(num_zeros, total_elements).astype(backend_module.float32)
+
+
+@numpy_eager_registry.register("ReduceEuclideanNorm")
+def _np_reduce_euclidean_norm(
+    backend_module: object, x: object, axis: object = None, keepdims: bool = False, **kwargs: object
+) -> object:
+    """ReduceEuclideanNorm."""
+    return backend_module.sqrt(
+        backend_module.sum(backend_module.square(x), axis=axis, keepdims=keepdims)
+    )
+
+
+@numpy_eager_registry.register("BesselJ0")
+def _np_bessel_j0(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.j0(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselJ1")
+def _np_bessel_j1(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.j1(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselK0")
+def _np_bessel_k0(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.k0(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselK0e")
+def _np_bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.k0e(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselK1")
+def _np_bessel_k1(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.k1(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselK1e")
+def _np_bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.k1e(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselY0")
+def _np_bessel_y0(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.y0(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselY1")
+def _np_bessel_y1(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.y1(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Dawsn")
+def _np_dawsn(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.dawsn(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Expint")
+def _np_expint(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.expi(*args, **kwargs)
+
+
+@numpy_eager_registry.register("FresnelCos")
+def _np_fresnel_cos(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.fresnel(*args, **kwargs)[1]
+
+
+@numpy_eager_registry.register("FresnelSin")
+def _np_fresnel_sin(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.fresnel(*args, **kwargs)[0]
+
+
+@numpy_eager_registry.register("Spence")
+def _np_spence(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.spence(*args, **kwargs)

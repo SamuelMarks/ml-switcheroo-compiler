@@ -2,7 +2,6 @@
 
 import numpy as np
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.sparse_tensor import SparseTensor
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -10,9 +9,11 @@ from ml_switcheroo_compiler.core.config import ConfigContext
 
 def test_sparse_tensor() -> None:
     """Test SparseTensor."""
+    from ml_switcheroo_compiler.core.sparse_tensor import SparseTensorCOO
+
     indices = Tensor(np.array([[0, 0], [1, 2]]), TensorConfig((2, 2), "int32", None))
     values = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", None))
-    sp = SparseTensor(indices, values, (3, 3))
+    sp = SparseTensorCOO(indices, values, (3, 3))
     assert sp.dense_shape == (3, 3)
 
 

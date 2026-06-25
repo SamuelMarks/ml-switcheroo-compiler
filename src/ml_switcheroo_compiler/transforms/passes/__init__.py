@@ -11,7 +11,7 @@ __all__ = [
     "constant_folding_pass",
     "cse_pass",
     "dce_pass",
+    "inject_spmd_communication_pass",
     "lift_state_pass",
     "shape_inference_pass",
-    "inject_spmd_communication_pass",
 ]

@@ -250,3 +250,91 @@ def _mvlgamma(x: object, p: object) -> object:
     for i in range(1, p_val + 1):
         res += np.vectorize(math.lgamma)(x + 0.5 * (1 - i))
     return res
+
+
+@numpy_eager_registry.register("DynamicPartition")
+def _np_dynamic_partition(
+    backend_module: object, data: object, partitions: object, num_partitions: int, **kwargs: object
+) -> object:
+    res = []
+    for i in range(num_partitions):
+        mask = partitions == i
+        res.append(data[mask])
+    return res
+
+
+@numpy_eager_registry.register("DynamicStitch")
+def _np_dynamic_stitch(
+    backend_module: object, indices: list, data: list, **kwargs: object
+) -> object:
+    if not indices:
+        raise ValueError("indices must not be empty")
+
+    # find max index to determine output size
+    max_idx = -1
+    for idx in indices:
+        if backend_module.size(idx) > 0:
+            max_idx = max(max_idx, backend_module.max(idx))
+
+    out_shape = (max_idx + 1,) + backend_module.shape(data[0])[backend_module.ndim(indices[0]) :]
+    out = backend_module.zeros(out_shape, dtype=data[0].dtype)
+
+    for idx, dat in zip(indices, data):
+        out[idx] = dat
+    return out
+
+
+@numpy_eager_registry.register("TensorScatterSub")
+def _np_tensor_scatter_sub(
+    backend_module: object, tensor: object, indices: object, updates: object, **kwargs: object
+) -> object:
+    out = backend_module.copy(tensor)
+    if indices.ndim > 1 and indices.shape[-1] > 1:
+        # this is a simplification for multi-dimensional indices
+        # proper tf.tensor_scatter_nd_sub support requires advanced indexing conversion
+        flat_idx = tuple(indices[..., i] for i in range(indices.shape[-1]))
+        backend_module.subtract.at(out, flat_idx, updates)
+    else:
+        # Fallback to a simpler loop if it's tricky, or just use subtract.at
+        # Assuming last dim of indices is the index depth
+        idx_tuple = tuple(indices[..., i] for i in range(indices.shape[-1]))
+        backend_module.subtract.at(out, idx_tuple, updates)
+    return out
+
+
+@numpy_eager_registry.register("ExtractVolumePatches")
+def _np_extract_volume_patches(
+    backend_module: object,
+    input: object,
+    ksizes: list,
+    strides: list,
+    padding: str,
+    **kwargs: object,
+) -> object:
+    # 5D input: [batch, in_planes, in_rows, in_cols, depth]
+    # Very complex to implement efficiently in pure numpy without stride tricks or loops.
+    # We will provide a stub that raises NotImplementedError for the eager numpy mode if called directly,
+    # or a very naive slow loop implementation.
+    raise NotImplementedError(
+        "ExtractVolumePatches numpy eager implementation not fully optimized."
+    )
+
+
+@numpy_eager_registry.register("BooleanMask")
+def _np_boolean_mask(
+    backend_module: object, tensor: object, mask: object, axis: int = None, **kwargs: object
+) -> object:
+    if axis is None:
+        return tensor[mask]
+    else:
+        # Construct an index tuple for advanced indexing
+        idx = [slice(None)] * backend_module.ndim(tensor)
+        idx[axis] = mask
+        return tensor[tuple(idx)]
+
+
+@numpy_eager_registry.register("UnravelIndex")
+def _np_unravel_index(
+    backend_module: object, indices: object, dims: object, **kwargs: object
+) -> object:
+    return backend_module.unravel_index(indices, dims)
