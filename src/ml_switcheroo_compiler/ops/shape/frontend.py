@@ -182,9 +182,12 @@ def diff(
 ) -> Tensor:
     """Calculate the n-th discrete difference along the given axis."""
     if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "Diff", getattr(a, "data", a), n=n, axis=axis, prepend=prepend, append=append
-        )
+        kwargs = {"n": n, "axis": axis}
+        if prepend is not None:
+            kwargs["prepend"] = prepend
+        if append is not None:
+            kwargs["append"] = append
+        data = get_active_backend().execute_op("Diff", getattr(a, "data", a), **kwargs)
         return Tensor(
             data,
             TensorConfig(data.shape, getattr(a, "dtype", "float32"), getattr(a, "device", None)),

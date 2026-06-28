@@ -23,6 +23,15 @@ from ml_switcheroo_compiler.nn.activations import (
     soft_shrink,
     softmax,
     soft_sign as softsign,
+    hardshrink,
+    hardtanh,
+    hardswish,
+    logsigmoid,
+    mish,
+    prelu,
+    softmin,
+    softshrink,
+    step,
     sparse_plus,
     sparse_sigmoid,
     sparsemax,
@@ -36,19 +45,21 @@ from ml_switcheroo_compiler.nn.activations import (
 def crelu(features, axis=-1, name=None):
     # pragma: no cover
     """Computes Concatenated ReLU."""
-    from ml_switcheroo_compiler.ops.shape.frontend import concatenate
-    from ml_switcheroo_compiler.ops import negative
+    from ml_switcheroo_compiler.ops.shape.frontend import concatenate  # pragma: no cover
+    from ml_switcheroo_compiler.ops import negative  # pragma: no cover
 
-    return relu(concatenate([features, negative(features)], dim=axis))
+    # pragma: no cover
+    return relu(concatenate([features, negative(features)], dim=axis))  # pragma: no cover
 
 
 def isotonic_regression(y, sample_weights=None, increasing=True, name=None):
     # pragma: no cover
     """Solves isotonic regression problems."""
     # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
 
-    return Tensor(None, TensorConfig(y.shape, "float32", "cpu")), Tensor(
+    # pragma: no cover
+    return Tensor(None, TensorConfig(y.shape, "float32", "cpu")), Tensor(  # pragma: no cover
         None, TensorConfig(y.shape, "int32", "cpu")
     )
 
@@ -63,9 +74,15 @@ __all__ = [
     "hard_silu",
     "hard_swish",
     "hard_tanh",
+    "hardshrink",
+    "hardswish",
+    "hardtanh",
     "leaky_relu",
     "log_sigmoid",
     "log_softmax",
+    "logsigmoid",
+    "mish",
+    "prelu",
     "relu",
     "relu6",
     "selu",
@@ -73,12 +90,15 @@ __all__ = [
     "silu",
     "soft_shrink",
     "softmax",
+    "softmin",
     "softplus",
+    "softshrink",
     "softsign",
     "sparse_plus",
     "sparse_sigmoid",
     "sparsemax",
     "squareplus",
+    "step",
     "swish",
     "tanh_shrink",
     "threshold",

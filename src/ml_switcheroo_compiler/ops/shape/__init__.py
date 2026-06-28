@@ -146,6 +146,17 @@ from .manipulation import (
 
 # pylint: disable=duplicate-code
 
+
+from .indexing import DynamicSliceInDim as DynamicSliceInDim
+from .indexing import DynamicUpdateSliceInDim as DynamicUpdateSliceInDim
+from .indexing import DynamicIndexInDim as DynamicIndexInDim
+from .indexing import DynamicUpdateIndexInDim as DynamicUpdateIndexInDim
+from .indexing import SliceInDim as SliceInDim
+from .indexing import ScatterApply as ScatterApply
+from .indexing import ScatterMax as ScatterMax
+from .indexing import ScatterMin as ScatterMin
+from .indexing import ScatterMul as ScatterMul
+
 __all__ = [
     "ArgSort",
     "Assign",
@@ -157,8 +168,12 @@ __all__ = [
     "Concatenate",
     "Dsplit",
     "Dstack",
+    "DynamicIndexInDim",
     "DynamicSlice",
+    "DynamicSliceInDim",
+    "DynamicUpdateIndexInDim",
     "DynamicUpdateSlice",
+    "DynamicUpdateSliceInDim",
     "Expand",
     "Flatten",
     "Gather",
@@ -175,10 +190,15 @@ __all__ = [
     "RowStack",
     "Scatter",
     "ScatterAdd",
+    "ScatterApply",
+    "ScatterMax",
+    "ScatterMin",
+    "ScatterMul",
     "ScatterNd",
     "SearchSorted",
     "Select",
     "Slice",
+    "SliceInDim",
     "Sort",
     "Split",
     "Squeeze",

@@ -41,7 +41,7 @@ def test_build_axis_size_map():
         EinsumEquationParser.build_axis_size_map("...ij,...jk", shapes_ell2)
 
     # Shape \(3, 4\) cannot match subscript jkl in regular processing
-    with pytest.raises(ValueError, match="Shape \(3, 4\) cannot match subscript jkl"):
+    with pytest.raises(ValueError, match=r"Shape \(3, 4\) cannot match subscript jkl"):
         EinsumEquationParser.build_axis_size_map("ij,jkl", shapes)
 
 

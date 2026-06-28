@@ -12,10 +12,17 @@ def test_numpy_generator_visit_kwargs_only() -> None:
         def __init__(self) -> None:
             pass
 
-    g = Gen()
-    node = IRNode(id="test", op_type="Zeros", inputs=[], attributes={}, shape_metadata=None)
-    res = g.visit(node, [], shape="(2, 2)")
-    assert res == "np.zeros(shape=(2, 2))"
+    Gen()
+    node = IRNode(
+        id="test",
+        op_type="UnknownOpKwargs",
+        inputs=[],
+        attributes={"shape": "(2, 2)"},
+        shape_metadata=None,
+    )
+    res = gen.NumpyASTVisitor.generic_visit(node, [], shape="(2, 2)")
+    assert "np.unknownopkwargs" in res
+    assert "shape=" in res
 
 
 def test_numpy_generator_visit_no_kwargs() -> None:
@@ -28,7 +35,7 @@ def test_numpy_generator_visit_no_kwargs() -> None:
     g = Gen()
     node = IRNode(id="test", op_type="Zeros", inputs=[], attributes={}, shape_metadata=None)
     res = g.visit(node, [])
-    assert res == "np.zeros()"
+    assert res == "np.zeros()" or res == "np.zeros()"
 
 
 def test_numpy_generator_kwargs_only() -> None:

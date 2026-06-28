@@ -29,6 +29,8 @@ __all__ = [
     "RNNWeights",
     "ScanConfig",
     "activity_regularization",
+    "adaptive_avg_pool2d",
+    "adaptive_max_pool2d",
     "all_candidate_sampler",
     "attention",
     "average_pool",

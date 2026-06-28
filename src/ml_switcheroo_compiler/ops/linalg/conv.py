@@ -53,3 +53,61 @@ def conv_general_dilated(
     out_shape = op.infer_shape(lhs, rhs, cfg)
 
     return _emit_linalg_node("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype])
+
+
+@dispatch_eager("ConvGeneralDilatedLocal")
+def conv_general_dilated_local(
+    lhs: Tensor,
+    rhs: Tensor,
+    window_strides: object,
+    padding: object,
+    filter_shape: object,
+    **kwargs: object,
+) -> Tensor:
+    """ConvGeneralDilatedLocal."""
+    inputs = [lhs, rhs]
+    attributes = {
+        "window_strides": window_strides,
+        "padding": padding,
+        "filter_shape": filter_shape,
+        **kwargs,
+    }
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilatedLocal
+
+    out_shape = ConvGeneralDilatedLocal().infer_shape(lhs, rhs, **attributes)
+    return _emit_linalg_node(
+        "ConvGeneralDilatedLocal", inputs, attributes, [out_shape], [lhs.dtype]
+    )
+
+
+@dispatch_eager("ConvGeneralDilatedPatches")
+def conv_general_dilated_patches(
+    lhs: Tensor, filter_shape: object, window_strides: object, padding: object, **kwargs: object
+) -> Tensor:
+    """ConvGeneralDilatedPatches."""
+    inputs = [lhs]
+    attributes = {
+        "filter_shape": filter_shape,
+        "window_strides": window_strides,
+        "padding": padding,
+        **kwargs,
+    }
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilatedPatches
+
+    out_shape = ConvGeneralDilatedPatches().infer_shape(lhs, **attributes)
+    return _emit_linalg_node(
+        "ConvGeneralDilatedPatches", inputs, attributes, [out_shape], [lhs.dtype]
+    )
+
+
+@dispatch_eager("ConvWithGeneralPadding")
+def conv_with_general_padding(
+    lhs: Tensor, rhs: Tensor, window_strides: object, padding: object, **kwargs: object
+) -> Tensor:
+    """ConvWithGeneralPadding."""
+    inputs = [lhs, rhs]
+    attributes = {"window_strides": window_strides, "padding": padding, **kwargs}
+    from ml_switcheroo_compiler.ops.linalg.basic import ConvWithGeneralPadding
+
+    out_shape = ConvWithGeneralPadding().infer_shape(lhs, rhs, **attributes)
+    return _emit_linalg_node("ConvWithGeneralPadding", inputs, attributes, [out_shape], [lhs.dtype])

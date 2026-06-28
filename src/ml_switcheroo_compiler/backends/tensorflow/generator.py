@@ -46,6 +46,18 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
             return "tf.transpose({0}, perm={axes})"  # pragma: no cover
         return "tf.transpose({0})"
 
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate ConvTranspose."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        strides = node.attributes.get("strides", 1)
+        padding = node.attributes.get("padding", "VALID")
+        return f"tf_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
+
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate RaggedDot."""
+        return f"tf_ragged_dot({input_vars[0]}, {input_vars[1]})"
+
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes.
 
@@ -88,6 +100,7 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
             "Adjoint": "tf.linalg.adjoint",
             "BandPart": "tf.linalg.band_part",
             "CholeskySolve": "tf.linalg.cholesky_solve",
+            "TriInv": "tf.linalg.inv({0})",
             "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
             "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
             "MatrixRank": "tf.linalg.matrix_rank",
@@ -198,6 +211,21 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         ops.update(self._get_nn_ops(kwargs))
         ops.update(self._get_creation_ops(kwargs))
         ops.update(self._get_array_ops(kwargs))
+
+        ops["Beta"] = (
+            "tf.random.gamma({shape}, alpha={1}) / (tf.random.gamma({shape}, alpha={1}) + tf.random.gamma({shape}, alpha={2}))"
+        )
+        ops["Dirichlet"] = (
+            "tf.random.gamma({shape}, alpha={1}) / tf.reduce_sum(tf.random.gamma({shape}, alpha={1}), axis=-1, keepdims=True)"
+        )
+        ops["Gamma"] = "tf.random.gamma({shape}, alpha={1})"
+        ops["RngBitGenerator"] = "tf.random.uniform({shape}, minval=0, maxval=255, dtype=tf.int32)"
+        ops["RngUniform"] = "tf.random.uniform({shape}, minval={0}, maxval={1})"
+
+        ops["Infeed"] = "{0}"
+        ops["Outfeed"] = "{0}"
+        ops["AxisIndex"] = "0"
+        ops["WithShardingConstraint"] = "{0}"
         return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:

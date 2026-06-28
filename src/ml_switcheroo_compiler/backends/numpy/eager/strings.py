@@ -57,3 +57,10 @@ def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: obj
                 )  # pragma: no cover
             return np.array([[1, 2], [1, 0], [0, 0]], dtype=np.int32)  # pragma: no cover
     return inputs
+
+
+@numpy_eager_registry.register("AsString")
+def _np_as_string(backend_module: object, x: object, **kwargs: object) -> object:
+    import numpy as np
+
+    return np.array([str(x)]) if np.isscalar(x) else x.astype(str)

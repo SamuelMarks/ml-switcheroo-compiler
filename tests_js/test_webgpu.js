@@ -3,12 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
-const jsCode = fs.readFileSync(path.join(__dirname, '../docs/_static/webgpu_runner.js'), 'utf8');
-
-const fn = new Function('module', 'exports', jsCode);
-const m = { exports: {} };
-fn(m, m.exports);
-const webgpuModule = m.exports;
+const webgpuModule = require('../docs/_static/webgpu_runner.js');
 
 test('initWebGPU throws if not supported', async () => {
     const nav = {}; // no gpu

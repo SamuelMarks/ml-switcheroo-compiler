@@ -79,6 +79,18 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate ConvTranspose."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        strides = node.attributes.get("strides", 1)
+        padding = node.attributes.get("padding", "VALID")
+        return f"keras_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
+
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate RaggedDot."""
+        return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
+
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes."""
         args_str = ", ".join(input_vars)  # pragma: no cover
@@ -99,11 +111,21 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
             Dictionary mapping operation type to format string.
         """
         return {
+            "Infeed": "{0}",
+            "Outfeed": "{0}",
+            "AxisIndex": "0",
+            "WithShardingConstraint": "{0}",
+            "Beta": "keras.random.beta({shape}, {1}, {2})",
+            "Dirichlet": "keras.random.dirichlet({shape}, {1})",
+            "Gamma": "keras.random.gamma({shape}, {1})",
+            "RngBitGenerator": "keras.random.randint({shape}, 0, 255)",
+            "RngUniform": "keras.random.uniform({shape}, minval={0}, maxval={1})",
             "Matmul": "keras.ops.matmul({0}, {1})",
             "Trace": "tf.linalg.trace",
             "Adjoint": "tf.linalg.adjoint",
             "BandPart": "tf.linalg.band_part",
             "CholeskySolve": "tf.linalg.cholesky_solve",
+            "TriInv": "tf.linalg.inv({0})",
             "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
             "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
             "MatrixRank": "tf.linalg.matrix_rank",

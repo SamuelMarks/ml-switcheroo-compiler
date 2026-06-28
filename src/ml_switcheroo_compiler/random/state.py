@@ -124,14 +124,29 @@ def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, func_name
-        ):  # pragma: no branch
-            return getattr(backend.module.random, func_name)(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            f"{func_name} is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")
+        op_name = "".join(word.capitalize() for word in func_name.split("_"))
+        try:
+            return backend.execute_op(op_name, *args, **kwargs)
+        except Exception as e:
+            raise NotImplementedError(
+                f"{func_name} is not supported in eager mode without backend support: {e}"
+            ) from e
+
+    # In tracing mode, we need to map to OpDefs just like core tensor ops do through get_op
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    op_name = "".join(word.capitalize() for word in func_name.split("_"))
+    op_cls = get_op(op_name)
+    if op_cls:
+        # It's an OpDef class
+        from ml_switcheroo_compiler.tracing import _tracer
+
+        if not _tracer.is_tracing:
+            raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")
+        return op_cls()(*args, **kwargs)  # pragma: no cover
+    raise NotImplementedError(
+        f"{func_name} is not fully supported in tracing mode."
+    )  # pragma: no cover
 
 
 def key(*args: object, **kwargs: object) -> object:
@@ -141,44 +156,17 @@ def key(*args: object, **kwargs: object) -> object:
 
 def key_data(*args: object, **kwargs: object) -> object:
     """Execute key_data."""
-    if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, "key_data"
-        ):  # pragma: no branch
-            return backend.module.random.key_data(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            "key_data is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("key_data is not fully supported in tracing mode.")
+    return _dispatch_random("key_data", *args, **kwargs)
 
 
 def key_impl(*args: object, **kwargs: object) -> object:
     """Execute key_impl."""
-    if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, "key_impl"
-        ):  # pragma: no branch
-            return backend.module.random.key_impl(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            "key_impl is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("key_impl is not fully supported in tracing mode.")
+    return _dispatch_random("key_impl", *args, **kwargs)
 
 
 def wrap_key_data(*args: object, **kwargs: object) -> object:
     """Execute wrap_key_data."""
-    if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, "wrap_key_data"
-        ):  # pragma: no branch
-            return backend.module.random.wrap_key_data(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            "wrap_key_data is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("wrap_key_data is not fully supported in tracing mode.")
+    return _dispatch_random("wrap_key_data", *args, **kwargs)
 
 
 def clone(*args: object, **kwargs: object) -> object:
@@ -189,3 +177,32 @@ def clone(*args: object, **kwargs: object) -> object:
 def bits(*args: object, **kwargs: object) -> object:
     """Execute bits."""
     return _dispatch_random("bits", *args, **kwargs)
+
+
+def rng_bit_generator(key: object, shape: object, dtype: object = None) -> object:
+    """Generates random bits.
+
+    Args:
+        key (object): PRNGKey.
+        shape (object): Shape.
+        dtype (object): Data type.
+
+    Returns:
+        object: Random bits.
+    """
+    return _dispatch_random("rng_bit_generator", key, shape=shape, dtype=dtype)
+
+
+def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> object:
+    """Generates uniform random values.
+
+    Args:
+        a (object): Lower bound.
+        b (object): Upper bound.
+        shape (object): Shape.
+        dtype (object): Data type.
+
+    Returns:
+        object: Random values.
+    """
+    return _dispatch_random("rng_uniform", a, b, shape=shape, dtype=dtype)

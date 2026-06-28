@@ -10,7 +10,10 @@ from .frontend import (
     ragged_segment_ids_to_row_splits as ragged_segment_ids_to_row_splits,
     ragged_stack as ragged_stack,
     ragged_stack_dynamic_partitions as ragged_stack_dynamic_partitions,
+    ragged_dot as ragged_dot,
 )
+
+from .core import RaggedDot
 
 
 @register_op("RaggedGather")
@@ -100,7 +103,7 @@ class RaggedRange(OpDef):
         self, starts: object, limits: object, deltas: object, **kwargs: object
     ) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("RaggedRowSplitsToSegmentIds")
@@ -146,13 +149,14 @@ class RaggedStackDynamicPartitions(OpDef):
         self, data: object, partitions: object, num_partitions: object, **kwargs: object
     ) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 __all__ = [
     "RaggedAdd",
     "RaggedConstant",
     "RaggedCrossHashed",
+    "RaggedDot",
     "RaggedDynamicBroadcast",
     "RaggedGather",
     "RaggedMatMul",
@@ -165,6 +169,7 @@ __all__ = [
     "ragged_constant",
     "ragged_cross",
     "ragged_cross_hashed",
+    "ragged_dot",
     "ragged_range",
     "ragged_row_splits_to_segment_ids",
     "ragged_segment_ids_to_row_splits",

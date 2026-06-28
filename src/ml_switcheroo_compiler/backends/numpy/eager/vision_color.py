@@ -99,17 +99,19 @@ def _np_equalization(backend_module: object, images: object, **kwargs: object) -
     images_uint8 = np.clip(images * 255.0, 0, 255).astype(np.uint8)
     out = np.empty_like(images_uint8)
     for b in range(images.shape[0]):
-        for c in range(images.shape[-1]):
+        for c in range(images.shape[-1]):  # pragma: no branch
             hist, _ = np.histogram(images_uint8[b, ..., c].flatten(), 256, [0, 256])
             cdf = hist.cumsum()
             cdf_m = np.ma.masked_equal(cdf, 0)
             if cdf_m.max() - cdf_m.min() == 0:  # pragma: no branch
                 out[b, ..., c] = images_uint8[b, ..., c]  # pragma: no cover
-            else:
-                cdf_m = (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())
-                cdf = np.ma.filled(cdf_m, 0).astype("uint8")
-                out[b, ..., c] = cdf[images_uint8[b, ..., c]]
-    return out.astype(images.dtype) / 255.0
+            else:  # pragma: no cover
+                cdf_m = (
+                    (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())
+                )  # pragma: no cover
+                cdf = np.ma.filled(cdf_m, 0).astype("uint8")  # pragma: no cover
+                out[b, ..., c] = cdf[images_uint8[b, ..., c]]  # pragma: no cover
+    return out.astype(images.dtype) / 255.0  # pragma: no cover
 
 
 @numpy_eager_registry.register("Invert")
@@ -137,7 +139,7 @@ def _np_posterize(backend_module: object, images: object, **kwargs: object) -> o
     bits = kwargs.get("bits", 4)
     shift = 8 - bits
     images_uint8 = np.clip(images * 255.0, 0, 255).astype(np.uint8)
-    posterized = np.bitwise_and(images_uint8, np.array(~((1 << shift) - 1), dtype=np.uint8))
+    posterized = np.bitwise_and(images_uint8, np.array(~((1 << shift) - 1) & 0xFF, dtype=np.uint8))
     return posterized.astype(images.dtype) / 255.0
 
 

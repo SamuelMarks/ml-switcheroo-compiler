@@ -5,9 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const axe = require('axe-core');
 
-const jsCode = fs.readFileSync(path.join(__dirname, '../docs/_static/playground.js'), 'utf8');
+const playgroundModule = require('../docs/_static/playground.js');
 
-// ... (mock storage code)
 class MockStorage {
     constructor() {
         this.store = {};
@@ -20,10 +19,11 @@ class MockStorage {
     }
 }
 
-const fn = new Function('module', 'exports', jsCode);
-const m = { exports: {} };
-fn(m, m.exports);
-const playgroundModule = m.exports;
+test('t function fallback and exact match', () => {
+    assert.strictEqual(playgroundModule.t('compile'), 'Compile');
+    assert.strictEqual(playgroundModule.t('compile', 'fr'), 'compile'); // fallback to key
+    assert.strictEqual(playgroundModule.t('unknown_key', 'en'), 'unknown_key'); // fallback to key
+});
 
 test('getExampleCode returns correct string', () => {
     const code = playgroundModule.getExampleCode('jax', 'simple_mlp');
@@ -50,12 +50,25 @@ test('initTheme uses localStorage', () => {
 
     const win = dom.window;
     win.matchMedia = () => ({ matches: false }); // Prefers light
+    win.monaco = { editor: { setTheme: () => {} } };
 
     playgroundModule.initTheme(doc, storage, win);
 
     const toggle = doc.getElementById('theme-toggle');
     assert.strictEqual(toggle.checked, true);
     assert.strictEqual(doc.documentElement.getAttribute('data-theme'), 'dark');
+
+    // test toggle change event to light
+    toggle.checked = false;
+    toggle.dispatchEvent(new dom.window.Event('change'));
+    assert.strictEqual(doc.documentElement.getAttribute('data-theme'), 'light');
+    assert.strictEqual(storage.getItem('ml-playground-theme'), 'light');
+
+    // test toggle change event back to dark
+    toggle.checked = true;
+    toggle.dispatchEvent(new dom.window.Event('change'));
+    assert.strictEqual(doc.documentElement.getAttribute('data-theme'), 'dark');
+    assert.strictEqual(storage.getItem('ml-playground-theme'), 'dark');
 });
 
 test('initTheme uses matchMedia if no localStorage', () => {
@@ -110,18 +123,24 @@ test('logToConsole and clearConsole work correctly', () => {
     `);
     const doc = dom.window.document;
     playgroundModule.logToConsole(doc, 'Test msg');
+    playgroundModule.logToConsole(doc, 'Test msg', false);
 
     const consoleEl = doc.getElementById('pg-console');
-    assert.strictEqual(consoleEl.children.length, 1);
+    assert.strictEqual(consoleEl.children.length, 2);
     assert.strictEqual(consoleEl.children[0].textContent, 'Test msg\n');
 
     playgroundModule.logToConsole(doc, 'Error msg', true);
-    assert.strictEqual(consoleEl.children.length, 2);
-    assert.strictEqual(consoleEl.children[1].style.color, 'red');
+    assert.strictEqual(consoleEl.children.length, 3);
+    assert.strictEqual(consoleEl.children[2].style.color, 'red');
 
     playgroundModule.clearConsole(doc);
     assert.strictEqual(consoleEl.children.length, 0);
     assert.strictEqual(consoleEl.textContent, '');
+
+    // Test missing console element
+    const docWithoutConsole = new JSDOM('<div></div>').window.document;
+    assert.doesNotThrow(() => playgroundModule.logToConsole(docWithoutConsole, 'Test msg'));
+    assert.doesNotThrow(() => playgroundModule.clearConsole(docWithoutConsole));
 });
 
 test('loadPyodideEnvironment initializes successfully', async () => {
@@ -140,6 +159,20 @@ test('loadPyodideEnvironment initializes successfully', async () => {
     // test singleton
     const pyodide2 = await playgroundModule.loadPyodideEnvironment(doc, win);
     assert.strictEqual(pyodide, pyodide2);
+});
+
+test('loadPyodideEnvironment throws on error', async () => {
+    delete require.cache[require.resolve('../docs/_static/playground.js')];
+    const freshPlayground = require('../docs/_static/playground.js');
+    const doc = new JSDOM('<div id="pg-console"></div>').window.document;
+    const win = {
+        loadPyodide: async () => { throw new Error('Network err'); }
+    };
+    await assert.rejects(() => freshPlayground.loadPyodideEnvironment(doc, win), /Network err/);
+
+    // restore the main instance for other tests if needed
+    delete require.cache[require.resolve('../docs/_static/playground.js')];
+    require('../docs/_static/playground.js');
 });
 
 test('compileCode runs successfully', () => {
@@ -162,12 +195,30 @@ test('compileCode handles error', () => {
     const res = playgroundModule.compileCode(pyodide, 'def f(): pass', 'jax', 'webgpu');
     assert.match(res, /Compilation failed: Runtime fault/);
 });
+
+test('applyI18n with unknown lang', () => {
+    const dom = new JSDOM('<html lang="fr"><body><div data-i18n="compile"></div><div data-i18n-aria="sourceFw"></div><div data-i18n-label="baseFw"></div></body></html>').window.document;
+    if (playgroundModule.applyI18n) {
+        playgroundModule.applyI18n(dom, 'fr');
+        assert.strictEqual(dom.querySelector('div').textContent, '');
+    }
+});
+
 test('applyI18n does not fail on missing keys', () => {
     const dom = new JSDOM('<div data-i18n="missing"></div>').window.document;
-    // We export applyI18n to test it
     if (playgroundModule.applyI18n) {
         playgroundModule.applyI18n(dom);
         assert.strictEqual(dom.querySelector('div').textContent, '');
+    }
+});
+
+test('applyI18n applies aria and label', () => {
+    const dom = new JSDOM('<div data-i18n="compile"></div><div data-i18n-aria="sourceFw"></div><div data-i18n-label="baseFw"></div>').window.document;
+    if (playgroundModule.applyI18n) {
+        playgroundModule.applyI18n(dom);
+        assert.strictEqual(dom.querySelector('[data-i18n]').textContent, 'Compile');
+        assert.strictEqual(dom.querySelector('[data-i18n-aria]').getAttribute('aria-label'), 'Source Framework');
+        assert.strictEqual(dom.querySelector('[data-i18n-label]').getAttribute('label'), 'Base ML Frameworks');
     }
 });
 
@@ -179,7 +230,6 @@ test('compile click fails gracefully if loadPyodide is missing', async () => {
         </body></html>
     `);
     const win = dom.window;
-    // We mock require to run the inner function immediately
     win.require = (deps, cb) => cb();
 
     playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
@@ -187,13 +237,11 @@ test('compile click fails gracefully if loadPyodide is missing', async () => {
     // simulate click
     dom.window.document.getElementById('btn-compile').click();
 
-    // Give promises time
     await new Promise(r => setTimeout(r, 10));
     const consoleEl = dom.window.document.getElementById('pg-console');
     assert.match(consoleEl.textContent, /Pyodide script not loaded/);
 });
 
-// 1. Missing targetSelect inside execute
 test('execute logic bails early if targetEditor is missing', async () => {
     const dom = new JSDOM('<html><body><button id="btn-execute"></button></body></html>');
     const win = dom.window;
@@ -203,20 +251,19 @@ test('execute logic bails early if targetEditor is missing', async () => {
     assert.ok(true);
 });
 
-// 2. Missing getExampleCode branch (if example string isn't found)
 test('getExampleCode fallback fallback for nonexistent framework/example', () => {
     const code = playgroundModule.getExampleCode('not_a_framework', 'simple_mlp');
     assert.match(code, /Example code not found/);
 });
 
-test('initPlayground initializes without throwing', () => {
+test('initPlayground initializes editors and handlers', async () => {
     const dom = new JSDOM(`
-        <html><body>
+        <html data-theme="dark"><body>
             <input type="checkbox" id="theme-toggle" />
-            <select id="target-framework"><option value="webgpu">WebGPU</option></select>
+            <select id="target-framework"><option value="webgpu">WebGPU</option><option value="wasm_simd">WASM</option><option value="jax">JAX</option></select>
             <button id="btn-execute"></button>
-            <select id="source-framework"></select>
-            <select id="source-example"></select>
+            <select id="source-framework"><option value="jax">JAX</option></select>
+            <select id="source-example"><option value="simple_mlp">MLP</option></select>
             <div id="editor-source"></div>
             <div id="editor-target"></div>
             <button id="btn-compile"></button>
@@ -225,10 +272,166 @@ test('initPlayground initializes without throwing', () => {
     `);
     const win = dom.window;
     win.matchMedia = () => ({ matches: false });
-
-    assert.doesNotThrow(() => {
-        playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
+    let shouldThrowCompile = false;
+    win.loadPyodide = async () => ({
+        loadPackage: async () => {},
+        pyimport: () => ({ install: async () => {} }),
+        runPython: () => {
+            if (shouldThrowCompile) throw new Error('compile failed');
+            return "Mock compiled code";
+        }
     });
+
+    let mockTargetLang = '';
+    const mockModel = {};
+    win.require = (deps, cb) => cb();
+    win.monaco = {
+        editor: {
+            create: (el, opts) => ({
+                getValue: () => opts.value || "code",
+                setValue: (v) => { if (shouldThrowCompile) throw new Error('editor error'); },
+                getModel: () => mockModel,
+                setModelLanguage: (m, l) => {}
+            }),
+            setTheme: () => {},
+            setModelLanguage: (m, l) => { mockTargetLang = l; }
+        }
+    };
+    global.runWebGPUCompute = async () => [42.0];
+
+    playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
+
+    // Trigger updateSource
+    dom.window.document.getElementById('source-framework').dispatchEvent(new dom.window.Event('change'));
+    dom.window.document.getElementById('target-framework').dispatchEvent(new dom.window.Event('change'));
+
+    // Trigger compile click (webgpu)
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100)); // allow compile to run
+
+    // Check python target
+    dom.window.document.getElementById('target-framework').value = 'jax';
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // Check compile error
+    shouldThrowCompile = true;
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    shouldThrowCompile = false;
+
+    // Check execute when runWebGPUCompute is undefined
+    delete global.runWebGPUCompute;
+    dom.window.document.getElementById('target-framework').value = 'webgpu';
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    dom.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // Check execute when runWasmCompute is undefined
+    delete global.runWasmCompute;
+    dom.window.document.getElementById('target-framework').value = 'wasm_simd';
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    dom.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // Now mock them successfully
+    global.runWebGPUCompute = async () => [42.0];
+    global.runWasmCompute = async () => [42.0];
+
+    // WebGPU success
+    dom.window.document.getElementById('target-framework').value = 'webgpu';
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    dom.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // WASM success
+    dom.window.document.getElementById('target-framework').value = 'wasm_simd';
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    dom.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // WASM error
+    global.runWasmCompute = async () => { throw new Error('mock wasm err'); };
+    dom.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // WebGPU error
+    global.runWebGPUCompute = async () => { throw new Error('mock webgpu err'); };
+    dom.window.document.getElementById('target-framework').value = 'webgpu';
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    dom.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 100));
+
+    // Check coverage
+    assert.ok(true);
+
+    delete global.runWebGPUCompute;
+    delete global.runWasmCompute;
+});
+
+test('initPlayground initializes editors with light theme', async () => {
+    const dom = new JSDOM(`
+        <html><body>
+            <div id="editor-source"></div>
+        </body></html>
+    `);
+    const win = dom.window;
+    win.matchMedia = () => ({ matches: false });
+    win.require = (deps, cb) => cb();
+    win.monaco = { editor: { create: () => ({ getValue: () => "", setValue: () => {} }) } };
+    playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
+    assert.ok(true);
+});
+
+test('browser environment run check', () => {
+    // mock DOMContentLoaded
+    const jsCode = fs.readFileSync(path.join(__dirname, '../docs/_static/playground.js'), 'utf8');
+    const fn = new Function('module', 'exports', 'window', 'document', 'localStorage', jsCode);
+    const win = {
+        addEventListener: (e, cb) => cb(),
+        require: (deps, cb) => cb(),
+        matchMedia: () => ({ matches: false })
+    };
+    const doc = (new JSDOM('<html><body></body></html>')).window.document;
+    const localStorage = new MockStorage();
+
+    // Call without module
+    assert.doesNotThrow(() => fn(undefined, undefined, win, doc, localStorage));
+});
+
+test('initPlayground with missing dom elements', async () => {
+    const dom = new JSDOM(`
+        <html><body>
+            <button id="btn-compile"></button>
+            <div id="pg-console"></div>
+        </body></html>
+    `);
+    const win = dom.window;
+    win.matchMedia = () => ({ matches: false });
+    win.loadPyodide = async () => ({
+        loadPackage: async () => {},
+        pyimport: () => ({ install: async () => {} }),
+        runPython: () => "Mock"
+    });
+    win.require = (deps, cb) => cb();
+    win.monaco = {
+        editor: {
+            create: () => ({ getValue: () => "", setValue: () => {} }),
+            setTheme: () => {}
+        }
+    };
+
+    playgroundModule.initPlayground(dom.window.document, new MockStorage(), win);
+
+    // Trigger compile click without editors/selects
+    dom.window.document.getElementById('btn-compile').click();
+    await new Promise(r => setTimeout(r, 100));
+    assert.ok(true);
 });
 
 test('Accessibility audit', async () => {

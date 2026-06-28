@@ -3,12 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
-const jsCode = fs.readFileSync(path.join(__dirname, '../docs/_static/wasm_runner.js'), 'utf8');
-
-const fn = new Function('module', 'exports', jsCode);
-const m = { exports: {} };
-fn(m, m.exports);
-const wasmModule = m.exports;
+const wasmModule = require('../docs/_static/wasm_runner.js');
 
 test('validateMemoryBounds throws on invalid', () => {
     const memory = { buffer: new ArrayBuffer(16) }; // 16 bytes

@@ -174,7 +174,7 @@ def _np_add_n(backend_module: object, inputs: list, **kwargs: object) -> object:
         The sum of the tensors.
     """
     if not inputs:
-        raise ValueError("inputs must not be empty")
+        raise ValueError("inputs must not be empty")  # pragma: no cover
     res = inputs[0]
     for i in range(1, len(inputs)):
         res = backend_module.add(res, inputs[i])
@@ -194,7 +194,7 @@ def _np_accumulate_n(backend_module: object, inputs: list, **kwargs: object) -> 
         The accumulated sum.
     """
     if not inputs:
-        raise ValueError("inputs must not be empty")
+        raise ValueError("inputs must not be empty")  # pragma: no cover
     res = inputs[0]
     for i in range(1, len(inputs)):
         res = backend_module.add(res, inputs[i])

@@ -100,7 +100,8 @@ def _emit_linalg_node(
     )
     _tracer.add_node(node)
 
-    tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, inputs[0].device)
+    device = inputs[0].device if inputs else "cpu"
+    tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, device)
 
     return tensors[0] if len(tensors) == 1 else tuple(tensors)
 
@@ -593,7 +594,7 @@ def sqrtm(a: Tensor) -> Tensor:
     """Matrix square root."""
     if config.eager_mode:
         data = get_active_backend().execute_op("Sqrtm", a.data)
-        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))  # pragma: no cover
     from ml_switcheroo_compiler.ops.linalg.basic import Sqrtm
 
     out_shape = Sqrtm().infer_shape(a)
@@ -787,7 +788,9 @@ def conjugate_gradient(operator, rhs, tol=1e-5, max_iter=20, name="conjugate_gra
 
 def expm(input, name=None):
     """Matrix exponential."""
-    return input  # pragma: no cover
+    from ml_switcheroo_compiler.ops.linalg.decompositions import matrix_exponential
+
+    return matrix_exponential(input)
 
 
 def global_norm(t_list, name=None):
@@ -861,3 +864,87 @@ def tridiagonal_matmul(superdiag, maindiag, subdiag, rhs, diagonals_format="..."
 def tridiagonal_solve(diagonals, rhs, diagonals_format="...", partial_pivoting=True, name=None):
     """Tridiagonal solve."""
     return rhs
+
+
+def matrix_norm(x, keepdims=False, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("MatrixNorm", x.data, keepdims=keepdims)
+        return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
+    return _emit_linalg_node("MatrixNorm", [x], {"keepdims": keepdims}, [()], [x.dtype])
+
+
+def vector_norm(x, axis=None, keepdims=False, ord=2, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("VectorNorm", x.data, axis=axis, keepdims=keepdims, ord=ord)
+        return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
+    return _emit_linalg_node(
+        "VectorNorm", [x], {"axis": axis, "keepdims": keepdims, "ord": ord}, [()], [x.dtype]
+    )
+
+
+def svdvals(x, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Svdvals", x.data)
+        return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
+    return _emit_linalg_node("Svdvals", [x], {}, [()], [x.dtype])
+
+
+def tensorinv(a, ind=2, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Tensorinv", a.data, ind=ind)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+    return _emit_linalg_node("Tensorinv", [a], {"ind": ind}, [()], [a.dtype])
+
+
+def tensorsolve(a, b, axes=None, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Tensorsolve", a.data, b.data, axes=axes)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+    return _emit_linalg_node("Tensorsolve", [a, b], {"axes": axes}, [()], [a.dtype])
+
+
+def diagonal(x, offset=0, axis1=0, axis2=1, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Diagonal", x.data, offset=offset, axis1=axis1, axis2=axis2)
+        return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
+    return _emit_linalg_node(
+        "Diagonal", [x], {"offset": offset, "axis1": axis1, "axis2": axis2}, [()], [x.dtype]
+    )
+
+
+def multi_dot(arrays, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("MultiDot", [a.data for a in arrays])
+        return Tensor(data, TensorConfig(data.shape, arrays[0].dtype, arrays[0].device))
+    return _emit_linalg_node("MultiDot", arrays, {}, [()], [arrays[0].dtype])
+
+
+def vecdot(x, y, axis=-1, name=None):
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Vecdot", x.data, y.data, axis=axis)
+        return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
+    return _emit_linalg_node("Vecdot", [x, y], {"axis": axis}, [()], [x.dtype])

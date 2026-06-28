@@ -177,3 +177,23 @@ def _np_fftshift(backend_module: object, *args: object, **kwargs: object) -> obj
 @numpy_eager_registry.register("Ifftshift")
 def _np_ifftshift(backend_module: object, *args: object, **kwargs: object) -> object:
     return backend_module.fft.ifftshift(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Fftfreq")
+def _np_fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.fftfreq(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Hfft")
+def _np_hfft(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.hfft(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Ihfft")
+def _np_ihfft(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.ihfft(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Rfftfreq")
+def _np_rfftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
+    return backend_module.fft.rfftfreq(*args, **kwargs)

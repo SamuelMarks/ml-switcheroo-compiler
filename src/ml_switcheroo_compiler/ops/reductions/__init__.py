@@ -28,6 +28,8 @@ from .frontend import unsorted_segment_max as unsorted_segment_max
 from .frontend import unsorted_segment_mean as unsorted_segment_mean
 from .frontend import unsorted_segment_min as unsorted_segment_min
 from .frontend import unsorted_segment_prod as unsorted_segment_prod
+from .frontend import adaptive_avg_pool2d as adaptive_avg_pool2d
+from .frontend import adaptive_max_pool2d as adaptive_max_pool2d
 from .frontend import unsorted_segment_sqrt_n as unsorted_segment_sqrt_n
 from .frontend import unsorted_segment_sum as unsorted_segment_sum
 from .frontend import approx_max_k as approx_max_k

@@ -80,7 +80,9 @@ class ActivityRegularization(OpDef):
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer shape."""
-        return x.shape
+        if isinstance(x, (tuple, list)):
+            return x
+        return getattr(x, "shape", ())
 
 
 @dispatch_eager("ActivityRegularization")

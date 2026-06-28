@@ -14,8 +14,13 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 def test_coverage_brute() -> None:
     """Execute generator methods for edge cases."""
 
-    class FakeGenerator(BaseGenerator):
+    from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+
+    class FakeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         """Docstring."""
+
+        def _get_backend_prefix(self) -> str:
+            return "fake"
 
     register_backend("fake")(FakeGenerator)
     assert BackendRegistry.get("fake") == FakeGenerator
@@ -73,6 +78,42 @@ def test_coverage_brute() -> None:
     assert "zeros" in gen_jax.visit(n_zeros_fake, [], shape="(2,)", fake=1).lower()
     assert "zeros" in gen_mlx.visit(n_zeros_fake, [], shape="(2,)", fake=1).lower()
 
+    n_scan = IRNode(
+        id="n_scan",
+        op_type="Scan",
+        inputs=["x", "y"],
+        attributes={},
+        shape_metadata=None,
+    )
+    gen_fake = FakeGenerator(g)
+    assert "fake_scan" in gen_fake.visit(n_scan, ["x", "y"])
+
+    n_switch = IRNode(
+        id="n_switch",
+        op_type="Switch",
+        inputs=["cond", "a", "b"],
+        attributes={},
+        shape_metadata=None,
+    )
+    assert "fake_switch" in gen_fake.visit(n_switch, ["cond", "a", "b"])
+
+    # cover line 88 in generator_mixins
+    from ml_switcheroo_compiler.backends.common.generator_mixins import GroupNormConfig
+
+    code_lines = gen_fake._get_group_norm_code(
+        GroupNormConfig(
+            "fake",
+            "fake.numpy",
+            "fake.reshape",
+            "fake.mean",
+            "fake.var",
+            "fake.sqrt",
+            "axis",
+            "keepdims",
+        )
+    )
+    assert len(code_lines) > 0
+
 
 def test_cupy_dask_kwargs_only_coverage() -> None:
     """Test cupy and dask missing branches."""
@@ -102,3 +143,28 @@ def test_cupy_dask_kwargs_only_coverage() -> None:
         assert "kwop" in gen_dask.visit(n, [], shape="(2,)").lower()
     except NameError:
         pass
+
+
+def test_add_n_accumulate_n_generation() -> None:
+    """Test AddN and AccumulateN AST generation."""
+    from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+    from ml_switcheroo_compiler.ir.core import IRNode
+
+    class MockGenerator(SharedASTGeneratorMixin):
+        def _get_backend_prefix(self) -> str:
+            return "mock"
+
+    gen = MockGenerator()
+
+    # Test AddN
+    node1 = IRNode(
+        id="n1", op_type="AddN", inputs=["a", "b", "c"], attributes={}, shape_metadata=None
+    )
+    assert gen.visit_AddN(node1, ["a", "b", "c"]) == "a + b + c"
+    assert gen.visit_AddN(node1, []) == "0.0"
+
+    # Test AccumulateN
+    node2 = IRNode(
+        id="n2", op_type="AccumulateN", inputs=["x", "y"], attributes={}, shape_metadata=None
+    )
+    assert gen.visit_AccumulateN(node2, ["x", "y"]) == "x + y"

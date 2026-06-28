@@ -1,7 +1,9 @@
 """Linear algebra operations package."""
 
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.basic import (
     ConvGeneralDilated,
+    ConvTranspose,
     Fft,
     Matmul,
     Rfft,
@@ -29,12 +31,38 @@ from .decompositions import power_iteration as power_iteration
 from .decompositions import qr as qr
 from .decompositions import slogdet as slogdet
 from .decompositions import solve as solve
+from .decompositions import tri_inv as tri_inv
 from .decompositions import solve_triangular as solve_triangular
 from .decompositions import svd as svd
 from .fft import fft as fft
 from .fft import fft2d as fft2d
 from .fft import fft2 as fft2
 from .fft import irfft as irfft
+from .decompositions import hessenberg as hessenberg
+from .decompositions import householder_product as householder_product
+from .decompositions import schur as schur
+from .decompositions import tridiagonal as tridiagonal
+from .decompositions import lu_pivots_to_permutation as lu_pivots_to_permutation
+
+from .fft import fftfreq as fftfreq
+from .fft import hfft as hfft
+from .fft import ihfft as ihfft
+from .fft import rfftfreq as rfftfreq
+from .fft import irfft2 as irfft2
+from .fft import rfft2 as rfft2
+from .fft import fftn as fftn
+from .fft import ifftn as ifftn
+from .fft import irfftn as irfftn
+from .fft import rfftn as rfftn
+
+from .frontend import matrix_norm as matrix_norm
+from .frontend import vector_norm as vector_norm
+from .frontend import svdvals as svdvals
+from .frontend import tensorinv as tensorinv
+from .frontend import tensorsolve as tensorsolve
+from .frontend import diagonal as diagonal
+from .frontend import multi_dot as multi_dot
+from .frontend import vecdot as vecdot
 from .frontend import trace as trace
 from .frontend import matrix_rank as matrix_rank
 from .frontend import matrix_transpose as matrix_transpose
@@ -134,8 +162,59 @@ def eig(input: object) -> tuple[object, object]:
     return w, v
 
 
+@register_op("Vecdot")
+class Vecdot(OpDef):
+    """Vecdot operator definition."""
+
+    op_name = "Vecdot"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        return args[0] if args else ()
+
+
+@register_op("CustomLinearSolve")
+class CustomLinearSolve(OpDef):
+    """CustomLinearSolve operator definition."""
+
+    op_name = "CustomLinearSolve"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        return args[0] if args else ()
+
+
+from .conv import conv_general_dilated_local as conv_general_dilated_local  # noqa: E402
+from .conv import conv_general_dilated_patches as conv_general_dilated_patches  # noqa: E402
+from .conv import conv_with_general_padding as conv_with_general_padding  # noqa: E402
+from .basic import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal  # noqa: E402
+from .basic import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches  # noqa: E402
+from .basic import ConvWithGeneralPadding as ConvWithGeneralPadding  # noqa: E402
+
+
+@register_op("CustomRoot")
+class CustomRoot(OpDef):
+    """CustomRoot operator definition."""
+
+    op_name = "CustomRoot"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
 __all__ = [
     "ConvGeneralDilated",
+    "ConvGeneralDilatedLocal",
+    "ConvGeneralDilatedPatches",
+    "ConvTranspose",
+    "ConvWithGeneralPadding",
     "Dot",
     "DotGeneral",
     "Einsum",
@@ -174,10 +253,14 @@ __all__ = [
     "cholesky_solve",
     "conjugate_gradient",
     "conv_general_dilated",
+    "conv_general_dilated_local",
+    "conv_general_dilated_patches",
+    "conv_with_general_padding",
     "convolve",
     "cross",
     "det",
     "diag_part",
+    "diagonal",
     "dot",
     "dot_general",
     "eig",
@@ -191,21 +274,30 @@ __all__ = [
     "fft2d",
     "fft3",
     "fft3d",
+    "fftfreq",
+    "fftn",
     "fftnd",
     "fftshift",
     "global_norm",
+    "hessenberg",
+    "hfft",
+    "householder_product",
     "ifft",
     "ifft2",
     "ifft2d",
     "ifft3",
     "ifft3d",
+    "ifftn",
     "ifftnd",
     "ifftshift",
+    "ihfft",
     "inner",
     "inv",
     "irfft",
+    "irfft2",
     "irfft2d",
     "irfft3d",
+    "irfftn",
     "irfftnd",
     "logdet",
     "logm",
@@ -213,14 +305,17 @@ __all__ = [
     "lu",
     "lu_factor",
     "lu_matrix_inverse",
+    "lu_pivots_to_permutation",
     "lu_reconstruct",
     "lu_solve",
     "matmul",
     "matrix_exponential",
+    "matrix_norm",
     "matrix_power",
     "matrix_rank",
     "matrix_transpose",
     "matvec",
+    "multi_dot",
     "norm",
     "normalize",
     "outer",
@@ -228,21 +323,32 @@ __all__ = [
     "power_iteration",
     "qr",
     "rfft",
+    "rfft2",
     "rfft2d",
     "rfft3d",
+    "rfftfreq",
+    "rfftn",
     "rfftnd",
+    "schur",
     "set_diag",
     "slogdet",
     "solve",
     "solve_triangular",
     "sqrtm",
     "svd",
+    "svdvals",
     "tensor_diag",
     "tensor_diag_part",
     "tensordot",
+    "tensorinv",
+    "tensorsolve",
     "trace",
+    "tri_inv",
     "triangular_solve",
+    "tridiagonal",
     "tridiagonal_matmul",
     "tridiagonal_solve",
     "vdot",
+    "vecdot",
+    "vector_norm",
 ]

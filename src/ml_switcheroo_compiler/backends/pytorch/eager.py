@@ -111,6 +111,24 @@ def _execute_broadcast_to(*args: object, **kwargs: object) -> object:
     return cast(Any, args[0]).expand(kwargs["shape"])  # pragma: no cover
 
 
+def _execute_cummax(*args: object, **kwargs: object) -> object:
+    import torch
+
+    return torch.cummax(*args, **kwargs)[0]
+
+
+def _execute_cummin(*args: object, **kwargs: object) -> object:
+    import torch
+
+    return torch.cummin(*args, **kwargs)[0]
+
+
+def _execute_cumlogsumexp(*args: object, **kwargs: object) -> object:
+    import torch
+
+    return torch.logcumsumexp(*args, **kwargs)
+
+
 def _get_custom_torch_op_map() -> dict:
     """Function docstring."""
     return {
@@ -120,6 +138,9 @@ def _get_custom_torch_op_map() -> dict:
         "TensorScatterMin": _execute_tensor_scatter_min,
         "PowerIteration": _execute_power_iteration,
         "BroadcastTo": _execute_broadcast_to,
+        "Cummax": _execute_cummax,
+        "Cummin": _execute_cummin,
+        "Cumlogsumexp": _execute_cumlogsumexp,
     }
 
 
@@ -150,6 +171,8 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         "Sin": torch.sin,
         "Cos": torch.cos,
         "Sum": torch.sum,
+        "Cumsum": torch.cumsum,
+        "Cumprod": torch.cumprod,
         "Mean": torch.mean,
         "Max": torch.max,
         "Min": torch.min,

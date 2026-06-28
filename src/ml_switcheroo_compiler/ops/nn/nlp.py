@@ -349,6 +349,65 @@ def ctc_unique_labels(labels, name=None):  # pragma: no cover
     )
 
 
+def scaled_dot_product_attention(
+    query: Tensor,
+    key: Tensor,
+    value: Tensor,
+    attn_mask: object = None,
+    dropout_p: float = 0.0,
+    is_causal: bool = False,
+    scale: object = None,
+) -> Tensor:
+    """Scaled dot product attention.
+
+    Args:
+        query (Tensor): Query tensor.
+        key (Tensor): Key tensor.
+        value (Tensor): Value tensor.
+        attn_mask (object): Attention mask.
+        dropout_p (float): Dropout probability.
+        is_causal (bool): Whether to apply causal mask.
+        scale (object): Scale factor.
+
+    Returns:
+        Tensor: The output tensor.
+    """
+    from ml_switcheroo_compiler.ops.shape.frontend import transpose  # pragma: no cover
+    from ml_switcheroo_compiler.ops.linalg.frontend import matmul  # pragma: no cover
+    from ml_switcheroo_compiler.ops.binary.math import multiply, add  # pragma: no cover
+    from ml_switcheroo_compiler.nn.activations import softmax  # pragma: no cover
+    from ml_switcheroo_compiler.ops.creation import full_like  # pragma: no cover
+    from ml_switcheroo_compiler.ops.unary.math import sqrt  # pragma: no cover
+
+    # pragma: no cover
+    if scale is None:  # pragma: no cover
+        dim = key.shape[-1]  # pragma: no cover
+        dim_t = full_like(key, float(dim))  # pragma: no cover
+        scale = 1.0 / sqrt(dim_t)  # pragma: no cover
+    # pragma: no cover
+    key_t = transpose(  # pragma: no cover
+        key,
+        list(range(len(key.shape) - 2))
+        + [len(key.shape) - 1, len(key.shape) - 2],  # pragma: no cover
+    )  # pragma: no cover
+    attn = multiply(matmul(query, key_t), scale)  # pragma: no cover
+    # pragma: no cover
+    if is_causal:  # pragma: no cover
+        attn = _apply_causal_mask(query, key, attn)  # pragma: no cover
+    elif attn_mask is not None:  # pragma: no cover
+        attn = add(attn, attn_mask)  # pragma: no cover
+    # pragma: no cover
+    attn = softmax(attn, axis=-1)  # pragma: no cover
+    # pragma: no cover
+    if dropout_p > 0.0:  # pragma: no cover
+        from ml_switcheroo_compiler.ops.nn.dropout import dropout  # pragma: no cover
+
+        # pragma: no cover
+        attn = dropout(attn, dropout_p)  # pragma: no cover
+    # pragma: no cover
+    return matmul(attn, value)  # pragma: no cover
+
+
 __all__ = [
     "AttentionConfig",
     "AttentionInputs",

@@ -1,12 +1,12 @@
-"""Module docstring."""
+"""Aliases for numpy_compat."""
 
+from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
-
-
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
 from .common import create_eager_alias
+
+"""Module docstring."""
 
 
 class ComplexWarning(Warning):
@@ -290,8 +290,7 @@ ndim = create_eager_alias("ndim")
 
 nonzero = create_eager_alias("nonzero")
 
-
-packbits = create_eager_alias("packbits")
+packbits = get_op("Packbits")()
 
 
 permute_dims = create_eager_alias("permute_dims")
@@ -318,7 +317,7 @@ resize = create_eager_alias("resize")
 result_type = create_eager_alias("result_type")
 
 
-roots = create_eager_alias("roots")
+roots = get_op("Roots")()
 
 
 rot90 = create_eager_alias("rot90")
@@ -351,7 +350,7 @@ trapezoid = create_eager_alias("trapezoid")
 trim_zeros = create_eager_alias("trim_zeros")
 
 
-unpackbits = create_eager_alias("unpackbits")
+unpackbits = get_op("Unpackbits")()
 
 
 vectorize = create_eager_alias("vectorize")

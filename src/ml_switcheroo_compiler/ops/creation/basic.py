@@ -245,3 +245,79 @@ class Kaiser(OpDef):
     def infer_shape(self, M: object, **kwargs: object) -> object:
         """Infer the output shape."""
         return (M,) if isinstance(M, int) else (M.item(),)
+
+
+@register_op("TrilIndices")
+class TrilIndices(OpDef):
+    """TrilIndices operator definition."""
+
+    op_name = "TrilIndices"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("TrilIndicesFrom")
+class TrilIndicesFrom(OpDef):
+    """TrilIndicesFrom operator definition."""
+
+    op_name = "TrilIndicesFrom"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("TriuIndices")
+class TriuIndices(OpDef):
+    """TriuIndices operator definition."""
+
+    op_name = "TriuIndices"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("TriuIndicesFrom")
+class TriuIndicesFrom(OpDef):
+    """TriuIndicesFrom operator definition."""
+
+    op_name = "TriuIndicesFrom"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()

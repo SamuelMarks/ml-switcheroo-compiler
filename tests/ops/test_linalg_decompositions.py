@@ -89,6 +89,13 @@ def test_solve():
     assert e.shape == (2,)
 
 
+def test_tri_inv():
+    a = Tensor(np.array([[1.0, 0.0], [2.0, 3.0]]), TensorConfig((2, 2), "float32", "cpu"))
+    e, t = _test_op(decomp.tri_inv, a, lower=True)
+    assert e.shape == (2, 2)
+    assert t.shape == (2, 2)
+
+
 def test_solve_triangular():
     a = Tensor(np.array([[1.0, 2.0], [0.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -158,6 +165,7 @@ def test_opdef_infer_shapes():
         decomp.Eigh(),
         decomp.Eigvalsh(),
         decomp.Solve(),
+        decomp.TriInv(),
         decomp.TriangularSolve(),
         decomp.Lu(),
         decomp.LuFactor(),
@@ -169,3 +177,57 @@ def test_opdef_infer_shapes():
         assert op.infer_shape() == ()
 
     assert basic.MatrixPower().infer_shape(None) == ()
+
+
+def test_hessenberg():
+    a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
+    e, t = _test_op(decomp.hessenberg, a)
+    assert e[0].shape == (2, 2)
+    assert e[1].shape == (2, 2)
+    assert t[0].shape == (2, 2)
+    assert t[1].shape == (2, 2)
+
+
+def test_householder_product():
+    a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
+    tau = Tensor(np.array([1.0, 1.0]), TensorConfig((2,), "float32", "cpu"))
+    e, t = _test_op(decomp.householder_product, a, tau)
+    assert e.shape == (2, 2)
+    assert t.shape == (2, 2)
+
+
+def test_schur():
+    a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
+    e, t = _test_op(decomp.schur, a)
+    assert e[0].shape == (2, 2)
+    assert e[1].shape == (2, 2)
+    assert t[0].shape == (2, 2)
+    assert t[1].shape == (2, 2)
+
+
+def test_tridiagonal():
+    a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
+    e, t = _test_op(decomp.tridiagonal, a)
+    assert e[0].shape == (2,)
+    assert e[1].shape == (1,)
+    assert e[2].shape == (2, 2)
+    assert t[0].shape == (2,)
+    assert t[1].shape == (1,)
+    assert t[2].shape == (2, 2)
+
+
+def test_tridiagonal_solve():
+    dl = Tensor(np.array([1.0]), TensorConfig((1,), "float32", "cpu"))
+    d = Tensor(np.array([2.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
+    du = Tensor(np.array([1.0]), TensorConfig((1,), "float32", "cpu"))
+    b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
+    e, t = _test_op(decomp.tridiagonal_solve, dl, d, du, b)
+    assert e.shape == (2,)
+    assert t.shape == (2,)
+
+
+def test_lu_pivots_to_permutation():
+    p = Tensor(np.array([1, 0]), TensorConfig((2,), "int32", "cpu"))
+    e, t = _test_op(decomp.lu_pivots_to_permutation, p, 2)
+    assert e.shape == (2,)
+    assert t.shape == (2,)

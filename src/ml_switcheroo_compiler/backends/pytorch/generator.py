@@ -100,6 +100,18 @@ class PyTorchCodeGenerator(
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"pt_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate ConvTranspose."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        strides = node.attributes.get("strides", 1)
+        padding = node.attributes.get("padding", "VALID")
+        return f"pt_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
+
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate RaggedDot."""
+        return f"pt_ragged_dot({input_vars[0]}, {input_vars[1]})"
+
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes."""
         args_str = ", ".join(input_vars)  # pragma: no cover
@@ -173,6 +185,7 @@ class PyTorchCodeGenerator(
             "Eigvalsh": "torch.linalg.eigvalsh({0})",
             "MatrixPower": "torch.linalg.matrix_power({0}, {n})",
             "Solve": "torch.linalg.solve({0}, {1})",
+            "TriInv": "torch.linalg.inv({0})",
             "TriangularSolve": "torch.linalg.solve_triangular({0}, {1}, upper=not {lower}, unitriangular={unit_diagonal})",
             "Lu": "torch.linalg.lu({0})",
             "LuFactor": "torch.linalg.lu_factor({0})",
@@ -286,6 +299,17 @@ class PyTorchCodeGenerator(
         ops.update(self._get_nn_ops(kwargs))
         ops.update(self._get_creation_ops(kwargs))
         ops.update(self._get_array_ops(kwargs))
+
+        ops["Beta"] = "torch.distributions.beta.Beta({1}, {2}).sample({shape})"
+        ops["Dirichlet"] = "torch.distributions.dirichlet.Dirichlet({1}).sample({shape})"
+        ops["Gamma"] = "torch.distributions.gamma.Gamma({1}, 1.0).sample({shape})"
+        ops["RngBitGenerator"] = "torch.randint(0, 255, {shape})"
+        ops["RngUniform"] = "({1} - {0}) * torch.rand({shape}) + {0}"
+
+        ops["Infeed"] = "{0}"
+        ops["Outfeed"] = "{0}"
+        ops["AxisIndex"] = "0"
+        ops["WithShardingConstraint"] = "{0}"
         return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:

@@ -85,6 +85,7 @@ class ConvGeneralDilated(OpDef):
     op_name = "ConvGeneralDilated"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -1012,3 +1013,127 @@ class EighTridiagonal(OpDef):
         """Infer shape."""
         # Actually returns (eigvals, eigvecs)
         return (alpha.shape, list(alpha.shape) + [alpha.shape[-1]])  # pragma: no cover
+
+
+@register_op("ConvGeneralDilatedLocal")
+class ConvGeneralDilatedLocal(OpDef):
+    """ConvGeneralDilatedLocal operator definition."""
+
+    op_name = "ConvGeneralDilatedLocal"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args else ()
+
+
+@register_op("ConvGeneralDilatedPatches")
+class ConvGeneralDilatedPatches(OpDef):
+    """ConvGeneralDilatedPatches operator definition."""
+
+    op_name = "ConvGeneralDilatedPatches"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args else ()
+
+
+@register_op("ConvWithGeneralPadding")
+class ConvWithGeneralPadding(OpDef):
+    """ConvWithGeneralPadding operator definition."""
+
+    op_name = "ConvWithGeneralPadding"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args else ()
+
+
+@register_op("ConvTranspose")
+class ConvTranspose(OpDef):
+    """ConvTranspose operator definition."""
+
+    op_name = "ConvTranspose"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args else ()
+
+
+@register_op("MatrixNorm")
+class MatrixNorm(OpDef):
+    """MatrixNorm operator definition."""
+
+    op_name = "MatrixNorm"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("VectorNorm")
+class VectorNorm(OpDef):
+    """VectorNorm operator definition."""
+
+    op_name = "VectorNorm"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("Svdvals")
+class Svdvals(OpDef):
+    """Svdvals operator definition."""
+
+    op_name = "Svdvals"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        in_shape = args[0].shape
+        return in_shape[:-1] if len(in_shape) > 1 else ()
+
+
+@register_op("Tensorinv")
+class Tensorinv(OpDef):
+    """Tensorinv operator definition."""
+
+    op_name = "Tensorinv"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        in_shape = args[0].shape
+        ind = kwargs.get("ind", 2)
+        return in_shape[ind:] + in_shape[:ind]
+
+
+@register_op("Tensorsolve")
+class Tensorsolve(OpDef):
+    """Tensorsolve operator definition."""
+
+    op_name = "Tensorsolve"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape[len(args[1].shape) :]
+
+
+@register_op("Diagonal")
+class Diagonal(OpDef):
+    """Diagonal operator definition."""
+
+    op_name = "Diagonal"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("MultiDot")
+class MultiDot(OpDef):
+    """MultiDot operator definition."""
+
+    op_name = "MultiDot"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()

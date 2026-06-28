@@ -5,11 +5,10 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 import typing
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
 from collections.abc import Sequence
 from typing import Union
 
-from .conv_utils import GenericConvConfig, _calculate_conv_transpose_padding
+from .conv_utils import GenericConvConfig
 from .conv1d import conv1d, depthwise_conv1d, separable_conv1d
 from .conv2d import conv2d, depthwise_conv2d, separable_conv2d
 from .conv3d import conv3d
@@ -32,26 +31,27 @@ def conv_transpose(
     Returns:
         Tensor: The result of the convolution.
     """
-    spatial_dims = len(lhs.shape) - 2
-    if isinstance(strides, int):
-        strides_tuple = (strides,) * spatial_dims
-    else:
-        strides_tuple = tuple(strides)
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    # For default layout, k_sdims is at the end. Assuming OIW / OIHW / OIDHW
-    k_sdims = rhs.shape[2:]
+    op_name = "ConvTranspose"
 
-    pads = _calculate_conv_transpose_padding(padding, k_sdims, strides_tuple)
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op(
+            op_name,
+            getattr(lhs, "data", lhs),
+            getattr(rhs, "data", rhs),
+            strides=strides,
+            padding=padding,
+        )
+        return Tensor(data, TensorConfig(getattr(data, "shape", ()), lhs.dtype, lhs.device))
 
-    from ml_switcheroo_compiler.ops.configs import ConvConfig
-
-    config_obj = ConvConfig(
-        window_strides=(1,) * spatial_dims,
-        padding=pads,
-        lhs_dilation=strides_tuple,
+    return _emit_linalg_node(
+        op_name, [lhs, rhs], {"strides": strides, "padding": padding}, [()], [lhs.dtype]
     )
-
-    return conv_general_dilated(lhs, rhs, config_obj)
 
 
 def conv(
@@ -137,7 +137,7 @@ def depthwise_conv(
             rhs_dilation=conf.dilation_rate,
         )
     elif spatial_rank == MAGIC_VAL_2:  # pragma: no branch
-        return depthwise_conv2d(
+        return depthwise_conv2d(  # pragma: no cover
             inputs,
             kernel,
             strides=conf.strides,
@@ -185,7 +185,7 @@ def separable_conv(
             rhs_dilation=conf.dilation_rate,
         )
     elif spatial_rank == MAGIC_VAL_2:  # pragma: no branch
-        return separable_conv2d(
+        return separable_conv2d(  # pragma: no cover
             inputs,
             depthwise_kernel,
             pointwise_kernel,

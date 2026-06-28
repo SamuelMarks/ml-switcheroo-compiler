@@ -44,6 +44,96 @@ class JAXNodeVisitorMixin:
         op = node.attributes.get("op", "psum")
         return f"jax.lax.{op}({tensor}, axis_name={axis_name})"
 
+    def visit_SegmentSum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate segment sum."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return f"jax.ops.segment_sum({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+
+    def visit_SegmentMax(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate segment max."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return f"jax.ops.segment_max({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+
+    def visit_SegmentMin(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate segment min."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return f"jax.ops.segment_min({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+
+    def visit_SegmentProd(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate segment prod."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return (
+            f"jax.ops.segment_prod({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+        )
+
+    def visit_UnsortedSegmentSum(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate unsorted segment sum."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return f"jax.ops.segment_sum({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+
+    def visit_UnsortedSegmentMax(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate unsorted segment max."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return f"jax.ops.segment_max({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+
+    def visit_UnsortedSegmentMin(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate unsorted segment min."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return f"jax.ops.segment_min({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+
+    def visit_UnsortedSegmentProd(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate unsorted segment prod."""
+        num_segments = node.attributes.get("num_segments", "None")
+        return (
+            f"jax.ops.segment_prod({input_vars[0]}, {input_vars[1]}, num_segments={num_segments})"
+        )
+
+    def visit_MatrixExponential(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate MatrixExponential."""
+        return f"jax.scipy.linalg.expm({input_vars[0]})"
+
+    def visit_Polar(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Polar."""
+        side = node.attributes.get("side", "'right'")
+        if not isinstance(side, str) or not side.startswith("'"):
+            side = f"'{side}'"
+        return f"jax.scipy.linalg.polar({input_vars[0]}, side={side})"
+
+    def visit_Schur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Schur."""
+        return f"jax.scipy.linalg.schur({input_vars[0]})"
+
+    def visit_Cholesky(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Cholesky."""
+        return f"jax.numpy.linalg.cholesky({input_vars[0]})"
+
+    def visit_Svd(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Svd."""
+        full_matrices = node.attributes.get("full_matrices", True)
+        compute_uv = node.attributes.get("compute_uv", True)
+        return f"jax.numpy.linalg.svd({input_vars[0]}, full_matrices={full_matrices}, compute_uv={compute_uv})"
+
+    def visit_If(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate If."""
+        # Simple fallback for jax.lax.cond if proper block tracing is not used natively
+        return f"jax.lax.cond({input_vars[0]}, lambda: None, lambda: None)"
+
+    def visit_Loop(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate WhileLoop."""
+        return f"jax.lax.while_loop(lambda _: True, lambda _: {input_vars[0]}, {input_vars[0]})"
+
+    def visit_Scan(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Scan."""
+        return f"jax.lax.scan(lambda c, x: (c, x), {input_vars[0]}, {input_vars[1]} if len({input_vars}) > 1 else None)"
+
     def visit_PowerIteration(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate power iteration."""
         num_iters = node.attributes.get("num_iters", 1)
@@ -137,6 +227,18 @@ class JAXNodeVisitorMixin:
         )
         return f"jax_mfcc({input_vars[0]}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs})"  # pragma: no cover
 
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate ConvTranspose."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        strides = node.attributes.get("strides", 1)
+        padding = node.attributes.get("padding", "VALID")
+        return f"jax_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
+
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate RaggedDot."""
+        return f"jax_ragged_dot({input_vars[0]}, {input_vars[1]})"
+
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes."""
         args_str = ", ".join(input_vars)  # pragma: no cover
@@ -211,6 +313,15 @@ class JAXCodeGenerator(JAXNodeVisitorMixin, SharedASTGeneratorMixin, BaseGenerat
             Dictionary mapping operation type to format string.
         """
         return {
+            "Infeed": "jax.lax.infeed(shape={shape})",
+            "Outfeed": "jax.lax.outfeed({0})",
+            "AxisIndex": "jax.lax.axis_index({axis_name})",
+            "WithShardingConstraint": "jax.lax.with_sharding_constraint({0}, {sharding})",
+            "RandomCategorical": "jax.random.categorical({0}, {1}, axis={axis}, shape={shape})",
+            "Beta": "jax.random.beta({0}, {1}, {2}, {shape})",
+            "Gamma": "jax.random.gamma({0}, {1}, {shape})",
+            "RngBitGenerator": "jax.random.bits({0}, {shape})",
+            "RngUniform": "jax.random.uniform(jax.random.PRNGKey(0), {shape}, minval={0}, maxval={1})",
             "Matmul": "jnp.matmul({0}, {1})",
             "Trace": "tf.linalg.trace",
             "Adjoint": "tf.linalg.adjoint",
@@ -249,7 +360,73 @@ class JAXCodeGenerator(JAXNodeVisitorMixin, SharedASTGeneratorMixin, BaseGenerat
             "Fft": "jnp.fft.fft({0})",
             "Rfft": "jnp.fft.rfft({0})",
             "Fftn": "jnp.fft.fftn({0})",
+            "Binomial": "jax.random.binomial({0}, {1}, {2}, {shape})",
+            "Cauchy": "jax.random.cauchy({0}, {shape})",
+            "Chisquare": "jax.random.chisquare({0}, {1}, {shape})",
+            "Dirichlet": "jax.random.dirichlet({0}, {1}, {shape})",
+            "DoubleSidedMaxwell": "jax.random.double_sided_maxwell({0}, {1}, {shape})",
+            "Exponential": "jax.random.exponential({0}, {shape})",
+            "F": "jax.random.f({0}, {1}, {2}, {shape})",
+            "Gumbel": "jax.random.gumbel({0}, {shape})",
+            "Laplace": "jax.random.laplace({0}, {shape})",
+            "Loggamma": "jax.random.loggamma({0}, {1}, {shape})",
+            "Logistic": "jax.random.logistic({0}, {shape})",
+            "Lognormal": "jax.random.lognormal({0}, {shape})",
+            "Maxwell": "jax.random.maxwell({0}, {shape})",
+            "MultivariateNormal": "jax.random.multivariate_normal({0}, {1}, {2}, {shape})",
+            "Pareto": "jax.random.pareto({0}, {1}, {shape})",
+            "Poisson": "jax.random.poisson({0}, {1}, {shape})",
+            "Rayleigh": "jax.random.rayleigh({0}, {shape})",
+            "T": "jax.random.t({0}, {1}, {shape})",
+            "Triangular": "jax.random.triangular({0}, {1}, {2}, {shape})",
+            "Wald": "jax.random.wald({0}, {1}, {2}, {shape})",
+            "WeibullMin": "jax.random.weibull_min({0}, {1}, {2}, {shape})",
+            "Clone": "jax.random.clone({0})",
+            "KeyData": "jax.random.key_data({0})",
+            "KeyImpl": "jax.random.key_impl({0})",
+            "WrapKeyData": "jax.random.wrap_key_data({0})",
+            "Bits": "jax.random.bits({0}, {shape})",
+            "GeneralizedNormal": "jax.random.generalized_normal({0}, {1}, {shape})",
+            "Orthogonal": "jax.random.orthogonal({0}, {1}, {shape})",
+            "RandomGammaP": "jax.random.gamma_p({0}, {1})",
+            "Vecdot": "jax.numpy.vecdot({0}, {1})",
+            "CustomLinearSolve": "jax.scipy.linalg.solve({0}, {1})",
+            "DebugInfs": "jax.debug.visualize_array_updates({0})",
+            "DebugNans": "jax.debug.visualize_array_updates({0})",
+            "AssociativeScan": "jax.lax.associative_scan({0}, {1}, reverse={reverse}, axis={axis})",
+            "DevicePutReplicated": "jax.device_put_replicated({0}, {devices})",
+            "DevicePutSharded": "jax.device_put_sharded({0}, {devices})",
+            "AllToAll": "jax.lax.all_to_all({0}, split_axis={split_axis}, concat_axis={concat_axis}, axis_name={axis_name})",
+            "Pmax": "jax.lax.pmax({0}, axis_name={axis_name})",
+            "Pmin": "jax.lax.pmin({0}, axis_name={axis_name})",
+            "PsumScatter": "jax.lax.psum_scatter({0}, scatter_dimension={scatter_dimension}, axis_name={axis_name})",
+            "Pswapaxes": "jax.lax.pswapaxes({0}, axis_name={axis_name}, axis={axis})",
             "Erfinv": "jax.scipy.special.erfinv({0})",
+            "Erf": "jax.scipy.special.erf({0})",
+            "SpecialGamma": "jax.scipy.special.gamma({0})",
+            "BesselJn": "jax.scipy.special.bessel_jn({1}, v={0})",
+            "Digamma": "jax.scipy.special.digamma({0})",
+            "Polygamma": "jax.scipy.special.polygamma({0}, {1})",
+            "Zeta": "jax.scipy.special.zeta({0}, {1})",
+            "Igamma": "jax.scipy.special.gammainc({0}, {1})",
+            "Igammac": "jax.scipy.special.gammaincc({0}, {1})",
+            "Betainc": "jax.scipy.special.betainc({0}, {1}, {2})",
+            "BesselI0e": "jax.scipy.special.i0e({0})",
+            "BesselI1e": "jax.scipy.special.i1e({0})",
+            "NormPdf": "jax.scipy.stats.norm.pdf({0}, loc={1}, scale={2})",
+            "NormCdf": "jax.scipy.stats.norm.cdf({0}, loc={1}, scale={2})",
+            "GammaPdf": "jax.scipy.stats.gamma.pdf({0}, {1}, loc={2}, scale={3})",
+            "GammaCdf": "jax.scipy.stats.gamma.cdf({0}, {1}, loc={2}, scale={3})",
+            "BetaPdf": "jax.scipy.stats.beta.pdf({0}, {1}, {2}, loc={3}, scale={4})",
+            "BetaCdf": "jax.scipy.stats.beta.cdf({0}, {1}, {2}, loc={3}, scale={4})",
+            "PoissonPmf": "jax.scipy.stats.poisson.pmf({0}, {1}, loc={2})",
+            "PoissonCdf": "jax.scipy.stats.poisson.cdf({0}, {1}, loc={2})",
+            "BinomPmf": "jax.scipy.stats.binom.pmf({0}, {1}, {2}, loc={3})",
+            "BinomCdf": "jax.scipy.special.betainc({1} - ({0} - {3}), ({0} - {3}) + 1, 1 - {2})",
+            "Convolve2d": "jax.scipy.signal.convolve2d({0}, {1}, mode='{mode}', boundary='{boundary}', fillvalue={fillvalue})",
+            "Fftconvolve": "jax.scipy.signal.fftconvolve({0}, {1}, mode='{mode}', axes={axes})",
+            "Welch": "jax.scipy.signal.welch({0}, fs={fs}, window='{window}', nperseg={nperseg}, noverlap={noverlap}, nfft={nfft}, detrend='{detrend}', return_onesided={return_onesided}, scaling='{scaling}', axis={axis}, average='{average}')",
+            "Convolve": "jax.scipy.signal.convolve({0}, {1}, mode='{mode}')",
             "Cholesky": "jnp.linalg.cholesky({0})",
             "Svd": "jnp.linalg.svd({0})",
             "Qr": "jnp.linalg.qr({0})",
@@ -261,6 +438,7 @@ class JAXCodeGenerator(JAXNodeVisitorMixin, SharedASTGeneratorMixin, BaseGenerat
             "Eigvalsh": "jnp.linalg.eigvalsh({0})",
             "MatrixPower": "jnp.linalg.matrix_power({0}, {n})",
             "Solve": "jnp.linalg.solve({0}, {1})",
+            "TriInv": "jnp.linalg.inv({0})",
             "TriangularSolve": "jax.scipy.linalg.solve_triangular({0}, {1}, lower={lower}, unit_diagonal={unit_diagonal})",
             "Lu": "jax.scipy.linalg.lu({0})",
             "LuFactor": "jax.scipy.linalg.lu_factor({0})",

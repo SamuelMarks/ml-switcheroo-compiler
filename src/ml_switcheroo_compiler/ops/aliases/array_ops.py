@@ -51,7 +51,12 @@ def ediff1d(ary: object, to_end: object = None, to_begin: object = None) -> obje
     from ml_switcheroo_compiler.ops.shape.manipulation import flatten  # pragma: no cover
 
     ary = flatten(asarray(ary))  # pragma: no cover
-    return diff(ary, n=1, axis=-1, prepend=to_begin, append=to_end)  # pragma: no cover
+    kwargs = {"n": 1, "axis": -1}  # pragma: no cover
+    if to_begin is not None:  # pragma: no cover
+        kwargs["prepend"] = to_begin  # pragma: no cover
+    if to_end is not None:  # pragma: no cover
+        kwargs["append"] = to_end  # pragma: no cover
+    return diff(ary, **kwargs)  # pragma: no cover
 
 
 def extract(condition: object, arr: object) -> object:
@@ -130,3 +135,16 @@ matrix_transpose = create_eager_alias("matrix_transpose")
 
 
 rollaxis = create_eager_alias("rollaxis")
+
+
+from ml_switcheroo_compiler.ops.base import get_op  # noqa: E402
+
+dynamic_slice_in_dim = get_op("DynamicSliceInDim")()
+dynamic_update_slice_in_dim = get_op("DynamicUpdateSliceInDim")()
+dynamic_index_in_dim = get_op("DynamicIndexInDim")()
+dynamic_update_index_in_dim = get_op("DynamicUpdateIndexInDim")()
+slice_in_dim = get_op("SliceInDim")()
+scatter_apply = get_op("ScatterApply")()
+scatter_max = get_op("ScatterMax")()
+scatter_min = get_op("ScatterMin")()
+scatter_mul = get_op("ScatterMul")()

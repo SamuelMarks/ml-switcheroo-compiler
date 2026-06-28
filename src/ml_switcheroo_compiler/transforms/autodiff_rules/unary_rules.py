@@ -371,3 +371,51 @@ def spence_vjp(graph: object, node: object, cotangent: str) -> tuple:
     # But usually x!=1. If we just do Division, it will yield NaN for 0/0.
     grad = emit_ir_node(graph, "Divide", [log_x, x_minus_one], node.shape_metadata, {})
     return (emit_ir_node(graph, "Multiply", [cotangent, grad], node.shape_metadata, {}),)
+
+
+@register_vjp("Erfinv")
+def erfinv_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Erfinv."""
+    _ = node.inputs[0]
+    # d/dx erfinv(x) = sqrt(pi)/2 * exp(erfinv(x)^2)
+    # y = erfinv(x) is node.id
+    y = node.id
+    y_sq = emit_ir_node(graph, "Multiply", [y, y], node.shape_metadata)
+    exp_y_sq = emit_ir_node(graph, "Exp", [y_sq], node.shape_metadata)
+
+    # sqrt(pi)/2 is roughly 0.88622692545
+    cst = emit_ir_node(graph, "Constant", [], None, {"value": 0.886226925452758})
+    dx_base = emit_ir_node(graph, "Multiply", [cst, exp_y_sq], node.shape_metadata)
+    dx = emit_ir_node(graph, "Multiply", [cotangent, dx_base], node.shape_metadata)
+    return (dx,)
+
+
+@register_vjp("BesselI0e")
+def bessel_i0e_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for BesselI0e."""
+    x = node.inputs[0]
+    # d/dx(i0e(x)) = i1e(x) - sign(x) * i0e(x)
+    i1e_x = emit_ir_node(graph, "BesselI1e", [x], node.shape_metadata)
+    sign_x = emit_ir_node(graph, "Sign", [x], node.shape_metadata)
+    i0e_x = node.id
+    term = emit_ir_node(graph, "Multiply", [sign_x, i0e_x], node.shape_metadata)
+    dx_base = emit_ir_node(graph, "Subtract", [i1e_x, term], node.shape_metadata)
+    dx = emit_ir_node(graph, "Multiply", [cotangent, dx_base], node.shape_metadata)
+    return (dx,)
+
+
+@register_vjp("BesselI1e")
+def bessel_i1e_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for BesselI1e."""
+    x = node.inputs[0]
+    # d/dx(i1e(x)) = i0e(x) - (1/x + sign(x))*i1e(x)
+    i0e_x = emit_ir_node(graph, "BesselI0e", [x], node.shape_metadata)
+    i1e_x = node.id
+    one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
+    one_over_x = emit_ir_node(graph, "Divide", [one, x], node.shape_metadata)
+    sign_x = emit_ir_node(graph, "Sign", [x], node.shape_metadata)
+    factor = emit_ir_node(graph, "Add", [one_over_x, sign_x], node.shape_metadata)
+    term = emit_ir_node(graph, "Multiply", [factor, i1e_x], node.shape_metadata)
+    dx_base = emit_ir_node(graph, "Subtract", [i0e_x, term], node.shape_metadata)
+    dx = emit_ir_node(graph, "Multiply", [cotangent, dx_base], node.shape_metadata)
+    return (dx,)

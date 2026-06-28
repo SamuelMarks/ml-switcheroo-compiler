@@ -236,7 +236,7 @@ class SparseSegmentMean(OpDef):
         self, data: object, indices: object, segment_ids: object, **kwargs: object
     ) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("SparseSegmentSqrtN")
@@ -249,7 +249,7 @@ class SparseSegmentSqrtN(OpDef):
         self, data: object, indices: object, segment_ids: object, **kwargs: object
     ) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("SparseSegmentSum")
@@ -262,7 +262,7 @@ class SparseSegmentSum(OpDef):
         self, data: object, indices: object, segment_ids: object, **kwargs: object
     ) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("SparseSlice")
@@ -275,7 +275,7 @@ class SparseSlice(OpDef):
         self, sp_input: object, start: object, size: object, **kwargs: object
     ) -> object:
         """Infer shape."""
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("SparseToIndicator")

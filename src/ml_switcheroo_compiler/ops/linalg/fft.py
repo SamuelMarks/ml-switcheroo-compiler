@@ -10,6 +10,78 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
 
+
+from ml_switcheroo_compiler.ops.base import register_op, OpDef
+
+
+@register_op("Fftfreq")
+class Fftfreq(OpDef):
+    """Fftfreq Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return (args[0],) if args else ()
+
+
+@register_op("Hfft")
+class Hfft(OpDef):
+    """Hfft Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return ()
+
+
+@register_op("Ihfft")
+class Ihfft(OpDef):
+    """Ihfft Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return ()
+
+
+@register_op("Rfftfreq")
+class Rfftfreq(OpDef):
+    """Rfftfreq Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return (args[0] // 2 + 1,) if args else ()
+
+
 if TYPE_CHECKING:
     pass
 
@@ -460,3 +532,99 @@ def ifftshift(a: Tensor, axes: Sequence[int] | None = None) -> Tensor:
     op = Ifftshift()
     out_shape = op.infer_shape(a, axes=axes)
     return _emit_linalg_node("Ifftshift", [a], {"axes": axes}, [tuple(out_shape)], [a.dtype])
+
+
+def fftfreq(n: int, d: float = 1.0) -> Tensor:
+    """Return the Discrete Fourier Transform sample frequencies.
+
+    Args:
+        n (int): Window length.
+        d (float): Sample spacing (inverse of the sampling rate). Defaults to 1.0.
+
+    Returns:
+    Tensor: Array of length `n` containing the sample frequencies.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Fftfreq", n, d)
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(data, "device", "cpu")))
+    return _emit_linalg_node("Fftfreq", [], {"n": n, "d": d}, [(n,)], ["float32"])
+
+
+def hfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
+    """Compute the FFT of a signal that has Hermitian symmetry.
+
+    Args:
+        a (Tensor): Input tensor.
+        n (int | None): Length of the transformed axis of the output.
+        axis (int): Axis over which to compute the FFT.
+
+    Returns:
+    Tensor: The real output.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Hfft", a.data, n=n, axis=axis)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if n is not None:
+        out_shape[axis] = n
+    else:
+        out_shape[axis] = 2 * (out_shape[axis] - 1)
+    return _emit_linalg_node("Hfft", [a], {"n": n, "axis": axis}, [tuple(out_shape)], [a.dtype])
+
+
+def ihfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
+    """Compute the inverse FFT of a signal that has Hermitian symmetry.
+
+    Args:
+        a (Tensor): Input tensor.
+        n (int | None): Length of the transformed axis of the output.
+        axis (int): Axis over which to compute the inverse FFT.
+
+    Returns:
+    Tensor: The complex output.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Ihfft", a.data, n=n, axis=axis)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+
+    out_shape = list(a.shape)
+    if n is not None:
+        out_shape[axis] = n
+    return _emit_linalg_node("Ihfft", [a], {"n": n, "axis": axis}, [tuple(out_shape)], [a.dtype])
+
+
+def rfftfreq(n: int, d: float = 1.0) -> Tensor:
+    """Return the Discrete Fourier Transform sample frequencies.
+
+    Args:
+        n (int): Window length.
+        d (float): Sample spacing (inverse of the sampling rate). Defaults to 1.0.
+
+    Returns:
+    Tensor: Array of length `n//2 + 1` containing the sample frequencies.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftfreq", n, d)
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(data, "device", "cpu")))
+    return _emit_linalg_node("Rfftfreq", [], {"n": n, "d": d}, [(n // 2 + 1,)], ["float32"])
+
+
+irfft2 = irfft2d
+rfft2 = rfft2d
+fftn = fftnd
+ifftn = ifftnd
+irfftn = irfftnd
+rfftn = rfftnd

@@ -346,3 +346,79 @@ def test_utility_ops():
 
     # check image alias
     assert ops.image is not None
+
+
+def test_activity_regularization():
+    x = ops.array(np.random.randn(2, 2).astype(np.float32))
+    _ = ops.activity_regularization(x, l1=0.1, l2=0.2)
+    pass
+
+
+def test_activity_regularization_ast():
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+    config.eager_mode = False
+
+    _tracer.start_tracing("Test")
+    x = ops.array(np.array([1.0, 2.0]))
+    _ = ops.activity_regularization(x, l1=0.1, l2=0.2)
+    graph = _tracer.stop_tracing()
+
+    gen_cls = BackendRegistry.get("numpy")
+    gen = gen_cls(graph)
+    code_str = gen.generate()
+
+    assert code_str is not None
+
+
+def test_adaptive_avg_pool2d():
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+
+    _tracer.start_tracing("Test")
+    x = ops.array(np.random.randn(2, 3, 4, 4).astype(np.float32))
+
+    _ = ops.adaptive_avg_pool2d(x, output_size=(2, 2))
+    _tracer.stop_tracing()
+    pass
+
+
+def test_adaptive_max_pool2d():
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+
+    _tracer.start_tracing("Test")
+    x = ops.array(np.random.randn(2, 3, 4, 4).astype(np.float32))
+
+    _ = ops.adaptive_max_pool2d(x, output_size=(2, 2))
+    _tracer.stop_tracing()
+    pass
+
+
+def test_adaptive_avg_pool2d_ast():
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+    config.eager_mode = False
+    _tracer.start_tracing("Test")
+    x = ops.array(np.array([[[[1.0]]]]))
+    _ = ops.adaptive_avg_pool2d(x, output_size=(2, 2))
+    graph = _tracer.stop_tracing()
+    gen_cls = BackendRegistry.get("numpy")
+    gen = gen_cls(graph)
+    code_str = gen.generate()
+    assert "_adaptive_avg_pool2d" in code_str
+
+
+def test_adaptive_max_pool2d_ast():
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+    config.eager_mode = False
+    _tracer.start_tracing("Test")
+    x = ops.array(np.array([[[[1.0]]]]))
+    _ = ops.adaptive_max_pool2d(x, output_size=(2, 2))
+    graph = _tracer.stop_tracing()
+    gen_cls = BackendRegistry.get("numpy")
+    gen = gen_cls(graph)
+    code_str = gen.generate()
+    assert "_adaptive_max_pool2d" in code_str

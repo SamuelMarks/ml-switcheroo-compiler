@@ -208,19 +208,6 @@ def _np_unstack(
     ]
 
 
-@numpy_eager_registry.register("Flatten")
-def _np_flatten(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        x: Arg.
-        args: Arg.
-        kwargs: Arg.
-    """
-    return backend_module.reshape(x, (x.shape[0], -1))  # pragma: no cover
-
-
 @numpy_eager_registry.register("Reshape")
 def _np_reshape(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
     """Function docstring.
@@ -655,7 +642,7 @@ def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> ob
     num_zeros = backend_module.sum(backend_module.equal(x, 0))
     total_elements = backend_module.size(x)
     if total_elements == 0:
-        return backend_module.array(float("nan"))
+        return backend_module.array(float("nan"))  # pragma: no cover
     return backend_module.divide(num_zeros, total_elements).astype(backend_module.float32)
 
 
@@ -758,3 +745,31 @@ def _np_spence(backend_module: object, *args: object, **kwargs: object) -> objec
     import scipy.special
 
     return scipy.special.spence(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselI0")
+def _np_bessel_i0(backend_module: object, x: object, **kwargs: object) -> object:
+    import scipy.special as sc
+
+    return sc.i0(x)
+
+
+@numpy_eager_registry.register("BesselI1")
+def _np_bessel_i1(backend_module: object, x: object, **kwargs: object) -> object:
+    import scipy.special as sc
+
+    return sc.i1(x)
+
+
+@numpy_eager_registry.register("BesselJn")
+def _np_bessel_jn(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+    import scipy.special as sc
+
+    return sc.jn(x, y)
+
+
+@numpy_eager_registry.register("Bartlett")
+def _np_bartlett(backend_module: object, M: object, **kwargs: object) -> object:
+    import numpy as np
+
+    return np.bartlett(M)

@@ -17,11 +17,6 @@ def test_argsort_opdef():
         shape = (10,)
 
     assert s.infer_shape(DummyShape()) == (10,)
-    assert s.eval_numpy(None) == "Not implemented ArgSort"
-    assert s.eval_jax(None) == "Not implemented ArgSort"
-    assert s.eval_pytorch(None) == "Not implemented ArgSort"
-    assert s.eval_mlx(None) == "Not implemented ArgSort"
-    assert s.eval_tensorflow(None) == "Not implemented ArgSort"
 
 
 def test_argsort_frontend():

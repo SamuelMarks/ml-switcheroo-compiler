@@ -90,18 +90,8 @@ def _np_adjoint(backend_module: object, *args: object, **kwargs: object) -> obje
     return np.conj(np.swapaxes(args[0], -1, -2))
 
 
-@numpy_eager_registry.register("BandPart")
-def _np_band_part(backend_module: object, *args: object, **kwargs: object) -> object:
-    return args[0]  # dummy
-
-
 @numpy_eager_registry.register("CholeskySolve")
 def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> object:
-    return args[0]  # dummy
-
-
-@numpy_eager_registry.register("BandedTriangularSolve")
-def _np_banded_triangular_solve(backend_module: object, *args: object, **kwargs: object) -> object:
     return args[0]  # dummy
 
 

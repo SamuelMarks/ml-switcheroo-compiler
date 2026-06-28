@@ -23,8 +23,11 @@ def while_loop_eager(
 ) -> object:  # noqa: ANN401
     """Docstring."""
     val = init_val
-    while bool(cond_fn(val).data):
+    res = cond_fn(val)
+    while bool(res.data if hasattr(res, "data") else res):
         val = body_fn(val)
+        res = cond_fn(val)
+
     return val
 
 

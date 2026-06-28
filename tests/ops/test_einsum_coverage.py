@@ -25,11 +25,11 @@ def test_einsum_infer_shape_coverage():
         op.infer_shape("ij,jk->ik", (2, 3))
 
     # 6. Multiple ellipses in operand
-    with pytest.raises(ValueError, match="Shape \(5, 2, 3\) cannot match subscript ...i...j"):
+    with pytest.raises(ValueError, match=r"Shape \(5, 2, 3\) cannot match subscript ...i...j"):
         op.infer_shape("...i...j,...jk->...ik", (5, 2, 3), (5, 3, 4))
 
     # 7. Shape \(5,\) cannot match subscript \.\.\.ijk
-    with pytest.raises(ValueError, match="Shape \(5,\) cannot match subscript \.\.\.ijk"):
+    with pytest.raises(ValueError, match=r"Shape \(5,\) cannot match subscript \.\.\.ijk"):
         op.infer_shape("...ijk,...jk->...ik", (5,), (5, 3, 4))
 
     # 8. Dimension mismatch for subscript (left of ellipsis)
@@ -55,7 +55,7 @@ def test_einsum_infer_shape_coverage():
         op.infer_shape("...ij,...jk->...ik", (2, 2, 3), (5, 3, 4))
 
     # 13. Shape \(2, 3, 1\) cannot match subscript ij (no ellipsis)
-    with pytest.raises(ValueError, match="Shape \(2, 3, 1\) cannot match subscript ij"):
+    with pytest.raises(ValueError, match=r"Shape \(2, 3, 1\) cannot match subscript ij"):
         op.infer_shape("ij,jk->ik", (2, 3, 1), (3, 4))
 
     # 14. Multiple ellipses in output

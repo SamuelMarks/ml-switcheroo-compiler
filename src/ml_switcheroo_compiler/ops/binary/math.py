@@ -389,6 +389,13 @@ class Zeta(BinaryMathOp):
     op_name = "Zeta"
 
 
+@register_op("BesselJn")
+class BesselJn(BinaryMathOp):
+    """An operation class for computing the Bessel function of the first kind of real order and complex argument."""
+
+    op_name = "BesselJn"
+
+
 @register_op("Polygamma")
 class Polygamma(BinaryMathOp):
     """An operation class for computing the polygamma function."""
@@ -405,7 +412,7 @@ class Betainc(OpDef):
     def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
         """Infer shape."""
         # Simple broadcasting
-        from ml_switcheroo_compiler.ops.shape.broadcasting import broadcast_shapes
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shape_a = getattr(a, "shape", ())  # pragma: no cover
         shape_b = getattr(b, "shape", ())  # pragma: no cover
@@ -460,3 +467,214 @@ class TruncateMod(BinaryMathOp):
     """Binary operation for element-wise truncated modulo."""
 
     op_name = "TruncateMod"
+
+
+@register_op("Polyadd")
+class Polyadd(OpDef):
+    """Polyadd operator definition."""
+
+    op_name = "Polyadd"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polysub")
+class Polysub(OpDef):
+    """Polysub operator definition."""
+
+    op_name = "Polysub"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polymul")
+class Polymul(OpDef):
+    """Polymul operator definition."""
+
+    op_name = "Polymul"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polydiv")
+class Polydiv(OpDef):
+    """Polydiv operator definition."""
+
+    op_name = "Polydiv"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polyval")
+class Polyval(OpDef):
+    """Polyval operator definition."""
+
+    op_name = "Polyval"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Poly")
+class Poly(OpDef):
+    """Poly operator definition."""
+
+    op_name = "Poly"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polyder")
+class Polyder(OpDef):
+    """Polyder operator definition."""
+
+    op_name = "Polyder"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polyfit")
+class Polyfit(OpDef):
+    """Polyfit operator definition."""
+
+    op_name = "Polyfit"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Polyint")
+class Polyint(OpDef):
+    """Polyint operator definition."""
+
+    op_name = "Polyint"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Roots")
+class Roots(OpDef):
+    """Roots operator definition."""
+
+    op_name = "Roots"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("IgammaGradA")
+class IgammaGradA(BinaryMathOp):
+    """An operation class for computing the gradient of the regularized lower incomplete gamma function with respect to a."""
+
+    op_name = "IgammaGradA"
+
+
+@register_op("RandomGammaGrad")
+class RandomGammaGrad(BinaryMathOp):
+    """An operation class for computing the gradient of random_gamma with respect to alpha."""
+
+    op_name = "RandomGammaGrad"
+
+
+@register_op("SortKeyVal")
+class SortKeyVal(BinaryMathOp):
+    """Sort keys and values."""
+
+    op_name = "SortKeyVal"

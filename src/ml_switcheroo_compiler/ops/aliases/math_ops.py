@@ -80,6 +80,8 @@ def rint(x: object) -> object:
 
 
 pi = math.pi
+e = math.e
+euler_gamma = 0.5772156649015329
 
 absolute = abs
 
@@ -109,7 +111,7 @@ radians = create_eager_alias("radians")
 unwrap = create_eager_alias("unwrap")
 
 
-vecdot = create_eager_alias("vecdot")
+vecdot = get_op("Vecdot")()
 
 
 invert = bitwise_invert
@@ -134,6 +136,8 @@ is_non_decreasing = get_op("IsNonDecreasing")()
 is_strictly_increasing = get_op("IsStrictlyIncreasing")()
 bessel_j0 = get_op("BesselJ0")()
 bessel_j1 = get_op("BesselJ1")()
+bessel_jn = get_op("BesselJn")()
+gamma = get_op("SpecialGamma")()
 bessel_k0 = get_op("BesselK0")()
 bessel_k0e = get_op("BesselK0e")()
 bessel_k1 = get_op("BesselK1")()
@@ -151,3 +155,7 @@ reduce_logsumexp = get_op("Logsumexp")()
 truediv = get_op("TrueDivide")()
 truncatediv = get_op("TruncateDiv")()
 truncatemod = get_op("TruncateMod")()
+
+custom_linear_solve = get_op("CustomLinearSolve")()
+
+custom_root = get_op("CustomRoot")()

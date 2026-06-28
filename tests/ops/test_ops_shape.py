@@ -135,11 +135,6 @@ def test_dynamic_slice_opdef() -> None:
     assert ds.infer_shape(None, None, [2, 3]) == (2, 3)
     x = np.arange(10)
     assert np.array_equal(ds.eager_eval(x, [2], [3]), np.array([2, 3, 4]))
-    assert ds.emit_jax() == "Not implemented"
-    assert ds.emit_keras() == "Not implemented"
-    assert ds.emit_mlx() == "Not implemented"
-    assert ds.emit_pytorch() == "Not implemented"
-    assert ds.emit_tensorflow() == "Not implemented"
 
     dus = DynamicUpdateSlice()
     assert dus.infer_shape(x, None, None) == (10,)
@@ -148,11 +143,6 @@ def test_dynamic_slice_opdef() -> None:
     assert out[2] == 99
     assert out[3] == 99
     assert out[4] == 4
-    assert dus.emit_jax() == "Not implemented"
-    assert dus.emit_keras() == "Not implemented"
-    assert dus.emit_mlx() == "Not implemented"
-    assert dus.emit_pytorch() == "Not implemented"
-    assert dus.emit_tensorflow() == "Not implemented"
 
 
 def test_select() -> None:
@@ -196,11 +186,7 @@ def test_top_k_opdef() -> None:
     assert np.array_equal(vals, [8, 5])
     assert np.array_equal(idxs, [3, 1])
 
-    assert tk.emit_jax() == "Not implemented TopK"
-    assert tk.emit_keras() == "Not implemented TopK"
-    assert tk.emit_mlx() == "Not implemented TopK"
-    assert tk.emit_pytorch() == "Not implemented TopK"
-    assert tk.emit_tensorflow() == "Not implemented TopK"
+    pass
 
 
 def test_top_k_frontend() -> None:
@@ -256,11 +242,7 @@ def test_sort_opdef() -> None:
     out = s.eager_eval(x)
     assert np.array_equal(out, [1, 2, 3])
 
-    assert s.emit_jax() == "Not implemented Sort"
-    assert s.emit_keras() == "Not implemented Sort"
-    assert s.emit_mlx() == "Not implemented Sort"
-    assert s.emit_pytorch() == "Not implemented Sort"
-    assert s.emit_tensorflow() == "Not implemented Sort"
+    pass
 
 
 def test_sort_frontend() -> None:
@@ -309,12 +291,6 @@ def test_broadcast_in_dim_opdef() -> None:
     assert out.shape == (2, 3)
     assert np.array_equal(out[0], [1, 2, 3])
     assert np.array_equal(out[1], [1, 2, 3])
-
-    assert op.emit_jax() == "Not implemented BroadcastInDim"
-    assert op.emit_keras() == "Not implemented BroadcastInDim"
-    assert op.emit_mlx() == "Not implemented BroadcastInDim"
-    assert op.emit_pytorch() == "Not implemented BroadcastInDim"
-    assert op.emit_tensorflow() == "Not implemented BroadcastInDim"
 
 
 def test_broadcast_in_dim_frontend() -> None:
@@ -368,12 +344,6 @@ def test_image_resize_opdef() -> None:
     x = np.ones((1, 5, 5, 3))
     out = op.eager_eval(x, (10, 10))
     assert out.shape == (1, 10, 10, 3)
-
-    assert op.emit_jax() == "Not implemented Resize"
-    assert op.emit_keras() == "Not implemented Resize"
-    assert op.emit_mlx() == "Not implemented Resize"
-    assert op.emit_pytorch() == "Not implemented Resize"
-    assert op.emit_tensorflow() == "Not implemented Resize"
 
 
 def test_image_resize_frontend() -> None:

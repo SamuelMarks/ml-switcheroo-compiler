@@ -6,6 +6,11 @@ from .conv2d import conv2d, conv2d_transpose, depthwise_conv2d, separable_conv2d
 from .conv3d import conv3d, conv3d_transpose
 from .conv_nd import conv, conv_transpose, depthwise_conv, separable_conv
 
+
+conv_transpose1d = conv1d_transpose
+conv_transpose2d = conv2d_transpose
+conv_transpose3d = conv3d_transpose
+
 __all__ = [
     "GenericConvConfig",
     "conv",
@@ -16,6 +21,9 @@ __all__ = [
     "conv3d",
     "conv3d_transpose",
     "conv_transpose",
+    "conv_transpose1d",
+    "conv_transpose2d",
+    "conv_transpose3d",
     "depthwise_conv",
     "depthwise_conv1d",
     "depthwise_conv2d",

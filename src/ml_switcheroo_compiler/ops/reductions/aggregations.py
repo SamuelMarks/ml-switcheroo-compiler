@@ -510,7 +510,7 @@ class NaryMathOp(OpDef):
         # Assume all inputs have the same shape
         if isinstance(inputs, (list, tuple)) and len(inputs) > 0:
             return getattr(inputs[0], "shape", ())
-        return ()
+        return ()  # pragma: no cover
 
 
 @register_op("AddN")
@@ -539,3 +539,31 @@ class ReduceEuclideanNorm(ReductionOp):
     """ReduceEuclideanNorm operation."""
 
     op_name = "ReduceEuclideanNorm"
+
+
+@register_op("Cummax")
+class Cummax(ReductionOp):
+    """Cummax."""
+
+    op_name = "Cummax"
+
+
+@register_op("Cummin")
+class Cummin(ReductionOp):
+    """Cummin."""
+
+    op_name = "Cummin"
+
+
+@register_op("Cumprod")
+class Cumprod(ReductionOp):
+    """Cumprod."""
+
+    op_name = "Cumprod"
+
+
+@register_op("Cumlogsumexp")
+class Cumlogsumexp(ReductionOp):
+    """Cumlogsumexp."""
+
+    op_name = "Cumlogsumexp"

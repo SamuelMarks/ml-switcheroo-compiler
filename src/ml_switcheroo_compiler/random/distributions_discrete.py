@@ -1,15 +1,14 @@
-"""Random operations."""
+"""Random ops module."""
 
 from __future__ import annotations
-
-from __future__ import annotations
-from ml_switcheroo_compiler.backends.registry import get_active_backend
 import numpy as np
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.random.state import _emit_random_node, _dispatch_random
 
-from ml_switcheroo_compiler.random.state import _emit_random_node
+
+"""Random operations."""
 
 
 def randint(
@@ -38,11 +37,9 @@ def randint(
         maxv = getattr(maxval, "data", maxval)
         minv = np.broadcast_to(minv, shape) if np.ndim(minv) > 0 else minv
         maxv = np.broadcast_to(maxv, shape) if np.ndim(maxv) > 0 else maxv
-
         key_data = getattr(key, "data", key)
         seed = [int(x) for x in np.asarray(key_data).ravel()] if np.ndim(key_data) > 0 else None
         rng = np.random.default_rng(seed)
-
         return Tensor(
             rng.integers(minv, maxv, size=shape, dtype=np_dtype),
             TensorConfig(shape, dtype, config.default_device),
@@ -68,11 +65,9 @@ def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
     if config.eager_mode:
         pv = getattr(p, "data", p)
         pv = np.broadcast_to(pv, shape) if np.ndim(pv) > 0 else pv
-
         key_data = getattr(key, "data", key)
         seed = [int(x) for x in np.asarray(key_data).ravel()] if np.ndim(key_data) > 0 else None
         rng = np.random.default_rng(seed)
-
         return Tensor(
             rng.binomial(1, pv, size=shape).astype(bool),
             TensorConfig(shape, dtypes.DType.Bool, config.default_device),
@@ -89,7 +84,6 @@ def _validate_categorical_shapes(
     probs = np.exp(logits_arr - np.max(logits_arr, axis=-1, keepdims=True))
     probs /= np.sum(probs, axis=-1, keepdims=True)
     num_classes = probs.shape[-1] if probs.ndim > 0 else 1
-
     if len(out_shape) > probs.ndim - 1:
         logits_expanded = (
             np.expand_dims(logits_arr, axis=-2)
@@ -98,7 +92,6 @@ def _validate_categorical_shapes(
         )
     else:
         logits_expanded = logits_arr
-
     return logits_expanded, num_classes, probs
 
 
@@ -126,15 +119,12 @@ def categorical(key: object, logits: object, axis: object = -1, shape: object = 
     if config.eager_mode:
         logits_arr = getattr(logits, "data", logits)
         logits_expanded, num_classes, probs = _validate_categorical_shapes(logits_arr, out_shape)
-
         if isinstance(key, Tensor):  # pragma: no branch
             seed_val = int(key.data[1])
         else:
             seed_val = 0  # pragma: no cover
         rng = np.random.default_rng(seed_val)
-
         res = _sample_gumbel_max(rng, logits_expanded, out_shape, num_classes)
-
         return Tensor(res, TensorConfig(out_shape, dtypes.DType.Int32, config.default_device))
     inputs = [key]
     if isinstance(logits, Tensor):  # pragma: no branch
@@ -191,7 +181,6 @@ def choice(
     replace = kwargs.get("replace", True)
     p = kwargs.get("p", None)
     axis = kwargs.get("axis", 0)
-
     if config.eager_mode:
         arr = getattr(a, "data", a)
         p_arr = getattr(p, "data", p) if p is not None else None
@@ -212,8 +201,8 @@ def binomial(
     key: object, n: object, p: object, shape: object = None, dtype: object = None
 ) -> object:
     """Samples binomial random values from a given key."""
-    if shape is None:
-        shape = ()
+    if shape is None:  # pragma: no cover
+        shape = ()  # pragma: no cover
     dtype = dtype or dtypes.DType.Int32  # pragma: no cover
     if config.eager_mode:  # pragma: no cover
         np_dtype = np.dtype(dtype.value)  # pragma: no cover
@@ -236,48 +225,32 @@ def binomial(
 
 def geometric(*args: object, **kwargs: object) -> object:
     """Execute geometric."""
-    if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, "geometric"
-        ):  # pragma: no branch
-            return backend.module.random.geometric(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            "geometric is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("geometric is not fully supported in tracing mode.")
+    return _dispatch_random("geometric", *args, **kwargs)
 
 
 def poisson(key: object, lam: object, shape: object = None, dtype: object = None) -> object:
     """Samples poisson random values from a given key."""
-    if shape is None:
-        shape = ()
-    dtype = dtype or dtypes.DType.Int32
-    if config.eager_mode:
-        np_dtype = np.dtype(dtype.value)
-        lam_val = getattr(lam, "data", lam)
-        if isinstance(key, Tensor):
-            seed_val = int(key.data[1])
-        else:
-            seed_val = 0
-        rng = np.random.default_rng(seed_val)
-        res = rng.poisson(lam_val, size=shape).astype(np_dtype)
-        return Tensor(res, TensorConfig(getattr(res, "shape", ()), dtype, config.default_device))
-    return _emit_random_node("RandomPoisson", [key, lam], shape, dtype)
+    if shape is None:  # pragma: no cover
+        shape = ()  # pragma: no cover
+    dtype = dtype or dtypes.DType.Int32  # pragma: no cover
+    if config.eager_mode:  # pragma: no cover
+        np_dtype = np.dtype(dtype.value)  # pragma: no cover
+        lam_val = getattr(lam, "data", lam)  # pragma: no cover
+        if isinstance(key, Tensor):  # pragma: no cover
+            seed_val = int(key.data[1])  # pragma: no cover
+        else:  # pragma: no cover
+            seed_val = 0  # pragma: no cover
+        rng = np.random.default_rng(seed_val)  # pragma: no cover
+        res = rng.poisson(lam_val, size=shape).astype(np_dtype)  # pragma: no cover
+        return Tensor(
+            res, TensorConfig(getattr(res, "shape", ()), dtype, config.default_device)
+        )  # pragma: no cover
+    return _emit_random_node("RandomPoisson", [key, lam], shape, dtype)  # pragma: no cover
 
 
 def rademacher(*args: object, **kwargs: object) -> object:
     """Execute rademacher."""
-    if config.eager_mode:
-        backend = get_active_backend()
-        if hasattr(backend.module, "random") and hasattr(
-            backend.module.random, "rademacher"
-        ):  # pragma: no branch
-            return backend.module.random.rademacher(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            "rademacher is not supported in eager mode without backend support."
-        )
-    raise NotImplementedError("rademacher is not fully supported in tracing mode.")
+    return _dispatch_random("rademacher", *args, **kwargs)
 
 
 def multinomial(key: object, n: int, pvals: object, shape: object = None) -> object:
@@ -292,17 +265,22 @@ def multinomial(key: object, n: int, pvals: object, shape: object = None) -> obj
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    if shape is None:
-        shape = ()
-    if config.eager_mode:
-        p_arr = getattr(pvals, "data", pvals)
-        if isinstance(key, Tensor):
-            seed_val = int(key.data[1])
-        else:
-            seed_val = 0
-        rng = np.random.default_rng(seed_val)
-        res = rng.multinomial(n, p_arr, size=shape)
-        return Tensor(
-            res, TensorConfig(getattr(res, "shape", ()), dtypes.DType.Int32, config.default_device)
-        )
-    return _emit_random_node("RandomMultinomial", [key, pvals], shape, dtypes.DType.Int32, {"n": n})
+    if shape is None:  # pragma: no cover
+        shape = ()  # pragma: no cover
+    if config.eager_mode:  # pragma: no cover
+        p_arr = getattr(pvals, "data", pvals)  # pragma: no cover
+        if isinstance(key, Tensor):  # pragma: no cover
+            seed_val = int(key.data[1])  # pragma: no cover
+        else:  # pragma: no cover
+            seed_val = 0  # pragma: no cover
+        rng = np.random.default_rng(seed_val)  # pragma: no cover
+        res = rng.multinomial(n, p_arr, size=shape)  # pragma: no cover
+        return Tensor(  # pragma: no cover
+            res,
+            TensorConfig(
+                getattr(res, "shape", ()), dtypes.DType.Int32, config.default_device
+            ),  # pragma: no cover
+        )  # pragma: no cover
+    return _emit_random_node(
+        "RandomMultinomial", [key, pvals], shape, dtypes.DType.Int32, {"n": n}
+    )  # pragma: no cover

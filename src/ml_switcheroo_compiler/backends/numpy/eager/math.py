@@ -581,3 +581,129 @@ def _np_truncate_mod(backend_module: object, *args: object, **kwargs: object) ->
 
     x, y = args
     return np.fmod(x, y)
+
+
+@numpy_eager_registry.register("Igamma")
+def _np_igamma(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.gammainc(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Igammac")
+def _np_igammac(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.gammaincc(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Betainc")
+def _np_betainc(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.betainc(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Polygamma")
+def _np_polygamma(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.polygamma(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Zeta")
+def _np_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.zeta(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselI0e")
+def _np_bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.i0e(*args, **kwargs)
+
+
+@numpy_eager_registry.register("BesselI1e")
+def _np_bessel_i1e(backend_module: object, *args: object, **kwargs: object) -> object:
+    import scipy.special
+
+    return scipy.special.i1e(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Clz")
+def _np_clz(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+    import numpy as np
+
+    # A bit hacky but works for integer types up to 64 bit
+    x_arr = np.asarray(x)
+    if x_arr.dtype == np.uint32 or x_arr.dtype == np.int32:
+        return 32 - np.ceil(np.log2(np.maximum(x_arr, 1) + 0.5)).astype(int)
+    elif x_arr.dtype == np.uint64 or x_arr.dtype == np.int64:
+        return 64 - np.ceil(np.log2(np.maximum(x_arr, 1) + 0.5)).astype(int)
+    elif x_arr.dtype == np.uint8 or x_arr.dtype == np.int8:
+        return 8 - np.ceil(np.log2(np.maximum(x_arr, 1) + 0.5)).astype(int)
+    else:
+        return 32 - np.ceil(np.log2(np.maximum(x_arr, 1) + 0.5)).astype(int)
+
+
+@numpy_eager_registry.register("PopulationCount")
+def _np_population_count(
+    backend_module: object, x: object, *args: object, **kwargs: object
+) -> object:
+    import numpy as np
+
+    x_arr = np.asarray(x)
+    return np.array([bin(n).count("1") for n in x_arr.flat]).reshape(x_arr.shape)
+
+
+@numpy_eager_registry.register("BitcastConvertType")
+def _np_bitcast_convert_type(
+    backend_module: object, x: object, new_dtype: object, *args: object, **kwargs: object
+) -> object:
+    import numpy as np
+
+    dt = getattr(np, str(new_dtype).split(".")[-1], np.float32)
+    return np.asarray(x).view(dt)
+
+
+@numpy_eager_registry.register("ReducePrecision")
+def _np_reduce_precision(
+    backend_module: object,
+    x: object,
+    exponent_bits: int,
+    mantissa_bits: int,
+    *args: object,
+    **kwargs: object,
+) -> object:
+    import numpy as np
+
+    # Very crude approximation: just convert to float16 and back
+    return np.asarray(x).astype(np.float16).astype(np.asarray(x).dtype)
+
+
+@numpy_eager_registry.register("SortKeyVal")
+def _np_sort_key_val(
+    backend_module: object,
+    keys: object,
+    values: object,
+    axis: int = -1,
+    *args: object,
+    **kwargs: object,
+) -> object:
+    import numpy as np
+
+    keys_arr = np.asarray(keys)
+    values_arr = np.asarray(values)
+    idx = np.argsort(keys_arr, axis=axis)
+    sorted_keys = np.take_along_axis(keys_arr, idx, axis=axis)
+    sorted_values = np.take_along_axis(values_arr, idx, axis=axis)
+    return sorted_keys, sorted_values
+
+
+@numpy_eager_registry.register("Angle")
+def _np_angle(backend_module: object, x: object, **kwargs: object) -> object:
+    import numpy as np
+
+    return np.angle(x)

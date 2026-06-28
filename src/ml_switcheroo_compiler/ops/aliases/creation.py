@@ -1,5 +1,8 @@
 """Aliases for creation."""
 
+from ml_switcheroo_compiler.ops.base import get_op
+
+
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_10_0
 
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
@@ -124,16 +127,10 @@ ravel_multi_index = create_eager_alias("ravel_multi_index")
 tri = create_eager_alias("tri")
 
 
-tril_indices = create_eager_alias("tril_indices")
-
-
-tril_indices_from = create_eager_alias("tril_indices_from")
-
-
-triu_indices = create_eager_alias("triu_indices")
-
-
-triu_indices_from = create_eager_alias("triu_indices_from")
+tril_indices = get_op("TrilIndices")()
+tril_indices_from = get_op("TrilIndicesFrom")()
+triu_indices = get_op("TriuIndices")()
+triu_indices_from = get_op("TriuIndicesFrom")()
 
 
 vander = create_eager_alias("vander")

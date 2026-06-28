@@ -123,3 +123,13 @@ def _np_where(backend_module: object, *args: object, **kwargs: object) -> object
         kwargs: Arg.
     """
     return backend_module.where(*args, **kwargs)
+
+
+@numpy_eager_registry.register("Assert")
+def _np_assert(backend_module: object, condition: object, **kwargs: object) -> object:
+    import numpy as np
+
+    if not np.all(condition):
+        data = kwargs.get("data", ["Assertion failed."])
+        raise AssertionError(data)
+    return backend_module.array(0)

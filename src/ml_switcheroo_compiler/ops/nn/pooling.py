@@ -240,37 +240,37 @@ def average_pool(
 def avg_pool1d(value, ksize, strides, padding, data_format="NWC", name=None):
     # pragma: no cover
     """1D Average pooling."""
-    return avg_pool(value, pool_size=ksize, strides=strides, padding=padding)
+    return avg_pool(value, pool_size=ksize, strides=strides, padding=padding)  # pragma: no cover
 
 
 def avg_pool2d(value, ksize, strides, padding, data_format="NHWC", name=None):
     # pragma: no cover
     """2D Average pooling."""
-    return avg_pool(value, pool_size=ksize, strides=strides, padding=padding)
+    return avg_pool(value, pool_size=ksize, strides=strides, padding=padding)  # pragma: no cover
 
 
 def avg_pool3d(value, ksize, strides, padding, data_format="NDHWC", name=None):
     # pragma: no cover
     """3D Average pooling."""
-    return avg_pool(value, pool_size=ksize, strides=strides, padding=padding)
+    return avg_pool(value, pool_size=ksize, strides=strides, padding=padding)  # pragma: no cover
 
 
 def max_pool1d(inputs, ksize, strides, padding, data_format="NWC", name=None):
     # pragma: no cover
     """1D Max pooling."""
-    return max_pool(inputs, pool_size=ksize, strides=strides, padding=padding)
+    return max_pool(inputs, pool_size=ksize, strides=strides, padding=padding)  # pragma: no cover
 
 
 def max_pool2d(inputs, ksize, strides, padding, data_format="NHWC", name=None):
     # pragma: no cover
     """2D Max pooling."""
-    return max_pool(inputs, pool_size=ksize, strides=strides, padding=padding)
+    return max_pool(inputs, pool_size=ksize, strides=strides, padding=padding)  # pragma: no cover
 
 
 def max_pool3d(inputs, ksize, strides, padding, data_format="NDHWC", name=None):
     # pragma: no cover
     """3D Max pooling."""
-    return max_pool(inputs, pool_size=ksize, strides=strides, padding=padding)
+    return max_pool(inputs, pool_size=ksize, strides=strides, padding=padding)  # pragma: no cover
 
 
 def max_pool_with_argmax(

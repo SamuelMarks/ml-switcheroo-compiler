@@ -110,12 +110,14 @@ def dispatch_eager(op_name: str) -> Callable:
                 backend = get_active_backend()
                 raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
                 data = backend.execute_op(op_name, *raw_args, **kwargs)
+                print(f"op_name: {op_name}, data.shape: {getattr(data, 'shape', None)}")
                 first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
                 device = first_tensor.device if first_tensor is not None else None
                 dtype = first_tensor.dtype if first_tensor is not None else None
                 return Tensor(
                     backend.array(data), TensorConfig(backend.array(data).shape, dtype, device)
                 )
+            print("EAGER MODE WAS FALSE IN WRAPPER!")
             return func(*args, **kwargs)
 
         return wrapper

@@ -164,6 +164,23 @@ class Solve(OpDef):
         return ()
 
 
+@register_op("TriInv")
+class TriInv(OpDef):
+    """TriInv Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
 @register_op("TriangularSolve")
 class TriangularSolve(OpDef):
     """TriangularSolve Operation Definition."""
@@ -302,6 +319,72 @@ class PowerIteration(OpDef):
         u_shape = in_shape[:-2] + (in_shape[-2],)  # pragma: no cover
         sigma_shape = in_shape[:-2]  # pragma: no cover
         return (v_shape, u_shape, sigma_shape), (args[0].dtype,) * 3  # pragma: no cover
+
+
+@register_op("Polar")
+class Polar(OpDef):
+    """Polar Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape, args[0].shape
+
+
+@register_op("Hessenberg")
+class Hessenberg(OpDef):
+    """Hessenberg Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape, args[0].shape
+
+
+@register_op("HouseholderProduct")
+class HouseholderProduct(OpDef):
+    """HouseholderProduct Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("Schur")
+class Schur(OpDef):
+    """Schur Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape, args[0].shape
+
+
+@register_op("Tridiagonal")
+class Tridiagonal(OpDef):
+    """Tridiagonal Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        a_shape = args[0].shape
+        diag_shape = a_shape[:-1]
+        off_diag_shape = a_shape[:-2] + (a_shape[-1] - 1,) if a_shape[-1] > 0 else a_shape[:-1]
+        return diag_shape, off_diag_shape, a_shape
+
+
+@register_op("TridiagonalSolve")
+class TridiagonalSolve(OpDef):
+    """TridiagonalSolve Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[3].shape
+
+
+@register_op("LuPivotsToPermutation")
+class LuPivotsToPermutation(OpDef):
+    """LuPivotsToPermutation Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape[:-1] + (kwargs["permutation_size"],)
 
 
 if TYPE_CHECKING:
@@ -584,6 +667,31 @@ def solve(a: Tensor, b: Tensor) -> Tensor:
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
 
 
+def tri_inv(a: Tensor, lower: bool = False) -> Tensor:
+    """Computes the inverse of a triangular matrix.
+
+    Args:
+        a (Tensor): Triangular matrix
+        lower (bool): If True, a is assumed to be lower triangular. Otherwise, upper.
+
+    Returns:
+    Tensor: The inverse matrix
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("TriInv", a.data, lower=lower)
+        return Tensor(data, TensorConfig(a.shape, a.dtype, a.device))
+    return _emit_linalg_node(
+        "TriInv",
+        [a],
+        {"lower": lower},
+        [a.shape],
+        [a.dtype],
+    )
+
+
 def solve_triangular(
     a: Tensor,
     b: Tensor,
@@ -819,4 +927,169 @@ def power_iteration(
         {"num_iters": num_iters},
         [v_shape, u_shape, sigma_shape],
         [input.dtype, input.dtype, input.dtype],
+    )
+
+
+def polar(a: Tensor, side: str = "right") -> tuple[Tensor, Tensor]:
+    """Computes the polar decomposition of a matrix.
+
+    Args:
+        a (Tensor): The input matrix
+        side (str): "right" or "left"
+
+    Returns:
+    tuple[Tensor, Tensor]: A tuple containing:
+        - U (Tensor): The unitary/orthogonal matrix
+        - P (Tensor): The positive semi-definite matrix
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        u, p = backend.execute_op("Polar", a.data, side=side)
+        return (
+            Tensor(u, TensorConfig(u.shape, a.dtype, a.device)),
+            Tensor(p, TensorConfig(p.shape, a.dtype, a.device)),
+        )
+    return _emit_linalg_node("Polar", [a], {"side": side}, [a.shape, a.shape], [a.dtype] * 2)
+
+
+def hessenberg(a: Tensor) -> tuple[Tensor, Tensor]:
+    """Computes the Hessenberg decomposition of a matrix.
+
+    Args:
+        a (Tensor): The input matrix
+
+    Returns:
+    tuple[Tensor, Tensor]: A tuple containing:
+        - H (Tensor): The upper Hessenberg matrix
+        - Q (Tensor): The unitary/orthogonal matrix
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        h, q = backend.execute_op("Hessenberg", a.data)
+        return (
+            Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
+            Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
+        )
+    return _emit_linalg_node("Hessenberg", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
+
+
+def householder_product(a: Tensor, tau: Tensor) -> Tensor:
+    """Computes the product of Householder reflectors.
+
+    Args:
+        a (Tensor): Vectors with Householder reflectors
+        tau (Tensor): Scalar factors
+
+    Returns:
+    Tensor: The orthogonal/unitary matrix
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("HouseholderProduct", a.data, tau.data)
+        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
+    return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
+
+
+def schur(a: Tensor) -> tuple[Tensor, Tensor]:
+    """Computes the Schur decomposition of a matrix.
+
+    Args:
+        a (Tensor): The input matrix
+
+    Returns:
+    tuple[Tensor, Tensor]: A tuple containing:
+        - T (Tensor): The Schur form
+        - Z (Tensor): The unitary/orthogonal matrix
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        t, z = backend.execute_op("Schur", a.data)
+        return (
+            Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
+            Tensor(z, TensorConfig(z.shape, a.dtype, a.device)),
+        )
+    return _emit_linalg_node("Schur", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
+
+
+def tridiagonal(a: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+    """Computes the tridiagonal decomposition of a symmetric matrix.
+
+    Args:
+        a (Tensor): The input symmetric matrix
+
+    Returns:
+    tuple[Tensor, Tensor, Tensor]: A tuple containing:
+        - diag (Tensor): The main diagonal
+        - off_diag (Tensor): The off-diagonal
+        - q (Tensor): The unitary/orthogonal matrix
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        diag, off_diag, q = backend.execute_op("Tridiagonal", a.data)
+        return (
+            Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
+            Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),
+            Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
+        )
+    diag_shape = a.shape[:-1]
+    off_diag_shape = a.shape[:-2] + (a.shape[-1] - 1,) if a.shape[-1] > 0 else a.shape[:-1]
+    return _emit_linalg_node(
+        "Tridiagonal", [a], {}, [diag_shape, off_diag_shape, a.shape], [a.dtype] * 3
+    )
+
+
+def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Tensor:
+    """Solves a tridiagonal linear system.
+
+    Args:
+        dl (Tensor): The lower diagonal
+        d (Tensor): The main diagonal
+        du (Tensor): The upper diagonal
+        b (Tensor): The right-hand side
+
+    Returns:
+    Tensor: The solution matrix `x`
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("TridiagonalSolve", dl.data, d.data, du.data, b.data)
+        return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
+    return _emit_linalg_node("TridiagonalSolve", [dl, d, du, b], {}, [b.shape], [b.dtype])
+
+
+def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int) -> Tensor:
+    """Converts LU pivots to a permutation matrix or array.
+
+    Args:
+        pivots (Tensor): The LU pivots
+        permutation_size (int): The size of the permutation
+
+    Returns:
+    Tensor: The permutation array
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("LuPivotsToPermutation", pivots.data, permutation_size)
+        return Tensor(data, TensorConfig(data.shape, pivots.dtype, pivots.device))
+    out_shape = pivots.shape[:-1] + (permutation_size,)
+    return _emit_linalg_node(
+        "LuPivotsToPermutation",
+        [pivots],
+        {"permutation_size": permutation_size},
+        [out_shape],
+        [pivots.dtype],
     )

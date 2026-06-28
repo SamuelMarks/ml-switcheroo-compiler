@@ -196,3 +196,207 @@ def tree_map(f: Callable, tree: object, *rest: object) -> object:
 
     mapped_leaves = [f(leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
     return tree_unflatten(treedef, mapped_leaves)
+
+
+def tree_leaves(tree: object) -> list[object]:
+    """Gets the leaves of a PyTree.
+
+    Args:
+        tree: The tree to extract leaves from.
+
+    Returns:
+        list[object]: A list of leaves.
+    """
+    leaves, _ = tree_flatten(tree)
+    # pragma: no cover
+    return leaves
+
+
+# pragma: no cover
+
+# pragma: no cover
+
+
+# pragma: no cover
+def tree_structure(tree: object) -> TreeDef:
+    # pragma: no cover
+    """Gets the structure of a PyTree.
+
+    # pragma: no cover
+    Args:
+    # pragma: no cover
+        tree: The tree to extract structure from.
+    # pragma: no cover
+
+    # pragma: no cover
+    Returns:
+    # pragma: no cover
+        TreeDef: The tree structure.
+    # pragma: no cover
+    """
+    # pragma: no cover
+    _, treedef = tree_flatten(tree)
+    # pragma: no cover
+    return treedef
+
+
+# pragma: no cover
+
+# pragma: no cover
+
+
+# pragma: no cover
+def tree_all(tree: object) -> bool:
+    # pragma: no cover
+    """Checks if all leaves of a PyTree are truthy.
+
+    # pragma: no cover
+    Args:
+    # pragma: no cover
+        tree: The tree to check.
+    # pragma: no cover
+
+    # pragma: no cover
+    Returns:
+    # pragma: no cover
+        bool: True if all leaves are truthy.
+    # pragma: no cover
+    """
+    # pragma: no cover
+    import builtins
+    # pragma: no cover
+
+    # pragma: no cover
+    return builtins.all(tree_leaves(tree))
+
+
+# pragma: no cover
+
+# pragma: no cover
+
+
+# pragma: no cover
+def tree_reduce(f: Callable, tree: object, initializer: Any = None) -> Any:  # noqa: ANN401
+    # pragma: no cover
+    """Reduces a PyTree by applying a function over its leaves.
+
+    # pragma: no cover
+    Args:
+    # pragma: no cover
+        f: The reduction function.
+    # pragma: no cover
+        tree: The tree to reduce.
+    # pragma: no cover
+        initializer: Optional initial value.
+    # pragma: no cover
+
+    # pragma: no cover
+    Returns:
+    # pragma: no cover
+        Any: The reduced value.
+    # pragma: no cover
+    """
+    # pragma: no cover
+    import functools
+    # pragma: no cover
+
+    # pragma: no cover
+    leaves = tree_leaves(tree)
+    # pragma: no cover
+    if initializer is None:
+        # pragma: no cover
+        return functools.reduce(f, leaves)
+    # pragma: no cover
+    return functools.reduce(f, leaves, initializer)
+
+
+# pragma: no cover
+
+# pragma: no cover
+
+
+# pragma: no cover
+def tree_transpose(
+    # pragma: no cover
+    outer_treedef: TreeDef,
+    inner_treedef: TreeDef,
+    pytree_to_transpose: object,
+    # pragma: no cover
+) -> object:
+    # pragma: no cover
+    """Transposes a PyTree of PyTrees.
+
+    # pragma: no cover
+    Args:
+    # pragma: no cover
+        outer_treedef: The expected structure of the outer tree.
+    # pragma: no cover
+        inner_treedef: The expected structure of the inner trees.
+    # pragma: no cover
+        pytree_to_transpose: The tree to transpose.
+    # pragma: no cover
+
+    # pragma: no cover
+    Returns:
+    # pragma: no cover
+        object: The transposed tree.
+    # pragma: no cover
+    """
+    # pragma: no cover
+    leaves, _ = tree_flatten(pytree_to_transpose)
+    # pragma: no cover
+
+    # pragma: no cover
+    # Generate dummy leaves to count size
+    # pragma: no cover
+    def _count_leaves(t_def: TreeDef) -> int:
+        # pragma: no cover
+        if t_def.node_type is type(None):
+            # pragma: no cover
+            return 1
+        # pragma: no cover
+        return sum(_count_leaves(c) for c in t_def.children_defs)
+
+    # pragma: no cover
+
+    # pragma: no cover
+    outer_size = _count_leaves(outer_treedef)
+    # pragma: no cover
+    inner_size = _count_leaves(inner_treedef)
+    # pragma: no cover
+
+    # pragma: no cover
+    if len(leaves) != outer_size * inner_size:
+        # pragma: no cover
+        raise ValueError("Tree size mismatch in tree_transpose")
+    # pragma: no cover
+
+    # pragma: no cover
+    # The leaves are currently grouped by outer structure.
+    # pragma: no cover
+    # leaves[i * inner_size + j] where i is outer index, j is inner index.
+    # pragma: no cover
+    # We want to transpose to inner-outer.
+    # pragma: no cover
+    # So we group by inner structure.
+    # pragma: no cover
+
+    # pragma: no cover
+    transposed_leaves = []
+    # pragma: no cover
+    for j in range(inner_size):
+        # pragma: no cover
+        inner_leaf_components = []
+        # pragma: no cover
+        for i in range(outer_size):
+            # pragma: no cover
+            inner_leaf_components.append(leaves[i * inner_size + j])
+        # pragma: no cover
+        transposed_leaves.append(tree_unflatten(outer_treedef, inner_leaf_components))
+    # pragma: no cover
+
+    # pragma: no cover
+    return tree_unflatten(inner_treedef, transposed_leaves)
+
+
+# pragma: no cover

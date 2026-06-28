@@ -1,29 +1,13 @@
 """Aliases for polynomial."""
 
-from .common import create_eager_alias
+from ml_switcheroo_compiler.ops.base import get_op
 
-poly = create_eager_alias("poly")
-
-
-polyadd = create_eager_alias("polyadd")
-
-
-polyder = create_eager_alias("polyder")
-
-
-polydiv = create_eager_alias("polydiv")
-
-
-polyfit = create_eager_alias("polyfit")
-
-
-polyint = create_eager_alias("polyint")
-
-
-polymul = create_eager_alias("polymul")
-
-
-polysub = create_eager_alias("polysub")
-
-
-polyval = create_eager_alias("polyval")
+poly = get_op("Poly")()
+polyadd = get_op("Polyadd")()
+polyder = get_op("Polyder")()
+polydiv = get_op("Polydiv")()
+polyfit = get_op("Polyfit")()
+polyint = get_op("Polyint")()
+polymul = get_op("Polymul")()
+polysub = get_op("Polysub")()
+polyval = get_op("Polyval")()

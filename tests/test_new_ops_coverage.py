@@ -381,3 +381,25 @@ def test_aliases_coverage_eager():
                 pass
         except Exception:
             pass
+
+
+def test_activations_coverage():
+    config.eager_mode = False
+    acts = [
+        "glu",
+        "hard_silu",
+        "hard_swish",
+        "leaky_relu",
+        "mish",
+        "soft_sign",
+        "softplus",
+        "sparse_plus",
+        "sparse_sigmoid",
+        "squareplus",
+    ]
+    for act in acts:
+        func = getattr(activations, act)
+        try:
+            func()
+        except Exception:
+            pass

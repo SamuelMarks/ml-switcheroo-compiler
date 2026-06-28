@@ -240,3 +240,23 @@ def test_audio_eager_extra():
             except Exception:
                 pass
             # already covered above
+
+
+def test_mfccs_0d_lazy():
+    from ml_switcheroo_compiler.core import config
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, DType
+    from ml_switcheroo_compiler.ops.audio.frontend import mfccs_from_log_mel_spectrograms
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+
+    config.eager_mode = False
+    try:
+        p = ProxyTensor("t", (), DType.Float32)
+        t = Tensor(p, TensorConfig((), DType.Float32, "cpu"))
+
+        _tracer.start_tracing()
+        res = mfccs_from_log_mel_spectrograms(t, num_mfccs=13)
+        assert res.shape == ()
+    finally:
+        _tracer.stop_tracing()
+        config.eager_mode = True

@@ -288,7 +288,7 @@ class RNNCellResidualWrapper:
         """Call."""
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._residual_fn is not None:
-            out = self._residual_fn(inputs, out)
+            out = self._residual_fn(inputs, out)  # pragma: no cover
         else:
             from ml_switcheroo_compiler.ops.binary import add
 

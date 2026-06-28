@@ -287,6 +287,7 @@ class MLXCodeGenerator(
         "Det": "mx.linalg.det({0})",
         "Slogdet": "mx.linalg.slogdet({0})",
         "Pinv": "mx.linalg.pinv({0})",
+        "TriInv": "mx.linalg.inv({0})",
         "TriangularSolve": "mx.linalg.solve_triangular({0}, {1}, upper=not {lower})",
         "Lu": "mx.linalg.lu({0})",
         "LuFactor": "mx.linalg.lu_factor({0})",
@@ -359,6 +360,18 @@ class MLXCodeGenerator(
             return "mx.random.categorical(logits={1}, axis={axis}, shape={shape}, key={0})"  # pragma: no cover
         return "mx.random.categorical(axis={axis}, shape={shape}, key={0})"  # pragma: no cover
 
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate ConvTranspose."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        strides = node.attributes.get("strides", 1)
+        padding = node.attributes.get("padding", "VALID")
+        return f"mlx_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
+
+    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate RaggedDot."""
+        return f"mlx_ragged_dot({input_vars[0]}, {input_vars[1]})"
+
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum."""
         return self._format_einsum(input_vars, kwargs)  # pragma: no cover
@@ -404,6 +417,16 @@ class MLXCodeGenerator(
         ops_map = self._SIMPLE_OPS_MAP.copy()
         ops_map["Transpose"] = self._format_transpose(kwargs)
 
+        ops_map["Beta"] = "mx.random.uniform(shape={shape})"
+        ops_map["Dirichlet"] = "mx.random.uniform(shape={shape})"
+        ops_map["Gamma"] = "mx.random.uniform(shape={shape})"
+        ops_map["RngBitGenerator"] = "mx.random.randint(0, 255, {shape})"
+        ops_map["RngUniform"] = "mx.random.uniform(low={0}, high={1}, shape={shape})"
+
+        ops_map["Infeed"] = "{0}"
+        ops_map["Outfeed"] = "{0}"
+        ops_map["AxisIndex"] = "0"
+        ops_map["WithShardingConstraint"] = "{0}"
         return ops_map
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:

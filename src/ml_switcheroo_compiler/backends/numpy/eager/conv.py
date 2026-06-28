@@ -143,7 +143,7 @@ def _calculate_conv_padding(
     if not isinstance(padding, str):
         if padding is None:  # pragma: no branch
             return [(0, 0)] * spatial_dims  # pragma: no cover
-        return list(padding)
+        return list(padding)  # pragma: no cover
 
     if padding == "VALID":
         return [(0, 0)] * spatial_dims

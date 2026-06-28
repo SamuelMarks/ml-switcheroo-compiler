@@ -444,6 +444,14 @@ class Mvlgamma(UnaryMathOp):
     op_name = "Mvlgamma"
 
 
+@register_op("SpecialGamma")
+class SpecialGamma(UnaryMathOp):
+    """Computes the gamma function element-wise."""
+
+    op_name = "SpecialGamma"
+    np_op_name = "gamma"
+
+
 @register_op("NanToNum")
 class NanToNum(UnaryMathOp):
     """Replaces NaN, positive infinity, and negative infinity values."""
@@ -641,3 +649,202 @@ class Spence(UnaryMathOp):
     """Spence operation."""
 
     op_name = "Spence"
+
+
+@register_op("Setdiff1d")
+class Setdiff1d(OpDef):
+    """Setdiff1d operator definition."""
+
+    op_name = "Setdiff1d"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Setxor1d")
+class Setxor1d(OpDef):
+    """Setxor1d operator definition."""
+
+    op_name = "Setxor1d"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Union1d")
+class Union1d(OpDef):
+    """Union1d operator definition."""
+
+    op_name = "Union1d"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("UniqueAll")
+class UniqueAll(OpDef):
+    """UniqueAll operator definition."""
+
+    op_name = "UniqueAll"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("UniqueCounts")
+class UniqueCounts(OpDef):
+    """UniqueCounts operator definition."""
+
+    op_name = "UniqueCounts"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("UniqueInverse")
+class UniqueInverse(OpDef):
+    """UniqueInverse operator definition."""
+
+    op_name = "UniqueInverse"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("UniqueValues")
+class UniqueValues(OpDef):
+    """UniqueValues operator definition."""
+
+    op_name = "UniqueValues"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Packbits")
+class Packbits(OpDef):
+    """Packbits operator definition."""
+
+    op_name = "Packbits"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Unpackbits")
+class Unpackbits(OpDef):
+    """Unpackbits operator definition."""
+
+    op_name = "Unpackbits"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0] if args else ()
+
+
+@register_op("Clz")
+class Clz(UnaryMathOp):
+    """Count leading zeros."""
+
+    op_name = "Clz"
+
+
+@register_op("PopulationCount")
+class PopulationCount(UnaryMathOp):
+    """Population count."""
+
+    op_name = "PopulationCount"
+
+
+@register_op("BitcastConvertType")
+class BitcastConvertType(UnaryMathOp):
+    """Bitcast convert type."""
+
+    op_name = "BitcastConvertType"
+
+
+@register_op("ReducePrecision")
+class ReducePrecision(UnaryMathOp):
+    """Reduce precision."""
+
+    op_name = "ReducePrecision"

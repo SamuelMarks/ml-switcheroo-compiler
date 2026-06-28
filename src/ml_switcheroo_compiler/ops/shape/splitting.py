@@ -35,8 +35,12 @@ def split(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        datas = backend.execute_op("Split", input.data, split_size_or_sections, axis=dim)
-        return tuple(Tensor(d, TensorConfig(d.shape, input.dtype, input.device)) for d in datas)
+        input_data = getattr(input, "data", input)
+        datas = backend.execute_op("Split", input_data, split_size_or_sections, axis=dim)
+        input_data = getattr(input, "data", input)
+        input_dtype = getattr(input, "dtype", backend.array(input_data).dtype)
+        input_device = getattr(input, "device", config.default_device)
+        return tuple(Tensor(d, TensorConfig(d.shape, input_dtype, input_device)) for d in datas)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
@@ -70,7 +74,10 @@ def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
             if hasattr(backend, "unstack")
             else backend.execute_op("Moveaxis", input.data, dim, 0)
         )
-        return tuple(Tensor(d, TensorConfig(d.shape, input.dtype, input.device)) for d in datas)
+        input_data = getattr(input, "data", input)
+        input_dtype = getattr(input, "dtype", backend.array(input_data).dtype)
+        input_device = getattr(input, "device", config.default_device)
+        return tuple(Tensor(d, TensorConfig(d.shape, input_dtype, input_device)) for d in datas)
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()

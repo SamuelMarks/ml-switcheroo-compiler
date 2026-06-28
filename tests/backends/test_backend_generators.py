@@ -62,7 +62,6 @@ def test_truncate_ops_generation() -> None:
     """Test generation of TruncateDiv and TruncateMod ops."""
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
-    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
     from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
     from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
     from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
@@ -81,10 +80,9 @@ def test_truncate_ops_generation() -> None:
         TensorFlowCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"])
         == "tf.math.truncatemod(x, y)"
     )
-    assert (
-        NumpyGenerator(MagicMock()).visit_TruncateDiv(node_div, ["x", "y"])
-        == "np.trunc(np.divide(x, y))"
-    )
+    from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor
+
+    assert NumpyASTVisitor.visit_TruncateDiv(node_div, ["x", "y"]) == "np.trunc(np.divide(x, y))"
     assert (
         PyTorchCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
         == "torch.trunc(x / y)"
@@ -110,7 +108,7 @@ def test_truncate_ops_generation() -> None:
         == "da.trunc(da.divide(x, y))"
     )
 
-    assert NumpyGenerator(MagicMock()).visit_TruncateMod(node_mod, ["x", "y"]) == "np.fmod(x, y)"
+    assert NumpyASTVisitor.visit_TruncateMod(node_mod, ["x", "y"]) == "np.fmod(x, y)"
     assert (
         PyTorchCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "torch.fmod(x, y)"
     )

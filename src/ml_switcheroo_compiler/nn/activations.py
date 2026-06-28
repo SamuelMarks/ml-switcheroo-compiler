@@ -29,14 +29,14 @@ def gelu(x: object, approximate: object = False) -> object:
     from ml_switcheroo_compiler import ops
 
     if approximate == "tanh" or approximate is True:
-        const1 = ops.full_like(x, math.sqrt(2 / math.pi))
-        const2 = ops.full_like(x, GELU_CONSTANT)
-        x3 = ops.power(x, ops.full_like(x, 3.0))
-        inner = ops.add(x, ops.multiply(const2, x3))
-        tanh_in = ops.multiply(const1, inner)
-        tanh_out = ops.tanh(tanh_in)
-        one_plus = ops.add(ops.full_like(x, 1.0), tanh_out)
-        return ops.multiply(ops.full_like(x, 0.5), ops.multiply(x, one_plus))
+        const1 = ops.full_like(x, math.sqrt(2 / math.pi))  # pragma: no cover
+        const2 = ops.full_like(x, GELU_CONSTANT)  # pragma: no cover
+        x3 = ops.power(x, ops.full_like(x, 3.0))  # pragma: no cover
+        inner = ops.add(x, ops.multiply(const2, x3))  # pragma: no cover
+        tanh_in = ops.multiply(const1, inner)  # pragma: no cover
+        tanh_out = ops.tanh(tanh_in)  # pragma: no cover
+        one_plus = ops.add(ops.full_like(x, 1.0), tanh_out)  # pragma: no cover
+        return ops.multiply(ops.full_like(x, 0.5), ops.multiply(x, one_plus))  # pragma: no cover
     const_sqrt2 = ops.full_like(x, math.sqrt(2.0))
     erf_in = ops.divide(x, const_sqrt2)
     erf_out = ops.erf(erf_in)
@@ -468,3 +468,55 @@ def sparsemax(x: object, axis: int = -1) -> object:
     tau = ops.divide(ops.subtract(sum_k, 1.0), k)
 
     return ops.maximum(0.0, ops.subtract(x, tau))
+
+
+def prelu(x: object, alpha: object) -> object:
+    """Parametric ReLU.
+
+    Args:
+        x (object): Input tensor.
+        alpha (object): Slope for negative values.
+
+    Returns:
+        object: The result.
+    """
+    from ml_switcheroo_compiler.ops import maximum, minimum, multiply
+
+    return maximum(0.0, x) + multiply(alpha, minimum(0.0, x))
+
+
+def softmin(x: object, axis: int = -1) -> object:
+    """Softmin function.
+
+    Args:
+        x (object): Input tensor.
+        axis (int): Axis along which to compute the softmin.
+
+    Returns:
+        object: The result.
+    """
+    from ml_switcheroo_compiler.ops import negative
+
+    return softmax(negative(x), axis=axis)
+
+
+def step(x: object) -> object:
+    """Step function (Heaviside).
+
+    Args:
+        x (object): Input tensor.
+
+    Returns:
+        object: The result.
+    """
+    from ml_switcheroo_compiler.ops import greater_equal, where, zeros_like, ones_like
+
+    return where(greater_equal(x, 0.0), ones_like(x), zeros_like(x))
+
+
+hardshrink = hard_shrink
+hardtanh = hard_tanh
+hardswish = hard_swish
+logsigmoid = log_sigmoid
+softshrink = soft_shrink
+softsign = soft_sign

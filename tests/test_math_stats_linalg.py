@@ -215,3 +215,34 @@ def test_advanced_indexing_shape():
     assert ops.dynamic_partition is not None
     assert ops.dynamic_stitch is not None
     assert ops.extract_volume_patches is not None
+
+
+def test_adjoint():
+    from ml_switcheroo_compiler.core.config import config
+
+    config.eager_mode = True
+    m = ops.array(np.array([[1.0 + 1j, 2.0], [3.0, 4.0 - 2j]]))
+    out = ops.adjoint(m)
+    # the adjoint is the conjugate transpose
+    expected = np.array([[1.0 - 1j, 3.0], [2.0, 4.0 + 2j]])
+    np.testing.assert_allclose(out.data, expected)
+
+
+def test_adjoint_ast():
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    import numpy as np
+
+    config.eager_mode = False
+
+    _tracer.start_tracing("Test")
+    x = ops.array(np.array([[1.0 + 1j, 2.0], [3.0, 4.0 - 2j]]))
+    _ = ops.adjoint(x)
+    graph = _tracer.stop_tracing()
+
+    gen_cls = BackendRegistry.get("numpy")
+    gen = gen_cls(graph)
+    code = gen.generate()
+
+    assert "adjoint" in code

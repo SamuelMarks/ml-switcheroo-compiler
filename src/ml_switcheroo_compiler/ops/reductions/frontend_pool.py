@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 
 from typing import TYPE_CHECKING
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 if TYPE_CHECKING:
@@ -60,6 +60,22 @@ def adaptive_avg_pool2d(
     if len(out_shape) >= MAGIC_VAL_2:  # pragma: no branch
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
+
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "AdaptiveAvgPool2D",
+            operand.data,
+            output_size=output_size,
+        )
+        return Tensor(
+            backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)
+        )
+
     return _emit_reduction_node(
         "AdaptiveAvgPool2D",
         [operand],
@@ -86,6 +102,22 @@ def adaptive_max_pool2d(
     if len(out_shape) >= MAGIC_VAL_2:  # pragma: no branch
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
+
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "AdaptiveMaxPool2D",
+            operand.data,
+            output_size=output_size,
+        )
+        return Tensor(
+            backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)
+        )
+
     return _emit_reduction_node(
         "AdaptiveMaxPool2D",
         [operand],

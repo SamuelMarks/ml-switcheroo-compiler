@@ -1,6 +1,8 @@
 """Random API."""
 
 from ml_switcheroo_compiler.random.state import (
+    rng_bit_generator,
+    rng_uniform,
     PRNGKey,
     bits,
     clone,
@@ -100,6 +102,8 @@ __all__ = [
     "randint",
     "random_gamma_p",
     "rayleigh",
+    "rng_bit_generator",
+    "rng_uniform",
     "set_global_generator",
     "shuffle",
     "split",

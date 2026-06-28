@@ -57,66 +57,6 @@ class TopK(OpDef):
         out_shape[-1] = k
         return tuple(out_shape)
 
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented TopK"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented TopK"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented TopK"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented TopK"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented TopK"
-
 
 @register_op("ArgSort")
 class ArgSort(OpDef):
@@ -135,26 +75,6 @@ class ArgSort(OpDef):
         if isinstance(x, tuple) and hasattr(x, "shape"):  # pragma: no branch
             return x.shape  # pragma: no cover
         return getattr(x, "shape", ())
-
-    def eval_numpy(self, x: object, **kwargs: object) -> object:
-        """Evaluate ArgSort."""
-        return "Not implemented ArgSort"
-
-    def eval_jax(self, x: object, **kwargs: object) -> object:
-        """Evaluate ArgSort."""
-        return "Not implemented ArgSort"
-
-    def eval_pytorch(self, x: object, **kwargs: object) -> object:
-        """Evaluate ArgSort."""
-        return "Not implemented ArgSort"
-
-    def eval_mlx(self, x: object, **kwargs: object) -> object:
-        """Evaluate ArgSort."""
-        return "Not implemented ArgSort"
-
-    def eval_tensorflow(self, x: object, **kwargs: object) -> object:
-        """Evaluate ArgSort."""
-        return "Not implemented ArgSort"
 
 
 @register_op("Sort")
@@ -182,66 +102,6 @@ class Sort(OpDef):
             object: The evaluated output resulting from this operation.
         """
         return getattr(x, "shape", ())
-
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Sort"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Sort"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Sort"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Sort"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Sort"
 
 
 @register_op("Where")
