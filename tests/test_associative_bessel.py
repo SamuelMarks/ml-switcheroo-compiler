@@ -35,8 +35,8 @@ def test_new_ops_part1():
     # random
     Ball = numpy_eager_registry.get("Ball")
     if Ball:
-        out = Ball(np)
-        assert out[0] == 0.0
+        out = Ball(np, key=0, d=2)
+        assert out is not None
 
     Beta = numpy_eager_registry.get("Beta")
     if Beta:

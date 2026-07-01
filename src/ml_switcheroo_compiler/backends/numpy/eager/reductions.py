@@ -239,6 +239,10 @@ def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> objec
 
     a = args[0]
     axis = kwargs.get("axis", None)
+    dtype = kwargs.get("dtype", None)
+    if dtype is not None and str(dtype) != "None":
+        dtype = getattr(dtype, "value", dtype)
+        return np.maximum.accumulate(a, axis=axis, dtype=dtype)
     return np.maximum.accumulate(a, axis=axis)
 
 
@@ -248,6 +252,10 @@ def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> objec
 
     a = args[0]
     axis = kwargs.get("axis", None)
+    dtype = kwargs.get("dtype", None)
+    if dtype is not None and str(dtype) != "None":
+        dtype = getattr(dtype, "value", dtype)
+        return np.minimum.accumulate(a, axis=axis, dtype=dtype)
     return np.minimum.accumulate(a, axis=axis)
 
 
@@ -255,6 +263,9 @@ def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> objec
 def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
     import numpy as np
 
+    dtype = kwargs.pop("dtype", None)
+    if dtype is not None and str(dtype) != "None":
+        kwargs["dtype"] = getattr(dtype, "value", dtype)
     return np.cumprod(*args, **kwargs)
 
 
@@ -387,4 +398,32 @@ def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("TopK")
 def _np_top_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    return _np_approx_max_k(backend_module, x, *args, **kwargs)
+    k = args[0] if len(args) > 0 else kwargs.get("k", 1)
+    if hasattr(k, "item"):
+        k = int(k.item())
+    elif hasattr(k, "data") and hasattr(k.data, "item"):
+        k = int(k.data.item())
+    else:
+        k = int(k)
+    axis = kwargs.get("axis", -1)
+    return_indices = kwargs.get("return_indices", None)
+    if not hasattr(x, "shape"):
+        x = backend_module.array(x)
+    kth = max(0, x.shape[axis] - k)
+
+    if return_indices is False:
+        val = backend_module.partition(x, kth, axis=axis)
+        slc = [slice(None)] * len(x.shape)
+        slc[axis] = slice(-k, None)
+        return val[tuple(slc)]
+
+    idx = backend_module.argpartition(x, kth, axis=axis)
+    slc = [slice(None)] * len(x.shape)
+    slc[axis] = slice(-k, None)
+    idx_k = idx[tuple(slc)]
+
+    if return_indices is True:
+        return idx_k
+
+    val_k = backend_module.take_along_axis(x, idx_k, axis=axis)
+    return val_k, idx_k

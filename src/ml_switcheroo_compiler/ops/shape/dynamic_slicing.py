@@ -50,13 +50,13 @@ def dynamic_slice(
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
         data = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    inputs = [input]
+    inputs = [input, *start_indices]
     # shape calculation placeholder
-    out_shape = inputs[0].shape
+    out_shape = tuple(slice_sizes)
     return _emit_shape_node(
         "DynamicSlice",
         inputs,
-        {},
+        {"slice_sizes": tuple(slice_sizes)},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -79,30 +79,10 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
     Raises:
     UnimplementedMathError: If called in eager mode
     """
-    if config.eager_mode:
-        import builtins
+    from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
-        starts = []
-        for s in start_indices:
-            if hasattr(s, "data"):
-                starts.append(int(s.data))
-            else:
-                starts.append(int(s))
-        starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, update.shape)]
-        idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, update.shape))
-        data = input.data.copy()
-        data[idx] = update.data
-        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    inputs = [input, update]
-    # shape calculation placeholder
-    out_shape = inputs[0].shape
-    return _emit_shape_node(
-        "DynamicUpdateSlice",
-        inputs,
-        {},
-        out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
+    starts = [s if isinstance(s, Tensor) else array(s) for s in start_indices]
+    return dynamic_update_slice(input, update, starts)
 
 
 @dispatch_eager("DynamicUpdateSlice")

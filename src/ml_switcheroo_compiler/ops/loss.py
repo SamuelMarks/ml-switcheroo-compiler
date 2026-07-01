@@ -1,19 +1,16 @@
 """Loss operations."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops import (
+from ml_switcheroo_compiler.ops.binary import (
     subtract,
     add,
     multiply,
     divide,
     maximum,
-    abs,
-    log,
-    square,
-    mean,
-    sum,
-    ones_like,
 )
+from ml_switcheroo_compiler.ops.unary import abs, log, square
+from ml_switcheroo_compiler.ops.reductions import mean, sum
+from ml_switcheroo_compiler.ops.creation.frontend import ones_like
 
 
 def l1_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
@@ -28,8 +25,8 @@ def mse_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
 
 def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Tensor:
     """Huber Loss."""
-    from ml_switcheroo_compiler.ops import where
-    from ml_switcheroo_compiler.ops import less_equal
+    from ml_switcheroo_compiler.ops.shape.indexing import where
+    from ml_switcheroo_compiler.ops.binary import less_equal
 
     error = subtract(y_true, y_pred)
     abs_error = abs(error)
@@ -45,8 +42,8 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Tensor:
 
 def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Tensor:
     """Smooth L1 Loss (similar to Huber with beta)."""
-    from ml_switcheroo_compiler.ops import where
-    from ml_switcheroo_compiler.ops import less_equal
+    from ml_switcheroo_compiler.ops.shape.indexing import where
+    from ml_switcheroo_compiler.ops.binary import less_equal
 
     if beta < 1e-5:  # noqa: PLR2004
         return l1_loss(y_true, y_pred)
@@ -81,8 +78,8 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     """
     # y_true * (log(y_true) - y_pred)
     # usually implemented as y_true * log(y_true) - y_true * y_pred
-    from ml_switcheroo_compiler.ops import where
-    from ml_switcheroo_compiler.ops import greater
+    from ml_switcheroo_compiler.ops.shape.indexing import where
+    from ml_switcheroo_compiler.ops.binary import greater
 
     # only compute where y_true > 0 to avoid log(0)
     safe_y_true = where(greater(y_true, 0.0), y_true, ones_like(y_true))
@@ -144,7 +141,7 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
     y_true expected to be class indices.
     """
     from ml_switcheroo_compiler.ops import take_along_axis
-    from ml_switcheroo_compiler.ops import expand_dims
+    from ml_switcheroo_compiler.ops.shape.manipulation import expand_dims
 
     # Gather the log probs corresponding to target indices
     # y_true needs to be expanded

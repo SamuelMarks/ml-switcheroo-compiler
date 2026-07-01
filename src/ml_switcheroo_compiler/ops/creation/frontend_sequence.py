@@ -49,7 +49,13 @@ def arange(
     shape = (size,)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Arange", start, stop, step, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Arange",
+            start,
+            stop,
+            step,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
         "Arange",
@@ -83,7 +89,13 @@ def linspace(
     shape = (steps,)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Linspace", start, stop, steps, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Linspace",
+            start,
+            stop,
+            steps,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
         "LinSpace",

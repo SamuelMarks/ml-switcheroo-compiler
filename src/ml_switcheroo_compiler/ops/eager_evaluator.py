@@ -75,6 +75,19 @@ class EagerEvaluator:
         first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
         device = first_tensor.device if first_tensor is not None else None
 
+        if isinstance(res_data, (tuple, list)):
+            return tuple(
+                Tensor(
+                    d,
+                    TensorConfig(
+                        d.shape if hasattr(d, "shape") else (),
+                        resolve_dtype(d, first_tensor),
+                        device,
+                    ),
+                )
+                for d in res_data
+            )
+
         dtype = resolve_dtype(res_data, first_tensor)
         shape = res_data.shape if hasattr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))

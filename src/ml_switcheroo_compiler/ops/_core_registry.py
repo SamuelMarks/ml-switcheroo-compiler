@@ -9,12 +9,16 @@ import ml_switcheroo_compiler.ops.base as _base
 import ml_switcheroo_compiler.ops.control_flow as _control_flow
 import ml_switcheroo_compiler.ops.creation as _creation
 import ml_switcheroo_compiler.ops.distributed as _distributed
+import ml_switcheroo_compiler.ops.io as _io
 import ml_switcheroo_compiler.ops.shape as _shape
 import ml_switcheroo_compiler.ops.text as _text
 import ml_switcheroo_compiler.ops.sparse as _sparse
 import ml_switcheroo_compiler.ops.ragged as _ragged
 import ml_switcheroo_compiler.ops.tensor_array as _tensor_array
+from ml_switcheroo_compiler.core.config import disable_compile as disable_compile
+
 import ml_switcheroo_compiler.ops.state as _state
+import ml_switcheroo_compiler.ops.device as _device
 import ml_switcheroo_compiler.ops.raw_ops as _raw_ops
 import ml_switcheroo_compiler.ops.creation.frontend as _creation_frontend
 
@@ -27,12 +31,14 @@ for _mod in [
     _control_flow,
     _creation,
     _distributed,
+    _io,
     _shape,
     _text,
     _sparse,
     _ragged,
     _tensor_array,
     _state,
+    _device,
     _raw_ops,
     _creation_frontend,
 ]:
@@ -252,6 +258,7 @@ __all__ = [
     "diagonal",
     "diff",
     "digitize",
+    "disable_compile",
     "dispatch_eager",
     "double",
     "dsplit",
@@ -270,9 +277,11 @@ __all__ = [
     "emit_ir_node",
     "empty",
     "empty_like",
+    "enable_compile",
     "euler_gamma",
     "expand",
     "expand_dims",
+    "export_to_dot",
     "extract",
     "extract_sequences",
     "extract_volume_patches",
@@ -480,7 +489,10 @@ __all__ = [
     "s_",
     "saturate_cast",
     "save",
+    "save_gguf",
+    "save_safetensors",
     "savez",
+    "savez_compressed",
     "scan",
     "scan_eager",
     "scan_tracing",
@@ -490,7 +502,10 @@ __all__ = [
     "scatter_update",
     "searchsorted",
     "select",
+    "set_default_stream",
+    "set_memory_limit",
     "set_printoptions",
+    "set_wired_limit",
     "setdiff1d",
     "setxor1d",
     "shard_tensor",
@@ -551,6 +566,7 @@ __all__ = [
     "uint4",
     "uint64",
     "uint8",
+    "unflatten",
     "union1d",
     "unique",
     "unique_all",
@@ -570,6 +586,7 @@ __all__ = [
     "vecdot",
     "vectorize",
     "vectorized_map",
+    "view",
     "vmap",
     "vsplit",
     "vstack",

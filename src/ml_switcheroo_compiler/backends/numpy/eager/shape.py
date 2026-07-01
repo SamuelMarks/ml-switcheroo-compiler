@@ -227,8 +227,17 @@ def _band_part(input: object, num_lower: object, num_upper: object) -> object:
 def _dynamic_update_slice(x: object, update: object, start_indices: object) -> object:
     """Execute _dynamic_update_slice."""
     out = np.copy(x)  # pragma: no cover
+
+    def _to_int(v: object) -> int:
+        if hasattr(v, "data"):
+            v = v.data
+        if hasattr(v, "item"):
+            return int(v.item())
+        return int(v)
+
     slices = tuple(  # pragma: no cover
-        slice(int(start), int(start) + size) for start, size in zip(start_indices, update.shape)
+        slice(_to_int(start), _to_int(start) + size)
+        for start, size in zip(start_indices, update.shape)
     )
     out[slices] = update  # pragma: no cover
     return out  # pragma: no cover
@@ -433,3 +442,10 @@ def _np_assign_sub(backend_module: object, ref: object, value: object, **kwargs:
 
     np.copyto(ref, ref - value)
     return ref
+
+
+@numpy_eager_registry.register("Reverse")
+def _np_reverse(backend_module: object, *args: object, **kwargs: object) -> object:
+    x = args[0]
+    dims = kwargs.get("dims")
+    return backend_module.flip(x, axis=dims)

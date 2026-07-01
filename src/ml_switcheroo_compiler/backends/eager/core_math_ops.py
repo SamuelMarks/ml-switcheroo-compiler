@@ -87,6 +87,7 @@ def _nan_to_num(backend_module: object, *args: object, **kwargs: object) -> obje
         kwargs: Arg.
     """
     x = args[0]  # pragma: no cover
+    kwargs.pop("copy", None)
     nan = kwargs.get("nan", 0.0)  # pragma: no cover
     posinf = kwargs.get("posinf", None)  # pragma: no cover
     neginf = kwargs.get("neginf", None)  # pragma: no cover

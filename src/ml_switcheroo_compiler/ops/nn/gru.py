@@ -1,6 +1,7 @@
 """RNN operations."""
 
 from typing import Optional
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
 from ml_switcheroo_compiler.ops.shape import split
@@ -46,3 +47,31 @@ def gru_cell(
 
     h_new = _compute_gru_gates(x_parts, r_parts, state)
     return h_new, h_new
+
+
+@register_op("Gru")
+class Gru(OpDef):
+    """Gru operation."""
+
+    op_name = "Gru"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0] if args else ()
+
+
+def gru(*args: object, **kwargs: object) -> Tensor:
+    """GRU layer."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("Gru", *[getattr(a, "data", a) for a in args], **kwargs)
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    t_args = [a for a in args if isinstance(a, Tensor)]
+    out_shape = getattr(t_args[0], "shape", ()) if t_args else ()
+    out_dtype = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
+    return _emit_shape_node("Gru", list(args), kwargs, out_shape, out_dtype)

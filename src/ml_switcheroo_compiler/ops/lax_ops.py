@@ -87,15 +87,28 @@ for op_name in ops_to_mock:
                 from ml_switcheroo_compiler.tracing import _tracer
 
                 if getattr(_tracer, "is_tracing", False) and _tracer.active_graph is not None:
-                    node = _tracer.active_graph.create_node(op_type=op)
+                    import uuid
+                    from ml_switcheroo_ir import LogicalNode
+
+                    node = LogicalNode(id=str(uuid.uuid4()), op_type=op, inputs=[])
                     for a in args:
                         if hasattr(a, "_node"):
-                            node.add_input(a._node)
-                    _tracer.active_graph.add_node(node)
+                            node.inputs.append(
+                                a._node.id if hasattr(a._node, "id") else str(a._node)
+                            )
+                        elif hasattr(a, "data") and hasattr(a.data, "id"):
+                            node.inputs.append(a.data.id)  # pragma: no cover
+                        elif hasattr(a, "id"):
+                            node.inputs.append(a.id)  # pragma: no cover
+                    _tracer.add_node(node)
                     import ml_switcheroo_compiler.core.tensor as tensor_mod
 
                     # Mock output proxy
-                    out_t = tensor_mod.Tensor(None, tensor_mod.TensorConfig((), None, None))
+                    out_dtype = args[0].dtype if args and hasattr(args[0], "dtype") else None
+                    out_shape = args[0].shape if args and hasattr(args[0], "shape") else ()
+                    out_t = tensor_mod.Tensor(
+                        None, tensor_mod.TensorConfig(out_shape, out_dtype, None)
+                    )
                     out_t._node = node
                     return out_t
                 return args[0] if args else None

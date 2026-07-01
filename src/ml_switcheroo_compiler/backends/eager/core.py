@@ -35,9 +35,19 @@ def execute_generic_op(  # noqa: C901, PLR0911
         stacklevel=2,
     )
 
+    # Standardize dim/axis
+    if "dim" in kwargs and "axis" not in kwargs:
+        kwargs["axis"] = kwargs.pop("dim")
+
     func_registry = global_eager_registry.get(op_type)
     if func_registry is not None:
-        return func_registry(backend_module, *args, **kwargs)
+        try:
+            return func_registry(backend_module, *args, **kwargs)
+        except TypeError as e:
+            if "unexpected keyword argument 'axis'" in str(e) and "axis" in kwargs:
+                kwargs["dim"] = kwargs.pop("axis")
+                return func_registry(backend_module, *args, **kwargs)
+            raise
 
     try:
         func = getattr(backend_module, op_type.lower())
@@ -48,7 +58,14 @@ def execute_generic_op(  # noqa: C901, PLR0911
             "Reshape",
             "BroadcastTo",
         ):  # pragma: no branch
-            return func(*args, **kwargs)
+            try:
+                return func(*args, **kwargs)
+            except TypeError as e:
+                if "unexpected keyword argument 'axis'" in str(e) and "axis" in kwargs:
+                    kwargs["dim"] = kwargs.pop("axis")
+                    return func(*args, **kwargs)
+                raise
+
     except AttributeError:
         # Check if the module has a random submodule
         try:

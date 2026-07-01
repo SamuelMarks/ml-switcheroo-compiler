@@ -165,6 +165,13 @@ def relu(x: object) -> object:
     return ops.maximum(x, zero)
 
 
+def relu2(x: object) -> object:
+    """Computes the ReLU2 activation function, capping at 2."""
+    from ml_switcheroo_compiler import ops
+
+    return ops.clip(x, 0.0, 2.0)
+
+
 def relu6(x: object) -> object:
     """Computes the ReLU6 activation function, capping at 6.
 

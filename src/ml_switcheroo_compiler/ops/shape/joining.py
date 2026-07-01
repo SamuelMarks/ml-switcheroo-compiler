@@ -50,7 +50,7 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
     return _emit_shape_node(
         "Concatenate",
         inputs,
-        {},
+        {"axis": dim},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -66,6 +66,16 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
     Returns:
     Tensor: The stacked tensor
     """
+    out_dtype = getattr(tensors[0], "dtype", "float32")
+    if hasattr(out_dtype, "name"):
+        out_dtype_str = str(out_dtype.name)
+    elif hasattr(out_dtype, "__name__"):
+        out_dtype_str = str(out_dtype.__name__)
+    elif hasattr(out_dtype, "value"):
+        out_dtype_str = str(out_dtype.value)
+    else:
+        out_dtype_str = str(out_dtype).split(".")[-1].lower()
+
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -75,19 +85,27 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
             data,
             TensorConfig(
                 getattr(data, "shape", ()),
-                getattr(tensors[0], "dtype", "float32"),
+                out_dtype_str,
                 getattr(tensors[0], "device", None),
             ),
         )
     inputs = list(tensors)
     # shape calculation placeholder
     out_shape = inputs[0].shape
+
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    try:
+        dt = DType(out_dtype_str)
+    except ValueError:
+        dt = DType.Float32
+
     return _emit_shape_node(
         "Stack",
         inputs,
-        {},
+        {"axis": dim},
         out_shape,
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
+        dt,
     )
 
 

@@ -22,6 +22,7 @@ class Dropout(OpDef):
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer shape."""
+        """Infer shape."""
         return x.shape
 
 
@@ -49,6 +50,7 @@ class AlphaDropout(OpDef):
     """AlphaDropout operation."""
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape."""
         return x.shape
 
@@ -80,6 +82,7 @@ class ActivityRegularization(OpDef):
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
         """Infer shape."""
+        """Infer shape."""
         if isinstance(x, (tuple, list)):
             return x
         return getattr(x, "shape", ())
@@ -102,3 +105,65 @@ def activity_regularization(
         Tensor.
     """
     return get_op("ActivityRegularization")()(x, l1=l1, l2=l2)  # pragma: no cover
+
+
+@register_op("Dropout2d")
+class Dropout2d(OpDef):
+    """Dropout2d operation."""
+
+    op_name = "Dropout2d"
+
+    def infer_shape(self, x: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(x, "shape", ())
+
+
+def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
+    """Dropout2d."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("Dropout2d", getattr(x, "data", x), p=p, training=training)
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    return _emit_shape_node(
+        "Dropout2d",
+        [x],
+        {"p": p, "training": training},
+        getattr(x, "shape", ()),
+        getattr(x, "dtype", DType.Float32),
+    )
+
+
+@register_op("Dropout3d")
+class Dropout3d(OpDef):
+    """Dropout3d operation."""
+
+    op_name = "Dropout3d"
+
+    def infer_shape(self, x: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(x, "shape", ())
+
+
+def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
+    """Dropout3d."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("Dropout3d", getattr(x, "data", x), p=p, training=training)
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+    from ml_switcheroo_compiler.core.dtype import DType
+
+    return _emit_shape_node(
+        "Dropout3d",
+        [x],
+        {"p": p, "training": training},
+        getattr(x, "shape", ()),
+        getattr(x, "dtype", DType.Float32),
+    )

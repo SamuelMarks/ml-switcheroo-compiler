@@ -93,7 +93,7 @@ def test_mlx_generator_coverage():
         attributes={"strides": 2, "padding": "SAME"},
         shape_metadata=None,
     )
-    assert "mlx_conv_transpose" in gen.visit(n_conv, ["x", "w"])
+    assert "mx.conv_transpose" in gen.visit(n_conv, ["x", "w"])
 
     n_ragged = IRNode(
         id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None

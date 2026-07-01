@@ -26,17 +26,18 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return generic_zeros(cp, shape)
 
 
-def array(cls: type, data: object) -> object:
+def array(cls: type, data: object, dtype: object = None) -> object:
     """Execute array.
 
     Args:
         cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
+        dtype (Any): Argument dtype.
 
     Returns:
     Any: The result.
     """
-    return generic_array(cp, data)
+    return generic_array(cp, data, dtype)
 
 
 def asarray(cls: type, data: object) -> object:

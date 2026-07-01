@@ -16,18 +16,23 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return torch.zeros(shape)
 
 
-def array(cls: type, data: object) -> object:
+def array(cls: type, data: object, dtype: object = None) -> object:
     """Execute array.
 
     Args:
         cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
+        dtype (Any): Argument dtype.
 
     Returns:
     Any: The result.
     """
     import torch
 
+    if dtype is not None:
+        dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
+        dt = getattr(torch, dtype_str, None)
+        return torch.tensor(data, dtype=dt)
     return torch.tensor(data)
 
 

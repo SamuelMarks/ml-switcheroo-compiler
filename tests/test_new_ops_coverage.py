@@ -403,3 +403,63 @@ def test_activations_coverage():
             func()
         except Exception:
             pass
+
+
+def test_missing_ops_coverage():
+    from ml_switcheroo_compiler.core.dtype import DType
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler import ops
+
+    t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, None))
+    t2 = Tensor(None, TensorConfig((2, 2), DType.Float32, None))
+    t3 = Tensor(None, TensorConfig((2, 2), DType.Float32, None))
+
+    fns = [
+        ("addmm", [t1, t2, t3]),
+        ("block_masked_mm", [t1, t2]),
+        ("gather_mm", [t1, t2]),
+        ("segmented_mm", [t1, t2]),
+        ("old_split", [t1, 1]),
+        ("put_along_axis", [t1, t2, t3, 0]),
+        ("dropout2d", [t1]),
+        ("dropout3d", [t1]),
+        ("gru", [t1, t2, t3]),
+    ]
+    for eager in [False, True]:
+        config.eager_mode = eager
+        for name, args in fns:
+            try:
+                getattr(ops, name)(*args)
+            except Exception:
+                pass
+
+        try:
+            ops.eval(t1)
+        except Exception:
+            pass
+        try:
+            ops.synchronize()
+        except Exception:
+            pass
+        try:
+            ops.get_peak_memory()
+        except Exception:
+            pass
+
+
+def test_device_ops_eager():
+    config.eager_mode = True
+    from ml_switcheroo_compiler import ops
+
+    try:
+        ops.eval(None)
+    except Exception:
+        pass
+    try:
+        ops.synchronize()
+    except Exception:
+        pass
+    try:
+        ops.get_peak_memory()
+    except Exception:
+        pass

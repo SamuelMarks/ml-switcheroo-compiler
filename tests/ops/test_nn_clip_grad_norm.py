@@ -1,0 +1,52 @@
+import numpy as np
+from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.ops.nn.clip_grad import clip_grad_norm
+from ml_switcheroo_compiler.core.config import config
+
+
+def test_clip_grad_norm():
+    config.eager_mode = True
+    x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    x = ops.array(x_data)
+
+    clipped, total_norm = clip_grad_norm(x, max_norm=1.0)
+    assert total_norm is not None
+
+
+def test_clip_grad_norm_list():
+    config.eager_mode = True
+    x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    x = ops.array(x_data)
+    y = ops.array(x_data * 2)
+
+    clipped, total_norm = clip_grad_norm([x, y], max_norm=1.0)
+    assert len(clipped) == 2
+    assert total_norm is not None
+
+
+def test_clip_grad_norm_inf():
+    config.eager_mode = True
+    x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    x = ops.array(x_data)
+    y = ops.array(x_data * 2)
+
+    clipped, total_norm = clip_grad_norm([x, y], max_norm=1.0, norm_type=float("inf"))
+    assert len(clipped) == 2
+    assert total_norm is not None
+
+
+def test_clip_grad_norm_pnorm():
+    config.eager_mode = True
+    x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
+    x = ops.array(x_data)
+    y = ops.array(x_data * 2)
+
+    clipped, total_norm = clip_grad_norm([x, y], max_norm=1.0, norm_type=3.0)
+    assert len(clipped) == 2
+    assert total_norm is not None
+
+
+def test_clip_grad_norm_empty():
+    clipped, total_norm = clip_grad_norm([], max_norm=1.0)
+    assert len(clipped) == 0
+    assert total_norm is not None

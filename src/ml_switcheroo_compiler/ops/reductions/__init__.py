@@ -78,6 +78,8 @@ count_nonzero = get_op("CountNonzero")()
 norm = get_op("Norm")()
 cumsum = get_op("Cumsum")()
 
+logcumsumexp = get_op("Logcumsumexp")()
+
 __all__ = [
     "Pmean",
     "Psum",
@@ -93,6 +95,7 @@ __all__ = [
     "count_nonzero",
     "cov",
     "cumsum",
+    "logcumsumexp",
     "logsumexp",
     "max",
     "mean",

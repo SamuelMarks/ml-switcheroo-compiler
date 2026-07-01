@@ -51,7 +51,11 @@ def _emit_creation_node(
     )
     _tracer.add_node(node)
 
-    proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
+    proxy = ProxyTensor(
+        id=out_id,
+        shape=shape,
+        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+    )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
@@ -73,7 +77,9 @@ def _emit_constant_node(
         raise RuntimeError(msg)
 
     out_id = str(uuid.uuid4())
-    val_arr = get_active_backend().array(value, dtype=dtype.value)
+    val_arr = get_active_backend().array(
+        value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype))
+    )
     shape = tuple(val_arr.shape)
 
     node = LogicalNode(
@@ -85,5 +91,9 @@ def _emit_constant_node(
     )
     _tracer.add_node(node)
 
-    proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
+    proxy = ProxyTensor(
+        id=out_id,
+        shape=shape,
+        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+    )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))

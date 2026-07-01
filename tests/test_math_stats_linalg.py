@@ -246,3 +246,56 @@ def test_adjoint_ast():
     code = gen.generate()
 
     assert "adjoint" in code
+
+
+def test_new_math_ops_trig():
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.grad import grad
+
+    config.eager_mode = True
+    x = ops.array(np.array([0.5]).astype(np.float32))
+    y = ops.array(np.array([0.5]).astype(np.float32))
+
+    # Test forward
+    _ = ops.acos(x)
+    _ = ops.acosh(ops.array(np.array([1.5]).astype(np.float32)))
+    _ = ops.asin(x)
+    _ = ops.asinh(x)
+    _ = ops.tan(x)
+    _ = ops.atan(x)
+    _ = ops.atanh(x)
+    _ = ops.atan2(y, x)
+
+    # Test grad
+    def func_acos(t):
+        return ops.acos(t)
+
+    def func_acosh(t):
+        return ops.acosh(t)
+
+    def func_asin(t):
+        return ops.asin(t)
+
+    def func_asinh(t):
+        return ops.asinh(t)
+
+    def func_tan(t):
+        return ops.tan(t)
+
+    def func_atan(t):
+        return ops.atan(t)
+
+    def func_atanh(t):
+        return ops.atanh(t)
+
+    def func_atan2(t, t2):
+        return ops.atan2(t, t2)
+
+    grad(func_acos)(x)
+    grad(func_acosh)(ops.array(np.array([1.5]).astype(np.float32)))
+    grad(func_asin)(x)
+    grad(func_asinh)(x)
+    grad(func_tan)(x)
+    grad(func_atan)(x)
+    grad(func_atanh)(x)
+    grad(func_atan2)(y, x)

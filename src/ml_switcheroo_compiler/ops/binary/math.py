@@ -678,3 +678,10 @@ class SortKeyVal(BinaryMathOp):
     """Sort keys and values."""
 
     op_name = "SortKeyVal"
+
+
+@register_op("Atan2")
+class Atan2(BinaryMathOp):
+    """Binary operation for element-wise arctangent of y/x."""
+
+    op_name = "Atan2"

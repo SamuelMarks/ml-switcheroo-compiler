@@ -35,7 +35,7 @@ def test_numpy_shape_eager_extra():
     tensor = np.ones((5,))
     indices = np.array([[1], [3]])
     updates = np.array([0.5, 0.5])
-    _np_tensor_scatter_sub(np, tensor, indices, updates)
+    res = _np_tensor_scatter_sub(np, tensor, indices, updates)
     assert res[1] == 0.5
 
     # extract volume patches

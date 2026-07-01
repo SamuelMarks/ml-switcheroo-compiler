@@ -99,6 +99,8 @@ def test_mlx_eager_coverage_part2():
     n_mock.data = 2
     res = execute_op(cls, "Eye", n_mock, dtype="float32")
     assert res is not None
+    res = execute_op(cls, "Eye", n_mock, n_mock, k=1, dtype="float32")
+    assert res is not None
 
     # Exception fallback (NotImplementedError) -> route to numpy
     with patch("mlx.core.take", side_effect=NotImplementedError):

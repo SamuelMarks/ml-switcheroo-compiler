@@ -120,8 +120,9 @@ def scatter_update(x: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
 
 def slice_update(x: Tensor, start_indices: Sequence[int], updates: Tensor) -> Tensor:
     """Slice update."""
-    # simplified mock
-    return x
+    from ml_switcheroo_compiler.ops.shape.dynamic_slicing import update_slice
+
+    return update_slice(x, updates, start_indices)
 
 
 def in_top_k(targets: Tensor, predictions: Tensor, k: int) -> Tensor:

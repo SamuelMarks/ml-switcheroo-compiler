@@ -90,6 +90,8 @@ from .frontend import dynamic_update_slice as dynamic_update_slice
 from .frontend import expand as expand
 from .frontend import expand_dims as expand_dims
 from .frontend import flatten as flatten
+from .frontend import unflatten as unflatten
+from .frontend import view as view
 from .frontend import gather as gather
 from .frontend import gather_nd as gather_nd
 from .frontend import hsplit as hsplit
@@ -156,6 +158,9 @@ from .indexing import ScatterApply as ScatterApply
 from .indexing import ScatterMax as ScatterMax
 from .indexing import ScatterMin as ScatterMin
 from .indexing import ScatterMul as ScatterMul
+
+from .indexing import put_along_axis as put_along_axis
+from .splitting import old_split as old_split
 
 __all__ = [
     "ArgSort",
@@ -260,9 +265,11 @@ __all__ = [
     "invert_permutation",
     "meshgrid",
     "moveaxis",
+    "old_split",
     "pad",
     "partition",
     "permute",
+    "put_along_axis",
     "repeat",
     "reshape",
     "reverse",
@@ -293,10 +300,12 @@ __all__ = [
     "transpose",
     "tril",
     "triu",
+    "unflatten",
     "unravel_index",
     "unsqueeze",
     "unstack",
     "update_slice",
+    "view",
     "vsplit",
     "vstack",
     "where",

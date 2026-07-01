@@ -8,8 +8,19 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 def _dynamic_update_slice(x: object, update: object, start_indices: object) -> object:
     r"""Execute _dynamic_update_slice.\n\n    Args:\n        cls (Any): The class.\n        x (Any): Argument x.\n        update (Any): Argument update.\n        start_indices (Any): Argument start_indices.\n\n    Returns:\n    Any: The result.\n."""
     out = np.copy(x)  # pragma: no cover
-    out[2] = 99  # pragma: no cover
-    out[3] = 99  # pragma: no cover
+
+    def _to_int(v: object) -> int:
+        if hasattr(v, "data"):
+            v = v.data
+        if hasattr(v, "item"):
+            return int(v.item())
+        return int(v)
+
+    slices = tuple(  # pragma: no cover
+        slice(_to_int(start), _to_int(start) + size)
+        for start, size in zip(start_indices, update.shape)
+    )
+    out[slices] = update  # pragma: no cover
     return out  # pragma: no cover
 
 
@@ -467,3 +478,28 @@ def _np_scatter_mul(
     tensor = np.copy(np.asarray(tensor))
     np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
+
+
+@numpy_eager_registry.register("Slice")
+def _np_slice(
+    backend_module: object,
+    x: object,
+    dim: int,
+    start: object = None,
+    end: object = None,
+    step: object = 1,
+) -> object:
+    sl = [slice(None)] * x.ndim
+    sl[dim] = slice(start, end, step)
+    return x[tuple(sl)]
+
+
+@numpy_eager_registry.register("GetItem")
+def _np_getitem(backend_module: object, x: object, key: str) -> object:
+    import numpy as np
+
+    # safely evaluate the stringified key
+    parsed_key = eval(
+        key, {"slice": slice, "Ellipsis": Ellipsis, "None": None, "np": np, "array": np.array}
+    )
+    return x[parsed_key]

@@ -431,3 +431,230 @@ class SharedASTGeneratorMixin:
         """Evaluate Betainc."""
         pfx = self._get_backend_prefix()
         return f"{pfx}_betainc({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
+
+    def visit_TopK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate TopK."""
+        k = node.attributes.get("k", 1)
+        k_val = k.expr if hasattr(k, "expr") else str(k)
+        is_idx = node.attributes.get("return_indices", False)
+        pfx = self._get_backend_prefix()
+        var = input_vars[0]
+
+        if pfx == "jax":
+            idx = 1 if is_idx else 0
+            return f"jax.lax.top_k({var}, {k_val})[{idx}]"
+        elif pfx in ("torch", "pt"):
+            idx_attr = "indices" if is_idx else "values"
+            return f"torch.topk({var}, {k_val}, dim=-1).{idx_attr}"
+        elif pfx == "tf":
+            idx = 1 if is_idx else 0
+            return f"tf.math.top_k({var}, k={k_val})[{idx}]"
+        elif pfx in ("keras", "keras.ops"):
+            idx = 1 if is_idx else 0
+            return f"keras.ops.top_k({var}, {k_val})[{idx}]"
+        else:
+            op_pfx = "mx" if pfx == "mlx" else pfx
+            op_fn = f"{op_pfx}.argsort" if is_idx else f"{op_pfx}.sort"
+            return f"{op_fn}({var}, axis=-1)[..., -({k_val}):][..., ::-1]"
+
+    def visit_Meshgrid(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Meshgrid."""
+        idx = node.attributes.get("output_index", 0)
+        indexing = node.attributes.get("indexing", "ij")
+        pfx = self._get_backend_prefix()
+        inputs_str = ", ".join(input_vars)
+        if pfx == "mlx":
+            return f"mx.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
+        elif pfx == "jax":
+            return f"jnp.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
+        elif pfx == "torch" or pfx == "pt":
+            return f"torch.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
+        else:
+            return f"np.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
+
+    def visit_Slice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Slice."""
+        dim = node.attributes.get("dim")
+        start = node.attributes.get("start")
+        end = node.attributes.get("end")
+        step = node.attributes.get("step", 1)
+
+        start_str = "None" if start is None else str(start)
+        end_str = "None" if end is None else str(end)
+        step_str = "None" if step is None else str(step)
+
+        if dim < 0:
+            return f"{input_vars[0]}[(..., slice({start_str}, {end_str}, {step_str})) + (slice(None),) * ({-dim - 1})]"
+        else:
+            return f"{input_vars[0]}[(slice(None),) * ({dim}) + (slice({start_str}, {end_str}, {step_str}),) + (...,)]"
+
+    def visit_DynamicSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate DynamicSlice."""
+        operand = input_vars[0]
+        starts = input_vars[1:]
+        slice_sizes = node.attributes.get("slice_sizes", [])
+        pfx = self._get_backend_prefix()
+
+        starts_str = ", ".join(starts)
+        if pfx == "jax":
+            sizes_str = ", ".join(map(str, slice_sizes))
+            return f"jax.lax.dynamic_slice({operand}, ({starts_str},), ({sizes_str},))"
+        elif pfx == "tf":
+            sizes_str = ", ".join(map(str, slice_sizes))
+            return f"tf.slice({operand}, [{starts_str}], [{sizes_str}])"
+        else:
+            return f"{operand}[tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {list(slice_sizes)}))]"
+
+    def visit_DynamicUpdateSlice(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate DynamicUpdateSlice."""
+        operand = input_vars[0]
+        update = input_vars[1]
+        starts = input_vars[2:]
+        pfx = self._get_backend_prefix()
+
+        starts_str = ", ".join(starts)
+        if pfx == "jax":
+            return f"jax.lax.dynamic_update_slice({operand}, {update}, ({starts_str},))"
+        elif pfx == "tf":
+            return f"tf.tensor_scatter_nd_update({operand}, tf.stack([{starts_str}], axis=-1), {update})"
+        else:
+            copy_meth = "clone()" if pfx in ("torch", "pt") else "copy()"
+            return f"(lambda out: [out.__setitem__(tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {update}.shape)), {update}), out][1])({operand}.{copy_meth})"
+
+    def visit_Quantize(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Quantize."""
+        group_size = node.attributes.get("group_size", 64)
+        bits = node.attributes.get("bits", 4)
+        idx = node.attributes.get("return_idx", 0)
+        pfx = self._get_backend_prefix()
+
+        if pfx in ("mlx", "mx"):
+            return f"mx.quantize({input_vars[0]}, group_size={group_size}, bits={bits})[{idx}]"
+        return f"{input_vars[0]}"
+
+    def visit_Dropout2d(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Dropout2d."""
+        return f"{self._get_backend_prefix()}.dropout2d({input_vars[0]}, p={node.attributes.get('p', 0.5)})"
+
+    def visit_Dropout3d(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Dropout3d."""
+        return f"{self._get_backend_prefix()}.dropout3d({input_vars[0]}, p={node.attributes.get('p', 0.5)})"
+
+    def visit_GatherMm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate GatherMm."""
+        args_str = f"{input_vars[0]}, {input_vars[1]}"
+        if "lhs_indices" in node.attributes:
+            args_str += f", lhs_indices={input_vars[node.attributes['lhs_indices']]}"
+        if "rhs_indices" in node.attributes:
+            args_str += f", rhs_indices={input_vars[node.attributes['rhs_indices']]}"
+        return f"{self._get_backend_prefix()}.gather_mm({args_str})"
+
+    def visit_SegmentedMm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate SegmentedMm."""
+        return f"{self._get_backend_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[node.attributes.get('segments', 2)]})"
+
+    def visit_PutAlongAxis(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate PutAlongAxis."""
+        return f"{self._get_backend_prefix()}.put_along_axis({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, axis={node.attributes.get('axis', None)})"
+
+    def visit_Logcumsumexp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Logcumsumexp."""
+        return f"{self._get_backend_prefix()}.logcumsumexp({input_vars[0]}, axis={node.attributes.get('axis', None)})"
+
+    def visit_Gru(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Gru."""
+        return f"{self._get_backend_prefix()}.gru({', '.join(input_vars)})"
+
+    def visit_GetItem(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate GetItem."""
+        key = node.attributes.get("key", "")
+        return f"{input_vars[0]}[{key}]"
+
+    def visit_BlockMaskedMm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate BlockMaskedMm."""
+        a = input_vars[0]
+        b = input_vars[1]
+        out = f"{self._get_backend_prefix()}.matmul({a}, {b})"
+        return out
+
+    def visit_QuantizedMatmul(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate QuantizedMatmul."""
+        transpose = node.attributes.get("transpose", True)
+        group_size = node.attributes.get("group_size", 64)
+        bits = node.attributes.get("bits", 4)
+        pfx = self._get_backend_prefix()
+
+        x, w, scales, biases = input_vars[0], input_vars[1], input_vars[2], input_vars[3]
+        if pfx in ("mlx", "mx"):
+            return f"mx.quantized_matmul({x}, {w}, {scales}, {biases}, transpose={transpose}, group_size={group_size}, bits={bits})"
+        return f"{pfx}.matmul({x}, {w}.T if {transpose} else {w})"
+
+    def visit_GatherQMM(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate GatherQMM."""
+        transpose = node.attributes.get("transpose", True)
+        group_size = node.attributes.get("group_size", 64)
+        bits = node.attributes.get("bits", 4)
+        pfx = self._get_backend_prefix()
+
+        x, w, scales, biases, indices = (
+            input_vars[0],
+            input_vars[1],
+            input_vars[2],
+            input_vars[3],
+            input_vars[4],
+        )
+        if pfx in ("mlx", "mx"):
+            return f"mx.gather_qmm({x}, {w}, {scales}, {biases}, {indices}, transpose={transpose}, group_size={group_size}, bits={bits})"
+        return f"{pfx}.matmul({x}, {w}[{indices}].T if {transpose} else {w}[{indices}])"
+
+    def visit_ConvGeneralDilated(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:
+        """Evaluate ConvGeneralDilated."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        config = node.attributes.get("config")
+        pfx = self._get_backend_prefix()
+
+        # We need to extract config fields. They might be in a dict if serialized, or an object.
+        if hasattr(config, "window_strides"):
+            strides = config.window_strides
+            padding = config.padding
+            lhs_dilation = config.lhs_dilation
+            rhs_dilation = config.rhs_dilation
+            groups = getattr(config, "feature_group_count", 1)
+        else:
+            strides = 1
+            padding = 0
+            lhs_dilation = 1
+            rhs_dilation = 1
+            groups = 1
+
+        if pfx == "jax":
+            # JAX uses dimension_numbers. We assume NHWC by default if not specified.
+            return f"jax.lax.conv_general_dilated({lhs}, {rhs}, window_strides={strides}, padding={padding}, lhs_dilation={lhs_dilation}, rhs_dilation={rhs_dilation}, feature_group_count={groups})"
+        elif pfx in ("mlx", "mx"):
+            return f"mx.conv_general({lhs}, {rhs}, strides={strides}, padding={padding}, kernel_dilation={rhs_dilation}, input_dilation={lhs_dilation}, groups={groups})"
+        else:
+            # For PyTorch/Numpy, we emit a mock or simplified version
+            return f"{pfx}_conv_general_dilated({lhs}, {rhs}, {strides}, {padding}, {lhs_dilation}, {rhs_dilation}, {groups})"
+
+    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate ConvTranspose."""
+        lhs = input_vars[0]
+        rhs = input_vars[1]
+        strides = node.attributes.get("strides", 1)
+        padding = node.attributes.get("padding", "VALID")
+        lhs_dilation = node.attributes.get("lhs_dilation", 1)
+        rhs_dilation = node.attributes.get("rhs_dilation", 1)
+        groups = node.attributes.get("groups", 1)
+        pfx = self._get_backend_prefix()
+
+        if pfx == "jax":
+            return f"jax.lax.conv_transpose({lhs}, {rhs}, strides={strides}, padding='{padding}', rhs_dilation={rhs_dilation})"
+        elif pfx in ("mlx", "mx"):
+            return f"mx.conv_transpose({lhs}, {rhs}, strides={strides}, padding='{padding}', kernel_dilation={rhs_dilation}, input_dilation={lhs_dilation}, groups={groups})"
+        else:
+            return f"{pfx}_conv_transpose({lhs}, {rhs}, {strides}, '{padding}', {lhs_dilation}, {rhs_dilation}, {groups})"

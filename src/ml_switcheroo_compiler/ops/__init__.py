@@ -19,6 +19,10 @@ from .distributed import axis_index as axis_index
 from .distributed import with_sharding_constraint as with_sharding_constraint
 from .distributed import Infeed, Outfeed, AxisIndex, WithShardingConstraint
 
+from .kernels import cuda_kernel as cuda_kernel
+from .kernels import metal_kernel as metal_kernel
+from .kernels import precompiled_cuda_kernel as precompiled_cuda_kernel
+
 
 def __getattr__(name: str) -> object:
     import ml_switcheroo_compiler.random as _random_mod
@@ -321,11 +325,6 @@ def concretization_function_error(*args: typing.Any, **kwargs: typing.Any) -> ty
 def factorial(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
     """Not implemented function factorial."""
     raise NotImplementedError("factorial not implemented")  # pragma: no cover
-
-
-def unflatten(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
-    """Not implemented function unflatten."""
-    raise NotImplementedError("unflatten not implemented")  # pragma: no cover
 
 
 def exp1(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
@@ -2541,6 +2540,7 @@ __all__ = [
     "add_jaxvals",
     "add_n",
     "add_tangents",
+    "addmm",
     "adjust_brightness",
     "adjust_contrast",
     "adjust_hue",
@@ -2668,6 +2668,7 @@ __all__ = [
     "blackman",
     "block",
     "block_diag",
+    "block_masked_mm",
     "bool",
     "bool_",
     "boolean_mask",
@@ -2783,6 +2784,7 @@ __all__ = [
     "csingle",
     "ctc_decode",
     "ctc_loss",
+    "cuda_kernel",
     "cumprod",
     "cumsum",
     "cumulative_logsumexp",
@@ -2860,6 +2862,8 @@ __all__ = [
     "double",
     "draw_bounding_boxes",
     "dropout",
+    "dropout2d",
+    "dropout3d",
     "dsplit",
     "dstack",
     "dtype",
@@ -2898,6 +2902,7 @@ __all__ = [
     "erfinv",
     "escaped_tracer_error",
     "euler_gamma",
+    "eval",
     "eval_context",
     "eval_jaxpr",
     "execute_with_python_values",
@@ -2994,6 +2999,7 @@ __all__ = [
     "gammaln",
     "gammasgn",
     "gather",
+    "gather_mm",
     "gather_nd",
     "gaussian_blur",
     "gaussian_nll_loss",
@@ -3011,6 +3017,7 @@ __all__ = [
     "get_item",
     "get_metadata",
     "get_op",
+    "get_peak_memory",
     "get_primitive_transpose",
     "get_printoptions",
     "get_referent",
@@ -3028,7 +3035,9 @@ __all__ = [
     "group_mean",
     "group_norm",
     "group_variance",
+    "gru",
     "gru_cell",
+    "hadamard_transform",
     "hamming",
     "hamming_window",
     "hann_window",
@@ -3203,6 +3212,7 @@ __all__ = [
     "logaddexp",
     "logaddexp2",
     "logcdf",
+    "logcumsumexp",
     "logdet",
     "logical_and",
     "logical_not",
@@ -3276,6 +3286,7 @@ __all__ = [
     "merge_lists",
     "merge_mlir_modules",
     "meshgrid",
+    "metal_kernel",
     "mfcc",
     "mfccs_from_log_mel_spectrograms",
     "mgrid",
@@ -3336,6 +3347,7 @@ __all__ = [
     "numpy",
     "object_",
     "ogrid",
+    "old_split",
     "one_hot",
     "ones",
     "ones_like",
@@ -3399,6 +3411,7 @@ __all__ = [
     "power_iteration",
     "ppermute",
     "ppf",
+    "precompiled_cuda_kernel",
     "primal_dtype_to_tangent_dtype",
     "primitive_uses_outfeed",
     "printoptions",
@@ -3415,6 +3428,7 @@ __all__ = [
     "pswapaxes",
     "ptp",
     "put",
+    "put_along_axis",
     "qr",
     "quantile",
     "r_",
@@ -3516,7 +3530,10 @@ __all__ = [
     "saturate_cast",
     "save",
     "save_device_memory_profile",
+    "save_gguf",
+    "save_safetensors",
     "savez",
+    "savez_compressed",
     "scalar_mul",
     "scalar_type_of",
     "scale_and_translate",
@@ -3535,6 +3552,7 @@ __all__ = [
     "segment_min",
     "segment_prod",
     "segment_sum",
+    "segmented_mm",
     "select",
     "selu",
     "sem",
@@ -3542,8 +3560,11 @@ __all__ = [
     "separable_conv1d",
     "separable_conv2d",
     "sequential_vmap",
+    "set_default_stream",
+    "set_memory_limit",
     "set_module",
     "set_printoptions",
+    "set_wired_limit",
     "setdiff1d",
     "setxor1d",
     "sf",
@@ -3643,6 +3664,7 @@ __all__ = [
     "swish",
     "switch",
     "switch_case",
+    "synchronize",
     "take",
     "take_along_axis",
     "tan",
@@ -3755,6 +3777,7 @@ __all__ = [
     "vectorize",
     "vectorized_batcher",
     "vectorized_map",
+    "view",
     "view_as_complex",
     "view_as_real",
     "visualize_array_sharding",

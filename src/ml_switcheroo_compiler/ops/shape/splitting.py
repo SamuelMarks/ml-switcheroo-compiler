@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -44,15 +45,39 @@ def split(
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape if len(inputs) > 0 else ()
-    return (
-        _emit_shape_node(
-            "Split",
-            inputs,
-            {},
-            out_shape,
-            inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-        ),
+    node = _emit_shape_node(
+        "Split",
+        inputs,
+        {"split_size_or_sections": split_size_or_sections, "axis": dim},
+        out_shape,
+        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
+    if isinstance(split_size_or_sections, int):
+        num_splits = (
+            split_size_or_sections
+            if getattr(input, "shape", None) is None
+            else (input.shape[dim] // split_size_or_sections if split_size_or_sections > 0 else 1)
+        )
+        if (
+            split_size_or_sections > 0
+            and input.shape
+            and input.shape[dim] % split_size_or_sections == 0
+        ):
+            num_splits = input.shape[dim] // split_size_or_sections
+        else:
+            num_splits = split_size_or_sections
+    else:
+        num_splits = len(split_size_or_sections) + 1
+
+    from ml_switcheroo_compiler.tracing import builder
+
+    out_tensors = []
+    for i in range(num_splits):
+        item_node = builder.TracingNodeBuilder.emit_tracing_node(
+            "GetItem", node, output_index=i, key=str(i)
+        )
+        out_tensors.append(item_node)
+    return tuple(out_tensors)
 
 
 def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
@@ -207,3 +232,16 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
             ary.dtype,
         ),
     )
+
+
+@register_op("GetItem")
+class GetItemOp(OpDef):
+    """Operation to retrieve an item from a tensor."""
+
+    def infer_shape(self, x: object, output_index: int = 0, **kwargs: object) -> tuple[int, ...]:
+        """Infer shape of get_item result."""
+        # We don't have enough info here if x is a node, but we can just return None
+        return getattr(x, "shape", ())
+
+
+old_split = split

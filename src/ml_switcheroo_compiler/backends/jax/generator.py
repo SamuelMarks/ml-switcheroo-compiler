@@ -227,14 +227,6 @@ class JAXNodeVisitorMixin:
         )
         return f"jax_mfcc({input_vars[0]}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs})"  # pragma: no cover
 
-    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ConvTranspose."""
-        lhs = input_vars[0]
-        rhs = input_vars[1]
-        strides = node.attributes.get("strides", 1)
-        padding = node.attributes.get("padding", "VALID")
-        return f"jax_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
-
     def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate RaggedDot."""
         return f"jax_ragged_dot({input_vars[0]}, {input_vars[1]})"

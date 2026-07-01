@@ -27,9 +27,9 @@ def array(cls: type, data: object, dtype: object = None) -> object:
     Returns:
     Any: The result.
     """
-    if dtype is not None:
-        return np.array(data, dtype=getattr(dtype, "value", dtype))
-    return np.array(data)
+    from ml_switcheroo_compiler.backends.eager import generic_array
+
+    return generic_array(np, data, dtype)
 
 
 def asarray(cls: type, data: object) -> object:

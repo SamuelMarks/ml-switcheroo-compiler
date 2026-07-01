@@ -1,6 +1,10 @@
 """Linear algebra operations package."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from .frontend import addmm as addmm
+from .frontend import block_masked_mm as block_masked_mm
+from .frontend import gather_mm as gather_mm
+from .frontend import segmented_mm as segmented_mm
 from ml_switcheroo_compiler.ops.linalg.basic import (
     ConvGeneralDilated,
     ConvTranspose,
@@ -54,6 +58,7 @@ from .fft import fftn as fftn
 from .fft import ifftn as ifftn
 from .fft import irfftn as irfftn
 from .fft import rfftn as rfftn
+from .transform import hadamard_transform as hadamard_transform
 
 from .frontend import matrix_norm as matrix_norm
 from .frontend import vector_norm as vector_norm
@@ -246,9 +251,11 @@ __all__ = [
     "Rfft",
     "Sqrtm",
     "Trace",
+    "addmm",
     "adjoint",
     "band_part",
     "banded_triangular_solve",
+    "block_masked_mm",
     "cholesky",
     "cholesky_solve",
     "conjugate_gradient",
@@ -278,7 +285,9 @@ __all__ = [
     "fftn",
     "fftnd",
     "fftshift",
+    "gather_mm",
     "global_norm",
+    "hadamard_transform",
     "hessenberg",
     "hfft",
     "householder_product",
@@ -330,6 +339,7 @@ __all__ = [
     "rfftn",
     "rfftnd",
     "schur",
+    "segmented_mm",
     "set_diag",
     "slogdet",
     "solve",

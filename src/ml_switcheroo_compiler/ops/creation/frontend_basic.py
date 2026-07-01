@@ -21,6 +21,21 @@ if TYPE_CHECKING:
 from .frontend_utils import _emit_creation_node, _emit_constant_node
 
 
+def _unpack_shape(shape: tuple) -> tuple:
+    unpacked_shape = []
+    for s in shape:
+        if hasattr(s, "data"):
+            s_val = s.data
+            if hasattr(s_val, "item"):
+                s_val = s_val.item()
+            unpacked_shape.append(s_val)
+        elif hasattr(s, "item"):
+            unpacked_shape.append(s.item())
+        else:
+            unpacked_shape.append(s)
+    return tuple(unpacked_shape)
+
+
 def array(
     object: object,
     dtype: DType | None = None,
@@ -44,7 +59,19 @@ def array(
         else:
             dtype = DType(dtype_str)
     else:
-        val_arr = get_active_backend().array(object)
+        try:
+            dtype_val = (
+                dtype.value
+                if hasattr(dtype, "value")
+                else str(dtype)
+                if hasattr(dtype, "name")
+                else dtype
+            )
+            if hasattr(dtype_val, "name") and type(dtype_val).__name__ == "dtype":
+                dtype_val = dtype_val.name  # pragma: no cover
+            val_arr = get_active_backend().array(object, dtype=dtype_val)  # pragma: no cover
+        except TypeError:
+            val_arr = get_active_backend().array(object)
 
     shape = tuple(val_arr.shape)
 
@@ -93,10 +120,14 @@ def zeros(
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
-    shape = (shape,) if isinstance(shape, int) else tuple(shape)
+    shape = _unpack_shape((shape,) if isinstance(shape, int) else tuple(shape))
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Zeros", shape, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Zeros",
+            shape,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Zeros", shape, dtype, {})
 
@@ -118,10 +149,14 @@ def ones(
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
-    shape = (shape,) if isinstance(shape, int) else tuple(shape)
+    shape = _unpack_shape((shape,) if isinstance(shape, int) else tuple(shape))
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Ones", shape, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Ones",
+            shape,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Ones", shape, dtype, {})
 
@@ -145,16 +180,27 @@ def full(
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
-    shape = (shape,) if isinstance(shape, int) else tuple(shape)
+    shape = _unpack_shape((shape,) if isinstance(shape, int) else tuple(shape))
+    if hasattr(fill_value, "data"):
+        fill_value = fill_value.data
+        if hasattr(fill_value, "item"):
+            fill_value = fill_value.item()
+    elif hasattr(fill_value, "item"):
+        fill_value = fill_value.item()
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Full",
+            shape,
+            fill_value,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node(
-        "ConstantOfShape",
+        "Full",
         shape,
         dtype,
-        {"value": fill_value},
+        {"fill_value": fill_value},
     )
 
 
@@ -176,7 +222,11 @@ def zeros_like(
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
-        data = get_active_backend().execute_op("Zeros_like", input.data, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Zeros_like",
+            input.data,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
     return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0})
 
@@ -199,7 +249,11 @@ def ones_like(
     dtype = dtype or input.dtype
     device = device or input.device
     if config.eager_mode:
-        data = get_active_backend().execute_op("Ones_like", input.data, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Ones_like",
+            input.data,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
     return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1})
 
@@ -228,7 +282,7 @@ def full_like(
             "Full_like",
             input.data,
             fill_value,
-            dtype=dtype.value,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
     return _emit_creation_node(
@@ -256,10 +310,14 @@ def empty(
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
-    shape = (shape,) if isinstance(shape, int) else tuple(shape)
+    shape = _unpack_shape((shape,) if isinstance(shape, int) else tuple(shape))
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Empty", shape, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Empty",
+            shape,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("Zeros", shape, dtype, {})
 

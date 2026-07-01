@@ -567,3 +567,11 @@ class Cumlogsumexp(ReductionOp):
     """Cumlogsumexp."""
 
     op_name = "Cumlogsumexp"
+
+
+@register_op("Logcumsumexp")
+class Logcumsumexp(ReductionOp):
+    """Logcumsumexp operation."""
+
+    op_name = "Logcumsumexp"
+    np_op_name = "logcumsumexp"  # fake numpy op, backend should handle

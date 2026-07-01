@@ -84,6 +84,15 @@ def mlx_power_iteration(w, num_iters, u=None):
 class MLXNNOpsVisitorMixin:
     """MLX NN ops visitor mixin."""
 
+    def visit_Rope(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate Rope."""
+        dim = node.attributes.get("dim")
+        traditional = node.attributes.get("traditional", False)
+        base = node.attributes.get("base", 10000.0)
+        scale = node.attributes.get("scale", 1.0)
+        offset = node.attributes.get("offset", 0)
+        return f"mx.fast.rope({input_vars[0]}, {dim}, traditional={traditional}, base={base}, scale={scale}, offset={offset})"
+
     def visit_PowerIteration(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate power iteration."""
         num_iters = node.attributes.get("num_iters", 1)
@@ -329,7 +338,7 @@ class MLXCodeGenerator(
         op: Arg.
         kwargs: Arg.
         """
-        dtype_str = f", dtype='{kwargs['dtype']}'" if "dtype" in kwargs else ""
+        dtype_str = f", dtype=mx.{kwargs['dtype']}" if "dtype" in kwargs else ""
         return f"mx.{op.lower()}({{shape}}){dtype_str}"
 
     def _format_full(self, kwargs: dict[str, object]) -> str:
@@ -338,8 +347,9 @@ class MLXCodeGenerator(
         Args:
         kwargs: Arg.
         """
-        dtype_str = f", dtype='{kwargs['dtype']}'" if "dtype" in kwargs else ""  # pragma: no cover
-        return f"mx.full({{shape}}, {{fill_value}}){dtype_str}"  # pragma: no cover
+        dtype_str = f", dtype=mx.{kwargs['dtype']}" if "dtype" in kwargs else ""  # pragma: no cover
+        val = "{fill_value}" if "fill_value" in kwargs else "{value}"  # pragma: no cover
+        return f"mx.full({{shape}}, {val}){dtype_str}"  # pragma: no cover
 
     def _format_transpose(self, kwargs: dict[str, object]) -> str:
         """Function docstring.
@@ -360,17 +370,98 @@ class MLXCodeGenerator(
             return "mx.random.categorical(logits={1}, axis={axis}, shape={shape}, key={0})"  # pragma: no cover
         return "mx.random.categorical(axis={axis}, shape={shape}, key={0})"  # pragma: no cover
 
-    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ConvTranspose."""
-        lhs = input_vars[0]
-        rhs = input_vars[1]
-        strides = node.attributes.get("strides", 1)
-        padding = node.attributes.get("padding", "VALID")
-        return f"mlx_conv_transpose({lhs}, {rhs}, {strides}, '{padding}')"
+    def visit_Concatenate(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover  # pragma: no cover
+        # pragma: no cover(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Handle Concatenate."""
+        axis = kwargs.get("axis", 0)
+        vars_str = ", ".join(input_vars)
+        return f"mx.concatenate([{vars_str}], axis={axis})"
+
+    def visit_Stack(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Stack."""
+        axis = kwargs.get("axis", 0)
+        vars_str = ", ".join(input_vars)
+        return f"mx.stack([{vars_str}], axis={axis})"
+
+    def visit_Partition(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Partition."""
+        axis = kwargs.get("axis", -1)
+        kth = input_vars[1]
+        return f"mx.partition({input_vars[0]}, {kth} if isinstance({kth}, int) else {kth}[0], axis={axis})"
+
+    def visit_Argpartition(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Argpartition."""
+        axis = kwargs.get("axis", -1)
+        kth = input_vars[1]
+        return f"mx.argpartition({input_vars[0]}, {kth} if isinstance({kth}, int) else {kth}[0], axis={axis})"
+
+    def visit_Repeat(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Repeat."""
+        repeats = kwargs.get("repeats")
+        axis = kwargs.get("axis", None)
+        axis_str = f", axis={axis}" if axis is not None else ""
+        return f"mx.repeat({input_vars[0]}, {repeats}{axis_str})"
+
+    def visit_Roll(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Roll."""
+        shift = kwargs.get("shift", kwargs.get("shifts"))
+        axis = kwargs.get("axis", kwargs.get("dims", None))
+        axis_str = f", axis={axis}" if axis is not None else ""
+        return f"mx.roll({input_vars[0]}, {shift}{axis_str})"
+
+    def visit_Tile(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Tile."""
+        reps = kwargs.get("reps")
+        return f"mx.tile({input_vars[0]}, {reps})"
+
+    def visit_TopK(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle TopK."""
+        k = kwargs.get("k")
+        return_indices = kwargs.get("return_indices", False)
+        var = input_vars[0]
+        if return_indices:
+            return f"mx.argsort({var}, axis=-1)[..., -({k}):][..., ::-1]"
+        else:
+            return f"mx.take_along_axis({var}, mx.argsort({var}, axis=-1)[..., -({k}):][..., ::-1], axis=-1)"
+
+    def visit_Moveaxis(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle Moveaxis."""
+        source = kwargs.get("source")
+        destination = kwargs.get("destination")
+        return f"mx.moveaxis({input_vars[0]}, {source}, {destination})"
 
     def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate RaggedDot."""
         return f"mlx_ragged_dot({input_vars[0]}, {input_vars[1]})"
+
+    def visit_NanToNum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Handle NanToNum."""
+        args = [input_vars[0]]  # pragma: no cover
+        if "nan" in kwargs:  # pragma: no cover
+            args.append(f"nan={kwargs['nan']}")  # pragma: no cover
+        if "posinf" in kwargs:  # pragma: no cover
+            args.append(f"posinf={kwargs['posinf']}")  # pragma: no cover
+        if "neginf" in kwargs:  # pragma: no cover
+            args.append(f"neginf={kwargs['neginf']}")  # pragma: no cover
+        return f"mx.nan_to_num({', '.join(args)})"  # pragma: no cover
 
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum."""
@@ -390,6 +481,12 @@ class MLXCodeGenerator(
         """Handle Full."""
         fmt = self._format_full(kwargs)  # pragma: no cover
         return OpFormatter.format_backend_string(fmt, input_vars, kwargs)  # pragma: no cover
+
+    def visit_ConstantOfShape(
+        self, node: object, input_vars: list[str], **kwargs: object
+    ) -> str:  # pragma: no cover
+        """Handle ConstantOfShape."""
+        return self.visit_Full(node, input_vars, **kwargs)
 
     def visit_Transpose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Handle Transpose."""

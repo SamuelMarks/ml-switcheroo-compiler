@@ -458,6 +458,11 @@ class NanToNum(UnaryMathOp):
 
     op_name = "NanToNum"
 
+    def __call__(self, x: object, **kwargs: object) -> object:
+        """Call NanToNum, filtering out the copy kwarg."""
+        kwargs.pop("copy", None)
+        return super().__call__(x, **kwargs)
+
 
 @register_op("Signbit")
 class Signbit(UnaryMathOp):

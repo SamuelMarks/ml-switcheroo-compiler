@@ -34,7 +34,7 @@ def array(cls: type, data: object, dtype: object = None) -> object:
     Returns:
     Any: The result.
     """
-    return mx.array(data, dtype=getattr(mx, str(dtype), None)) if dtype else generic_array(mx, data)
+    return generic_array(mx, data, dtype)
 
 
 def asarray(cls: type, data: object) -> object:

@@ -28,3 +28,14 @@ class QuantDType(Enum):
     QInt8 = "qint8"
     QUInt8 = "quint8"
     QInt4 = "qint4"
+
+
+# Type categories
+floating = (DType.Float64, DType.Float32, DType.Float16, DType.BFloat16)
+complexfloating = (DType.Complex64, DType.Complex128)
+inexact = floating + complexfloating
+signedinteger = (DType.Int64, DType.Int32, DType.Int16, DType.Int8)
+unsignedinteger = (DType.UInt32, DType.UInt8)
+integer = signedinteger + unsignedinteger
+number = inexact + integer
+generic = number + (DType.Bool, DType.String)

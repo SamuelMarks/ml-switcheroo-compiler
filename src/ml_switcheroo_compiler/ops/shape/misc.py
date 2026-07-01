@@ -40,7 +40,7 @@ def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
     return _emit_shape_node(
         "Tile",
         inputs,
-        {},
+        {"reps": reps},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -75,7 +75,7 @@ def repeat(
     return _emit_shape_node(
         "Repeat",
         inputs,
-        {},
+        {"repeats": repeats, "axis": dim},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -163,13 +163,18 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
             Tensor(d, TensorConfig(d.shape, tensors[0].dtype, tensors[0].device)) for d in datas
         )
     inputs = list(tensors)
-    # shape calculation placeholder
-    out_shape = inputs[0].shape if len(inputs) > 0 else ()
+    if len(inputs) > 0:
+        out_shape = tuple(t.shape[0] if len(t.shape) > 0 else 1 for t in inputs)
+        if indexing == "xy" and len(inputs) >= 2:
+            out_shape = (out_shape[1], out_shape[0]) + out_shape[2:]
+    else:
+        out_shape = ()
+
     return tuple(
         _emit_shape_node(
             "Meshgrid",
             inputs,
-            {},
+            {"indexing": indexing},
             out_shape,
             inputs[0].dtype if len(inputs) > 0 else DType.Float32,
         )
@@ -222,8 +227,12 @@ def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
     inputs = [operand]
     # We cheat a bit by returning two tensors pointing to the same node for now,
     # as handling multi-output nodes properly requires more IR scaffolding
-    val_node = _emit_shape_node("TopK", inputs, {"k": k}, out_shape, operand.dtype)
-    idx_node = _emit_shape_node("TopK", inputs, {"k": k}, out_shape, DType.Int32)
+    val_node = _emit_shape_node(
+        "TopK", inputs, {"k": k, "return_indices": False}, out_shape, operand.dtype
+    )
+    idx_node = _emit_shape_node(
+        "TopK", inputs, {"k": k, "return_indices": True}, out_shape, DType.Int32
+    )
     return val_node, idx_node
 
 
@@ -232,6 +241,7 @@ def argsort(
     dimension: int = -1,
     is_stable: bool = True,
     axis: int | None = None,
+    dim: int | None = None,
 ) -> Tensor:
     """Returns the indices that would sort an array along a given dimension.
 
@@ -240,12 +250,15 @@ def argsort(
         dimension (int): The dimension to sort along
         is_stable (bool): Whether to use a stable sorting algorithm
         axis (int): Alias for dimension.
+        dim (int): Alias for dimension.
 
     Returns:
     Tensor: The indices that sort the tensor
     """
     if axis is not None:
         dimension = axis
+    if dim is not None:
+        dimension = dim  # pragma: no cover
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -269,6 +282,7 @@ def sort(
     dimension: int = -1,
     is_stable: bool = True,
     axis: int | None = None,
+    dim: int | None = None,
 ) -> Tensor:
     """Sorts the elements of an array along a given dimension.
 
@@ -277,12 +291,15 @@ def sort(
         dimension (int): The dimension to sort along
         is_stable (bool): Whether to use a stable sorting algorithm
         axis (int): Alias for dimension.
+        dim (int): Alias for dimension.
 
     Returns:
     Tensor: The sorted tensor
     """
     if axis is not None:
         dimension = axis
+    if dim is not None:
+        dimension = dim  # pragma: no cover
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

@@ -200,11 +200,21 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             The computed shape or evaluation result.
         """
+        import numpy as np
+
         backend = get_active_backend()
 
         if hasattr(self.data, "id"):
-            return backend.zeros(self.shape)
-        return backend.array(self.data)
+            data = backend.zeros(self.shape)
+        else:
+            data = self.data
+
+        try:
+            return np.asarray(data, dtype=dtype) if dtype is not None else np.asarray(data)
+        except Exception:  # pragma: no cover
+            return np.array(
+                data.tolist() if hasattr(data, "tolist") else data, dtype=dtype
+            )  # pragma: no cover
 
     def __bool__(self) -> bool:
         """Bool.

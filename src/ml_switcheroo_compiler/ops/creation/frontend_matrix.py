@@ -27,6 +27,7 @@ from .frontend_utils import _emit_creation_node
 def eye(
     n: int,
     m: int | None = None,
+    k: int = 0,
     dtype: DType | None = None,
     device: Device | None = None,
 ) -> Tensor:
@@ -35,6 +36,7 @@ def eye(
     Args:
         n (int): Argument n
         m (Optional[int]): Argument m
+        k (int): Index of the diagonal.
         dtype (Optional[DType]): The data type
         device (Optional[Device]): The device to store the tensor on.
 
@@ -47,9 +49,15 @@ def eye(
     shape = (n, m)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Eye", n, m, dtype=dtype.value)
+        data = get_active_backend().execute_op(
+            "Eye",
+            n,
+            m,
+            k=k,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return _emit_creation_node("EyeLike", shape, dtype, {"n": n, "m": m})
+    return _emit_creation_node("EyeLike", shape, dtype, {"n": n, "m": m, "k": k})
 
 
 def identity(
@@ -91,11 +99,12 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
         if dtype is None:
             dtype = getattr(data, "dtype", DType.Float32)
         return Tensor(data, TensorConfig(shape, dtype, device))
-    if len(input.shape) == 1:
-        n = input.shape[0] + abs(diagonal)
+    input_shape = getattr(input, "shape", ())
+    if len(input_shape) == 1:
+        n = input_shape[0] + abs(diagonal)
         shape = (n, n)
-    elif len(input.shape) == MAGIC_VAL_2:
-        n = min(input.shape) - abs(diagonal)
+    elif len(input_shape) == MAGIC_VAL_2:
+        n = min(input_shape) - abs(diagonal)
         shape = (max(0, n),)
     else:
         msg = "diag requires a 1D or 2D tensor."
@@ -105,13 +114,18 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
         msg = "Cannot emit diag node outside of a tracing context."
         raise RuntimeError(msg)
     out_id = str(uuid.uuid4())
+    input_id = input.data.id if hasattr(input, "data") else getattr(input, "id", "const")
     node = LogicalNode(
         id=out_id,
         op_type="Diag",
-        inputs=[input.data.id],
+        inputs=[input_id],
         attributes={"k": diagonal},
         shape_metadata=shape,
     )
     _tracer.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
+    proxy = ProxyTensor(
+        id=out_id,
+        shape=shape,
+        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+    )
     return Tensor(proxy, TensorConfig(shape, dtype, device))

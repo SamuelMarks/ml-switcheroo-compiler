@@ -276,3 +276,13 @@ def StreamContext(stream_name: str) -> Iterator[None]:
         Iterator[None]: The evaluated output resulting from this operation.
     """
     return ConfigContext(current_stream=stream_name)
+
+
+def disable_compile() -> None:
+    """Disables compilation globally (enables eager mode)."""
+    config.eager_mode = True
+
+
+def enable_compile() -> None:
+    """Enables compilation globally (disables eager mode)."""
+    config.eager_mode = False

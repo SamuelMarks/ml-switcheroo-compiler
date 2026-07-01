@@ -15,7 +15,12 @@ def _to_numpy(val: object) -> object:
     import numpy as np
 
     if isinstance(val, mx.array):
-        return np.array(val)
+        try:
+            return np.array(val)
+        except RuntimeError:  # pragma: no cover
+            if str(val.dtype) == "bfloat16":  # pragma: no cover
+                return np.array(val.astype(mx.float32).tolist())  # pragma: no cover
+            return np.array(val.tolist())  # pragma: no cover
     return val
 
 
@@ -27,7 +32,11 @@ def _from_numpy(val: object) -> object:
     """
     import numpy as np
 
-    if isinstance(val, np.ndarray) or isinstance(val, (int, float, bool)):
+    if isinstance(val, np.ndarray):
+        return mx.array(
+            val.tolist(), dtype=getattr(mx, str(val.dtype)) if hasattr(mx, str(val.dtype)) else None
+        )
+    if isinstance(val, (int, float, bool)):
         return mx.array(val)
     if isinstance(val, tuple):  # pragma: no branch
         return tuple(_from_numpy(r) for r in val)
@@ -277,6 +286,129 @@ def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object
         return backend_module.full(shape, fill_value)
 
 
+@mlx_eager_registry.register("Partition")
+def _mlx_partition(
+    backend_module: object, *args: object, **kwargs: object
+) -> object:  # pragma: no cover
+    """Function docstring.
+
+    Args:
+        backend_module: Arg.
+        args: Arg.
+        kwargs: Arg.
+    """
+    a = args[0]
+    k = kwargs.get("k", args[1] if len(args) > 1 else 1)
+    if hasattr(k, "item"):
+        k = int(k.item())
+    elif hasattr(k, "data") and hasattr(k.data, "item"):
+        k = int(k.data.item())
+    else:
+        k = int(k)
+    return_indices = kwargs.get("return_indices", None)
+
+    kth = max(0, a.shape[-1] - k)
+    if return_indices is False:
+        if hasattr(backend_module, "topk"):
+            return backend_module.topk(a, k)
+        return backend_module.partition(a, kth, axis=-1)[..., -k:]
+
+    indices = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
+    if return_indices is True:
+        return indices
+
+    values = backend_module.take_along_axis(a, indices, axis=-1)
+    return values, indices
+
+
+@mlx_eager_registry.register("NanToNum")
+def _mlx_nan_to_num(
+    backend_module: object, *args: object, **kwargs: object
+) -> object:  # pragma: no cover
+    """Function docstring.
+
+    Args:
+        backend_module: Arg.
+        args: Arg.
+        kwargs: Arg.
+    """
+    valid_kwargs = {}
+    for key in ("nan", "posinf", "neginf"):
+        if key in kwargs:
+            val = kwargs[key]
+            if hasattr(val, "item"):
+                val = float(val.item())
+            elif hasattr(val, "data") and hasattr(val.data, "item"):
+                val = float(val.data.item())
+            elif val is not None:
+                val = float(val)
+            valid_kwargs[key] = val
+    return backend_module.nan_to_num(*args, **valid_kwargs)
+
+
+@mlx_eager_registry.register("Cummax")
+def _mlx_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
+    dtype = kwargs.pop("dtype", None)
+    res = backend_module.cummax(*args, **kwargs)
+    if dtype is not None and str(dtype) != "None":
+        res = res.astype(
+            getattr(
+                backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)
+            )
+        )
+    return res
+
+
+@mlx_eager_registry.register("Cummin")
+def _mlx_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
+    dtype = kwargs.pop("dtype", None)
+    res = backend_module.cummin(*args, **kwargs)
+    if dtype is not None and str(dtype) != "None":
+        res = res.astype(
+            getattr(
+                backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)
+            )
+        )
+    return res
+
+
+@mlx_eager_registry.register("Cumprod")
+def _mlx_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
+    dtype = kwargs.pop("dtype", None)
+    res = backend_module.cumprod(*args, **kwargs)
+    if dtype is not None and str(dtype) != "None":
+        res = res.astype(
+            getattr(
+                backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)
+            )
+        )
+    return res
+
+
+@mlx_eager_registry.register("Slice")
+def _mlx_slice(
+    backend_module: object, *args: object, **kwargs: object
+) -> object:  # pragma: no cover
+    """Function docstring.
+
+    Args:
+        backend_module: Arg.
+        args: Arg.
+        kwargs: Arg.
+    """
+    import builtins
+
+    a = args[0]
+    dim = kwargs.get("dim")
+    start = kwargs.get("start")
+    end = kwargs.get("end")
+    step = kwargs.get("step", 1)
+
+    sl = [builtins.slice(None)] * len(a.shape)
+    sl[dim] = builtins.slice(start, end, step)
+    return a[tuple(sl)]
+
+
 @mlx_eager_registry.register("Eye")
 def _mlx_eye(backend_module: object, *args: object, **kwargs: object) -> object:
     """Function docstring.
@@ -289,6 +421,33 @@ def _mlx_eye(backend_module: object, *args: object, **kwargs: object) -> object:
     n_arg = args[0]
     if hasattr(n_arg, "data"):  # pragma: no branch
         n_arg = n_arg.data
+    m_arg = args[1] if len(args) > 1 else None
+    if hasattr(m_arg, "data"):  # pragma: no branch
+        m_arg = m_arg.data
+    m_val = int(m_arg) if m_arg is not None else int(n_arg)
+    k_val = int(kwargs.get("k", 0))
     return backend_module.eye(
-        int(n_arg), dtype=getattr(backend_module, kwargs.get("dtype", "float32"))
+        n=int(n_arg),
+        m=m_val,
+        k=k_val,
+        dtype=getattr(backend_module, kwargs.get("dtype", "float32")),
     )
+
+
+@mlx_eager_registry.register("Rope")
+def _mlx_rope(backend_module: object, x: object, **kwargs: object) -> object:
+    """Apply Rotary Positional Encoding using MLX.
+
+    Args:
+        backend_module: Arg.
+        x: Arg.
+        kwargs: Arg.
+    """
+    import mlx.core as mx
+
+    dim = kwargs.get("dim")
+    base = kwargs.get("base", 10000.0)
+    offset = kwargs.get("offset", 0)
+    traditional = kwargs.get("traditional", False)
+    scale = kwargs.get("scale", 1.0)
+    return mx.fast.rope(x, dim, traditional=traditional, base=base, scale=scale, offset=offset)

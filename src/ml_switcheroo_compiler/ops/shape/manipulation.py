@@ -56,20 +56,49 @@ def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
     """
     import math
 
-    inputs = [input]
-    shape = list(inputs[0].shape)
+    shape = list(input.shape) if input.shape is not None else []
+    if not shape:
+        return reshape(input, [-1])
     s_dim = start_dim if start_dim >= 0 else start_dim + len(shape)
     e_dim = end_dim if end_dim >= 0 else end_dim + len(shape)
 
     new_shape = shape[:s_dim] + [math.prod(shape[s_dim : e_dim + 1])] + shape[e_dim + 1 :]
+    return reshape(input, new_shape)
 
-    return _emit_shape_node(
-        "Flatten",
-        inputs,
-        {"start_dim": start_dim, "end_dim": end_dim},
-        tuple(new_shape),
-        inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-    )
+
+def unflatten(input: Tensor, dim: int, sizes: tuple[int, ...]) -> Tensor:
+    """Unflattens a dimension of the input tensor into multiple dimensions.
+
+    Args:
+        input (Tensor): The input tensor
+        dim (int): The dimension to unflatten
+        sizes (tuple[int, ...]): The new shape of the unflattened dimension
+
+    Returns:
+    Tensor: The unflattened tensor
+    """
+    shape = list(input.shape) if input.shape is not None else []
+    if not shape:
+        return input  # pragma: no cover
+    dim = dim if dim >= 0 else dim + len(shape)
+
+    new_shape = shape[:dim] + list(sizes) + shape[dim + 1 :]
+    return reshape(input, new_shape)  # pragma: no cover
+
+
+def view(input: Tensor, shape: tuple[int, ...] | list[int]) -> Tensor:
+    """Returns a new tensor with the same data as the input tensor but of a different shape.
+
+    For compiler representation, view is treated identically to reshape.
+
+    Args:
+        input (Tensor): The input tensor
+        shape (tuple[int, ...] | list[int]): The desired shape
+
+    Returns:
+    Tensor: A reshaped tensor
+    """
+    return reshape(input, list(shape))
 
 
 def _normalize_dims(dim: int | tuple[int, ...] | list[int] | None) -> list[int] | None:
@@ -97,17 +126,22 @@ def _compute_squeeze_shape(shape: tuple, dim: int | tuple[int, ...] | list[int] 
 
 
 @dispatch_eager("Squeeze")
-def squeeze(input: Tensor, dim: int | Sequence[int] | None = None) -> Tensor:
+def squeeze(
+    input: Tensor, dim: int | Sequence[int] | None = None, axis: int | Sequence[int] | None = None
+) -> Tensor:
     """Removes dimensions of size 1 from the input tensor.
 
     Args:
         input (Tensor): The input tensor
         dim (int | Sequence[int] | None): The dimension(s) to squeeze
+        axis (int | Sequence[int] | None): Alias for dim
         If None, all dimensions of size 1 are removed. Defaults to None
 
     Returns:
     Tensor: The squeezed tensor
     """
+    if axis is not None:
+        dim = axis
     inputs = [input]
     out_shape = _compute_squeeze_shape(input.shape, dim)
     kwargs = {"dim": dim} if dim is not None else {}
@@ -262,8 +296,24 @@ def _parse_shape_arg(size: object) -> tuple[int, ...] | None:
     if isinstance(size, list):
         size = _extract_from_list(size)
 
-    if isinstance(size, list) or isinstance(size, tuple):
-        size = [int(s) if isinstance(s, (int, float, bool)) else s for s in size]
+    if isinstance(size, (list, tuple)):
+        new_size = []
+        for s in size:
+            if isinstance(s, (int, float, bool)):
+                new_size.append(int(s))
+            elif hasattr(s, "item") and callable(s.item):
+                try:
+                    new_size.append(int(s.item()))
+                except Exception:
+                    new_size.append(s)
+            elif hasattr(s, "data") and hasattr(s.data, "item"):
+                try:
+                    new_size.append(int(s.data.item()))
+                except Exception:
+                    new_size.append(s)
+            else:
+                new_size.append(s)
+        size = new_size
 
     return tuple(size)
 
@@ -384,7 +434,7 @@ def moveaxis(
     return _emit_shape_node(
         "Moveaxis",
         inputs,
-        {},
+        {"source": source, "destination": destination},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -414,7 +464,7 @@ def roll(
     return _emit_shape_node(
         "Roll",
         inputs,
-        {},
+        {"shift": shifts, "axis": dims},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )

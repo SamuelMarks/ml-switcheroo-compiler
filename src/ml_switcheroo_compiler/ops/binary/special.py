@@ -40,6 +40,19 @@ class Atan2(OpDef):
 class Divmod(OpDef):
     """An operation class for computing element-wise quotient and remainder."""
 
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        """Call Divmod."""
+        from ml_switcheroo_compiler.core.config import config
+
+        if config.eager_mode:
+            from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
+
+            return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
+
+        from ml_switcheroo_compiler.ops.binary.frontend import floor_divide, remainder
+
+        return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
+
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
         """Execute infer_shape.
 

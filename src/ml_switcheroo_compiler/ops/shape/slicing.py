@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ def slice(
     return _emit_shape_node(
         "Slice",
         inputs,
-        {},
+        {"dim": dim, "start": start, "end": end, "step": step},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -92,7 +92,6 @@ def strided_slice(
     )
 
 
-@dispatch_eager("DynamicUpdateSlice")
 @register_op("Slice")
 class Slice(OpDef):
     """Slice operator definition."""

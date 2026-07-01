@@ -21,6 +21,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
 
@@ -388,7 +389,7 @@ def diag(input: Tensor, k: int = 0) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Diag", input.data, k=k)
+        data = backend.execute_op("Diag", getattr(input, "data", input), k=k)
         # We need shape for eager return, backend.array handles it mostly
         return Tensor(
             backend.array(data),
@@ -543,7 +544,7 @@ def convolve(a: object, v: object, mode: str = "full") -> Tensor:
             TensorConfig(data.shape, getattr(a, "dtype", "float32"), getattr(a, "device", None)),
         )
     return _emit_linalg_node(
-        "Convolve", [a, v], {"mode": mode}, (None,), getattr(a, "dtype", "float32")
+        "Convolve", [a, v], {"mode": mode}, [(None,)], [getattr(a, "dtype", "float32")]
     )
 
 
@@ -948,3 +949,206 @@ def vecdot(x, y, axis=-1, name=None):
         data = backend.execute_op("Vecdot", x.data, y.data, axis=axis)
         return Tensor(data, TensorConfig(data.shape, x.dtype, x.device))
     return _emit_linalg_node("Vecdot", [x, y], {"axis": axis}, [()], [x.dtype])
+
+
+def addmm(
+    input: Tensor,
+    mat1: Tensor,
+    mat2: Tensor,
+    *,
+    beta: float | int = 1.0,
+    alpha: float | int = 1.0,
+) -> Tensor:
+    """Performs a matrix multiplication of the matrices mat1 and mat2.
+
+    The matrix input is added to the final result.
+    out = beta * input + alpha * (mat1 @ mat2).
+    """
+    from ml_switcheroo_compiler.ops.binary import add, multiply
+
+    mm_res = matmul(mat1, mat2)
+    if alpha != 1.0:
+        mm_res = multiply(mm_res, alpha)
+    if beta != 1.0:
+        input_scaled = multiply(input, beta)
+    else:
+        input_scaled = input
+    return add(input_scaled, mm_res)
+
+
+@register_op("BlockMaskedMm")
+class BlockMaskedMm(OpDef):
+    """BlockMaskedMm operation."""
+
+    op_name = "BlockMaskedMm"
+
+    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+        """Infer shape."""
+        if isinstance(a, tuple) and isinstance(b, tuple):
+            from ml_switcheroo_compiler.ir.shape_system import matmul_shape
+
+            try:
+                return matmul_shape(a, b)
+            except Exception:  # pragma: no cover
+                return None
+        return getattr(a, "shape", ())
+
+
+def block_masked_mm(
+    a: Tensor,
+    b: Tensor,
+    block_size: int = 64,
+    mask_out: Tensor | None = None,
+    mask_lhs: Tensor | None = None,
+    mask_rhs: Tensor | None = None,
+) -> Tensor:
+    """Block masked matrix multiplication."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    kwargs = {"block_size": block_size}
+    if config.eager_mode:
+        backend = get_active_backend()
+        if mask_out is not None:
+            kwargs["mask_out"] = mask_out.data
+        if mask_lhs is not None:
+            kwargs["mask_lhs"] = mask_lhs.data
+        if mask_rhs is not None:
+            kwargs["mask_rhs"] = mask_rhs.data
+
+        data = backend.execute_op("BlockMaskedMm", a.data, b.data, **kwargs)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, a.dtype, a.device)
+        )
+
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+    from ml_switcheroo_compiler.ir.shape_system import matmul_shape
+
+    out_shape = matmul_shape(a.shape, b.shape)
+
+    inputs = [a, b]
+    if mask_out is not None:
+        kwargs["mask_out"] = len(inputs)
+        inputs.append(mask_out)
+    if mask_lhs is not None:
+        kwargs["mask_lhs"] = len(inputs)
+        inputs.append(mask_lhs)
+    if mask_rhs is not None:
+        kwargs["mask_rhs"] = len(inputs)
+        inputs.append(mask_rhs)
+
+    return _emit_shape_node("BlockMaskedMm", inputs, kwargs, out_shape, a.dtype)
+
+
+@register_op("GatherMm")
+class GatherMm(OpDef):
+    """GatherMm operation."""
+
+    op_name = "GatherMm"
+
+    def infer_shape(
+        self,
+        a: object,
+        b: object,
+        lhs_indices: object = None,
+        rhs_indices: object = None,
+        **kwargs: object,
+    ) -> object:
+        """Infer shape."""
+        if isinstance(a, tuple) and isinstance(b, tuple):
+            from ml_switcheroo_compiler.ir.shape_system import matmul_shape
+
+            try:
+                mm_shape = matmul_shape(a, b)
+                if lhs_indices is not None and isinstance(lhs_indices, tuple):
+                    return (lhs_indices[0],) + mm_shape[-2:]
+                elif rhs_indices is not None and isinstance(rhs_indices, tuple):
+                    return (rhs_indices[0],) + mm_shape[-2:]
+                return mm_shape
+            except Exception:  # pragma: no cover
+                return None
+        return getattr(a, "shape", ())
+
+
+def gather_mm(
+    a: Tensor,
+    b: Tensor,
+    lhs_indices: Tensor = None,
+    rhs_indices: Tensor = None,
+    sorted_indices: bool = False,
+) -> Tensor:
+    """Gather matrix multiplication."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    kwargs = {"sorted_indices": sorted_indices}
+    if config.eager_mode:
+        backend = get_active_backend()
+        if lhs_indices is not None:
+            kwargs["lhs_indices"] = lhs_indices.data
+        if rhs_indices is not None:
+            kwargs["rhs_indices"] = rhs_indices.data
+        data = backend.execute_op("GatherMm", a.data, b.data, **kwargs)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, a.dtype, a.device)
+        )
+
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    # Simple shape inference for now: assume batch dimension is determined by indices
+    out_shape = list(getattr(a, "shape", (1, 1, 1)))
+    if lhs_indices is not None:
+        out_shape[0] = getattr(lhs_indices, "shape", (1,))[0]
+    elif rhs_indices is not None:
+        out_shape[0] = getattr(rhs_indices, "shape", (1,))[0]
+
+    out_shape = tuple(
+        out_shape[:-2] + [getattr(a, "shape", (1, 1))[-2], getattr(b, "shape", (1, 1))[-1]]
+    )
+
+    inputs = [a, b]
+    if lhs_indices is not None:
+        kwargs["lhs_indices"] = len(inputs)
+        inputs.append(lhs_indices)
+    if rhs_indices is not None:
+        kwargs["rhs_indices"] = len(inputs)
+        inputs.append(rhs_indices)
+
+    return _emit_shape_node("GatherMm", inputs, kwargs, out_shape, a.dtype)
+
+
+@register_op("SegmentedMm")
+class SegmentedMm(OpDef):
+    """SegmentedMm operation."""
+
+    op_name = "SegmentedMm"
+
+    def infer_shape(
+        self, a: object, b: object, segments: object = None, **kwargs: object
+    ) -> object:
+        """Infer shape."""
+        if isinstance(a, tuple) and isinstance(b, tuple):
+            if segments is not None and isinstance(segments, tuple):
+                return (segments[0] - 1, a[-2], b[-1])
+            return (1, a[-2], b[-1])
+        return getattr(a, "shape", ())
+
+
+def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> Tensor:
+    """Segmented matrix multiplication."""
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("SegmentedMm", a.data, b.data, segments=segments.data)
+        return Tensor(
+            backend.array(data), TensorConfig(backend.array(data).shape, a.dtype, a.device)
+        )
+
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    out_shape = (
+        getattr(segments, "shape", (2,))[0] - 1,
+        getattr(a, "shape", (1, 1))[-2],
+        getattr(b, "shape", (1, 1))[-1],
+    )
+
+    return _emit_shape_node("SegmentedMm", [a, b, segments], {"segments": 2}, out_shape, a.dtype)

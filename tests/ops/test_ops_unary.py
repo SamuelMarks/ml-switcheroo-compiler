@@ -19,6 +19,7 @@ from ml_switcheroo_compiler.ops.unary.math import (
     Round,
     Sign,
     Sin,
+    Tan,
     Sqrt,
     Square,
     UnaryMathOp,
@@ -40,6 +41,7 @@ def test_unary_math_ops() -> None:
 
     ops = [
         (Sin(), np.sin),
+        (Tan(), np.tan),
         (Cos(), np.cos),
         (Exp(), np.exp),
         (Log(), np.log),

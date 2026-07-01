@@ -19,16 +19,19 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     return da.zeros(shape, chunks="auto")
 
 
-def array(cls: type, data: object) -> object:
+def array(cls: type, data: object, dtype: object = None) -> object:
     """Execute array.
 
     Args:
         cls (Any): The cls parameter for the operation.
         data (Any): Argument data.
+        dtype (Any): Argument dtype.
 
     Returns:
     Any: The result.
     """
+    if dtype is not None:
+        return da.array(data, dtype=getattr(dtype, "value", dtype))
     return da.array(data)
 
 

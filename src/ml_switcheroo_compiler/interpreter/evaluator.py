@@ -56,6 +56,59 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None
     target_op = _get_op_alias(node.op_type)
     kwargs = _prepare_node_kwargs(node, target_op)
 
+    if target_op == "Slice":
+        import builtins
+        import numpy as np
+
+        # Determine slices from node attributes. If it's the tracer format, it has "slices"
+        if "slices" in kwargs:
+            parsed_key = eval(
+                kwargs["slices"],
+                {
+                    "slice": builtins.slice,
+                    "Ellipsis": Ellipsis,
+                    "None": None,
+                    "np": np,
+                    "array": np.array,
+                },
+            )
+            env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+            return
+
+        dim = kwargs.get("dim", 0)
+        start = kwargs.get("start", None)
+        end = kwargs.get("end", None)
+        step = kwargs.get("step", 1)
+
+        sl = [builtins.slice(None)] * len(in_vals[0].shape)
+        sl[dim] = builtins.slice(start, end, step)
+        env.set(node.id, backend.array(np.array(in_vals[0])[tuple(sl)]))
+        return
+
+    if target_op == "GetItem":
+        key = kwargs.get("key")
+        import builtins
+        import numpy as np
+
+        parsed_key = eval(
+            key,
+            {
+                "slice": builtins.slice,
+                "Ellipsis": Ellipsis,
+                "None": None,
+                "np": np,
+                "array": np.array,
+            },
+        )
+        env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+        return
+
+    if target_op == "Meshgrid":
+        idx = kwargs.pop("output_index", 0)
+        result = backend.execute_op(target_op, *in_vals, **kwargs)
+        env.set(node.id, result[idx])
+        return
+
     result = backend.execute_op(target_op, *in_vals, **kwargs)
     env.set(node.id, result)
 

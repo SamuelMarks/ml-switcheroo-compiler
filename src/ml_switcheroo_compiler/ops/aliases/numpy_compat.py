@@ -21,15 +21,14 @@ def astype(x: object, dtype: object, **kwargs: object) -> object:
     Args:
         x (object): Array to cast.
         dtype (object): Type to cast to.
-        **kwargs: Additional keyword arguments.
+        **kwargs (object): Additional keyword arguments.
 
     Returns:
         object: Cast array.
     """
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray  # pragma: no cover
+    from ml_switcheroo_compiler.ops.unary import cast
 
-    t = asarray(x)  # pragma: no cover
-    return t.astype(dtype, **kwargs)  # pragma: no cover
+    return cast(x, dtype=dtype, **kwargs)
 
 
 def array_equal(a1: object, a2: object, equal_nan: bool = False) -> object:
@@ -412,15 +411,14 @@ def bincount(x: object, weights: object = None, minlength: int = 0) -> object:
 
 def cumprod(a: object, axis: int = None, dtype: object = None) -> object:
     """Cumprod missing from compiler."""
-    import importlib  # pragma: no cover
-
-    np = importlib.import_module("numpy")  # pragma: no cover
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
     from ml_switcheroo_compiler.core.config import config as core_config  # pragma: no cover
 
     if core_config.eager_mode:  # pragma: no cover
-        a_data = getattr(a, "data", a)  # pragma: no cover
-        res = np.cumprod(a_data, axis=axis, dtype=dtype)  # pragma: no cover
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        res = backend.execute_op("Cumprod", getattr(a, "data", a), axis=axis, dtype=dtype)
         return Tensor(  # pragma: no cover
             res,
             TensorConfig(
@@ -429,4 +427,35 @@ def cumprod(a: object, axis: int = None, dtype: object = None) -> object:
                 device=getattr(a, "device", None),
             ),
         )
-    raise NotImplementedError("cumprod is not fully supported in tracing mode.")  # pragma: no cover
+
+    from ml_switcheroo_compiler.tracing import _tracer  # pragma: no cover
+    import uuid  # pragma: no cover
+    from ml_switcheroo_ir import LogicalNode  # pragma: no cover
+
+    # pragma: no cover
+    if (
+        getattr(_tracer, "is_tracing", False) and _tracer.active_graph is not None
+    ):  # pragma: no cover
+        node = LogicalNode(
+            id=str(uuid.uuid4()),
+            op_type="Cumprod",
+            inputs=[],
+            attributes={"axis": axis, "dtype": dtype},
+        )  # pragma: no cover
+        if hasattr(a, "_node"):  # pragma: no cover
+            node.inputs.append(a._node.id)  # pragma: no cover
+        elif hasattr(a, "data") and hasattr(a.data, "id"):  # pragma: no cover
+            node.inputs.append(a.data.id)  # pragma: no cover
+        elif hasattr(a, "id"):  # pragma: no cover
+            node.inputs.append(a.id)  # pragma: no cover
+        _tracer.add_node(node)  # pragma: no cover
+        # pragma: no cover
+        out_t = Tensor(
+            None,
+            TensorConfig(
+                getattr(a, "shape", ()), getattr(a, "dtype", None), getattr(a, "device", None)
+            ),
+        )  # pragma: no cover
+        out_t._node = node  # pragma: no cover
+        return out_t  # pragma: no cover
+    return None  # pragma: no cover

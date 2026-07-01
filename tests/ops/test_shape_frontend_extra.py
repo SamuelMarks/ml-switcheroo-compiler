@@ -42,25 +42,12 @@ def test_update_slice_indices() -> None:
 
 def test_shape_frontend_tracing(monkeypatch: object) -> None:
     """Docstring."""
-    from unittest.mock import MagicMock
-
+    from ml_switcheroo_compiler.tracing.tracer import _tracer
     import ml_switcheroo_compiler.ops.shape.frontend as sf
 
     config.eager_mode = False
 
-    class MockTracer:
-        """Docstring."""
-
-        is_tracing = True
-        graph = MagicMock()
-
-        def add_node(self, *args: object, **kwargs: object) -> str:
-            """Docstring."""
-            return "n1"
-
-    import ml_switcheroo_compiler.ops.shape.utils as su
-
-    monkeypatch.setattr(su, "_tracer", MockTracer())
+    _tracer.start_tracing("test")
 
     class MockData:
         """Docstring."""
@@ -82,4 +69,5 @@ def test_shape_frontend_tracing(monkeypatch: object) -> None:
     res3 = sf.strided_slice(x, [0], [3], [1])
     assert res3 is not None
 
+    _tracer.stop_tracing()
     config.eager_mode = True

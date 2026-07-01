@@ -16,6 +16,9 @@ def test_lax_ops_tracing():
         t2._node = "dummy_node2"
 
         class DummyGraph:
+            def __init__(self):
+                self.nodes = {}
+
             def create_node(self, op_type):
                 class Node:
                     def add_input(self, inp):

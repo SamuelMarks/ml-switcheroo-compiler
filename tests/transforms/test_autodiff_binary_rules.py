@@ -48,3 +48,18 @@ def test_binary_rules_extra():
         random_gamma_node = DummyNode(["alpha", "key"])
         da, dk = random_gamma_vjp(graph, random_gamma_node, "cotangent")
         assert da == "mock_out"
+
+
+def test_atan2_jvp():
+    from ml_switcheroo_compiler.transforms.autodiff_rules.binary_rules import atan2_jvp
+    from unittest.mock import MagicMock
+
+    graph = MagicMock()
+    y_mock = MagicMock()
+    y_mock.shape_metadata = {}
+    x_mock = MagicMock()
+    x_mock.shape_metadata = {}
+    graph.nodes = {"y": y_mock, "x": x_mock}
+
+    res = atan2_jvp(tangent_y="ty", tangent_x="tx", y="y", x="x", graph=graph)
+    assert res is not None

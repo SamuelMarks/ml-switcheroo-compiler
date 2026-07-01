@@ -29,6 +29,12 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
 
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+    func_registry = global_eager_registry.get(op_type)
+    if func_registry is not None:
+        return func_registry(np, *args, **kwargs)
+
     try:
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()

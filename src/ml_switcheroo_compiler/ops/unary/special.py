@@ -10,11 +10,12 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Cast(OpDef):
     """An operation that casts an input array to a specified data type."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
             x (object): The first input tensor.
+            dtype (object, optional): The target data type.
             **kwargs (object): Additional keyword arguments.
 
         Returns:
@@ -32,11 +33,12 @@ class Bitcast(Cast):
 class Frexp(OpDef):
     """An operation that decomposes a floating-point array into mantissa and exponent."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
             x (object): The first input tensor.
+            dtype (object, optional): The target data type.
             **kwargs (object): Additional keyword arguments.
 
         Returns:

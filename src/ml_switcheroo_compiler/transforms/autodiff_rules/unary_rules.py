@@ -419,3 +419,185 @@ def bessel_i1e_vjp(graph: object, node: object, cotangent: str) -> tuple:
     dx_base = emit_ir_node(graph, "Subtract", [i0e_x, term], node.shape_metadata)
     dx = emit_ir_node(graph, "Multiply", [cotangent, dx_base], node.shape_metadata)
     return (dx,)
+
+
+@register_vjp("Acos")
+def acos_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """Computes the Vector-Jacobian Product (VJP) for the Acos operation.
+
+    Args:
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Acos operation
+        cotangent (str): The identifier of the incoming cotangent vector
+
+    Returns:
+    tuple: A single-element tuple containing the identifier of the computed VJP node
+    """
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Multiply", [x, x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [one, x_sq], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    neg_recip = emit_ir_node(graph, "Negative", [recip], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, neg_recip], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Acos")
+def acos_jvp(graph: object, node: object, tangent: str) -> str:
+    """Computes the Jacobian-Vector Product (JVP) for the Acos operation.
+
+    Args:
+        graph (object): The computation graph containing the nodes
+        node (object): The IR node representing the Acos operation
+        tangent (str): The identifier of the incoming tangent vector
+
+    Returns:
+    str: The identifier of the computed JVP node
+    """
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Multiply", [x, x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [one, x_sq], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    neg_recip = emit_ir_node(graph, "Negative", [recip], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, neg_recip], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Acosh")
+def acosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Acosh."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [x_sq, one], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, recip], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Acosh")
+def acosh_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Acosh."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [x_sq, one], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, recip], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Asin")
+def asin_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Asin."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [one, x_sq], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, recip], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Asin")
+def asin_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Asin."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [one, x_sq], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, recip], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Asinh")
+def asinh_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Asinh."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Add", [x_sq, one], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, recip], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Asinh")
+def asinh_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Asinh."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Add", [x_sq, one], graph.nodes[x].shape_metadata)
+    sqrt_diff = emit_ir_node(graph, "Sqrt", [diff], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, sqrt_diff], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, recip], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Atan")
+def atan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Atan."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Add", [one, x_sq], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, diff], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, recip], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Atan")
+def atan_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Atan."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Add", [one, x_sq], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, diff], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, recip], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Atanh")
+def atanh_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Atanh."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [one, x_sq], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, diff], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, recip], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Atanh")
+def atanh_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Atanh."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)
+    diff = emit_ir_node(graph, "Subtract", [one, x_sq], graph.nodes[x].shape_metadata)
+    recip = emit_ir_node(graph, "TrueDivide", [one, diff], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, recip], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Tan")
+def tan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Tan."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    tan_x = node.id
+    tan_sq = emit_ir_node(graph, "Square", [tan_x], graph.nodes[x].shape_metadata)
+    sec_sq = emit_ir_node(graph, "Add", [one, tan_sq], graph.nodes[x].shape_metadata)
+    return (emit_ir_node(graph, "Multiply", [cotangent, sec_sq], graph.nodes[x].shape_metadata),)
+
+
+@register_jvp("Tan")
+def tan_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Tan."""
+    x = node.inputs[0]
+    one = emit_ir_node(graph, "OnesLike", [x], graph.nodes[x].shape_metadata)
+    tan_x = node.id
+    tan_sq = emit_ir_node(graph, "Square", [tan_x], graph.nodes[x].shape_metadata)
+    sec_sq = emit_ir_node(graph, "Add", [one, tan_sq], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Multiply", [tangent, sec_sq], graph.nodes[x].shape_metadata)

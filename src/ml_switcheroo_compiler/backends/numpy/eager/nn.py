@@ -125,3 +125,39 @@ def _np_time_distributed(backend_module: object, x: object, **kwargs: object) ->
     out = execute_generic_op(backend_module, wrapped_op_name, flat_x, **kwargs)
     out_shape = (shape[0], shape[1], *out.shape[1:])
     return np.reshape(out, out_shape)
+
+
+@numpy_eager_registry.register("Rope")
+def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
+    """Apply Rotary Positional Encoding using NumPy."""
+    dim = kwargs.get("dim")
+    base = kwargs.get("base", 10000.0)
+    offset = kwargs.get("offset", 0)
+
+    x_np = backend_module.asarray(x)
+    seq_len = x_np.shape[-2]
+
+    # Generate positional indices
+    position = backend_module.arange(offset, offset + seq_len, dtype=x_np.dtype)
+
+    # Generate frequencies
+    half_dim = dim // 2
+    freqs = backend_module.exp(
+        -backend_module.arange(0, half_dim, dtype=x_np.dtype)
+        * (backend_module.log(base) / half_dim)
+    )
+
+    # Calculate angles
+    angles = position[:, None] * freqs[None, :]
+
+    # Apply RoPE
+    sin_val = backend_module.sin(angles)
+    cos_val = backend_module.cos(angles)
+
+    x1 = x_np[..., :half_dim]
+    x2 = x_np[..., half_dim:]
+
+    rot_x1 = x1 * cos_val - x2 * sin_val
+    rot_x2 = x1 * sin_val + x2 * cos_val
+
+    return backend_module.concatenate([rot_x1, rot_x2], axis=-1)

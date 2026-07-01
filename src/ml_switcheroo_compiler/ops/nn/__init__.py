@@ -20,6 +20,7 @@ from .activations import (
     leaky_relu,
     log_sigmoid,
     log_softmax,
+    relu2,
     relu6,
     sigmoid,
     silu,
@@ -44,6 +45,7 @@ from .activations import (
     threshold,
 )
 from .conv import (
+    conv_general,
     GenericConvConfig,
     conv,
     conv1d,
@@ -179,6 +181,29 @@ from .rnn import (
 
 from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d
 
+from .linear_ops import linear, bilinear
+
+from .upsample_ops import upsample
+
+from .clip_grad import clip_grad_norm
+from .attention_utils import (
+    rope as rope,
+    sinusoidal_positional_encoding as sinusoidal_positional_encoding,
+    alibi_mask as alibi_mask,
+)
+
+from .quantized_ops import (
+    quantize as quantize,
+    quantized_matmul as quantized_matmul,
+    gather_qmm as gather_qmm,
+    quantized_linear as quantized_linear,
+    quantized_embedding as quantized_embedding,
+)
+
+from .dropout import dropout2d
+from .dropout import dropout3d
+from .gru import gru
+
 __all__ = [
     "AttentionConfig",
     "AttentionInputs",
@@ -197,6 +222,7 @@ __all__ = [
     "activity_regularization",
     "adaptive_avg_pool2d",
     "adaptive_max_pool2d",
+    "alibi_mask",
     "all_candidate_sampler",
     "attention",
     "average_pool",
@@ -209,11 +235,13 @@ __all__ = [
     "batch_normalization",
     "bias_add",
     "bidirectional",
+    "bilinear",
     "binary_crossentropy",
     "categorical_crossentropy",
     "categorical_generalized_cross_entropy",
     "celu",
     "circle_loss",
+    "clip_grad_norm",
     "collapse_repeated",
     "compute_accidental_hits",
     "compute_average_loss",
@@ -227,6 +255,7 @@ __all__ = [
     "conv3d",
     "conv3d_lstm_cell",
     "conv3d_transpose",
+    "conv_general",
     "conv_lstm_cell",
     "conv_transpose",
     "conv_transpose1d",
@@ -248,6 +277,8 @@ __all__ = [
     "dilation2d",
     "dot_product_attention",
     "dropout",
+    "dropout2d",
+    "dropout3d",
     "elu",
     "embedding",
     "embedding_lookup",
@@ -256,9 +287,11 @@ __all__ = [
     "fixed_unigram_candidate_sampler",
     "fractional_avg_pool",
     "fractional_max_pool",
+    "gather_qmm",
     "gelu",
     "glu",
     "group_norm",
+    "gru",
     "gru_cell",
     "hard_shrink",
     "hard_sigmoid",
@@ -276,6 +309,7 @@ __all__ = [
     "layer_norm",
     "leaky_relu",
     "learned_unigram_candidate_sampler",
+    "linear",
     "local_response_normalization",
     "log_poisson_loss",
     "log_sigmoid",
@@ -298,11 +332,17 @@ __all__ = [
     "pool2d",
     "pool3d",
     "prelu",
+    "quantize",
+    "quantized_embedding",
+    "quantized_linear",
+    "quantized_matmul",
     "relu",
+    "relu2",
     "relu6",
     "rms_norm",
     "rms_normalization",
     "rnn",
+    "rope",
     "safe_embedding_lookup_sparse",
     "sampled_softmax_loss",
     "scale_regularization_loss",
@@ -314,6 +354,7 @@ __all__ = [
     "sigmoid",
     "silu",
     "simple_rnn_cell",
+    "sinusoidal_positional_encoding",
     "soft_shrink",
     "softmax",
     "softmin",
@@ -332,6 +373,7 @@ __all__ = [
     "threshold",
     "time_distributed",
     "uniform_candidate_sampler",
+    "upsample",
     "weighted_moments",
     "zero_fraction",
 ]

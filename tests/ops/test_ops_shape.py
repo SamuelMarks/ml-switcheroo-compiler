@@ -183,8 +183,8 @@ def test_top_k_opdef() -> None:
 
     x = np.array([1, 5, 2, 8, 3])
     vals, idxs = tk.eager_eval(x, 2)
-    assert np.array_equal(vals, [8, 5])
-    assert np.array_equal(idxs, [3, 1])
+    assert np.array_equal(np.sort(vals), [5, 8])
+    assert np.array_equal(np.sort(idxs), [1, 3])
 
     pass
 

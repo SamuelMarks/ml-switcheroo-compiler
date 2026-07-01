@@ -4,11 +4,12 @@
 """NN registry."""
 
 import ml_switcheroo_compiler.ops.nn as _nn
+import ml_switcheroo_compiler.ops.loss as _loss
 import ml_switcheroo_compiler.ops.normalization as _normalization
 
 
 # Inject attributes into globals
-for _mod in [_nn, _normalization]:
+for _mod in [_nn, _normalization, _loss]:
     for _name in getattr(_mod, "__all__", [n for n in dir(_mod) if not n.startswith("_")]):
         globals()[_name] = getattr(_mod, _name)
 
@@ -64,6 +65,8 @@ __all__ = [
     "dice_loss",
     "dot_product_attention",
     "dropout",
+    "dropout2d",
+    "dropout3d",
     "elu",
     "embedding",
     "embedding_lookup",
@@ -75,6 +78,7 @@ __all__ = [
     "group_mean",
     "group_norm",
     "group_variance",
+    "gru",
     "gru_cell",
     "hard_shrink",
     "hard_sigmoid",

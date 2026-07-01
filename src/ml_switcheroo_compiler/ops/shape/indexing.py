@@ -722,3 +722,44 @@ class ScatterMul(OpDef):
     ) -> object:
         """Infer shape."""
         return getattr(tensor, "shape", ())
+
+
+@register_op("PutAlongAxis")
+class PutAlongAxis(OpDef):
+    """PutAlongAxis operation."""
+
+    op_name = "PutAlongAxis"
+
+    def infer_shape(self, arr: object, indices: object, values: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(arr, "shape", ())
+
+
+def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> Tensor:
+    """Put values into arr along axis at indices."""
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op(
+            "PutAlongAxis",
+            getattr(arr, "data", arr),
+            getattr(indices, "data", indices),
+            getattr(values, "data", values),
+            axis=axis,
+        )
+        return Tensor(
+            data,
+            TensorConfig(
+                getattr(data, "shape", getattr(arr, "shape", ())),
+                getattr(arr, "dtype", DType.Float32),
+                getattr(arr, "device", config.default_device),
+            ),
+        )
+    return _emit_shape_node(
+        "PutAlongAxis",
+        [arr, indices, values],
+        {"axis": axis},
+        getattr(arr, "shape", ()),
+        getattr(arr, "dtype", DType.Float32),
+    )
