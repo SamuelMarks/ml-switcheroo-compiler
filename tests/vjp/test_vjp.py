@@ -3,6 +3,7 @@
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.transforms.autodiff import grad
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
@@ -73,12 +74,7 @@ def test_vjp_add() -> None:
     grad_g = grad(g, inputs, out)
     assert len(grad_g.outputs) == 2
     # Verify both gradients are 1.0 (from output adjoint)
-    assert (
-        grad_g.nodes[grad_g.outputs[0]].op_type == "Constant"
-        or "add" in grad_g.outputs[0]
-        or grad_g.nodes[grad_g.outputs[0]].op_type in ["Add", "Sum"]
-        or "grad_ones" in grad_g.outputs[0]
-    )
+    assert grad_g.nodes[grad_g.outputs[0]].op_type == "Constant" or "add" in grad_g.outputs[0] or grad_g.nodes[grad_g.outputs[0]].op_type in ["Add", "Sum"] or "grad_ones" in grad_g.outputs[0]
 
 
 def test_vjp_sub() -> None:
@@ -256,7 +252,6 @@ def test_vjp_returns_wrong_number_of_adjoints() -> None:
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="TestOp", inputs=["w", "w"])
-    from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
     try:
 
@@ -285,7 +280,6 @@ def test_vjp_returns_none() -> None:
     g = LogicalGraph()
     g.nodes["w"] = LogicalNode(id="w", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="TestNoneOp", inputs=["w"])
-    from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
     try:
 

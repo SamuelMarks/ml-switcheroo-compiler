@@ -1,20 +1,20 @@
 """Type & Shape System for IR."""
 
 from __future__ import annotations
-# ruff: noqa: UP007
-
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 
 from typing import TYPE_CHECKING, Union
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.ir.core import TensorSpec
 
 MAX_DIMENSIONS = 4
 MAX_RANK = 5
 
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.ir.core import TensorSpec
+    pass
 
 
 class SymInt:
@@ -264,7 +264,7 @@ class ShapeTracker:
 ShapeType = tuple[Union[int, str], ...]
 
 
-def _broadcast_dim(a: Union[int, str], b: Union[int, str]) -> Union[int, str]:
+def _broadcast_dim(a: int | str, b: int | str) -> int | str:
     """Execute _broadcast_dim.
 
     Args:

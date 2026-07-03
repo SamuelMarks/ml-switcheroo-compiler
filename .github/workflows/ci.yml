@@ -45,7 +45,10 @@ jobs:
         pytest --cov=. --cov-report=xml
 
     - name: Cyclomatic Complexity
-      run: radon cc src/ -nc --fail-under 1
+      run: radon cc src/ --min C | tee radon_out.txt; if [ -s radon_out.txt ]; then exit 1; fi
+
+    - name: Duplicate Code Check
+      run: pylint src/ml_switcheroo_compiler --disable=all --enable=duplicate-code
 
     - name: Update Badges
       run: |

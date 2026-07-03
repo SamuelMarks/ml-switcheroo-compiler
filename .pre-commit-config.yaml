@@ -40,7 +40,7 @@ repos:
   hooks:
   - id: radon
     name: radon
-    entry: radon cc -nc
+    entry: radon cc --min C
     language: python
     types:
     - python

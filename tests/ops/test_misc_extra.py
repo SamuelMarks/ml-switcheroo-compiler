@@ -1,26 +1,31 @@
-from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis
-from ml_switcheroo_compiler.ops.signal import convolve2d, fftconvolve, welch
-from ml_switcheroo_compiler.ops.stats import (
-    norm_pdf,
-    norm_cdf,
-    gamma_pdf,
-    gamma_cdf,
-    beta_pdf,
-    beta_cdf,
-    poisson_pmf,
-    poisson_cdf,
-    binom_pmf,
-    binom_cdf,
-)
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.ops.tensor import allclose
-import numpy as np
+"""Module docstring."""
+
 from unittest.mock import patch
 
+import numpy as np
 
-def test_misc():
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis
+from ml_switcheroo_compiler.ops.signal import convolve2d, fftconvolve, welch
+from ml_switcheroo_compiler.ops.stats.distributions import (
+    beta_cdf,
+    beta_pdf,
+    binom_cdf,
+    binom_pmf,
+    gamma_cdf,
+    gamma_pdf,
+    norm_cdf,
+    norm_pdf,
+    poisson_cdf,
+    poisson_pmf,
+)
+from ml_switcheroo_compiler.ops.tensor import allclose
+
+
+def test_misc() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
     with ConfigContext(eager_mode=True):
@@ -31,9 +36,7 @@ def test_misc():
             welch(t1)
 
             # just mock out eager eval for stats
-            with patch(
-                "ml_switcheroo_compiler.ops.eager_evaluator.EagerEvaluator.evaluate"
-            ) as mock_eval:
+            with patch("ml_switcheroo_compiler.ops.eager_evaluator.EagerEvaluator.evaluate") as mock_eval:
                 mock_eval.return_value = np.ones((2,))
                 take_along_axis(t1, t1, 0)
                 norm_pdf(t1)

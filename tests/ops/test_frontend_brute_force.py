@@ -6,6 +6,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import binary, creation, linalg, reductions, shape, unary
+from ml_switcheroo_compiler.tracing.state import (
+    global_tracing_state,
+)
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 def _test_namespace(ns: object, eager: bool) -> None:
@@ -15,8 +19,6 @@ def _test_namespace(ns: object, eager: bool) -> None:
         ns (object): The ns.
         eager (bool): The eager.
     """
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-
     config.eager_mode = eager
 
     if eager:
@@ -97,18 +99,14 @@ def _test_namespace(ns: object, eager: bool) -> None:
                     for kwargs in kwargs_list:
                         try:
                             if not eager:
-                                from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-                                _tracer.start_tracing("test")
+                                global_tracing_state.start_tracing("test")
                                 func(*args, **kwargs)
-                                _tracer.stop_tracing()
+                                global_tracing_state.stop_tracing()
                             else:
                                 func(*args, **kwargs)
                         except Exception:
                             if not eager:
-                                from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-                                _tracer.stop_tracing()
+                                global_tracing_state.stop_tracing()
 
 
 def test_shape_brute_force() -> None:

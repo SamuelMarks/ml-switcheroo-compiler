@@ -1,8 +1,11 @@
 """Backend utilities."""
 
-from typing import Optional
+from __future__ import annotations
 
-from ml_switcheroo_compiler.ir.core import IRNode
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.ir.core import IRNode
 
 
 def resolve_input_vars(node: IRNode, var_names: dict[str, str]) -> list[str]:
@@ -18,7 +21,7 @@ def resolve_input_vars(node: IRNode, var_names: dict[str, str]) -> list[str]:
     return [var_names.get(in_id, in_id) for in_id in node.inputs]
 
 
-def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> Optional[str]:
+def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> str | None:
     """Format shape metadata for a node.
 
     Args:
@@ -26,7 +29,7 @@ def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> Optional[s
         var_names (dict[str, str]): Variable name mapping.
 
     Returns:
-        Optional[str]: Formatted shape metadata.
+        str | None: Formatted shape metadata.
     """
     if not (hasattr(node, "shape_metadata") and node.shape_metadata):
         return None

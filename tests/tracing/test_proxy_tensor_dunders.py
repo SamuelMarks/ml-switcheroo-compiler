@@ -8,8 +8,10 @@ of tracing contexts, and verify error handling for invalid operations.
 """
 
 import pytest
+from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 def test_proxy_tensor_dunders() -> None:
@@ -26,7 +28,7 @@ def test_proxy_tensor_dunders() -> None:
     Returns:
     None
     """
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
         p1 = ProxyTensor("p1", (2, 2), "float32")
         p2 = ProxyTensor("p2", (2, 2), "float32")
@@ -60,7 +62,7 @@ def test_proxy_tensor_dunders() -> None:
         _ = p1[0]
         _ = p1 @ p2
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_proxy_tensor_outside_tracing() -> None:
@@ -98,11 +100,9 @@ def test_add_node_outside_tracing() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_ir import LogicalNode
-
     node = LogicalNode(id="dummy", op_type="Input")
     with pytest.raises(RuntimeError):
-        _tracer.add_node(node)
+        global_tracing_state.add_node(node)
 
 
 def test_matmul_invalid() -> None:
@@ -117,10 +117,10 @@ def test_matmul_invalid() -> None:
     Returns:
     None
     """
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
         p1 = ProxyTensor("p1", (2, 2), "float32")
         with pytest.raises(ValueError):
             _ = p1 @ 5
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()

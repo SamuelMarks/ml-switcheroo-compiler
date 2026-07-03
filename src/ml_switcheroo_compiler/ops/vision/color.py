@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -18,14 +20,9 @@ def rgb_to_hsv(images: Tensor) -> Tensor:
         Tensor: HSV images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("RgbToHsv", images.data)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("RgbToHsv")()(images, dtype=DType.Int32)
 
@@ -40,14 +37,9 @@ def hsv_to_rgb(images: Tensor) -> Tensor:
         Tensor: RGB images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("HsvToRgb", images.data)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("HsvToRgb")()(images, dtype=DType.Int32)
 
@@ -63,14 +55,9 @@ def adjust_hue(images: Tensor, delta: float) -> Tensor:
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AdjustHue", images.data, delta=delta)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     kwargs = {"delta": delta}
     return get_op("AdjustHue")()(images, dtype=DType.Int32, **kwargs)
@@ -87,18 +74,10 @@ def adjust_saturation(images: Tensor, saturation_factor: float) -> Tensor:
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
-        data = backend.execute_op(
-            "AdjustSaturation", images.data, saturation_factor=saturation_factor
-        )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    return _emit_shape_node(
-        "AdjustSaturation", [images], {"saturation_factor": saturation_factor}, (), DType.Int32
-    )
+        data = backend.execute_op("AdjustSaturation", images.data, saturation_factor=saturation_factor)
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+    return _emit_shape_node("AdjustSaturation", [images], {"saturation_factor": saturation_factor}, (), DType.Int32)
 
 
 def adjust_contrast(images: Tensor, contrast_factor: float) -> Tensor:
@@ -112,16 +91,10 @@ def adjust_contrast(images: Tensor, contrast_factor: float) -> Tensor:
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AdjustContrast", images.data, contrast_factor=contrast_factor)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    return _emit_shape_node(
-        "AdjustContrast", [images], {"contrast_factor": contrast_factor}, (), DType.Int32
-    )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+    return _emit_shape_node("AdjustContrast", [images], {"contrast_factor": contrast_factor}, (), DType.Int32)
 
 
 def adjust_brightness(images: Tensor, delta: float) -> Tensor:
@@ -135,14 +108,9 @@ def adjust_brightness(images: Tensor, delta: float) -> Tensor:
         Tensor: Adjusted images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AdjustBrightness", images.data, delta=delta)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     kwargs = {"delta": delta}
     return get_op("AdjustBrightness")()(images, dtype=DType.Int32, **kwargs)
@@ -159,17 +127,13 @@ def rgb_to_grayscale(images: Tensor, data_format: str = "channels_last") -> Tens
         Tensor: Grayscale image or batch of grayscale images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("RgbToGrayscale", images.data, data_format=data_format)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    return _emit_shape_node(
-        "RgbToGrayscale", [images], {"data_format": data_format}, (), images.dtype
-    )
+    return _emit_shape_node("RgbToGrayscale", [images], {"data_format": data_format}, (), images.dtype)
 
 
 def random_color_jitter(
@@ -186,8 +150,6 @@ def random_color_jitter(
         Tensor: Jittered images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomColorJitter",
@@ -221,15 +183,12 @@ def solarize(images: Tensor, threshold: float = 0.5, value_range: tuple = (0, 25
         Tensor: Solarized images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Solarize", images.data, threshold=threshold)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op
 
     kwargs = {"threshold": threshold, "value_range": value_range}
     return get_op("Solarize")()(images, **kwargs)
@@ -246,15 +205,12 @@ def invert(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
         Tensor: Inverted images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Invert", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op
 
     return get_op("Invert")()(images, value_range=value_range)
 
@@ -270,15 +226,12 @@ def posterize(images: Tensor, bits: int) -> Tensor:
         Tensor: Posterized images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Posterize", images.data, bits=bits)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op
 
     kwargs = {"bits": bits}
     return get_op("Posterize")()(images, **kwargs)
@@ -295,15 +248,12 @@ def degeneration(images: Tensor, factor: float = 0.0) -> Tensor:
         Tensor: Degenerated images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Degeneration", images.data, factor=factor)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op
 
     kwargs = {"factor": factor}
     return get_op("Degeneration")()(images, **kwargs)
@@ -320,15 +270,12 @@ def augmix(images: Tensor, factor: float = 0.3) -> Tensor:
         Tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("AugMix", images.data, factor=factor)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     kwargs = {"factor": factor}  # pragma: no cover
     return get_op("AugMix")()(images, **kwargs)  # pragma: no cover
@@ -345,15 +292,12 @@ def auto_contrast(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
         Tensor.
     """
     if config.eager_mode:  # pragma: no branch
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AutoContrast", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     return get_op("AutoContrast")()(images, value_range=value_range)  # pragma: no cover
 
@@ -369,15 +313,12 @@ def rand_augment(images: Tensor, factor: float = 0.5) -> Tensor:
         Tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("RandAugment", images.data, factor=factor)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     kwargs = {"factor": factor}  # pragma: no cover
     return get_op("RandAugment")()(images, **kwargs)  # pragma: no cover
@@ -394,15 +335,12 @@ def random_erasing(images: Tensor, factor: float = 1.0) -> Tensor:
         Tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("RandomErasing", images.data, factor=factor)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     kwargs = {"factor": factor}  # pragma: no cover
     return get_op("RandomErasing")()(images, **kwargs)  # pragma: no cover
@@ -418,15 +356,12 @@ def equalization(images: Tensor) -> Tensor:
         Tensor.
     """
     if config.eager_mode:  # pragma: no branch
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Equalization", images.data)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     return get_op("Equalization")()(images)  # pragma: no cover
 
@@ -441,8 +376,6 @@ def rgb_to_yiq(images: Tensor) -> Tensor:
     Tensor: Images in YIQ space.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("RgbToYiq", images.data)
         return Tensor(
@@ -462,8 +395,6 @@ def yiq_to_rgb(images: Tensor) -> Tensor:
     Tensor: Images in RGB space.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("YiqToRgb", images.data)
         return Tensor(
@@ -483,8 +414,6 @@ def rgb_to_yuv(images: Tensor) -> Tensor:
     Tensor: Images in YUV space.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("RgbToYuv", images.data)
         return Tensor(
@@ -504,8 +433,6 @@ def yuv_to_rgb(images: Tensor) -> Tensor:
     Tensor: Images in RGB space.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("YuvToRgb", images.data)
         return Tensor(

@@ -1,8 +1,8 @@
 """Operation utilities."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from typing import Any, Optional, Union
 
-from typing import Any, Union, Optional
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 
 
 def get_source_inputs(tensor: object) -> list[object]:  # pragma: no cover
@@ -22,9 +22,7 @@ def get_source_inputs(tensor: object) -> list[object]:  # pragma: no cover
 class ShapeInferenceStrategy:
     """Base class for shape inference strategies."""
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
         """Compute shape propagation.
 
         Args:
@@ -41,9 +39,7 @@ class ShapeInferenceStrategy:
 class ReshapeInference(ShapeInferenceStrategy):
     """Shape inference for reshape."""
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> tuple[int, ...]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
         """Compute reshape propagation.
 
         Args:
@@ -60,9 +56,7 @@ class ReshapeInference(ShapeInferenceStrategy):
 class TransposeInference(ShapeInferenceStrategy):
     """Shape inference for transpose."""
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> tuple[int, ...]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
         """Compute transpose propagation.
 
         Args:
@@ -82,9 +76,7 @@ class TransposeInference(ShapeInferenceStrategy):
 class ExpandDimsInference(ShapeInferenceStrategy):
     """Shape inference for expand_dims."""
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> tuple[int, ...]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
         """Compute expand_dims propagation.
 
         Args:
@@ -112,9 +104,7 @@ def _validate_squeeze_dims(shape: tuple[int, ...], axes: list[int]) -> None:
     """Validates that squeezed dimensions have size 1."""
     for a in axes:
         if a < 0 or a >= len(shape):
-            raise ValueError(
-                f"Squeeze axis {a} is out of bounds for shape {shape}"
-            )  # pragma: no cover
+            raise ValueError(f"Squeeze axis {a} is out of bounds for shape {shape}")  # pragma: no cover
         if shape[a] != 1:
             raise ValueError(f"Cannot squeeze dimension {a} of size {shape[a]}")  # pragma: no cover
 
@@ -135,9 +125,7 @@ def _squeeze_specific_axes(shape: tuple[int, ...], axes: list[int]) -> tuple[int
 class SqueezeInference(ShapeInferenceStrategy):
     """Shape inference for squeeze."""
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> tuple[int, ...]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
         """Compute squeeze propagation.
 
         Args:
@@ -157,9 +145,7 @@ class SqueezeInference(ShapeInferenceStrategy):
 class SplitInference(ShapeInferenceStrategy):
     """Shape inference for split."""
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
         """Compute split propagation.
 
         Args:
@@ -174,9 +160,7 @@ class SplitInference(ShapeInferenceStrategy):
         axis = kwargs.get("axis", args[2] if len(args) > MAGIC_VAL_2 else 0)
         if isinstance(num_or_size_splits, int):
             sub_shape = list(shape)
-            sub_shape[axis] = (
-                sub_shape[axis] // num_or_size_splits if sub_shape[axis] is not None else None
-            )
+            sub_shape[axis] = sub_shape[axis] // num_or_size_splits if sub_shape[axis] is not None else None
             return [tuple(sub_shape) for _ in range(num_or_size_splits)]
         return shape  # pragma: no cover (fallback if not int, based on original missing else)
 
@@ -197,26 +181,23 @@ class MeanInference(ShapeInferenceStrategy):
         if dtype is not None and not isinstance(dtype, str):
             pass  # pragma: no cover
 
-    def _compute_keepdims_shape(
-        self, shape: tuple[int, ...], normalized_axis: set[int]
-    ) -> tuple[int, ...]:
+    def _compute_keepdims_shape(self, shape: tuple[int, ...], normalized_axis: set[int]) -> tuple[int, ...]:
+        """Function docstring."""
         return tuple(1 if i in normalized_axis else s for i, s in enumerate(shape))
 
-    def _compute_reduced_shape(
-        self, shape: tuple[int, ...], normalized_axis: set[int]
-    ) -> tuple[int, ...]:
+    def _compute_reduced_shape(self, shape: tuple[int, ...], normalized_axis: set[int]) -> tuple[int, ...]:
+        """Function docstring."""
         return tuple(s for i, s in enumerate(shape) if i not in normalized_axis)
 
     def _extract_axis(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Optional[object]:
+        """Function docstring."""
         if "axis" in kwargs:
             return kwargs["axis"]
         if len(args) > 1:
             return args[1]
         return None
 
-    def __call__(
-        self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> tuple[int, ...]:
+    def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
         """Compute mean propagation."""
         self._validate_datatype_promotion(kwargs)
 
@@ -242,9 +223,7 @@ SHAPE_INFERENCE_REGISTRY: dict[str, ShapeInferenceStrategy] = {
 }
 
 
-def compute_shape_propagation(
-    name: str, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]
-) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
+def compute_shape_propagation(name: str, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
     """Compute shape propagation.
 
     Args:

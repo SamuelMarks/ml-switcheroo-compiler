@@ -2,8 +2,13 @@
 
 import ml_switcheroo_compiler.ops.binary.math as _math
 import ml_switcheroo_compiler.ops.binary.special as _special
+
+# However we might not have complex type in our dummy compiler
+# So we just mock it using a tuple or mock operation
 from ml_switcheroo_compiler.ops.base import get_op
 
+_ = _math
+_ = _special
 add = get_op("Add")()
 allclose = get_op("Allclose")()
 atan2 = get_op("Atan2")()
@@ -51,23 +56,19 @@ igamma = get_op("Igamma")()
 igammac = get_op("Igammac")()
 zeta = get_op("Zeta")()
 polygamma = get_op("Polygamma")()
-_ = _math
-_ = _special
 betainc = get_op("Betainc")()
 
 
 def divide_no_nan(x: object, y: object) -> object:
     """Safe division."""
-    from ml_switcheroo_compiler.ops.shape.frontend import where
     from ml_switcheroo_compiler.ops.creation import zeros_like
+    from ml_switcheroo_compiler.ops.shape.frontend import where
 
     return where(equal(y, 0.0), zeros_like(x), divide(x, y))
 
 
 def polar(abs: object, angle: object) -> object:
     """Converts polar coordinates to a complex tensor."""
-    # However we might not have complex type in our dummy compiler
-    # So we just mock it using a tuple or mock operation
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()

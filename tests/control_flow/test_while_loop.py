@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import while_loop
 from ml_switcheroo_compiler.tracing import ProxyTensor
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 device = Device(DeviceType.CPU, 0)
-"""Control flow tests."""
 
 
 def test_while_loop_eager() -> None:
@@ -90,12 +90,11 @@ def test_while_loop_trace() -> None:
             ProxyTensor(id="mock", shape=(), dtype="float32"),
             TensorConfig((), DType.Float32, device),
         )
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
 
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         res = while_loop(cond_fn, body_fn, init_val)
         assert res.dtype == DType.Float32
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_while_loop_tuple_init() -> None:
@@ -107,9 +106,6 @@ def test_while_loop_tuple_init() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.ops.control_flow import while_loop
-
     with ConfigContext(eager_mode=True):
         t1 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
         t2 = Tensor(np.array(0), TensorConfig((), DType.Int32, device))
@@ -142,12 +138,8 @@ def test_while_loop_tuple_init() -> None:
         assert res1.data == 2
 
     with ConfigContext(eager_mode=False):
-        pt1 = Tensor(
-            ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device)
-        )
-        pt2 = Tensor(
-            ProxyTensor(id="mock2", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device)
-        )
+        pt1 = Tensor(ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
+        pt2 = Tensor(ProxyTensor(id="mock2", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
 
         def cond_fn_trace(v1: object, v2: object) -> object:
             """Cond fn trace.
@@ -176,12 +168,10 @@ def test_while_loop_tuple_init() -> None:
             """
             return (v1, v2)
 
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             res_trace = while_loop(cond_fn_trace, body_fn_trace, [pt1, pt2])
             assert isinstance(res_trace, list)
             assert len(res_trace) == 2
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()

@@ -1,14 +1,16 @@
 """Test AST parsing of generated code."""
 
-import pytest
 import ast
-from ml_switcheroo_compiler.ir.core import IRGraph
-from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
-from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
+
+import pytest
+
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
-from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
+from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 @pytest.mark.parametrize(

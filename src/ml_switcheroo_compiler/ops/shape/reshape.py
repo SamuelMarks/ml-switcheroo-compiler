@@ -3,7 +3,7 @@
 """Defines shape manipulation operations for the ML Switcheroo framework."""
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
+from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -73,20 +73,16 @@ class BroadcastTo(OpDef):
         Returns:
             The computed shape or evaluation result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+        if not (isinstance(x, tuple) and isinstance(shape, tuple)):
+            return shape
 
-        if isinstance(x, tuple) and isinstance(shape, tuple):
-            try:
-                broadcasted = broadcast_shapes(x, shape)
-                if broadcasted != shape:
-                    raise ValueError(  # pragma: no cover
-                        f"[broadcast_shapes] Shapes {x} and {shape} cannot be broadcast."  # pragma: no cover
-                    )  # pragma: no cover
-            except ValueError as e:  # pragma: no cover
-                # Catch the core shape broadcast error and raise the mlx-style one  # pragma: no cover
-                raise ValueError(  # pragma: no cover
-                    f"[broadcast_shapes] Shapes {x} and {shape} cannot be broadcast."
-                ) from e
+        try:
+            broadcasted = broadcast_shapes(x, shape)
+            if broadcasted != shape:
+                raise ValueError(f"[broadcast_shapes] Shapes {x} and {shape} cannot be broadcast.")
+        except ValueError as e:
+            raise ValueError(f"[broadcast_shapes] Shapes {x} and {shape} cannot be broadcast.") from e
+
         return shape
 
 

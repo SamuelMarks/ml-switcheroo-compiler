@@ -8,6 +8,8 @@ operations
 
 from typing import Callable
 
+from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
 # Registry mapping op_name to JVP function
 _JVP_REGISTRY: dict[str, Callable] = {}
 
@@ -63,8 +65,6 @@ def get_jvp(op_name: str) -> Callable:
     operation
     """
     if op_name not in _JVP_REGISTRY:
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
         msg = f"JVP not implemented for {op_name}"
         raise UnimplementedMathError(msg)
     return _JVP_REGISTRY[op_name]

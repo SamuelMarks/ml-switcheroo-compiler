@@ -5,6 +5,9 @@ various element-wise binary mathematical operations (e.g., Add, Subtract, Multip
 Divide) using NumPy for evaluation
 """
 
+# Simple broadcasting
+from ml_switcheroo_compiler.core.shape import broadcast_shapes
+from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -27,8 +30,6 @@ class BinaryMathOp(OpDef):
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
-
         """Infer the output shape of the operation.
 
         Args:
@@ -411,9 +412,6 @@ class Betainc(OpDef):
 
     def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
         """Infer shape."""
-        # Simple broadcasting
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
         shape_a = getattr(a, "shape", ())  # pragma: no cover
         shape_b = getattr(b, "shape", ())  # pragma: no cover
         shape_x = getattr(x, "shape", ()) if x is not None else ()  # pragma: no cover

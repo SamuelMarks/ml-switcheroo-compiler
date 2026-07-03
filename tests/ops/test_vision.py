@@ -1,10 +1,16 @@
 """Tests for vision operations."""
 
 from unittest import mock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.backends.eager.vision_filtering import (
+    _apply_suppression_threshold,
+    _sort_boxes_by_score,
+)
+from ml_switcheroo_compiler.backends.registry import BackendRegistry
+from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -15,32 +21,126 @@ from ml_switcheroo_compiler.ops.vision import (
     adjust_saturation,
     affine_generator,
     affine_transform,
+    crop,
     crop_and_resize,
+    cutmix,
+    degeneration,
+    elastic_transform,
+    extract_bounding_boxes,
     flip_left_right,
     flip_up_down,
+    gaussian_blur,
     hsv_to_rgb,
+    invert,
+    iou,
+    median_filter,
+    mixup,
+    non_max_suppression,
+    pad_to_bounding_box,
+    perspective_transform,
+    posterize,
+    random_color_jitter,
+    resize_bicubic,
     resize_bilinear,
+    resize_lanczos3,
     resize_nearest,
     rgb_to_hsv,
+    sharpen,
+    solarize,
 )
-from ml_switcheroo_compiler.tracing import _tracer
+from ml_switcheroo_compiler.ops.vision.affine import (
+    affine_grid,
+    grid_sample,
+    random_crop,
+    random_elastic_transform,
+    random_flip,
+    random_perspective,
+    random_rotation,
+    random_shear,
+    random_translation,
+    random_zoom,
+)
+from ml_switcheroo_compiler.ops.vision.bbox import crop_images, draw_bounding_boxes, extract_patches, pad_images
+from ml_switcheroo_compiler.ops.vision.color import (
+    auto_contrast,
+    equalization,
+    rgb_to_grayscale,
+    rgb_to_yiq,
+    rgb_to_yuv,
+    yiq_to_rgb,
+    yuv_to_rgb,
+)
+from ml_switcheroo_compiler.ops.vision.filtering import (
+    random_gaussian_blur,
+    random_sharpness,
+)
+from ml_switcheroo_compiler.ops.vision.interpolation import map_coordinates, resize
+from ml_switcheroo_compiler.ops.vision.ops import (
+    AdjustBrightness,
+    AdjustContrast,
+    AdjustHue,
+    AdjustSaturation,
+    AffineGenerator,
+    AffineGrid,
+    AffineTransform,
+    AugMix,
+    AutoContrast,
+    Crop,
+    CropAndResize,
+    Cutmix,
+    DrawBoundingBoxes,
+    ElasticTransform,
+    Equalization,
+    ExtractBoundingBoxes,
+    FlipLeftRight,
+    FlipUpDown,
+    GaussianBlur,
+    GridSample,
+    HsvToRgb,
+    IoU,
+    MedianFilter,
+    Mixup,
+    NonMaxSuppression,
+    PadToBoundingBox,
+    PerspectiveTransform,
+    RandAugment,
+    RandomColorJitter,
+    RandomCropOp,
+    RandomElasticTransformOp,
+    RandomErasing,
+    RandomGaussianBlurOp,
+    RandomPerspectiveOp,
+    RandomRotationOp,
+    RandomSharpnessOp,
+    RandomShearOp,
+    RandomTranslationOp,
+    RandomZoomOp,
+    Resize,
+    ResizeBicubic,
+    ResizeBilinear,
+    ResizeLanczos3,
+    ResizeLanczos5,
+    ResizeNearest,
+    RgbToGrayscaleOp,
+    RgbToHsv,
+    RgbToYiq,
+    RgbToYuv,
+    YiqToRgb,
+    YuvToRgb,
+)
+from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_vision_eager_mode_exceptions():
+def test_vision_eager_mode_exceptions() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU, 0)
-    img = Tensor(
-        np.ones((1, 4, 4, 3), dtype=np.float32), TensorConfig((1, 4, 4, 3), DType.Float32, device)
-    )
+    img = Tensor(np.ones((1, 4, 4, 3), dtype=np.float32), TensorConfig((1, 4, 4, 3), DType.Float32, device))
     boxes = Tensor(np.zeros((1, 4), dtype=np.float32), TensorConfig((1, 4), DType.Float32, device))
     box_idx = Tensor(np.zeros((1,), dtype=np.int32), TensorConfig((1,), DType.Int32, device))
-    transforms = Tensor(
-        np.eye(3, dtype=np.float32).reshape(1, 3, 3), TensorConfig((1, 3, 3), DType.Float32, device)
-    )
+    transforms = Tensor(np.eye(3, dtype=np.float32).reshape(1, 3, 3), TensorConfig((1, 3, 3), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
-        with mock.patch(
-            "ml_switcheroo_compiler.backends.registry.get_active_backend"
-        ) as mock_backend:
+        with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
             mock_backend.return_value.execute_op.return_value = np.zeros((1,))
             mock_backend.return_value.array.return_value = np.zeros((1,))
             try:
@@ -61,11 +161,12 @@ def test_vision_eager_mode_exceptions():
                 pass
 
 
-def test_vision_tracing_mode():
+def test_vision_tracing_mode() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU, 0)
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
             boxes = Tensor("dummy_boxes", TensorConfig((1, 4), DType.Float32, device))
@@ -86,39 +187,34 @@ def test_vision_tracing_mode():
             flip_up_down(img)
             adjust_brightness(img, 0.1)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_advanced_resize_tracing():
+def test_advanced_resize_tracing() -> object:
     """Test advanced resize tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
-            from ml_switcheroo_compiler.ops.vision import resize_bicubic, resize_lanczos3
 
             resize_bicubic(img, (2, 2))
             resize_lanczos3(img, (2, 2), align_corners=True)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_advanced_resize_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_advanced_resize_eager_backends() -> object:
+    """Function docstring."""
     """Test advanced resize eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.ones((1, 4, 4, 3), dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision import resize_bicubic, resize_lanczos3
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device))
                 res_bicubic = resize_bicubic(img, (2, 2))
                 res_lanczos = resize_lanczos3(img, (2, 2))
             except Exception:
@@ -141,34 +237,31 @@ def test_advanced_resize_eager_backends():
                 pass
 
 
-def test_iou_nms_tracing():
+def test_iou_nms_tracing() -> object:
     """Test iou and nms tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             boxes1 = Tensor("dummy_b1", TensorConfig((2, 4), DType.Float32, device))
             boxes2 = Tensor("dummy_b2", TensorConfig((3, 4), DType.Float32, device))
             scores = Tensor("dummy_s", TensorConfig((2,), DType.Float32, device))
-            from ml_switcheroo_compiler.ops.vision import iou, non_max_suppression
 
             iou(boxes1, boxes2, "yxyx")
             iou(boxes1, boxes2, "xywh")
             iou(boxes1, boxes2, "center_xywh")
             non_max_suppression(boxes1, scores, 1, 0.5, 0.0)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_iou_nms_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_iou_nms_eager_backends() -> object:
+    """Function docstring."""
     """Test iou and nms eager backends."""
     device = Device(DeviceType.CPU)
     b1_data = np.array([[0.0, 0.0, 1.0, 1.0], [0.5, 0.5, 1.5, 1.5]], dtype=np.float32)
     b2_data = np.array([[0.0, 0.0, 1.0, 1.0]], dtype=np.float32)
     s_data = np.array([0.9, 0.8], dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision import iou, non_max_suppression
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
@@ -199,52 +292,39 @@ def test_iou_nms_eager_backends():
                 pass
 
 
-def test_extract_bounding_boxes_tracing():
+def test_extract_bounding_boxes_tracing() -> object:
     """Test extract bounding boxes tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
             boxes = Tensor("dummy_boxes", TensorConfig((2, 4), DType.Float32, device))
             box_indices = Tensor("dummy_box_indices", TensorConfig((2,), DType.Int32, device))
-            from ml_switcheroo_compiler.ops.vision import extract_bounding_boxes
 
             extract_bounding_boxes(img, boxes, box_indices, (2, 2))
-            extract_bounding_boxes(
-                img, boxes, box_indices, 2, interpolation="nearest", data_format="channels_first"
-            )
+            extract_bounding_boxes(img, boxes, box_indices, 2, interpolation="nearest", data_format="channels_first")
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_extract_bounding_boxes_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_extract_bounding_boxes_eager_backends() -> object:
+    """Function docstring."""
     """Test extract bounding boxes eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.ones((1, 4, 4, 3), dtype=np.float32)
     boxes_data = np.array([[0.0, 0.0, 1.0, 1.0], [0.25, 0.25, 0.75, 0.75]], dtype=np.float32)
     box_indices_data = np.array([0, 0], dtype=np.int32)
-    from ml_switcheroo_compiler.ops.vision import extract_bounding_boxes
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device)
-                )
-                boxes = Tensor(
-                    backend_cls.array(boxes_data), TensorConfig((2, 4), DType.Float32, device)
-                )
-                box_indices = Tensor(
-                    backend_cls.array(box_indices_data), TensorConfig((2,), DType.Int32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device))
+                boxes = Tensor(backend_cls.array(boxes_data), TensorConfig((2, 4), DType.Float32, device))
+                box_indices = Tensor(backend_cls.array(box_indices_data), TensorConfig((2,), DType.Int32, device))
                 res = extract_bounding_boxes(img, boxes, box_indices, (2, 2))
-                res_nearest = extract_bounding_boxes(
-                    img, boxes, box_indices, 2, interpolation="nearest"
-                )
+                res_nearest = extract_bounding_boxes(img, boxes, box_indices, 2, interpolation="nearest")
             except Exception:
                 continue
             res_data = res.data
@@ -265,36 +345,31 @@ def test_extract_bounding_boxes_eager_backends():
                 pass
 
 
-def test_median_filter_tracing():
+def test_median_filter_tracing() -> object:
     """Test median filter tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
-            from ml_switcheroo_compiler.ops.vision import median_filter
 
             median_filter(img, 3)
             median_filter(img, (3, 5), padding="valid", data_format="channels_first")
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_median_filter_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_median_filter_eager_backends() -> object:
+    """Function docstring."""
     """Test median filter eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.ones((1, 4, 4, 3), dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision import median_filter
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device))
                 res = median_filter(img, 3)
                 res_valid = median_filter(img, (3, 3), padding="valid")
             except Exception:
@@ -317,14 +392,13 @@ def test_median_filter_eager_backends():
                 pass
 
 
-def test_gaussian_blur_tracing():
+def test_gaussian_blur_tracing() -> object:
     """Test gaussian blur tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
-            from ml_switcheroo_compiler.ops.vision import gaussian_blur
 
             gaussian_blur(img, kernel_size=3, sigma=1.0)
             gaussian_blur(
@@ -335,28 +409,22 @@ def test_gaussian_blur_tracing():
                 data_format="channels_first",
             )
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_gaussian_blur_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_gaussian_blur_eager_backends() -> object:
+    """Function docstring."""
     """Test gaussian blur eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.ones((1, 4, 4, 3), dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision import gaussian_blur
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((1, 4, 4, 3), DType.Float32, device))
                 res = gaussian_blur(img, kernel_size=3, sigma=1.0)
-                res_valid = gaussian_blur(
-                    img, kernel_size=(3, 3), sigma=(1.0, 1.0), padding="valid"
-                )
+                res_valid = gaussian_blur(img, kernel_size=(3, 3), sigma=(1.0, 1.0), padding="valid")
             except Exception:
                 continue
             res_data = res.data
@@ -377,40 +445,33 @@ def test_gaussian_blur_eager_backends():
                 pass
 
 
-def test_elastic_transform_tracing():
+def test_elastic_transform_tracing() -> object:
     """Test elastic transform tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
             disp = Tensor("dummy_disp", TensorConfig((1, 4, 4, 2), DType.Float32, device))
-            from ml_switcheroo_compiler.ops.vision import elastic_transform
 
             elastic_transform(img, disp)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_elastic_transform_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_elastic_transform_eager_backends() -> object:
+    """Function docstring."""
     """Test elastic transform eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.array([[[[1.0], [2.0]], [[3.0], [4.0]]]], dtype=np.float32)
     disp_data = np.zeros((1, 2, 2, 2), dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision import elastic_transform
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((1, 2, 2, 1), DType.Float32, device)
-                )
-                disp = Tensor(
-                    backend_cls.array(disp_data), TensorConfig((1, 2, 2, 2), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((1, 2, 2, 1), DType.Float32, device))
+                disp = Tensor(backend_cls.array(disp_data), TensorConfig((1, 2, 2, 2), DType.Float32, device))
                 res = elastic_transform(img, disp)
             except Exception:
                 # Some backends like Dask might not implement all eager primitives, which is fine
@@ -429,45 +490,36 @@ def test_elastic_transform_eager_backends():
                 pass
 
 
-def test_perspective_transform_tracing():
+def test_perspective_transform_tracing() -> object:
     """Test perspective transform tracing."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy_img", TensorConfig((1, 4, 4, 3), DType.Float32, device))
             sp = Tensor("dummy_sp", TensorConfig((1, 4, 2), DType.Float32, device))
             ep = Tensor("dummy_ep", TensorConfig((1, 4, 2), DType.Float32, device))
-            from ml_switcheroo_compiler.ops.vision import perspective_transform
 
             perspective_transform(img, sp, ep)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_perspective_transform_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_perspective_transform_eager_backends() -> object:
+    """Function docstring."""
     """Test perspective transform eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.array([[[[1.0], [2.0]], [[3.0], [4.0]]]], dtype=np.float32)
     start_points = np.array([[[0, 0], [0, 1], [1, 0], [1, 1]]], dtype=np.float32)
     end_points = np.array([[[0, 0], [0, 1], [1, 0], [1, 1]]], dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision import perspective_transform
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((1, 2, 2, 1), DType.Float32, device)
-                )
-                sp = Tensor(
-                    backend_cls.array(start_points), TensorConfig((1, 4, 2), DType.Float32, device)
-                )
-                ep = Tensor(
-                    backend_cls.array(end_points), TensorConfig((1, 4, 2), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((1, 2, 2, 1), DType.Float32, device))
+                sp = Tensor(backend_cls.array(start_points), TensorConfig((1, 4, 2), DType.Float32, device))
+                ep = Tensor(backend_cls.array(end_points), TensorConfig((1, 4, 2), DType.Float32, device))
                 res = perspective_transform(img, sp, ep)
             except Exception:
                 continue
@@ -479,33 +531,8 @@ def test_perspective_transform_eager_backends():
             np.testing.assert_allclose(res_data, img_data, atol=1e-5)
 
 
-def test_vision_infer_shapes():
-    from ml_switcheroo_compiler.ops.vision.ops import (
-        AdjustBrightness,
-        AdjustContrast,
-        AdjustHue,
-        AdjustSaturation,
-        AffineGenerator,
-        AffineTransform,
-        CropAndResize,
-        ElasticTransform,
-        ExtractBoundingBoxes,
-        FlipLeftRight,
-        FlipUpDown,
-        GaussianBlur,
-        HsvToRgb,
-        IoU,
-        MedianFilter,
-        NonMaxSuppression,
-        PerspectiveTransform,
-        ResizeBicubic,
-        ResizeBilinear,
-        ResizeLanczos3,
-        ResizeLanczos5,
-        ResizeNearest,
-        RgbToHsv,
-    )
-
+def test_vision_infer_shapes() -> object:
+    """Function docstring."""
     # We just call infer_shape on all of them to cover it.
     ops = [
         ResizeBilinear,
@@ -537,16 +564,8 @@ def test_vision_infer_shapes():
     assert ResizeLanczos5().infer_shape(None) == () == ()
 
 
-def test_crop_pad_ops():
+def test_crop_pad_ops() -> object:
     """Test crop and pad to bounding box."""
-    from unittest.mock import MagicMock, patch
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.vision import crop, pad_to_bounding_box
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-
     # test eager
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
@@ -563,7 +582,7 @@ def test_crop_pad_ops():
 
     # test tracing
     config.eager_mode = False
-    _tracer.start_tracing("test_graph")
+    global_tracing_state.start_tracing("test_graph")
     try:
         t = Tensor(MagicMock(id="t1"), TensorConfig((20, 20), DType.Float32, "cpu"))
         res1 = crop(t, 0, 0, 10, 10)
@@ -571,31 +590,21 @@ def test_crop_pad_ops():
         assert res1.shape == ()
         assert res2.shape == ()
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
-def test_crop_pad_opdefs():
+def test_crop_pad_opdefs() -> object:
     """Test OpDefs."""
-    from ml_switcheroo_compiler.ops.vision.ops import Crop, PadToBoundingBox
-
     assert Crop().infer_shape(None) == ()
     assert PadToBoundingBox().infer_shape(None) == ()
 
 
-def test_nms_helpers():
-    import numpy as np
-
-    from ml_switcheroo_compiler.backends.eager.vision_filtering import (
-        _apply_suppression_threshold,
-        _sort_boxes_by_score,
-    )
-
+def test_nms_helpers() -> object:
+    """Function docstring."""
     bxs = np.array([[0, 0, 10, 10], [0, 0, 10, 10], [20, 20, 30, 30]])
     scs = np.array([0.9, 0.8, 0.7])
 
-    bxs_filtered, scs_filtered, orig_idx, order = _sort_boxes_by_score(
-        np, bxs, scs, score_threshold=0.75
-    )
+    bxs_filtered, scs_filtered, orig_idx, order = _sort_boxes_by_score(np, bxs, scs, score_threshold=0.75)
     assert len(bxs_filtered) == 2
     assert np.array_equal(orig_idx, np.array([0, 1]))
     assert np.array_equal(order, np.array([0, 1]))
@@ -604,18 +613,16 @@ def test_nms_helpers():
     assert keep == [0]
 
 
-def test_random_flip_eager():
-    from ml_switcheroo_compiler.ops.vision.affine import random_flip
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from unittest import mock
-
+def test_random_flip_eager() -> object:
+    """Function docstring."""
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         img = np.random.rand(2, 4, 4, 3)
         mock_backend.return_value.array = lambda x: x
         mock_backend.return_value.execute_op.return_value = img
 
         class Dummy:
+            """Class docstring."""
+
             data = img
             dtype = np.float32
             device = None
@@ -629,18 +636,16 @@ def test_random_flip_eager():
             assert res.shape == (2, 4, 4, 3)
 
 
-def test_random_rotation_eager():
-    from ml_switcheroo_compiler.ops.vision.affine import random_rotation
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from unittest import mock
-
+def test_random_rotation_eager() -> object:
+    """Function docstring."""
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         img = np.random.rand(2, 10, 10, 3)
         mock_backend.return_value.array = lambda x: x
         mock_backend.return_value.execute_op.return_value = img
 
         class Dummy:
+            """Class docstring."""
+
             data = img
             dtype = np.float32
             device = None
@@ -658,18 +663,16 @@ def test_random_rotation_eager():
             assert res.shape == (2, 10, 10, 3)
 
 
-def test_random_crop_eager():
-    from ml_switcheroo_compiler.ops.vision.affine import random_crop
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from unittest import mock
-
+def test_random_crop_eager() -> object:
+    """Function docstring."""
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         img = np.random.rand(2, 10, 10, 3)
         mock_backend.return_value.array = lambda x: x
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 5, 5, 3))
 
         class Dummy:
+            """Class docstring."""
+
             data = img
             dtype = np.float32
             device = None
@@ -679,18 +682,16 @@ def test_random_crop_eager():
             assert res.shape == (2, 5, 5, 3)
 
 
-def test_rgb_to_grayscale_eager():
-    from ml_switcheroo_compiler.ops.vision.color import rgb_to_grayscale
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from unittest import mock
-
+def test_rgb_to_grayscale_eager() -> object:
+    """Function docstring."""
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         img = np.random.rand(2, 4, 4, 3)
         mock_backend.return_value.array = lambda x: x
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 4, 4, 1))
 
         class Dummy:
+            """Class docstring."""
+
             data = img
             dtype = np.float32
             device = None
@@ -700,27 +701,16 @@ def test_rgb_to_grayscale_eager():
             assert res.shape == (2, 4, 4, 1)
 
 
-def test_new_color_filtering_mixing_eager():
-    from ml_switcheroo_compiler.ops.vision import (
-        random_color_jitter,
-        solarize,
-        invert,
-        posterize,
-        degeneration,
-        sharpen,
-        mixup,
-        cutmix,
-    )
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from unittest import mock
-
+def test_new_color_filtering_mixing_eager() -> object:
+    """Function docstring."""
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         img = np.random.rand(2, 4, 4, 3)
         mock_backend.return_value.array = lambda x: x
         mock_backend.return_value.execute_op.return_value = img
 
         class Dummy:
+            """Class docstring."""
+
             data = img
             dtype = np.float32
             device = None
@@ -744,30 +734,10 @@ def test_new_color_filtering_mixing_eager():
             assert res.shape == (2, 4, 4, 3)
 
 
-def test_lazy_vision_new_ops():
-    from ml_switcheroo_compiler.ops.vision.affine import (
-        random_flip,
-        random_rotation,
-        random_crop,
-    )
-    from ml_switcheroo_compiler.ops.vision.color import rgb_to_grayscale
-    from ml_switcheroo_compiler.ops.vision import (
-        random_color_jitter,
-        solarize,
-        invert,
-        posterize,
-        degeneration,
-        sharpen,
-        mixup,
-        cutmix,
-    )
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.tracing import _tracer
-
+def test_lazy_vision_new_ops() -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy", TensorConfig((2, 4, 4, 3), DType.Float32, None))
             res1 = random_flip(img, mode="horizontal_and_vertical", seed=42)
@@ -807,27 +777,19 @@ def test_lazy_vision_new_ops():
             res_cut = cutmix(img, img)
             assert res_cut is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_random_affine_ops_eager():
-    from ml_switcheroo_compiler.ops.vision.affine import (
-        random_zoom,
-        random_translation,
-        random_shear,
-        random_perspective,
-        random_elastic_transform,
-    )
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from unittest import mock
-
+def test_random_affine_ops_eager() -> object:
+    """Function docstring."""
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         img = np.random.rand(2, 4, 4, 3)
         mock_backend.return_value.array = lambda x: x
         mock_backend.return_value.execute_op.return_value = img
 
         class Dummy:
+            """Class docstring."""
+
             data = img
             dtype = np.float32
             device = None
@@ -845,21 +807,10 @@ def test_random_affine_ops_eager():
             assert res.shape == (2, 4, 4, 3)
 
 
-def test_lazy_vision_affine_ops():
-    from ml_switcheroo_compiler.ops.vision.affine import (
-        random_zoom,
-        random_translation,
-        random_shear,
-        random_perspective,
-        random_elastic_transform,
-    )
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.tracing import _tracer
-
+def test_lazy_vision_affine_ops() -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy", TensorConfig((2, 4, 4, 3), DType.Float32, None))
             res = random_zoom(img, height_factor=0.1)
@@ -877,30 +828,20 @@ def test_lazy_vision_affine_ops():
             res = random_elastic_transform(img, alpha=0.1, sigma=0.1)
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_random_geometric_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_random_geometric_eager_backends() -> object:
+    """Function docstring."""
     """Test new random geometric eager backends."""
     device = Device(DeviceType.CPU)
     img_data = np.ones((2, 10, 10, 3), dtype=np.float32)
-    from ml_switcheroo_compiler.ops.vision.affine import (
-        random_shear,
-        random_perspective,
-        random_elastic_transform,
-        random_zoom,
-        random_translation,
-    )
 
     for backend_name in BackendRegistry.get_all().keys():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((2, 10, 10, 3), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((2, 10, 10, 3), DType.Float32, device))
                 res_shear = random_shear(img, y_factor=0.1)
                 random_perspective(img, factor=0.1)
                 random_elastic_transform(img, alpha=0.1, sigma=0.1)
@@ -923,19 +864,8 @@ def test_random_geometric_eager_backends():
                 pass
 
 
-def test_color_pixel_manipulations_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-    from ml_switcheroo_compiler.ops.vision.color import (
-        solarize,
-        invert,
-        posterize,
-        auto_contrast,
-        equalization,
-        adjust_brightness,
-        adjust_contrast,
-        adjust_saturation,
-    )
-
+def test_color_pixel_manipulations_eager_backends() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU)
     img_data = np.random.rand(2, 10, 10, 3).astype(np.float32)
 
@@ -943,9 +873,7 @@ def test_color_pixel_manipulations_eager_backends():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((2, 10, 10, 3), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((2, 10, 10, 3), DType.Float32, device))
                 res_solarize = solarize(img, threshold=0.5)
                 invert(img)
                 posterize(img, bits=4)
@@ -971,13 +899,8 @@ def test_color_pixel_manipulations_eager_backends():
                 pass
 
 
-def test_random_filtering_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-    from ml_switcheroo_compiler.ops.vision.filtering import (
-        random_gaussian_blur,
-        random_sharpness,
-    )
-
+def test_random_filtering_eager_backends() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU)
     img_data = np.random.rand(2, 10, 10, 3).astype(np.float32)
 
@@ -985,9 +908,7 @@ def test_random_filtering_eager_backends():
         with ConfigContext(eager_mode=True, backend=backend_name):
             try:
                 backend_cls = BackendRegistry.get(backend_name)
-                img = Tensor(
-                    backend_cls.array(img_data), TensorConfig((2, 10, 10, 3), DType.Float32, device)
-                )
+                img = Tensor(backend_cls.array(img_data), TensorConfig((2, 10, 10, 3), DType.Float32, device))
                 res_blur = random_gaussian_blur(img, kernel_size=3, sigma=1.0)
                 random_sharpness(img, factor=1.5)
             except Exception:
@@ -1007,18 +928,10 @@ def test_random_filtering_eager_backends():
                 pass
 
 
-def test_lazy_vision_filtering_ops():
-    from ml_switcheroo_compiler.ops.vision.filtering import (
-        random_gaussian_blur,
-        random_sharpness,
-    )
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.tracing import _tracer
-
+def test_lazy_vision_filtering_ops() -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             img = Tensor("dummy", TensorConfig((2, 4, 4, 3), DType.Float32, None))
             res = random_gaussian_blur(img, kernel_size=3, sigma=1.0)
@@ -1027,34 +940,16 @@ def test_lazy_vision_filtering_ops():
             res = random_sharpness(img, factor=1.5)
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_vision_eager_extra() -> None:  # noqa: PLR0915
+def test_vision_eager_extra() -> None:
     """Test eager evaluation for new vision ops."""
-    import numpy as np
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
-        from unittest.mock import patch
-
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
             mock_backend.return_value.execute_op.return_value = np.zeros((1,))
             mock_backend.return_value.array.return_value = np.zeros((1,))
-
-            from ml_switcheroo_compiler.ops.vision.affine import affine_grid, grid_sample
-            from ml_switcheroo_compiler.ops.vision.bbox import draw_bounding_boxes
-            from ml_switcheroo_compiler.ops.vision.color import (
-                rgb_to_yiq,
-                yiq_to_rgb,
-                rgb_to_yuv,
-                yuv_to_rgb,
-            )
-            from ml_switcheroo_compiler.ops.vision.interpolation import resize
 
             t_4d = Tensor(
                 np.zeros((1, 3, 4, 4), dtype=np.float32),
@@ -1088,9 +983,7 @@ def test_vision_eager_extra() -> None:  # noqa: PLR0915
                 np.zeros((1, 4, 4, 3), dtype=np.float32),
                 TensorConfig((1, 4, 4, 3), DType.Float32, device),
             )
-            t_boxes = Tensor(
-                np.zeros((1, 4), dtype=np.float32), TensorConfig((1, 4), DType.Float32, device)
-            )
+            t_boxes = Tensor(np.zeros((1, 4), dtype=np.float32), TensorConfig((1, 4), DType.Float32, device))
 
             try:
                 draw_bounding_boxes(t_img, t_boxes)
@@ -1121,26 +1014,10 @@ def test_vision_eager_extra() -> None:  # noqa: PLR0915
 
 def test_vision_tracing_extra() -> None:
     """Test tracing evaluation for new vision ops."""
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.tracing import _tracer
-
     device = Device("cpu")
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
-            from ml_switcheroo_compiler.ops.vision.affine import affine_grid, grid_sample
-            from ml_switcheroo_compiler.ops.vision.bbox import draw_bounding_boxes
-            from ml_switcheroo_compiler.ops.vision.color import (
-                rgb_to_yiq,
-                yiq_to_rgb,
-                rgb_to_yuv,
-                yuv_to_rgb,
-            )
-            from ml_switcheroo_compiler.ops.vision.interpolation import resize
-
             t_4d = Tensor("dummy_4d", TensorConfig((1, 3, 4, 4), DType.Float32, device))
             t_theta = Tensor("dummy_th", TensorConfig((1, 2, 3), DType.Float32, device))
             t_grid = Tensor("dummy_g", TensorConfig((1, 4, 4, 2), DType.Float32, device))
@@ -1160,21 +1037,11 @@ def test_vision_tracing_extra() -> None:
             rgb_to_yuv(t_img)
             yuv_to_rgb(t_img)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_new_vision_infer_shapes():
-    from ml_switcheroo_compiler.ops.vision.ops import (
-        RgbToYiq,
-        YiqToRgb,
-        RgbToYuv,
-        YuvToRgb,
-        AffineGrid,
-        GridSample,
-        Resize,
-        DrawBoundingBoxes,
-    )
-
+def test_new_vision_infer_shapes() -> object:
+    """Function docstring."""
     assert RgbToYiq().infer_shape(None) == ()
     assert YiqToRgb().infer_shape(None) == ()
     assert RgbToYuv().infer_shape(None) == ()
@@ -1185,26 +1052,8 @@ def test_new_vision_infer_shapes():
     assert DrawBoundingBoxes().infer_shape(None) == ()
 
 
-def test_all_vision_infer_shapes():
-    from ml_switcheroo_compiler.ops.vision.ops import (
-        RandomRotationOp,
-        RgbToGrayscaleOp,
-        Mixup,
-        Cutmix,
-        AugMix,
-        AutoContrast,
-        RandAugment,
-        RandomErasing,
-        Equalization,
-        RandomZoomOp,
-        RandomShearOp,
-        RandomTranslationOp,
-        RandomPerspectiveOp,
-        RandomElasticTransformOp,
-        RandomGaussianBlurOp,
-        RandomSharpnessOp,
-    )
-
+def test_all_vision_infer_shapes() -> object:
+    """Function docstring."""
     assert RandomRotationOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
     assert RgbToGrayscaleOp().infer_shape((1, 2, 2, 3), data_format="channels_first") == (
         1,
@@ -1228,24 +1077,21 @@ def test_all_vision_infer_shapes():
     assert RandomSharpnessOp().infer_shape((1, 2, 2, 3)) == (1, 2, 2, 3)
 
 
-def test_random_crop_op_infer_shape_branch():
-    from ml_switcheroo_compiler.ops.vision.ops import RandomCropOp
-
+def test_random_crop_op_infer_shape_branch() -> object:
+    """Function docstring."""
     op = RandomCropOp()
     # length 3 branch
     assert op.infer_shape((10, 10, 3), size=(5, 5)) == (5, 5, 3)
 
 
-def test_rgb_to_grayscale_op_infer_shape_branch():
-    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
-
+def test_rgb_to_grayscale_op_infer_shape_branch() -> object:
+    """Function docstring."""
     op = RgbToGrayscaleOp()
     assert op.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
 
 
-def test_random_crop_op_infer_shape_branch2():
-    from ml_switcheroo_compiler.ops.vision.ops import RandomCropOp, RgbToGrayscaleOp
-
+def test_random_crop_op_infer_shape_branch2() -> object:
+    """Function docstring."""
     op = RandomCropOp()
     assert op.infer_shape((10, 10, 3, 4), size=(5, 5)) == (10, 5, 5, 4)
 
@@ -1253,9 +1099,8 @@ def test_random_crop_op_infer_shape_branch2():
     assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
 
 
-def test_random_crop_op_infer_shape_branch3():
-    from ml_switcheroo_compiler.ops.vision.ops import RandomCropOp, RgbToGrayscaleOp
-
+def test_random_crop_op_infer_shape_branch3() -> object:
+    """Function docstring."""
     op = RandomCropOp()
     assert op.infer_shape((10, 10, 3), size=(5, 5)) == (5, 5, 3)
 
@@ -1263,23 +1108,20 @@ def test_random_crop_op_infer_shape_branch3():
     assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
 
 
-def test_random_crop_op_infer_shape_branch4():
-    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
-
+def test_random_crop_op_infer_shape_branch4() -> object:
+    """Function docstring."""
     op2 = RgbToGrayscaleOp()
     assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
 
 
-def test_rgb_to_grayscale_op_infer_shape_branch5():
-    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
-
+def test_rgb_to_grayscale_op_infer_shape_branch5() -> object:
+    """Function docstring."""
     op2 = RgbToGrayscaleOp()
     assert op2.infer_shape((10, 3, 10, 10), data_format="channels_first") == (10, 1, 10, 10)
 
 
-def test_rgb_to_grayscale_op_infer_shape_branch6():
-    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp, RandomCropOp
-
+def test_rgb_to_grayscale_op_infer_shape_branch6() -> object:
+    """Function docstring."""
     op2 = RgbToGrayscaleOp()
     assert op2.infer_shape((10, 10, 10, 3), data_format="channels_last") == (10, 10, 10, 1)
 
@@ -1287,29 +1129,20 @@ def test_rgb_to_grayscale_op_infer_shape_branch6():
     assert op.infer_shape((10, 10, 3), size=(5, 5)) == (5, 5, 3)
 
 
-def test_rgb_to_grayscale_op_infer_shape_branch7():
-    from ml_switcheroo_compiler.ops.vision.ops import RgbToGrayscaleOp
-
+def test_rgb_to_grayscale_op_infer_shape_branch7() -> object:
+    """Function docstring."""
     op2 = RgbToGrayscaleOp()
     assert op2.infer_shape((10, 3, 10, 10), data_format="something_else") == (10, 1, 10, 10)
 
 
-def test_random_color_jitter_op_infer_shape_branch():
-    from ml_switcheroo_compiler.ops.vision.ops import RandomColorJitter
-
+def test_random_color_jitter_op_infer_shape_branch() -> object:
+    """Function docstring."""
     op = RandomColorJitter()
     assert op.infer_shape((10, 10, 3)) == (10, 10, 3)
 
 
-def test_crop_images():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.vision.bbox import crop_images
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from unittest.mock import patch
-
+def test_crop_images() -> object:
+    """Function docstring."""
     img = Tensor(np.array([[[[1.0]]]]), TensorConfig((1, 1, 1, 1), DType.Float32, None))
 
     with (
@@ -1318,28 +1151,21 @@ def test_crop_images():
     ):
         mock_backend.return_value.execute_op.return_value = np.array([[[[1.0]]]])
         mock_backend.return_value.array.return_value = np.array([[[[1.0]]]])
-        res = crop_images(img, 0, 0, 0, 0)
+        res = crop_images(img, (0, 0, 0, 0))
         assert hasattr(res, "shape")
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             p_img = Tensor("mock_img", TensorConfig((1, 1, 1, 1), DType.Float32, None))
-            res = crop_images(p_img, 0, 0, 0, 0)
+            res = crop_images(p_img, (0, 0, 0, 0))
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_extract_patches():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.vision.bbox import extract_patches
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from unittest.mock import patch
-
+def test_extract_patches() -> object:
+    """Function docstring."""
     img = Tensor(np.array([[[[1.0]]]]), TensorConfig((1, 1, 1, 1), DType.Float32, None))
 
     with (
@@ -1352,24 +1178,17 @@ def test_extract_patches():
         assert hasattr(res, "shape")
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             p_img = Tensor("mock_img", TensorConfig((1, 1, 1, 1), DType.Float32, None))
             res = extract_patches(p_img, size=1)
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_pad_images():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.vision.bbox import pad_images
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from unittest.mock import patch
-
+def test_pad_images() -> object:
+    """Function docstring."""
     img = Tensor(np.array([[[[1.0]]]]), TensorConfig((1, 1, 1, 1), DType.Float32, None))
 
     with (
@@ -1378,28 +1197,21 @@ def test_pad_images():
     ):
         mock_backend.return_value.execute_op.return_value = np.array([[[[1.0]]]])
         mock_backend.return_value.array.return_value = np.array([[[[1.0]]]])
-        res = pad_images(img, 1, 1, 1, 1)
+        res = pad_images(img, (1, 1, 1, 1), (None, None))
         assert hasattr(res, "shape")
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             p_img = Tensor("mock_img", TensorConfig((1, 1, 1, 1), DType.Float32, None))
-            res = pad_images(p_img, 1, 1, 1, 1)
+            res = pad_images(p_img, (1, 1, 1, 1), (None, None))
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_map_coordinates():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.vision.interpolation import map_coordinates
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from unittest.mock import patch
-
+def test_map_coordinates() -> object:
+    """Function docstring."""
     img = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), DType.Float32, None))
     coords = Tensor(np.array([[0.5, 0.5]]), TensorConfig((1, 2), DType.Float32, None))
 
@@ -1413,11 +1225,11 @@ def test_map_coordinates():
         assert hasattr(res, "shape")
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             p_img = Tensor("mock_img", TensorConfig((2, 2), DType.Float32, None))
             p_coords = Tensor("mock_coords", TensorConfig((1, 2), DType.Float32, None))
             res = map_coordinates(p_img, p_coords, order=1)
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()

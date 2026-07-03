@@ -1,11 +1,12 @@
 """Test associative bessel."""
 
 import numpy as np
-from ml_switcheroo_compiler.core.config import config
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.core.config import config
 
 
-def test_new_ops_part1():
+def test_new_ops_part1() -> object:
     """Test first part."""
     config.eager_mode = True
 
@@ -44,7 +45,7 @@ def test_new_ops_part1():
         assert len(out) == 1
 
 
-def test_new_ops_part2():
+def test_new_ops_part2() -> object:
     """Test second part."""
     config.eager_mode = True
 

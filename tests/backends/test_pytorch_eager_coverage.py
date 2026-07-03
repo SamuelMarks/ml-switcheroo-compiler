@@ -1,13 +1,18 @@
+"""Module docstring."""
+
 import torch
+
 from ml_switcheroo_compiler.backends.pytorch.eager import (
+    _execute_cumlogsumexp,
     _execute_cummax,
     _execute_cummin,
-    _execute_cumlogsumexp,
     execute_op,
 )
+from ml_switcheroo_compiler.backends.pytorch.types import array, asarray, item, zeros
 
 
-def test_pytorch_eager_coverage():
+def test_pytorch_eager_coverage() -> object:
+    """Function docstring."""
     t = torch.tensor([1, 2, 3])
 
     assert torch.equal(_execute_cummax(t, dim=0), torch.tensor([1, 2, 3]))
@@ -24,8 +29,6 @@ def test_pytorch_eager_coverage():
         execute_op(None, "UnknownFakeOp", torch.tensor(1))
     except NotImplementedError:
         pass
-
-    from ml_switcheroo_compiler.backends.pytorch.types import zeros, array, asarray, item
 
     assert zeros(None, (2,)) is not None
     assert array(None, [1, 2]) is not None

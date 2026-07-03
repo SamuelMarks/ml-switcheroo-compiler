@@ -1,9 +1,12 @@
 """Backend utilities."""
 
-import mlx.core as mx
+import builtins
 
-from ml_switcheroo_compiler.backends.eager import execute_generic_op
+import mlx.core as mx
+import numpy as np
+
 from ml_switcheroo_compiler.backends.eager_registry import mlx_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import execute_op as np_execute_op
 
 
 def _to_numpy(val: object) -> object:
@@ -12,8 +15,6 @@ def _to_numpy(val: object) -> object:
     Args:
         val: Arg.
     """
-    import numpy as np
-
     if isinstance(val, mx.array):
         try:
             return np.array(val)
@@ -30,12 +31,8 @@ def _from_numpy(val: object) -> object:
     Args:
         val: Arg.
     """
-    import numpy as np
-
     if isinstance(val, np.ndarray):
-        return mx.array(
-            val.tolist(), dtype=getattr(mx, str(val.dtype)) if hasattr(mx, str(val.dtype)) else None
-        )
+        return mx.array(val.tolist(), dtype=getattr(mx, str(val.dtype)) if hasattr(mx, str(val.dtype)) else None)
     if isinstance(val, (int, float, bool)):
         return mx.array(val)
     if isinstance(val, tuple):  # pragma: no branch
@@ -52,8 +49,6 @@ def _execute_numpy_fallback(cls: type, op_type: str, *args: object, **kwargs: ob
         args: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.numpy.eager import execute_op as np_execute_op
-
     np_args = [_to_numpy(a) for a in args]
     np_kwargs = {k: _to_numpy(v) for k, v in kwargs.items()}
     res = np_execute_op(cls, op_type, *np_args, **np_kwargs)
@@ -80,7 +75,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         if func_registry is not None:
             return func_registry(mx, *args, **kwargs)
 
-        return execute_generic_op(mx, op_type, *args, **kwargs)
+        raise NotImplementedError(f"Operation '{op_type}' not supported eagerly by this backend.")
     except (NotImplementedError, AttributeError):
         return _execute_numpy_fallback(cls, op_type, *args, **kwargs)
 
@@ -135,7 +130,6 @@ def _mlx_tensor_scatter_add(backend_module: object, *args: object, **kwargs: obj
         kwargs: Arg.
     """
     tensor, indices, updates = args[0], args[1], args[2]
-    import numpy as np
 
     res = np.array(tensor)
     idx = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -153,7 +147,6 @@ def _mlx_tensor_scatter_max(backend_module: object, *args: object, **kwargs: obj
         kwargs: Arg.
     """
     tensor, indices, updates = args[0], args[1], args[2]
-    import numpy as np
 
     res = np.array(tensor)
     idx = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -171,7 +164,6 @@ def _mlx_tensor_scatter_min(backend_module: object, *args: object, **kwargs: obj
         kwargs: Arg.
     """
     tensor, indices, updates = args[0], args[1], args[2]
-    import numpy as np
 
     res = np.array(tensor)
     idx = tuple(np.moveaxis(np.array(indices), -1, 0))
@@ -287,9 +279,7 @@ def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @mlx_eager_registry.register("Partition")
-def _mlx_partition(
-    backend_module: object, *args: object, **kwargs: object
-) -> object:  # pragma: no cover
+def _mlx_partition(backend_module: object, *args: object, **kwargs: object) -> object:  # pragma: no cover
     """Function docstring.
 
     Args:
@@ -322,9 +312,7 @@ def _mlx_partition(
 
 
 @mlx_eager_registry.register("NanToNum")
-def _mlx_nan_to_num(
-    backend_module: object, *args: object, **kwargs: object
-) -> object:  # pragma: no cover
+def _mlx_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> object:  # pragma: no cover
     """Function docstring.
 
     Args:
@@ -348,47 +336,36 @@ def _mlx_nan_to_num(
 
 @mlx_eager_registry.register("Cummax")
 def _mlx_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cummax(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res = res.astype(
-            getattr(
-                backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)
-            )
-        )
+        res = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Cummin")
 def _mlx_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cummin(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res = res.astype(
-            getattr(
-                backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)
-            )
-        )
+        res = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Cumprod")
 def _mlx_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cumprod(*args, **kwargs)
     if dtype is not None and str(dtype) != "None":
-        res = res.astype(
-            getattr(
-                backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)
-            )
-        )
+        res = res.astype(getattr(backend_module, str(getattr(dtype, "value", dtype)), getattr(dtype, "value", dtype)))
     return res
 
 
 @mlx_eager_registry.register("Slice")
-def _mlx_slice(
-    backend_module: object, *args: object, **kwargs: object
-) -> object:  # pragma: no cover
+def _mlx_slice(backend_module: object, *args: object, **kwargs: object) -> object:  # pragma: no cover
     """Function docstring.
 
     Args:
@@ -396,8 +373,6 @@ def _mlx_slice(
         args: Arg.
         kwargs: Arg.
     """
-    import builtins
-
     a = args[0]
     dim = kwargs.get("dim")
     start = kwargs.get("start")
@@ -443,8 +418,6 @@ def _mlx_rope(backend_module: object, x: object, **kwargs: object) -> object:
         x: Arg.
         kwargs: Arg.
     """
-    import mlx.core as mx
-
     dim = kwargs.get("dim")
     base = kwargs.get("base", 10000.0)
     offset = kwargs.get("offset", 0)

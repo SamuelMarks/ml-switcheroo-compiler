@@ -9,6 +9,8 @@ myst_parser, and configures the Furo HTML theme.
 import os
 import sys
 
+from ml_playground_directive import setup as setup_directive
+
 # All target directories relative to the current conf.py
 projects = [
     "../ml-switcheroo-compiler",
@@ -80,6 +82,4 @@ def setup(app: object) -> object:
     Returns:
     object: The result of the directive setup, typically None.
     """
-    from ml_playground_directive import setup as setup_directive
-
     setup_directive(app)

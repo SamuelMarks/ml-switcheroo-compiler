@@ -1,10 +1,13 @@
 """Transformation operations."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+import numpy as np
+
+import ml_switcheroo_compiler.ops.binary.math as _math
+import ml_switcheroo_compiler.ops.shape.joining as _joining
 import ml_switcheroo_compiler.ops.shape.manipulation as _manipulation
 import ml_switcheroo_compiler.ops.shape.slicing as _slicing
-import ml_switcheroo_compiler.ops.shape.joining as _joining
-import ml_switcheroo_compiler.ops.binary.math as _math
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
 
 def hadamard_transform(x: Tensor, scale: float = 1.0) -> Tensor:
@@ -34,9 +37,6 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> Tensor:
         res = _manipulation.reshape(stacked, list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        from ml_switcheroo_compiler.ops.creation.frontend_basic import array
-        import numpy as np
-
         res = _math.multiply(res, array(np.array([scale], dtype=np.float32)))
     return res
 

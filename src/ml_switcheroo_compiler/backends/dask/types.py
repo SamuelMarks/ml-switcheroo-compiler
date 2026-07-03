@@ -1,7 +1,9 @@
 """Backend utilities."""
 
+import dask.array as da
+
 try:
-    import dask.array as da
+    pass
 except ImportError:
     da = None
 

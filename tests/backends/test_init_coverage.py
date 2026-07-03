@@ -1,14 +1,26 @@
 """Module docstring."""
 
+import builtins
 import importlib
+import sys
 
-from ml_switcheroo_compiler.backends.formatters import FormatterContext
+import numpy as np
+
+import ml_switcheroo_compiler.backends as be
+
+# To hit the except branch in fallback
+from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
+from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
+from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
+from ml_switcheroo_compiler.backends.numpy.eager import execute_op
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.type_promotion import promote_types
+from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 def test_import_error_branches() -> None:
     """Docstring."""
-    import ml_switcheroo_compiler.backends as be
-
     # Force reload of the module while simulating ImportError
     orig_import = __import__
 
@@ -25,8 +37,6 @@ def test_import_error_branches() -> None:
                 raise ImportError(f"Mocked ImportError for {name}")
         return orig_import(name, globals, locals, fromlist, level)
 
-    import builtins
-
     builtins.__import__ = mock_import
     try:
         importlib.reload(be)
@@ -36,19 +46,13 @@ def test_import_error_branches() -> None:
 
 def test_cupy_generator_import() -> None:
     """Test cupy generator reload branches."""
-    import importlib
-    import sys
-
     orig_import = __import__
 
-    def mock_import(
-        name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0
-    ) -> object:
+    def mock_import(name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0) -> object:
+        """Function docstring."""
         if name == "cupy":
             raise ImportError("mocked cupy error")
         return orig_import(name, globals, locals, fromlist, level)
-
-    import builtins
 
     builtins.__import__ = mock_import
     try:
@@ -59,11 +63,6 @@ def test_cupy_generator_import() -> None:
                 pass
             except Exception:
                 pass
-
-        # To hit the except branch in fallback
-        from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
-        from ml_switcheroo_compiler.core.dtype import DType
-        from ml_switcheroo_compiler.ir.core import IRGraph
 
         gen = CupyGenerator(IRGraph())
         try:
@@ -81,19 +80,13 @@ def test_cupy_generator_import() -> None:
 
 def test_dask_generator_import() -> None:
     """Test dask generator reload branches."""
-    import importlib
-    import sys
-
     orig_import = __import__
 
-    def mock_import(
-        name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0
-    ) -> object:
+    def mock_import(name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0) -> object:
+        """Function docstring."""
         if name == "dask.array":
             raise ImportError("mocked dask error")
         return orig_import(name, globals, locals, fromlist, level)
-
-    import builtins
 
     builtins.__import__ = mock_import
     try:
@@ -104,9 +97,6 @@ def test_dask_generator_import() -> None:
                 pass
             except Exception:
                 pass
-
-        from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
-        from ml_switcheroo_compiler.ir.core import IRGraph
 
         gen = DaskGenerator(IRGraph())
         try:
@@ -120,14 +110,8 @@ def test_dask_generator_import() -> None:
 
 def test_numpy_eager_extra() -> None:
     """Extra eager checks."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.backends.numpy.eager import execute_op
-
     try:
-        execute_op(
-            None, "BroadcastInDim", np.array([1.0]), shape=iter([2]), broadcast_dimensions=iter([0])
-        )
+        execute_op(None, "BroadcastInDim", np.array([1.0]), shape=iter([2]), broadcast_dimensions=iter([0]))
     except Exception:
         pass
     try:
@@ -142,27 +126,19 @@ def test_numpy_eager_extra() -> None:
 
 def test_type_promotion_129() -> None:
     """Type promotion branch."""
-    from ml_switcheroo_compiler.core.type_promotion import promote_types
-
     assert promote_types("float64", "float64") == "float64"
     assert promote_types("bool", "bool") == "bool"
 
 
 def test_cupy_eager_import() -> None:
     """Test cupy eager reload branches."""
-    import importlib
-    import sys
-
     orig_import = __import__
 
-    def mock_import(
-        name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0
-    ) -> object:
+    def mock_import(name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0) -> object:
+        """Function docstring."""
         if name == "cupy":
             raise ImportError("mocked cupy error")
         return orig_import(name, globals, locals, fromlist, level)
-
-    import builtins
 
     builtins.__import__ = mock_import
     try:
@@ -181,19 +157,13 @@ def test_cupy_eager_import() -> None:
 
 def test_dask_eager_import() -> None:
     """Test dask eager reload branches."""
-    import importlib
-    import sys
-
     orig_import = __import__
 
-    def mock_import(
-        name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0
-    ) -> object:
+    def mock_import(name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0) -> object:
+        """Function docstring."""
         if name == "dask.array":
             raise ImportError("mocked dask error")
         return orig_import(name, globals, locals, fromlist, level)
-
-    import builtins
 
     builtins.__import__ = mock_import
     try:
@@ -212,19 +182,13 @@ def test_dask_eager_import() -> None:
 
 def test_cupy_types_import() -> None:
     """Test cupy types reload branches."""
-    import importlib
-    import sys
-
     orig_import = __import__
 
-    def mock_import(
-        name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0
-    ) -> object:
+    def mock_import(name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0) -> object:
+        """Function docstring."""
         if name == "cupy":
             raise ImportError("mocked cupy error")
         return orig_import(name, globals, locals, fromlist, level)
-
-    import builtins
 
     builtins.__import__ = mock_import
     try:
@@ -243,19 +207,13 @@ def test_cupy_types_import() -> None:
 
 def test_dask_types_import() -> None:
     """Test dask types reload branches."""
-    import importlib
-    import sys
-
     orig_import = __import__
 
-    def mock_import(
-        name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0
-    ) -> object:
+    def mock_import(name: str, globals: dict = None, locals: dict = None, fromlist: tuple = (), level: int = 0) -> object:
+        """Function docstring."""
         if name == "dask.array":
             raise ImportError("mocked dask error")
         return orig_import(name, globals, locals, fromlist, level)
-
-    import builtins
 
     builtins.__import__ = mock_import
     try:
@@ -274,32 +232,20 @@ def test_dask_types_import() -> None:
 
 def test_cupy_generator_fallback_kwargs_only() -> None:
     """Test kwargs only."""
-    from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
-
     CupyGenerator(IRGraph())
-    from ml_switcheroo_compiler.backends.formatters import OpFormatter
 
     OpFormatter.format_generic_fallback(FormatterContext("out", "Op", [], {"a": "1"}))
 
 
 def test_dask_generator_fallback_kwargs_only() -> None:
     """Test kwargs only."""
-    from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
-
     DaskGenerator(IRGraph())
-    from ml_switcheroo_compiler.backends.formatters import OpFormatter
 
     OpFormatter.format_generic_fallback(FormatterContext("out", "Op", [], {"a": "1"}))
 
 
 def test_type_promotion_129_complex() -> None:
     """Docstring."""
-    from ml_switcheroo_compiler.core.config import config
-
     config.jax_enable_x64 = True
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.type_promotion import promote_types
 
     assert promote_types(DType.Complex64, DType.Complex128) == DType.Complex128

@@ -1,8 +1,13 @@
 """Distributed execution and sharding primitives."""
 
-from typing import Optional
-from contextlib import AbstractContextManager as ContextManager
+import contextlib  # pragma: no cover
 from collections.abc import Iterator
+from contextlib import AbstractContextManager as ContextManager
+from typing import Optional
+
+from ml_switcheroo_compiler.core import config  # pragma: no cover
+from ml_switcheroo_compiler.ops import distributed  # pragma: no cover
+
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
 
@@ -91,10 +96,10 @@ class Distribution:
         Returns:
             ContextManager[None]: the context manager scope.
         """
-        import contextlib  # pragma: no cover
 
         @contextlib.contextmanager  # pragma: no cover
         def _scope() -> Iterator[None]:  # pragma: no cover
+            """Function docstring."""
             global _dist
             _old = _dist  # pragma: no cover
             _dist = self  # type: ignore  # pragma: no cover
@@ -148,11 +153,9 @@ def distribute_tensor(*args: object, **kwargs: object) -> object:
     global _dist
     if _dist is None:  # pragma: no cover
         return args[0] if args else kwargs.get("tensor")  # pragma: no cover
-    from ml_switcheroo_compiler.core import config  # pragma: no cover
 
     if config.eager_mode:  # pragma: no cover
         return args[0] if args else kwargs.get("tensor")  # pragma: no cover
-    from ml_switcheroo_compiler.ops import distributed  # pragma: no cover
 
     return distributed.shard_tensor(*args, **kwargs)  # pragma: no cover
 

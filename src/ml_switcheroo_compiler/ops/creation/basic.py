@@ -5,7 +5,6 @@ and arange, along with their shape inference and NumPy evaluation implementation
 """
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 

@@ -1,18 +1,16 @@
 """Broadcast Explicitizer Pass."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
-from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
 import uuid
 from typing import Optional
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 
 
 def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[int, ...]) -> str:
@@ -35,9 +33,7 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     return new_id
 
 
-def _needs_broadcast(
-    shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]
-) -> Optional[tuple[int, ...]]:
+def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]) -> Optional[tuple[int, ...]]:
     """Function docstring.
 
     Args:

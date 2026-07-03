@@ -1,9 +1,15 @@
+"""Module docstring."""
+
 import numpy as np
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
-def test_numpy_lax_mocks():
-    def execute(op, *args, **kwargs):
+def test_numpy_lax_mocks() -> object:
+    """Function docstring."""
+
+    def execute(op: object, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return numpy_eager_registry.get(op)(np, *args, **kwargs)
 
     # Test tuples

@@ -3,6 +3,16 @@
 interpreter.
 """
 
+import numpy as np
+import pytest
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.interpreter import evaluate_graph
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ops.registry import get_op
+from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
+
 
 def test_shape_inference_broadcasting() -> None:
     """Verifies that the interpreter correctly infers and broadcasts shapes using a numpy-.
@@ -16,11 +26,6 @@ def test_shape_inference_broadcasting() -> None:
     Returns:
     None
     """
-    import numpy as np
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
-    from ml_switcheroo_compiler.interpreter import evaluate_graph
-
     g = LogicalGraph(outputs=["exp"])
     g.nodes["x"] = LogicalNode(id="x", op_type="Input")
     g.nodes["exp"] = LogicalNode(
@@ -37,9 +42,6 @@ def test_shape_inference_broadcasting() -> None:
 
 def test_shape_inference_pass_coverage_() -> None:
     """Test shape inference pass coverage."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     g = IRGraph()
     # input node
     inp = IRNode(id="in", op_type="Input", inputs=[], shape_metadata=(2,))
@@ -74,9 +76,6 @@ def test_shape_inference_pass_coverage_() -> None:
 
 def test_shape_inference_pass_coverage_kwargs() -> None:
     """Test kwargs."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     g = IRGraph()
     # input node
     inp = IRNode(id="in", op_type="Input", inputs=[], shape_metadata=(2,))
@@ -104,9 +103,6 @@ def test_shape_inference_pass_coverage_kwargs() -> None:
 
 def test_shape_inference_pass_coverage_output_no_inputs() -> None:
     """Test output no inputs."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     g = IRGraph()
     out = IRNode(id="out", op_type="Output", inputs=[], shape_metadata=())
     g.nodes = {"out": out}
@@ -115,9 +111,6 @@ def test_shape_inference_pass_coverage_output_no_inputs() -> None:
 
 def test_shape_inference_pass_coverage_broadcast() -> None:
     """Test broadcast."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     g = IRGraph()
     inp = IRNode(id="in", op_type="Input", inputs=[], shape_metadata=(2,))
     bcast = IRNode(
@@ -133,9 +126,6 @@ def test_shape_inference_pass_coverage_broadcast() -> None:
 
 def test_shape_inference_pass_coverage_output_with_input() -> None:
     """Test output with input."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     g = IRGraph()
     inp = IRNode(id="in", op_type="Input", inputs=[], shape_metadata=(5, 5))
     out = IRNode(id="out", op_type="Output", inputs=["in"], shape_metadata=())
@@ -146,9 +136,6 @@ def test_shape_inference_pass_coverage_output_with_input() -> None:
 
 def test_shape_inference_pass_coverage_constant_modified() -> None:
     """Test const modified."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
-
     g = IRGraph()
     const = IRNode(
         id="const",
@@ -160,3 +147,39 @@ def test_shape_inference_pass_coverage_constant_modified() -> None:
     g.nodes = {"const": const}
     res = shape_inference_pass(g)
     assert res in (True, False)
+
+
+def test_shape_inference_pass_coverage_exceptions() -> None:
+    """Function docstring."""
+    g = IRGraph()
+    inp = IRNode(id="in", op_type="Input", inputs=[], shape_metadata=(5, 5))
+
+    # Trigger a ValueError in Reshape.infer_shape
+    # For example, by passing an invalid newshape attribute
+    bad_op = IRNode(
+        id="bad",
+        op_type="Reshape",
+        inputs=["in"],
+        attributes={"newshape": (5, 5, 2, 2)},
+        shape_metadata=None,
+    )
+
+    g.nodes = {"in": inp, "bad": bad_op}
+
+    Reshape = get_op("Reshape")
+
+    # We monkeypatch infer_shape to raise ValueError
+    original_infer = Reshape.infer_shape
+
+    def mock_infer(*args: object, **kwargs: object) -> object:
+        """Function docstring."""
+        raise ValueError("mock error")
+
+    Reshape.infer_shape = mock_infer
+    try:
+        with pytest.raises(CompilationError):
+            shape_inference_pass(g)
+    finally:
+        Reshape.infer_shape = original_infer
+
+    pass

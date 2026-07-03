@@ -8,6 +8,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import map_fn
 from ml_switcheroo_compiler.tracing import ProxyTensor
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 device = Device(DeviceType.CPU, 0)
 
@@ -25,6 +26,7 @@ def test_map_fn_eager() -> None:
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
         def f(x: object) -> object:
+            """Function docstring."""
             y = x.data * 2
             return Tensor(y, TensorConfig((), DType.Int32, device))
 
@@ -48,11 +50,10 @@ def test_map_fn_trace() -> None:
         )
 
         def f(x: object) -> object:
+            """Function docstring."""
             return x
 
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         ys = map_fn(f, xs)
         assert ys.dtype == DType.Int32
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()

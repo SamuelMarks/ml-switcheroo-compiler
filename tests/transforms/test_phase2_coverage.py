@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import (
     broadcast_explicitizer_pass,
 )
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
+from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
     type_promotion_explicitizer_pass,
 )
@@ -167,7 +168,6 @@ def test_shape_inference_edge_cases() -> None:
     None
     """
     g = IRGraph()
-    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 
     # Output without inputs
     g.nodes["out"] = LogicalNode(id="out", op_type="Output", inputs=[])

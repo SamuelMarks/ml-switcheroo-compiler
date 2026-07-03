@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-if TYPE_CHECKING:
-    from collections.abc import Sequence
+from ml_switcheroo_compiler.core.dtype import DType
 
-    from ml_switcheroo_compiler.core.dtype import DType
+if TYPE_CHECKING:
+    pass
 
 
 def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:

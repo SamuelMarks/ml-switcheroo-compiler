@@ -8,7 +8,6 @@ intermediate representation (IR) graph for compilation
 
 from __future__ import annotations
 
-
 import uuid
 from typing import Callable
 
@@ -16,20 +15,17 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRBlock
-from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
 
-def _wrap_proxy_inputs(
-    args: tuple[object, ...], subgraph: object
-) -> tuple[list[str], list[object]]:
+def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list[str], list[object]]:
     """Function docstring.
 
     Args:
         args: Arg.
         subgraph: Arg.
     """
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     proxy_args = []
     input_ids = []
     for _i, arg in enumerate(args):
@@ -61,8 +57,6 @@ def _get_tensor_ids(obj: object) -> list[str]:
     Args:
         obj: Arg.
     """
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     if isinstance(obj, Tensor):
         return [obj.data.id]
     if isinstance(obj, (tuple, list)):
@@ -117,23 +111,21 @@ def _trace_function(func: Callable, args: tuple[Tensor, ...], name: str) -> IRBl
     TypeError: If the traced function does not return a Tensor or a tuple of
     Tensors
     """
-    prev_graph = _tracer.active_graph
-    is_tracing = _tracer.is_tracing
-
-    from ml_switcheroo_compiler.tracing.tracer import increment_trace_count
+    prev_graph = global_tracing_state.active_graph
+    is_tracing = global_tracing_state.is_tracing
 
     increment_trace_count(func)
 
-    subgraph = _tracer.start_tracing(name=name)
+    subgraph = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
 
     out = func(*proxy_args)
 
     out_node_id = _process_trace_outputs(out, subgraph)
 
-    _tracer.stop_tracing()
-    _tracer.active_graph = prev_graph
-    _tracer.is_tracing = is_tracing
+    global_tracing_state.stop_tracing()
+    global_tracing_state.active_graph = prev_graph
+    global_tracing_state.is_tracing = is_tracing
 
     return IRBlock(
         id=name,

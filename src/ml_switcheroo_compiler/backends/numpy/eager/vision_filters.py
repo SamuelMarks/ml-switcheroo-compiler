@@ -1,6 +1,7 @@
 """Numpy vision filters."""
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager.vision_extras import _np_gaussian_blur, _np_sharpen
 
 
 @numpy_eager_registry.register("RandomGaussianBlur")
@@ -20,11 +21,7 @@ def _np_random_gaussian_blur(
         sigma: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.numpy.eager.vision_extras import _np_gaussian_blur
-
-    return _np_gaussian_blur(
-        backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs
-    )  # pragma: no cover
+    return _np_gaussian_blur(backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs)  # pragma: no cover
 
 
 @numpy_eager_registry.register("RandomSharpness")
@@ -42,6 +39,4 @@ def _np_random_sharpness(
         factor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.numpy.eager.vision_extras import _np_sharpen
-
     return _np_sharpen(backend_module, images, factor=factor, **kwargs)  # pragma: no cover

@@ -1,23 +1,25 @@
+"""Module docstring."""
+
+from unittest.mock import MagicMock
+
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.manipulation import transpose
-from ml_switcheroo_compiler.tracing.tracer import _tracer
+from ml_switcheroo_compiler.ops.shape.manipulation import _try_extract_item, _try_extract_tolist, transpose
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def test_transpose_coverage():
-    _tracer.start_tracing()
+def test_transpose_coverage() -> object:
+    """Function docstring."""
+    global_tracing_state.start_tracing()
     t = Tensor(None, TensorConfig((2,), DType.Float32, Device("cpu")))
     # dim0 and dim1 >= len
     transpose(t, 2, 3)
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
 
 
-def test_extract_helpers_coverage():
-    from unittest.mock import MagicMock
-
-    from ml_switcheroo_compiler.ops.shape.manipulation import _try_extract_item, _try_extract_tolist
-
+def test_extract_helpers_coverage() -> object:
+    """Function docstring."""
     # tolist list
     m1 = MagicMock()
     m1.data.tolist.return_value = [1]

@@ -1,21 +1,23 @@
+# auto-generate-all
+
 """Constants & Creation Operations."""
 
 from .frontend_basic import (
     array,
     asarray,
-    zeros,
-    ones,
-    full,
-    zeros_like,
-    ones_like,
-    full_like,
     empty,
     empty_like,
+    full,
+    full_like,
+    ones,
+    ones_like,
+    zeros,
+    zeros_like,
 )
+from .frontend_matrix import diag, eye, identity
+from .frontend_random import manual_seed, rand, randint, randn
 from .frontend_sequence import arange, linspace
-from .frontend_matrix import eye, identity, diag
-from .frontend_random import rand, randn, randint, manual_seed
-from .frontend_windows import blackman, bartlett, hamming, hanning, kaiser
+from .frontend_windows import bartlett, blackman, hamming, hanning, kaiser
 
 __all__ = [
     "arange",

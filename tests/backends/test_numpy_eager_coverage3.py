@@ -1,11 +1,15 @@
+"""Module docstring."""
+
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
 from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
+from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
+from ml_switcheroo_compiler.backends.numpy.eager.shape import _band_part
 from ml_switcheroo_compiler.ops.configs import ConvConfig, WindowConfig
 
 
-def test_reduce_window_coverage():
+def test_reduce_window_coverage() -> object:
+    """Function docstring."""
     operand = np.array([1, 2, 3])
 
     # base_dilation coverage
@@ -70,7 +74,8 @@ def test_reduce_window_coverage():
         pass
 
 
-def test_conv_general_dilated_coverage():
+def test_conv_general_dilated_coverage() -> object:
+    """Function docstring."""
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
 
@@ -132,6 +137,8 @@ def test_conv_general_dilated_coverage():
     rhs2 = np.ones((4, 2, 3, 3))
 
     class DimensionNumbers:
+        """Class docstring."""
+
         lhs_spec = (0, 1, 2, 3)
         rhs_spec = (0, 1, 2, 3)
         out_spec = (0, 1, 2, 3)
@@ -144,9 +151,8 @@ def test_conv_general_dilated_coverage():
     assert res is not None
 
 
-def test_band_part_coverage():
-    from ml_switcheroo_compiler.backends.numpy.eager.math_extras import _band_part
-
+def test_band_part_coverage() -> object:
+    """Function docstring."""
     res = _band_part(np.ones((3, 3)), 1, 1)
     assert res is not None
     assert res.shape == (3, 3)

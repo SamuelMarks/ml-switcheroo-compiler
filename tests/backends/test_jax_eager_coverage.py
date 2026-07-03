@@ -1,8 +1,13 @@
-from ml_switcheroo_compiler.backends.jax.eager import execute_op
+"""Module docstring."""
+
 import jax.numpy as jnp
 
+from ml_switcheroo_compiler.backends.jax.eager import execute_op
+from ml_switcheroo_compiler.backends.jax.types import array, asarray, item, zeros
 
-def test_jax_eager_ops():
+
+def test_jax_eager_ops() -> object:
+    """Function docstring."""
     x = jnp.array([1.0, 2.0, 3.0])
     ids = jnp.array([0, 1, 0])
 
@@ -56,8 +61,6 @@ def test_jax_eager_ops():
         execute_op(None, "UnknownFakeOp", x_1d)
     except NotImplementedError:
         pass
-
-    from ml_switcheroo_compiler.backends.jax.types import zeros, array, asarray, item
 
     assert zeros(None, (2,)) is not None
     assert array(None, [1, 2]) is not None

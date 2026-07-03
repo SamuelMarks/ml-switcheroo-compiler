@@ -151,49 +151,59 @@ def _np_irfft2(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Fftnd")
 def _np_fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.fftn(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Ifftnd")
 def _np_ifftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.ifftn(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Rfftnd")
 def _np_rfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.rfftn(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Irfftnd")
 def _np_irfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.irfftn(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Fftshift")
 def _np_fftshift(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.fftshift(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Ifftshift")
 def _np_ifftshift(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.ifftshift(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Fftfreq")
 def _np_fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.fftfreq(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Hfft")
 def _np_hfft(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.hfft(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Ihfft")
 def _np_ihfft(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.ihfft(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Rfftfreq")
 def _np_rfftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.fft.rfftfreq(*args, **kwargs)

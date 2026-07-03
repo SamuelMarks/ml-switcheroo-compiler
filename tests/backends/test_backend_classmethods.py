@@ -5,6 +5,11 @@ import importlib
 import sys
 from unittest.mock import MagicMock
 
+import ml_switcheroo_compiler.backends.cupy as cupy_mod
+import ml_switcheroo_compiler.backends.dask as dask_mod
+from ml_switcheroo_compiler.backends import jax, keras, mlx, numpy, pytorch, tensorflow
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
 
 def test_backend_classmethods() -> None:
     """Docstring."""
@@ -12,10 +17,6 @@ def test_backend_classmethods() -> None:
     sys.modules["cupy"] = MagicMock()
     sys.modules["dask"] = MagicMock()
     sys.modules["dask.array"] = MagicMock()
-
-    import ml_switcheroo_compiler.backends.cupy as cupy_mod
-    import ml_switcheroo_compiler.backends.dask as dask_mod
-    from ml_switcheroo_compiler.backends import jax, keras, mlx, numpy, pytorch, tensorflow
 
     importlib.reload(cupy_mod)
     importlib.reload(dask_mod)
@@ -48,10 +49,6 @@ def test_backend_classmethods() -> None:
 
 def test_cupy_dask_generate() -> None:
     """Docstring."""
-    import ml_switcheroo_compiler.backends.cupy as cupy_mod
-    import ml_switcheroo_compiler.backends.dask as dask_mod
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
     g = IRGraph()
     n1 = IRNode(
         id="n1",

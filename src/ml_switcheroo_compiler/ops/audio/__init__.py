@@ -1,27 +1,27 @@
 """Audio operations module."""
 
-from ml_switcheroo_compiler.ops.audio import ops  # noqa: F401
+from ml_switcheroo_compiler.ops.audio import ops
 from ml_switcheroo_compiler.ops.audio.frontend import (
+    dct,
+    frame,
+    hamming_window,
+    hann_window,
+    idct,
+    inverse_mdct,
+    inverse_stft,
+    inverse_stft_window_fn,
     istft,
+    kaiser_bessel_derived_window,
+    kaiser_window,
+    linear_to_mel_weight_matrix,
+    mdct,
     mel_filterbank,
     mel_spectrogram,
     mfcc,
-    stft,
     mfccs_from_log_mel_spectrograms,
-    hann_window,
-    hamming_window,
-    linear_to_mel_weight_matrix,
-    inverse_stft,
-    dct,
-    idct,
-    mdct,
-    inverse_mdct,
-    frame,
     overlap_and_add,
-    inverse_stft_window_fn,
+    stft,
     vorbis_window,
-    kaiser_bessel_derived_window,
-    kaiser_window,
 )
 
 __all__ = [
@@ -46,3 +46,4 @@ __all__ = [
     "stft",
     "vorbis_window",
 ]
+_ = ops

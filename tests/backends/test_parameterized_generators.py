@@ -252,12 +252,16 @@ def test_keras_generator_coverage() -> None:
     gen = KerasCodeGenerator(LogicalGraph("foo"))
 
     class DummyNode:
+        """Class docstring."""
+
         op_type = "Matmul"
 
     res = gen.visit(DummyNode(), ["a", "b"], unrelated="hi")
     assert res == "keras.ops.matmul(a, b)"
 
     class DummyNode2:
+        """Class docstring."""
+
         op_type = "Zeros"
 
     res2 = gen.visit(DummyNode2(), ["a"], shape=[1], unrelated="hi")
@@ -288,18 +292,24 @@ def test_pytorch_generator_coverage() -> None:
     gen = PyTorchCodeGenerator(LogicalGraph("foo"))
 
     class DummyNode:
+        """Class docstring."""
+
         op_type = "Sum"
 
     res = gen.visit(DummyNode(), ["a"], unrelated="hi")
     assert res == "torch.sum(a)"
 
     class ReshapeNode:
+        """Class docstring."""
+
         op_type = "Reshape"
 
     res2 = gen.visit(ReshapeNode(), ["a"], shape="(2, 2)")
     assert res2 == "torch.reshape(a, (2, 2))"
 
     class ReluNode:
+        """Class docstring."""
+
         op_type = "Relu"
 
     res3 = gen.visit(ReluNode(), ["a"], axis=1, keepdims=True)

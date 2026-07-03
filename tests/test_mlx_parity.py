@@ -58,8 +58,6 @@ def test_mlx_parity_coverage() -> None:
 
 def test_device_dunders() -> None:
     """Tests Device dunder methods."""
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-
     d1 = Device(DeviceType.CPU, 0)
     d2 = Device(DeviceType.CPU, 0)
     d3 = Device(DeviceType.GPU, 1)
@@ -73,7 +71,6 @@ def test_device_dunders() -> None:
 
 def test_grad_coverage_extra() -> None:
     """Tests extra grad methods."""
-    import ml_switcheroo_compiler.grad as grad_module
 
     def f(x: object) -> object:
         """Docstring."""

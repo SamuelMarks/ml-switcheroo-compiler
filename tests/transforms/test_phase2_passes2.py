@@ -5,6 +5,12 @@ identifies and inserts explicit type casting operations in a logical graph when 
 operations have mismatched input data types.
 """
 
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
+    type_promotion_explicitizer_pass,
+)
+
 
 def test_type_promotion_partial_branches() -> None:
     """Verifies type promotion behavior when only one operand requires casting.
@@ -22,12 +28,6 @@ def test_type_promotion_partial_branches() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
-    from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
-        type_promotion_explicitizer_pass,
-    )
-
     g = LogicalGraph(outputs=["add1", "add2"])
 
     # dt1 == target, dt2 != target (float64 and float32 -> float64)

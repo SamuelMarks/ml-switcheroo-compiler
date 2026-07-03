@@ -1,3 +1,5 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.transforms.passes.spmd import (
     _create_all_gather_node,
     _create_reduce_scatter_node,
@@ -6,11 +8,15 @@ from ml_switcheroo_compiler.transforms.passes.spmd import (
 
 
 class MockSharding:
-    def __init__(self, mesh_mapping):
+    """Class docstring."""
+
+    def __init__(self, mesh_mapping: object) -> object:
+        """Function docstring."""
         self.mesh_mapping = mesh_mapping
 
 
-def test_is_boundary_transition():
+def test_is_boundary_transition() -> object:
+    """Function docstring."""
     s1 = MockSharding([None, "x"])
     s2 = MockSharding([None, None])
     inp_sharded, node_sharded = _is_boundary_transition(s1, s2)
@@ -18,7 +24,8 @@ def test_is_boundary_transition():
     assert node_sharded is False
 
 
-def test_create_all_gather_node():
+def test_create_all_gather_node() -> object:
+    """Function docstring."""
     s = MockSharding([None, None])
     node = _create_all_gather_node("test_inp", s)
     assert node.id == "test_inp_all_gather"
@@ -27,7 +34,8 @@ def test_create_all_gather_node():
     assert node.sharding is s
 
 
-def test_create_reduce_scatter_node():
+def test_create_reduce_scatter_node() -> object:
+    """Function docstring."""
     s = MockSharding([None, "x"])
     node = _create_reduce_scatter_node("test_inp", s)
     assert node.id == "test_inp_reduce_scatter"

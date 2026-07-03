@@ -1,11 +1,13 @@
 """Test approx max/min k."""
 
 import numpy as np
-from ml_switcheroo_compiler.core.config import config
+
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.core.config import config
 
 
-def test_approx_k():
+def test_approx_k() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x = ops.array(np.array([1, 4, 3, 2, 5]))
 

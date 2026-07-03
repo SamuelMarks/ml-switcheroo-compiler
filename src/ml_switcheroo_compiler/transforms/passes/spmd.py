@@ -75,9 +75,7 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: o
     return scatter_node
 
 
-def _process_spmd_input(
-    node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: object
-) -> typing.Optional[IRNode]:
+def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: object) -> typing.Optional[IRNode]:
     """Function docstring.
 
     Args:

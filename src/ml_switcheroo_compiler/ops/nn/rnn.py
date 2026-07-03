@@ -1,21 +1,20 @@
 """RNN operations frontend."""
 
+from .conv_lstm import conv1d_lstm_cell, conv2d_lstm_cell, conv3d_lstm_cell, conv_lstm_cell
+from .gru import gru_cell
+from .lstm import lstm_cell
+from .rnn_cell import simple_rnn_cell
 from .rnn_utils import (
-    RNNConfig,
-    BidirectionalInputs,
     BidirectionalConfig,
-    RNNWeights,
+    BidirectionalInputs,
     ConvLSTMConfig,
+    RNNConfig,
+    RNNWeights,
     ScanConfig,
-    scan,
     bidirectional,
     rnn,
+    scan,
 )
-from .rnn_cell import simple_rnn_cell
-from .lstm import lstm_cell
-from .gru import gru_cell
-from .conv_lstm import conv_lstm_cell, conv1d_lstm_cell, conv2d_lstm_cell, conv3d_lstm_cell
-
 
 rnn_step = simple_rnn_cell
 lstm_step = lstm_cell

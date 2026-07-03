@@ -1,6 +1,8 @@
 """Distributed execution operations."""
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -18,19 +20,13 @@ def shard_tensor(tensor: Tensor, device_mesh: object, layout: object) -> Tensor:
         Tensor: The sharded tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
-        data = backend.execute_op(
-            "ShardTensor", tensor.data, device_mesh=device_mesh, layout=layout
-        )
+        data = backend.execute_op("ShardTensor", tensor.data, device_mesh=device_mesh, layout=layout)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    return _emit_shape_node(
-        "ShardTensor", [tensor], {"device_mesh": device_mesh, "layout": layout}, (), tensor.dtype
-    )
+    return _emit_shape_node("ShardTensor", [tensor], {"device_mesh": device_mesh, "layout": layout}, (), tensor.dtype)
 
 
 def all_reduce(tensor: Tensor, op: str = "sum") -> Tensor:
@@ -44,8 +40,6 @@ def all_reduce(tensor: Tensor, op: str = "sum") -> Tensor:
         Tensor: The reduced tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AllReduce", tensor.data, op=op)
         return Tensor(
@@ -66,8 +60,6 @@ def all_gather(tensor: Tensor, axis: int = 0) -> Tensor:
         Tensor: The gathered tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AllGather", tensor.data, axis=axis)
         return Tensor(
@@ -89,8 +81,6 @@ def reduce_scatter(tensor: Tensor, op: str = "sum", axis: int = 0) -> Tensor:
         Tensor: The scattered tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("ReduceScatter", tensor.data, op=op, axis=axis)
         return Tensor(
@@ -147,22 +137,14 @@ def device_put_replicated(tensor: Tensor, devices: object) -> Tensor:
         Tensor: The replicated tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "DevicePutReplicated", tensor.data, devices=devices
-        )  # pragma: no cover
+        data = backend.execute_op("DevicePutReplicated", tensor.data, devices=devices)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensor.dtype, tensor.device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),  # pragma: no cover
         )  # pragma: no cover
-    return _emit_shape_node(
-        "DevicePutReplicated", [tensor], {"devices": devices}, (), tensor.dtype
-    )  # pragma: no cover
+    return _emit_shape_node("DevicePutReplicated", [tensor], {"devices": devices}, (), tensor.dtype)  # pragma: no cover
 
 
 def device_put_sharded(tensors: list[Tensor], devices: object) -> Tensor:
@@ -176,23 +158,15 @@ def device_put_sharded(tensors: list[Tensor], devices: object) -> Tensor:
         Tensor: The sharded tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
         data_list = [t.data for t in tensors]  # pragma: no cover
-        data = backend.execute_op(
-            "DevicePutSharded", data_list, devices=devices
-        )  # pragma: no cover
+        data = backend.execute_op("DevicePutSharded", data_list, devices=devices)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensors[0].dtype, tensors[0].device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensors[0].dtype, tensors[0].device),  # pragma: no cover
         )  # pragma: no cover
-    return _emit_shape_node(
-        "DevicePutSharded", tensors, {"devices": devices}, (), tensors[0].dtype
-    )  # pragma: no cover
+    return _emit_shape_node("DevicePutSharded", tensors, {"devices": devices}, (), tensors[0].dtype)  # pragma: no cover
 
 
 def all_to_all(tensor: Tensor, split_axis: int, concat_axis: int, axis_name: str) -> Tensor:
@@ -208,8 +182,6 @@ def all_to_all(tensor: Tensor, split_axis: int, concat_axis: int, axis_name: str
         Tensor: The output tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op(  # pragma: no cover
@@ -221,9 +193,7 @@ def all_to_all(tensor: Tensor, split_axis: int, concat_axis: int, axis_name: str
         )  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensor.dtype, tensor.device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),  # pragma: no cover
         )  # pragma: no cover
     return _emit_shape_node(  # pragma: no cover
         "AllToAll",
@@ -245,20 +215,14 @@ def pmax(tensor: Tensor, axis_name: str) -> Tensor:
         Tensor: The output tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("Pmax", tensor.data, axis_name=axis_name)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensor.dtype, tensor.device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),  # pragma: no cover
         )  # pragma: no cover
-    return _emit_shape_node(
-        "Pmax", [tensor], {"axis_name": axis_name}, (), tensor.dtype
-    )  # pragma: no cover
+    return _emit_shape_node("Pmax", [tensor], {"axis_name": axis_name}, (), tensor.dtype)  # pragma: no cover
 
 
 def pmin(tensor: Tensor, axis_name: str) -> Tensor:
@@ -272,20 +236,14 @@ def pmin(tensor: Tensor, axis_name: str) -> Tensor:
         Tensor: The output tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("Pmin", tensor.data, axis_name=axis_name)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensor.dtype, tensor.device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),  # pragma: no cover
         )  # pragma: no cover
-    return _emit_shape_node(
-        "Pmin", [tensor], {"axis_name": axis_name}, (), tensor.dtype
-    )  # pragma: no cover
+    return _emit_shape_node("Pmin", [tensor], {"axis_name": axis_name}, (), tensor.dtype)  # pragma: no cover
 
 
 def psum_scatter(tensor: Tensor, scatter_dimension: int, axis_name: str) -> Tensor:
@@ -300,8 +258,6 @@ def psum_scatter(tensor: Tensor, scatter_dimension: int, axis_name: str) -> Tens
         Tensor: The output tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op(  # pragma: no cover
@@ -312,9 +268,7 @@ def psum_scatter(tensor: Tensor, scatter_dimension: int, axis_name: str) -> Tens
         )  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensor.dtype, tensor.device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),  # pragma: no cover
         )  # pragma: no cover
     return _emit_shape_node(  # pragma: no cover
         "PsumScatter",
@@ -337,18 +291,12 @@ def pswapaxes(tensor: Tensor, axis_name: str, axis: int) -> Tensor:
         Tensor: The output tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "Pswapaxes", tensor.data, axis_name=axis_name, axis=axis
-        )  # pragma: no cover
+        data = backend.execute_op("Pswapaxes", tensor.data, axis_name=axis_name, axis=axis)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),  # pragma: no cover
-            TensorConfig(
-                backend.array(data).shape, tensor.dtype, tensor.device
-            ),  # pragma: no cover
+            TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),  # pragma: no cover
         )  # pragma: no cover
     return _emit_shape_node(  # pragma: no cover
         "Pswapaxes", [tensor], {"axis_name": axis_name, "axis": axis}, (), tensor.dtype
@@ -450,8 +398,6 @@ def pbroadcast(tensor: Tensor, axis_name: str) -> Tensor:
         Tensor: Broadcasted tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Pbroadcast", tensor.data, axis_name=axis_name)
         return Tensor(
@@ -473,13 +419,9 @@ def pdot(lhs: Tensor, rhs: Tensor, axis_name: str) -> Tensor:
         Tensor: Resulting tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Pdot", lhs.data, rhs.data, axis_name=axis_name)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, lhs.dtype, lhs.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, lhs.dtype, lhs.device))
     return _emit_shape_node("Pdot", [lhs, rhs], {"axis_name": axis_name}, (), lhs.dtype)
 
 
@@ -495,17 +437,13 @@ def ppermute(tensor: Tensor, axis_name: str, perm: object) -> Tensor:
         Tensor: Permuted tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ppermute", tensor.data, axis_name=axis_name, perm=perm)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    return _emit_shape_node(
-        "Ppermute", [tensor], {"axis_name": axis_name, "perm": perm}, (), tensor.dtype
-    )
+    return _emit_shape_node("Ppermute", [tensor], {"axis_name": axis_name, "perm": perm}, (), tensor.dtype)
 
 
 def pshuffle(tensor: Tensor, axis_name: str, perm: object) -> Tensor:
@@ -520,17 +458,13 @@ def pshuffle(tensor: Tensor, axis_name: str, perm: object) -> Tensor:
         Tensor: Shuffled tensor.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Pshuffle", tensor.data, axis_name=axis_name, perm=perm)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, tensor.dtype, tensor.device),
         )
-    return _emit_shape_node(
-        "Pshuffle", [tensor], {"axis_name": axis_name, "perm": perm}, (), tensor.dtype
-    )
+    return _emit_shape_node("Pshuffle", [tensor], {"axis_name": axis_name, "perm": perm}, (), tensor.dtype)
 
 
 @register_op("Pbroadcast")
@@ -633,13 +567,9 @@ def outfeed(tensor: Tensor, token: object = None) -> Tensor:
 
 def axis_index(axis_name: str) -> Tensor:
     """Axis index operation."""
-    from ml_switcheroo_compiler.core.dtype import DType
-
     return _emit_shape_node("AxisIndex", [], {"axis_name": axis_name}, (), DType.Int32)
 
 
 def with_sharding_constraint(tensor: Tensor, sharding: object) -> Tensor:
     """With sharding constraint operation."""
-    return _emit_shape_node(
-        "WithShardingConstraint", [tensor], {"sharding": sharding}, tensor.shape, tensor.dtype
-    )
+    return _emit_shape_node("WithShardingConstraint", [tensor], {"sharding": sharding}, tensor.shape, tensor.dtype)

@@ -1,5 +1,13 @@
+"""Module docstring."""
+
 import numpy as np
+
+# iou
+import ml_switcheroo_compiler.backends.eager as eager_mod
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import (
+    _np_affine_generator,
+    _np_affine_grid,
+    _np_affine_transform,
     _np_elastic_transform,
     _np_extract_bounding_boxes,
     _np_iou,
@@ -8,25 +16,21 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import (
     _np_resize_bicubic,
     _np_resize_lanczos3,
     _np_resize_nearest,
-    _np_affine_grid,
-    _np_affine_transform,
-    _np_affine_generator,
 )
 
 
-def test_numpy_vision_geometry_eager_extra():
+def test_numpy_vision_geometry_eager_extra() -> object:
+    """Function docstring."""
     # elastic transform
     _np_elastic_transform(np, np.ones((2, 2, 3)), np.ones((2, 2, 2)))
 
     # extract bounding boxes
     _np_extract_bounding_boxes(np, np.ones((2, 2, 3)), np.array([0, 0, 10, 10]), np.array([0]))
 
-    # iou
-    import ml_switcheroo_compiler.backends.eager as eager_mod
-
     original_iou = eager_mod.iou_eager
 
-    def mock_iou(*args, **kwargs):
+    def mock_iou(*args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[1]
 
     eager_mod.iou_eager = mock_iou
@@ -38,7 +42,8 @@ def test_numpy_vision_geometry_eager_extra():
     # nms
     original_nms = eager_mod.nms_eager
 
-    def mock_nms(*args, **kwargs):
+    def mock_nms(*args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[1]
 
     eager_mod.nms_eager = mock_nms

@@ -1,10 +1,13 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 from ml_switcheroo_compiler.distributed.layout_map import ShardingSpec
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
 
 
-def test_spmd_pass():
+def test_spmd_pass() -> object:
+    """Function docstring."""
     graph = IRGraph()
     mesh = DeviceMesh([2], ["x"])
     spec1 = ShardingSpec(mesh, ["x"])
@@ -23,7 +26,8 @@ def test_spmd_pass():
     # Check that reduce_scatter was injected for gradients
 
 
-def test_spmd_edge_cases():
+def test_spmd_edge_cases() -> object:
+    """Function docstring."""
     graph = IRGraph()
     mesh = DeviceMesh([2], ["x"])
     spec1 = ShardingSpec(mesh, ["x"])
@@ -32,9 +36,7 @@ def test_spmd_edge_cases():
     node_no_sharding = IRNode(id="n0", op_type="Input")
 
     # Node with an input not in graph.nodes
-    node_external_input = IRNode(
-        id="n1", op_type="Identity", inputs=["missing_input"], sharding=spec1
-    )
+    node_external_input = IRNode(id="n1", op_type="Identity", inputs=["missing_input"], sharding=spec1)
 
     graph.nodes = {"n0": node_no_sharding, "n1": node_external_input}
 

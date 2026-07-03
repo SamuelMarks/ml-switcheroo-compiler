@@ -15,13 +15,13 @@ from ml_switcheroo_compiler.ops.distributed import (
     reduce_scatter,
     shard_tensor,
 )
-from ml_switcheroo_compiler.tracing.tracer import _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def test_distributed_ops_eager():
+def test_distributed_ops_eager() -> object:
     """Test distributed ops eager mode."""
     config.eager_mode = True
-    _tracer.is_tracing = False  # Reset just in case
+    global_tracing_state.is_tracing = False  # Reset just in case
     # In eager mode they raise NotImplementedError since there is no backend by default
     # Or actually if backend is numpy, maybe they fail. Let's mock backend.
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
@@ -42,10 +42,10 @@ def test_distributed_ops_eager():
         assert res4.shape == (3,)
 
 
-def test_distributed_ops_tracing():
+def test_distributed_ops_tracing() -> object:
     """Test distributed ops tracing mode."""
     config.eager_mode = False
-    _tracer.start_tracing("test_graph")
+    global_tracing_state.start_tracing("test_graph")
     try:
         tensor = Tensor(MagicMock(id="t1"), TensorConfig((3,), DType.Float32, "cpu"))
 
@@ -59,10 +59,10 @@ def test_distributed_ops_tracing():
         assert res3.shape == ()
         assert res4.shape == ()
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
-def test_distributed_op_defs():
+def test_distributed_op_defs() -> object:
     """Test OpDef infer_shape."""
     assert ShardTensorOp().infer_shape(None) == ()
     assert AllReduceOp().infer_shape(None) == ()

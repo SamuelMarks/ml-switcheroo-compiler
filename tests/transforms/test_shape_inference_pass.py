@@ -1,5 +1,8 @@
 """Provides required module functionality."""
 
+# We must mock get_op so it throws an exception that is NOT KeyError
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from ml_switcheroo_compiler.core.errors import CompilationError
@@ -23,9 +26,6 @@ def test_shape_inference_pass_coverage() -> None:
     graph.nodes = {n.id: n for n in [n1, n2]}
     graph.inputs = ["n1"]
     graph.outputs = ["n2"]
-
-    # We must mock get_op so it throws an exception that is NOT KeyError
-    from unittest.mock import patch
 
     with (
         patch(
@@ -75,7 +75,6 @@ def test_shape_inference_pass_coverage_2() -> None:
         shape_metadata=None,
     )
     graph.nodes = {n.id: n for n in [n1, n2]}
-    from unittest.mock import MagicMock, patch
 
     mock_op = MagicMock()
     mock_op.infer_shape.return_value = (10,)

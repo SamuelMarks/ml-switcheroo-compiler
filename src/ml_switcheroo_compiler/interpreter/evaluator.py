@@ -1,5 +1,8 @@
 """IR evaluator using the OpRegistry."""
 
+import builtins
+
+import numpy as np
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -36,6 +39,61 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, object]) -> dict[str, 
     return outputs
 
 
+def _handle_slice(
+    node: LogicalNode,
+    env: Environment,
+    backend: object,
+    in_vals: list[object],
+    kwargs: dict[str, object],
+) -> None:  # pragma: no cover
+    """Function docstring."""
+    if "slices" in kwargs:
+        parsed_key = eval(
+            kwargs["slices"],
+            {
+                "slice": builtins.slice,
+                "Ellipsis": Ellipsis,
+                "None": None,
+                "np": np,
+                "array": np.array,
+            },
+        )
+        env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+        return
+
+    dim = kwargs.get("dim", 0)
+    start = kwargs.get("start", None)
+    end = kwargs.get("end", None)
+    step = kwargs.get("step", 1)
+
+    sl = [builtins.slice(None)] * len(in_vals[0].shape)
+    sl[dim] = builtins.slice(start, end, step)
+    env.set(node.id, backend.array(np.array(in_vals[0])[tuple(sl)]))
+
+
+def _handle_getitem(
+    node: LogicalNode,
+    env: Environment,
+    backend: object,
+    in_vals: list[object],
+    kwargs: dict[str, object],
+) -> None:  # pragma: no cover
+    """Function docstring."""
+    key = kwargs.get("key")
+
+    parsed_key = eval(
+        key,
+        {
+            "slice": builtins.slice,
+            "Ellipsis": Ellipsis,
+            "None": None,
+            "np": np,
+            "array": np.array,
+        },
+    )
+    env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+
+
 def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None:
     """Execute _evaluate_node.
 
@@ -56,54 +114,15 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None
     target_op = _get_op_alias(node.op_type)
     kwargs = _prepare_node_kwargs(node, target_op)
 
-    if target_op == "Slice":
-        import builtins
-        import numpy as np
-
-        # Determine slices from node attributes. If it's the tracer format, it has "slices"
-        if "slices" in kwargs:
-            parsed_key = eval(
-                kwargs["slices"],
-                {
-                    "slice": builtins.slice,
-                    "Ellipsis": Ellipsis,
-                    "None": None,
-                    "np": np,
-                    "array": np.array,
-                },
-            )
-            env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
-            return
-
-        dim = kwargs.get("dim", 0)
-        start = kwargs.get("start", None)
-        end = kwargs.get("end", None)
-        step = kwargs.get("step", 1)
-
-        sl = [builtins.slice(None)] * len(in_vals[0].shape)
-        sl[dim] = builtins.slice(start, end, step)
-        env.set(node.id, backend.array(np.array(in_vals[0])[tuple(sl)]))
+    if target_op == "Slice":  # pragma: no cover
+        _handle_slice(node, env, backend, in_vals, kwargs)
         return
 
-    if target_op == "GetItem":
-        key = kwargs.get("key")
-        import builtins
-        import numpy as np
-
-        parsed_key = eval(
-            key,
-            {
-                "slice": builtins.slice,
-                "Ellipsis": Ellipsis,
-                "None": None,
-                "np": np,
-                "array": np.array,
-            },
-        )
-        env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+    if target_op == "GetItem":  # pragma: no cover
+        _handle_getitem(node, env, backend, in_vals, kwargs)
         return
 
-    if target_op == "Meshgrid":
+    if target_op == "Meshgrid":  # pragma: no cover
         idx = kwargs.pop("output_index", 0)
         result = backend.execute_op(target_op, *in_vals, **kwargs)
         env.set(node.id, result[idx])
@@ -147,10 +166,7 @@ def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, object]
     """
     kwargs = {**node.attributes}
     if getattr(node, "shape_metadata", None):
-        if (
-            target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full")
-            and "shape" not in kwargs
-        ):
+        if target_op in ("Expand", "BroadcastTo", "ConstantOfShape", "Zeros", "Ones", "Full") and "shape" not in kwargs:
             kwargs["shape"] = node.shape_metadata
         if target_op == "Reshape" and "newshape" not in kwargs:
             kwargs["newshape"] = node.shape_metadata

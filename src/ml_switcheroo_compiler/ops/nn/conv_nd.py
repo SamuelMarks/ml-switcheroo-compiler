@@ -1,17 +1,19 @@
 """Convolution operations."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
 import typing
-from ml_switcheroo_compiler.core.tensor import Tensor
 from collections.abc import Sequence
 from typing import Union
 
-from .conv_utils import GenericConvConfig
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2, MAGIC_VAL_3
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
 from .conv1d import conv1d, depthwise_conv1d, separable_conv1d
 from .conv2d import conv2d, depthwise_conv2d, separable_conv2d
 from .conv3d import conv3d
+from .conv_utils import GenericConvConfig
 
 
 def conv_transpose(
@@ -31,11 +33,6 @@ def conv_transpose(
     Returns:
         Tensor: The result of the convolution.
     """
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     op_name = "ConvTranspose"
 
     if config.eager_mode:
@@ -49,9 +46,7 @@ def conv_transpose(
         )
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), lhs.dtype, lhs.device))
 
-    return _emit_linalg_node(
-        op_name, [lhs, rhs], {"strides": strides, "padding": padding}, [()], [lhs.dtype]
-    )
+    return _emit_linalg_node(op_name, [lhs, rhs], {"strides": strides, "padding": padding}, [()], [lhs.dtype])
 
 
 def conv(
@@ -140,15 +135,14 @@ def depthwise_conv(
         return depthwise_conv2d(  # pragma: no cover
             inputs,
             kernel,
-            strides=conf.strides,
-            padding=conf.padding,
-            lhs_dilation=1,
-            rhs_dilation=conf.dilation_rate,
+            config=GenericConvConfig(
+                strides=conf.strides,
+                padding=conf.padding,
+                dilation_rate=conf.dilation_rate,
+            ),
         )
     else:
-        raise ValueError(
-            f"Unsupported spatial rank for depthwise_conv: {spatial_rank}"
-        )  # pragma: no cover
+        raise ValueError(f"Unsupported spatial rank for depthwise_conv: {spatial_rank}")  # pragma: no cover
 
 
 def separable_conv(
@@ -195,6 +189,4 @@ def separable_conv(
             rhs_dilation=conf.dilation_rate,
         )
     else:
-        raise ValueError(
-            f"Unsupported spatial rank for separable_conv: {spatial_rank}"
-        )  # pragma: no cover
+        raise ValueError(f"Unsupported spatial rank for separable_conv: {spatial_rank}")  # pragma: no cover

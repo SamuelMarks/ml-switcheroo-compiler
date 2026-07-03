@@ -1,22 +1,22 @@
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
-# pylint: disable=duplicate-code
 
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
+import builtins
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
+
+# pylint: disable=duplicate-code
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 def dynamic_slice(
@@ -38,8 +38,6 @@ def dynamic_slice(
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        import builtins
-
         starts = []
         for s in start_indices:
             if hasattr(s, "data"):

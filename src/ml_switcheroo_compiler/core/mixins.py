@@ -6,6 +6,10 @@ if TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
+if TYPE_CHECKING:
+    pass
+
+
 class TensorArithmeticMixin:
     """Arithmetic mixin."""
 
@@ -20,7 +24,7 @@ class TensorArithmeticMixin:
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.ops.base import get_op
+        from ml_switcheroo_compiler.ops.registry import get_op
 
         return get_op(name)()
 

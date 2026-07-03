@@ -1,19 +1,14 @@
-# ruff: noqa: F405, F403
-
-# ruff: noqa: E402
 """Vision utilities."""
 
 from __future__ import annotations
 
-
 from dataclasses import dataclass
 
-
-from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 from ml_switcheroo_compiler.backends.eager.utils import (
     _to_channels_last,
     _to_numpy_array,
 )
+from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
 
 @dataclass
@@ -54,9 +49,7 @@ class EagerTransformContext:  # pylint: disable=too-many-instance-attributes
     name: str
 
 
-def _prepare_eager_transform(
-    backend_module: object, images: object, seed: object, data_format: object
-) -> EagerTransformContext:
+def _prepare_eager_transform(backend_module: object, images: object, seed: object, data_format: object) -> EagerTransformContext:
     """Function docstring.
 
     Args:
@@ -107,6 +100,7 @@ class MapCoordsContext:
 
 
 def _map_coords_nearest(ctx: MapCoordsContext) -> object:
+    """Function docstring."""
     np_mod, image, y, x, valid = ctx.np_mod, ctx.image, ctx.y, ctx.x, ctx.valid
     """Function docstring.
 
@@ -124,7 +118,8 @@ def _map_coords_nearest(ctx: MapCoordsContext) -> object:
     return image[y_idx, x_idx]
 
 
-def _map_coords_bilinear(ctx: MapCoordsContext) -> object:
+def _map_coords_bilinear(ctx: MapCoordsContext) -> object:  # pylint: disable=too-many-locals
+    """Function docstring."""
     np_mod, image, y, x, valid = ctx.np_mod, ctx.image, ctx.y, ctx.x, ctx.valid
     """Function docstring.
 
@@ -152,9 +147,7 @@ def _map_coords_bilinear(ctx: MapCoordsContext) -> object:
     return image[y0, x0] * w00 + image[y0, x1] * w01 + image[y1, x0] * w10 + image[y1, x1] * w11
 
 
-def _np_map_coordinates(
-    np_mod: object, image: object, coords: object, order: int = 1, fill_value: float = 0.0
-) -> object:
+def _np_map_coordinates(np_mod: object, image: object, coords: object, order: int = 1, fill_value: float = 0.0) -> object:
     """Function docstring.
 
     Args:
@@ -212,9 +205,7 @@ def _compute_perspective_matrix(np_mod: object, src: object, dst: object) -> obj
     return h  # pragma: no cover
 
 
-def _generate_perspective_coords(
-    np_mod: object, h_batch: object, coords: object
-) -> tuple[object, object]:
+def _generate_perspective_coords(np_mod: object, h_batch: object, coords: object) -> tuple[object, object]:
     """Generate source x and y coordinates for a given batch from homography matrix."""
     H_mat = np_mod.concatenate([h_batch, [1.0]]).reshape(3, 3)  # pragma: no cover
     t_coords = coords @ H_mat.T  # pragma: no cover
@@ -230,9 +221,7 @@ def _generate_perspective_grid(np_mod: object, H: int, W: int) -> object:
         H: Arg.
         W: Arg.
     """
-    y_grid, x_grid = np_mod.meshgrid(
-        np_mod.arange(H), np_mod.arange(W), indexing="ij"
-    )  # pragma: no cover
+    y_grid, x_grid = np_mod.meshgrid(np_mod.arange(H), np_mod.arange(W), indexing="ij")  # pragma: no cover
     y_grid = y_grid.astype(np_mod.float32)  # pragma: no cover
     x_grid = x_grid.astype(np_mod.float32)  # pragma: no cover
     ones = np_mod.ones_like(x_grid)  # pragma: no cover
@@ -260,6 +249,7 @@ class PerspectiveChannelContext:
 
 
 def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> None:
+    """Function docstring."""
     np_mod, imgs, out, ctx, config = (
         pctx.np_mod,
         pctx.imgs,
@@ -287,18 +277,14 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> None:
         out[ctx.b, ..., c] = res  # pragma: no cover
 
 
-def _apply_perspective_batch(
-    np_mod: object, imgs: object, h: object, config: PerspectiveConfig
-) -> object:
+def _apply_perspective_batch(np_mod: object, imgs: object, h: object, config: PerspectiveConfig) -> object:
     """Apply perspective transform to a batched image array."""
     B_sz, H, W, C = imgs.shape  # pragma: no cover
     out = np_mod.zeros_like(imgs)  # pragma: no cover
     coords = _generate_perspective_grid(np_mod, H, W)  # pragma: no cover
     # pragma: no cover
     for b in range(B_sz):  # pragma: no branch  # pragma: no cover
-        _apply_perspective_channel(
-            np_mod, imgs, out, coords, h=h[b], b=b, config=config
-        )  # pragma: no cover
+        _apply_perspective_channel(np_mod, imgs, out, coords, h=h[b], b=b, config=config)  # pragma: no cover
     return out  # pragma: no cover
 
 

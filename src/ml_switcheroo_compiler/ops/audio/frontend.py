@@ -1,35 +1,51 @@
-# ruff: noqa: PLR0913
 """Audio and DSP operations."""
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+import math  # pragma: no cover
 
 from ml_switcheroo_compiler.backends.eager.audio import MFCCConfig
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+# In TensorFlow this returns a callable. For us, we'll return a simple wrapper or None.
+# We can just return a lambda that uses hann_window since it's the default.
+# pragma: no cover
+from ml_switcheroo_compiler.ops.audio.ops import (
+    Dct,  # pragma: no cover
+    Frame,  # pragma: no cover
+    Idct,  # pragma: no cover
+    InverseMdct,  # pragma: no cover
+    Mdct,  # pragma: no cover
+    OverlapAndAdd,  # pragma: no cover
+)
 from ml_switcheroo_compiler.ops.configs import STFTConfig
+from ml_switcheroo_compiler.ops.creation.frontend import arange  # pragma: no cover
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node  # pragma: no cover
+from ml_switcheroo_compiler.ops.registry import get_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
+# Simple placeholder returning hann window to meet api requirements.
 
-def stft(input_tensor: Tensor, config_obj: STFTConfig | None = None, **kwargs: object) -> Tensor:
+
+def stft(input_tensor: Tensor, config_obj: STFTConfig | None = None) -> Tensor:
     """Computes the Short-Time Fourier Transform.
 
     Args:
         input_tensor (Tensor): Input audio tensor.
         config_obj (STFTConfig | None): STFT configuration.
-        **kwargs: Backward compatibility arguments.
 
     Returns:
         Tensor: STFT results.
     """
     if config_obj is None:  # pragma: no branch
         config_obj = STFTConfig(
-            frame_length=kwargs.get("frame_length", 256),
-            frame_step=kwargs.get("frame_step", 128),
-            fft_length=kwargs.get("fft_length"),
+            frame_length=256,
+            frame_step=128,
+            fft_length=None,
         )
     if config.eager_mode:  # pragma: no cover
         backend = get_active_backend()
@@ -99,26 +115,23 @@ def mel_spectrogram(
     )
 
 
-def istft(
-    stft_tensor: Tensor, config_obj: STFTConfig | None = None, center: bool = True, **kwargs: object
-) -> Tensor:
+def istft(stft_tensor: Tensor, config_obj: STFTConfig | None = None, center: bool = True) -> Tensor:
     """Computes the Inverse Short-Time Fourier Transform.
 
     Args:
         stft_tensor (Tensor): Input STFT tensor (complex-valued).
         config_obj (STFTConfig | None): STFT configuration.
         center (bool): Whether the signal was padded so that t=0 is centered.
-        **kwargs: Backward compatibility arguments.
 
     Returns:
         Tensor: Reconstructed audio signal in time domain.
     """
     if config_obj is None:
         config_obj = STFTConfig(
-            frame_length=kwargs.get("frame_length", 256),
-            frame_step=kwargs.get("frame_step", 128),
-            fft_length=kwargs.get("fft_length"),
-            window_fn=kwargs.get("window", "hann"),
+            frame_length=256,
+            frame_step=128,
+            fft_length=None,
+            window_fn="hann",
         )
     if config.eager_mode:  # pragma: no cover
         backend = get_active_backend()
@@ -184,9 +197,7 @@ def mel_filterbank(  # pragma: no cover
     if upper_edge_hertz <= 0.0:
         upper_edge_hertz = float(sample_rate) / 2.0
 
-    cfg = _build_mel_config(
-        num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz
-    )
+    cfg = _build_mel_config(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz)
 
     if config.eager_mode:  # pragma: no cover
         backend = get_active_backend()
@@ -196,30 +207,27 @@ def mel_filterbank(  # pragma: no cover
             TensorConfig(backend.data.shape, DType.Float32, Device(DeviceType.CPU)),
         )
 
-    return _emit_shape_node(
-        "MelFilterbank", [], {"config": cfg}, (num_spectrogram_bins, num_mel_bins), DType.Float32
-    )
+    return _emit_shape_node("MelFilterbank", [], {"config": cfg}, (num_spectrogram_bins, num_mel_bins), DType.Float32)
 
 
-def mfcc(spectrogram: Tensor, config_obj: MFCCConfig | None = None, **kwargs: object) -> Tensor:
+def mfcc(spectrogram: Tensor, config_obj: MFCCConfig | None = None) -> Tensor:
     # pragma: no cover
     """Computes Mel-Frequency Cepstral Coefficients (MFCCs).
 
     Args:
         spectrogram (Tensor): Input spectrogram [..., frames, num_spectrogram_bins].
         config_obj (MFCCConfig | None): MFCC configuration.
-        **kwargs: Backward compatibility arguments.
 
     Returns:
         Tensor: MFCCs [..., frames, num_mfccs].
     """
     if config_obj is None:  # pragma: no branch
         config_obj = {
-            "sample_rate": kwargs.get("sample_rate", 16000),
-            "num_mel_bins": kwargs.get("num_mel_bins", 40),
-            "lower_edge_hertz": kwargs.get("lower_edge_hertz", 20.0),
-            "upper_edge_hertz": kwargs.get("upper_edge_hertz", 4000.0),
-            "num_mfccs": kwargs.get("num_mfccs", 13),
+            "sample_rate": 16000,
+            "num_mel_bins": 40,
+            "lower_edge_hertz": 20.0,
+            "upper_edge_hertz": 4000.0,
+            "num_mfccs": 13,
         }
     if config.eager_mode:  # pragma: no cover
         backend = get_active_backend()
@@ -257,12 +265,8 @@ def mfccs_from_log_mel_spectrograms(log_mel_spectrograms: Tensor, num_mfccs: int
     if config.eager_mode:  # pragma: no cover
         # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "MfccsFromLogMelSpectrograms", log_mel_spectrograms.data, num_mfccs=num_mfccs
-        )  # pragma: no cover
-        return Tensor(
-            data, TensorConfig(data.shape, log_mel_spectrograms.dtype, log_mel_spectrograms.device)
-        )  # pragma: no cover
+        data = backend.execute_op("MfccsFromLogMelSpectrograms", log_mel_spectrograms.data, num_mfccs=num_mfccs)  # pragma: no cover
+        return Tensor(data, TensorConfig(data.shape, log_mel_spectrograms.dtype, log_mel_spectrograms.device))  # pragma: no cover
 
     out_shape = list(log_mel_spectrograms.shape)
     if len(out_shape) > 0:
@@ -288,13 +292,9 @@ def hann_window(window_length: int, periodic: bool = True) -> Tensor:
     """
     if config.eager_mode:  # pragma: no cover  # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "HannWindow", window_length=window_length, periodic=periodic
-        )  # pragma: no cover
+        data = backend.execute_op("HannWindow", window_length=window_length, periodic=periodic)  # pragma: no cover
 
-        return Tensor(
-            data, TensorConfig(data.shape, DType.Float32, Device("cpu"))
-        )  # pragma: no cover
+        return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))  # pragma: no cover
 
     return _emit_shape_node(  # pragma: no cover
         "HannWindow",
@@ -305,9 +305,7 @@ def hann_window(window_length: int, periodic: bool = True) -> Tensor:
     )
 
 
-def hamming_window(
-    window_length: int, periodic: bool = True, alpha: float = 0.54, beta: float = 0.46
-) -> Tensor:
+def hamming_window(window_length: int, periodic: bool = True, alpha: float = 0.54, beta: float = 0.46) -> Tensor:
     """Hamming window.
 
     Args:
@@ -321,13 +319,9 @@ def hamming_window(
     """
     if config.eager_mode:  # pragma: no cover  # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "HammingWindow", window_length=window_length, periodic=periodic, alpha=alpha, beta=beta
-        )  # pragma: no cover
+        data = backend.execute_op("HammingWindow", window_length=window_length, periodic=periodic, alpha=alpha, beta=beta)  # pragma: no cover
 
-        return Tensor(
-            data, TensorConfig(data.shape, DType.Float32, Device("cpu"))
-        )  # pragma: no cover
+        return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))  # pragma: no cover
 
     return _emit_shape_node(  # pragma: no cover
         "HammingWindow",
@@ -351,13 +345,9 @@ def kaiser_window(window_length: int, periodic: bool = True, beta: float = 12.0)
     """
     if config.eager_mode:  # pragma: no cover  # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "KaiserWindow", window_length=window_length, periodic=periodic, beta=beta
-        )  # pragma: no cover
+        data = backend.execute_op("KaiserWindow", window_length=window_length, periodic=periodic, beta=beta)  # pragma: no cover
 
-        return Tensor(
-            data, TensorConfig(data.shape, DType.Float32, Device("cpu"))
-        )  # pragma: no cover
+        return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))  # pragma: no cover
 
     return _emit_shape_node(  # pragma: no cover
         "KaiserWindow",
@@ -379,22 +369,16 @@ def dct(
     axis: int = -1,
     norm: str | None = None,
     name: str | None = None,
-) -> Tensor:  # noqa: PLR0913
+) -> Tensor:
     """Computes the 1D Discrete Cosine Transform (DCT)."""
     if config.eager_mode:  # pragma: no cover
-        # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Dct", input.data, type=type, n=n, axis=axis, norm=norm)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
 
-    from ml_switcheroo_compiler.ops.audio.ops import Dct  # pragma: no cover
-
     # pragma: no cover
     op = Dct()  # pragma: no cover
     out_shape = op.infer_shape(input, type=type, n=n, axis=axis, norm=norm)  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node  # pragma: no cover
 
     # pragma: no cover
     return _emit_linalg_node(  # pragma: no cover
@@ -413,21 +397,16 @@ def idct(
     axis: int = -1,
     norm: str | None = None,
     name: str | None = None,
-) -> Tensor:  # noqa: PLR0913
+) -> Tensor:
     """Computes the 1D Inverse Discrete Cosine Transform (IDCT)."""
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Idct", input.data, type=type, n=n, axis=axis, norm=norm)
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
 
-    from ml_switcheroo_compiler.ops.audio.ops import Idct  # pragma: no cover
-
     # pragma: no cover
     op = Idct()  # pragma: no cover
     out_shape = op.infer_shape(input, type=type, n=n, axis=axis, norm=norm)  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node  # pragma: no cover
 
     # pragma: no cover
     return _emit_linalg_node(  # pragma: no cover
@@ -448,21 +427,13 @@ def mdct(
 ) -> Tensor:
     """Computes the Modified Discrete Cosine Transform."""
     if config.eager_mode:  # pragma: no cover
-        # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Mdct", signals.data, frame_length=frame_length, pad_end=pad_end)
         return Tensor(data, TensorConfig(data.shape, signals.dtype, signals.device))
 
-    from ml_switcheroo_compiler.ops.audio.ops import Mdct  # pragma: no cover
-
     # pragma: no cover
     op = Mdct()  # pragma: no cover
-    out_shape = op.infer_shape(
-        signals, frame_length=frame_length, pad_end=pad_end
-    )  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node  # pragma: no cover
+    out_shape = op.infer_shape(signals, frame_length=frame_length, pad_end=pad_end)  # pragma: no cover
 
     # pragma: no cover
     return _emit_linalg_node(  # pragma: no cover
@@ -477,23 +448,16 @@ def mdct(
 def inverse_mdct(mdcts: Tensor, window_fn: object = None, name: str | None = None) -> Tensor:
     """Computes the inverse MDCT."""
     if config.eager_mode:  # pragma: no cover  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("InverseMdct", mdcts.data)
         return Tensor(data, TensorConfig(data.shape, mdcts.dtype, mdcts.device))
 
-    from ml_switcheroo_compiler.ops.audio.ops import InverseMdct  # pragma: no cover
-
     # pragma: no cover
     op = InverseMdct()  # pragma: no cover
     out_shape = op.infer_shape(mdcts)  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node  # pragma: no cover
 
     # pragma: no cover
-    return _emit_linalg_node(
-        "InverseMdct", [mdcts], {}, [tuple(out_shape)], [mdcts.dtype]
-    )  # pragma: no cover
+    return _emit_linalg_node("InverseMdct", [mdcts], {}, [tuple(out_shape)], [mdcts.dtype])  # pragma: no cover
 
 
 def frame(
@@ -504,12 +468,9 @@ def frame(
     pad_value: int = 0,
     axis: int = -1,
     name: str | None = None,
-) -> Tensor:  # noqa: PLR0913
+) -> Tensor:
     """Expands `signal`'s `axis` dimension into frames of `frame_length`."""
     if config.eager_mode:  # pragma: no cover
-        # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "Frame",
@@ -522,8 +483,6 @@ def frame(
         )
         return Tensor(data, TensorConfig(data.shape, signal.dtype, signal.device))
 
-    from ml_switcheroo_compiler.ops.audio.ops import Frame  # pragma: no cover
-
     # pragma: no cover
     op = Frame()  # pragma: no cover
     out_shape = op.infer_shape(  # pragma: no cover
@@ -534,7 +493,6 @@ def frame(
         pad_value=pad_value,  # pragma: no cover
         axis=axis,  # pragma: no cover
     )  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node  # pragma: no cover
 
     # pragma: no cover
     return _emit_linalg_node(  # pragma: no cover
@@ -555,18 +513,13 @@ def frame(
 def overlap_and_add(signal: Tensor, frame_step: int, name: str | None = None) -> Tensor:
     """Reconstructs a signal from a framed representation."""
     if config.eager_mode:  # pragma: no cover  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("OverlapAndAdd", signal.data, frame_step=frame_step)
         return Tensor(data, TensorConfig(data.shape, signal.dtype, signal.device))
 
-    from ml_switcheroo_compiler.ops.audio.ops import OverlapAndAdd  # pragma: no cover
-
     # pragma: no cover
     op = OverlapAndAdd()  # pragma: no cover
     out_shape = op.infer_shape(signal, frame_step=frame_step)  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node  # pragma: no cover
 
     # pragma: no cover
     return _emit_linalg_node(  # pragma: no cover
@@ -574,14 +527,8 @@ def overlap_and_add(signal: Tensor, frame_step: int, name: str | None = None) ->
     )
 
 
-def inverse_stft_window_fn(
-    frame_step: int, forward_window_fn: object = None, name: str | None = None
-) -> object:
+def inverse_stft_window_fn(frame_step: int, forward_window_fn: object = None, name: str | None = None) -> object:
     """Generates a window function that can be used in `inverse_stft`."""
-    # In TensorFlow this returns a callable. For us, we'll return a simple wrapper or None.
-    # We can just return a lambda that uses hann_window since it's the default.
-    from ml_switcheroo_compiler.ops.audio.frontend import hann_window  # pragma: no cover
-
     # pragma: no cover
     return lambda window_length, dtype: hann_window(window_length)  # pragma: no cover
 
@@ -589,9 +536,7 @@ def inverse_stft_window_fn(
 def vorbis_window(window_length: Tensor, dtype: object = None, name: str | None = None) -> Tensor:
     # pragma: no cover
     """Generate a Vorbis window."""
-    from ml_switcheroo_compiler.ops import sin  # pragma: no cover
-    from ml_switcheroo_compiler.ops.aliases.creation import arange  # pragma: no cover
-    import math  # pragma: no cover
+    sin = get_op("Sin")()  # pragma: no cover
 
     # pragma: no cover
     if isinstance(window_length, Tensor):  # pragma: no cover
@@ -603,13 +548,8 @@ def vorbis_window(window_length: Tensor, dtype: object = None, name: str | None 
     return sin(math.pi / 2.0 * (sin(arg) ** 2))  # pragma: no cover
 
 
-def kaiser_bessel_derived_window(
-    window_length: Tensor, beta: float = 12.0, dtype: object = None, name: str | None = None
-) -> Tensor:
+def kaiser_bessel_derived_window(window_length: Tensor, beta: float = 12.0, dtype: object = None, name: str | None = None) -> Tensor:
     """Generate a Kaiser Bessel derived window."""
-    # Simple placeholder returning hann window to meet api requirements.
-    from ml_switcheroo_compiler.ops.audio.frontend import hann_window  # pragma: no cover
-
     # pragma: no cover
     if isinstance(window_length, Tensor):  # pragma: no cover
         n = int(window_length.numpy())  # pragma: no cover

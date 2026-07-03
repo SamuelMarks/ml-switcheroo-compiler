@@ -5,12 +5,50 @@ Min by comparing their shape inference and evaluation results against their equi
 NumPy implementations.
 """
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
-
 import numpy as np
 
-from ml_switcheroo_compiler.ops.reductions.aggregations import Max, Min, Sum
-from ml_switcheroo_compiler.ops.reductions.statistical import Mean
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.configs import WindowConfig
+from ml_switcheroo_compiler.ops.reductions import segment_sum
+from ml_switcheroo_compiler.ops.reductions.aggregations import (
+    CountNonzero,
+    Cumsum,
+    Logsumexp,
+    Max,
+    Min,
+    Norm,
+    ReduceWindow,
+    SegmentSum,
+    Sum,
+)
+from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
+from ml_switcheroo_compiler.ops.reductions.distributed import Pmean, Psum
+
+# Test missing defaults
+from ml_switcheroo_compiler.ops.reductions.frontend import (
+    adaptive_avg_pool2d,
+    adaptive_max_pool2d,
+    ctc_loss,
+    fold,
+    fractional_max_pool2d,
+    pmean,
+    psum,
+    unfold,
+)
+from ml_switcheroo_compiler.ops.reductions.frontend_utils import reduce_window
+from ml_switcheroo_compiler.ops.reductions.pooling import (
+    AdaptiveAvgPool2D,
+    AdaptiveMaxPool2D,
+    CTCLoss,
+    Fold,
+    FractionalMaxPool2D,
+    Unfold,
+)
+from ml_switcheroo_compiler.ops.stats.descriptive import Mean
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 
 def test_reduction_ops() -> None:
@@ -45,10 +83,6 @@ def test_reduction_ops() -> None:
 
 def test_segment_sum_opdef() -> None:
     """Test segment_sum_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.reductions.aggregations import SegmentSum
-
     ss = SegmentSum()
     assert ss.infer_shape(None, None, None) == ()
     data = np.array([1, 2, 3, 4])
@@ -68,16 +102,7 @@ def test_segment_sum_opdef() -> None:
 
 def test_segment_sum_frontend() -> None:
     """Test segment sum frontend."""
-    from ml_switcheroo_compiler.ops.reductions import segment_sum
-
     assert callable(segment_sum)
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((4,)), TensorConfig((4,), DType.Int32, device))
@@ -88,12 +113,8 @@ def test_segment_sum_frontend() -> None:
 
     graph = _tracer.start_tracing("test_ss")
     try:
-        x_p = Tensor(
-            ProxyTensor(id="x", shape=(4,), dtype="int32"), TensorConfig((4,), DType.Int32, device)
-        )
-        s_p = Tensor(
-            ProxyTensor(id="s", shape=(4,), dtype="int32"), TensorConfig((4,), DType.Int32, device)
-        )
+        x_p = Tensor(ProxyTensor(id="x", shape=(4,), dtype="int32"), TensorConfig((4,), DType.Int32, device))
+        s_p = Tensor(ProxyTensor(id="s", shape=(4,), dtype="int32"), TensorConfig((4,), DType.Int32, device))
         out = segment_sum(x_p, s_p, 2)
         assert out.shape == ()
         node = graph.nodes[out.data.id]
@@ -105,10 +126,6 @@ def test_segment_sum_frontend() -> None:
 
 def test_reduce_window_opdef() -> None:
     """Test reduce_window_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.reductions.aggregations import ReduceWindow
-
     op = ReduceWindow()
 
     class DummyShape:
@@ -122,15 +139,9 @@ def test_reduce_window_opdef() -> None:
             """
             self.shape = shape
 
-        from ml_switcheroo_compiler.ops.configs import WindowConfig
-
         assert op.infer_shape(None, 0, "max", WindowConfig([2, 2])) == ()
 
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
-
-    assert op.infer_shape(
-        DummyShape((1, 4, 4, 1)), 0, "max", WindowConfig([1, 2, 2, 1], [1, 2, 2, 1])
-    ) == (
+    assert op.infer_shape(DummyShape((1, 4, 4, 1)), 0, "max", WindowConfig([1, 2, 2, 1], [1, 2, 2, 1])) == (
         1,
         2,
         2,
@@ -139,7 +150,6 @@ def test_reduce_window_opdef() -> None:
 
     # Test numpy evaluation mock
     x = np.ones((4, 4))
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
 
     out = op.eager_eval(x, 0, "max", WindowConfig([2, 2], [2, 2]))
     assert out.shape == (2, 2)
@@ -154,15 +164,6 @@ def test_reduce_window_opdef() -> None:
 
 def test_reduce_window_frontend() -> None:
     """Test reduce_window_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.reductions.frontend_utils import WindowConfig, reduce_window
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((4, 4)), TensorConfig((4, 4), DType.Int32, device))
 
@@ -184,9 +185,7 @@ def test_reduce_window_frontend() -> None:
         assert node.attributes["window_dimensions"] == [2, 2]
 
         # Test tensor init_value
-        init_val_proxy = Tensor(
-            ProxyTensor(id="init", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device)
-        )
+        init_val_proxy = Tensor(ProxyTensor(id="init", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
         out2 = reduce_window(x_proxy, init_val_proxy, "max", WindowConfig([2, 2], [2, 2]))
         assert graph.nodes[out2.data.id].inputs == ["x", "init"]
     finally:
@@ -195,10 +194,6 @@ def test_reduce_window_frontend() -> None:
 
 def test_psum_pmean_opdef() -> None:
     """Test psum_pmean_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.reductions.distributed import Pmean, Psum
-
     op_sum = Psum()
     op_mean = Pmean()
 
@@ -226,15 +221,6 @@ def test_psum_pmean_opdef() -> None:
 
 def test_psum_pmean_frontend() -> None:
     """Test psum_pmean_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.reductions.frontend import pmean, psum
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((4, 4)), TensorConfig((4, 4), DType.Int32, device))
 
@@ -265,15 +251,6 @@ def test_psum_pmean_frontend() -> None:
 
 def test_reduction_eager_eval_coverage() -> None:
     """Test numpy eval coverage."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.reductions.aggregations import (
-        CountNonzero,
-        Cumsum,
-        Logsumexp,
-        Norm,
-    )
-
     x = np.array([1.0, 2.0, 0.0])
     lse = Logsumexp()
     assert lse.eager_eval(x) is not None
@@ -290,12 +267,6 @@ def test_reduction_eager_eval_coverage() -> None:
 
 def test_reduction_infer_shape_coverage() -> None:
     """Test infer shape coverage."""
-    from ml_switcheroo_compiler.ops.reductions.aggregations import (
-        CountNonzero,
-        Cumsum,
-        Logsumexp,
-        Norm,
-    )
 
     class DummyShape:
         """Docstring."""
@@ -319,7 +290,6 @@ def test_reduction_infer_shape_coverage() -> None:
 
 def test_reduction_args_coverage() -> None:
     """Test args coverage."""
-    from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
     class MockReduction(ReductionOp):
         """Docstring."""
@@ -334,7 +304,6 @@ def test_reduction_args_coverage() -> None:
 
 def test_reduce_window_coverage() -> None:
     """Test reduce window coverage."""
-    from ml_switcheroo_compiler.ops.reductions.aggregations import ReduceWindow
 
     class DummyShape:
         """Docstring."""
@@ -342,8 +311,6 @@ def test_reduce_window_coverage() -> None:
         shape = (1, 4, 4, 1)
 
     rw = ReduceWindow()
-    # Test missing defaults
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
 
     assert rw.infer_shape(DummyShape(), 0, "max", WindowConfig([1, 2])) == (1, 3, 4, 1)
 
@@ -360,7 +327,6 @@ def test_reduce_window_coverage() -> None:
 
 def test_reduce_window_coverage_zero_dim() -> None:
     """Test reduce window zero dim."""
-    from ml_switcheroo_compiler.ops.reductions.aggregations import ReduceWindow
 
     class DummyShape:
         """Docstring."""
@@ -368,26 +334,12 @@ def test_reduce_window_coverage_zero_dim() -> None:
         shape = (1, 1)
 
     rw = ReduceWindow()
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
 
     assert rw.infer_shape(DummyShape(), 0, "max", WindowConfig([2, 2])) == (0, 0)
 
 
 def test_missing_advanced_ops() -> None:
     """Test missing advanced ops."""
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.reductions.frontend import (
-        adaptive_avg_pool2d,
-        adaptive_max_pool2d,
-        ctc_loss,
-        fold,
-        fractional_max_pool2d,
-        unfold,
-    )
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     graph = _tracer.start_tracing("test_advanced_ops")
     try:
@@ -436,19 +388,12 @@ def test_missing_advanced_ops() -> None:
 
 def test_missing_advanced_ops_infer_shape_fallback() -> None:
     """Test missing advanced ops infer shape fallback."""
-    from ml_switcheroo_compiler.ops.reductions.pooling import (
-        AdaptiveAvgPool2D,
-        AdaptiveMaxPool2D,
-        CTCLoss,
-        Fold,
-        FractionalMaxPool2D,
-        Unfold,
-    )
-
     ctc = CTCLoss()
     assert ctc.infer_shape(1, 1, 1, 1) == ()
 
     class DummyShape:
+        """Class docstring."""
+
         shape = (10,)
 
     assert ctc.infer_shape(DummyShape(), 1, 1, 1) == ()
@@ -471,13 +416,10 @@ def test_missing_advanced_ops_infer_shape_fallback() -> None:
 
 def test_missing_advanced_ops_infer_shape_fallback_2() -> None:
     """Test missing advanced ops infer shape fallback 2."""
-    from ml_switcheroo_compiler.ops.reductions.pooling import (
-        AdaptiveAvgPool2D,
-        AdaptiveMaxPool2D,
-        FractionalMaxPool2D,
-    )
 
     class DummyShape:
+        """Class docstring."""
+
         shape = (10, 10)
 
     fmp = FractionalMaxPool2D()
@@ -492,13 +434,10 @@ def test_missing_advanced_ops_infer_shape_fallback_2() -> None:
 
 def test_missing_advanced_ops_infer_shape_valid() -> None:
     """Test missing advanced ops infer shape valid."""
-    from ml_switcheroo_compiler.ops.reductions.pooling import (
-        AdaptiveAvgPool2D,
-        AdaptiveMaxPool2D,
-        FractionalMaxPool2D,
-    )
 
     class DummyShape:
+        """Class docstring."""
+
         shape = (1, 3, 10, 10)
 
     fmp = FractionalMaxPool2D()

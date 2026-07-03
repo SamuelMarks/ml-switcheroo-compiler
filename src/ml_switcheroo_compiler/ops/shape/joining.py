@@ -1,21 +1,23 @@
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
-# pylint: disable=duplicate-code
 
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+
+# pylint: disable=duplicate-code
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.creation.frontend import asarray
+from ml_switcheroo_compiler.ops.shape.manipulation import flatten, reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
@@ -29,8 +31,6 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
     Tensor: The concatenated tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Concatenate", [getattr(t, "data", t) for t in tensors], axis=dim)
         return Tensor(
@@ -43,10 +43,7 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
         )
     inputs = list(tensors)
     # shape calculation placeholder
-    out_shape = tuple(
-        sum(t.shape[i] for t in tensors) if i == dim else tensors[0].shape[i]
-        for i in range(len(tensors[0].shape))
-    )
+    out_shape = tuple(sum(t.shape[i] for t in tensors) if i == dim else tensors[0].shape[i] for i in range(len(tensors[0].shape)))
     return _emit_shape_node(
         "Concatenate",
         inputs,
@@ -77,8 +74,6 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
         out_dtype_str = str(out_dtype).split(".")[-1].lower()
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Stack", [getattr(t, "data", t) for t in tensors], axis=dim)
         return Tensor(
@@ -92,8 +87,6 @@ def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
     inputs = list(tensors)
     # shape calculation placeholder
     out_shape = inputs[0].shape
-
-    from ml_switcheroo_compiler.core.dtype import DType
 
     try:
         dt = DType(out_dtype_str)
@@ -119,8 +112,6 @@ def vstack(tup: Sequence[Tensor]) -> Tensor:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
@@ -139,8 +130,6 @@ def hstack(tup: Sequence[Tensor]) -> Tensor:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
@@ -159,8 +148,6 @@ def dstack(tup: Sequence[Tensor]) -> Tensor:
         Tensor: The stacked tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
@@ -182,18 +169,11 @@ def append(arr: object, values: object, axis: int | None = None) -> Tensor:
         Tensor: A copy of arr with values appended to axis.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
-        data = backend.execute_op(
-            "Append", getattr(arr, "data", arr), getattr(values, "data", values), axis=axis
-        )
+        data = backend.execute_op("Append", getattr(arr, "data", arr), getattr(values, "data", values), axis=axis)
         arr_dtype = getattr(arr, "dtype", getattr(values, "dtype", "float32"))
         arr_device = getattr(arr, "device", None)
         return Tensor(data, TensorConfig(data.shape, arr_dtype, arr_device))
-
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray
-    from ml_switcheroo_compiler.ops.shape.manipulation import flatten
 
     arr_t = asarray(arr)
     values_t = asarray(values)
@@ -215,9 +195,6 @@ def column_stack(tup: Sequence[object]) -> Tensor:
     Returns:
         Tensor: The array formed by stacking the given arrays.
     """
-    from ml_switcheroo_compiler.ops.creation.frontend import asarray
-    from ml_switcheroo_compiler.ops.shape.manipulation import reshape
-
     tensors = [asarray(t) for t in tup]
     arrays = []
     for a in tensors:

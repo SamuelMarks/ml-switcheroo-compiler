@@ -1,9 +1,13 @@
+"""Module docstring."""
+
 import numpy as np
-from ml_switcheroo_compiler.backends.numpy.eager.random import _unwrap
+
 import ml_switcheroo_compiler.backends.numpy.eager.random as mod
+from ml_switcheroo_compiler.backends.numpy.eager.random import _unwrap
 
 
-def test_unwrap_coverage():
+def test_unwrap_coverage() -> object:
+    """Function docstring."""
     # scalar ndarray
     arr = np.array(5)
     assert _unwrap(arr) == 5
@@ -13,11 +17,17 @@ def test_unwrap_coverage():
     assert _unwrap(arr_empty) == ()
 
     class DummyTensor:
-        def __init__(self):
+        """Class docstring."""
+
+        def __init__(self) -> object:
+            """Function docstring."""
             self.data = np.array(10)
 
     class DummyTensorOuter:
-        def __init__(self):
+        """Class docstring."""
+
+        def __init__(self) -> object:
+            """Function docstring."""
             self.__class__.__name__ = "Tensor"
             self.data = np.array(10)
 
@@ -25,26 +35,32 @@ def test_unwrap_coverage():
     assert _unwrap(dt) == 10
 
 
-def test_randint_dtype():
+def test_randint_dtype() -> object:
+    """Function docstring."""
     # pass size to make it an array
     res = mod._np_randint(np, 0, 10, size=(2,), dtype=np.int32)
     assert res.dtype == np.int32
 
     # custom dtype as string?
     class DummyDtype:
-        def __str__(self):
+        """Class docstring."""
+
+        def __str__(self) -> object:
+            """Function docstring."""
             return "int32"
 
     res2 = mod._np_randint(np, 0, 10, size=(2,), dtype=DummyDtype())
     assert res2.dtype == np.int32
 
 
-def test_dropout():
+def test_dropout() -> object:
+    """Function docstring."""
     res = mod.dropout(np, np.ones((2, 2)), 0.5)
     assert res is not None
 
 
-def test_other_ops():
+def test_other_ops() -> object:
+    """Function docstring."""
     for _, func in mod.numpy_eager_registry._registry.items():
         if func.__module__ == "ml_switcheroo_compiler.backends.numpy.eager.random":
             try:
@@ -61,7 +77,8 @@ def test_other_ops():
                 pass
 
 
-def test_seeds_and_shapes():
+def test_seeds_and_shapes() -> object:
+    """Function docstring."""
     mod._np_seed(np, 123)
     mod._np_manual_seed(np, 123)
 

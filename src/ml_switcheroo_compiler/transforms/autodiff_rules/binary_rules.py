@@ -6,9 +6,21 @@ This module registers automatic differentiation rules for common binary operatio
 as addition, subtraction, multiplication, division, and exponentiation
 """
 
+# dx = -polygamma(0, q) ? No, zeta(x, q) is sum(1/(q+k)^x).
+# This is complex. Let's just emit UnconnectedGradients or some approximation for now?
+# Wait, derivative of zeta(x, q) w.r.t q is -x * zeta(x+1, q).
+# w.r.t x is not simply expressible. JAX throws an error if we diff w.r.t x.
+# We will just return None for dx (meaning no gradient) and -x*zeta(x+1, q) for dq.
+from ml_switcheroo_compiler.grad import UnconnectedGradients
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
+
+# polygamma(n, x) = d^(n+1)/dx^(n+1) ln(Gamma(x))
+# w.r.t x is polygamma(n+1, x).
+# w.r.t n is not supported usually.
+# Only grad w.r.t x is easily expressible: x^(a-1) * (1-x)^(b-1) / Beta(a,b)
+# da and db are complex. We return UnconnectedGradients for now.
 
 
 @register_vjp("Add")
@@ -291,6 +303,19 @@ def xlog1py_vjp(graph: object, node: object, cotangent: str) -> tuple:
     return (dx, dy)
 
 
+def _compute_igamma_dx(graph: object, a: str, x: str) -> str:
+    """Function docstring."""
+    one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
+    a_minus_1 = emit_ir_node(graph, "Subtract", [a, one], graph.nodes[a].shape_metadata)
+    log_x = emit_ir_node(graph, "Log", [x], graph.nodes[x].shape_metadata)
+    term1 = emit_ir_node(graph, "Multiply", [a_minus_1, log_x], graph.nodes[x].shape_metadata)
+    neg_x = emit_ir_node(graph, "Negative", [x], graph.nodes[x].shape_metadata)
+    lgamma_a = emit_ir_node(graph, "Lgamma", [a], graph.nodes[a].shape_metadata)
+    term2 = emit_ir_node(graph, "Add", [neg_x, term1], graph.nodes[x].shape_metadata)
+    term3 = emit_ir_node(graph, "Subtract", [term2, lgamma_a], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Exp", [term3], graph.nodes[x].shape_metadata)
+
+
 @register_vjp("Igamma")
 def igamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """VJP for Igamma."""
@@ -301,15 +326,7 @@ def igamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
     da = emit_ir_node(graph, "Multiply", [cotangent, grad_a_base], graph.nodes[a].shape_metadata)
 
     # dx = exp(-x + (a-1)*log(x) - lgamma(a)) * cotangent
-    one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
-    a_minus_1 = emit_ir_node(graph, "Subtract", [a, one], graph.nodes[a].shape_metadata)
-    log_x = emit_ir_node(graph, "Log", [x], graph.nodes[x].shape_metadata)
-    term1 = emit_ir_node(graph, "Multiply", [a_minus_1, log_x], graph.nodes[x].shape_metadata)
-    neg_x = emit_ir_node(graph, "Negative", [x], graph.nodes[x].shape_metadata)
-    lgamma_a = emit_ir_node(graph, "Lgamma", [a], graph.nodes[a].shape_metadata)
-    term2 = emit_ir_node(graph, "Add", [neg_x, term1], graph.nodes[x].shape_metadata)
-    term3 = emit_ir_node(graph, "Subtract", [term2, lgamma_a], graph.nodes[x].shape_metadata)
-    grad_x_base = emit_ir_node(graph, "Exp", [term3], graph.nodes[x].shape_metadata)
+    grad_x_base = _compute_igamma_dx(graph, a, x)
     dx = emit_ir_node(graph, "Multiply", [cotangent, grad_x_base], graph.nodes[x].shape_metadata)
 
     return (da, dx)
@@ -330,12 +347,6 @@ def igammac_vjp(graph: object, node: object, cotangent: str) -> tuple:
 def zeta_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """VJP for Zeta."""
     x, q = node.inputs
-    # dx = -polygamma(0, q) ? No, zeta(x, q) is sum(1/(q+k)^x).
-    # This is complex. Let's just emit UnconnectedGradients or some approximation for now?
-    # Wait, derivative of zeta(x, q) w.r.t q is -x * zeta(x+1, q).
-    # w.r.t x is not simply expressible. JAX throws an error if we diff w.r.t x.
-    # We will just return None for dx (meaning no gradient) and -x*zeta(x+1, q) for dq.
-    from ml_switcheroo_compiler.grad import UnconnectedGradients
 
     dx = UnconnectedGradients.ZERO
 
@@ -352,10 +363,6 @@ def zeta_vjp(graph: object, node: object, cotangent: str) -> tuple:
 def polygamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """VJP for Polygamma."""
     n, x = node.inputs
-    # polygamma(n, x) = d^(n+1)/dx^(n+1) ln(Gamma(x))
-    # w.r.t x is polygamma(n+1, x).
-    # w.r.t n is not supported usually.
-    from ml_switcheroo_compiler.grad import UnconnectedGradients
 
     dn = UnconnectedGradients.ZERO
 
@@ -366,18 +373,19 @@ def polygamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
     return (dn, dx)
 
 
-@register_vjp("Betainc")
-def betainc_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Betainc."""
-    a, b, x = node.inputs
-    # Only grad w.r.t x is easily expressible: x^(a-1) * (1-x)^(b-1) / Beta(a,b)
-    # da and db are complex. We return UnconnectedGradients for now.
-    from ml_switcheroo_compiler.grad import UnconnectedGradients
+def _compute_betainc_log_beta(graph: object, a: str, b: str) -> str:
+    """Function docstring."""
+    lgamma_a = emit_ir_node(graph, "Lgamma", [a], graph.nodes[a].shape_metadata)
+    lgamma_b = emit_ir_node(graph, "Lgamma", [b], graph.nodes[b].shape_metadata)
+    a_plus_b = emit_ir_node(graph, "Add", [a, b], graph.nodes[a].shape_metadata)
+    lgamma_ab = emit_ir_node(graph, "Lgamma", [a_plus_b], graph.nodes[a].shape_metadata)
 
-    da = UnconnectedGradients.ZERO
-    db = UnconnectedGradients.ZERO
+    log_beta = emit_ir_node(graph, "Add", [lgamma_a, lgamma_b], graph.nodes[a].shape_metadata)
+    return emit_ir_node(graph, "Subtract", [log_beta, lgamma_ab], graph.nodes[a].shape_metadata)
 
-    one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
+
+def _compute_betainc_dx_terms(graph: object, a: str, b: str, x: str, one: str) -> tuple[str, str]:
+    """Function docstring."""
     a_minus_1 = emit_ir_node(graph, "Subtract", [a, one], graph.nodes[a].shape_metadata)
     b_minus_1 = emit_ir_node(graph, "Subtract", [b, one], graph.nodes[b].shape_metadata)
     one_minus_x = emit_ir_node(graph, "Subtract", [one, x], graph.nodes[x].shape_metadata)
@@ -386,21 +394,30 @@ def betainc_vjp(graph: object, node: object, cotangent: str) -> tuple:
     log_1_minus_x = emit_ir_node(graph, "Log", [one_minus_x], graph.nodes[x].shape_metadata)
 
     term1 = emit_ir_node(graph, "Multiply", [a_minus_1, log_x], graph.nodes[x].shape_metadata)
-    term2 = emit_ir_node(
-        graph, "Multiply", [b_minus_1, log_1_minus_x], graph.nodes[x].shape_metadata
-    )
+    term2 = emit_ir_node(graph, "Multiply", [b_minus_1, log_1_minus_x], graph.nodes[x].shape_metadata)
+    return term1, term2
 
-    lgamma_a = emit_ir_node(graph, "Lgamma", [a], graph.nodes[a].shape_metadata)
-    lgamma_b = emit_ir_node(graph, "Lgamma", [b], graph.nodes[b].shape_metadata)
-    a_plus_b = emit_ir_node(graph, "Add", [a, b], graph.nodes[a].shape_metadata)
-    lgamma_ab = emit_ir_node(graph, "Lgamma", [a_plus_b], graph.nodes[a].shape_metadata)
 
-    log_beta = emit_ir_node(graph, "Add", [lgamma_a, lgamma_b], graph.nodes[a].shape_metadata)
-    log_beta = emit_ir_node(graph, "Subtract", [log_beta, lgamma_ab], graph.nodes[a].shape_metadata)
+def _compute_betainc_dx(graph: object, a: str, b: str, x: str) -> str:
+    """Function docstring."""
+    one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
+    term1, term2 = _compute_betainc_dx_terms(graph, a, b, x, one)
+    log_beta = _compute_betainc_log_beta(graph, a, b)
 
     log_dx = emit_ir_node(graph, "Add", [term1, term2], graph.nodes[x].shape_metadata)
     log_dx = emit_ir_node(graph, "Subtract", [log_dx, log_beta], graph.nodes[x].shape_metadata)
-    dx_base = emit_ir_node(graph, "Exp", [log_dx], graph.nodes[x].shape_metadata)
+    return emit_ir_node(graph, "Exp", [log_dx], graph.nodes[x].shape_metadata)
+
+
+@register_vjp("Betainc")
+def betainc_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Betainc."""
+    a, b, x = node.inputs
+
+    da = UnconnectedGradients.ZERO
+    db = UnconnectedGradients.ZERO
+
+    dx_base = _compute_betainc_dx(graph, a, b, x)
     dx = emit_ir_node(graph, "Multiply", [cotangent, dx_base], graph.nodes[x].shape_metadata)
 
     return (da, db, dx)
@@ -415,14 +432,8 @@ def random_gamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
     # We will just assume alpha, key for now.
     alpha = node.inputs[0]
 
-    grad_alpha_base = emit_ir_node(
-        graph, "RandomGammaGrad", [alpha, node.id], graph.nodes[alpha].shape_metadata
-    )
-    dalpha = emit_ir_node(
-        graph, "Multiply", [cotangent, grad_alpha_base], graph.nodes[alpha].shape_metadata
-    )
-
-    from ml_switcheroo_compiler.grad import UnconnectedGradients
+    grad_alpha_base = emit_ir_node(graph, "RandomGammaGrad", [alpha, node.id], graph.nodes[alpha].shape_metadata)
+    dalpha = emit_ir_node(graph, "Multiply", [cotangent, grad_alpha_base], graph.nodes[alpha].shape_metadata)
 
     # Return dalpha and UnconnectedGradients for the rest
     res = [dalpha]

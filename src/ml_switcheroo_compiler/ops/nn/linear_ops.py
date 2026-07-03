@@ -4,7 +4,8 @@ from typing import Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add
-from ml_switcheroo_compiler.ops.linalg.frontend import matmul, einsum
+from ml_switcheroo_compiler.ops.linalg.einsum_frontend import einsum
+from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.manipulation import swapaxes
 
 
@@ -25,9 +26,7 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tens
     return out
 
 
-def bilinear(
-    input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None
-) -> Tensor:
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tensor:
     """Applies a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).

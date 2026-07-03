@@ -1,10 +1,31 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
-"""Stateless random operations."""
+"""Module docstring."""
 
-from typing import Union  # pragma: no cover
+import typing
 from collections.abc import Sequence  # pragma: no cover
-from ml_switcheroo_compiler.core.tensor import Tensor  # pragma: no cover
+from dataclasses import dataclass
+from typing import (
+    Optional,
+    Union,  # pragma: no cover
+)
+
 from ml_switcheroo_compiler.core.dtype import DType  # pragma: no cover
+from ml_switcheroo_compiler.core.tensor import Tensor  # pragma: no cover
+
+
+@dataclass
+class NormalConfig:
+    """Normal config."""
+
+    mean: float = 0.0
+    stddev: float = 1.0
+
+
+@dataclass
+class UniformConfig:
+    """Uniform config."""
+
+    minval: float = 0.0
+    maxval: typing.Optional[float] = None
 
 
 def stateless_random_uniform(  # pragma: no cover
@@ -26,9 +47,9 @@ def stateless_random_uniform(  # pragma: no cover
     Returns:
         Tensor: The generated tensor.
     """
-    from ml_switcheroo_compiler.random.distributions_continuous import uniform  # pragma: no cover
-    from ml_switcheroo_compiler.ops.binary import multiply, add  # pragma: no cover
+    from ml_switcheroo_compiler.ops.binary import add, multiply  # pragma: no cover
     from ml_switcheroo_compiler.ops.creation import full  # pragma: no cover
+    from ml_switcheroo_compiler.random.distributions_continuous import uniform  # pragma: no cover
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
     res = uniform(seed, tuple(shape), dtype_enum)  # pragma: no cover
@@ -56,9 +77,9 @@ def stateless_random_normal(  # pragma: no cover
     Returns:
         Tensor: The generated tensor.
     """
-    from ml_switcheroo_compiler.random.distributions_continuous import normal  # pragma: no cover
-    from ml_switcheroo_compiler.ops.binary import multiply, add  # pragma: no cover
+    from ml_switcheroo_compiler.ops.binary import add, multiply  # pragma: no cover
     from ml_switcheroo_compiler.ops.creation import full  # pragma: no cover
+    from ml_switcheroo_compiler.random.distributions_continuous import normal  # pragma: no cover
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
     res = normal(seed, tuple(shape), dtype_enum)  # pragma: no cover
@@ -112,11 +133,11 @@ def stateless_truncated_normal(  # pragma: no cover
     Returns:
         Tensor: The generated tensor.
     """
+    from ml_switcheroo_compiler.ops.binary import add, multiply  # pragma: no cover
+    from ml_switcheroo_compiler.ops.creation import full  # pragma: no cover
     from ml_switcheroo_compiler.random.distributions_continuous import (
         truncated_normal,
     )  # pragma: no cover
-    from ml_switcheroo_compiler.ops.binary import multiply, add  # pragma: no cover
-    from ml_switcheroo_compiler.ops.creation import full  # pragma: no cover
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
     lower = -2.0  # pragma: no cover
@@ -144,8 +165,8 @@ def stateless_categorical(  # pragma: no cover
     Returns:
         Tensor: The generated tensor (batch_size, num_samples).
     """
-    from ml_switcheroo_compiler.random.distributions_discrete import categorical  # pragma: no cover
     from ml_switcheroo_compiler.ops import cast  # pragma: no cover
+    from ml_switcheroo_compiler.random.distributions_discrete import categorical  # pragma: no cover
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
 
@@ -200,7 +221,7 @@ def stateless_beta(  # pragma: no cover
     Returns:
         Tensor: The generated tensor.
     """
-    from ml_switcheroo_compiler.random.distributions_continuous import beta  # pragma: no cover
+    from ml_switcheroo_compiler.random.continuous import beta  # pragma: no cover
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype  # pragma: no cover
     res = beta(seed, alpha, beta_param, tuple(shape), dtype_enum)  # pragma: no cover
@@ -228,9 +249,18 @@ def stateless_shuffle(  # pragma: no cover
     return res  # pragma: no cover
 
 
-def stateless_parameterized_truncated_normal(
-    shape, seed, means=0.0, stddevs=1.0, minvals=-2.0, maxvals=2.0, name=None
-):
+@dataclass
+class RandomGenerationConfig:
+    """Config for random generation."""
+
+    means: float = 0.0
+    stddevs: float = 1.0
+    minvals: float = -2.0
+    maxvals: float = 2.0
+    name: Optional[str] = None
+
+
+def stateless_parameterized_truncated_normal(shape: object, seed: object, config: Optional[RandomGenerationConfig] = None) -> Tensor:
     """Stateless parameterized truncated normal."""
     # Dummy mock
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
@@ -251,17 +281,19 @@ class Algorithm:
 class Generator:
     """Random Generator."""
 
-    def __init__(self, copy_from=None, state=None, alg=None) -> None:
+    def __init__(self, copy_from: object = None, state: object = None, alg: object = None) -> None:
         """Init."""
         self.state = state  # pragma: no cover
 
     @classmethod
-    def from_seed(cls, seed, alg=None) -> "Generator":
+    def from_seed(cls, seed: object, alg: object = None) -> "Generator":
         """From seed."""
         return cls(state=seed, alg=alg)  # pragma: no cover
 
-    def normal(self, shape, mean=0.0, stddev=1.0, dtype="float32", name=None) -> Tensor:
+    def normal(self, shape: object, config: Optional[NormalConfig] = None, dtype: object = "float32", name: object = None) -> Tensor:
         """Normal."""
+        config = config or NormalConfig()
+
         # pragma: no cover
         # pragma: no cover
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
@@ -269,8 +301,10 @@ class Generator:
         # pragma: no cover
         return Tensor(None, TensorConfig(shape, dtype, "cpu"))  # pragma: no cover
 
-    def uniform(self, shape, minval=0, maxval=None, dtype="float32", name=None) -> Tensor:
+    def uniform(self, shape: object, config: Optional[UniformConfig] = None, dtype: object = "float32", name: object = None) -> Tensor:
         """Uniform."""
+        config = config or UniformConfig()
+
         # pragma: no cover
         # pragma: no cover
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
@@ -279,7 +313,7 @@ class Generator:
         return Tensor(None, TensorConfig(shape, dtype, "cpu"))  # pragma: no cover
 
 
-def create_rng_state(seed, alg=None):  # pragma: no cover
+def create_rng_state(seed: object, alg: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """Create rng state."""
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -290,7 +324,7 @@ def create_rng_state(seed, alg=None):  # pragma: no cover
 _GLOBAL_GENERATOR = None
 
 
-def get_global_generator():  # pragma: no cover
+def get_global_generator() -> object:  # pragma: no cover
     # pragma: no cover
     """Get global generator."""
     global _GLOBAL_GENERATOR
@@ -299,26 +333,26 @@ def get_global_generator():  # pragma: no cover
     return _GLOBAL_GENERATOR
 
 
-def set_global_generator(generator):  # pragma: no cover
+def set_global_generator(generator: object) -> None:  # pragma: no cover
     # pragma: no cover
     """Set global generator."""
     global _GLOBAL_GENERATOR
     _GLOBAL_GENERATOR = generator
 
 
-def index_shuffle(index, seed, max_index):  # pragma: no cover
+def index_shuffle(index: object, seed: object, max_index: object) -> object:  # pragma: no cover
     # pragma: no cover
     """Index shuffle."""
     return index
 
 
-def stateless_fold_in(seed, data):  # pragma: no cover
+def stateless_fold_in(seed: object, data: object) -> object:  # pragma: no cover
     # pragma: no cover
     """Stateless fold in."""
     return seed
 
 
-def stateless_split(seed, num=2):  # pragma: no cover
+def stateless_split(seed: object, num: object = 2) -> object:  # pragma: no cover
     # pragma: no cover
     """Stateless split."""
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig

@@ -1,17 +1,10 @@
+# auto-generate-all
+# exclude_exports: OpDef, register_op
+
 """Linear algebra operations package."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from .frontend import addmm as addmm
-from .frontend import block_masked_mm as block_masked_mm
-from .frontend import gather_mm as gather_mm
-from .frontend import segmented_mm as segmented_mm
-from ml_switcheroo_compiler.ops.linalg.basic import (
-    ConvGeneralDilated,
-    ConvTranspose,
-    Fft,
-    Matmul,
-    Rfft,
-)
+from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
 from ml_switcheroo_compiler.ops.linalg.dot import (
     Dot,
     DotGeneral,
@@ -19,143 +12,148 @@ from ml_switcheroo_compiler.ops.linalg.dot import (
 from ml_switcheroo_compiler.ops.linalg.einsum import (
     Einsum,
 )
+from ml_switcheroo_compiler.ops.linalg.fft_ops import Fft, Rfft
+from ml_switcheroo_compiler.ops.linalg.products import Matmul
 
 from .conv import conv_general_dilated as conv_general_dilated
+from .conv import conv_general_dilated_local as conv_general_dilated_local
+from .conv import conv_general_dilated_patches as conv_general_dilated_patches
+from .conv import conv_with_general_padding as conv_with_general_padding
+from .conv_ops import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal
+from .conv_ops import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches
+from .conv_ops import ConvWithGeneralPadding as ConvWithGeneralPadding
 from .decompositions import cholesky as cholesky
 from .decompositions import det as det
 from .decompositions import eigh as eigh
 from .decompositions import eigvalsh as eigvalsh
+from .decompositions import hessenberg as hessenberg
+from .decompositions import householder_product as householder_product
 from .decompositions import inv as inv
 from .decompositions import lu_factor as lu_factor
-from .decompositions import norm as norm
+from .decompositions import lu_pivots_to_permutation as lu_pivots_to_permutation
 from .decompositions import matrix_exponential as matrix_exponential
 from .decompositions import matrix_power as matrix_power
+from .decompositions import norm as norm
 from .decompositions import pinv as pinv
 from .decompositions import power_iteration as power_iteration
 from .decompositions import qr as qr
+from .decompositions import schur as schur
 from .decompositions import slogdet as slogdet
 from .decompositions import solve as solve
-from .decompositions import tri_inv as tri_inv
 from .decompositions import solve_triangular as solve_triangular
 from .decompositions import svd as svd
-from .fft import fft as fft
-from .fft import fft2d as fft2d
-from .fft import fft2 as fft2
-from .fft import irfft as irfft
-from .decompositions import hessenberg as hessenberg
-from .decompositions import householder_product as householder_product
-from .decompositions import schur as schur
+from .decompositions import tri_inv as tri_inv
 from .decompositions import tridiagonal as tridiagonal
-from .decompositions import lu_pivots_to_permutation as lu_pivots_to_permutation
-
-from .fft import fftfreq as fftfreq
-from .fft import hfft as hfft
-from .fft import ihfft as ihfft
-from .fft import rfftfreq as rfftfreq
-from .fft import irfft2 as irfft2
-from .fft import rfft2 as rfft2
-from .fft import fftn as fftn
-from .fft import ifftn as ifftn
-from .fft import irfftn as irfftn
-from .fft import rfftn as rfftn
-from .transform import hadamard_transform as hadamard_transform
-
-from .frontend import matrix_norm as matrix_norm
-from .frontend import vector_norm as vector_norm
-from .frontend import svdvals as svdvals
-from .frontend import tensorinv as tensorinv
-from .frontend import tensorsolve as tensorsolve
-from .frontend import diagonal as diagonal
-from .frontend import multi_dot as multi_dot
-from .frontend import vecdot as vecdot
-from .frontend import trace as trace
-from .frontend import matrix_rank as matrix_rank
-from .frontend import matrix_transpose as matrix_transpose
-from .frontend import sqrtm as sqrtm
-from .frontend import adjoint as adjoint
-from .frontend import band_part as band_part
-from .frontend import cholesky_solve as cholesky_solve
-from .frontend import banded_triangular_solve as banded_triangular_solve
-from .frontend import eigh_tridiagonal as eigh_tridiagonal
-
-from .frontend import tensor_diag as tensor_diag
-from .frontend import tensor_diag_part as tensor_diag_part
-
-from .frontend import (
-    LinearOperator as LinearOperator,
-    LinearOperatorAdjoint as LinearOperatorAdjoint,
-    LinearOperatorBlockDiag as LinearOperatorBlockDiag,
-    LinearOperatorBlockLowerTriangular as LinearOperatorBlockLowerTriangular,
-    LinearOperatorCirculant as LinearOperatorCirculant,
-    LinearOperatorCirculant2D as LinearOperatorCirculant2D,
-    LinearOperatorCirculant3D as LinearOperatorCirculant3D,
-    LinearOperatorComposition as LinearOperatorComposition,
-    LinearOperatorDiag as LinearOperatorDiag,
-    LinearOperatorFullMatrix as LinearOperatorFullMatrix,
-    LinearOperatorHouseholder as LinearOperatorHouseholder,
-    LinearOperatorIdentity as LinearOperatorIdentity,
-    LinearOperatorInversion as LinearOperatorInversion,
-    LinearOperatorKronecker as LinearOperatorKronecker,
-    LinearOperatorLowRankUpdate as LinearOperatorLowRankUpdate,
-    LinearOperatorLowerTriangular as LinearOperatorLowerTriangular,
-    LinearOperatorPermutation as LinearOperatorPermutation,
-    LinearOperatorScaledIdentity as LinearOperatorScaledIdentity,
-    LinearOperatorToeplitz as LinearOperatorToeplitz,
-    LinearOperatorTridiag as LinearOperatorTridiag,
-    LinearOperatorZeros as LinearOperatorZeros,
-    conjugate_gradient as conjugate_gradient,
-    expm as expm,
-    global_norm as global_norm,
-    logdet as logdet,
-    logm as logm,
-    lstsq as lstsq,
-    lu as lu,
-    lu_matrix_inverse as lu_matrix_inverse,
-    lu_reconstruct as lu_reconstruct,
-    lu_solve as lu_solve,
-    matvec as matvec,
-    normalize as normalize,
-    set_diag as set_diag,
-    triangular_solve as triangular_solve,
-    tridiagonal_matmul as tridiagonal_matmul,
-    tridiagonal_solve as tridiagonal_solve,
-)
-
-from .frontend import diag_part as diag_part
-from .basic import Trace as Trace
-from .basic import MatrixRank as MatrixRank
-from .basic import MatrixTranspose as MatrixTranspose
-from .basic import Sqrtm as Sqrtm
-
-from .fft import ifft as ifft
-from .fft import ifft2d as ifft2d
-from .fft import ifft2 as ifft2
-from .fft import fft3d as fft3d
+from .einsum_frontend import einsum as einsum
+from .einsum_frontend import tensordot as tensordot
+from .fft import fft as fft
+from .fft import fft2 as fft2
+from .fft import fft2d as fft2d
 from .fft import fft3 as fft3
-from .fft import ifft3d as ifft3d
+from .fft import fft3d as fft3d
+from .fft import fftfreq as fftfreq
+from .fft import fftn as fftn
+from .fft import fftnd as fftnd
+from .fft import fftshift as fftshift
+from .fft import hfft as hfft
+from .fft import ifft as ifft
+from .fft import ifft2 as ifft2
+from .fft import ifft2d as ifft2d
 from .fft import ifft3 as ifft3
-from .fft import rfft2d as rfft2d
-from .fft import rfft3d as rfft3d
+from .fft import ifft3d as ifft3d
+from .fft import ifftn as ifftn
+from .fft import ifftnd as ifftnd
+from .fft import ifftshift as ifftshift
+from .fft import ihfft as ihfft
+from .fft import irfft as irfft
+from .fft import irfft2 as irfft2
 from .fft import irfft2d as irfft2d
 from .fft import irfft3d as irfft3d
-from .fft import rfft as rfft
-from .fft import fftnd as fftnd
-from .fft import ifftnd as ifftnd
-from .fft import rfftnd as rfftnd
+from .fft import irfftn as irfftn
 from .fft import irfftnd as irfftnd
-from .fft import fftshift as fftshift
-from .fft import ifftshift as ifftshift
-
-from .frontend import convolve as convolve
-from .frontend import cross as cross
-from .frontend import dot as dot
-from .frontend import dot_general as dot_general
-from .frontend import einsum as einsum
-from .frontend import inner as inner
-from .frontend import matmul as matmul
-from .frontend import outer as outer
-from .frontend import tensordot as tensordot
-from .frontend import vdot as vdot
+from .fft import rfft as rfft
+from .fft import rfft2 as rfft2
+from .fft import rfft2d as rfft2d
+from .fft import rfft3d as rfft3d
+from .fft import rfftfreq as rfftfreq
+from .fft import rfftn as rfftn
+from .fft import rfftnd as rfftnd
+from .linear_operator import LinearOperator as LinearOperator
+from .linear_operator import LinearOperatorAdjoint as LinearOperatorAdjoint
+from .linear_operator import LinearOperatorBlockDiag as LinearOperatorBlockDiag
+from .linear_operator import (
+    LinearOperatorBlockLowerTriangular as LinearOperatorBlockLowerTriangular,
+)
+from .linear_operator import LinearOperatorCirculant as LinearOperatorCirculant
+from .linear_operator import LinearOperatorCirculant2D as LinearOperatorCirculant2D
+from .linear_operator import LinearOperatorCirculant3D as LinearOperatorCirculant3D
+from .linear_operator import LinearOperatorComposition as LinearOperatorComposition
+from .linear_operator import LinearOperatorDiag as LinearOperatorDiag
+from .linear_operator import LinearOperatorFullMatrix as LinearOperatorFullMatrix
+from .linear_operator import LinearOperatorHouseholder as LinearOperatorHouseholder
+from .linear_operator import LinearOperatorIdentity as LinearOperatorIdentity
+from .linear_operator import LinearOperatorInversion as LinearOperatorInversion
+from .linear_operator import LinearOperatorKronecker as LinearOperatorKronecker
+from .linear_operator import LinearOperatorLowerTriangular as LinearOperatorLowerTriangular
+from .linear_operator import LinearOperatorLowRankUpdate as LinearOperatorLowRankUpdate
+from .linear_operator import LinearOperatorPermutation as LinearOperatorPermutation
+from .linear_operator import LinearOperatorScaledIdentity as LinearOperatorScaledIdentity
+from .linear_operator import LinearOperatorToeplitz as LinearOperatorToeplitz
+from .linear_operator import LinearOperatorTridiag as LinearOperatorTridiag
+from .linear_operator import LinearOperatorZeros as LinearOperatorZeros
+from .matmul import addmm as addmm
+from .matmul import block_masked_mm as block_masked_mm
+from .matmul import convolve as convolve
+from .matmul import dot as dot
+from .matmul import dot_general as dot_general
+from .matmul import gather_mm as gather_mm
+from .matmul import inner as inner
+from .matmul import matmul as matmul
+from .matmul import matvec as matvec
+from .matmul import multi_dot as multi_dot
+from .matmul import outer as outer
+from .matmul import segmented_mm as segmented_mm
+from .matmul import vdot as vdot
+from .matmul import vecdot as vecdot
+from .matrix_ops import adjoint as adjoint
+from .matrix_ops import band_part as band_part
+from .matrix_ops import cross as cross
+from .matrix_ops import diag_part as diag_part
+from .matrix_ops import diagonal as diagonal
+from .matrix_ops import eigh_tridiagonal as eigh_tridiagonal
+from .matrix_ops import expm as expm
+from .matrix_ops import global_norm as global_norm
+from .matrix_ops import logdet as logdet
+from .matrix_ops import logm as logm
+from .matrix_ops import matrix_norm as matrix_norm
+from .matrix_ops import matrix_rank as matrix_rank
+from .matrix_ops import matrix_transpose as matrix_transpose
+from .matrix_ops import normalize as normalize
+from .matrix_ops import set_diag as set_diag
+from .matrix_ops import sqrtm as sqrtm
+from .matrix_ops import svdvals as svdvals
+from .matrix_ops import tensor_diag as tensor_diag
+from .matrix_ops import tensor_diag_part as tensor_diag_part
+from .matrix_ops import trace as trace
+from .matrix_ops import tridiagonal_matmul as tridiagonal_matmul
+from .matrix_ops import vector_norm as vector_norm
+from .products import MatrixRank as MatrixRank
+from .products import MatrixTranspose as MatrixTranspose
+from .products import Trace as Trace
+from .solvers import Sqrtm as Sqrtm
+from .solvers import banded_triangular_solve as banded_triangular_solve
+from .solvers import cholesky_solve as cholesky_solve
+from .solvers import conjugate_gradient as conjugate_gradient
+from .solvers import lstsq as lstsq
+from .solvers import lu as lu
+from .solvers import lu_matrix_inverse as lu_matrix_inverse
+from .solvers import lu_reconstruct as lu_reconstruct
+from .solvers import lu_solve as lu_solve
+from .solvers import tensorinv as tensorinv
+from .solvers import tensorsolve as tensorsolve
+from .solvers import triangular_solve as triangular_solve
+from .solvers import tridiagonal_solve as tridiagonal_solve
+from .transform import hadamard_transform as hadamard_transform
 
 
 def eig(input: object) -> tuple[object, object]:
@@ -174,6 +172,7 @@ class Vecdot(OpDef):
     op_name = "Vecdot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[0] if args else ()
 
 
@@ -184,15 +183,8 @@ class CustomLinearSolve(OpDef):
     op_name = "CustomLinearSolve"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[0] if args else ()
-
-
-from .conv import conv_general_dilated_local as conv_general_dilated_local  # noqa: E402
-from .conv import conv_general_dilated_patches as conv_general_dilated_patches  # noqa: E402
-from .conv import conv_with_general_padding as conv_with_general_padding  # noqa: E402
-from .basic import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal  # noqa: E402
-from .basic import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches  # noqa: E402
-from .basic import ConvWithGeneralPadding as ConvWithGeneralPadding  # noqa: E402
 
 
 @register_op("CustomRoot")
@@ -220,6 +212,8 @@ __all__ = [
     "ConvGeneralDilatedPatches",
     "ConvTranspose",
     "ConvWithGeneralPadding",
+    "CustomLinearSolve",
+    "CustomRoot",
     "Dot",
     "DotGeneral",
     "Einsum",
@@ -251,6 +245,7 @@ __all__ = [
     "Rfft",
     "Sqrtm",
     "Trace",
+    "Vecdot",
     "addmm",
     "adjoint",
     "band_part",

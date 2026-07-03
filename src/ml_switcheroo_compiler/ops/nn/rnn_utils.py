@@ -1,12 +1,20 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """RNN operations."""
 
-from typing import Optional
 from dataclasses import dataclass
+from typing import Optional
 
-from ml_switcheroo_compiler.ops.binary import add, multiply
-
+from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.binary import add, multiply
+from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
+from ml_switcheroo_compiler.ops.nn.dropout import dropout
+from ml_switcheroo_compiler.ops.shape import (
+    concatenate,  # pragma: no cover
+    permute,
+    stack,
+    unstack,
+)
+from ml_switcheroo_compiler.ops.shape import reverse as cf_reverse  # pragma: no cover
 
 
 @dataclass
@@ -85,11 +93,7 @@ def scan(
     Returns:
         tuple[tuple[Tensor, ...], Tensor]: The final carry and the stacked outputs.
     """
-    from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
-    from ml_switcheroo_compiler.ops.shape import stack, unstack
-
     conf = config if config is not None else ScanConfig()
-    from ml_switcheroo_compiler.core.config import config as global_config
 
     if global_config.eager_mode or conf.unroll:  # pragma: no branch
         xs_unstacked = unstack(xs, dim=0)
@@ -107,8 +111,6 @@ def scan(
         return carry, stack(ys, dim=0)
     else:
         if conf.reverse:  # pragma: no cover
-            from ml_switcheroo_compiler.ops.shape import reverse as cf_reverse  # pragma: no cover
-
             xs = cf_reverse(xs, (0,))  # pragma: no cover
 
         carry, y = cf_scan(f, init, xs, conf.length)  # pragma: no cover
@@ -133,25 +135,19 @@ def bidirectional(
         tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
             Merged output sequence, forward final states, backward final states.
     """
-    from ml_switcheroo_compiler.ops.shape import concatenate  # pragma: no cover
-
     conf = config if config is not None else BidirectionalConfig()  # pragma: no cover
     forward_out, forward_state = rnn(  # pragma: no cover
         inputs.forward_inputs,  # pragma: no cover
         inputs.forward_initial_state,  # pragma: no cover
         cell_fn,  # pragma: no cover
-        config=RNNConfig(
-            time_major=conf.time_major, unroll=conf.unroll, go_backwards=False
-        ),  # pragma: no cover
+        config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),  # pragma: no cover
     )  # pragma: no cover
     # pragma: no cover
     backward_out, backward_state = rnn(  # pragma: no cover
         inputs.backward_inputs,  # pragma: no cover
         inputs.backward_initial_state,  # pragma: no cover
         cell_fn,  # pragma: no cover
-        config=RNNConfig(
-            time_major=conf.time_major, unroll=conf.unroll, go_backwards=False
-        ),  # pragma: no cover
+        config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),  # pragma: no cover
     )  # pragma: no cover
     # pragma: no cover
     conf = config if config is not None else BidirectionalConfig()  # pragma: no cover
@@ -172,8 +168,6 @@ def bidirectional(
 
 def _permute_time_major(inputs: Tensor) -> Tensor:
     """Swap batch and time dimensions."""
-    from ml_switcheroo_compiler.ops.shape import permute
-
     dims = list(range(len(inputs.shape)))
     dims[0], dims[1] = 1, 0
     return permute(inputs, tuple(dims))
@@ -232,65 +226,81 @@ def rnn(
 class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
-    def __init__(self, cell, device, **kwargs) -> None:
+    def __init__(self, cell: object, device: object, **kwargs: object) -> None:
         """Init."""
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs, state, **kwargs) -> tuple:
+    def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple:
         """Call."""
         return self._cell(inputs, state, **kwargs)
 
 
+@dataclass
+class DropoutWrapperConfig:
+    """Configuration for RNNCellDropoutWrapper."""
+
+    input_keep_prob: float = 1.0
+    output_keep_prob: float = 1.0
+    state_keep_prob: float = 1.0
+    variational_recurrent: bool = False
+    input_size: Optional[int] = None
+    dtype: Optional[object] = None
+    seed: Optional[int] = None
+    dropout_state_filter_visitor: Optional[object] = None
+
+
 class RNNCellDropoutWrapper:
-    """RNNCellDropoutWrapper."""
+    """Wrapper that adds dropout to input and/or output of the given cell."""
 
     def __init__(
         self,
-        cell,
-        input_keep_prob=1.0,
-        output_keep_prob=1.0,
-        state_keep_prob=1.0,
-        variational_recurrent=False,
-        input_size=None,
-        dtype=None,
-        seed=None,
-        dropout_state_filter_visitor=None,
-        **kwargs,
+        cell: object,
+        config: Optional[DropoutWrapperConfig] = None,
+        **kwargs: object,
     ) -> None:
-        """Init."""
+        """Initialize the RNNCellDropoutWrapper.
+
+        Args:
+            cell (object): The RNN cell to wrap.
+            config (Optional[DropoutWrapperConfig]): Configuration for dropout.
+            kwargs (object): Additional keyword arguments.
+        """
         self._cell = cell
-        self._input_keep_prob = input_keep_prob
-        self._output_keep_prob = output_keep_prob
-        self._state_keep_prob = state_keep_prob
+        self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs, state, **kwargs) -> tuple:
-        """Call."""
-        from ml_switcheroo_compiler.ops.nn.dropout import dropout
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: object) -> tuple[Tensor, tuple[Tensor, ...]]:
+        """Run the cell with dropout.
 
-        if self._input_keep_prob < 1.0:
-            inputs = dropout(inputs, 1.0 - self._input_keep_prob)
+        Args:
+            inputs (Tensor): Input tensor.
+            state (tuple[Tensor, ...]): Current state.
+            kwargs (object): Additional keyword arguments.
+
+        Returns:
+            tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
+        """
+        if self._config.input_keep_prob < 1.0:
+            inputs = dropout(inputs, 1.0 - self._config.input_keep_prob)
         out, new_state = self._cell(inputs, state, **kwargs)
-        if self._output_keep_prob < 1.0:
-            out = dropout(out, 1.0 - self._output_keep_prob)
+        if self._config.output_keep_prob < 1.0:
+            out = dropout(out, 1.0 - self._config.output_keep_prob)
         return out, new_state
 
 
 class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
-    def __init__(self, cell, residual_fn=None, **kwargs) -> None:
+    def __init__(self, cell: object, residual_fn: object = None, **kwargs: object) -> None:
         """Init."""
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs, state, **kwargs) -> tuple:
+    def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple:
         """Call."""
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._residual_fn is not None:
             out = self._residual_fn(inputs, out)  # pragma: no cover
         else:
-            from ml_switcheroo_compiler.ops.binary import add
-
             out = add(inputs, out)
         return out, new_state

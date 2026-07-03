@@ -1,18 +1,21 @@
 """Reductions operations package."""
 
-import ml_switcheroo_compiler.ops.reductions.basic as _basic
-import ml_switcheroo_compiler.ops.reductions.nan as _nan
-import ml_switcheroo_compiler.ops.reductions.pooling as _pooling
 import ml_switcheroo_compiler.ops.reductions.aggregations as _aggregations
 import ml_switcheroo_compiler.ops.reductions.boolean as _boolean
 import ml_switcheroo_compiler.ops.reductions.core as _core
 import ml_switcheroo_compiler.ops.reductions.distributed as _distributed
-import ml_switcheroo_compiler.ops.reductions.statistical as _statistical
-from ml_switcheroo_compiler.ops.reductions.statistical import moments
+import ml_switcheroo_compiler.ops.reductions.nan as _nan
+import ml_switcheroo_compiler.ops.reductions.pooling as _pooling
+import ml_switcheroo_compiler.ops.stats.descriptive as _statistical
 from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.stats.descriptive import moments
 
-from .distributed import Pmean, Psum
 from .aggregations import ReduceWindow
+from .distributed import Pmean, Psum
+from .frontend import adaptive_avg_pool2d as adaptive_avg_pool2d
+from .frontend import adaptive_max_pool2d as adaptive_max_pool2d
+from .frontend import approx_max_k as approx_max_k
+from .frontend import approx_min_k as approx_min_k
 from .frontend import corrcoef as corrcoef
 from .frontend import correlate as correlate
 from .frontend import cov as cov
@@ -28,14 +31,9 @@ from .frontend import unsorted_segment_max as unsorted_segment_max
 from .frontend import unsorted_segment_mean as unsorted_segment_mean
 from .frontend import unsorted_segment_min as unsorted_segment_min
 from .frontend import unsorted_segment_prod as unsorted_segment_prod
-from .frontend import adaptive_avg_pool2d as adaptive_avg_pool2d
-from .frontend import adaptive_max_pool2d as adaptive_max_pool2d
 from .frontend import unsorted_segment_sqrt_n as unsorted_segment_sqrt_n
 from .frontend import unsorted_segment_sum as unsorted_segment_sum
-from .frontend import approx_max_k as approx_max_k
-from .frontend import approx_min_k as approx_min_k
 
-_ = _basic
 _ = _nan
 _ = _pooling
 _ = _aggregations

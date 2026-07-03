@@ -1,17 +1,16 @@
-"""Linear algebra operations."""
+"""Module docstring."""
 
 from __future__ import annotations
 
-
-from typing import TYPE_CHECKING
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
-
-
-from ml_switcheroo_compiler.ops.base import register_op, OpDef
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.linalg.fft_ops import Fft, Fftnd, Fftshift, Ifftnd, Ifftshift, Irfftnd, Rfft, Rfftnd
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
 @register_op("Fftfreq")
@@ -99,15 +98,11 @@ def fft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
 
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Fft", a.data, n=n, axis=axis)
         # Note: returning proper complex type is complex, using a mock DType mapping if possible
         # We will just return float32 here if complex not supported
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Fft
 
     op = Fft()
     out_shape = op.infer_shape(a, n, axis)
@@ -128,13 +123,9 @@ def rfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
 
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Rfft", a.data, n=n, axis=axis)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Rfft
 
     op = Rfft()
     out_shape = op.infer_shape(a, n, axis)
@@ -155,13 +146,9 @@ def ifft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
 
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ifft", a.data, n=n, axis=axis)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Fft
 
     op = Fft()
     out_shape = op.infer_shape(a, n, axis)
@@ -182,8 +169,6 @@ def fft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = (
 
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Fft2d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -209,8 +194,6 @@ def ifft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = 
 
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ifft2d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -236,8 +219,6 @@ def irfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
 
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Irfft", a.data, n=n, axis=axis)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -251,9 +232,7 @@ def irfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     return _emit_linalg_node("Irfft", [a], {"n": n, "axis": axis}, [tuple(out_shape)], [a.dtype])
 
 
-def fft3d(
-    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
-) -> Tensor:
+def fft3d(a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)) -> Tensor:
     """Computes the 3-dimensional discrete Fourier Transform.
 
     Args:
@@ -265,8 +244,6 @@ def fft3d(
     Tensor: The transformed tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Fft3d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -280,9 +257,7 @@ def fft3d(
     return _emit_linalg_node("Fft3d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
 
 
-def ifft3d(
-    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
-) -> Tensor:
+def ifft3d(a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)) -> Tensor:
     """Computes the 3-dimensional inverse discrete Fourier Transform.
 
     Args:
@@ -294,8 +269,6 @@ def ifft3d(
     Tensor: The transformed tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ifft3d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -321,8 +294,6 @@ def rfft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = 
     Tensor: The transformed tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Rfft2d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -337,9 +308,7 @@ def rfft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = 
     return _emit_linalg_node("Rfft2d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
 
 
-def rfft3d(
-    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
-) -> Tensor:
+def rfft3d(a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)) -> Tensor:
     """Computes the 3-dimensional discrete Fourier Transform for real input.
 
     Args:
@@ -351,8 +320,6 @@ def rfft3d(
     Tensor: The transformed tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Rfft3d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -368,9 +335,7 @@ def rfft3d(
     return _emit_linalg_node("Rfft3d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
 
 
-def irfft2d(
-    a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = (-2, -1)
-) -> Tensor:
+def irfft2d(a: Tensor, s: tuple[int, int] | None = None, axes: tuple[int, int] = (-2, -1)) -> Tensor:
     """Computes the 2-dimensional inverse discrete Fourier Transform for real input.
 
     Args:
@@ -382,8 +347,6 @@ def irfft2d(
     Tensor: The transformed tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Irfft2d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -398,9 +361,7 @@ def irfft2d(
     return _emit_linalg_node("Irfft2d", [a], {"s": s, "axes": axes}, [tuple(out_shape)], [a.dtype])
 
 
-def irfft3d(
-    a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)
-) -> Tensor:
+def irfft3d(a: Tensor, s: tuple[int, int, int] | None = None, axes: tuple[int, int, int] = (-3, -2, -1)) -> Tensor:
     """Computes the 3-dimensional inverse discrete Fourier Transform for real input.
 
     Args:
@@ -412,8 +373,6 @@ def irfft3d(
     Tensor: The transformed tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Irfft3d", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -441,13 +400,9 @@ ifft3 = ifft3d
 def fftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
     """Computes the n-dimensional discrete Fourier Transform."""
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Fftnd", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Fftnd
 
     op = Fftnd()
     out_shape = op.infer_shape(a, s=s, axes=axes)
@@ -457,13 +412,9 @@ def fftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None 
 def ifftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
     """Computes the n-dimensional inverse discrete Fourier Transform."""
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ifftnd", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Ifftnd
 
     op = Ifftnd()
     out_shape = op.infer_shape(a, s=s, axes=axes)
@@ -473,13 +424,9 @@ def ifftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None
 def rfftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
     """Computes the n-dimensional discrete Fourier Transform of real input."""
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Rfftnd", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Rfftnd
 
     op = Rfftnd()
     out_shape = op.infer_shape(a, s=s, axes=axes)
@@ -489,13 +436,9 @@ def rfftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None
 def irfftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | None = None) -> Tensor:
     """Computes the inverse n-dimensional discrete Fourier Transform of real input."""
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Irfftnd", a.data, s=s, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Irfftnd
 
     op = Irfftnd()
     out_shape = op.infer_shape(a, s=s, axes=axes)
@@ -505,13 +448,9 @@ def irfftnd(a: Tensor, s: Sequence[int] | None = None, axes: Sequence[int] | Non
 def fftshift(a: Tensor, axes: Sequence[int] | None = None) -> Tensor:
     """Shift the zero-frequency component to the center of the spectrum."""
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Fftshift", a.data, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Fftshift
 
     op = Fftshift()
     out_shape = op.infer_shape(a, axes=axes)
@@ -521,13 +460,9 @@ def fftshift(a: Tensor, axes: Sequence[int] | None = None) -> Tensor:
 def ifftshift(a: Tensor, axes: Sequence[int] | None = None) -> Tensor:
     """The inverse of fftshift."""
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ifftshift", a.data, axes=axes)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Ifftshift
 
     op = Ifftshift()
     out_shape = op.infer_shape(a, axes=axes)
@@ -545,8 +480,6 @@ def fftfreq(n: int, d: float = 1.0) -> Tensor:
     Tensor: Array of length `n` containing the sample frequencies.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Fftfreq", n, d)
         return Tensor(data, TensorConfig(data.shape, "float32", getattr(data, "device", "cpu")))
@@ -565,8 +498,6 @@ def hfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     Tensor: The real output.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Hfft", a.data, n=n, axis=axis)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -591,8 +522,6 @@ def ihfft(a: Tensor, n: int | None = None, axis: int = -1) -> Tensor:
     Tensor: The complex output.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Ihfft", a.data, n=n, axis=axis)
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
@@ -614,8 +543,6 @@ def rfftfreq(n: int, d: float = 1.0) -> Tensor:
     Tensor: Array of length `n//2 + 1` containing the sample frequencies.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Rfftfreq", n, d)
         return Tensor(data, TensorConfig(data.shape, "float32", getattr(data, "device", "cpu")))

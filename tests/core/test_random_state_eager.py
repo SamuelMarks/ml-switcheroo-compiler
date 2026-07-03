@@ -1,15 +1,16 @@
+"""Module docstring."""
+
 import numpy as np
+
+import ml_switcheroo_compiler.backends.eager_registry as reg
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.random.state import rng_bit_generator, rng_uniform
 
 
-def test_random_state_eager():
-    import ml_switcheroo_compiler.backends.eager_registry as reg
-
+def test_random_state_eager() -> object:
+    """Function docstring."""
     # Register stubs
-    reg.numpy_eager_registry.register("RngBitGenerator")(
-        lambda m, key, **kw: np.zeros(kw.get("shape"))
-    )
+    reg.numpy_eager_registry.register("RngBitGenerator")(lambda m, key, **kw: np.zeros(kw.get("shape")))
     reg.numpy_eager_registry.register("RngUniform")(lambda m, a, b, **kw: np.zeros(kw.get("shape")))
 
     with ConfigContext(eager_mode=True, backend="numpy"):

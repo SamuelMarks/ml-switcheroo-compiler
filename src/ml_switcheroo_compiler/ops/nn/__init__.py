@@ -1,51 +1,66 @@
+# auto-generate-all
+
 """Neural network operations."""
 
+from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d
+
 from .activations import (
-    crelu as crelu,
-    isotonic_regression as isotonic_regression,
-)
-from .activations import (
+    celu,
     elu,
     gelu,
-    relu,
-    selu,
-    softplus,
-    celu,
     glu,
     hard_shrink,
     hard_sigmoid,
     hard_silu,
     hard_swish,
     hard_tanh,
+    hardshrink,
+    hardswish,
+    hardtanh,
     leaky_relu,
     log_sigmoid,
     log_softmax,
+    logsigmoid,
+    mish,
+    prelu,
+    relu,
     relu2,
     relu6,
+    selu,
     sigmoid,
     silu,
     soft_shrink,
     softmax,
-    softsign,
-    hardshrink,
-    hardtanh,
-    hardswish,
-    logsigmoid,
-    mish,
-    prelu,
     softmin,
+    softplus,
     softshrink,
-    step,
+    softsign,
     sparse_plus,
     sparse_sigmoid,
     sparsemax,
     squareplus,
+    step,
     swish,
     tanh_shrink,
     threshold,
 )
+from .activations import (
+    crelu as crelu,
+)
+from .activations import (
+    isotonic_regression as isotonic_regression,
+)
+from .attention_utils import (
+    alibi_mask as alibi_mask,
+)
+from .attention_utils import (
+    rope as rope,
+)
+from .attention_utils import (
+    sinusoidal_positional_encoding as sinusoidal_positional_encoding,
+)
+from .clip_grad import clip_grad_norm
 from .conv import (
-    conv_general,
     GenericConvConfig,
     conv,
     conv1d,
@@ -54,10 +69,11 @@ from .conv import (
     conv2d_transpose,
     conv3d,
     conv3d_transpose,
+    conv_general,
+    conv_transpose,
     conv_transpose1d,
     conv_transpose2d,
     conv_transpose3d,
-    conv_transpose,
     depthwise_conv,
     depthwise_conv1d,
     depthwise_conv2d,
@@ -65,144 +81,150 @@ from .conv import (
     separable_conv1d,
     separable_conv2d,
 )
-from .dropout import dropout, activity_regularization
-from .loss import (
-    log_poisson_loss as log_poisson_loss,
-    in_top_k as in_top_k,
-    l2_loss as l2_loss,
-    scale_regularization_loss as scale_regularization_loss,
-)
-from .normalization import (
-    layer_norm,
-    group_norm,
-    instance_norm,
-    batch_norm,
-    rms_norm,
-    l2_normalize as l2_normalize,
-    moments as moments,
-    normalize_moments as normalize_moments,
-    sufficient_statistics as sufficient_statistics,
-    weighted_moments as weighted_moments,
-    zero_fraction as zero_fraction,
-)
-from .loss import (
-    ctc_loss,
-    dice_loss,
-    categorical_generalized_cross_entropy,
-    circle_loss,
-    binary_crossentropy,
-    categorical_crossentropy,
-    sparse_categorical_crossentropy,
-    ctc_decode,
-)
-from .normalization import (
-    local_response_normalization,
-    batch_normalization,
-    rms_normalization,
-    BatchNormConfig,
-)
-from .nlp import (
-    all_candidate_sampler,
-    compute_accidental_hits,
-    fixed_unigram_candidate_sampler,
-    learned_unigram_candidate_sampler,
-    log_uniform_candidate_sampler,
-    uniform_candidate_sampler,
-    nce_loss,
-    sampled_softmax_loss,
-    embedding_lookup,
-    embedding_lookup_sparse,
-    safe_embedding_lookup_sparse,
-)
 from .conv_utils import (
+    bias_add,
+    collapse_repeated,
+    compute_average_loss,
+    convolution,
     depthwise_conv2d_backprop_filter,
     depthwise_conv2d_backprop_input,
     dilation2d,
     erosion2d,
-    convolution,
-    bias_add,
-    collapse_repeated,
-    compute_average_loss,
+)
+from .dropout import activity_regularization, dropout, dropout2d, dropout3d
+from .gru import gru
+from .linear_ops import bilinear, linear
+from .loss import (
+    binary_crossentropy,
+    categorical_crossentropy,
+    categorical_generalized_cross_entropy,
+    circle_loss,
+    ctc_decode,
+    dice_loss,
+    sparse_categorical_crossentropy,
+)
+from .loss import (
+    in_top_k as in_top_k,
+)
+from .loss import (
+    l2_loss as l2_loss,
+)
+from .loss import (
+    log_poisson_loss as log_poisson_loss,
+)
+from .loss import (
+    scale_regularization_loss as scale_regularization_loss,
+)
+from .nlp import (
+    AttentionConfig,
+    AttentionInputs,
+    CTCLossOptions,
+    DotProductAttentionConfig,
+    all_candidate_sampler,
+    attention,
+    compute_accidental_hits,
+    ctc_beam_search_decoder,
+    ctc_greedy_decoder,
+    ctc_loss,
+    ctc_unique_labels,
+    dot_product_attention,
+    embedding,
+    embedding_lookup,
+    embedding_lookup_sparse,
+    fixed_unigram_candidate_sampler,
+    learned_unigram_candidate_sampler,
+    log_uniform_candidate_sampler,
+    nce_loss,
+    safe_embedding_lookup_sparse,
+    sampled_softmax_loss,
+    uniform_candidate_sampler,
+)
+from .normalization import (
+    BatchNormConfig,
+    batch_norm,
+    batch_norm_with_global_normalization,
+    batch_normalization,
+    group_norm,
+    instance_norm,
+    layer_norm,
+    local_response_normalization,
+    lrn,
+    rms_norm,
+    rms_normalization,
+)
+from .normalization import (
+    l2_normalize as l2_normalize,
+)
+from .normalization import (
+    moments as moments,
+)
+from .normalization import (
+    normalize_moments as normalize_moments,
+)
+from .normalization import (
+    sufficient_statistics as sufficient_statistics,
+)
+from .normalization import (
+    weighted_moments as weighted_moments,
 )
 from .pooling import (
+    average_pool,
+    avg_pool,
     avg_pool1d,
     avg_pool2d,
     avg_pool3d,
+    fractional_avg_pool,
+    fractional_max_pool,
+    max_pool,
     max_pool1d,
     max_pool2d,
     max_pool3d,
     max_pool_with_argmax,
-    fractional_avg_pool,
-    fractional_max_pool,
     pool,
+    pool1d,
+    pool2d,
+    pool3d,
 )
-from .normalization import (
-    batch_norm_with_global_normalization,
-    lrn,
+from .quantized_ops import (
+    gather_qmm as gather_qmm,
 )
-from .nlp import (
-    ctc_beam_search_decoder,
-    ctc_greedy_decoder,
-    ctc_unique_labels,
+from .quantized_ops import (
+    quantize as quantize,
+)
+from .quantized_ops import (
+    quantized_embedding as quantized_embedding,
+)
+from .quantized_ops import (
+    quantized_linear as quantized_linear,
+)
+from .quantized_ops import (
+    quantized_matmul as quantized_matmul,
+)
+from .rnn import (
+    BidirectionalConfig,
+    BidirectionalInputs,
+    ConvLSTMConfig,
+    RNNConfig,
+    RNNWeights,
+    ScanConfig,
+    bidirectional,
+    conv1d_lstm_cell,
+    conv2d_lstm_cell,
+    conv3d_lstm_cell,
+    conv_lstm_cell,
+    gru_cell,
+    lstm_cell,
+    rnn,
+    scan,
+    simple_rnn_cell,
 )
 from .rnn_utils import (
     RNNCellDeviceWrapper,
     RNNCellDropoutWrapper,
     RNNCellResidualWrapper,
 )
-from .nlp import (
-    AttentionConfig,
-    DotProductAttentionConfig,
-    AttentionInputs,
-    attention,
-    embedding,
-    dot_product_attention,
-)
 from .time_distributed import time_distributed
-from .pooling import average_pool, avg_pool, max_pool, pool1d, pool2d, pool3d
-from .rnn import (
-    RNNConfig,
-    ScanConfig,
-    BidirectionalConfig,
-    BidirectionalInputs,
-    ConvLSTMConfig,
-    RNNWeights,
-    gru_cell,
-    lstm_cell,
-    simple_rnn_cell,
-    rnn,
-    scan,
-    conv_lstm_cell,
-    conv1d_lstm_cell,
-    conv2d_lstm_cell,
-    conv3d_lstm_cell,
-    bidirectional,
-)
-
-from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d
-
-from .linear_ops import linear, bilinear
-
 from .upsample_ops import upsample
-
-from .clip_grad import clip_grad_norm
-from .attention_utils import (
-    rope as rope,
-    sinusoidal_positional_encoding as sinusoidal_positional_encoding,
-    alibi_mask as alibi_mask,
-)
-
-from .quantized_ops import (
-    quantize as quantize,
-    quantized_matmul as quantized_matmul,
-    gather_qmm as gather_qmm,
-    quantized_linear as quantized_linear,
-    quantized_embedding as quantized_embedding,
-)
-
-from .dropout import dropout2d
-from .dropout import dropout3d
-from .gru import gru
 
 __all__ = [
     "AttentionConfig",
@@ -210,6 +232,7 @@ __all__ = [
     "BatchNormConfig",
     "BidirectionalConfig",
     "BidirectionalInputs",
+    "CTCLossOptions",
     "ConvLSTMConfig",
     "DotProductAttentionConfig",
     "GenericConvConfig",
@@ -375,5 +398,4 @@ __all__ = [
     "uniform_candidate_sampler",
     "upsample",
     "weighted_moments",
-    "zero_fraction",
 ]

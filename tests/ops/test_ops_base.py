@@ -4,10 +4,16 @@ This module contains tests verifying that operations can be registered and retri
 correctly, and that eager and tracing execution modes behave as expected.
 """
 
+import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
-from ml_switcheroo_compiler.ops.base import _OP_REGISTRY, OpDef, get_op, register_op
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, OpDef, get_op, register_op
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 def test_register_and_get_op() -> None:
@@ -175,13 +181,6 @@ def test_opdef_call_eager() -> None:
     Returns:
     None
     """
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     original_registry = _OP_REGISTRY.copy()
     try:
 
@@ -334,14 +333,6 @@ def test_opdef_call_tracing() -> None:
     Returns:
     None
     """
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     original_registry = _OP_REGISTRY.copy()
     try:
 
@@ -469,7 +460,7 @@ def test_opdef_call_tracing() -> None:
         proxy_in = ProxyTensor(id="in1", shape=(1,), dtype=DType.Float32.value)
         t_in = Tensor(proxy_in, TensorConfig((1,), DType.Float32, dev))
 
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             op = get_op("TestTraceOp")()
             t_out = op(t_in)
@@ -481,12 +472,12 @@ def test_opdef_call_tracing() -> None:
             assert t_out.dtype == DType.Float32
 
             # Check node was added
-            nodes = list(_tracer.active_graph.nodes.values())
+            nodes = list(global_tracing_state.active_graph.nodes.values())
             assert len(nodes) == 1
             assert nodes[0].op_type == "TestTraceOp"
             assert nodes[0].inputs == ["in1"]
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
         # Test error when tracing outside context
         with pytest.raises(
             RuntimeError,

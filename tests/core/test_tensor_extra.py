@@ -1,5 +1,8 @@
 """Tests for extra methods in Tensor class."""
 
+# Mock eval to return scalar
+from unittest.mock import patch
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
@@ -35,8 +38,6 @@ def test_tensor_extra_methods() -> None:
 def test_tensor_item_non_tensor() -> None:
     """Test function."""
     t_scalar = Tensor(np.array(5.0), TensorConfig((), "float32", Device("cpu")))
-    # Mock eval to return scalar
-    from unittest.mock import patch
 
     with patch.object(t_scalar, "eval", return_value=np.array(10.0)):
         assert t_scalar.item() == 10.0

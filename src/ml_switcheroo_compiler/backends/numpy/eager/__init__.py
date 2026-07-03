@@ -2,10 +2,11 @@
 
 import importlib
 import pkgutil
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-import numpy as np
 import re
 
+import numpy as np
+
+from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
 
 # Auto-discover all modules in this package to run their @register decorators
 
@@ -28,8 +29,6 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     func_registry = numpy_eager_registry.get(op_type)
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
-
-    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
     func_registry = global_eager_registry.get(op_type)
     if func_registry is not None:

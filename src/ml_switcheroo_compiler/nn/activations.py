@@ -1,6 +1,18 @@
-"""Neural network modules and layers."""
+"""Module docstring."""
+
+import math
 
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.creation.frontend import full_like, ones_like, zeros_like
+from ml_switcheroo_compiler.ops.registry import get_op
+from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
+from ml_switcheroo_compiler.ops.unary import expm1
+
+
+def clip(x: object, a: object, b: object) -> object:
+    """Function docstring."""
+    return get_op("Clip")()(x, a, b)
+
 
 GELU_CONSTANT = 0.044715
 RELU6_MAX = 6.0
@@ -24,24 +36,20 @@ def gelu(x: object, approximate: object = False) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    import math
-
-    from ml_switcheroo_compiler import ops
-
     if approximate == "tanh" or approximate is True:
-        const1 = ops.full_like(x, math.sqrt(2 / math.pi))  # pragma: no cover
-        const2 = ops.full_like(x, GELU_CONSTANT)  # pragma: no cover
-        x3 = ops.power(x, ops.full_like(x, 3.0))  # pragma: no cover
-        inner = ops.add(x, ops.multiply(const2, x3))  # pragma: no cover
-        tanh_in = ops.multiply(const1, inner)  # pragma: no cover
-        tanh_out = ops.tanh(tanh_in)  # pragma: no cover
-        one_plus = ops.add(ops.full_like(x, 1.0), tanh_out)  # pragma: no cover
-        return ops.multiply(ops.full_like(x, 0.5), ops.multiply(x, one_plus))  # pragma: no cover
-    const_sqrt2 = ops.full_like(x, math.sqrt(2.0))
-    erf_in = ops.divide(x, const_sqrt2)
-    erf_out = ops.erf(erf_in)
-    one_plus = ops.add(ops.full_like(x, 1.0), erf_out)
-    return ops.multiply(ops.multiply(x, ops.full_like(x, 0.5)), one_plus)
+        const1 = full_like(x, math.sqrt(2 / math.pi))  # pragma: no cover
+        const2 = full_like(x, GELU_CONSTANT)  # pragma: no cover
+        x3 = get_op("Power")()(x, full_like(x, 3.0))  # pragma: no cover
+        inner = get_op("Add")()(x, get_op("Multiply")()(const2, x3))  # pragma: no cover
+        tanh_in = get_op("Multiply")()(const1, inner)  # pragma: no cover
+        tanh_out = get_op("Tanh")()(tanh_in)  # pragma: no cover
+        one_plus = get_op("Add")()(full_like(x, 1.0), tanh_out)  # pragma: no cover
+        return get_op("Multiply")()(full_like(x, 0.5), get_op("Multiply")()(x, one_plus))  # pragma: no cover
+    const_sqrt2 = full_like(x, math.sqrt(2.0))
+    erf_in = get_op("Divide")()(x, const_sqrt2)
+    erf_out = get_op("Erf")()(erf_in)
+    one_plus = get_op("Add")()(full_like(x, 1.0), erf_out)
+    return get_op("Multiply")()(get_op("Multiply")()(x, full_like(x, 0.5)), one_plus)
 
 
 def logsumexp(
@@ -59,10 +67,12 @@ def logsumexp(
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler.ops.reductions import logsumexp as _lse
+    logsumexp = get_op("Logsumexp")()
+    get_op("Max")()
+    get_op("Sum")()  # logsumexp as _lse
 
     keepdims = kwargs.get("keepdims", False)
-    return _lse(a, axis=axis, keepdims=keepdims)
+    return logsumexp(a, axis=axis, keepdims=keepdims)
 
 
 def one_hot(x: Tensor, num_classes: int, *, dtype: object = None, axis: int = -1) -> Tensor:
@@ -77,10 +87,11 @@ def one_hot(x: Tensor, num_classes: int, *, dtype: object = None, axis: int = -1
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    from ml_switcheroo_compiler.ops.binary import equal
-    from ml_switcheroo_compiler.ops.creation.frontend import arange
-    from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
-    from ml_switcheroo_compiler.ops.unary import cast
+    equal = get_op("Equal")()
+
+    arange = get_op("Arange")()
+
+    cast = get_op("Cast")()
 
     classes = arange(num_classes)
     for _ in range(len(x.shape)):
@@ -104,9 +115,14 @@ def softmax(x: Tensor, axis: int = -1, where: object = None, initial: object = N
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    from ml_switcheroo_compiler.ops.binary import subtract, true_divide
-    from ml_switcheroo_compiler.ops.reductions import max, sum
-    from ml_switcheroo_compiler.ops.unary import exp
+    subtract = get_op("Subtract")()
+    true_divide = get_op("TrueDivide")()
+
+    get_op("Logsumexp")()
+    max = get_op("Max")()
+    sum = get_op("Sum")()  # max, sum
+
+    exp = get_op("Exp")()
 
     x_max = max(x, axis=axis, keepdims=True)
     unnormalized = exp(subtract(x, x_max))
@@ -122,8 +138,11 @@ def sigmoid(x: Tensor) -> Tensor:
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    from ml_switcheroo_compiler.ops.binary import add, true_divide
-    from ml_switcheroo_compiler.ops.unary import exp, negative
+    add = get_op("Add")()
+    true_divide = get_op("TrueDivide")()
+
+    exp = get_op("Exp")()
+    negative = get_op("Negative")()
 
     return true_divide(1.0, add(1.0, exp(negative(x))))
 
@@ -137,9 +156,14 @@ def log_sigmoid(x: Tensor) -> Tensor:
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    from ml_switcheroo_compiler.ops.binary import less, subtract
-    from ml_switcheroo_compiler.ops.shape.frontend import where
-    from ml_switcheroo_compiler.ops.unary import exp, log1p, negative
+    less = get_op("Less")()
+    subtract = get_op("Subtract")()
+
+    where = get_op("Where")()
+
+    exp = get_op("Exp")()
+    log1p = get_op("Log1P")()
+    negative = get_op("Negative")()
 
     # log(sigmoid(x)) = -log1p(exp(-x)) for x > 0
     # log(sigmoid(x)) = x - log1p(exp(x)) for x < 0
@@ -159,17 +183,13 @@ def relu(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    zero = ops.zeros_like(x)
-    return ops.maximum(x, zero)
+    zero = zeros_like(x)
+    return get_op("Maximum")()(x, zero)
 
 
 def relu2(x: object) -> object:
     """Computes the ReLU2 activation function, capping at 2."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.clip(x, 0.0, 2.0)
+    return clip(x, 0.0, 2.0)
 
 
 def relu6(x: object) -> object:
@@ -181,9 +201,7 @@ def relu6(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    return ops.clip(x, 0.0, RELU6_MAX)
+    return clip(x, 0.0, RELU6_MAX)
 
 
 def hard_sigmoid(x: object) -> object:
@@ -195,9 +213,7 @@ def hard_sigmoid(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    return ops.clip(x / HARDSIGMOID_SCALE + HARDSIGMOID_OFFSET, 0.0, 1.0)
+    return clip(x / HARDSIGMOID_SCALE + HARDSIGMOID_OFFSET, 0.0, 1.0)
 
 
 def hard_tanh(x: object) -> object:
@@ -209,9 +225,7 @@ def hard_tanh(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    return ops.clip(x, -1.0, 1.0)
+    return clip(x, -1.0, 1.0)
 
 
 def swish(x: object) -> object:
@@ -223,9 +237,7 @@ def swish(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    return x / (1.0 + ops.exp(-x))
+    return x / (1.0 + get_op("Exp")()(-x))
 
 
 def silu(x: object) -> object:
@@ -237,9 +249,7 @@ def silu(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    return x / (1.0 + ops.exp(-x))
+    return x / (1.0 + get_op("Exp")()(-x))
 
 
 def elu(x: object, alpha: object = 1.0) -> object:
@@ -252,9 +262,7 @@ def elu(x: object, alpha: object = 1.0) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    return ops.where(x > 0.0, x, alpha * (ops.exp(x) - 1.0))
+    return get_op("Where")()(x > 0.0, x, alpha * (get_op("Exp")()(x) - 1.0))
 
 
 def celu(x: object, alpha: object = 1.0) -> object:
@@ -267,10 +275,8 @@ def celu(x: object, alpha: object = 1.0) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    zero = ops.zeros_like(x)
-    return ops.maximum(x, zero) + ops.minimum(alpha * (ops.exp(x / alpha) - 1.0), zero)
+    zero = zeros_like(x)
+    return get_op("Maximum")()(x, zero) + get_op("Minimum")()(alpha * (get_op("Exp")()(x / alpha) - 1.0), zero)
 
 
 def selu(x: object) -> object:
@@ -282,14 +288,15 @@ def selu(x: object) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
     alpha = SELU_ALPHA
     scale = SELU_SCALE
 
-    pos = ops.maximum(x, ops.full_like(x, 0.0))
-    neg = ops.multiply(ops.full_like(x, alpha), ops.expm1(ops.minimum(x, ops.full_like(x, 0.0))))
-    return ops.multiply(ops.full_like(x, scale), ops.add(pos, neg))
+    pos = get_op("Maximum")()(x, full_like(x, 0.0))
+    neg = get_op("Multiply")()(
+        full_like(x, alpha),
+        expm1(get_op("Minimum")()(x, full_like(x, 0.0))),
+    )
+    return get_op("Multiply")()(full_like(x, scale), get_op("Add")()(pos, neg))
 
 
 def log_softmax(x: object, axis: object = -1) -> object:
@@ -302,138 +309,109 @@ def log_softmax(x: object, axis: object = -1) -> object:
     Returns:
         object: The evaluated output resulting from this operation.
     """
-    from ml_switcheroo_compiler import ops
-
-    amax = ops.max(x, axis=axis, keepdims=True)
-    shifted = ops.subtract(x, amax)
-    sum_exp = ops.sum(ops.exp(shifted), axis=axis, keepdims=True)
-    return ops.subtract(shifted, ops.log(sum_exp))
+    amax = get_op("Max")()(x, axis=axis, keepdims=True)
+    shifted = get_op("Subtract")()(x, amax)
+    sum_exp = get_op("Sum")()(get_op("Exp")()(shifted), axis=axis, keepdims=True)
+    return get_op("Subtract")()(shifted, get_op("Log")()(sum_exp))
 
 
 def glu(x: object, axis: int = -1) -> object:
     """Computes the Gated Linear Unit (GLU) activation function."""
-    from ml_switcheroo_compiler import ops
-
-    a, b = ops.shape.split(x, 2, dim=axis)
-    return ops.multiply(a, sigmoid(b))
+    a, b = get_op("Split")()(x, 2, dim=axis)
+    return get_op("Multiply")()(a, sigmoid(b))
 
 
 def hard_silu(x: object) -> object:
     """Computes the Hard SiLU activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.multiply(x, hard_sigmoid(x))
+    return get_op("Multiply")()(x, hard_sigmoid(x))
 
 
 def hard_swish(x: object) -> object:
     """Computes the Hard Swish activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.multiply(
-        x, ops.divide(ops.clip(ops.add(x, HARDSWISH_OFFSET), 0.0, HARDSWISH_MAX), HARDSWISH_MAX)
+    return get_op("Multiply")()(
+        x,
+        get_op("Divide")()(
+            clip(get_op("Add")()(x, HARDSWISH_OFFSET), 0.0, HARDSWISH_MAX),
+            HARDSWISH_MAX,
+        ),
     )
 
 
 def leaky_relu(x: object, negative_slope: float = LEAKY_RELU_DEFAULT_SLOPE) -> object:
     """Computes the Leaky ReLU activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.where(ops.greater_equal(x, 0.0), x, ops.multiply(x, negative_slope))
+    return get_op("Where")()(get_op("GreaterEqual")()(x, 0.0), x, get_op("Multiply")()(x, negative_slope))
 
 
 def mish(x: object) -> object:
     """Computes the Mish activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.multiply(x, ops.tanh(softplus(x)))
+    return get_op("Multiply")()(x, get_op("Tanh")()(softplus(x)))
 
 
 def soft_sign(x: object) -> object:
     """Computes the SoftSign activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.divide(x, ops.add(1.0, ops.abs(x)))
+    return get_op("Divide")()(x, get_op("Add")()(1.0, get_op("Abs")()(x)))
 
 
 def softplus(x: object) -> object:
     """Computes the Softplus activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.log1p(ops.exp(x))
+    return get_op("Log1P")()(get_op("Exp")()(x))
 
 
 def sparse_plus(x: object) -> object:
     """Computes the SparsePlus activation function."""
-    from ml_switcheroo_compiler import ops
-
-    leq = ops.less_equal(x, ops.full_like(x, -1.0))
-    geq = ops.greater_equal(x, ops.full_like(x, 1.0))
-    mid = ops.multiply(
-        ops.full_like(x, SPARSE_PLUS_MID_MULTIPLIER), ops.square(ops.add(x, ops.full_like(x, 1.0)))
+    leq = get_op("LessEqual")()(x, full_like(x, -1.0))
+    geq = get_op("GreaterEqual")()(x, full_like(x, 1.0))
+    mid = get_op("Multiply")()(
+        full_like(x, SPARSE_PLUS_MID_MULTIPLIER),
+        get_op("Square")()(get_op("Add")()(x, full_like(x, 1.0))),
     )
-    return ops.where(leq, ops.zeros_like(x), ops.where(geq, x, mid))
+    return get_op("Where")()(leq, zeros_like(x), get_op("Where")()(geq, x, mid))
 
 
 def sparse_sigmoid(x: object) -> object:
     """Computes the Sparse Sigmoid activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.clip(ops.add(ops.multiply(0.5, x), 0.5), 0.0, 1.0)
+    return clip(get_op("Add")()(get_op("Multiply")()(0.5, x), 0.5), 0.0, 1.0)
 
 
 def squareplus(x: object, b: float = 4.0) -> object:
     """Computes the SquarePlus activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.multiply(0.5, ops.add(x, ops.sqrt(ops.add(ops.square(x), b))))
+    return get_op("Multiply")()(0.5, get_op("Add")()(x, get_op("Sqrt")()(get_op("Add")()(get_op("Square")()(x), b))))
 
 
 def standardize(x: object, axis: int = -1, epsilon: float = 1e-5) -> object:
     """Standardizes the input tensor along the given axis."""
-    from ml_switcheroo_compiler import ops
-
-    mean = ops.mean(x, axis=axis, keepdims=True)
-    var = ops.var(x, axis=axis, keepdims=True)  # pragma: no cover
-    return ops.divide(ops.subtract(x, mean), ops.sqrt(ops.add(var, epsilon)))  # pragma: no cover
+    mean = get_op("Mean")()(x, axis=axis, keepdims=True)
+    var = get_op("Var")()(x, axis=axis, keepdims=True)  # pragma: no cover
+    return get_op("Divide")()(get_op("Subtract")()(x, mean), get_op("Sqrt")()(get_op("Add")()(var, epsilon)))  # pragma: no cover
 
 
 def hard_shrink(x: object, lower: float = -0.5, upper: float = 0.5) -> object:
     """Computes the Hard Shrink activation function."""
-    from ml_switcheroo_compiler import ops
-
-    cond = ops.logical_or(ops.less(x, lower), ops.greater(x, upper))
-    return ops.where(cond, x, ops.zeros_like(x))
+    cond = get_op("LogicalOr")()(get_op("Less")()(x, lower), get_op("Greater")()(x, upper))
+    return get_op("Where")()(cond, x, zeros_like(x))
 
 
 def soft_shrink(x: object, lower: float = -0.5, upper: float = 0.5) -> object:
     """Computes the Soft Shrink activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.where(
-        ops.less(x, lower),
-        ops.subtract(x, lower),
-        ops.where(ops.greater(x, upper), ops.subtract(x, upper), ops.zeros_like(x)),
+    return get_op("Where")()(
+        get_op("Less")()(x, lower),
+        get_op("Subtract")()(x, lower),
+        get_op("Where")()(get_op("Greater")()(x, upper), get_op("Subtract")()(x, upper), zeros_like(x)),
     )
 
 
 def tanh_shrink(x: object) -> object:
     """Computes the Tanh Shrink activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.subtract(x, ops.tanh(x))
+    return get_op("Subtract")()(x, get_op("Tanh")()(x))
 
 
 def threshold(x: object, threshold: float = 0.0, value: float = 0.0) -> object:
     """Computes the Threshold activation function."""
-    from ml_switcheroo_compiler import ops
-
-    return ops.where(ops.greater(x, threshold), x, ops.full_like(x, value))
+    return get_op("Where")()(get_op("Greater")()(x, threshold), x, full_like(x, value))
 
 
 def sparsemax(x: object, axis: int = -1) -> object:
     """Computes the Sparsemax activation function."""
-    from ml_switcheroo_compiler import ops
-
     # sparsemax(z) = max(0, z - tau(z))
     # where tau(z) is the threshold function.
     # To implement sparsemax properly:
@@ -443,11 +421,11 @@ def sparsemax(x: object, axis: int = -1) -> object:
     # 4. max(0, z - tau)
     # Since we may not have full sort easily, we can use an approximation or full sort.
     # We will use sort.
-    sorted_x = ops.sort(x, axis=axis)  # Ascending
+    sorted_x = get_op("Sort")()(x, axis=axis)  # Ascending
     # We want descending
-    sorted_x = ops.multiply(ops.sort(ops.multiply(x, -1.0), axis=axis), -1.0)
+    sorted_x = get_op("Multiply")()(get_op("Sort")()(get_op("Multiply")()(x, -1.0), axis=axis), -1.0)
 
-    cumsum_x = ops.cumsum(sorted_x, axis=axis)
+    cumsum_x = get_op("Cumsum")()(sorted_x, axis=axis)
 
     # Create an array of [1, 2, ..., d] along the axis
     shape = x.shape
@@ -458,23 +436,23 @@ def sparsemax(x: object, axis: int = -1) -> object:
     arange_shape = [1] * rank
     arange_shape[axis] = d
 
-    j = ops.reshape(ops.arange(1, d + 1, dtype=x.dtype), arange_shape)
+    j = get_op("Reshape")()(get_op("Arange")()(1, d + 1, dtype=x.dtype.value), arange_shape)
 
     # condition: 1 + j * z_j > sum_{i=1}^j z_i
-    cond = ops.greater(ops.add(1.0, ops.multiply(j, sorted_x)), cumsum_x)
+    cond = get_op("Greater")()(get_op("Add")()(1.0, get_op("Multiply")()(j, sorted_x)), cumsum_x)
 
-    k = ops.sum(ops.cast(cond, dtype=x.dtype), axis=axis, keepdims=True)
+    k = get_op("Sum")()(get_op("Cast")()(cond, dtype=x.dtype.value), axis=axis, keepdims=True)
 
     # To get the sum up to k, we can use gather or just sum with masking
     # Wait, sum_k is the k-th element of cumsum_x
     # We can get it by picking the element at k-1
     # Actually, using a mask is easier: mask = j <= k
-    mask = ops.less_equal(j, k)
-    sum_k = ops.sum(ops.where(mask, sorted_x, ops.zeros_like(sorted_x)), axis=axis, keepdims=True)
+    mask = get_op("LessEqual")()(j, k)
+    sum_k = get_op("Sum")()(get_op("Where")()(mask, sorted_x, zeros_like(sorted_x)), axis=axis, keepdims=True)
 
-    tau = ops.divide(ops.subtract(sum_k, 1.0), k)
+    tau = get_op("Divide")()(get_op("Subtract")()(sum_k, 1.0), k)
 
-    return ops.maximum(0.0, ops.subtract(x, tau))
+    return get_op("Maximum")()(0.0, get_op("Subtract")()(x, tau))
 
 
 def prelu(x: object, alpha: object) -> object:
@@ -487,7 +465,9 @@ def prelu(x: object, alpha: object) -> object:
     Returns:
         object: The result.
     """
-    from ml_switcheroo_compiler.ops import maximum, minimum, multiply
+    maximum = get_op("Maximum")()
+    minimum = get_op("Minimum")()
+    multiply = get_op("Multiply")()
 
     return maximum(0.0, x) + multiply(alpha, minimum(0.0, x))
 
@@ -502,7 +482,7 @@ def softmin(x: object, axis: int = -1) -> object:
     Returns:
         object: The result.
     """
-    from ml_switcheroo_compiler.ops import negative
+    negative = get_op("Negative")()
 
     return softmax(negative(x), axis=axis)
 
@@ -516,7 +496,8 @@ def step(x: object) -> object:
     Returns:
         object: The result.
     """
-    from ml_switcheroo_compiler.ops import greater_equal, where, zeros_like, ones_like
+    greater_equal = get_op("GreaterEqual")()
+    where = get_op("Where")()
 
     return where(greater_equal(x, 0.0), ones_like(x), zeros_like(x))
 

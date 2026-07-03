@@ -19,9 +19,7 @@ class ExportArchive:  # pragma: no cover
         """
         self.trackables[id(resource)] = resource  # pragma: no cover
 
-    def add_endpoint(
-        self, name: str, fn: Callable[..., object], **kwargs: object
-    ) -> None:  # pragma: no cover
+    def add_endpoint(self, name: str, fn: Callable[..., object], **kwargs: object) -> None:  # pragma: no cover
         """Add an endpoint.
 
         Args:
@@ -31,9 +29,7 @@ class ExportArchive:  # pragma: no cover
         """
         self.endpoints[name] = fn  # pragma: no cover
 
-    def write_out(
-        self, filepath: str, options: Optional[object] = None
-    ) -> None:  # pragma: no cover
+    def write_out(self, filepath: str, options: Optional[object] = None) -> None:  # pragma: no cover
         """Write the archive to a directory.
 
         Args:

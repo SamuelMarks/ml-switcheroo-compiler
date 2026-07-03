@@ -1,25 +1,33 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
-# pylint: disable=duplicate-code
 
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
+import math
+import typing
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+
+# pylint: disable=duplicate-code
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.shape import broadcast_shapes
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import dispatch_eager
+from ml_switcheroo_compiler.ops.registry import register_frontend
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
+# Dummy mock
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 @dispatch_eager("Reshape")
+@register_frontend("reshape")
 def reshape(input: Tensor, shape: Sequence[int] | None = None) -> Tensor:
     """Reshapes the input tensor to the specified shape.
 
@@ -30,6 +38,12 @@ def reshape(input: Tensor, shape: Sequence[int] | None = None) -> Tensor:
     Returns:
     Tensor: A reshaped tensor with the specified shape
     """
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Reshape", getattr(input, "data", input), tuple(shape))
+
+        return Tensor(data, TensorConfig(getattr(data, "shape", tuple(shape)), input.dtype, input.device))
+
     inputs = [input]
     # shape calculation placeholder
     out_shape = tuple(shape)
@@ -54,8 +68,6 @@ def flatten(input: Tensor, start_dim: int = 0, end_dim: int = -1) -> Tensor:
     Returns:
     Tensor: A flattened 1D tensor
     """
-    import math
-
     shape = list(input.shape) if input.shape is not None else []
     if not shape:
         return reshape(input, [-1])
@@ -126,9 +138,7 @@ def _compute_squeeze_shape(shape: tuple, dim: int | tuple[int, ...] | list[int] 
 
 
 @dispatch_eager("Squeeze")
-def squeeze(
-    input: Tensor, dim: int | Sequence[int] | None = None, axis: int | Sequence[int] | None = None
-) -> Tensor:
+def squeeze(input: Tensor, dim: int | Sequence[int] | None = None, axis: int | Sequence[int] | None = None) -> Tensor:
     """Removes dimensions of size 1 from the input tensor.
 
     Args:
@@ -210,15 +220,16 @@ def expand(input: Tensor, size: Sequence[int]) -> Tensor:
     )
 
 
-def _extract_tolist(size: object) -> object:
-    """Function docstring.
+def _parse_tensor_shape(size: object) -> object:
+    """Extracts a shape sequence from a tensor object if possible.
 
     Args:
-        size: Arg.
+        size: The potential tensor object.
+
+    Returns:
+        The extracted list or the original object.
     """
-    if (
-        hasattr(size, "data") and hasattr(size.data, "tolist") and callable(size.data.tolist)
-    ):  # pragma: no branch
+    if hasattr(size, "data") and hasattr(size.data, "tolist") and callable(size.data.tolist):  # pragma: no branch
         return size.data.tolist()  # pragma: no cover
     if hasattr(size, "tolist") and callable(size.tolist):  # pragma: no branch
         return size.tolist()  # pragma: no cover
@@ -232,10 +243,7 @@ def _try_extract_tolist(size_list: list[object]) -> list[object] | None:
         size_list: Arg.
     """
     try:
-        return [
-            int(s.data.tolist() if not isinstance(s.data.tolist(), list) else s.data.tolist()[0])
-            for s in size_list
-        ]
+        return [int(s.data.tolist() if not isinstance(s.data.tolist(), list) else s.data.tolist()[0]) for s in size_list]
     except TypeError:
         return None
 
@@ -270,11 +278,14 @@ def _process_data_list(size_list: list[object], first_data: object) -> list[obje
     return size_list  # pragma: no cover
 
 
-def _extract_from_list(size_list: list[object]) -> list[object]:
-    """Function docstring.
+def _parse_sequence_shape(size_list: list[object]) -> list[object]:
+    """Parses a sequence (list) of shape dimensions, potentially resolving inner tensors.
 
     Args:
-        size_list: Arg.
+        size_list: A list of dimension sizes.
+
+    Returns:
+        A resolved list of dimensions.
     """
     if not size_list:  # pragma: no branch
         return size_list  # pragma: no cover
@@ -283,37 +294,53 @@ def _extract_from_list(size_list: list[object]) -> list[object]:
     return _process_data_list(size_list, size_list[0].data)  # pragma: no cover
 
 
+def _parse_scalar(s: object) -> object:
+    """Parses a scalar element into an int if possible.
+
+    Args:
+        s: The scalar object.
+
+    Returns:
+        The integer or the original object.
+    """
+    if isinstance(s, (int, float, bool)):
+        return int(s)
+
+    if hasattr(s, "item") and callable(s.item):
+        try:
+            return int(s.item())
+        except (ValueError, TypeError):
+            pass
+
+    if hasattr(s, "data") and hasattr(s.data, "item"):
+        try:
+            return int(s.data.item())
+        except (ValueError, TypeError, AttributeError):
+            pass
+
+    return s
+
+
 def _parse_shape_arg(size: object) -> tuple[int, ...] | None:
     """Parses various types of size arguments into a shape tuple.
 
     Handles scalar tensors, shape tuples, lists of tensors, etc.
+
+    Args:
+        size: The size argument to parse.
+
+    Returns:
+        The parsed shape tuple or None.
     """
     if size is None:
         return None
 
-    size = _extract_tolist(size)
-
+    size = _parse_tensor_shape(size)
     if isinstance(size, list):
-        size = _extract_from_list(size)
+        size = _parse_sequence_shape(size)
 
     if isinstance(size, (list, tuple)):
-        new_size = []
-        for s in size:
-            if isinstance(s, (int, float, bool)):
-                new_size.append(int(s))
-            elif hasattr(s, "item") and callable(s.item):
-                try:
-                    new_size.append(int(s.item()))
-                except Exception:
-                    new_size.append(s)
-            elif hasattr(s, "data") and hasattr(s.data, "item"):
-                try:
-                    new_size.append(int(s.data.item()))
-                except Exception:
-                    new_size.append(s)
-            else:
-                new_size.append(s)
-        size = new_size
+        return tuple(_parse_scalar(s) for s in size)
 
     return tuple(size)
 
@@ -518,7 +545,8 @@ def atleast_1d(*arys: object) -> object:
         object: An array, or list of arrays, each with a.ndim >= 1.
     """
 
-    def _gen() -> object:  # type: ignore
+    def _gen() -> typing.Iterator[object]:
+        """Function docstring."""
         for a in arys:
             t = a  # pragma: no cover
             if len(t.shape) == 0:  # pragma: no cover
@@ -542,7 +570,8 @@ def atleast_2d(*arys: object) -> object:
         object: An array, or list of arrays, each with a.ndim >= MAGIC_VAL_2.
     """
 
-    def _gen() -> object:  # type: ignore
+    def _gen() -> typing.Iterator[object]:
+        """Function docstring."""
         for a in arys:
             t = a  # pragma: no cover
             if len(t.shape) == 0:  # pragma: no cover
@@ -569,7 +598,8 @@ def atleast_3d(*arys: object) -> object:
         object: An array, or list of arrays, each with a.ndim >= MAGIC_VAL_3.
     """
 
-    def _gen() -> object:  # type: ignore
+    def _gen() -> typing.Iterator[object]:
+        """Function docstring."""
         for a in arys:
             t = a  # pragma: no cover
             if len(t.shape) == 0:  # pragma: no cover
@@ -599,8 +629,6 @@ def broadcast_arrays(*args: object, **kwargs: object) -> object:
     Returns:
         object: A list of broadcasted arrays.
     """
-    from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
     tensors = [a for a in args]  # pragma: no cover
     b_shape = tensors[0].shape  # pragma: no cover
     for t in tensors[1:]:  # pragma: no cover
@@ -608,35 +636,39 @@ def broadcast_arrays(*args: object, **kwargs: object) -> object:
     return [broadcast_to(t, b_shape) for t in tensors]  # pragma: no cover
 
 
-def depth_to_space(input, block_size, data_format="NHWC", name=None):  # pragma: no cover
+def depth_to_space(input: object, block_size: object, data_format: object = "NHWC", name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """DepthToSpace for tensors."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))
 
 
-def space_to_depth(input, block_size, data_format="NHWC", name=None):  # pragma: no cover
+def space_to_depth(input: object, block_size: object, data_format: object = "NHWC", name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """SpaceToDepth for tensors."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))
 
 
-def space_to_batch(input, paddings, block_size=None, name=None):  # pragma: no cover
+def space_to_batch(input: object, paddings: object, block_size: object = None, name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """SpaceToBatch for 4-D tensors of shape [batch, height, width, depth]."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))
+
+
+@dataclass
+class WithSpaceToBatchOptions:
+    """Options for with_space_to_batch."""
+
+    filter_shape: object = None
+    spatial_dims: object = None
+    data_format: str | None = None
 
 
 def with_space_to_batch(
-    input, dilation_rate, padding, op, filter_shape=None, spatial_dims=None, data_format=None
-):
+    input: object,
+    dilation_rate: object,
+    padding: object,
+    op: object,
+    options: WithSpaceToBatchOptions | None = None,
+) -> object:
     """Performs `op` on the space-to-batch representation of `input`."""
     return op(input)

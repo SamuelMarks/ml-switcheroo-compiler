@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-
 from ml_switcheroo_compiler.ops.base import register_op
-
-
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
 

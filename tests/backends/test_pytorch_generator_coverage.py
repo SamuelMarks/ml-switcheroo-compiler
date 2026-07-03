@@ -1,8 +1,12 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchDistributedVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_pytorch_generator_coverage():
+def test_pytorch_generator_coverage() -> object:
+    """Function docstring."""
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)
 
@@ -15,9 +19,7 @@ def test_pytorch_generator_coverage():
     )
     assert "pt_conv_transpose" in gen.visit(n_conv, ["x", "w"])
 
-    n_ragged = IRNode(
-        id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None
-    )
+    n_ragged = IRNode(id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None)
     assert "pt_ragged_dot" in gen.visit(n_ragged, ["x", "y"])
 
     n_power = IRNode(
@@ -43,9 +45,7 @@ def test_pytorch_generator_coverage():
     assert len(prefix) > 0
     assert "import torch" in prefix[0]
 
-    n_const = IRNode(
-        id="n4", op_type="Constant", inputs=[], attributes={"value": 1.0}, shape_metadata=None
-    )
+    n_const = IRNode(id="n4", op_type="Constant", inputs=[], attributes={"value": 1.0}, shape_metadata=None)
     g.nodes["n4"] = n_const
     gen.sorted_nodes = [n_const]
     gen.code = []
@@ -54,17 +54,13 @@ def test_pytorch_generator_coverage():
 
     assert gen.get_fallback_keepdims_kwarg() == "keepdim"
 
-    n_not_const = IRNode(
-        id="n5", op_type="Add", inputs=["x", "y"], attributes={}, shape_metadata=None
-    )
+    n_not_const = IRNode(id="n5", op_type="Add", inputs=["x", "y"], attributes={}, shape_metadata=None)
     g.nodes["n5"] = n_not_const
     gen.sorted_nodes = [n_not_const]
     gen.code = []
     assert gen._emit_init_body() is False
 
-    from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchDistributedMixin
-
-    mixin = PyTorchDistributedMixin()
+    mixin = PyTorchDistributedVisitor()
     n_dummy = IRNode(id="nx", op_type="Unknown", inputs=[], attributes={}, shape_metadata=None)
     assert "all_gather" in mixin.visit_all_gather(n_dummy, ["x"])
     assert "reduce_scatter" in mixin.visit_reduce_scatter(n_dummy, ["x"])

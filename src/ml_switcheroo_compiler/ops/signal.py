@@ -3,13 +3,26 @@
 # pragma: no cover
 
 # pragma: no cover
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from dataclasses import dataclass
+from typing import Optional
+
+# pragma: no cover
+# pragma: no cover
+# pragma: no cover
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 
 # pragma: no cover
 from ml_switcheroo_compiler.core.config import config
 
 # pragma: no cover
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+# pragma: no cover
+# pragma: no cover
+# pragma: no cover
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
 # pragma: no cover
 
 # pragma: no cover
@@ -164,10 +177,6 @@ def _emit_signal_node(
     # pragma: no cover
     # pragma: no cover
     # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
 
     # pragma: no cover
     # pragma: no cover
@@ -208,10 +217,6 @@ def convolve2d(
     # pragma: no cover
     # pragma: no cover
     if config.eager_mode:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
         # pragma: no cover
         # pragma: no cover
         # pragma: no cover
@@ -295,10 +300,6 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = Non
         # pragma: no cover
         # pragma: no cover
         # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
 
         # pragma: no cover
         # pragma: no cover
@@ -342,242 +343,89 @@ def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = Non
 # pragma: no cover
 # pragma: no cover
 # pragma: no cover
-def welch(  # noqa: PLR0913
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
+
+
+@dataclass
+@dataclass
+class WindowConfig:
+    """Class docstring."""
+
+    fs: float = 1.0
+    window: str = "hann"
+    nperseg: Optional[int] = None
+    noverlap: Optional[int] = None
+    nfft: Optional[int] = None
+
+
+@dataclass
+class FilterState:
+    """Class docstring."""
+
+    detrend: str = "constant"
+    return_onesided: bool = True
+    scaling: str = "density"
+    axis: int = -1
+    average: str = "mean"
+
+
+@dataclass
+class WelchConfig:
+    """Class docstring."""
+
+    window_config: WindowConfig = WindowConfig()
+    filter_state: FilterState = FilterState()
+
+
+def welch(
     x: Tensor,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    fs: float = 1.0,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    window: str = "hann",
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    nperseg: int = None,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    noverlap: int = None,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    nfft: int = None,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    detrend: str = "constant",
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    return_onesided: bool = True,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    scaling: str = "density",
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    axis: int = -1,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    average: str = "mean",
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-) -> tuple[Tensor, Tensor]:  # noqa: PLR0913
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
+    config_params: Optional[WelchConfig] = None,
+) -> tuple[Tensor, Tensor]:
     """Evaluate welch."""
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
+    if config_params is None:
+        config_params = WelchConfig()
+
     if config.eager_mode:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
-
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         backend = get_active_backend()
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         f, Pxx = backend.execute_op(
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
             "Welch",
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
             x.data,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            fs=fs,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            window=window,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            nperseg=nperseg,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            noverlap=noverlap,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            nfft=nfft,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            detrend=detrend,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            return_onesided=return_onesided,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            scaling=scaling,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            axis=axis,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            average=average,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
+            fs=config_params.window_config.fs,
+            window=config_params.window_config.window,
+            nperseg=config_params.window_config.nperseg,
+            noverlap=config_params.window_config.noverlap,
+            nfft=config_params.window_config.nfft,
+            detrend=config_params.filter_state.detrend,
+            return_onesided=config_params.filter_state.return_onesided,
+            scaling=config_params.filter_state.scaling,
+            axis=config_params.filter_state.axis,
+            average=config_params.filter_state.average,
         )
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         return (
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
             Tensor(f, TensorConfig(f.shape, x.dtype, x.device)),
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
             Tensor(Pxx, TensorConfig(Pxx.shape, x.dtype, x.device)),
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
         )
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    # Using simple shapes for graph tracing
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    f_shape = (256,)  # Dummy placeholder for trace
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    Pxx_shape = (256,)  # Dummy placeholder for trace
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
 
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
+    f_shape = (256,)
+    Pxx_shape = (256,)
+
     f, Pxx = _emit_linalg_node(
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         "Welch",
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         [x],
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         {
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "fs": fs,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "window": window,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "nperseg": nperseg,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "noverlap": noverlap,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "nfft": nfft,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "detrend": detrend,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "return_onesided": return_onesided,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "scaling": scaling,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "axis": axis,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "average": average,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
+            "fs": config_params.fs,
+            "window": config_params.window,
+            "nperseg": config_params.nperseg,
+            "noverlap": config_params.noverlap,
+            "nfft": config_params.nfft,
+            "detrend": config_params.detrend,
+            "return_onesided": config_params.return_onesided,
+            "scaling": config_params.scaling,
+            "axis": config_params.axis,
+            "average": config_params.average,
         },
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         [f_shape, Pxx_shape],
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         [x.dtype, x.dtype],
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
     )
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     return f, Pxx
 
 

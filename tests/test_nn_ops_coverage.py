@@ -1,15 +1,21 @@
+"""Module docstring."""
+
 import numpy as np
 
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def setup_module():
+def setup_module() -> object:
+    """Function docstring."""
     config.eager_mode = True
 
 
-def test_conv1d():
+def test_conv1d() -> object:
+    """Function docstring."""
     lhs = ops.array(np.random.randn(2, 10, 3).astype(np.float32))
     rhs = ops.array(np.random.randn(3, 3, 4).astype(np.float32))
 
@@ -21,7 +27,8 @@ def test_conv1d():
     print("out2 shape:", out2.shape)
 
 
-def test_conv2d():
+def test_conv2d() -> object:
+    """Function docstring."""
     lhs = ops.array(np.random.randn(2, 10, 10, 3).astype(np.float32))
     rhs = ops.array(np.random.randn(3, 3, 3, 4).astype(np.float32))
 
@@ -33,7 +40,8 @@ def test_conv2d():
     print("out2 shape:", out2.shape)
 
 
-def test_conv3d():
+def test_conv3d() -> object:
+    """Function docstring."""
     lhs = ops.array(np.random.randn(2, 10, 10, 10, 3).astype(np.float32))
     rhs = ops.array(np.random.randn(3, 3, 3, 3, 4).astype(np.float32))
 
@@ -45,7 +53,8 @@ def test_conv3d():
     print("out2 shape:", out2.shape)
 
 
-def test_conv_transpose():
+def test_conv_transpose() -> object:
+    """Function docstring."""
     lhs = ops.array(np.random.randn(2, 3, 10).astype(np.float32))
     rhs = ops.array(np.random.randn(4, 3, 3).astype(np.float32))
 
@@ -71,7 +80,8 @@ def test_conv_transpose():
     print("out2 shape:", out2.shape)
 
 
-def test_pooling():
+def test_pooling() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 10, 10, 3).astype(np.float32))
     out1 = ops.max_pool(x, window_shape=(2, 2))
     out2 = ops.max_pool(x, window_shape=(2, 2), strides=(2, 2))
@@ -85,24 +95,25 @@ def test_pooling():
     print("out2 shape:", out2.shape)
 
 
-def test_rnn():
+def test_rnn() -> object:
+    """Function docstring."""
     inputs = ops.array(np.random.randn(10, 2, 5).astype(np.float32))
     initial_state = (ops.array(np.zeros((2, 4)).astype(np.float32)),)
 
-    def cell_fn(x, state):
+    def cell_fn(x: object, state: object) -> object:
+        """Function docstring."""
         return x, state
 
     out1, state1 = ops.rnn(inputs, initial_state, cell_fn, config=ops.RNNConfig(time_major=True))
-    out2, state2 = ops.rnn(
-        inputs, initial_state, cell_fn, config=ops.RNNConfig(time_major=False, go_backwards=True)
-    )
+    out2, state2 = ops.rnn(inputs, initial_state, cell_fn, config=ops.RNNConfig(time_major=False, go_backwards=True))
     assert out1 is not None
     assert out2 is not None
     print("out1 shape:", out1.shape)
     print("out2 shape:", out2.shape)
 
 
-def test_lstm_cell():
+def test_lstm_cell() -> object:
+    """Function docstring."""
     inputs = ops.array(np.random.randn(2, 5).astype(np.float32))
     state = (
         ops.array(np.zeros((2, 4)).astype(np.float32)),
@@ -120,7 +131,8 @@ def test_lstm_cell():
     print("out2 shape:", out2.shape)
 
 
-def test_gru_cell():
+def test_gru_cell() -> object:
+    """Function docstring."""
     inputs = ops.array(np.random.randn(2, 5).astype(np.float32))
     state = ops.array(np.zeros((2, 4)).astype(np.float32))
     kernel = ops.array(np.random.randn(5, 12).astype(np.float32))
@@ -135,7 +147,8 @@ def test_gru_cell():
     print("out2 shape:", out2.shape)
 
 
-def test_activations():
+def test_activations() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 5).astype(np.float32))
     ops.softplus(x)
     ops.relu(x)
@@ -144,13 +157,15 @@ def test_activations():
     ops.gelu(x)
 
 
-def test_loss():
+def test_loss() -> object:
+    """Function docstring."""
     y_true = ops.array(np.random.randn(2, 5).astype(np.float32))
     y_pred = ops.array(np.random.randn(2, 5).astype(np.float32))
     ops.dice_loss(y_true, y_pred)
 
 
-def test_nlp():
+def test_nlp() -> object:
+    """Function docstring."""
     inputs = ops.array(np.array([[0, 0, 0, 0, 0], [1, 1, 1, 1, 1]]).astype(np.int32))
     weights = ops.array(np.random.randn(10, 5).astype(np.float32))
     ops.embedding(inputs, weights)
@@ -161,12 +176,11 @@ def test_nlp():
     mask = ops.array(np.zeros((2, 3, 3)).astype(np.float32))
 
     ops.attention(ops.AttentionInputs(q, k, v))
-    ops.attention(
-        ops.AttentionInputs(q, k, v), ops.AttentionConfig(mask=mask, is_causal=True, dropout=0.1)
-    )
+    ops.attention(ops.AttentionInputs(q, k, v), ops.AttentionConfig(mask=mask, is_causal=True, dropout=0.1))
 
 
-def test_pooling_explicit_padding():
+def test_pooling_explicit_padding() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 10, 10, 3).astype(np.float32))
     out1 = ops.max_pool(x, window_shape=(2, 2), padding=((1, 1), (1, 1)))
     out2 = ops.avg_pool(x, window_shape=(2, 2), padding=((1, 1), (1, 1)))
@@ -176,7 +190,8 @@ def test_pooling_explicit_padding():
     print("out2 shape:", out2.shape)
 
 
-def test_depthwise_conv1d():
+def test_depthwise_conv1d() -> object:
+    """Function docstring."""
     lhs = Tensor(np.ones((2, 4, 3), dtype=np.float32), TensorConfig((2, 4, 3), "float32", "cpu"))
     rhs = Tensor(np.ones((2, 3, 2), dtype=np.float32), TensorConfig((2, 3, 2), "float32", "cpu"))
     config.eager_mode = True
@@ -184,44 +199,43 @@ def test_depthwise_conv1d():
     assert out1.shape == (2, 3, 6)
 
 
-def test_depthwise_conv2d():
-    lhs = Tensor(
-        np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu")
-    )
-    rhs = Tensor(
-        np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu")
-    )
+def test_depthwise_conv2d() -> object:
+    """Function docstring."""
+    lhs = Tensor(np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu"))
+    rhs = Tensor(np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu"))
     config.eager_mode = True
-    out1 = ops.depthwise_conv2d(lhs, rhs, strides=1, padding="VALID")
+    out1 = ops.depthwise_conv2d(lhs, rhs, config=ops.GenericConvConfig(strides=1, padding="VALID"))
     assert out1.shape == (2, 3, 3, 6)
 
 
-def test_average_pool():
+def test_average_pool() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 10, 10, 3).astype(np.float32))
     out = ops.average_pool(x, pool_size=(2, 2))
     assert out is not None
 
 
-def test_batch_normalization():
+def test_batch_normalization() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 10, 10, 3).astype(np.float32))
     mean = ops.array(np.zeros((3,)).astype(np.float32))
     variance = ops.array(np.ones((3,)).astype(np.float32))
     offset = ops.array(np.zeros((3,)).astype(np.float32))
     scale = ops.array(np.ones((3,)).astype(np.float32))
-    out = ops.batch_normalization(
-        x, mean, variance, axis=-1, config=ops.BatchNormConfig(offset=offset, scale=scale)
-    )
+    out = ops.batch_normalization(x, mean, variance, axis=-1, config=ops.BatchNormConfig(offset=offset, scale=scale))
     assert out is not None
 
 
-def test_rms_normalization():
+def test_rms_normalization() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 10, 10, 3).astype(np.float32))
     scale = ops.array(np.ones((3,)).astype(np.float32))
     out = ops.rms_normalization(x, scale)
     assert out is not None
 
 
-def test_generic_conv():
+def test_generic_conv() -> object:
+    """Function docstring."""
     lhs1 = ops.array(np.random.randn(2, 10, 3).astype(np.float32))
     rhs1 = ops.array(np.random.randn(3, 3, 4).astype(np.float32))
     out1 = ops.conv(lhs1, rhs1)
@@ -237,43 +251,36 @@ def test_generic_conv():
     assert out1 is not None and out2 is not None and out3 is not None
 
 
-def test_generic_depthwise_conv():
+def test_generic_depthwise_conv() -> object:
+    """Function docstring."""
     lhs1 = Tensor(np.ones((2, 4, 3), dtype=np.float32), TensorConfig((2, 4, 3), "float32", "cpu"))
     rhs1 = Tensor(np.ones((2, 3, 2), dtype=np.float32), TensorConfig((2, 3, 2), "float32", "cpu"))
     out1 = ops.depthwise_conv(lhs1, rhs1)
 
-    lhs2 = Tensor(
-        np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu")
-    )
-    rhs2 = Tensor(
-        np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu")
-    )
+    lhs2 = Tensor(np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu"))
+    rhs2 = Tensor(np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu"))
     out2 = ops.depthwise_conv(lhs2, rhs2)
 
     assert out1 is not None and out2 is not None
 
 
-def test_generic_separable_conv():
+def test_generic_separable_conv() -> object:
+    """Function docstring."""
     lhs1 = Tensor(np.ones((2, 4, 3), dtype=np.float32), TensorConfig((2, 4, 3), "float32", "cpu"))
     dw1 = Tensor(np.ones((2, 3, 2), dtype=np.float32), TensorConfig((2, 3, 2), "float32", "cpu"))
     pw1 = Tensor(np.ones((1, 6, 4), dtype=np.float32), TensorConfig((1, 6, 4), "float32", "cpu"))
     out1 = ops.separable_conv(lhs1, dw1, pw1)
 
-    lhs2 = Tensor(
-        np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu")
-    )
-    dw2 = Tensor(
-        np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu")
-    )
-    pw2 = Tensor(
-        np.ones((1, 1, 6, 4), dtype=np.float32), TensorConfig((1, 1, 6, 4), "float32", "cpu")
-    )
+    lhs2 = Tensor(np.ones((2, 4, 4, 3), dtype=np.float32), TensorConfig((2, 4, 4, 3), "float32", "cpu"))
+    dw2 = Tensor(np.ones((2, 2, 3, 2), dtype=np.float32), TensorConfig((2, 2, 3, 2), "float32", "cpu"))
+    pw2 = Tensor(np.ones((1, 1, 6, 4), dtype=np.float32), TensorConfig((1, 1, 6, 4), "float32", "cpu"))
     out2 = ops.separable_conv(lhs2, dw2, pw2)
 
     assert out1 is not None and out2 is not None
 
 
-def test_new_activations():
+def test_new_activations() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 6).astype(np.float32))
     ops.celu(x)
     ops.glu(x)
@@ -300,7 +307,8 @@ def test_new_activations():
     ops.threshold(x)
 
 
-def test_new_losses():
+def test_new_losses() -> object:
+    """Function docstring."""
     y_true = ops.array(np.array([[1.0, 0.0], [0.0, 1.0]]).astype(np.float32))
     y_pred = ops.array(np.array([[0.9, 0.1], [0.2, 0.8]]).astype(np.float32))
 
@@ -320,9 +328,8 @@ def test_new_losses():
     assert paths is not None
 
 
-def test_utility_ops():
-    from ml_switcheroo_compiler.core.config import config
-
+def test_utility_ops() -> object:
+    """Function docstring."""
     config.eager_mode = True
 
     # dot_product_attention
@@ -348,22 +355,21 @@ def test_utility_ops():
     assert ops.image is not None
 
 
-def test_activity_regularization():
+def test_activity_regularization() -> object:
+    """Function docstring."""
     x = ops.array(np.random.randn(2, 2).astype(np.float32))
     _ = ops.activity_regularization(x, l1=0.1, l2=0.2)
     pass
 
 
-def test_activity_regularization_ast():
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_activity_regularization_ast() -> object:
+    """Function docstring."""
     config.eager_mode = False
 
-    _tracer.start_tracing("Test")
+    global_tracing_state.start_tracing("Test")
     x = ops.array(np.array([1.0, 2.0]))
     _ = ops.activity_regularization(x, l1=0.1, l2=0.2)
-    graph = _tracer.stop_tracing()
+    graph = global_tracing_state.stop_tracing()
 
     gen_cls = BackendRegistry.get("numpy")
     gen = gen_cls(graph)
@@ -372,52 +378,46 @@ def test_activity_regularization_ast():
     assert code_str is not None
 
 
-def test_adaptive_avg_pool2d():
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-    _tracer.start_tracing("Test")
+def test_adaptive_avg_pool2d() -> object:
+    """Function docstring."""
+    global_tracing_state.start_tracing("Test")
     x = ops.array(np.random.randn(2, 3, 4, 4).astype(np.float32))
 
     _ = ops.adaptive_avg_pool2d(x, output_size=(2, 2))
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     pass
 
 
-def test_adaptive_max_pool2d():
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-    _tracer.start_tracing("Test")
+def test_adaptive_max_pool2d() -> object:
+    """Function docstring."""
+    global_tracing_state.start_tracing("Test")
     x = ops.array(np.random.randn(2, 3, 4, 4).astype(np.float32))
 
     _ = ops.adaptive_max_pool2d(x, output_size=(2, 2))
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     pass
 
 
-def test_adaptive_avg_pool2d_ast():
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_adaptive_avg_pool2d_ast() -> object:
+    """Function docstring."""
     config.eager_mode = False
-    _tracer.start_tracing("Test")
+    global_tracing_state.start_tracing("Test")
     x = ops.array(np.array([[[[1.0]]]]))
     _ = ops.adaptive_avg_pool2d(x, output_size=(2, 2))
-    graph = _tracer.stop_tracing()
+    graph = global_tracing_state.stop_tracing()
     gen_cls = BackendRegistry.get("numpy")
     gen = gen_cls(graph)
     code_str = gen.generate()
     assert "_adaptive_avg_pool2d" in code_str
 
 
-def test_adaptive_max_pool2d_ast():
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_adaptive_max_pool2d_ast() -> object:
+    """Function docstring."""
     config.eager_mode = False
-    _tracer.start_tracing("Test")
+    global_tracing_state.start_tracing("Test")
     x = ops.array(np.array([[[[1.0]]]]))
     _ = ops.adaptive_max_pool2d(x, output_size=(2, 2))
-    graph = _tracer.stop_tracing()
+    graph = global_tracing_state.stop_tracing()
     gen_cls = BackendRegistry.get("numpy")
     gen = gen_cls(graph)
     code_str = gen.generate()

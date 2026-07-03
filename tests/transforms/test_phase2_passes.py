@@ -5,8 +5,9 @@ including data type inference, explicit broadcasting, type promotion, and state 
 on logical IR graphs.
 """
 
-from ml_switcheroo_ir import LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import (
@@ -31,8 +32,6 @@ def test_dtype_inference() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import config
-
     config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["c"] = LogicalNode(
@@ -65,8 +64,6 @@ def test_broadcast_explicitizer() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import config
-
     config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["A"] = LogicalNode(id="A", op_type="Input", shape_metadata=(1, 3))
@@ -97,8 +94,6 @@ def test_type_promotion() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import config
-
     config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["A"] = LogicalNode(id="A", op_type="Input", attributes={"dtype": "float32"})
@@ -133,8 +128,6 @@ def test_state_lifting() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import config
-
     config.jax_enable_x64 = True
     g = IRGraph()
     g.nodes["r"] = LogicalNode(
@@ -170,12 +163,6 @@ def test_type_promotion_partial_branches() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
-    from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import (
-        type_promotion_explicitizer_pass,
-    )
-
     g = LogicalGraph(outputs=["add1", "add2"])
 
     # dt1 == target, dt2 != target

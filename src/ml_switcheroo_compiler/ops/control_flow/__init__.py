@@ -2,38 +2,45 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.ops.base import get_op
+from typing import Any, Callable
 
-from typing import Callable, Any
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
+
+# pragma: no cover
+# Build pred_fn_pairs from branch_fns  # pragma: no cover
+from ml_switcheroo_compiler.ops.binary import (
+    add,
+    equal,  # pragma: no cover
+    less,
+)
 from ml_switcheroo_compiler.ops.vmap import vmap as vmap
 
 from .eager import (
+    assert_value_eager,
     cond_eager,
-    while_loop_eager,
-    scan_eager,
     map_fn_eager,
     pmap_eager,
+    scan_eager,
     stop_gradient_eager,
-    assert_value_eager,
+    while_loop_eager,
 )
 from .tracing import (
+    assert_value_tracing,
     cond_tracing,
-    while_loop_tracing,
-    scan_tracing,
     map_fn_tracing,
     pmap_tracing,
+    scan_tracing,
     stop_gradient_tracing,
-    assert_value_tracing,
+    while_loop_tracing,
 )
 
 
 def cond(  # pragma: no cover
     pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]
-) -> object:  # noqa: ANN401
+) -> object:
     """Docstring."""
     if config.eager_mode:
         return cond_eager(pred, true_fn, false_fn)
@@ -42,23 +49,21 @@ def cond(  # pragma: no cover
 
 def while_loop(  # pragma: no cover
     cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object
-) -> object:  # noqa: ANN401
+) -> object:
     """Docstring."""
     if config.eager_mode:
         return while_loop_eager(cond_fn, body_fn, init_val)
     return while_loop_tracing(cond_fn, body_fn, init_val)
 
 
-def scan(
-    f: Callable[[Any, Any], tuple[Any, Any]], init: object, xs: object, length: int | None = None
-) -> tuple[Any, Any]:  # noqa: ANN401
+def scan(f: Callable[[Any, Any], tuple[Any, Any]], init: object, xs: object, length: int | None = None) -> tuple[Any, Any]:
     """Docstring."""
     if config.eager_mode:
         return scan_eager(f, init, xs, length)
     return scan_tracing(f, init, xs, length)
 
 
-def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) -> Tensor:  # noqa: ANN401
+def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) -> Tensor:
     """Docstring."""
     if config.eager_mode:
         return map_fn_eager(fn, elems, dtype)
@@ -96,11 +101,8 @@ class AssertOp(OpDef):
         return ()
 
 
-def fori_loop(
-    lower: object, upper: object, body_fun: Callable[[object, object], object], init_val: object
-) -> object:
+def fori_loop(lower: object, upper: object, body_fun: Callable[[object, object], object], init_val: object) -> object:
     """fori_loop implementation."""
-    from ml_switcheroo_compiler.ops.binary import less, add
 
     def cond_fn(val: object) -> object:
         """Function docstring.
@@ -159,8 +161,6 @@ def switch(index: Tensor, branches: list[Callable], *operands: object) -> object
             """Function docstring."""
             return build_tree(mid, end)
 
-        from ml_switcheroo_compiler.ops.binary import less
-
         return cond(less(index, mid), true_fn, false_fn)
 
     return build_tree(0, len(branches))
@@ -197,12 +197,11 @@ def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Callable = None)
     if not pred_fn_pairs:  # pragma: no cover
         if default is not None:  # pragma: no cover
             return default()  # pragma: no cover
-        raise ValueError(
-            "case requires at least one (pred, fn) pair or a default"
-        )  # pragma: no cover
+        raise ValueError("case requires at least one (pred, fn) pair or a default")  # pragma: no cover
 
     # pragma: no cover
     def _build_case(idx: int) -> Callable:  # pragma: no cover
+        """Function docstring."""
         if idx == len(pred_fn_pairs):  # pragma: no cover
             return default if default is not None else lambda: None  # pragma: no cover
         pred, fn = pred_fn_pairs[idx]  # pragma: no cover
@@ -212,9 +211,7 @@ def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Callable = None)
     return _build_case(0)()  # pragma: no cover
 
 
-def switch_case(
-    branch_index: Tensor, branch_fns: dict[int, Callable], default: Callable = None
-) -> object:
+def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable], default: Callable = None) -> object:
     """Execute switch_case.
 
     Args:
@@ -228,20 +225,13 @@ def switch_case(
     if not branch_fns:  # pragma: no cover
         if default is not None:  # pragma: no cover
             return default()  # pragma: no cover
-        raise ValueError(
-            "switch_case requires at least one branch or a default"
-        )  # pragma: no cover
-    # pragma: no cover
-    # Build pred_fn_pairs from branch_fns  # pragma: no cover
-    from ml_switcheroo_compiler.ops.binary import equal  # pragma: no cover
+        raise ValueError("switch_case requires at least one branch or a default")  # pragma: no cover
 
     # pragma: no cover
     pred_fn_pairs = []  # pragma: no cover
     # Sort keys to ensure deterministic ordering (not strictly necessary but good practice)  # pragma: no cover
     for key in sorted(branch_fns.keys()):  # pragma: no cover
-        key_tensor = Tensor(
-            key, TensorConfig((), branch_index.dtype, branch_index.device)
-        )  # pragma: no cover
+        key_tensor = Tensor(key, TensorConfig((), branch_index.dtype, branch_index.device))  # pragma: no cover
         pred = equal(branch_index, key_tensor)  # pragma: no cover
         pred_fn_pairs.append((pred, branch_fns[key]))  # pragma: no cover
     # pragma: no cover
@@ -280,9 +270,7 @@ class SwitchOp(OpDef):
 
     op_name = "Switch"
 
-    def infer_shape(
-        self, index: object, branches: object, *operands: object, **kwargs: object
-    ) -> object:
+    def infer_shape(self, index: object, branches: object, *operands: object, **kwargs: object) -> object:
         """Infer shape."""
         return ()
 

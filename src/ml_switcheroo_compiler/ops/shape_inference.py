@@ -1,6 +1,8 @@
 """Shape inference module."""
 
-from typing import Callable, Any
+from typing import Callable
+
+# Fallback to the OpDef's infer_shape method if it still has it
 
 _SHAPE_INFERENCE_REGISTRY: dict[str, Callable] = {}
 
@@ -20,12 +22,12 @@ def register_shape_inference(op_type: str) -> Callable:
     return decorator  # pragma: no cover
 
 
-def infer_shape(op_type: str, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+def infer_shape(op_type: str, *args: object, **kwargs: object) -> object:
     """Infer shape using the registered function."""
     if op_type in _SHAPE_INFERENCE_REGISTRY:  # pragma: no branch
         return _SHAPE_INFERENCE_REGISTRY[op_type](*args, **kwargs)  # pragma: no cover
-    # Fallback to the OpDef's infer_shape method if it still has it
-    from ml_switcheroo_compiler.ops.base import get_op
+
+    from ml_switcheroo_compiler.ops.registry import get_op
 
     op_cls = get_op(op_type)
     if hasattr(op_cls, "infer_shape") and callable(op_cls.infer_shape):  # pragma: no branch

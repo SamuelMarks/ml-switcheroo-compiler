@@ -1,11 +1,12 @@
 """Module docstring."""
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-
 import typing
 
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 
+from ml_switcheroo_compiler.backends.eager import nms_eager  # pragma: no cover
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
@@ -22,9 +23,7 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: list) -> list:
     return [(p // 2, p - p // 2) for p in pad_total]  # pragma: no cover
 
 
-def _calculate_padding_for_window(
-    padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list
-) -> list:
+def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list) -> list:
     """Function docstring.
 
     Args:
@@ -41,17 +40,13 @@ def _calculate_padding_for_window(
     return [(p[0], p[1]) for p in padding]
 
 
-def _create_sliding_window_view(
-    operand: np.ndarray, config: WindowConfig
-) -> tuple[(np.ndarray, tuple[(int, ...)])]:
+def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tuple[(np.ndarray, tuple[(int, ...)])]:
     """Function docstring.
 
     Args:
         operand: Arg.
         config: Arg.
     """
-    from numpy.lib.stride_tricks import as_strided
-
     window_dimensions = config.window_dimensions
     window_strides = config.window_strides or ([1] * len(window_dimensions))
     window_dilation = config.window_dilation or ([1] * len(window_dimensions))
@@ -74,9 +69,7 @@ def _create_sliding_window_view(
     return (view, axis_to_reduce)
 
 
-def _apply_base_dilation(
-    operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: object
-) -> np.ndarray:
+def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: object) -> np.ndarray:
     """Function docstring.
 
     Args:
@@ -105,17 +98,13 @@ def _top_k(x: object, k: object, axis: object = (-1)) -> object:
     return (val_k, idx_k)
 
 
-def _reduce_window(
-    operand: object, init_value: object, computation: str, config: WindowConfig
-) -> object:
+def _reduce_window(operand: object, init_value: object, computation: str, config: WindowConfig) -> object:
     """Evaluate."""
     operand_arr = np.asarray(operand)
     if not operand_arr.shape:  # pragma: no cover  # pragma: no branch
         operand_arr = operand_arr.reshape((1,))  # pragma: no cover
     operand_arr = _apply_base_dilation(operand_arr, config.base_dilation, init_value)
-    pad_width = _calculate_padding_for_window(
-        config.padding, operand_arr.ndim, config.window_dimensions
-    )
+    pad_width = _calculate_padding_for_window(config.padding, operand_arr.ndim, config.window_dimensions)
     operand_arr = np.pad(operand_arr, pad_width, mode="constant", constant_values=init_value)
     (view, axis_to_reduce) = _create_sliding_window_view(operand_arr, config)
     strategies = {"max": np.max, "min": np.min, "sum": np.sum, "prod": np.prod}
@@ -124,9 +113,7 @@ def _reduce_window(
     return strategies[computation](view, axis=axis_to_reduce)
 
 
-def _logsumexp(
-    x: object, axis: object = None, keepdims: object = False
-) -> object:  # pragma: no cover
+def _logsumexp(x: object, axis: object = None, keepdims: object = False) -> object:  # pragma: no cover
     r"""Execute _logsumexp.\n\n    Args:\n        cls (Any): The class.\n        x (Any): Argument x.\n        axis (Any): Argument axis.\n        keepdims (Any): Argument keepdims.\n\n    Returns:\n    Any: The result.\n."""
     xmax = np.max(x, axis=axis, keepdims=True)  # pragma: no cover
     return np.log(np.sum(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (  # pragma: no cover
@@ -169,9 +156,7 @@ def _np_reduce_window(backend_module: object, *args: object, **kwargs: object) -
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
-def _np_nms(
-    backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object
-) -> object:
+def _np_nms(backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -181,8 +166,6 @@ def _np_nms(
         max_output_size: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager import nms_eager  # pragma: no cover
-
     return nms_eager(backend_module, boxes, scores, max_output_size, **kwargs)  # pragma: no cover
 
 
@@ -195,21 +178,16 @@ def _np_trapezoidal_integral(backend_module: object, y: object, **kwargs: object
         y: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
     axis = kwargs.get("axis", -1)
     if x is not None:  # pragma: no branch
         return np.trapz(y, x=x, axis=axis)  # pragma: no cover
-    else:
-        return np.trapz(y, dx=dx, axis=axis)
+    return np.trapz(y, dx=dx, axis=axis)
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix(
-    backend_module: object, labels: object, predictions: object, **kwargs: object
-) -> object:
+def _np_confusion_matrix(backend_module: object, labels: object, predictions: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -218,8 +196,6 @@ def _np_confusion_matrix(
         predictions: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     num_classes = kwargs.get("num_classes", None)
     weights = kwargs.get("weights", None)
 
@@ -235,8 +211,7 @@ def _np_confusion_matrix(
 
 @numpy_eager_registry.register("Cummax")
 def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     a = args[0]
     axis = kwargs.get("axis", None)
     dtype = kwargs.get("dtype", None)
@@ -248,8 +223,7 @@ def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Cummin")
 def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     a = args[0]
     axis = kwargs.get("axis", None)
     dtype = kwargs.get("dtype", None)
@@ -261,8 +235,7 @@ def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Cumprod")
 def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
         kwargs["dtype"] = getattr(dtype, "value", dtype)
@@ -271,8 +244,7 @@ def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("Cumlogsumexp")
 def _np_cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     a = args[0]
     axis = kwargs.get("axis", None)
     if axis is None:
@@ -282,13 +254,13 @@ def _np_cumlogsumexp(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _segment_sum(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentMax")
-def _np_segment_max(
-    backend_module: object, data: object, segment_ids: object, num_segments: object = None
-) -> object:
+def _np_segment_max(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
+    """Function docstring."""
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
     out = np.full(((num_segments,) + data.shape[1:]), -np.inf, dtype=data.dtype)
@@ -300,9 +272,8 @@ def _np_segment_max(
 
 
 @numpy_eager_registry.register("SegmentMin")
-def _np_segment_min(
-    backend_module: object, data: object, segment_ids: object, num_segments: object = None
-) -> object:
+def _np_segment_min(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
+    """Function docstring."""
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
     out = np.full(((num_segments,) + data.shape[1:]), np.inf, dtype=data.dtype)
@@ -314,9 +285,8 @@ def _np_segment_min(
 
 
 @numpy_eager_registry.register("SegmentProd")
-def _np_segment_prod(
-    backend_module: object, data: object, segment_ids: object, num_segments: object = None
-) -> object:
+def _np_segment_prod(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
+    """Function docstring."""
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
     out = np.ones(((num_segments,) + data.shape[1:]), dtype=data.dtype)
@@ -328,11 +298,8 @@ def _np_segment_prod(
 
 
 @numpy_eager_registry.register("AdaptiveAvgPool2D")
-def _np_adaptive_avg_pool2d(
-    backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object
-) -> object:
-    import numpy as np
-
+def _np_adaptive_avg_pool2d(backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object) -> object:
+    """Function docstring."""
     # Very naive implementation for numpy fallback. In practice backends use their native ops.
     if isinstance(operand, np.ndarray):
         s = list(operand.shape)
@@ -342,11 +309,8 @@ def _np_adaptive_avg_pool2d(
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool2D")
-def _np_adaptive_max_pool2d(
-    backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object
-) -> object:
-    import numpy as np
-
+def _np_adaptive_max_pool2d(backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object) -> object:
+    """Function docstring."""
     # Very naive implementation for numpy fallback. In practice backends use their native ops.
     if isinstance(operand, np.ndarray):
         s = list(operand.shape)
@@ -357,13 +321,13 @@ def _np_adaptive_max_pool2d(
 
 @numpy_eager_registry.register("ApproxMaxK")
 def _np_approx_max_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
     if not hasattr(x, "shape"):
         x = backend_module.array(x)
     if x.size == 0:
         return x, x
-    import numpy as np
 
     # sort and take last k
     idx = np.argsort(x, axis=reduction_dimension)
@@ -380,13 +344,13 @@ def _np_approx_max_k(backend_module: object, x: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("ApproxMinK")
 def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
     if not hasattr(x, "shape"):
         x = backend_module.array(x)
     if x.size == 0:
         return x, x
-    import numpy as np
 
     # sort and take first k
     idx = np.argsort(x, axis=reduction_dimension)
@@ -398,6 +362,7 @@ def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("TopK")
 def _np_top_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     if hasattr(k, "item"):
         k = int(k.item())

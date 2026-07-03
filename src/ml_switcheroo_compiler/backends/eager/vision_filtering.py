@@ -1,5 +1,12 @@
 """Module docstring."""
 
+from dataclasses import dataclass
+from typing import Optional
+
+import tensorflow as tf  # pragma: no cover
+import torch  # pragma: no cover
+import torchvision.ops as tv_ops  # pragma: no cover
+
 from ml_switcheroo_compiler.backends.eager.utils import (
     _from_channels_last,
     _from_numpy_array,
@@ -8,9 +15,6 @@ from ml_switcheroo_compiler.backends.eager.utils import (
 )
 from ml_switcheroo_compiler.backends.eager.vision_utils import _np_map_coordinates
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
-
-from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -48,9 +52,7 @@ def _extract_box_channels(
         )
 
 
-def _get_box_coords(
-    np_mod: object, box_ctx: tuple[int, int, int, int], box: object
-) -> tuple[object, object]:
+def _get_box_coords(np_mod: object, box_ctx: tuple[int, int, int, int], box: object) -> tuple[object, object]:
     """Function docstring.
 
     Args:
@@ -120,8 +122,6 @@ def _extract_boxes_tf(
         box_indices: Arg.
         config: Arg.
     """
-    import tensorflow as tf  # pragma: no cover
-
     if config.data_format == "channels_first":  # pragma: no cover
         images = backend_module.transpose(images, (0, 2, 3, 1))  # pragma: no cover
     images_tf = tf.convert_to_tensor(images)  # pragma: no cover
@@ -198,9 +198,7 @@ def _to_xyxy_format(np_mod: object, boxes: object, format: str) -> object:
             boxes[..., 2],
             boxes[..., 3],
         )  # pragma: no cover
-        return np_mod.stack(
-            [cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1
-        )  # pragma: no cover
+        return np_mod.stack([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1)  # pragma: no cover
     return boxes  # pragma: no cover
 
 
@@ -222,9 +220,7 @@ def _compute_iou(np_mod: object, b1: object, b2: object) -> object:
 
     b1_area = (b1[..., 2] - b1[..., 0]) * (b1[..., 3] - b1[..., 1])
     b2_area = (b2[..., 2] - b2[..., 0]) * (b2[..., 3] - b2[..., 1])
-    union_area = (
-        np_mod.expand_dims(b1_area, axis=1) + np_mod.expand_dims(b2_area, axis=0) - inter_area
-    )
+    union_area = np_mod.expand_dims(b1_area, axis=1) + np_mod.expand_dims(b2_area, axis=0) - inter_area
 
     return np_mod.where(union_area > 0, inter_area / union_area, 0.0)
 
@@ -250,9 +246,7 @@ def iou_eager(
     return _from_numpy_array(backend_module, iou_vals, name, boxes1)
 
 
-def _sort_boxes_by_score(
-    np_mod: object, boxes: object, scores: object, score_threshold: float
-) -> tuple[object, object, object, object]:
+def _sort_boxes_by_score(np_mod: object, boxes: object, scores: object, score_threshold: float) -> tuple[object, object, object, object]:
     """Function docstring.
 
     Args:
@@ -292,9 +286,7 @@ def _compute_overlap(np_mod: object, bxs: object, i: int, order: object) -> obje
     return inter / (area_i + area_others - inter)
 
 
-def _apply_suppression_threshold(
-    np_mod: object, bxs: object, order: object, max_output_size: int, iou_threshold: float
-) -> object:
+def _apply_suppression_threshold(np_mod: object, bxs: object, order: object, max_output_size: int, iou_threshold: float) -> object:
     """Function docstring.
 
     Args:
@@ -333,8 +325,6 @@ def _nms_tf(
         scores: Arg.
         config: Arg.
     """
-    import tensorflow as tf  # pragma: no cover
-
     conf = config if config is not None else NMSConfig(max_output_size=0)  # pragma: no cover
     max_output_size = conf.max_output_size  # pragma: no cover
     iou_threshold = conf.iou_threshold  # pragma: no cover
@@ -367,8 +357,6 @@ def _nms_torch(
     max_output_size = config.max_output_size  # pragma: no cover
     iou_threshold = config.iou_threshold  # pragma: no cover
     score_threshold = config.score_threshold  # pragma: no cover
-    import torch  # pragma: no cover
-    import torchvision.ops as tv_ops  # pragma: no cover
 
     mask = scores > score_threshold  # pragma: no cover
     filtered_boxes = boxes[mask]  # pragma: no cover
@@ -379,7 +367,7 @@ def _nms_torch(
     return original_indices[keep].to(torch.int32)  # pragma: no cover
 
 
-def nms_eager(
+def nms_eager(  # pylint: disable=too-many-locals
     backend_module: object,
     boxes: object,
     scores: object,
@@ -412,13 +400,9 @@ def nms_eager(
     bxs = _to_numpy_array(np_mod, boxes, name)  # pragma: no cover
     scs = _to_numpy_array(np_mod, scores, name)  # pragma: no cover
     # pragma: no cover
-    bxs, scs, original_idx, order = _sort_boxes_by_score(
-        np_mod, bxs, scs, score_threshold
-    )  # pragma: no cover
+    bxs, scs, original_idx, order = _sort_boxes_by_score(np_mod, bxs, scs, score_threshold)  # pragma: no cover
     # pragma: no cover
-    keep = _apply_suppression_threshold(
-        np_mod, bxs, order, max_output_size, iou_threshold
-    )  # pragma: no cover
+    keep = _apply_suppression_threshold(np_mod, bxs, order, max_output_size, iou_threshold)  # pragma: no cover
     # pragma: no cover
     keep_indices = original_idx[keep].astype(np_mod.int32)  # pragma: no cover
     # pragma: no cover

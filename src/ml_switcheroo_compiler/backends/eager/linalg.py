@@ -1,6 +1,20 @@
 """Linalg utilities."""
 
+from dataclasses import dataclass
+
+import numpy as np
+
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+
+@dataclass
+class BlockMaskedMmConfig:
+    """Class docstring."""
+
+    block_size: int = 64
+    mask_out: object = None
+    mask_lhs: object = None
+    mask_rhs: object = None
 
 
 @global_eager_registry.register("BlockMaskedMm")
@@ -8,36 +22,32 @@ def _block_masked_mm_eager(
     backend_module: object,
     a: object,
     b: object,
-    block_size: int = 64,
-    mask_out: object = None,
-    mask_lhs: object = None,
-    mask_rhs: object = None,
+    config: BlockMaskedMmConfig = None,
+    **kwargs: object,
 ) -> object:
     """Fallback eager execution for BlockMaskedMm."""
+    if config is None:
+        config = BlockMaskedMmConfig(**{k: v for k, v in kwargs.items() if k in ["block_size", "mask_out", "mask_lhs", "mask_rhs"]})
+    block_size = config.block_size
+    mask_out = config.mask_out
+    mask_lhs = config.mask_lhs
+    mask_rhs = config.mask_rhs
     if hasattr(backend_module, "block_masked_mm"):
-        return backend_module.block_masked_mm(
-            a, b, block_size=block_size, mask_out=mask_out, mask_lhs=mask_lhs, mask_rhs=mask_rhs
-        )
+        return backend_module.block_masked_mm(a, b, block_size=block_size, mask_out=mask_out, mask_lhs=mask_lhs, mask_rhs=mask_rhs)
 
     # Fallback to normal matmul and manual masking
     # scale masks by block_size
     if mask_lhs is not None:
-        mask_lhs = backend_module.repeat(
-            backend_module.repeat(mask_lhs, block_size, axis=-2), block_size, axis=-1
-        )
+        mask_lhs = backend_module.repeat(backend_module.repeat(mask_lhs, block_size, axis=-2), block_size, axis=-1)
         a = backend_module.where(mask_lhs, a, 0)
     if mask_rhs is not None:
-        mask_rhs = backend_module.repeat(
-            backend_module.repeat(mask_rhs, block_size, axis=-2), block_size, axis=-1
-        )
+        mask_rhs = backend_module.repeat(backend_module.repeat(mask_rhs, block_size, axis=-2), block_size, axis=-1)
         b = backend_module.where(mask_rhs, b, 0)
 
     out = backend_module.matmul(a, b)
 
     if mask_out is not None:
-        mask_out = backend_module.repeat(
-            backend_module.repeat(mask_out, block_size, axis=-2), block_size, axis=-1
-        )
+        mask_out = backend_module.repeat(backend_module.repeat(mask_out, block_size, axis=-2), block_size, axis=-1)
         out = backend_module.where(mask_out, out, 0)
 
     return out
@@ -52,10 +62,9 @@ def _gather_mm_eager(
     rhs_indices: object = None,
     **kwargs: object,
 ) -> object:
+    """Function docstring."""
     if hasattr(backend_module, "gather_mm"):
-        return backend_module.gather_mm(
-            a, b, lhs_indices=lhs_indices, rhs_indices=rhs_indices, **kwargs
-        )
+        return backend_module.gather_mm(a, b, lhs_indices=lhs_indices, rhs_indices=rhs_indices, **kwargs)
     # naive fallback
     if lhs_indices is not None:
         a = backend_module.take(a, lhs_indices, axis=0)
@@ -65,18 +74,16 @@ def _gather_mm_eager(
 
 
 @global_eager_registry.register("SegmentedMm")
-def _segmented_mm_eager(
-    backend_module: object, a: object, b: object, segments: object, **kwargs: object
-) -> object:
+def _segmented_mm_eager(backend_module: object, a: object, b: object, segments: object, **kwargs: object) -> object:
+    """Function docstring."""
     if hasattr(backend_module, "segmented_mm"):
         return backend_module.segmented_mm(a, b, segments, **kwargs)
     raise NotImplementedError("SegmentedMm eager fallback not implemented")
 
 
 @global_eager_registry.register("Dropout2d")
-def _dropout2d_eager(
-    backend_module: object, x: object, p: float = 0.5, training: bool = True
-) -> object:
+def _dropout2d_eager(backend_module: object, x: object, p: float = 0.5, training: bool = True) -> object:
+    """Function docstring."""
     if not training or p == 0.0:
         return x
     if hasattr(backend_module, "dropout2d"):
@@ -88,7 +95,6 @@ def _dropout2d_eager(
             shape[-2] = 1
         mask = backend_module.random.uniform(size=shape) > p
         return backend_module.where(mask, x / (1.0 - p), 0.0)
-    import numpy as np
 
     shape = list(x.shape)
     if len(shape) >= 2:
@@ -99,14 +105,12 @@ def _dropout2d_eager(
 
 
 @global_eager_registry.register("Dropout3d")
-def _dropout3d_eager(
-    backend_module: object, x: object, p: float = 0.5, training: bool = True
-) -> object:
+def _dropout3d_eager(backend_module: object, x: object, p: float = 0.5, training: bool = True) -> object:
+    """Function docstring."""
     if not training or p == 0.0:
         return x
     if hasattr(backend_module, "dropout3d"):
         return backend_module.dropout3d(x, p=p, training=training)
-    import numpy as np
 
     shape = list(x.shape)
     if len(shape) >= 3:
@@ -126,13 +130,11 @@ def _put_along_axis_eager(
     axis: int = None,
     **kwargs: object,
 ) -> object:
+    """Function docstring."""
     if hasattr(backend_module, "put_along_axis"):
         return backend_module.put_along_axis(a, indices, values, axis=axis, **kwargs)
     if hasattr(backend_module, "put_along_axis"):
-        import numpy as np
-
         return np.put_along_axis(a, indices, values, axis)
-    import numpy as np
 
     out = np.array(a)
     np.put_along_axis(out, indices, values, axis)
@@ -142,9 +144,8 @@ def _put_along_axis_eager(
 
 
 @global_eager_registry.register("Logcumsumexp")
-def _logcumsumexp_eager(
-    backend_module: object, a: object, axis: int = None, **kwargs: object
-) -> object:
+def _logcumsumexp_eager(backend_module: object, a: object, axis: int = None, **kwargs: object) -> object:
+    """Function docstring."""
     if hasattr(backend_module, "logcumsumexp"):
         return backend_module.logcumsumexp(a, axis=axis, **kwargs)
     raise NotImplementedError("Logcumsumexp eager fallback not implemented")
@@ -152,18 +153,18 @@ def _logcumsumexp_eager(
 
 @global_eager_registry.register("Gru")
 def _gru_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     raise NotImplementedError("Gru eager fallback not implemented")
 
 
 @global_eager_registry.register("GetItem")
 def _getitem_eager(backend_module: object, x: object, key: object, **kwargs: object) -> object:
+    """Function docstring."""
     return x[key]
 
 
 @global_eager_registry.register("PowerIteration")
-def _power_iteration(
-    backend_module: object, w: object, num_iters: int = 1, u: object = None
-) -> tuple[object, object, object]:
+def _power_iteration(backend_module: object, w: object, num_iters: int = 1, u: object = None) -> tuple[object, object, object]:
     """Function docstring.
 
     Args:

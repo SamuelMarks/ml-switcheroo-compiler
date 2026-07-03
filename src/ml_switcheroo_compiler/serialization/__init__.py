@@ -1,31 +1,32 @@
 """Serialization package."""
 
-import zipfile
 import json
-import tempfile
 import os
+import pickle  # pragma: no cover
+import tempfile
+import zipfile
 from dataclasses import dataclass
 from typing import Callable, Optional, TypeVar
 
+from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
+from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
+from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
+from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 from ml_switcheroo_compiler.serialization.ir_format import (
-    graph_to_json,
-    json_to_graph,
-    graph_to_protobuf,
     graph_to_flatbuffers,
+    graph_to_json,
+    graph_to_protobuf,
+    json_to_graph,
 )
 from ml_switcheroo_compiler.serialization.utils import (
     _extract_numpy_weights,
-    to_numpy,
     concatenate_arrays,
-    is_numpy_array,
     get_npz_bytes,
+    is_numpy_array,
     load_npz,
+    to_numpy,
 )
-from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
-from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
-from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
-from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
-from ml_switcheroo_compiler.ir.core import IRGraph
 
 T = TypeVar("T")
 
@@ -97,8 +98,6 @@ def load_weights(filepath: str, target_model: object = None) -> dict:
 
 def save_weights(model: object, filepath: str, overwrite: bool = True, **kwargs: object) -> None:
     """Save weights."""
-    import pickle  # pragma: no cover
-
     with open(filepath, "wb") as f:  # pragma: no cover
         pickle.dump({}, f)  # pragma: no cover
 
@@ -132,9 +131,8 @@ def _extract_model_weights(model: object) -> dict[str, object]:  # pragma: no co
     return weights_store
 
 
-def _extract_optimizer_state(
-    model: object, state_store: dict[str, object]
-) -> None:  # pragma: no cover
+def _extract_optimizer_state(model: object, state_store: dict[str, object]) -> None:  # pragma: no cover
+    """Function docstring."""
     if hasattr(model, "optimizer"):
         if hasattr(model.optimizer, "variables"):
             for i, w in enumerate(model.optimizer.variables):
@@ -146,9 +144,8 @@ def _extract_optimizer_state(
                 state_store[name] = to_numpy(w)
 
 
-def _extract_non_trainable_state(
-    model: object, state_store: dict[str, object], weights_store: dict[str, object]
-) -> None:  # pragma: no cover
+def _extract_non_trainable_state(model: object, state_store: dict[str, object], weights_store: dict[str, object]) -> None:  # pragma: no cover
+    """Function docstring."""
     if hasattr(model, "non_trainable_variables"):
         for i, w in enumerate(model.non_trainable_variables):
             name = getattr(w, "name", f"non_trainable_{i}")
@@ -157,15 +154,14 @@ def _extract_non_trainable_state(
 
 
 def _extract_ema_state(model: object, state_store: dict[str, object]) -> None:  # pragma: no cover
+    """Function docstring."""
     if hasattr(model, "ema_variables"):
         for i, w in enumerate(model.ema_variables):
             name = getattr(w, "name", f"ema_{i}")
             state_store[name] = to_numpy(w)
 
 
-def _extract_model_state(
-    model: object, weights_store: dict[str, object]
-) -> dict[str, object]:  # pragma: no cover
+def _extract_model_state(model: object, weights_store: dict[str, object]) -> dict[str, object]:  # pragma: no cover
     """Extract optimizer state and non-trainable variables."""
     state_store: dict[str, object] = {}
     _extract_optimizer_state(model, state_store)
@@ -185,9 +181,7 @@ def _compile_model_metadata(
     return config_dict, metadata
 
 
-def _write_h5_to_zip(
-    zf: zipfile.ZipFile, filename: str, store: dict[str, object]
-) -> None:  # pragma: no cover
+def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: dict[str, object]) -> None:  # pragma: no cover
     """Helper to write h5 data into a zip file."""
     zinfo = zipfile.ZipInfo(filename)
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".h5")
@@ -243,12 +237,11 @@ def load_model(
     pass  # pragma: no cover
 
 
-def register_keras_serializable(
-    package: str = "Custom", name: Optional[str] = None
-) -> Callable[[T], T]:
+def register_keras_serializable(package: str = "Custom", name: Optional[str] = None) -> Callable[[T], T]:
     """Register an object with Keras serialization."""
 
     def decorator(arg: T) -> T:  # pragma: no cover
+        """Function docstring."""
         return arg  # pragma: no cover
 
     return decorator  # pragma: no cover

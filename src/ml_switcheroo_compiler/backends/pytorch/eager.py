@@ -1,6 +1,8 @@
 """Backend utilities."""
 
-from typing import cast, Any
+from typing import Any, cast
+
+import torch  # pragma: no cover
 
 
 def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
@@ -15,13 +17,9 @@ def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
         cast(Any, args[1]),
         cast(Any, args[2]),
     )  # pragma: no cover
-    flat_idx = sum(
-        indices[..., i] * tensor.stride(i) for i in range(indices.shape[-1])
-    )  # pragma: no cover
+    flat_idx = sum(indices[..., i] * tensor.stride(i) for i in range(indices.shape[-1]))  # pragma: no cover
     res = tensor.clone().flatten()  # pragma: no cover
-    res.scatter_reduce_(
-        0, flat_idx.flatten(), updates.flatten(), reduce="amax", include_self=True
-    )  # pragma: no cover
+    res.scatter_reduce_(0, flat_idx.flatten(), updates.flatten(), reduce="amax", include_self=True)  # pragma: no cover
     return res.reshape(tensor.shape)  # pragma: no cover
 
 
@@ -37,13 +35,9 @@ def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
         cast(Any, args[1]),
         cast(Any, args[2]),
     )  # pragma: no cover
-    flat_idx = sum(
-        indices[..., i] * tensor.stride(i) for i in range(indices.shape[-1])
-    )  # pragma: no cover
+    flat_idx = sum(indices[..., i] * tensor.stride(i) for i in range(indices.shape[-1]))  # pragma: no cover
     res = tensor.clone().flatten()  # pragma: no cover
-    res.scatter_reduce_(
-        0, flat_idx.flatten(), updates.flatten(), reduce="amin", include_self=True
-    )  # pragma: no cover
+    res.scatter_reduce_(0, flat_idx.flatten(), updates.flatten(), reduce="amin", include_self=True)  # pragma: no cover
     return res.reshape(tensor.shape)  # pragma: no cover
 
 
@@ -55,9 +49,7 @@ def _execute_tensor_scatter_update(*args: object, **kwargs: object) -> object:
         kwargs: Arg.
     """
     return (  # pragma: no cover
-        cast(Any, args[0])
-        .clone()
-        .index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]))
+        cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]))
     )
 
 
@@ -69,9 +61,7 @@ def _execute_tensor_scatter_add(*args: object, **kwargs: object) -> object:
         kwargs: Arg.
     """
     return (  # pragma: no cover
-        cast(Any, args[0])
-        .clone()
-        .index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]), accumulate=True)
+        cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]), accumulate=True)
     )
 
 
@@ -82,15 +72,11 @@ def _execute_power_iteration(*args: object, **kwargs: object) -> object:
         args: Arg.
         kwargs: Arg.
     """
-    import torch  # pragma: no cover
-
     w = args[0]  # pragma: no cover
     num_iters = kwargs.get("num_iters", 1)  # pragma: no cover
     u = kwargs.get("u", None)  # pragma: no cover
     if u is None:  # pragma: no cover
-        u = torch.ones(
-            w.shape[:-2] + (w.shape[-2], 1), dtype=w.dtype, device=w.device
-        )  # pragma: no cover
+        u = torch.ones(w.shape[:-2] + (w.shape[-2], 1), dtype=w.dtype, device=w.device)  # pragma: no cover
     for _ in range(num_iters):  # pragma: no cover
         w_t = w.transpose(-1, -2)  # pragma: no cover
         v = torch.matmul(w_t, u)  # pragma: no cover
@@ -112,20 +98,17 @@ def _execute_broadcast_to(*args: object, **kwargs: object) -> object:
 
 
 def _execute_cummax(*args: object, **kwargs: object) -> object:
-    import torch
-
+    """Function docstring."""
     return torch.cummax(*args, **kwargs)[0]
 
 
 def _execute_cummin(*args: object, **kwargs: object) -> object:
-    import torch
-
+    """Function docstring."""
     return torch.cummin(*args, **kwargs)[0]
 
 
 def _execute_cumlogsumexp(*args: object, **kwargs: object) -> object:
-    import torch
-
+    """Function docstring."""
     return torch.logcumsumexp(*args, **kwargs)
 
 
@@ -156,8 +139,6 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     Returns:
     Any: The result.
     """
-    import torch
-
     op_map = {
         "Add": torch.add,
         "Subtract": torch.sub,

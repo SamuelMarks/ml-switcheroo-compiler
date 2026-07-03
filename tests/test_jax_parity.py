@@ -5,7 +5,10 @@ import numpy as np
 import ml_switcheroo_compiler.grad as grad_module
 from ml_switcheroo_compiler import nn, ops, random
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.configs import InitializerConfig, SpaceConfig
 
 
 def test_grad_coverage() -> None:
@@ -31,9 +34,6 @@ def test_grad_coverage() -> None:
 
 def test_nn_coverage() -> None:
     """Tests the NN API."""
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-
     config.eager_mode = True
     t = Tensor(np.array(1.0, dtype=np.float32), TensorConfig((), DType.Float32, Device("cpu")))
     assert nn.gelu(t) is not None
@@ -75,13 +75,9 @@ def test_nn_coverage() -> None:
     ]:
         assert init_fn()(key, (2,)).shape == (2,)
 
-    from ml_switcheroo_compiler.ops.configs import InitializerConfig
-
     for init_fn in [nn.orthogonal, nn.delta_orthogonal, nn.variance_scaling]:
         if init_fn == nn.variance_scaling:
-            assert init_fn(InitializerConfig(scale=1.0, mode="fan_in", distribution="uniform"))(
-                key, (2,)
-            ).shape == (2,)
+            assert init_fn(InitializerConfig(scale=1.0, mode="fan_in", distribution="uniform"))(key, (2,)).shape == (2,)
         else:
             assert init_fn()(key, (2,)).shape == (2,)
 
@@ -114,8 +110,6 @@ def test_ops_composite_coverage() -> None:
     assert ops.clamp(1, t1, 2) is not None
     assert ops.clip(t1, 1, 2) is not None
     assert ops.broadcast_shapes((1,), (2,)) == (2,)
-
-    from ml_switcheroo_compiler.ops.configs import SpaceConfig
 
     ls = ops.logspace(1, 2)
     assert ls is not None

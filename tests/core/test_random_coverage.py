@@ -1,14 +1,21 @@
+"""Module docstring."""
+
+import numpy as np
 import pytest
 
 from ml_switcheroo_compiler import random as rn
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.tracing.tracer import _tracer, ProxyTensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.random_stateless import stateless_beta, stateless_shuffle
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
-def test_random_ops():
+def test_random_ops() -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
 
         keys = rn.split(rn.PRNGKey(0))
         k1 = keys  # pass the whole split tensor for now to test ops
@@ -26,21 +33,15 @@ def test_random_ops():
 
         rn.fold_in(k1, 5)
 
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
     with ConfigContext(eager_mode=True):
         with pytest.raises(NotImplementedError):
             rn.state._emit_random_node("FakeOp", [], (), DType.Float32, {})
 
 
-def test_stateless_beta():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.random_stateless import stateless_beta
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-
+def test_stateless_beta() -> object:
+    """Function docstring."""
     seed = Tensor(np.array([0, 0]), TensorConfig((2,), DType.Int32, None))
     alpha = Tensor(np.array(1.0), TensorConfig((), DType.Float32, None))
     beta_param = Tensor(np.array(1.0), TensorConfig((), DType.Float32, None))
@@ -50,7 +51,7 @@ def test_stateless_beta():
         assert res.shape == (2, 2)
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             p_seed = Tensor(
                 ProxyTensor(id="mock_seed", shape=(2,), dtype=DType.Int32.value),
@@ -67,17 +68,11 @@ def test_stateless_beta():
             res = stateless_beta((2, 2), p_seed, p_alpha, p_beta)
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
-def test_stateless_shuffle():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.random_stateless import stateless_shuffle
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-
+def test_stateless_shuffle() -> object:
+    """Function docstring."""
     seed = Tensor(np.array([0, 0]), TensorConfig((2,), DType.Int32, None))
     x = Tensor(np.array([1, 2, 3, 4]), TensorConfig((4,), DType.Int32, None))
     y = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Int32, None))
@@ -89,7 +84,7 @@ def test_stateless_shuffle():
         assert res2.shape == (2, 2)
 
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             p_seed = Tensor(
                 ProxyTensor(id="mock_seed", shape=(2,), dtype=DType.Int32.value),
@@ -102,4 +97,4 @@ def test_stateless_shuffle():
             res = stateless_shuffle(p_x, p_seed)
             assert res is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()

@@ -1,7 +1,10 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-def test_ir_node_sharding():
+def test_ir_node_sharding() -> object:
+    """Function docstring."""
     # Verify that IRNode can carry sharding attribute.
     node = IRNode("node_1", "Add")
     node.sharding = "shard_info"

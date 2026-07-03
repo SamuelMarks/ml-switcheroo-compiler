@@ -2,30 +2,52 @@
 
 from __future__ import annotations  # pragma: no cover
 
-
 import os  # pragma: no cover
-import urllib.request  # pragma: no cover
-import tarfile  # pragma: no cover
-import zipfile  # pragma: no cover
-import time  # pragma: no cover
+import random  # pragma: no cover
 import sys  # pragma: no cover
+import tarfile  # pragma: no cover
+import time  # pragma: no cover
+import urllib.request  # pragma: no cover
+import zipfile  # pragma: no cover
+from dataclasses import dataclass
 from typing import Any
 
-from dataclasses import dataclass
+from ml_switcheroo_compiler.core import config  # pragma: no cover
+
+
+@dataclass
+class HashConfig:  # pragma: no cover
+    """Class docstring."""
+
+    md5_hash: str | None = None
+    file_hash: str | None = None
+    hash_algorithm: str = "auto"
+
+
+@dataclass
+class ArchiveConfig:  # pragma: no cover
+    """Class docstring."""
+
+    untar: bool = False
+    extract: bool = False
+    archive_format: str = "auto"
+
+
+@dataclass
+class CacheConfig:  # pragma: no cover
+    """Class docstring."""
+
+    cache_subdir: str = "datasets"
+    cache_dir: str | None = None
 
 
 @dataclass
 class GetFileConfig:  # pragma: no cover
     """GetFile configuration."""
 
-    untar: bool = False
-    md5_hash: str | None = None
-    file_hash: str | None = None
-    cache_subdir: str = "datasets"
-    hash_algorithm: str = "auto"
-    extract: bool = False
-    archive_format: str = "auto"
-    cache_dir: str | None = None
+    hash_config: HashConfig = HashConfig()
+    archive_config: ArchiveConfig = ArchiveConfig()
+    cache_config: CacheConfig = CacheConfig()
 
 
 @dataclass
@@ -44,19 +66,13 @@ class ProgbarConfig:  # pragma: no cover
 
 def set_random_seed(seed: int) -> None:  # pragma: no cover
     """Sets all random seeds for the program."""
-    from ml_switcheroo_compiler.core import config  # pragma: no cover
-
-    config.seed = seed  # type: ignore[attr-defined] # pragma: no cover
+    config.seed = seed  # pragma: no cover
     try:  # pragma: no cover
-        import sys  # pragma: no cover
-
         if "numpy" in sys.modules:  # pragma: no cover
             sys.modules["numpy"].random.seed(seed)  # pragma: no cover
     except (ImportError, AttributeError):  # pragma: no cover
         pass  # pragma: no cover
     try:  # pragma: no cover
-        import random  # pragma: no cover
-
         random.seed(seed)  # pragma: no cover
     except ImportError:  # pragma: no cover
         pass  # pragma: no cover
@@ -97,10 +113,10 @@ def get_file(  # pragma: no cover
 ) -> str:
     """Downloads a file from a URL if it not already in the cache."""
     conf = config if config is not None else GetFileConfig()
-    untar = conf.untar
-    cache_subdir = conf.cache_subdir
-    extract = conf.extract
-    cache_dir = conf.cache_dir
+    untar = conf.archive_config.untar
+    cache_subdir = conf.cache_config.cache_subdir
+    extract = conf.archive_config.extract
+    cache_dir = conf.cache_config.cache_dir
 
     if cache_dir is None:  # pragma: no cover
         cache_dir = os.path.join(os.path.expanduser("~"), ".keras")  # pragma: no cover
@@ -121,6 +137,19 @@ def get_file(  # pragma: no cover
     return fpath  # pragma: no cover
 
 
+@dataclass
+class ProgbarState:
+    """Class docstring."""
+
+    dynamic_display: bool
+    total_width: int
+    seen_so_far: int
+    values: dict[str, list[float | int]]
+    values_order: list[str]
+    start_time: float
+    last_update: float
+
+
 class Progbar:  # pragma: no cover
     """Displays a progress bar."""
 
@@ -131,29 +160,22 @@ class Progbar:  # pragma: no cover
     ) -> None:
         """Initialize progress bar."""
         conf = config if config is not None else ProgbarConfig()
-        width = conf.width
-        verbose = conf.verbose
-        interval = conf.interval
-        stateful_metrics = conf.stateful_metrics
-        unit_name = conf.unit_name
 
         self.target = target  # pragma: no cover
-        self.width = width  # pragma: no cover
-        self.verbose = verbose  # pragma: no cover
-        self.interval = interval  # pragma: no cover
-        self.stateful_metrics = stateful_metrics or []  # pragma: no cover
-        self.unit_name = unit_name  # pragma: no cover
-        self._dynamic_display = (
-            hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
-        )  # pragma: no cover
-        self._total_width = 0  # pragma: no cover
-        self._seen_so_far = 0  # pragma: no cover
-        self._values: dict[str, list[float | int]] = {}  # pragma: no cover
-        self._values_order: list[str] = []  # pragma: no cover
-        self._start = time.time()  # pragma: no cover
-        self._last_update = 0.0  # pragma: no cover
+        self.config = conf
+
+        self.state = ProgbarState(
+            dynamic_display=hasattr(sys.stdout, "isatty") and sys.stdout.isatty(),
+            total_width=0,
+            seen_so_far=0,
+            values={},
+            values_order=[],
+            start_time=time.time(),
+            last_update=0.0,
+        )
 
     def _update_values(self, current: int, values: list[Any]) -> None:  # pragma: no cover
+        """Function docstring."""
         for k, v in values:
             if k not in self._values_order:
                 self._values_order.append(k)
@@ -163,6 +185,7 @@ class Progbar:  # pragma: no cover
                 self._update_stateless_metric(k, v, current)
 
     def _update_stateless_metric(self, k: str, v: float, current: int) -> None:  # pragma: no cover
+        """Function docstring."""
         if k not in self._values:
             self._values[k] = [
                 v * (current - self._seen_so_far),
@@ -173,14 +196,17 @@ class Progbar:  # pragma: no cover
             self._values[k][1] += current - self._seen_so_far
 
     def _should_finalize(self, current: int, finalize: bool | None) -> bool:  # pragma: no cover
+        """Function docstring."""
         if finalize is not None:
             return finalize
         return self.target is None or current >= self.target
 
     def _should_update(self, now: float, finalize: bool) -> bool:  # pragma: no cover
+        """Function docstring."""
         return finalize or (now - self._last_update > self.interval)
 
     def _format_info(self, current: int) -> str:  # pragma: no cover
+        """Function docstring."""
         return f" - {current}/{self.target}" if self.target is not None else f" - {current}"
 
     def update(  # pragma: no cover
@@ -387,12 +413,6 @@ def standardize_dtype(*args: object, **kwargs: object) -> object:  # pragma: no 
     Returns:
         The standardized dtype.
     """
-    pass  # pragma: no cover
-
-
-class legacy:  # pragma: no cover
-    """Legacy utilities namespace."""
-
     pass  # pragma: no cover
 
 

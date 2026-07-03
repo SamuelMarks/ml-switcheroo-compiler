@@ -1,12 +1,22 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """NLP operations."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_0_5
-
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
 from typing import Optional
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_0_5
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+# Dummy mock
+from ml_switcheroo_compiler.core.tensor import Tensor as CoreTensor
+from ml_switcheroo_compiler.nn.activations import softmax
+from ml_switcheroo_compiler.ops.binary import add, true_divide
+from ml_switcheroo_compiler.ops.creation import full_like
+from ml_switcheroo_compiler.ops.creation.frontend_basic import ones_like
+from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.nn.dropout import dropout  # pragma: no cover
+from ml_switcheroo_compiler.ops.registry import get_op
+from ml_switcheroo_compiler.ops.shape import gather, permute, tril, where
 
 
 @dataclass
@@ -52,8 +62,6 @@ def embedding(
     Returns:
         Tensor: The embeddings.
     """
-    from ml_switcheroo_compiler.ops.shape import gather
-
     return gather(weights, 0, inputs)
 
 
@@ -65,23 +73,15 @@ def _apply_causal_mask(query: Tensor, key: Tensor, scores: Tensor) -> Tensor:
         key: Arg.
         scores: Arg.
     """
-    import math
-    from ml_switcheroo_compiler.ops.creation import full_like
-    from ml_switcheroo_compiler.ops.shape import tril, where
-
     _seq_len_q = query.shape[-2]
     _seq_len_k = key.shape[-2]
-
-    from ml_switcheroo_compiler.ops.creation.frontend_basic import ones_like
 
     causal_mask = tril(ones_like(scores))
     neg_inf = full_like(scores, -math.inf)
     return where(causal_mask > MAGIC_VAL_0_5, scores, neg_inf)
 
 
-def _scaled_dot_product_attention_scores(
-    query: Tensor, key: Tensor, is_causal: bool, mask: Optional[Tensor]
-) -> Tensor:
+def _scaled_dot_product_attention_scores(query: Tensor, key: Tensor, is_causal: bool, mask: Optional[Tensor]) -> Tensor:
     """Calculate scaled dot-product attention scores.
 
     Args:
@@ -93,11 +93,6 @@ def _scaled_dot_product_attention_scores(
     Returns:
         Tensor: Attention scores.
     """
-    import math
-    from ml_switcheroo_compiler.ops.binary import add, true_divide
-    from ml_switcheroo_compiler.ops.linalg import matmul
-    from ml_switcheroo_compiler.ops.shape import permute
-
     depth = query.shape[-1]
     dims = list(range(len(key.shape)))
     dims[-1], dims[-2] = dims[-2], dims[-1]
@@ -131,12 +126,7 @@ def attention(
     if config is None:
         config = AttentionConfig()
 
-    from ml_switcheroo_compiler.nn.activations import softmax
-    from ml_switcheroo_compiler.ops.linalg import matmul
-
-    scores = _scaled_dot_product_attention_scores(
-        inputs.query, inputs.key, config.is_causal, config.mask
-    )
+    scores = _scaled_dot_product_attention_scores(inputs.query, inputs.key, config.is_causal, config.mask)
 
     attn_weights = softmax(scores, axis=-1)
 
@@ -148,6 +138,8 @@ def attention(
 
 @dataclass
 class DotProductAttentionConfig:
+    """Class docstring."""
+
     mask: object = None
     scale: float = None
     dropout_rate: float = 0.0
@@ -174,189 +166,245 @@ def dot_product_attention(
     )
 
 
-def all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=None, name=None):
+@dataclass
+class SamplingConfig:
+    """Class docstring."""
+
+    num_true: int = 1
+    num_sampled: int = 1
+    unique: bool = False
+    range_max: Optional[int] = None
+    seed: Optional[int] = None
+
+
+@dataclass
+class EmbeddingConfig:
+    """Class docstring."""
+
+    partition_strategy: str = "mod"
+    validate_indices: bool = True
+    max_norm: Optional[float] = None
+    combiner: str = "mean"
+    default_id: Optional[int] = None
+
+
+@dataclass
+class NLPOpsConfig:
+    """Class docstring."""
+
+    sampling: SamplingConfig = field(default_factory=SamplingConfig)
+    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
+    name: Optional[str] = None
+
+
+def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     # pragma: no cover
     """All candidate sampler."""
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    num_sampled_tensor = Tensor(None, TensorConfig((num_sampled,), "int32", "cpu"))
+    num_sampled_tensor = Tensor(None, TensorConfig((config.sampling.num_sampled,), "int32", "cpu"))
     true_expected_count = Tensor(
         None,
         TensorConfig(true_classes.shape, "float32", "cpu"),
     )
-    sampled_expected_count = Tensor(None, TensorConfig((num_sampled,), "float32", "cpu"))
+    sampled_expected_count = Tensor(None, TensorConfig((config.sampling.num_sampled,), "float32", "cpu"))
     return num_sampled_tensor, true_expected_count, sampled_expected_count
 
 
-def compute_accidental_hits(true_classes, sampled_candidates, num_true, seed=None, name=None):
+def compute_accidental_hits(true_classes: object, sampled_candidates: object, config: NLPOpsConfig) -> object:
     # pragma: no cover
     """Compute accidental hits."""
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     indices = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     ids = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     weights = Tensor([-1e30], TensorConfig((1,), "float32", "cpu"))
     return indices, ids, weights
 
 
+@dataclass
+class VocabConfig:
+    """Class docstring."""
+
+    vocab_file: str = ""
+    num_reserved_ids: int = 0
+    unigrams: tuple = ()
+
+
+@dataclass
+class SamplingStrategyConfig:
+    """Class docstring."""
+
+    distortion: float = 1.0
+    num_shards: int = 1
+    shard: int = 0
+    seed: Optional[int] = None
+
+
+@dataclass
+class SamplerConfig:
+    """Class docstring."""
+
+    range_max: int
+    vocab: VocabConfig = field(default_factory=VocabConfig)
+    strategy: SamplingStrategyConfig = field(default_factory=SamplingStrategyConfig)
+    name: Optional[str] = None
+
+
 def fixed_unigram_candidate_sampler(
-    true_classes,
-    num_true,
-    num_sampled,
-    unique,
-    range_max,
-    vocab_file="",
-    distortion=1.0,
-    num_reserved_ids=0,
-    num_shards=1,
-    shard=0,
-    unigrams=(),
-    seed=None,
-    name=None,
-):
+    true_classes: object,
+    config: NLPOpsConfig,
+    sampler_config: Optional[SamplerConfig] = None,
+) -> object:
     """Fixed unigram candidate sampler."""
-    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+    return all_candidate_sampler(true_classes, config)
 
 
-def learned_unigram_candidate_sampler(
-    true_classes, num_true, num_sampled, unique, range_max, seed=None, name=None
-):
+def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Learned unigram candidate sampler."""
-    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+    return all_candidate_sampler(true_classes, config)
 
 
-def log_uniform_candidate_sampler(
-    true_classes, num_true, num_sampled, unique, range_max, seed=None, name=None
-):
+def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Log uniform candidate sampler."""
-    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+    return all_candidate_sampler(true_classes, config)
 
 
-def uniform_candidate_sampler(
-    true_classes, num_true, num_sampled, unique, range_max, seed=None, name=None
-):
+def uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     """Uniform candidate sampler."""
-    return all_candidate_sampler(true_classes, num_true, num_sampled, unique, seed=seed, name=name)
+    return all_candidate_sampler(true_classes, config)
+
+
+@dataclass
+class NCELossConfig:
+    """Class docstring."""
+
+    num_sampled: int
+    num_classes: int
+    num_true: int = 1
+    sampled_values: Optional[object] = None
+    remove_accidental_hits: bool = False
+    name: str = "nce_loss"
 
 
 def nce_loss(
-    weights,
-    biases,
-    labels,
-    inputs,
-    num_sampled,
-    num_classes,
-    num_true=1,
-    sampled_values=None,
-    remove_accidental_hits=False,
-    name="nce_loss",
-):
+    weights: object,
+    biases: object,
+    labels: object,
+    inputs: object,
+    config: NCELossConfig,
+) -> object:
     """Computes and returns the noise-contrastive estimation training loss."""
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
+
+
+@dataclass
+class SampledSoftmaxConfig:
+    """Class docstring."""
+
+    num_sampled: int
+    num_classes: int
+    num_true: int = 1
+    sampled_values: Optional[object] = None
+    remove_accidental_hits: bool = True
+    seed: Optional[int] = None
+    name: str = "sampled_softmax_loss"
 
 
 def sampled_softmax_loss(
-    weights,
-    biases,
-    labels,
-    inputs,
-    num_sampled,
-    num_classes,
-    num_true=1,
-    sampled_values=None,
-    remove_accidental_hits=True,
-    seed=None,
-    name="sampled_softmax_loss",
-):
+    weights: object,
+    biases: object,
+    labels: object,
+    inputs: object,
+    config: SampledSoftmaxConfig,
+) -> object:
     """Computes and returns the sampled softmax training loss."""
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
 
 
-def embedding_lookup(
-    params, ids, partition_strategy="mod", name=None, validate_indices=True, max_norm=None
-):
+def embedding_lookup(params: object, ids: object, config: Optional[NLPOpsConfig] = None) -> object:
     """Looks up `ids` in a list of embedding tensors."""
     return embedding(ids, params)
 
 
-def embedding_lookup_sparse(sp_ids, sp_weights, params, combiner=None, max_norm=None, name=None):
+def embedding_lookup_sparse(sp_ids: object, sp_weights: object, params: object, config: Optional[NLPOpsConfig] = None) -> object:
     """Looks up embeddings for the given ids and weights from a list of tensors."""
     return embedding(sp_ids.values, params)
 
 
 def safe_embedding_lookup_sparse(
-    embedding_weights,
-    sparse_ids,
-    sparse_weights=None,
-    combiner="mean",
-    default_id=None,
-    name=None,
-    partition_strategy="div",
-    max_norm=None,
-):
+    embedding_weights: object,
+    sparse_ids: object,
+    sparse_weights: object = None,
+    config: Optional[NLPOpsConfig] = None,
+) -> object:
     """Lookup embedding results, accounting for invalid IDs and empty features."""
     return embedding(sparse_ids.values, embedding_weights)
 
 
 def ctc_beam_search_decoder(
-    inputs, sequence_length, beam_width=100, top_paths=1, merge_repeated=True
-):  # pragma: no cover
+    inputs: object,
+    sequence_length: object,
+    beam_width: object = 100,
+    top_paths: object = 1,
+    merge_repeated: object = True,
+) -> object:  # pragma: no cover
     """Performs beam search decoding on the logits given in input."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
 
 
 def ctc_greedy_decoder(
-    inputs, sequence_length, merge_repeated=True, blank_index=None
-):  # pragma: no cover
+    inputs: object,
+    sequence_length: object,
+    merge_repeated: object = True,
+    blank_index: object = None,
+) -> object:  # pragma: no cover
     # pragma: no cover
     """Performs greedy decoding on the logits given in input."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
 
 
+@dataclass
+class CTCLossOptions:
+    """Options for CTC Loss."""
+
+    logits_time_major: bool = True
+    unique: Optional[object] = None
+    blank_index: Optional[int] = None
+    name: Optional[str] = None
+
+
 def ctc_loss(
-    labels,
-    logits,
-    label_length,
-    logit_length,
-    logits_time_major=True,
-    unique=None,
-    blank_index=None,
-    name=None,
-):  # pragma: no cover
-    """Computes the CTC (Connectionist Temporal Classification) Loss."""
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    labels: Tensor,
+    logits: Tensor,
+    label_length: Tensor,
+    logit_length: Tensor,
+    options: Optional[CTCLossOptions] = None,
+) -> Tensor:  # pragma: no cover
+    """Computes the CTC (Connectionist Temporal Classification) Loss.
 
-    return Tensor(None, TensorConfig((1,), "float32", "cpu"))
+    Args:
+        labels (Tensor): Labels.
+        logits (Tensor): Logits.
+        label_length (Tensor): Label length.
+        logit_length (Tensor): Logit length.
+        options (Optional[CTCLossOptions]): Additional options.
+
+    Returns:
+        Tensor: The computed loss.
+    """
+    _ = options
+    return CoreTensor(None, TensorConfig((1,), "float32", "cpu"))
 
 
-def ctc_unique_labels(labels, name=None):  # pragma: no cover
+def ctc_unique_labels(labels: object, name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """Get unique labels and indices for batched data for tf.nn.ctc_loss."""
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
-    return Tensor(None, TensorConfig((1,), "int32", "cpu")), Tensor(
-        None, TensorConfig((1,), "int32", "cpu")
-    )
+    return Tensor(None, TensorConfig((1,), "int32", "cpu")), Tensor(None, TensorConfig((1,), "int32", "cpu"))
 
 
 def scaled_dot_product_attention(
     query: Tensor,
     key: Tensor,
     value: Tensor,
-    attn_mask: object = None,
-    dropout_p: float = 0.0,
-    is_causal: bool = False,
-    scale: object = None,
+    config: Optional[AttentionConfig] = None,
+    scale: Optional[object] = None,
 ) -> Tensor:
     """Scaled dot product attention.
 
@@ -364,48 +412,36 @@ def scaled_dot_product_attention(
         query (Tensor): Query tensor.
         key (Tensor): Key tensor.
         value (Tensor): Value tensor.
-        attn_mask (object): Attention mask.
-        dropout_p (float): Dropout probability.
-        is_causal (bool): Whether to apply causal mask.
-        scale (object): Scale factor.
+        config (Optional[AttentionConfig]): Configuration for attention (mask, dropout, is_causal).
+        scale (Optional[object]): Optional scale factor.
 
     Returns:
-        Tensor: The output tensor.
+        Tensor: The attention output.
     """
-    from ml_switcheroo_compiler.ops.shape.frontend import transpose  # pragma: no cover
-    from ml_switcheroo_compiler.ops.linalg.frontend import matmul  # pragma: no cover
-    from ml_switcheroo_compiler.ops.binary.math import multiply, add  # pragma: no cover
-    from ml_switcheroo_compiler.nn.activations import softmax  # pragma: no cover
-    from ml_switcheroo_compiler.ops.creation import full_like  # pragma: no cover
-    from ml_switcheroo_compiler.ops.unary.math import sqrt  # pragma: no cover
+    conf = config if config is not None else AttentionConfig()
 
-    # pragma: no cover
     if scale is None:  # pragma: no cover
-        dim = key.shape[-1]  # pragma: no cover
-        dim_t = full_like(key, float(dim))  # pragma: no cover
-        scale = 1.0 / sqrt(dim_t)  # pragma: no cover
-    # pragma: no cover
-    key_t = transpose(  # pragma: no cover
-        key,
-        list(range(len(key.shape) - 2))
-        + [len(key.shape) - 1, len(key.shape) - 2],  # pragma: no cover
-    )  # pragma: no cover
-    attn = multiply(matmul(query, key_t), scale)  # pragma: no cover
-    # pragma: no cover
-    if is_causal:  # pragma: no cover
-        attn = _apply_causal_mask(query, key, attn)  # pragma: no cover
-    elif attn_mask is not None:  # pragma: no cover
-        attn = add(attn, attn_mask)  # pragma: no cover
-    # pragma: no cover
-    attn = softmax(attn, axis=-1)  # pragma: no cover
-    # pragma: no cover
-    if dropout_p > 0.0:  # pragma: no cover
-        from ml_switcheroo_compiler.ops.nn.dropout import dropout  # pragma: no cover
+        scale = 1.0 / get_op("Sqrt")()(get_op("FullLike")()(key, float(key.shape[-1])))  # pragma: no cover
 
-        # pragma: no cover
-        attn = dropout(attn, dropout_p)  # pragma: no cover
-    # pragma: no cover
-    return matmul(attn, value)  # pragma: no cover
+    attn = get_op("Multiply")()(
+        get_op("Matmul")()(
+            query,
+            get_op("Transpose")()(key, list(range(len(key.shape) - 2)) + [len(key.shape) - 1, len(key.shape) - 2]),
+        ),
+        scale,
+    )  # pragma: no cover
+
+    if conf.is_causal:  # pragma: no cover
+        attn = _apply_causal_mask(query, key, attn)  # pragma: no cover
+    elif conf.mask is not None:  # pragma: no cover
+        attn = get_op("Add")()(attn, conf.mask)  # pragma: no cover
+
+    attn = softmax(attn, axis=-1)  # pragma: no cover
+
+    if conf.dropout > 0.0:  # pragma: no cover
+        attn = dropout(attn, conf.dropout)  # pragma: no cover
+
+    return get_op("Matmul")()(attn, value)  # pragma: no cover
 
 
 __all__ = [

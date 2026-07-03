@@ -1,6 +1,7 @@
 """Pickle format serialization."""
 
 import pickle
+
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
 

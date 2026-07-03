@@ -1,16 +1,18 @@
 """Text and Categorical operations."""
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
 import uuid
-
-
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.config import config as global_config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from dataclasses import dataclass
 from typing import Optional
+
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config as global_config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
+from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 
 @dataclass
@@ -63,9 +65,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
     """
     if global_config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op(
-            "RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite
-        )
+        data = backend.execute_op("RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite)
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
@@ -191,9 +191,7 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
         delimiter: Arg.
     """
     backend = get_active_backend()  # pragma: no cover
-    tokens, lengths = backend.execute_op(
-        "StringSplit", input_tensor.data, delimiter=delimiter
-    )  # pragma: no cover
+    tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)  # pragma: no cover
     return (  # pragma: no cover
         Tensor(
             backend.array(tokens),
@@ -213,17 +211,13 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
         input_tensor: Arg.
         delimiter: Arg.
     """
-    from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
-
-    if not _tracer.is_tracing:
+    if not global_tracing_state.is_tracing:
         raise RuntimeError("Cannot emit StringSplit node outside of a tracing context.")
 
     out_id_tokens = str(uuid.uuid4())
     out_id_lengths = str(uuid.uuid4())
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs((input_tensor,))
-
-    from ml_switcheroo_ir import LogicalNode
 
     node = LogicalNode(
         id=out_id_tokens,
@@ -232,7 +226,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
         attributes={"delimiter": delimiter, "secondary_id": out_id_lengths},
         shape_metadata=(),
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
 
     proxy_tokens = ProxyTensor(id=out_id_tokens, shape=(), dtype="string")
     proxy_lengths = ProxyTensor(id=out_id_lengths, shape=(), dtype="int32")
@@ -270,9 +264,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Tensor:
     """
     if global_config.eager_mode:  # pragma: no branch
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "Lookup", input_tensor.data, vocabulary=vocabulary.data
-        )  # pragma: no cover
+        data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
@@ -298,9 +290,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
     """
     if global_config.eager_mode:  # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "TextVectorization", input_tensor.data, **kwargs
-        )  # pragma: no cover
+        data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
@@ -326,9 +316,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
     """
     if global_config.eager_mode:  # pragma: no cover
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "StringToNumber", input_tensor.data, dtype=dtype
-        )  # pragma: no cover
+        data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, dtype, input_tensor.device),
@@ -405,9 +393,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     """
     if global_config.eager_mode:  # pragma: no branch
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            "EditDistance", hypothesis.data, truth.data, normalize=normalize
-        )  # pragma: no cover
+        data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)  # pragma: no cover
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Float32, hypothesis.device),

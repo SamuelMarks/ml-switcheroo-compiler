@@ -7,7 +7,8 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 def test_base_coverage_brute() -> None:
@@ -26,7 +27,7 @@ def test_base_coverage_brute() -> None:
             """Docstring."""
             return 1
 
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     op = TestCoverageOp()
 
     t1 = Tensor(ProxyTensor(id="n1", shape=()), TensorConfig((), DType.Int32, Device("cpu")))
@@ -44,5 +45,5 @@ def test_base_coverage_brute() -> None:
 
     op(t1, dtype=DType.Float32)
 
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     config.eager_mode = True

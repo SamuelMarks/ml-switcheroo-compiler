@@ -1,8 +1,12 @@
+"""Module docstring."""
+
 import numpy as np
-import ml_switcheroo_compiler.backends.numpy.eager.math as mod
+
+import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mod
 
 
-def test_segment_sum_coverage():
+def test_segment_sum_coverage() -> object:
+    """Function docstring."""
     data = np.array([1, 2, 3, 4, 5])
     segment_ids = np.array([0, 0, 1, 1, 2])
 

@@ -1,10 +1,9 @@
-# ruff: noqa: E402, F403
 """Vision eager common operations."""
 
-"""Shared vision utilities and ops."""
-
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 import numpy as np
+
+from ml_switcheroo_compiler.backends.eager.audio import istft_eager, mel_filterbank_eager, mfcc_eager, stft_eager
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Istft")
@@ -20,8 +19,6 @@ def _np_istft(
         stft_tensor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.audio import istft_eager
-
     return istft_eager(backend_module, stft_tensor, **kwargs)
 
 
@@ -38,8 +35,6 @@ def _np_mel_filterbank(
         _: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.audio import mel_filterbank_eager
-
     return mel_filterbank_eager(backend_module, None, kwargs.get("config", kwargs))
 
 
@@ -56,15 +51,11 @@ def _np_mfcc(
         spectrogram: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.audio import mfcc_eager
-
     return mfcc_eager(backend_module, spectrogram, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("PowerIteration")
-def _np_power_iteration(
-    backend_module: object, w: object, *args: object, **kwargs: object
-) -> object:
+def _np_power_iteration(backend_module: object, w: object, *args: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -100,8 +91,6 @@ def _np_stft(
         input_tensor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.audio import stft_eager
-
     return stft_eager(np, input_tensor, **kwargs)
 
 

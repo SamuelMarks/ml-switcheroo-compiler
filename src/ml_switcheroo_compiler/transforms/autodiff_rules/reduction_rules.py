@@ -3,6 +3,8 @@
 reduction operations
 """
 
+import math
+
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -72,13 +74,9 @@ def mean_vjp(graph: object, node: object, cotangent: str) -> tuple:
         {"shape": graph.nodes[x].shape_metadata},
     )
 
-    import math
-
     n = 1.0
     if graph.nodes[x].shape_metadata and node.shape_metadata:
-        n = math.prod(graph.nodes[x].shape_metadata) / (
-            math.prod(node.shape_metadata) if node.shape_metadata else 1.0
-        )
+        n = math.prod(graph.nodes[x].shape_metadata) / (math.prod(node.shape_metadata) if node.shape_metadata else 1.0)
 
     n_id = emit_ir_node(graph, "Constant", [], graph.nodes[x].shape_metadata, {"value": float(n)})
     res = emit_ir_node(graph, "TrueDivide", [bcast, n_id], graph.nodes[x].shape_metadata)
@@ -211,22 +209,16 @@ def cumulative_logsumexp_vjp(graph: object, node: object, cotangent: str) -> tup
     # exp_neg_y = exp(-y)
     exp_neg_y = emit_ir_node(graph, "Exp", [neg_y], node.shape_metadata, {})
     # scaled_cotangent = cotangent * exp(-y)
-    scaled_cotangent = emit_ir_node(
-        graph, "Multiply", [cotangent, exp_neg_y], node.shape_metadata, {}
-    )
+    scaled_cotangent = emit_ir_node(graph, "Multiply", [cotangent, exp_neg_y], node.shape_metadata, {})
     # rev_cumsum = cumsum(scaled_cotangent) reversed... wait. Cumsum doesn't support reverse yet.
     # So we flip, cumsum, flip.
 
     # flip(scaled_cotangent)
-    flipped = emit_ir_node(
-        graph, "Reverse", [scaled_cotangent], node.shape_metadata, {"dims": [axis]}
-    )
+    flipped = emit_ir_node(graph, "Reverse", [scaled_cotangent], node.shape_metadata, {"dims": [axis]})
     # cumsum(flipped)
     cumsum_flipped = emit_ir_node(graph, "Cumsum", [flipped], node.shape_metadata, {"axis": axis})
     # flip(cumsum_flipped)
-    rev_cumsum = emit_ir_node(
-        graph, "Reverse", [cumsum_flipped], node.shape_metadata, {"dims": [axis]}
-    )
+    rev_cumsum = emit_ir_node(graph, "Reverse", [cumsum_flipped], node.shape_metadata, {"dims": [axis]})
 
     # exp_x = exp(x)
     exp_x = emit_ir_node(graph, "Exp", [x], graph.nodes[x].shape_metadata, {})
@@ -239,9 +231,7 @@ def cumulative_logsumexp_vjp(graph: object, node: object, cotangent: str) -> tup
 @register_jvp("CumulativeLogsumexp")
 def cumulative_logsumexp_jvp(graph: object, node: object, tangent: str) -> str:
     """JVP for CumulativeLogsumexp."""
-    return emit_ir_node(
-        graph, "CumulativeLogsumexp", [tangent], node.shape_metadata, node.attributes
-    )
+    return emit_ir_node(graph, "CumulativeLogsumexp", [tangent], node.shape_metadata, node.attributes)
 
 
 @register_vjp("ReduceEuclideanNorm")
@@ -266,9 +256,7 @@ def reduce_euclidean_norm_vjp(graph: object, node: object, cotangent: str) -> tu
     )
 
     # dx = (cotangent_bcast / y_bcast) * x (using DivideNoNan for safety)
-    grad_scale = emit_ir_node(
-        graph, "DivideNoNan", [cotangent_bcast, y_bcast], graph.nodes[x].shape_metadata, {}
-    )
+    grad_scale = emit_ir_node(graph, "DivideNoNan", [cotangent_bcast, y_bcast], graph.nodes[x].shape_metadata, {})
     dx = emit_ir_node(graph, "Multiply", [grad_scale, x], graph.nodes[x].shape_metadata, {})
     return (dx,)
 
@@ -287,9 +275,7 @@ def reduce_euclidean_norm_jvp(graph: object, node: object, tangent: str) -> str:
         {"shape": graph.nodes[x].shape_metadata},
     )
     x_over_y = emit_ir_node(graph, "DivideNoNan", [x, y_bcast], graph.nodes[x].shape_metadata, {})
-    scaled_tangent = emit_ir_node(
-        graph, "Multiply", [x_over_y, tangent], graph.nodes[x].shape_metadata, {}
-    )
+    scaled_tangent = emit_ir_node(graph, "Multiply", [x_over_y, tangent], graph.nodes[x].shape_metadata, {})
     return emit_ir_node(graph, "Sum", [scaled_tangent], node.shape_metadata, node.attributes)
 
 
@@ -316,9 +302,7 @@ def logsumexp_vjp(graph: object, node: object, cotangent: str) -> tuple:
     # dx = exp(x - y_bcast) * cotangent_bcast
     x_minus_y = emit_ir_node(graph, "Subtract", [x, y_bcast], graph.nodes[x].shape_metadata, {})
     exp_x_minus_y = emit_ir_node(graph, "Exp", [x_minus_y], graph.nodes[x].shape_metadata, {})
-    dx = emit_ir_node(
-        graph, "Multiply", [exp_x_minus_y, cotangent_bcast], graph.nodes[x].shape_metadata, {}
-    )
+    dx = emit_ir_node(graph, "Multiply", [exp_x_minus_y, cotangent_bcast], graph.nodes[x].shape_metadata, {})
     return (dx,)
 
 
@@ -336,7 +320,5 @@ def logsumexp_jvp(graph: object, node: object, tangent: str) -> str:
     )
     x_minus_y = emit_ir_node(graph, "Subtract", [x, y_bcast], graph.nodes[x].shape_metadata, {})
     softmax_x = emit_ir_node(graph, "Exp", [x_minus_y], graph.nodes[x].shape_metadata, {})
-    scaled_tangent = emit_ir_node(
-        graph, "Multiply", [softmax_x, tangent], graph.nodes[x].shape_metadata, {}
-    )
+    scaled_tangent = emit_ir_node(graph, "Multiply", [softmax_x, tangent], graph.nodes[x].shape_metadata, {})
     return emit_ir_node(graph, "Sum", [scaled_tangent], node.shape_metadata, node.attributes)

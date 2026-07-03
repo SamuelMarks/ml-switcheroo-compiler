@@ -2,20 +2,18 @@
 
 from __future__ import annotations
 
-
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
+from .frontend_utils import _emit_reduction_node
 
 if TYPE_CHECKING:
     pass
-
-
-from .frontend_utils import _emit_reduction_node
 
 
 @dispatch_eager("Psum")
@@ -49,9 +47,7 @@ def pmean(x: Tensor, axis_name: str) -> Tensor:
 
 
 @dispatch_eager("ApproxMaxK")
-def approx_max_k(
-    operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95
-) -> tuple[Tensor, Tensor]:
+def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> tuple[Tensor, Tensor]:
     """Computes approximate top-k max elements and their indices.
 
     Args:
@@ -63,8 +59,6 @@ def approx_max_k(
     Returns:
         tuple[Tensor, Tensor]: A tuple of (values, indices)
     """
-    from ml_switcheroo_compiler.core.dtype import DType
-
     attributes = {
         "k": k,
         "reduction_dimension": reduction_dimension,
@@ -77,9 +71,7 @@ def approx_max_k(
 
 
 @dispatch_eager("ApproxMinK")
-def approx_min_k(
-    operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95
-) -> tuple[Tensor, Tensor]:
+def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> tuple[Tensor, Tensor]:
     """Computes approximate top-k min elements and their indices.
 
     Args:
@@ -91,8 +83,6 @@ def approx_min_k(
     Returns:
         tuple[Tensor, Tensor]: A tuple of (values, indices)
     """
-    from ml_switcheroo_compiler.core.dtype import DType
-
     attributes = {
         "k": k,
         "reduction_dimension": reduction_dimension,
@@ -125,9 +115,7 @@ def ctc_loss(
     return _emit_reduction_node("CTCLoss", inputs, {}, (), log_probs.dtype)
 
 
-def corrcoef(
-    x: object, y: object = None, rowvar: bool = True, bias: object = None, ddof: object = None
-) -> Tensor:
+def corrcoef(x: object, y: object = None, rowvar: bool = True, bias: object = None, ddof: object = None) -> Tensor:
     """Return Pearson product-moment correlation coefficients."""
     if config.eager_mode:
         data = get_active_backend().execute_op(
@@ -151,12 +139,8 @@ def corrcoef(
 def correlate(a: object, v: object, mode: str = "valid") -> Tensor:
     """Cross-correlation of two 1-dimensional sequences."""
     if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "Correlate", getattr(a, "data", a), getattr(v, "data", v), mode=mode
-        )
-        return Tensor(
-            data, TensorConfig(data.shape, "float32", getattr(a, "device", None))
-        )  # pragma: no cover
+        data = get_active_backend().execute_op("Correlate", getattr(a, "data", a), getattr(v, "data", v), mode=mode)
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(a, "device", None)))  # pragma: no cover
     return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")
 
 

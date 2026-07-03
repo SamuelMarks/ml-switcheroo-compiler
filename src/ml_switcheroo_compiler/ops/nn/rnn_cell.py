@@ -2,11 +2,10 @@
 
 from typing import Optional
 
-from ml_switcheroo_compiler.ops.binary import add
-
-from ml_switcheroo_compiler.ops.unary import tanh
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.binary import add
 from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.unary import tanh
 
 
 def simple_rnn_cell(

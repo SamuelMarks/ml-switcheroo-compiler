@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+# pragma: no cover
+import builtins
 
-from typing import Any, Callable
+# pragma: no cover
+import functools
 from collections.abc import Iterator
+from typing import Any, Callable
 
 
 class TreeDef:
@@ -54,11 +58,7 @@ class TreeDef:
         """
         if not isinstance(other, TreeDef):
             return False
-        return (
-            self.node_type == other.node_type
-            and self.children_defs == other.children_defs
-            and self.keys == other.keys
-        )
+        return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
 
 
 def tree_flatten(tree: object) -> tuple[list[object], TreeDef]:
@@ -119,9 +119,7 @@ def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
     if t_def.keys is None:
         msg_0 = "Dict treedef must have keys"
         raise ValueError(msg_0)
-    return {
-        k: _unflatten_node(c_def, leaves_it) for k, c_def in zip(t_def.keys, t_def.children_defs)
-    }
+    return {k: _unflatten_node(c_def, leaves_it) for k, c_def in zip(t_def.keys, t_def.children_defs)}
 
 
 def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
@@ -263,8 +261,6 @@ def tree_all(tree: object) -> bool:
     # pragma: no cover
     """
     # pragma: no cover
-    import builtins
-    # pragma: no cover
 
     # pragma: no cover
     return builtins.all(tree_leaves(tree))
@@ -276,7 +272,7 @@ def tree_all(tree: object) -> bool:
 
 
 # pragma: no cover
-def tree_reduce(f: Callable, tree: object, initializer: Any = None) -> Any:  # noqa: ANN401
+def tree_reduce(f: Callable, tree: object, initializer: object = None) -> object:
     # pragma: no cover
     """Reduces a PyTree by applying a function over its leaves.
 
@@ -296,8 +292,6 @@ def tree_reduce(f: Callable, tree: object, initializer: Any = None) -> Any:  # n
         Any: The reduced value.
     # pragma: no cover
     """
-    # pragma: no cover
-    import functools
     # pragma: no cover
 
     # pragma: no cover
@@ -350,6 +344,7 @@ def tree_transpose(
     # Generate dummy leaves to count size
     # pragma: no cover
     def _count_leaves(t_def: TreeDef) -> int:
+        """Function docstring."""
         # pragma: no cover
         if t_def.node_type is type(None):
             # pragma: no cover

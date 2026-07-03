@@ -4,10 +4,14 @@ This module provides the Tensor class, which serves as the core multi-dimensiona
 abstraction across different execution backends and tracing modes
 """
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from dataclasses import dataclass
+import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 
+import numpy as np
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.mixins import (
@@ -15,6 +19,8 @@ from ml_switcheroo_compiler.core.mixins import (
     TensorBitwiseMixin,
     TensorLogicalMixin,
 )
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 class ArrayAt:
@@ -187,9 +193,14 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             Tensor: The evaluated tensor
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
+        if config.eager_mode or not hasattr(self.data, "id"):
+            return self
 
-        return _td.dispatch_eval(self)
+        if global_tracing_state.is_tracing and global_tracing_state.active_graph:
+            graph = global_tracing_state.active_graph
+            if self.data.id not in graph.outputs:
+                graph.outputs.append(self.data.id)
+        return self
 
     def __array__(self, dtype: object = None) -> object:
         """Array.
@@ -200,7 +211,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             The computed shape or evaluation result.
         """
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
 
@@ -212,9 +223,7 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         try:
             return np.asarray(data, dtype=dtype) if dtype is not None else np.asarray(data)
         except Exception:  # pragma: no cover
-            return np.array(
-                data.tolist() if hasattr(data, "tolist") else data, dtype=dtype
-            )  # pragma: no cover
+            return np.array(data.tolist() if hasattr(data, "tolist") else data, dtype=dtype)  # pragma: no cover
 
     def __bool__(self) -> bool:
         """Bool.
@@ -260,9 +269,32 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             Tensor: A new tensor with the selected element.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
+        arr = self.__array__()
+        if hasattr(key, "data"):
+            key = key.data
+        elif isinstance(key, tuple):
+            key = tuple(getattr(k, "data", k) for k in key)
 
-        return _td.dispatch_getitem(self, key)
+        res = arr[key]
+        if config.eager_mode:
+            return Tensor(res, TensorConfig(getattr(res, "shape", ()), self.dtype, self.device))
+
+        nid = f"getitem_{uuid.uuid4().hex[:6]}"
+        input_id = getattr(self.data, "id", "const")
+
+        node = LogicalNode(
+            id=nid,
+            op_type="GetItem",
+            inputs=[input_id],
+            attributes={"key": str(key)},
+            shape_metadata=(),
+        )
+        if global_tracing_state.is_tracing:
+            global_tracing_state.add_node(node)
+        else:
+            raise RuntimeError("Cannot add node: not currently tracing.")
+
+        return Tensor(ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device))
 
     def __setitem__(self, key: object, value: object) -> None:
         """Setitem.
@@ -271,9 +303,12 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             key (object): The key to process.
             value (object): The value to set or add.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
-
-        _td.dispatch_setitem(self, key, value)
+        if config.eager_mode:
+            val = getattr(value, "data", value)
+            self.data[key] = val
+        else:
+            msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
+            raise TypeError(msg)
 
     def backward(self, *args: object, **kwargs: object) -> None:
         """Triggers the reverse-mode auto-differentiation.
@@ -282,9 +317,9 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             *args: Additional arguments.
             **kwargs: Additional keyword arguments.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
+        from ml_switcheroo_compiler.ops.registry import get_util
 
-        _td.dispatch_backward(self, *args, **kwargs)
+        get_util("backward")(self, *args, **kwargs)
 
     def view(self, *shape: int) -> "Tensor":
         """Returns a new tensor with the same data but different size.
@@ -295,15 +330,15 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
-
         flat_shape = []
         for s in shape:
             if isinstance(s, (list, tuple)):
                 flat_shape.extend(s)
             else:
                 flat_shape.append(s)
-        return _td.dispatch_reshape(self, tuple(flat_shape))
+        from ml_switcheroo_compiler.ops.registry import get_frontend
+
+        return get_frontend("reshape")(self, tuple(flat_shape))
 
     def contiguous(self) -> "Tensor":
         """Returns a contiguous in memory tensor.
@@ -319,6 +354,8 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             float: The evaluated output resulting from this operation.
         """
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
         backend = get_active_backend()
 
         if self.eval().__class__.__name__ == "Tensor":
@@ -331,8 +368,6 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        from ml_switcheroo_compiler.core.device import Device
-
         return Tensor(self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
 
     @property
@@ -367,9 +402,17 @@ class Variable(Tensor):
         Returns:
             Variable: The updated variable.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
+        if config.eager_mode:
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return _td.dispatch_assign(self, value)
+            backend = get_active_backend()
+            self._data = backend.execute_op("Assign", self._data, value.data)
+        else:
+            from ml_switcheroo_compiler.ops.registry import get_util
+
+            _emit_shape_node = get_util("_emit_shape_node")
+            _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
+        return self
 
     def assign_add(self, value: Tensor) -> "Variable":
         """Add a value to the variable in-place.
@@ -380,9 +423,20 @@ class Variable(Tensor):
         Returns:
             Variable: The updated variable.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
+        if config.eager_mode:
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return _td.dispatch_assign_add(self, value)
+            backend = get_active_backend()
+            self._data = backend.execute_op("Add", self._data, value.data)
+        else:
+            from ml_switcheroo_compiler.ops.registry import get_op
+
+            new_val = get_op("Add")()(self, value)
+            from ml_switcheroo_compiler.ops.registry import get_util
+
+            _emit_shape_node = get_util("_emit_shape_node")
+            _emit_shape_node("Assign", [self, new_val], {}, self.shape, self.dtype)
+        return self
 
     def assign_sub(self, value: Tensor) -> "Variable":
         """Subtract a value from the variable in-place.
@@ -393,9 +447,20 @@ class Variable(Tensor):
         Returns:
             Variable: The updated variable.
         """
-        import ml_switcheroo_compiler.core.tensor_dispatcher as _td
+        if config.eager_mode:
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return _td.dispatch_assign_sub(self, value)
+            backend = get_active_backend()
+            self._data = backend.execute_op("Subtract", self._data, value.data)
+        else:
+            from ml_switcheroo_compiler.ops.registry import get_op
+
+            new_val = get_op("Subtract")()(self, value)
+            from ml_switcheroo_compiler.ops.registry import get_util
+
+            _emit_shape_node = get_util("_emit_shape_node")
+            _emit_shape_node("Assign", [self, new_val], {}, self.shape, self.dtype)
+        return self
 
 
 class Parameter(Variable):

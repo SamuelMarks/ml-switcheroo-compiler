@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.indexing import (
+from ml_switcheroo_compiler.ops.shape import (
     gather,
     gather_nd,
     scatter,
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.shape.indexing import (
     take_along_axis,
     where,
 )
-from ml_switcheroo_compiler.tracing.tracer import _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 def test_indexing_eager() -> None:
@@ -47,15 +47,9 @@ def test_indexing_eager() -> None:
     assert s_nd.data[0, 1, 0] == 9.0
 
     # scatter
-    input_tensor = Tensor(
-        np.zeros((2, 3), dtype=np.float32), TensorConfig((2, 3), DType.Float32, Device("cpu"))
-    )
-    idx_tensor = Tensor(
-        np.array([[1], [2]], dtype=np.int32), TensorConfig((2, 1), DType.Int32, Device("cpu"))
-    )
-    src_tensor = Tensor(
-        np.array([[9], [8]], dtype=np.float32), TensorConfig((2, 1), DType.Float32, Device("cpu"))
-    )
+    input_tensor = Tensor(np.zeros((2, 3), dtype=np.float32), TensorConfig((2, 3), DType.Float32, Device("cpu")))
+    idx_tensor = Tensor(np.array([[1], [2]], dtype=np.int32), TensorConfig((2, 1), DType.Int32, Device("cpu")))
+    src_tensor = Tensor(np.array([[9], [8]], dtype=np.float32), TensorConfig((2, 1), DType.Float32, Device("cpu")))
     s = scatter(input_tensor, 1, idx_tensor, src_tensor)
     assert s.shape == (2, 3)
     assert s.data[0, 1] == 9.0
@@ -97,7 +91,7 @@ def test_indexing_eager() -> None:
 def test_indexing_lazy() -> None:
     """Test indexing lazy."""
     config.eager_mode = False
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
 
     m1 = MagicMock(id="n1")
     m2 = MagicMock(id="n2")
@@ -107,38 +101,38 @@ def test_indexing_lazy() -> None:
     indices = Tensor(m2, TensorConfig((2, 2), DType.Int32, Device("cpu")))
 
     gather_nd(x, indices)
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "GatherNd"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "GatherNd"
 
     updates = Tensor(m3, TensorConfig((2, 2), DType.Float32, Device("cpu")))
     scatter_nd(indices, updates, (2, 3, 2))
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "ScatterNd"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "ScatterNd"
 
     input_tensor = Tensor(m1, TensorConfig((2, 3), DType.Float32, Device("cpu")))
     idx_tensor = Tensor(m2, TensorConfig((2, 1), DType.Int32, Device("cpu")))
     src_tensor = Tensor(m3, TensorConfig((2, 1), DType.Float32, Device("cpu")))
 
     scatter(input_tensor, 1, idx_tensor, src_tensor)
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "Scatter"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "Scatter"
 
     scatter_add(input_tensor, 1, idx_tensor, src_tensor)
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "ScatterAdd"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "ScatterAdd"
 
     take(input_tensor, Tensor(m2, TensorConfig((2,), DType.Int32, Device("cpu"))))
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "Take"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "Take"
 
     a = Tensor(m1, TensorConfig((5,), DType.Int32, Device("cpu")))
     v = Tensor(m2, TensorConfig((1,), DType.Int32, Device("cpu")))
     searchsorted(a, v)
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "SearchSorted"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "SearchSorted"
 
     gather(input_tensor, 1, idx_tensor)
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "Gather"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "Gather"
 
     cond = Tensor(m1, TensorConfig((2,), DType.Bool, Device("cpu")))
     t_true = Tensor(m2, TensorConfig((2,), DType.Int32, Device("cpu")))
     t_false = Tensor(m3, TensorConfig((2,), DType.Int32, Device("cpu")))
     where(cond, t_true, t_false)
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "Where"
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "Where"
 
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     config.eager_mode = True

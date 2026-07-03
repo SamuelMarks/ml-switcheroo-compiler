@@ -1,13 +1,11 @@
-# ruff: noqa: F405, F403
 """Core utilities."""
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 
 import importlib
 import typing
 
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.dtype import DType
 
 
 @global_eager_registry.register("Sort")
@@ -52,9 +50,7 @@ def _reshape(backend_module: object, *args: object, **kwargs: object) -> object:
         kwargs: Arg.
     """
     x = args[0]  # pragma: no cover
-    shape = (
-        list(args[1]) if len(args) > 1 else list(kwargs.get("shape", kwargs.get("newshape")))
-    )  # pragma: no cover
+    shape = list(args[1]) if len(args) > 1 else list(kwargs.get("shape", kwargs.get("newshape")))  # pragma: no cover
     if hasattr(backend_module, "reshape"):  # pragma: no cover
         return backend_module.reshape(x, shape)  # pragma: no cover
     return None  # pragma: no cover
@@ -114,18 +110,14 @@ def _tensor_scatter_add(backend_module: object, *args: object, **kwargs: object)
     if name == "jax.numpy":
         return tensor.at[tuple(backend_module.moveaxis(indices, -1, 0))].add(updates)
     if name == "torch":  # pragma: no branch
-        return tensor.clone().index_put_(
-            tuple(indices.unbind(-1)), updates, accumulate=True
-        )  # pragma: no cover
+        return tensor.clone().index_put_(tuple(indices.unbind(-1)), updates, accumulate=True)  # pragma: no cover
     if name == "keras.ops":
         return backend_module.tensor_scatter_add(tensor, indices, updates)
     if name in {"tensorflow.math", "tensorflow"}:  # pragma: no branch
         tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_add(tensor, indices, updates)
-    raise NotImplementedError(
-        f"TensorScatterAdd eager not implemented for {name}"
-    )  # pragma: no cover
+    raise NotImplementedError(f"TensorScatterAdd eager not implemented for {name}")  # pragma: no cover
 
 
 @global_eager_registry.register("TensorScatterMax")
@@ -142,18 +134,14 @@ def _tensor_scatter_max(backend_module: object, *args: object, **kwargs: object)
     if name == "jax.numpy":
         return tensor.at[tuple(backend_module.moveaxis(indices, -1, 0))].max(updates)
     if name == "torch":  # pragma: no branch
-        raise NotImplementedError(
-            "TensorScatterMax not implemented for torch in legacy eager"
-        )  # pragma: no cover
+        raise NotImplementedError("TensorScatterMax not implemented for torch in legacy eager")  # pragma: no cover
     if name == "keras.ops":
         return backend_module.tensor_scatter_max(tensor, indices, updates)
     if name in {"tensorflow.math", "tensorflow"}:  # pragma: no branch
         tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_max(tensor, indices, updates)
-    raise NotImplementedError(
-        f"TensorScatterMax eager not implemented for {name}"
-    )  # pragma: no cover
+    raise NotImplementedError(f"TensorScatterMax eager not implemented for {name}")  # pragma: no cover
 
 
 @global_eager_registry.register("TensorScatterMin")
@@ -170,18 +158,14 @@ def _tensor_scatter_min(backend_module: object, *args: object, **kwargs: object)
     if name == "jax.numpy":
         return tensor.at[tuple(backend_module.moveaxis(indices, -1, 0))].min(updates)
     if name == "torch":  # pragma: no branch
-        raise NotImplementedError(
-            "TensorScatterMin not implemented for torch in legacy eager"
-        )  # pragma: no cover
+        raise NotImplementedError("TensorScatterMin not implemented for torch in legacy eager")  # pragma: no cover
     if name == "keras.ops":
         return backend_module.tensor_scatter_min(tensor, indices, updates)
     if name in {"tensorflow.math", "tensorflow"}:  # pragma: no branch
         tf = importlib.import_module("tensorflow")
 
         return tf.tensor_scatter_nd_min(tensor, indices, updates)
-    raise NotImplementedError(
-        f"TensorScatterMin eager not implemented for {name}"
-    )  # pragma: no cover
+    raise NotImplementedError(f"TensorScatterMin eager not implemented for {name}")  # pragma: no cover
 
 
 def _normalize_shape(shape: object) -> object:
@@ -326,9 +310,7 @@ def _broadcast_in_dim(backend_module: object, *args: object, **kwargs: object) -
     """
     x = args[0]
     shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
-    broadcast_dimensions = kwargs.get(
-        "broadcast_dimensions", args[2] if len(args) > MAGIC_VAL_2 else None
-    )
+    broadcast_dimensions = kwargs.get("broadcast_dimensions", args[2] if len(args) > MAGIC_VAL_2 else None)
     expanded_shape = []
     for i in range(len(shape)):
         if i in broadcast_dimensions:
@@ -414,9 +396,7 @@ def _dynamic_update_slice(backend_module: object, *args: object, **kwargs: objec
 
 
 @global_eager_registry.register("ConvGeneralDilated")
-def _conv_general_dilated_fallback(
-    backend_module: object, *args: object, **kwargs: object
-) -> object:
+def _conv_general_dilated_fallback(backend_module: object, *args: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -440,7 +420,37 @@ def generic_zeros(backend_module: object, shape: tuple[int, ...]) -> object:
     return backend_module.zeros(shape)
 
 
-def generic_array(backend_module: object, data: object, dtype: object = None) -> object:  # noqa: PLR0911
+def _handle_mlx_array(backend_module: object, data: object, dtype: object) -> object:
+    """Function docstring."""
+    if getattr(data, "__name__", "") == "mlx.core" or "mlx.core.array" in str(type(data)):
+        return data
+    if dtype is not None:
+        dtype_str = str(dtype).split(".")[-1]
+        if dtype_str == "bool":
+            dtype_str = "bool_"
+        dt = getattr(backend_module, dtype_str, dtype)
+        return backend_module.array(data, dtype=dt)
+    return backend_module.array(data)
+
+
+def _handle_default_array(backend_module: object, data: object, dtype: object) -> object:
+    """Function docstring."""
+    try:
+        if dtype is not None:
+            dtype_str = str(dtype).split(".")[-1]
+            dt = getattr(backend_module, dtype_str, dtype)
+            return backend_module.array(data, dtype=dt)
+        return backend_module.array(data)
+    except AttributeError:
+        return backend_module.convert_to_tensor(data)
+
+
+_ARRAY_DISPATCH = {
+    "mlx.core": _handle_mlx_array,
+}
+
+
+def generic_array(backend_module: object, data: object, dtype: object = None) -> object:
     """Generic array creation.
 
     Args:
@@ -451,40 +461,30 @@ def generic_array(backend_module: object, data: object, dtype: object = None) ->
     Returns:
         object: A tensor array.
     """
-    try:
-        from ml_switcheroo_compiler.core.dtype import DType
+    result = None
+    if isinstance(data, DType) or data is None:
+        result = data
+    else:
+        backend_name = getattr(backend_module, "__name__", "")
+        # Also check if data is an mlx array for dispatching to mlx handler when backend is None/mocked
+        if backend_name == "" and "mlx.core.array" in str(type(data)):
+            backend_name = "mlx.core"
 
-        if isinstance(data, DType):
-            return data
-        if data is None:
-            return None
-        if getattr(data, "__name__", "") == "mlx.core":  # pragma: no branch
-            return data  # pragma: no cover
-        if "mlx.core.array" in str(type(data)):
-            return data
+        handler = _ARRAY_DISPATCH.get(backend_name, _handle_default_array)
+        result = handler(backend_module, data, dtype)
 
-        if dtype is not None:
-            dtype_str = str(dtype).split(".")[-1]
-            if dtype_str == "bool" and getattr(backend_module, "__name__", "") == "mlx.core":
-                dtype_str = "bool_"
-            dt = getattr(backend_module, dtype_str, dtype)
-            return backend_module.array(data, dtype=dt)
-        return backend_module.array(data)
-    except AttributeError:
-        return backend_module.convert_to_tensor(data)
+    return result
 
 
 def generic_asarray(backend_module: object, data: object) -> object:
     """Fallback to convert data to array if backend lacks specific logic."""
     try:
-        from ml_switcheroo_compiler.core.dtype import DType
-
         if isinstance(data, DType):
             return data
         if hasattr(backend_module, "asarray"):
             return backend_module.asarray(data)
         return generic_array(backend_module, data)
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         return data
 
 
@@ -508,13 +508,9 @@ def generic_item(backend_module: object, data: object) -> float:
 def _stack(backend_module: object, arrays: object, *args: object, **kwargs: object) -> object:
     """Function docstring."""
     try:
-        from ml_switcheroo_compiler.backends.eager.core_tensor_ops import generic_asarray
-
         arrays = [generic_asarray(backend_module, a) for a in arrays]
-    except Exception:
-        import traceback
-
-        traceback.print_exc()
+    except (TypeError, ValueError, AttributeError) as e:
+        raise RuntimeError(f"Failed to convert array: {e}") from e
 
     if hasattr(backend_module, "stack"):
         return backend_module.stack(arrays, *args, **kwargs)
@@ -523,18 +519,15 @@ def _stack(backend_module: object, arrays: object, *args: object, **kwargs: obje
 
 @global_eager_registry.register("Concatenate")
 def _concatenate(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     if len(args) == 1 and isinstance(args[0], (list, tuple)):
         arrays = list(args[0])
     else:
         arrays = list(args)
     try:
-        from ml_switcheroo_compiler.backends.eager.core_tensor_ops import generic_asarray
-
         arrays = [generic_asarray(backend_module, a) for a in arrays]
-    except Exception:
-        import traceback
-
-        traceback.print_exc()
+    except (TypeError, ValueError, AttributeError) as e:
+        raise RuntimeError(f"Failed to convert array: {e}") from e
     return backend_module.concatenate(arrays, **kwargs)
 
 
@@ -543,11 +536,7 @@ def _repeat(backend_module: object, *args: object, **kwargs: object) -> object:
     """Function docstring."""
     x = args[0]
     repeats = kwargs.get("repeats", args[1] if len(args) > 1 else None)
-    repeats = (
-        _parse_eager_shape(repeats)
-        if isinstance(repeats, (list, tuple))
-        else _extract_shape_value(repeats)
-    )
+    repeats = _parse_eager_shape(repeats) if isinstance(repeats, (list, tuple)) else _extract_shape_value(repeats)
 
     if len(args) > 1:
         args = (x, repeats) + args[2:]

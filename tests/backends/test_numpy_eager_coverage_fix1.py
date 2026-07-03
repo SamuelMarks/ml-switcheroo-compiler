@@ -1,17 +1,24 @@
+"""Module docstring."""
+
 import numpy as np
 import pytest
+
 from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated, _get_transpose
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
 
 class DummyDimSpecs:
-    def __init__(self):
+    """Class docstring."""
+
+    def __init__(self) -> object:
+        """Function docstring."""
         self.lhs_spec = (0, 1, 2)
         self.rhs_spec = (0, 1, 2)
         self.out_spec = (0, 1, 2)
 
 
-def test_conv_general_dilated_all_coverage():
+def test_conv_general_dilated_all_coverage() -> object:
+    """Function docstring."""
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
 
@@ -48,6 +55,4 @@ def test_conv_general_dilated_all_coverage():
     )
 
     # dimension_numbers None
-    _conv_general_dilated(
-        lhs, rhs, ConvConfig(window_strides=(1,), padding="VALID", dimension_numbers=None)
-    )
+    _conv_general_dilated(lhs, rhs, ConvConfig(window_strides=(1,), padding="VALID", dimension_numbers=None))

@@ -6,6 +6,7 @@ of Zeros, Ones, Full, and Arange operations against their NumPy equivalents.
 
 import numpy as np
 
+from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Full, Ones, Zeros
 
 
@@ -62,8 +63,6 @@ def test_arange_op() -> None:
 
 def test_rand_ops() -> None:
     """Test function."""
-    from ml_switcheroo_compiler.ops.base import get_op
-
     op = get_op("Rand")()
     assert op.infer_shape(size=(2, 3)) == (2, 3)
     assert op.infer_shape((2, 3)) == (2, 3)

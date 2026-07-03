@@ -1,15 +1,14 @@
-# ruff: noqa: E402
-
 """Module docstring."""
 
-from ml_switcheroo_compiler.backends.common.generator_mixins import GroupNormConfig
+import os
 
-"""Keras Target Emission."""
-from .keras_mixins import KerasVisionMixin, KerasAudioMixin
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
+from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
+
+from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
 
 
 class KerasSignatureBuilder:
@@ -18,11 +17,7 @@ class KerasSignatureBuilder:
     @staticmethod
     def get_input_assignment(var_name: str, node: IRNode) -> str:
         """Function docstring."""
-        shape_str = (
-            str(node.shape_metadata)
-            if hasattr(node, "shape_metadata") and node.shape_metadata
-            else "(None,)"
-        )
+        shape_str = str(node.shape_metadata) if hasattr(node, "shape_metadata") and node.shape_metadata else "(None,)"
         return f"{var_name} = keras.Input(shape={shape_str}, name='{node.id}')"
 
     @staticmethod
@@ -61,7 +56,7 @@ class KerasTensorManipulator:
 
 
 @register_backend("keras")
-class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixin, KerasAudioMixin):
+class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
     def _get_backend_prefix(self) -> str:
@@ -76,6 +71,13 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
             **kwargs (object): Additional keyword arguments.
         """
         super().__init__(*args, **kwargs)
+        self.visitors.extend(
+            [
+                SharedASTGeneratorVisitor(generator=self),
+                KerasVisionVisitor(),
+                KerasAudioVisitor(),
+            ]
+        )
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
@@ -118,11 +120,6 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
             "BandPart": "tf.linalg.band_part",
             "CholeskySolve": "tf.linalg.cholesky_solve",
             "TriInv": "tf.linalg.inv({0})",
-            "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
-            "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
-            "MatrixRank": "tf.linalg.matrix_rank",
-            "MatrixTranspose": "tf.linalg.matrix_transpose",
-            "Sqrtm": "tf.linalg.sqrtm",
             "Dot": "keras.ops.dot({0}, {1})",
             "BroadcastTo": "keras.ops.broadcast_to({0}, {shape})",
             "Reshape": "keras.ops.reshape({0}, {shape})",
@@ -142,12 +139,6 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
             "Irfftnd": "keras.ops.fft.irfftn({0})",
             "Fftshift": "keras.ops.fft.fftshift({0})",
             "Ifftshift": "keras.ops.fft.ifftshift({0})",
-            "Dct": "tf.signal.dct({0})",
-            "Idct": "tf.signal.idct({0})",
-            "Mdct": "tf.signal.mdct({0})",
-            "InverseMdct": "tf.signal.inverse_mdct({0})",
-            "Frame": "tf.signal.frame({0})",
-            "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
             "Fft": "keras.ops.fft.fft({0})",
             "Rfft": "keras.ops.fft.rfft({0})",
             "Fftn": "keras.ops.fft.fftn({0})",
@@ -173,9 +164,7 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
             "Transpose": KerasTensorManipulator.format_transpose(kwargs),
         }
 
-    def _emit_input_assignment(
-        self, var_name: str, node: IRNode, input_prefix: str, input_idx: int
-    ) -> None:
+    def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
         """Evaluate emit input assignment.
 
         Args:
@@ -211,14 +200,13 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
 
     def _resolve_imports(self) -> list[str]:
         """Function docstring."""
-        import os
-
         tmpl_path = os.path.join(os.path.dirname(__file__), "keras_prefix.py.tmpl")
         with open(tmpl_path) as f:
             keras_prefix_template = f.read()
+
         return [
             "import keras\n",
-            *self._get_group_norm_code(
+            *NNASTVisitor(generator=self)._get_group_norm_code(
                 GroupNormConfig(
                     "keras",
                     "keras.ops",
@@ -241,12 +229,6 @@ class KerasCodeGenerator(SharedASTGeneratorMixin, BaseGenerator, KerasVisionMixi
         self.keras_output_vars = []
         self.indent_level += 1
 
-    def _traverse_ir_graph(self) -> None:
-        """Function docstring."""
-        self._generate_body()
-
     def _generate_return_block(self) -> None:
         """Function docstring."""
-        self.add_line(
-            KerasSignatureBuilder.get_return_block(self.keras_input_vars, self.keras_output_vars)
-        )
+        self.add_line(KerasSignatureBuilder.get_return_block(self.keras_input_vars, self.keras_output_vars))

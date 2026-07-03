@@ -1,10 +1,22 @@
 """Unit tests for shape manipulation and state operations in the ml_switcheroo_compiler library."""
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
+from unittest.mock import patch
 
 import numpy as np
+import pytest
 
-from ml_switcheroo_compiler.ops.shape import BroadcastTo, Reshape, Transpose
+from ml_switcheroo_compiler.core.config import ConfigContext, config
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.shape import BroadcastInDim, BroadcastTo, DynamicSlice, DynamicUpdateSlice, Reshape, Resize, Sort, TopK, Transpose
+
+# searchsorted eager
+from ml_switcheroo_compiler.ops.shape.frontend import broadcast_in_dim, dynamic_shape, dynamic_update_slice, expand, gather, image_resize, permute, repeat, searchsorted, select, sort, squeeze, top_k
+from ml_switcheroo_compiler.ops.shape.slicing import strided_slice
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 
 def test_reshape_op() -> None:
@@ -68,11 +80,6 @@ def test_state_ops() -> None:
     Returns:
     None
     """
-    import pytest
-
-    from ml_switcheroo_compiler.core.errors import CompilationError
-    from ml_switcheroo_compiler.ops.base import get_op
-
     r = get_op("ReadVariable")()
     a = get_op("AssignVariable")()
 
@@ -88,15 +95,6 @@ def test_state_ops() -> None:
 
 def test_dynamic_update_slice() -> None:
     """Test dynamic_update_slice."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import dynamic_update_slice
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     t = Tensor(np.zeros((5,)), TensorConfig((5,), DType.Float32, device))
     u = Tensor(np.ones((2,)), TensorConfig((2,), DType.Float32, device))
@@ -115,9 +113,7 @@ def test_dynamic_update_slice() -> None:
             TensorConfig((2,), DType.Float32, device),
         )
         proxy = ProxyTensor(id="idx", shape=(), dtype="int32")
-        out = dynamic_update_slice(
-            t_proxy, u_proxy, [Tensor(proxy, TensorConfig((), DType.Int32, device))]
-        )
+        out = dynamic_update_slice(t_proxy, u_proxy, [Tensor(proxy, TensorConfig((), DType.Int32, device))])
         assert out.shape == (5,)
         node = graph.nodes[out.data.id]
         assert node.op_type == "DynamicUpdateSlice"
@@ -127,10 +123,6 @@ def test_dynamic_update_slice() -> None:
 
 def test_dynamic_slice_opdef() -> None:
     """Test dynamic_slice_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.shape import DynamicSlice, DynamicUpdateSlice
-
     ds = DynamicSlice()
     assert ds.infer_shape(None, None, [2, 3]) == (2, 3)
     x = np.arange(10)
@@ -147,14 +139,6 @@ def test_dynamic_slice_opdef() -> None:
 
 def test_select() -> None:
     """Test select."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import select
-
     device = Device(DeviceType.CPU)
     c = Tensor(np.array([True, False]), TensorConfig((2,), DType.Bool, device))
     x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
@@ -167,10 +151,6 @@ def test_select() -> None:
 
 def test_top_k_opdef() -> None:
     """Test top_k_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.shape import TopK
-
     tk = TopK()
     assert tk.infer_shape(None, 2) == ()
 
@@ -191,15 +171,6 @@ def test_top_k_opdef() -> None:
 
 def test_top_k_frontend() -> None:
     """Test top_k_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import top_k
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.array([1, 5, 2, 8, 3]), TensorConfig((5,), DType.Int32, device))
 
@@ -209,9 +180,7 @@ def test_top_k_frontend() -> None:
 
     graph = _tracer.start_tracing("test_top_k")
     try:
-        x_proxy = Tensor(
-            ProxyTensor(id="x", shape=(5,), dtype="int32"), TensorConfig((5,), DType.Int32, device)
-        )
+        x_proxy = Tensor(ProxyTensor(id="x", shape=(5,), dtype="int32"), TensorConfig((5,), DType.Int32, device))
         v, i = top_k(x_proxy, 2)
         assert v.shape == (2,)
         assert i.shape == (2,)
@@ -224,10 +193,6 @@ def test_top_k_frontend() -> None:
 
 def test_sort_opdef() -> None:
     """Test sort_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.shape import Sort
-
     s = Sort()
     assert s.infer_shape(None) == ()
 
@@ -247,15 +212,6 @@ def test_sort_opdef() -> None:
 
 def test_sort_frontend() -> None:
     """Test sort_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import sort
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.array([3, 1, 2]), TensorConfig((3,), DType.Int32, device))
 
@@ -265,9 +221,7 @@ def test_sort_frontend() -> None:
 
     graph = _tracer.start_tracing("test_sort")
     try:
-        x_proxy = Tensor(
-            ProxyTensor(id="x", shape=(3,), dtype="int32"), TensorConfig((3,), DType.Int32, device)
-        )
+        x_proxy = Tensor(ProxyTensor(id="x", shape=(3,), dtype="int32"), TensorConfig((3,), DType.Int32, device))
         out = sort(x_proxy)
         assert out.shape == (3,)
         node = graph.nodes[out.data.id]
@@ -279,10 +233,6 @@ def test_sort_frontend() -> None:
 
 def test_broadcast_in_dim_opdef() -> None:
     """Test broadcast_in_dim_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.shape import BroadcastInDim
-
     op = BroadcastInDim()
     assert op.infer_shape(None, (2, 3), [1]) == (2, 3)
 
@@ -295,15 +245,6 @@ def test_broadcast_in_dim_opdef() -> None:
 
 def test_broadcast_in_dim_frontend() -> None:
     """Test broadcast_in_dim_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import broadcast_in_dim
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))
 
@@ -312,9 +253,7 @@ def test_broadcast_in_dim_frontend() -> None:
 
     graph = _tracer.start_tracing("test_broadcast")
     try:
-        x_proxy = Tensor(
-            ProxyTensor(id="x", shape=(3,), dtype="int32"), TensorConfig((3,), DType.Int32, device)
-        )
+        x_proxy = Tensor(ProxyTensor(id="x", shape=(3,), dtype="int32"), TensorConfig((3,), DType.Int32, device))
         out = broadcast_in_dim(x_proxy, (2, 3), [1])
         assert out.shape == (2, 3)
         node = graph.nodes[out.data.id]
@@ -327,10 +266,6 @@ def test_broadcast_in_dim_frontend() -> None:
 
 def test_image_resize_opdef() -> None:
     """Test image_resize_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.shape import Resize
-
     op = Resize()
     assert op.infer_shape(None, (10, 10)) == ()
 
@@ -348,15 +283,6 @@ def test_image_resize_opdef() -> None:
 
 def test_image_resize_frontend() -> None:
     """Test image_resize_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import image_resize
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((1, 5, 5, 3)), TensorConfig((1, 5, 5, 3), DType.Float32, device))
 
@@ -381,10 +307,6 @@ def test_image_resize_frontend() -> None:
 
 def test_shape_basic_coverage() -> None:
     """Test shape basic coverage."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.shape import Resize, TopK, Transpose
-
     # Test Transpose _format_args
     op1 = Transpose()
     assert op1._format_args("x", None) == "x"
@@ -407,19 +329,9 @@ def test_shape_basic_coverage() -> None:
 
 def test_shape_frontend_missing() -> None:
     """Test shape frontend missing coverage."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.frontend import expand, gather, permute, repeat, squeeze
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = "cpu"
     x = Tensor(np.ones((2, 1, 3)), TensorConfig((2, 1, 3), DType.Float32, device))
-    x_proxy = Tensor(
-        ProxyTensor("x", (2, 1, 3), "float32"), TensorConfig((2, 1, 3), DType.Float32, device)
-    )
+    x_proxy = Tensor(ProxyTensor("x", (2, 1, 3), "float32"), TensorConfig((2, 1, 3), DType.Float32, device))
 
     with ConfigContext(eager_mode=False):
         _tracer.start_tracing("test")
@@ -428,10 +340,7 @@ def test_shape_frontend_missing() -> None:
         repeat(x_proxy, 2, dim=0)
 
         # top_k tracing with 0D tensor to hit out_shape false branch
-        x_proxy_0d = Tensor(
-            ProxyTensor("x0", (), "float32"), TensorConfig((), DType.Float32, device)
-        )
-        from ml_switcheroo_compiler.ops.shape.frontend import top_k
+        x_proxy_0d = Tensor(ProxyTensor("x0", (), "float32"), TensorConfig((), DType.Float32, device))
 
         top_k(x_proxy_0d, 1)
         _tracer.stop_tracing()
@@ -448,9 +357,6 @@ def test_shape_frontend_missing() -> None:
         idx = Tensor(np.array([[[0]]]), TensorConfig((1, 1, 1), DType.Int32, device))
         gather(x, 2, idx)
 
-        # searchsorted eager
-        from ml_switcheroo_compiler.ops.shape.frontend import searchsorted
-
         x_1d = Tensor(np.array([1.0, 3.0]), TensorConfig((2,), DType.Float32, device))
         v = Tensor(np.array([2.0]), TensorConfig((1,), DType.Float32, device))
         searchsorted(x_1d, v)
@@ -458,13 +364,6 @@ def test_shape_frontend_missing() -> None:
 
 def test_slicing_eager_strided() -> None:
     """Test eager slicing strided."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.shape.slicing import strided_slice
-
     config.eager_mode = True
     data = np.array([1.0, 2.0])
     inp = Tensor(data, TensorConfig((2,), "float32", Device("cpu")))
@@ -475,15 +374,8 @@ def test_slicing_eager_strided() -> None:
     config.eager_mode = False
 
 
-def test_dynamic_shape():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.shape.frontend import dynamic_shape
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    from unittest.mock import patch
-
+def test_dynamic_shape() -> object:
+    """Function docstring."""
     x = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Int32, None))
 
     with (

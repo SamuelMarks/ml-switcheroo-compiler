@@ -1,8 +1,25 @@
 """Module docstring."""
 
+from dataclasses import dataclass
+
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    global_eager_registry,
+    numpy_eager_registry,
+)  # pragma: no cover
+
+
+@dataclass
+class IndexingContext:
+    """Class docstring."""
+
+    axis: int = 0
+    start_index: int = None
+    limit_index: int = None
+    slice_size: int = None
+    stride: int = 1
+    keepdims: bool = True
 
 
 def _dynamic_update_slice(x: object, update: object, start_indices: object) -> object:
@@ -10,6 +27,7 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
     out = np.copy(x)  # pragma: no cover
 
     def _to_int(v: object) -> int:
+        """Function docstring."""
         if hasattr(v, "data"):
             v = v.data
         if hasattr(v, "item"):
@@ -17,8 +35,7 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
         return int(v)
 
     slices = tuple(  # pragma: no cover
-        slice(_to_int(start), _to_int(start) + size)
-        for start, size in zip(start_indices, update.shape)
+        slice(_to_int(start), _to_int(start) + size) for start, size in zip(start_indices, update.shape)
     )
     out[slices] = update  # pragma: no cover
     return out  # pragma: no cover
@@ -56,8 +73,6 @@ def _scatter_add(x: object, index: object, src: object, dim: int, **kwargs: obje
 
 def _tensor_scatter_update(tensor: object, indices: object, updates: object) -> object:
     """Tensor scatter update for numpy."""
-    import numpy as np  # pragma: no cover
-
     res = np.copy(tensor)  # pragma: no cover
     if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
         indices = np.asarray(indices)  # pragma: no cover
@@ -68,8 +83,6 @@ def _tensor_scatter_update(tensor: object, indices: object, updates: object) -> 
 
 def _tensor_scatter_add(tensor: object, indices: object, updates: object) -> object:
     """Tensor scatter add for numpy."""
-    import numpy as np  # pragma: no cover
-
     res = np.copy(tensor)  # pragma: no cover
     if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
         indices = np.asarray(indices)  # pragma: no cover
@@ -80,8 +93,6 @@ def _tensor_scatter_add(tensor: object, indices: object, updates: object) -> obj
 
 def _tensor_scatter_max(tensor: object, indices: object, updates: object) -> object:
     """Tensor scatter max for numpy."""
-    import numpy as np  # pragma: no cover
-
     res = np.copy(tensor)  # pragma: no cover
     if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
         indices = np.asarray(indices)  # pragma: no cover
@@ -92,8 +103,6 @@ def _tensor_scatter_max(tensor: object, indices: object, updates: object) -> obj
 
 def _tensor_scatter_min(tensor: object, indices: object, updates: object) -> object:
     """Tensor scatter min for numpy."""
-    import numpy as np  # pragma: no cover
-
     res = np.copy(tensor)  # pragma: no cover
     if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
         indices = np.asarray(indices)  # pragma: no cover
@@ -115,9 +124,7 @@ def _np_dynamic_update_slice(backend_module: object, *args: object, **kwargs: ob
 
 
 @numpy_eager_registry.register("Unstack")
-def _np_unstack(
-    backend_module: object, x: object, axis: object = 0, *args: object, **kwargs: object
-) -> object:
+def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -128,15 +135,12 @@ def _np_unstack(
         kwargs: Arg.
     """
     return [  # pragma: no cover
-        backend_module.squeeze(a, axis=axis)
-        for a in backend_module.split(x, x.shape[axis], axis=axis)
+        backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, x.shape[axis], axis=axis)
     ]
 
 
 @numpy_eager_registry.register("DynamicSlice")
-def _np_dynamic_slice(
-    backend_module: object, x: object, start_indices: object, slice_sizes: object
-) -> object:
+def _np_dynamic_slice(backend_module: object, x: object, start_indices: object, slice_sizes: object) -> object:
     """Function docstring.
 
     Args:
@@ -165,9 +169,7 @@ def _np_take_along_axis(backend_module: object, x: object, indices: object, axis
 
 
 @numpy_eager_registry.register("TensorScatterUpdate")
-def _np_tensor_scatter_update(
-    backend_module: object, tensor: object, indices: object, updates: object
-) -> object:
+def _np_tensor_scatter_update(backend_module: object, tensor: object, indices: object, updates: object) -> object:
     """Function docstring.
 
     Args:
@@ -176,19 +178,13 @@ def _np_tensor_scatter_update(
         indices: Arg.
         updates: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager_registry import (
-        global_eager_registry,
-    )  # pragma: no cover
-
     return global_eager_registry.get("TensorScatterUpdate")(  # pragma: no cover
         backend_module, tensor, indices, updates
     )
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
-def _np_tensor_scatter_add(
-    backend_module: object, tensor: object, indices: object, updates: object
-) -> object:
+def _np_tensor_scatter_add(backend_module: object, tensor: object, indices: object, updates: object) -> object:
     """Function docstring.
 
     Args:
@@ -204,9 +200,7 @@ def _np_tensor_scatter_add(
 
 
 @numpy_eager_registry.register("TensorScatterMax")
-def _np_tensor_scatter_max(
-    backend_module: object, tensor: object, indices: object, updates: object
-) -> object:
+def _np_tensor_scatter_max(backend_module: object, tensor: object, indices: object, updates: object) -> object:
     """Function docstring.
 
     Args:
@@ -222,9 +216,7 @@ def _np_tensor_scatter_max(
 
 
 @numpy_eager_registry.register("TensorScatterMin")
-def _np_tensor_scatter_min(
-    backend_module: object, tensor: object, indices: object, updates: object
-) -> object:
+def _np_tensor_scatter_min(backend_module: object, tensor: object, indices: object, updates: object) -> object:
     """Function docstring.
 
     Args:
@@ -253,9 +245,7 @@ def _np_gather_nd(backend_module: object, params: object, indices: object) -> ob
 
 
 @numpy_eager_registry.register("ScatterNd")
-def _np_scatter_nd(
-    backend_module: object, indices: object, updates: object, shape: object, **kwargs: object
-) -> object:
+def _np_scatter_nd(backend_module: object, indices: object, updates: object, shape: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -265,8 +255,6 @@ def _np_scatter_nd(
         shape: Arg.
         kwargs: Arg.
     """
-    import numpy as np  # pragma: no cover
-
     out = np.zeros(shape, dtype=updates.dtype)  # pragma: no cover
     idx = tuple(np.moveaxis(np.array(indices), (-1), 0))  # pragma: no cover
     out[idx] = updates  # pragma: no cover
@@ -282,8 +270,6 @@ def _np_scatter(backend_module: object, *args: object, **kwargs: object) -> obje
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np  # pragma: no cover
-
     input_data = args[0]  # pragma: no cover
     index = args[1]  # pragma: no cover
     src = args[2]  # pragma: no cover
@@ -302,15 +288,11 @@ def _np_scatter_add(backend_module: object, *args: object, **kwargs: object) -> 
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     input_data = np.copy(args[0])
     index = args[1]
     src = args[2]
     dim = kwargs.get("dim", 0)
-    np.put_along_axis(
-        input_data, index, (np.take_along_axis(input_data, index, axis=dim) + src), axis=dim
-    )
+    np.put_along_axis(input_data, index, (np.take_along_axis(input_data, index, axis=dim) + src), axis=dim)
     return input_data
 
 
@@ -318,18 +300,15 @@ def _np_scatter_add(backend_module: object, *args: object, **kwargs: object) -> 
 def _np_dynamic_slice_in_dim(
     backend_module: object,
     operand: object,
-    start_index: object,
-    slice_size: int,
-    axis: int = 0,
+    context: IndexingContext,
     *args: object,
     **kwargs: object,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     operand = np.asarray(operand)
-    start_index = np.asarray(start_index).item()
+    start_index = np.asarray(context.start_index).item()
     sl = [slice(None)] * operand.ndim
-    sl[axis] = slice(start_index, start_index + slice_size)
+    sl[context.axis] = slice(start_index, start_index + context.slice_size)
     return operand[tuple(sl)]
 
 
@@ -338,18 +317,16 @@ def _np_dynamic_update_slice_in_dim(
     backend_module: object,
     operand: object,
     update: object,
-    start_index: object,
-    axis: int = 0,
+    context: IndexingContext,
     *args: object,
     **kwargs: object,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     operand = np.copy(np.asarray(operand))
-    start_index = np.asarray(start_index).item()
-    slice_size = np.asarray(update).shape[axis]
+    start_index = np.asarray(context.start_index).item()
+    slice_size = np.asarray(update).shape[context.axis]
     sl = [slice(None)] * operand.ndim
-    sl[axis] = slice(start_index, start_index + slice_size)
+    sl[context.axis] = slice(start_index, start_index + slice_size)
     operand[tuple(sl)] = update
     return operand
 
@@ -359,22 +336,20 @@ def _np_dynamic_index_in_dim(
     backend_module: object,
     operand: object,
     index: object,
-    axis: int = 0,
-    keepdims: bool = True,
+    context: IndexingContext,
     *args: object,
     **kwargs: object,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     operand = np.asarray(operand)
     idx = np.asarray(index).item()
-    if keepdims:
+    if context.keepdims:
         sl = [slice(None)] * operand.ndim
-        sl[axis] = slice(idx, idx + 1)
+        sl[context.axis] = slice(idx, idx + 1)
         return operand[tuple(sl)]
     else:
         sl = [slice(None)] * operand.ndim
-        sl[axis] = idx
+        sl[context.axis] = idx
         return operand[tuple(sl)]
 
 
@@ -384,51 +359,43 @@ def _np_dynamic_update_index_in_dim(
     operand: object,
     update: object,
     index: object,
-    axis: int = 0,
+    context: IndexingContext,
     *args: object,
     **kwargs: object,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     operand = np.copy(np.asarray(operand))
     idx = np.asarray(index).item()
     sl = [slice(None)] * operand.ndim
-    sl[axis] = idx
+    sl[context.axis] = idx
     operand[tuple(sl)] = update
     return operand
 
 
 @numpy_eager_registry.register("SliceInDim")
-def _np_slice_in_dim(  # noqa: PLR0913
+def _np_slice_in_dim(
     backend_module: object,
     operand: object,
-    start_index: int,
-    limit_index: int,
-    stride: int = 1,
-    axis: int = 0,
+    context: IndexingContext,
     *args: object,
     **kwargs: object,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     operand = np.asarray(operand)
     sl = [slice(None)] * operand.ndim
-    sl[axis] = slice(start_index, limit_index, stride)
+    sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
     return operand[tuple(sl)]
 
 
 @numpy_eager_registry.register("ScatterApply")
 def _np_scatter_apply(
     backend_module: object,
-    tensor: object,
-    indices: object,
-    updates: object,
-    func: object,
+    context: IndexingContext,
     *args: object,
     **kwargs: object,
 ) -> object:
-    # Requires custom logic, just return tensor for eager stub
-    return tensor
+    """Function docstring."""
+    return kwargs.get("tensor", args[0] if args else None)
 
 
 @numpy_eager_registry.register("ScatterMax")
@@ -437,12 +404,9 @@ def _np_scatter_max(
     tensor: object,
     indices: object,
     updates: object,
-    *args: object,
-    **kwargs: object,
+    context: IndexingContext = None,
 ) -> object:
-    import numpy as np
-
-    # Simplified stub using np.maximum.at, not correct for all cases but fine for eager tests
+    """Function docstring."""
     tensor = np.copy(np.asarray(tensor))
     np.maximum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
@@ -454,11 +418,9 @@ def _np_scatter_min(
     tensor: object,
     indices: object,
     updates: object,
-    *args: object,
-    **kwargs: object,
+    context: IndexingContext = None,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     tensor = np.copy(np.asarray(tensor))
     np.minimum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
@@ -470,11 +432,9 @@ def _np_scatter_mul(
     tensor: object,
     indices: object,
     updates: object,
-    *args: object,
-    **kwargs: object,
+    context: IndexingContext = None,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     tensor = np.copy(np.asarray(tensor))
     np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
     return tensor
@@ -484,22 +444,17 @@ def _np_scatter_mul(
 def _np_slice(
     backend_module: object,
     x: object,
-    dim: int,
-    start: object = None,
-    end: object = None,
-    step: object = 1,
+    context: IndexingContext,
 ) -> object:
+    """Function docstring."""
     sl = [slice(None)] * x.ndim
-    sl[dim] = slice(start, end, step)
+    sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
     return x[tuple(sl)]
 
 
 @numpy_eager_registry.register("GetItem")
 def _np_getitem(backend_module: object, x: object, key: str) -> object:
-    import numpy as np
-
+    """Function docstring."""
     # safely evaluate the stringified key
-    parsed_key = eval(
-        key, {"slice": slice, "Ellipsis": Ellipsis, "None": None, "np": np, "array": np.array}
-    )
+    parsed_key = eval(key, {"slice": slice, "Ellipsis": Ellipsis, "None": None, "np": np, "array": np.array})
     return x[parsed_key]

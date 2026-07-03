@@ -1,6 +1,7 @@
 """Dtype resolution and type inference logic."""
 
 import re
+
 from ml_switcheroo_compiler.core.dtype import DType
 
 

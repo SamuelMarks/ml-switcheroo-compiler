@@ -6,7 +6,7 @@ from typing import Any
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def flatten_state_dict(state_dict: dict[str, Any], prefix: str = "") -> dict[str, Any]:  # noqa: ANN401
+def flatten_state_dict(state_dict: dict[str, Any], prefix: str = "") -> dict[str, Any]:
     """Flatten a nested state dictionary (like flax.nnx.State) into a flat map.
 
     Args:
@@ -26,7 +26,7 @@ def flatten_state_dict(state_dict: dict[str, Any], prefix: str = "") -> dict[str
     return flat
 
 
-def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:  # noqa: ANN401
+def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:
     """Unflatten a state dict back to nested structure.
 
     Args:

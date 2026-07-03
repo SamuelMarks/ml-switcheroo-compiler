@@ -1,16 +1,15 @@
-# ruff: noqa: E402
 """Convolution Ops."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
 import itertools
+import logging  # pragma: no cover
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Union
-from collections.abc import Iterable
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2, MAGIC_VAL_3
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
 
@@ -35,9 +34,6 @@ class ConvExecutionState:
     spatial_dims: int
 
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-
-
 def _get_transpose(spec: Union[str, Iterable[int]], default: str) -> tuple[int, ...]:
     """Get transpose.
 
@@ -52,8 +48,6 @@ def _get_transpose(spec: Union[str, Iterable[int]], default: str) -> tuple[int, 
         try:
             return tuple(spec.index(c) for c in default)
         except (ValueError, TypeError) as e:  # pragma: no cover
-            import logging  # pragma: no cover
-
             logging.error(f"CRASH: spec={spec}, default={default}")  # pragma: no cover
             raise e  # pragma: no cover
     return tuple(spec)
@@ -149,9 +143,7 @@ def _calculate_conv_padding(
         return [(0, 0)] * spatial_dims
 
     if padding == "SAME":
-        rhs_dilation = (
-            config.rhs_dilation if config.rhs_dilation is not None else [1] * spatial_dims
-        )
+        rhs_dilation = config.rhs_dilation if config.rhs_dilation is not None else [1] * spatial_dims
         return _calculate_same_padding(lhs_shape, rhs_shape, rhs_dilation, config.window_strides)
 
     return [(0, 0)] * spatial_dims
@@ -270,9 +262,7 @@ def _compute_single_patch(
             group_out_c=out_channels // state.config.feature_group_count,
             feature_group_count=state.config.feature_group_count,
         )
-        _compute_single_patch_grouped(
-            lhs_patch, state.rhs_c, state.out, spatial_indices, patch_config
-        )
+        _compute_single_patch_grouped(lhs_patch, state.rhs_c, state.out, spatial_indices, patch_config)
     else:
         res = np.tensordot(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs))
         state.out[tuple([slice(None), slice(None)] + list(spatial_indices))] = res
@@ -289,15 +279,11 @@ def _compute_conv_patches(
     out_spatial = out.shape[2:]
 
     for spatial_indices in itertools.product(*[range(d) for d in out_spatial]):
-        state = ConvExecutionState(
-            lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims
-        )
+        state = ConvExecutionState(lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims)
         _compute_single_patch(state, spatial_indices)
 
 
-def _apply_conv_padding_helper(
-    lhs_c: np.ndarray, rhs_c: np.ndarray, config: ConvConfig
-) -> np.ndarray:
+def _apply_conv_padding_helper(lhs_c: np.ndarray, rhs_c: np.ndarray, config: ConvConfig) -> np.ndarray:
     """Function docstring.
 
     Args:
@@ -334,17 +320,11 @@ def _preprocess_conv_tensors(
             if rhs_c.shape[1] == in_channels:  # pragma: no cover
                 permutation = (1, 0) + tuple(range(2, rhs_c.ndim))  # pragma: no cover
                 rhs_c = np.transpose(rhs_c, permutation)  # pragma: no cover
-                new_shape = (rhs_c.shape[0] * rhs_c.shape[1], expected_rhs_in) + rhs_c.shape[
-                    2:
-                ]  # pragma: no cover
+                new_shape = (rhs_c.shape[0] * rhs_c.shape[1], expected_rhs_in) + rhs_c.shape[2:]  # pragma: no cover
                 rhs_c = np.reshape(rhs_c, new_shape)  # pragma: no cover
 
-    lhs_dilation = (
-        config.lhs_dilation if config.lhs_dilation is not None else [1] * specs.spatial_dims
-    )
-    rhs_dilation = (
-        config.rhs_dilation if config.rhs_dilation is not None else [1] * specs.spatial_dims
-    )
+    lhs_dilation = config.lhs_dilation if config.lhs_dilation is not None else [1] * specs.spatial_dims
+    rhs_dilation = config.rhs_dilation if config.rhs_dilation is not None else [1] * specs.spatial_dims
 
     # Dilate before padding!
     lhs_dilated = _apply_conv_dilation(lhs_c, lhs_dilation, specs.spatial_dims)
@@ -370,10 +350,7 @@ def _compute_out_shape(
         spatial_dims: Arg.
         window_strides: Arg.
     """
-    out_spatial = [
-        (lhs_pad_shape[2 + i] - rhs_c_shape[2 + i]) // window_strides[i] + 1
-        for i in range(spatial_dims)
-    ]
+    out_spatial = [(lhs_pad_shape[2 + i] - rhs_c_shape[2 + i]) // window_strides[i] + 1 for i in range(spatial_dims)]
     return [lhs_pad_shape[0], rhs_c_shape[0]] + out_spatial
 
 
@@ -400,9 +377,7 @@ def _conv_general_dilated(
     rhs = np.asarray(rhs)
     spatial_dims = lhs.ndim - 2
 
-    specs = _parse_conv_dimension_numbers(
-        lhs.ndim, rhs.ndim, spatial_dims, config.dimension_numbers
-    )
+    specs = _parse_conv_dimension_numbers(lhs.ndim, rhs.ndim, spatial_dims, config.dimension_numbers)
 
     lhs_pad, rhs_c = _preprocess_conv_tensors(lhs, rhs, config, specs)
 

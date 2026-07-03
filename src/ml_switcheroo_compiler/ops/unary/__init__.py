@@ -1,11 +1,19 @@
-"""Unary operations package."""
+"""Module docstring."""
 
 import ml_switcheroo_compiler.ops.binary.special as _binary_special
-import ml_switcheroo_compiler.ops.unary.math as _math
+import ml_switcheroo_compiler.ops.unary.arithmetic as _arith
+import ml_switcheroo_compiler.ops.unary.base as _unary_base
+import ml_switcheroo_compiler.ops.unary.complex_types as _cmplx
+import ml_switcheroo_compiler.ops.unary.exponential as _exp
+import ml_switcheroo_compiler.ops.unary.hyperbolic as _hyp
+import ml_switcheroo_compiler.ops.unary.logical as _log
+import ml_switcheroo_compiler.ops.unary.normalization as _norm
+import ml_switcheroo_compiler.ops.unary.sets as _sets
 import ml_switcheroo_compiler.ops.unary.special as _special
+import ml_switcheroo_compiler.ops.unary.trigonometric as _trig
 from ml_switcheroo_compiler.ops.base import get_op
 
-_ = _binary_special
+_ = (_binary_special, _special, _norm, _sets, _cmplx, _log, _exp, _arith, _hyp, _trig, _unary_base)
 
 abs = get_op("Abs")()
 angle = get_op("Angle")()
@@ -68,7 +76,7 @@ bitcast = get_op("Bitcast")()
 frexp = get_op("Frexp")()
 
 atan2 = get_op("Atan2")()
-_ = _math
+
 _ = _special
 logit = get_op("Logit")()
 mvlgamma = get_op("Mvlgamma")()

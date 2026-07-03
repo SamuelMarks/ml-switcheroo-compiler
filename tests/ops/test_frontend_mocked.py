@@ -9,8 +9,8 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
 
 
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
 def test_lazy_frontend_mocked_1(mock_proxy: object, mock_add_node: object) -> None:
     """Test frontend lazy APIs using mocks part 1.
@@ -44,8 +44,8 @@ def test_lazy_frontend_mocked_1(mock_proxy: object, mock_add_node: object) -> No
     shape.vsplit(x, 2)
 
 
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
 def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> None:
     """Test frontend lazy APIs using mocks part 2.
@@ -64,9 +64,7 @@ def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> No
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
 
-    t_3d = Tensor(
-        MagicMock(id="3d", shape=(2, 2, 2)), TensorConfig((2, 2, 2), DType.Float32, "cpu")
-    )
+    t_3d = Tensor(MagicMock(id="3d", shape=(2, 2, 2)), TensorConfig((2, 2, 2), DType.Float32, "cpu"))
     shape.dsplit(t_3d, 2)
 
     shape.tile(x, (2, 2))
@@ -91,8 +89,8 @@ def test_lazy_frontend_mocked_2(mock_proxy: object, mock_add_node: object) -> No
         shape.argsort(x)
 
 
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
 def test_lazy_frontend_mocked_3(mock_proxy: object, mock_add_node: object) -> None:
     """Test frontend lazy APIs using mocks part 3.
@@ -140,8 +138,8 @@ def test_lazy_frontend_mocked_3(mock_proxy: object, mock_add_node: object) -> No
     linalg.einsum("ab,bc->ac", x, y)
 
 
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.is_tracing", True)
-@patch("ml_switcheroo_compiler.tracing.tracer._tracer.add_node")
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.is_tracing", True)
+@patch("ml_switcheroo_compiler.tracing.tracer.global_tracing_state.add_node")
 @patch("ml_switcheroo_compiler.tracing.tracer.ProxyTensor")
 def test_lazy_frontend_mocked_4(mock_proxy: object, mock_add_node: object) -> None:
     """Test frontend lazy APIs using mocks part 4."""

@@ -7,6 +7,8 @@ addition, subtraction, multiplication, division, and power.
 
 import numpy as np
 
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops import array, true_divide, truncatediv, truncatemod
 from ml_switcheroo_compiler.ops.binary.math import (
     Add,
     BinaryMathOp,
@@ -17,6 +19,8 @@ from ml_switcheroo_compiler.ops.binary.math import (
     Power,
     Subtract,
     TrueDivide,
+    TruncateDiv,
+    TruncateMod,
 )
 
 
@@ -133,10 +137,6 @@ def test_binary_special_coverage() -> None:
 
 def test_truncate_ops() -> None:
     """Verifies the correctness of truncated division and modulo operations."""
-    from ml_switcheroo_compiler.ops.binary.math import TruncateDiv, TruncateMod
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.ops import truncatediv, truncatemod, truediv, array
-
     # test op instantiation
     t_div = TruncateDiv()
     t_mod = TruncateMod()
@@ -152,7 +152,7 @@ def test_truncate_ops() -> None:
 
     x2 = array([5, 5])
     y2 = array([2, 2])
-    res3 = truediv(x2, y2)
+    res3 = true_divide(x2, y2)
     config.eager_mode = False
 
     assert res1 is not None

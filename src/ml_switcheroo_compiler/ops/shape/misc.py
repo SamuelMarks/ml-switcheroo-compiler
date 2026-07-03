@@ -1,19 +1,22 @@
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+
+from collections.abc import Sequence
+
 # pylint: disable=duplicate-code
-
-
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import dispatch_eager, OpDef, register_op
+from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
+from ml_switcheroo_compiler.ops.shape.reshape import Resize
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
@@ -27,13 +30,9 @@ def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
     Tensor: The tiled tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Tile", input.data, reps)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -62,13 +61,9 @@ def repeat(
     Tensor: The tensor with repeated elements
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Repeat", input.data, repeats, axis=dim)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -93,13 +88,9 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
     Tensor: The upper triangular tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Triu", input.data, k=diagonal)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -124,13 +115,9 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
     Tensor: The lower triangular tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Tril", input.data, k=diagonal)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input]
     # shape calculation placeholder
     out_shape = inputs[0].shape
@@ -141,6 +128,16 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
+
+
+def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, ...]:
+    """Computes the shape for a meshgrid."""
+    if not inputs:
+        return ()
+    out_shape = tuple(t.shape[0] if t.shape else 1 for t in inputs)
+    if indexing == "xy" and len(inputs) >= 2:
+        return (out_shape[1], out_shape[0]) + out_shape[2:]
+    return out_shape
 
 
 def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
@@ -155,31 +152,14 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     Sequence[Tensor]: A sequence of coordinate grid tensors
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         datas = backend.execute_op("Meshgrid", *[t.data for t in tensors], indexing=indexing)
-        return tuple(
-            Tensor(d, TensorConfig(d.shape, tensors[0].dtype, tensors[0].device)) for d in datas
-        )
+        return tuple(Tensor(d, TensorConfig(d.shape, tensors[0].dtype, tensors[0].device)) for d in datas)
     inputs = list(tensors)
-    if len(inputs) > 0:
-        out_shape = tuple(t.shape[0] if len(t.shape) > 0 else 1 for t in inputs)
-        if indexing == "xy" and len(inputs) >= 2:
-            out_shape = (out_shape[1], out_shape[0]) + out_shape[2:]
-    else:
-        out_shape = ()
+    out_shape = _compute_meshgrid_shape(inputs, indexing)
+    dtype = inputs[0].dtype if inputs else DType.Float32
 
-    return tuple(
-        _emit_shape_node(
-            "Meshgrid",
-            inputs,
-            {"indexing": indexing},
-            out_shape,
-            inputs[0].dtype if len(inputs) > 0 else DType.Float32,
-        )
-        for _ in inputs
-    )
+    return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
 def pad(
@@ -199,8 +179,6 @@ def pad(
     Returns:
     object: The padded array
     """
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-
     backend = get_active_backend()
     return backend.execute_op("Pad", array, pad_width, mode=mode, **kwargs)
 
@@ -227,12 +205,8 @@ def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
     inputs = [operand]
     # We cheat a bit by returning two tensors pointing to the same node for now,
     # as handling multi-output nodes properly requires more IR scaffolding
-    val_node = _emit_shape_node(
-        "TopK", inputs, {"k": k, "return_indices": False}, out_shape, operand.dtype
-    )
-    idx_node = _emit_shape_node(
-        "TopK", inputs, {"k": k, "return_indices": True}, out_shape, DType.Int32
-    )
+    val_node = _emit_shape_node("TopK", inputs, {"k": k, "return_indices": False}, out_shape, operand.dtype)
+    idx_node = _emit_shape_node("TopK", inputs, {"k": k, "return_indices": True}, out_shape, DType.Int32)
     return val_node, idx_node
 
 
@@ -261,18 +235,14 @@ def argsort(
         dimension = dim  # pragma: no cover
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
         data = backend.execute_op("ArgSort", operand.data, axis=dimension, kind=kind)
-        from ml_switcheroo_compiler.core.dtype import DType
 
         return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))
 
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}
-    from ml_switcheroo_compiler.core.dtype import DType
 
     return _emit_shape_node("ArgSort", inputs, attributes, operand.shape, DType.Int32)
 
@@ -302,8 +272,6 @@ def sort(
         dimension = dim  # pragma: no cover
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
         data = backend.execute_op("Sort", operand.data, axis=dimension, kind=kind)
@@ -329,8 +297,6 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
     Returns:
     Tensor: The resized image tensor
     """
-    from ml_switcheroo_compiler.ops.shape.reshape import Resize
-
     op = Resize()
     out_shape = op.infer_shape(image, shape, method)
 

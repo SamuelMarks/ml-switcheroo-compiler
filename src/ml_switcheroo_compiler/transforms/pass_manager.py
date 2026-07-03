@@ -167,6 +167,4 @@ class DAGTopologicalSorter:
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-
         return topological_sort(graph)

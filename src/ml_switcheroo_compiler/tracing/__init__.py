@@ -3,8 +3,8 @@
 from ml_switcheroo_compiler.tracing.tracer import (
     ProxyTensor,
     TracerTape,
-    _tracer,
     get_trace_count,
+    global_tracing_state,
     increment_trace_count,
     reset_trace_count,
 )
@@ -12,8 +12,8 @@ from ml_switcheroo_compiler.tracing.tracer import (
 __all__ = [
     "ProxyTensor",
     "TracerTape",
-    "_tracer",
     "get_trace_count",
+    "global_tracing_state",
     "increment_trace_count",
     "reset_trace_count",
 ]

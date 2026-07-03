@@ -1,23 +1,31 @@
 """Dask code generator and eager execution backend."""
 
-try:
-    import dask.array as da
-except ImportError:
-    da = None
+import dask.array as da
+
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
+from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
+from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
 
-
-from ml_switcheroo_compiler.backends.common.generator_mixins import (
-    SharedASTGeneratorMixin,
-    GroupNormConfig,
-)
+try:
+    pass
+except ImportError:
+    da = None
 
 
 @register_backend("dask")
-class DaskGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
+class DaskGenerator(PythonStringGenerator):
     """Generates Dask python code from IR."""
+
+    def __init__(self, graph: object) -> None:
+        """Init."""
+        super().__init__(graph)
+        self.visitors.extend(
+            [
+                SharedASTGeneratorVisitor(generator=self),
+            ]
+        )
 
     def _get_backend_prefix(self) -> str:
         """Function docstring."""
@@ -27,7 +35,7 @@ class DaskGenerator(SharedASTGeneratorMixin, PythonStringGenerator):
         """Get helper functions."""
         res = super().get_helper_functions()  # pragma: no cover
         res.extend(  # pragma: no cover
-            self._get_group_norm_code(
+            NNASTVisitor(generator=self)._get_group_norm_code(
                 GroupNormConfig(
                     "da",
                     "dask.array as da",

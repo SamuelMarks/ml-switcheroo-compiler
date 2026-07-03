@@ -1,31 +1,6 @@
 """Random API."""
 
-from ml_switcheroo_compiler.random.state import (
-    rng_bit_generator,
-    rng_uniform,
-    PRNGKey,
-    bits,
-    clone,
-    fold_in,
-    key,
-    key_data,
-    key_impl,
-    split,
-    wrap_key_data,
-)
-from ml_switcheroo_compiler.random.distributions_discrete import (
-    bernoulli,
-    multinomial,
-    binomial,
-    categorical,
-    choice,
-    geometric,
-    permutation,
-    poisson,
-    rademacher,
-    randint,
-)
-from ml_switcheroo_compiler.random.distributions_continuous import (
+from ml_switcheroo_compiler.random.continuous import (
     ball,
     beta,
     cauchy,
@@ -54,6 +29,31 @@ from ml_switcheroo_compiler.random.distributions_continuous import (
     uniform,
     wald,
     weibull_min,
+)
+from ml_switcheroo_compiler.random.distributions_discrete import (
+    bernoulli,
+    binomial,
+    categorical,
+    choice,
+    geometric,
+    multinomial,
+    permutation,
+    poisson,
+    rademacher,
+    randint,
+)
+from ml_switcheroo_compiler.random.state import (
+    PRNGKey,
+    bits,
+    clone,
+    fold_in,
+    key,
+    key_data,
+    key_impl,
+    rng_bit_generator,
+    rng_uniform,
+    split,
+    wrap_key_data,
 )
 from ml_switcheroo_compiler.random.transformations import shuffle
 

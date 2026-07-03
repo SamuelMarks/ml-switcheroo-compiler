@@ -3,10 +3,13 @@
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.backends.backend_utils import format_shape_metadata, resolve_input_vars
-from ml_switcheroo_compiler.ir.core import IRNode
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.ir.core import IRNode
+
+if TYPE_CHECKING:
+    pass
 
 
 class CodeGeneratorVisitor:
@@ -68,9 +71,7 @@ class CodeGeneratorVisitor:
             input_prefix (Any): Argument input_prefix.
         """
         var_name = self.generator.assign_var_name(node.id, "input")
-        self.generator._emit_input_assignment(
-            var_name, node, input_prefix, self.generator.input_idx
-        )
+        self.generator._emit_input_assignment(var_name, node, input_prefix, self.generator.input_idx)
         self.generator.input_idx += 1
 
     def handle_output_node(self, node: IRNode) -> None:

@@ -1,17 +1,17 @@
 """Test sparse and ragged ops."""
 
+from ml_switcheroo_compiler.ops.ragged import (
+    RaggedAdd,
+    RaggedDynamicBroadcast,
+    RaggedGather,
+    RaggedMatMul,
+    RaggedTensorToDense,
+)
 from ml_switcheroo_compiler.ops.sparse import (
-    SparseDenseMatMul,
     SparseAdd,
+    SparseDenseMatMul,
     SparseReduceSum,
     SparseSoftmax,
-)
-from ml_switcheroo_compiler.ops.ragged import (
-    RaggedGather,
-    RaggedTensorToDense,
-    RaggedAdd,
-    RaggedMatMul,
-    RaggedDynamicBroadcast,
 )
 
 
@@ -23,6 +23,8 @@ def test_sparse_ops() -> None:
     op2 = SparseAdd()
 
     class Dummy:
+        """Class docstring."""
+
         dense_shape = (2, 2)
 
     assert op2.infer_shape(Dummy(), None) == (2, 2)

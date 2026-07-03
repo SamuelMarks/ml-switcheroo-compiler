@@ -1,42 +1,67 @@
+"""Module docstring."""
+
+# mock hasattr to test branches
+import builtins
+
 import numpy as np
+
+# matrix_norm wrapper missing
+# missing _np_norm
 from ml_switcheroo_compiler.backends.numpy.eager.linalg import (
+    _np_band_part,
+    _np_banded_triangular_solve,
+    _np_cholesky,
+    _np_cross,
+    _np_det,
+    _np_diagonal,
     _np_dot_general,
-    _np_polar,
-    _np_view_as_complex,
-    _np_view_as_real,
+    _np_eig,
+    _np_eigh,
+    _np_eigvalsh,
+    _np_einsum,
     _np_fft2d,
-    _np_ifft2d,
-    _np_tri_inv,
-    _np_triangular_solve,
-    _np_lu,
-    _np_lu_factor,
-    _np_lu_solve,
-    _np_matrix_exponential,
     _np_hessenberg,
     _np_householder_product,
-    _np_schur,
-    _np_tridiagonal,
-    _np_tridiagonal_solve,
+    _np_ifft2d,
+    _np_inv,
+    _np_irfft,
+    _np_lstsq,
+    _np_lu,
+    _np_lu_factor,
     _np_lu_pivots_to_permutation,
+    _np_lu_solve,
+    _np_matmul,
+    _np_matrix_exponential,
     _np_matrix_norm,
-    _np_vector_norm,
+    _np_matrix_power,
+    _np_multi_dot,
+    _np_norm,
+    _np_pinv,
+    _np_polar,
+    _np_qr,
+    _np_schur,
+    _np_slogdet,
+    _np_solve,
+    _np_svd,
     _np_svdvals,
     _np_tensorinv,
     _np_tensorsolve,
-    _np_diagonal,
-    _np_multi_dot,
+    _np_tri_inv,
+    _np_triangular_solve,
+    _np_tridiagonal,
+    _np_tridiagonal_solve,
     _np_vecdot,
-    _np_band_part,
-    _np_banded_triangular_solve,
+    _np_vector_norm,
+    _np_view_as_complex,
+    _np_view_as_real,
 )
 
 
-def test_numpy_linalg_eager_extra():  # noqa: C901, PLR0912, PLR0915
+def test_numpy_linalg_eager_extra() -> object:
+    """Function docstring."""
     # dot_general
     try:
-        _np_dot_general(
-            np, np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (0,)), ((), ()))
-        )
+        _np_dot_general(np, np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (0,)), ((), ())))
     except Exception:
         pass
 
@@ -203,13 +228,8 @@ def test_numpy_linalg_eager_extra():  # noqa: C901, PLR0912, PLR0915
         pass
 
 
-def test_numpy_linalg_eager_extra2():
-    from ml_switcheroo_compiler.backends.numpy.eager.linalg import (
-        _np_cross,
-        _np_lu_pivots_to_permutation,
-    )
-    import numpy as np
-
+def test_numpy_linalg_eager_extra2() -> object:
+    """Function docstring."""
     # cross wrapper
     _np_cross(np, np.ones(3), np.ones(3))
 
@@ -217,29 +237,8 @@ def test_numpy_linalg_eager_extra2():
     _np_lu_pivots_to_permutation(np, np.array([[0, 1]]), 2)
 
 
-def test_numpy_linalg_eager_extra3():  # noqa: C901, PLR0912, PLR0915
-    from ml_switcheroo_compiler.backends.numpy.eager.linalg import (
-        _np_matmul,
-        _np_einsum,
-        _np_cholesky,
-        _np_eigh,
-        _np_inv,
-        _np_pinv,
-        _np_qr,
-        _np_svd,
-        _np_det,
-        _np_slogdet,
-        _np_solve,
-        _np_eigvalsh,
-        _np_matrix_power,
-        _np_eig,
-        _np_lstsq,
-        _np_irfft,
-        _np_banded_triangular_solve,
-        _np_band_part,
-    )
-    import numpy as np
-
+def test_numpy_linalg_eager_extra3() -> object:
+    """Function docstring."""
     # matmul
     _np_matmul(np, np.ones((2, 2)), np.ones((2, 2)))
 
@@ -330,10 +329,6 @@ def test_numpy_linalg_eager_extra3():  # noqa: C901, PLR0912, PLR0915
     except Exception:
         pass
 
-    # matrix_norm wrapper missing
-    # missing _np_norm
-    from ml_switcheroo_compiler.backends.numpy.eager.linalg import _np_norm
-
     try:
         _np_norm(np, np.ones(2))
     except Exception:
@@ -344,33 +339,20 @@ def test_numpy_linalg_eager_extra3():  # noqa: C901, PLR0912, PLR0915
     _np_banded_triangular_solve(np, np.ones((1, 2)), np.ones(2), lower=True)
 
 
-def test_numpy_linalg_eager_extra4():
-    from ml_switcheroo_compiler.backends.numpy.eager.linalg import _np_lu_solve
-    import numpy as np
-
+def test_numpy_linalg_eager_extra4() -> object:
+    """Function docstring."""
     _np_lu_solve(np, np.eye(2), np.array([0, 1]), np.ones(2))
 
 
-def test_numpy_linalg_eager_extra5():
-    from ml_switcheroo_compiler.backends.numpy.eager.linalg import (
-        _np_matrix_norm,
-        _np_vector_norm,
-        _np_svdvals,
-        _np_vecdot,
-    )
-    import numpy as np
-
-    # mock hasattr to test branches
-    import builtins
-
+def test_numpy_linalg_eager_extra5() -> object:
+    """Function docstring."""
     original_hasattr = builtins.hasattr if "builtins" in globals() else hasattr
 
-    def mock_hasattr(obj, name):
+    def mock_hasattr(obj: object, name: object) -> object:
+        """Function docstring."""
         if name in ["matrix_norm", "vector_norm", "svdvals", "vecdot"]:
             return False
         return original_hasattr(obj, name)
-
-    import builtins
 
     builtins.hasattr = mock_hasattr
 

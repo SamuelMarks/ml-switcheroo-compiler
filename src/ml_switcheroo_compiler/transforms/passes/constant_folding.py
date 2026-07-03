@@ -1,6 +1,9 @@
 """Constant Folding pass."""
 
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -23,9 +26,7 @@ def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> boo
     return True
 
 
-def _evaluate_constant_node(
-    node: object, canonical_inputs: list[str], graph: IRGraph, backend: object
-) -> object:
+def _evaluate_constant_node(node: object, canonical_inputs: list[str], graph: IRGraph, backend: object) -> object:
     """Execute _evaluate_constant_node.
 
     Args:
@@ -37,10 +38,6 @@ def _evaluate_constant_node(
     Returns:
     Any: The result.
     """
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
-    from ml_switcheroo_compiler.interpreter import evaluate_graph
-
     subgraph = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:
         subgraph.nodes[inp] = graph.nodes[inp]

@@ -5,6 +5,7 @@ supported
 operators and error handling for unsupported ones.
 """
 
+import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -34,11 +35,6 @@ def test_evaluator_greater() -> None:
     Returns:
     None
     """
-    import numpy as np
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
     g.nodes["b"] = LogicalNode(id="b", op_type="Input")
@@ -51,8 +47,6 @@ def test_evaluator_greater() -> None:
 
 def test_evaluator_relu() -> None:
     """Test evaluator relu."""
-    import numpy as np
-
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
     g.nodes["c"] = LogicalNode(id="c", op_type="Relu", inputs=["a"])
@@ -63,8 +57,6 @@ def test_evaluator_relu() -> None:
 
 def test_evaluator_where() -> None:
     """Test evaluator where."""
-    import numpy as np
-
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
     g.nodes["b"] = LogicalNode(id="b", op_type="Input")
@@ -86,11 +78,6 @@ def test_evaluator_unimplemented() -> None:
     Returns:
     None
     """
-    import pytest
-    from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
     g.nodes["b"] = LogicalNode(id="b", op_type="UnknownOp", inputs=["a"])
@@ -117,18 +104,12 @@ def test_evaluator_exception() -> None:
     g.inputs = ["n1"]
     g.outputs = ["n2"]
 
-    import pytest
-
     with pytest.raises((NotImplementedError, AttributeError)):
         evaluate_graph(g, {"n1": 1})
 
 
 def test_evaluator_stubs() -> None:
     """Test stub evaluations in interpreter."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
     # Greater
     g1 = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(1,))
@@ -164,10 +145,6 @@ def test_evaluator_stubs() -> None:
 
 def test_evaluator_shape_kwargs() -> None:
     """Test Expand and Reshape kwargs."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
     # Expand
     g1 = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=(1,))

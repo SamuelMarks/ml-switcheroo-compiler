@@ -1,9 +1,12 @@
+"""Module docstring."""
+
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends.numpy.eager import execute_op
 
 
-def test_numpy_eager_coverage():
+def test_numpy_eager_coverage() -> object:
+    """Function docstring."""
     ops = [
         "FloorDivide",
         "Remainder",

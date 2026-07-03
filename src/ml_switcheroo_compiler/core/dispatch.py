@@ -1,14 +1,12 @@
 """Dispatch utilities for the ml-switcheroo compiler."""
 
-from ml_switcheroo_compiler.core.config import config as core_config  # pragma: no cover
 from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
+from ml_switcheroo_compiler.core.config import config as core_config  # pragma: no cover
 
 
 # pragma: no cover
 # pragma: no cover
-def dispatch(
-    module_name: str, func_name: str, *args: object, **kwargs: object
-) -> object:  # pragma: no cover
+def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) -> object:  # pragma: no cover
     """Dynamically dispatch a function to the active backend.
 
     Args:  # pragma: no cover
@@ -32,6 +30,4 @@ def dispatch(
         raise NotImplementedError(  # pragma: no cover
             f"{func_name} is not supported in the active backend."  # pragma: no cover
         )  # pragma: no cover
-    raise NotImplementedError(
-        f"{func_name} is not fully supported in tracing mode."
-    )  # pragma: no cover
+    raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")  # pragma: no cover

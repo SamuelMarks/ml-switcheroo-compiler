@@ -1,5 +1,7 @@
 """Extracted logical functions for numpy eager."""
 
+import numpy as np
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 # pragma: no cover
@@ -127,8 +129,7 @@ def _np_where(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Assert")
 def _np_assert(backend_module: object, condition: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     if not np.all(condition):
         data = kwargs.get("data", ["Assertion failed."])
         raise AssertionError(data)

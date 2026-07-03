@@ -1,10 +1,14 @@
+"""Module docstring."""
+
 import numpy as np
+
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.ops.nn.clip_grad import clip_grad_norm
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops.nn.clip_grad import clip_grad_norm
 
 
-def test_clip_grad_norm():
+def test_clip_grad_norm() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     x = ops.array(x_data)
@@ -13,7 +17,8 @@ def test_clip_grad_norm():
     assert total_norm is not None
 
 
-def test_clip_grad_norm_list():
+def test_clip_grad_norm_list() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     x = ops.array(x_data)
@@ -24,7 +29,8 @@ def test_clip_grad_norm_list():
     assert total_norm is not None
 
 
-def test_clip_grad_norm_inf():
+def test_clip_grad_norm_inf() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     x = ops.array(x_data)
@@ -35,7 +41,8 @@ def test_clip_grad_norm_inf():
     assert total_norm is not None
 
 
-def test_clip_grad_norm_pnorm():
+def test_clip_grad_norm_pnorm() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.array([1.0, 2.0, 3.0], dtype=np.float32)
     x = ops.array(x_data)
@@ -46,7 +53,8 @@ def test_clip_grad_norm_pnorm():
     assert total_norm is not None
 
 
-def test_clip_grad_norm_empty():
+def test_clip_grad_norm_empty() -> object:
+    """Function docstring."""
     clipped, total_norm = clip_grad_norm([], max_norm=1.0)
     assert len(clipped) == 0
     assert total_norm is not None

@@ -1,7 +1,7 @@
 """Eager backend utilities."""
 
 from .audio import istft_eager, mel_filterbank_eager, mfcc_eager
-from .core import execute_generic_op
+from .core_group_ops import _group_mean, _group_norm, _group_variance
 from .core_math_ops import (
     _allclose,
     _einsum,
@@ -41,7 +41,6 @@ from .core_tensor_ops import (
     generic_item,
     generic_zeros,
 )
-from .core_group_ops import _group_mean, _group_norm, _group_variance
 from .linalg import _power_iteration
 from .signal import gaussian_blur_eager, median_filter_eager
 from .vision_filtering import extract_bounding_boxes_eager, iou_eager, nms_eager
@@ -84,7 +83,6 @@ __all__ = [
     "_true_divide",
     "_zeros",
     "elastic_transform_eager",
-    "execute_generic_op",
     "extract_bounding_boxes_eager",
     "gaussian_blur_eager",
     "generic_array",

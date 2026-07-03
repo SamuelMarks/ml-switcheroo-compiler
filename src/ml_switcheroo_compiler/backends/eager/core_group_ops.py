@@ -1,4 +1,3 @@
-# ruff: noqa: F405, F403
 """Core utilities."""
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -14,9 +13,7 @@ def _get_reduction_axes(reshaped_dims: list, axis: int) -> tuple:
     return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
 
 
-def _invoke_grouped_op(
-    backend_module: object, op_name: str, reshaped_x: object, reduction_axes: tuple, is_torch: bool
-) -> object:
+def _invoke_grouped_op(backend_module: object, op_name: str, reshaped_x: object, reduction_axes: tuple, is_torch: bool) -> object:
     """Function docstring.
 
     Args:
@@ -28,23 +25,17 @@ def _invoke_grouped_op(
     """
     if op_name == "mean":
         if is_torch:  # pragma: no branch
-            return backend_module.mean(
-                reshaped_x, dim=reduction_axes, keepdim=True
-            )  # pragma: no cover
+            return backend_module.mean(reshaped_x, dim=reduction_axes, keepdim=True)  # pragma: no cover
         return backend_module.mean(reshaped_x, axis=reduction_axes, keepdims=True)
     if op_name == "variance":  # pragma: no branch
         if is_torch:  # pragma: no branch
-            return backend_module.var(
-                reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False
-            )  # pragma: no cover
+            return backend_module.var(reshaped_x, dim=reduction_axes, keepdim=True, unbiased=False)  # pragma: no cover
         return backend_module.var(reshaped_x, axis=reduction_axes, keepdims=True)
     msg = f"Unknown grouped reduction op: {op_name}"  # pragma: no cover
     raise ValueError(msg)  # pragma: no cover
 
 
-def _apply_grouped_reduction(
-    backend_module: object, op_name: str, x: object, **kwargs: int
-) -> object:
+def _apply_grouped_reduction(backend_module: object, op_name: str, x: object, **kwargs: int) -> object:
     """Function docstring.
 
     Args:
@@ -104,9 +95,7 @@ def _group_variance(backend_module: object, *args: object, **kwargs: object) -> 
     return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
 
-def _apply_affine_transform(
-    backend_module: object, out: object, axis: int, **kwargs: object
-) -> object:
+def _apply_affine_transform(backend_module: object, out: object, axis: int, **kwargs: object) -> object:
     """Apply affine transform scaling to normalized output."""
     weight = kwargs.get("weight")
     bias = kwargs.get("bias")

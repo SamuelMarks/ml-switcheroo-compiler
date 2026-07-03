@@ -7,6 +7,8 @@ Sine, Cosine, Exponential, and Natural Logarithm, allowing backpropagation and f
 mode differentiation through the computation graph
 """
 
+import math
+
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
@@ -119,9 +121,7 @@ def exp_jvp(graph: object, node: object, tangent: str) -> str:
     Returns:
     str: The identifier of the computed JVP node
     """
-    return emit_ir_node(
-        graph, "Multiply", [tangent, node.id], graph.nodes[node.inputs[0]].shape_metadata
-    )
+    return emit_ir_node(graph, "Multiply", [tangent, node.id], graph.nodes[node.inputs[0]].shape_metadata)
 
 
 @register_vjp("Log")
@@ -170,13 +170,8 @@ def reciprocal_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
     return (emit_ir_node(graph, "Multiply", [cotangent, grad], node.shape_metadata, {}),)
 
 
-@register_vjp("L2Normalize")
-def l2_normalize_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for L2Normalize."""
-    x = node.inputs[0]
-    axis = node.attributes.get("axis", None)
-
-    # norm = ReduceEuclideanNorm(x, axis, keepdims=True)
+def _compute_l2_normalize_dx(graph: object, x: str, cotangent: str, axis: object) -> str:
+    """Function docstring."""
     norm = emit_ir_node(
         graph,
         "ReduceEuclideanNorm",
@@ -185,7 +180,6 @@ def l2_normalize_vjp(graph: object, node: object, cotangent: str) -> tuple:
         {"axis": axis, "keepdims": True},
     )
 
-    # x_adj_1 = cotangent / norm
     norm_bcast = emit_ir_node(
         graph,
         "BroadcastTo",
@@ -193,15 +187,10 @@ def l2_normalize_vjp(graph: object, node: object, cotangent: str) -> tuple:
         graph.nodes[x].shape_metadata,
         {"shape": graph.nodes[x].shape_metadata},
     )
-    x_adj_1 = emit_ir_node(
-        graph, "DivideNoNan", [cotangent, norm_bcast], graph.nodes[x].shape_metadata, {}
-    )
+    x_adj_1 = emit_ir_node(graph, "DivideNoNan", [cotangent, norm_bcast], graph.nodes[x].shape_metadata, {})
 
-    # dot_prod = sum(cotangent * x, axis, keepdims=True)
     cotangent_x = emit_ir_node(graph, "Multiply", [cotangent, x], graph.nodes[x].shape_metadata, {})
-    dot_prod = emit_ir_node(
-        graph, "Sum", [cotangent_x], graph.nodes[x].shape_metadata, {"axis": axis, "keepdims": True}
-    )
+    dot_prod = emit_ir_node(graph, "Sum", [cotangent_x], graph.nodes[x].shape_metadata, {"axis": axis, "keepdims": True})
     dot_prod_bcast = emit_ir_node(
         graph,
         "BroadcastTo",
@@ -210,22 +199,21 @@ def l2_normalize_vjp(graph: object, node: object, cotangent: str) -> tuple:
         {"shape": graph.nodes[x].shape_metadata},
     )
 
-    # norm_sq = norm^2
-    norm_sq = emit_ir_node(
-        graph, "Multiply", [norm_bcast, norm_bcast], graph.nodes[x].shape_metadata, {}
-    )
-    norm_cubed = emit_ir_node(
-        graph, "Multiply", [norm_sq, norm_bcast], graph.nodes[x].shape_metadata, {}
-    )
+    norm_sq = emit_ir_node(graph, "Multiply", [norm_bcast, norm_bcast], graph.nodes[x].shape_metadata, {})
+    norm_cubed = emit_ir_node(graph, "Multiply", [norm_sq, norm_bcast], graph.nodes[x].shape_metadata, {})
 
-    # x_adj_2 = (x * dot_prod) / norm^3
     x_dot = emit_ir_node(graph, "Multiply", [x, dot_prod_bcast], graph.nodes[x].shape_metadata, {})
-    x_adj_2 = emit_ir_node(
-        graph, "DivideNoNan", [x_dot, norm_cubed], graph.nodes[x].shape_metadata, {}
-    )
+    x_adj_2 = emit_ir_node(graph, "DivideNoNan", [x_dot, norm_cubed], graph.nodes[x].shape_metadata, {})
 
-    # dx = x_adj_1 - x_adj_2
-    dx = emit_ir_node(graph, "Subtract", [x_adj_1, x_adj_2], graph.nodes[x].shape_metadata, {})
+    return emit_ir_node(graph, "Subtract", [x_adj_1, x_adj_2], graph.nodes[x].shape_metadata, {})
+
+
+@register_vjp("L2Normalize")
+def l2_normalize_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for L2Normalize."""
+    x = node.inputs[0]
+    axis = node.attributes.get("axis", None)
+    dx = _compute_l2_normalize_dx(graph, x, cotangent, axis)
     return (dx,)
 
 
@@ -337,8 +325,6 @@ def expint_vjp(graph: object, node: object, cotangent: str) -> tuple:
 @register_vjp("FresnelCos")
 def fresnel_cos_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Docstring."""
-    import math
-
     x = node.inputs[0]
     pi_over_two = emit_ir_node(graph, "Constant", [], None, {"value": math.pi / 2.0})
     x_sq = emit_ir_node(graph, "Multiply", [x, x], node.shape_metadata, {})
@@ -350,8 +336,6 @@ def fresnel_cos_vjp(graph: object, node: object, cotangent: str) -> tuple:
 @register_vjp("FresnelSin")
 def fresnel_sin_vjp(graph: object, node: object, cotangent: str) -> tuple:
     """Docstring."""
-    import math
-
     x = node.inputs[0]
     pi_over_two = emit_ir_node(graph, "Constant", [], None, {"value": math.pi / 2.0})
     x_sq = emit_ir_node(graph, "Multiply", [x, x], node.shape_metadata, {})

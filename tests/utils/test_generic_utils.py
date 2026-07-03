@@ -10,6 +10,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ml_switcheroo_compiler.utils.generic_utils import (
+    ArchiveConfig,
+    CacheConfig,
     GetFileConfig,
     _download_remote_file,
     _extract_archive,
@@ -76,7 +78,7 @@ def test_get_file(
     """Test get_file."""
     mock_validate_cache.return_value = False
 
-    config = GetFileConfig(cache_dir=".", untar=True)
+    config = GetFileConfig(cache_config=CacheConfig(cache_dir="."), archive_config=ArchiveConfig(untar=True))
     fpath = get_file("fname", "origin", config)
 
     assert fpath is not None

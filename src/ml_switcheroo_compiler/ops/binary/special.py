@@ -3,7 +3,10 @@
 wise trigonometric, division, and comparison operations
 """
 
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 
 
 @register_op("Atan2")
@@ -20,8 +23,6 @@ class Atan2(OpDef):
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
-
         """Infer the output shape of the operation.
 
         Args:
@@ -42,14 +43,10 @@ class Divmod(OpDef):
 
     def __call__(self, *args: object, **kwargs: object) -> object:
         """Call Divmod."""
-        from ml_switcheroo_compiler.core.config import config
-
         if config.eager_mode:
-            from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
-
             return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
 
-        from ml_switcheroo_compiler.ops.binary.frontend import floor_divide, remainder
+        from ml_switcheroo_compiler.ops.binary import floor_divide, remainder
 
         return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
 
@@ -63,8 +60,6 @@ class Divmod(OpDef):
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
-
         """Infer the output shape of the operation.
 
         Args:
@@ -113,8 +108,6 @@ class Isclose(OpDef):
         Returns:
         Any: The result.
         """
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
-
         """Infer the output shape of the operation.
 
         Args:

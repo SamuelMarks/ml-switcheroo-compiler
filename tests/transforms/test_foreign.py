@@ -6,7 +6,10 @@ from ml_switcheroo_compiler.transforms.foreign import ingest_jaxpr, ingest_torch
 
 
 class MockFXNode:
-    def __init__(self, op, target, name, args):
+    """Class docstring."""
+
+    def __init__(self, op: object, target: object, name: object, args: object) -> object:
+        """Function docstring."""
         self.op = op
         self.target = target
         self.name = name
@@ -14,13 +17,17 @@ class MockFXNode:
 
 
 class MockFXGraph:
-    def __init__(self):
+    """Class docstring."""
+
+    def __init__(self) -> object:
+        """Function docstring."""
         # x = placeholder
         # y = add(x, x)
         # return y
         node_x = MockFXNode("placeholder", None, "x", ())
 
-        def add():
+        def add() -> object:
+            """Function docstring."""
             pass
 
         add.__name__ = "add"
@@ -32,28 +39,41 @@ class MockFXGraph:
 
 
 class MockFXModule:
-    def __init__(self):
+    """Class docstring."""
+
+    def __init__(self) -> object:
+        """Function docstring."""
         self.graph = MockFXGraph()
 
 
 class MockJaxPrimitive:
-    def __init__(self, name):
+    """Class docstring."""
+
+    def __init__(self, name: object) -> object:
+        """Function docstring."""
         self.name = name
 
 
 class MockJaxEqn:
-    def __init__(self):
+    """Class docstring."""
+
+    def __init__(self) -> object:
+        """Function docstring."""
         self.primitive = MockJaxPrimitive("add")
         self.invars = ["in1", "in2"]
         self.outvars = ["out1"]
 
 
 class MockJaxpr:
-    def __init__(self):
+    """Class docstring."""
+
+    def __init__(self) -> object:
+        """Function docstring."""
         self.eqns = [MockJaxEqn()]
 
 
-def test_foreign_ingestion_torch():
+def test_foreign_ingestion_torch() -> object:
+    """Function docstring."""
     with pytest.raises(ValueError):
         ingest_torch_fx(None)
 
@@ -65,7 +85,8 @@ def test_foreign_ingestion_torch():
     assert graph.outputs == ["add_1"]
 
 
-def test_foreign_ingestion_jax():
+def test_foreign_ingestion_jax() -> object:
+    """Function docstring."""
     with pytest.raises(ValueError):
         ingest_jaxpr(None)
 
@@ -78,10 +99,12 @@ def test_foreign_ingestion_jax():
     assert node.op_type == "Add"
 
 
-def test_foreign_ingestion_torch_more():
+def test_foreign_ingestion_torch_more() -> object:
+    """Function docstring."""
     module = MockFXModule()
 
-    def mul():
+    def mul() -> object:
+        """Function docstring."""
         pass
 
     mul.__name__ = "mul"
@@ -99,7 +122,8 @@ def test_foreign_ingestion_torch_more():
     assert graph.outputs == ["mul_1"]
 
 
-def test_foreign_ingestion_jax_more():
+def test_foreign_ingestion_jax_more() -> object:
+    """Function docstring."""
     jaxpr = MockJaxpr()
     jaxpr.eqns[0].primitive.name = "mul"
     graph = ingest_jaxpr(jaxpr)

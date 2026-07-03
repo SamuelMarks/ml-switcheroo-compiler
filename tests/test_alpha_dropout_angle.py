@@ -5,7 +5,8 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
-def test_alpha_dropout_numpy_eager():
+def test_alpha_dropout_numpy_eager() -> object:
+    """Function docstring."""
     AlphaDropout = numpy_eager_registry.get("AlphaDropout")
     t = np.array([1.0, 2.0, 3.0, 4.0])
 
@@ -31,7 +32,8 @@ def test_alpha_dropout_numpy_eager():
     np.testing.assert_allclose(out_act, t)
 
 
-def test_angle_numpy_eager():
+def test_angle_numpy_eager() -> object:
+    """Function docstring."""
     Angle = numpy_eager_registry.get("Angle")
     t = np.array([1.0 + 1.0j, 1.0 - 1.0j])
     out = Angle(np, t)

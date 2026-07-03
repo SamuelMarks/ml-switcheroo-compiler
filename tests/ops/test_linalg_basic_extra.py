@@ -1,9 +1,18 @@
+"""Module docstring."""
+
 from unittest.mock import MagicMock
 
-from ml_switcheroo_compiler.ops.linalg.basic import MatrixPower, Pinv
+import numpy as np
+
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated
+from ml_switcheroo_compiler.ops.linalg.fft_ops import Fftnd, Ifftnd, Irfftnd, Rfftnd
+from ml_switcheroo_compiler.ops.linalg.products import MatrixPower
+from ml_switcheroo_compiler.ops.linalg.solvers import Pinv
 
 
-def test_linalg_infer_shape_coverage():
+def test_linalg_infer_shape_coverage() -> object:
+    """Function docstring."""
     mock_a = MagicMock()
     mock_a.shape = (2, 3)
     assert Pinv().infer_shape(mock_a) == (3, 2)
@@ -15,9 +24,8 @@ def test_linalg_infer_shape_coverage():
     assert MatrixPower().infer_shape(mock_a) == (2, 3)
 
 
-def test_conv_general_dilated_emit_backends():
-    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
-
+def test_conv_general_dilated_emit_backends() -> object:
+    """Function docstring."""
     op = ConvGeneralDilated()
     assert op.emit_jax() == "Not implemented ConvGeneralDilated"
     assert op.emit_keras() == "Not implemented ConvGeneralDilated"
@@ -26,11 +34,8 @@ def test_conv_general_dilated_emit_backends():
     assert op.emit_tensorflow() == "Not implemented ConvGeneralDilated"
 
 
-def test_fftnd_infer_shape_branches():
-    from ml_switcheroo_compiler.ops.linalg.basic import Fftnd, Ifftnd, Rfftnd, Irfftnd
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
+def test_fftnd_infer_shape_branches() -> object:
+    """Function docstring."""
     t = Tensor(np.zeros((4, 4)), TensorConfig((4, 4), "float32", "cpu"))
 
     op_f = Fftnd()
@@ -46,11 +51,8 @@ def test_fftnd_infer_shape_branches():
     assert op_ir.infer_shape(t) == (4, 6)
 
 
-def test_fftnd_infer_shape_branches_empty_list():
-    from ml_switcheroo_compiler.ops.linalg.basic import Fftnd, Ifftnd, Rfftnd, Irfftnd
-    import numpy as np
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
+def test_fftnd_infer_shape_branches_empty_list() -> object:
+    """Function docstring."""
     t = Tensor(np.zeros((4, 4)), TensorConfig((4, 4), "float32", "cpu"))
 
     op_f = Fftnd()

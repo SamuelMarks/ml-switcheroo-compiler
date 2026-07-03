@@ -1,10 +1,13 @@
+"""Module docstring."""
+
 import numpy as np
+
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.core.config import config
 
 
-def test_complex_signal():
-    from ml_switcheroo_compiler.core.config import config
-
+def test_complex_signal() -> object:
+    """Function docstring."""
     config.eager_mode = True
 
     x = ops.array(np.random.randn(2, 4).astype(np.float32))

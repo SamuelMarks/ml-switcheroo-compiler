@@ -1,95 +1,94 @@
 """Backend utilities."""
 
-import jax.numpy as jnp
+from typing import Any, Callable
+
 import jax.ops
 import jax.scipy.linalg
+import jax.scipy.signal
 import jax.scipy.special
-
+import jax.scipy.special as jss
 import jax.scipy.stats
 
-import jax.scipy.signal
 
-from ml_switcheroo_compiler.backends.eager import execute_generic_op
+def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
+    k, n, p = args[0], args[1], args[2]
+    loc = kwargs.get("loc", 0.0)
+    return jss.betainc(n - (k - loc), (k - loc) + 1, 1 - p)
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:  # noqa: C901, PLR0911, PLR0912
+def _execute_bessel_jn(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
+    return jax.scipy.special.bessel_jn(args[1], v=args[0])
+
+
+def _execute_unsorted_segment_sum(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
+    return jax.ops.segment_sum(*args, **kwargs)
+
+
+def _execute_unsorted_segment_max(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
+    return jax.ops.segment_max(*args, **kwargs)
+
+
+def _execute_unsorted_segment_min(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
+    return jax.ops.segment_min(*args, **kwargs)
+
+
+def _execute_unsorted_segment_prod(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
+    return jax.ops.segment_prod(*args, **kwargs)
+
+
+_OP_DISPATCH: dict[str, Callable[..., Any]] = {
+    "Convolve2d": jax.scipy.signal.convolve2d,
+    "Fftconvolve": jax.scipy.signal.fftconvolve,
+    "Welch": jax.scipy.signal.welch,
+    "Convolve": jax.scipy.signal.convolve,
+    "NormPdf": jax.scipy.stats.norm.pdf,
+    "NormCdf": jax.scipy.stats.norm.cdf,
+    "GammaPdf": jax.scipy.stats.gamma.pdf,
+    "GammaCdf": jax.scipy.stats.gamma.cdf,
+    "BetaPdf": jax.scipy.stats.beta.pdf,
+    "BetaCdf": jax.scipy.stats.beta.cdf,
+    "PoissonPmf": jax.scipy.stats.poisson.pmf,
+    "PoissonCdf": jax.scipy.stats.poisson.cdf,
+    "BinomPmf": jax.scipy.stats.binom.pmf,
+    "BinomCdf": _execute_binom_cdf,
+    "Erf": jax.scipy.special.erf,
+    "SpecialGamma": jax.scipy.special.gamma,
+    "BesselJn": _execute_bessel_jn,
+    "Digamma": jax.scipy.special.digamma,
+    "Polygamma": jax.scipy.special.polygamma,
+    "Zeta": jax.scipy.special.zeta,
+    "MatrixExponential": jax.scipy.linalg.expm,
+    "Polar": jax.scipy.linalg.polar,
+    "Schur": jax.scipy.linalg.schur,
+    "SegmentSum": jax.ops.segment_sum,
+    "SegmentMax": jax.ops.segment_max,
+    "SegmentMin": jax.ops.segment_min,
+    "SegmentProd": jax.ops.segment_prod,
+    "UnsortedSegmentSum": _execute_unsorted_segment_sum,
+    "UnsortedSegmentMax": _execute_unsorted_segment_max,
+    "UnsortedSegmentMin": _execute_unsorted_segment_min,
+    "UnsortedSegmentProd": _execute_unsorted_segment_prod,
+}
+
+
+def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
     """Execute execute_op.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        op_type (Any): Argument op_type.
-        *args (Any): Argument *args.
-        **kwargs (Any): Argument **kwargs.
+        cls (type): The cls parameter for the operation.
+        op_type (str): Argument op_type.
+        *args (object): Argument *args.
+        **kwargs (object): Argument **kwargs.
 
     Returns:
-    Any: The result.
+        object: The result.
     """
-    if op_type == "Convolve2d":
-        return jax.scipy.signal.convolve2d(*args, **kwargs)
-    if op_type == "Fftconvolve":
-        return jax.scipy.signal.fftconvolve(*args, **kwargs)
-    if op_type == "Welch":
-        return jax.scipy.signal.welch(*args, **kwargs)
-    if op_type == "Convolve":
-        return jax.scipy.signal.convolve(*args, **kwargs)
-    if op_type == "NormPdf":
-        return jax.scipy.stats.norm.pdf(*args, **kwargs)
-    if op_type == "NormCdf":
-        return jax.scipy.stats.norm.cdf(*args, **kwargs)
-    if op_type == "GammaPdf":
-        return jax.scipy.stats.gamma.pdf(*args, **kwargs)
-    if op_type == "GammaCdf":
-        return jax.scipy.stats.gamma.cdf(*args, **kwargs)
-    if op_type == "BetaPdf":
-        return jax.scipy.stats.beta.pdf(*args, **kwargs)
-    if op_type == "BetaCdf":
-        return jax.scipy.stats.beta.cdf(*args, **kwargs)
-    if op_type == "PoissonPmf":
-        return jax.scipy.stats.poisson.pmf(*args, **kwargs)
-    if op_type == "PoissonCdf":
-        return jax.scipy.stats.poisson.cdf(*args, **kwargs)
-    if op_type == "BinomPmf":
-        return jax.scipy.stats.binom.pmf(*args, **kwargs)
-    if op_type == "BinomCdf":
-        import jax.scipy.special as jss
-
-        # JAX doesn't have binom.cdf natively in scipy.stats.binom
-        k, n, p, loc = args[0], args[1], args[2], kwargs.get("loc", 0.0)
-        return jss.betainc(n - (k - loc), (k - loc) + 1, 1 - p)
-
-    if op_type == "Erf":
-        return jax.scipy.special.erf(*args, **kwargs)
-    if op_type == "SpecialGamma":
-        return jax.scipy.special.gamma(*args, **kwargs)
-    if op_type == "BesselJn":
-        return jax.scipy.special.bessel_jn(args[1], v=args[0])
-    if op_type == "Digamma":
-        return jax.scipy.special.digamma(*args, **kwargs)
-    if op_type == "Polygamma":
-        return jax.scipy.special.polygamma(*args, **kwargs)
-    if op_type == "Zeta":
-        return jax.scipy.special.zeta(*args, **kwargs)
-    if op_type == "MatrixExponential":
-        return jax.scipy.linalg.expm(*args, **kwargs)
-    if op_type == "Polar":
-        return jax.scipy.linalg.polar(*args, **kwargs)
-    if op_type == "Schur":
-        return jax.scipy.linalg.schur(*args, **kwargs)
-    if op_type == "SegmentSum":
-        return jax.ops.segment_sum(*args, **kwargs)
-    if op_type == "SegmentMax":
-        return jax.ops.segment_max(*args, **kwargs)
-    if op_type == "SegmentMin":
-        return jax.ops.segment_min(*args, **kwargs)
-    if op_type == "SegmentProd":
-        return jax.ops.segment_prod(*args, **kwargs)
-    if op_type in (
-        "UnsortedSegmentSum",
-        "UnsortedSegmentMax",
-        "UnsortedSegmentMin",
-        "UnsortedSegmentProd",
-    ):
-        op_name = op_type.replace("UnsortedSegment", "segment_").lower()
-        return getattr(jax.ops, op_name)(*args, **kwargs)
-
-    return execute_generic_op(jnp, op_type, *args, **kwargs)
+    if op_type in _OP_DISPATCH:
+        return _OP_DISPATCH[op_type](*args, **kwargs)
+    raise NotImplementedError(f"Operation '{op_type}' not supported eagerly by this backend.")

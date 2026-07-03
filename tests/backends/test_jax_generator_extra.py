@@ -1,12 +1,16 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_jax_generator_extra_coverage():
+def test_jax_generator_extra_coverage() -> object:
+    """Function docstring."""
     g = IRGraph()
     gen = JAXCodeGenerator(g)
 
-    def _test_node(op_type, inputs, attrs, expected):
+    def _test_node(op_type: object, inputs: object, attrs: object, expected: object) -> object:
+        """Function docstring."""
         n = IRNode(id="n1", op_type=op_type, inputs=inputs, attributes=attrs, shape_metadata=None)
         res = gen.visit(n, inputs)
         assert expected in res
@@ -49,7 +53,8 @@ def test_jax_generator_extra_coverage():
     _test_node("all_reduce", ["x"], {"axis_name": "'y'", "op": "pmax"}, "pmax")
 
 
-def test_jax_generator_generate_full():
+def test_jax_generator_generate_full() -> object:
+    """Function docstring."""
     g = IRGraph()
     n = IRNode(id="n1", op_type="UnknownOp", inputs=[], attributes={}, shape_metadata=None)
     g.nodes["n1"] = n

@@ -9,17 +9,13 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
-def test_dataset_basic():
+def test_dataset_basic() -> object:
     """Test basic dataset iteration."""
     backend = get_active_backend()
     device = Device("cpu")
 
-    data1 = Tensor(
-        backend.array([1.0, 2.0, 3.0, 4.0, 5.0]), TensorConfig((5,), DType.Float32, device)
-    )
-    data2 = Tensor(
-        backend.array([10.0, 20.0, 30.0, 40.0, 50.0]), TensorConfig((5,), DType.Float32, device)
-    )
+    data1 = Tensor(backend.array([1.0, 2.0, 3.0, 4.0, 5.0]), TensorConfig((5,), DType.Float32, device))
+    data2 = Tensor(backend.array([10.0, 20.0, 30.0, 40.0, 50.0]), TensorConfig((5,), DType.Float32, device))
 
     ds = Dataset(data1, data2).batch(2)
     batches = list(ds)
@@ -29,7 +25,7 @@ def test_dataset_basic():
     assert batches[-1][0].shape == (1,)
 
 
-def test_dataset_shuffle():
+def test_dataset_shuffle() -> object:
     """Test dataset shuffling."""
     backend = get_active_backend()
     device = Device("cpu")
@@ -45,7 +41,7 @@ def test_dataset_shuffle():
         assert b[0].shape == (10,)
 
 
-def test_dataset_prefetch():
+def test_dataset_prefetch() -> object:
     """Test dataset prefetching."""
     backend = get_active_backend()
     device = Device("cpu")
@@ -55,7 +51,7 @@ def test_dataset_prefetch():
     assert ds._prefetch_buffer == 2
 
 
-def test_dataset_exceptions():
+def test_dataset_exceptions() -> object:
     """Test dataset exceptions."""
     backend = get_active_backend()
     device = Device("cpu")

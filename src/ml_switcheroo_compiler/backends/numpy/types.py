@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager import generic_array
+
 
 def zeros(cls: type, shape: tuple[int, ...]) -> object:
     """Execute zeros.
@@ -27,8 +29,6 @@ def array(cls: type, data: object, dtype: object = None) -> object:
     Returns:
     Any: The result.
     """
-    from ml_switcheroo_compiler.backends.eager import generic_array
-
     return generic_array(np, data, dtype)
 
 

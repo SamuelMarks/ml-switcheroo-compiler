@@ -11,8 +11,6 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
 
-"""Module containing related functionality."""
-
 
 def test_dtype_inference_full_branches() -> None:
     """Verifies dtype inference behavior across different branch conditions.

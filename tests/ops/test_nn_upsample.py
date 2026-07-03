@@ -1,11 +1,15 @@
-import pytest
+"""Module docstring."""
+
 import numpy as np
+import pytest
+
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.ops.nn.upsample_ops import upsample
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops.nn.upsample_ops import upsample
 
 
-def test_upsample():
+def test_upsample() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.random.randn(2, 3, 10, 10).astype(np.float32)
     x = ops.array(x_data)
@@ -24,7 +28,8 @@ def test_upsample():
     assert y4 is not None
 
 
-def test_upsample_errors():
+def test_upsample_errors() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.random.randn(2, 3, 10, 10).astype(np.float32)
     x = ops.array(x_data)

@@ -2,25 +2,24 @@
 
 from __future__ import annotations
 
-from typing import Callable, Any
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from typing import Any, Callable
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.ops.vmap import vmap
 from ml_switcheroo_compiler.core.assertions import record_assertion
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.vmap import vmap
 
 
-def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:  # noqa: ANN401
+def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:
     """Docstring."""
     if bool(pred.data):
         return true_fn()
     return false_fn()
 
 
-def while_loop_eager(
-    cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object
-) -> object:  # noqa: ANN401
+def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object) -> object:
     """Docstring."""
     val = init_val
     res = cond_fn(val)
@@ -51,19 +50,13 @@ def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
         )
 
 
-def scan_eager(
-    f: Callable, init: object, xs: object, length: int | None = None
-) -> tuple[object, object]:
+def scan_eager(f: Callable, init: object, xs: object, length: int | None = None) -> tuple[object, object]:
     """Docstring."""
     carry = init
     ys = []
     scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
     for i in range(scan_length):
-        x = (
-            Tensor(xs.data[i], TensorConfig(xs.shape[1:], xs.dtype, xs.device))
-            if xs is not None
-            else None
-        )
+        x = Tensor(xs.data[i], TensorConfig(xs.shape[1:], xs.dtype, xs.device)) if xs is not None else None
         carry, y = f(carry, x)
         ys.append(y.data if hasattr(y, "data") else y)
 
@@ -72,10 +65,12 @@ def scan_eager(
 
 
 def _map_fn_eager_get_length(elems: Tensor) -> int:
+    """Function docstring."""
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
 
 def _map_fn_eager_execute(fn: Callable, elems: Tensor, length: int) -> list[Any]:
+    """Function docstring."""
     ys = []
     for i in range(length):
         x = Tensor(elems.data[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
@@ -85,6 +80,7 @@ def _map_fn_eager_execute(fn: Callable, elems: Tensor, length: int) -> list[Any]
 
 
 def _map_fn_eager_stack(ys: list[Any], elems: Tensor, dtype: DType | None) -> Tensor:
+    """Function docstring."""
     if len(ys) > 0 and isinstance(ys[0], tuple):
         stacked_ys = get_active_backend().execute_op("Stack", ys)
         return Tensor(stacked_ys, TensorConfig(stacked_ys.shape, elems.dtype, elems.device))

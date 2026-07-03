@@ -1,3 +1,8 @@
+"""Module docstring."""
+
+# just hit the lines
+from unittest.mock import patch
+
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
 from ml_switcheroo_compiler.ops.ragged.frontend import (
     ragged_dot,
@@ -6,10 +11,8 @@ from ml_switcheroo_compiler.ops.ragged.frontend import (
 )
 
 
-def test_ragged_ops():
-    # just hit the lines
-    from unittest.mock import patch
-
+def test_ragged_ops() -> object:
+    """Function docstring."""
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._ragged_op") as mock_ragged:
         mock_ragged.return_value = "res"
         res1 = ragged_stack()

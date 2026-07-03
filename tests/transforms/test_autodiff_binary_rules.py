@@ -1,20 +1,32 @@
+"""Module docstring."""
+
+from unittest.mock import MagicMock, patch
+
 from ml_switcheroo_compiler.transforms.autodiff_rules.binary_rules import (
-    zeta_vjp,
-    polygamma_vjp,
+    atan2_jvp,
     betainc_vjp,
+    polygamma_vjp,
     random_gamma_vjp,
+    zeta_vjp,
 )
-from unittest.mock import patch
 
 
-def test_binary_rules_extra():
+def test_binary_rules_extra() -> object:
+    """Function docstring."""
+
     class DummyNode:
-        def __init__(self, inputs):
+        """Class docstring."""
+
+        def __init__(self, inputs: object) -> object:
+            """Function docstring."""
             self.id = "id"
             self.inputs = inputs
 
     class DummyGraph:
-        def __init__(self):
+        """Class docstring."""
+
+        def __init__(self) -> object:
+            """Function docstring."""
             self.nodes = {}
 
     graph = DummyGraph()
@@ -50,10 +62,8 @@ def test_binary_rules_extra():
         assert da == "mock_out"
 
 
-def test_atan2_jvp():
-    from ml_switcheroo_compiler.transforms.autodiff_rules.binary_rules import atan2_jvp
-    from unittest.mock import MagicMock
-
+def test_atan2_jvp() -> object:
+    """Function docstring."""
     graph = MagicMock()
     y_mock = MagicMock()
     y_mock.shape_metadata = {}

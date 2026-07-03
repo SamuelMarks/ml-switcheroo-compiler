@@ -1,12 +1,15 @@
 """Base generator for emitting backend code from IR."""
 
-from typing import Union
+import re
 from dataclasses import dataclass
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from ml_switcheroo_compiler.backends.formatters import CodeFormatter
-from .generator_mixins import GeneratorLifecycleMixin, EagerExecutionMixin
-from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from typing import Union
+
+from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
 
 
 class IRGraphWalker:
@@ -115,20 +118,20 @@ class EmitUtilsMixin:
         self.add_line(f"{var_name} = {val_repr}")
 
 
-class BaseGenerator(
-    FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin
-):
+class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
     """Abstract base class for backend code generation."""
 
-    def __init__(self, graph: IRGraph) -> None:
+    def __init__(self, graph: IRGraph, delegates: list = None) -> None:
         """Initializes the object.
 
         Args:
             graph (IRGraph): The graph to process.
+            delegates: The visitor delegates.
         """
         self.graph = graph
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
+        self.visitors = [self] + (delegates or [])
 
     def emit_constant(self, node: IRNode) -> str:
         """Emit code for the constant backend.
@@ -155,10 +158,31 @@ class BaseGenerator(
         """
         op_type = getattr(node, "op_type", "")
         method_name = f"visit_{op_type}"
-        if hasattr(self, method_name):
-            method = getattr(self, method_name)
-            return method(node, input_vars, **kwargs)
+        for visitor in getattr(self, "visitors", []):
+            if hasattr(visitor, method_name):
+                method = getattr(visitor, method_name)
+                return method(node, input_vars, **kwargs)
         return self.generic_visit(node, input_vars, **kwargs)
+
+    def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
+        return {}
+
+    def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
+        return {}
+
+    def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
+        return {}
+
+    def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
+        return {}
+
+    def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
+        return {}
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
         """Get the operation mapping dictionary.
@@ -169,7 +193,31 @@ class BaseGenerator(
         Returns:
             Dictionary mapping operation type to format string.
         """
-        return {}  # pragma: no cover
+        ops = {}
+        ops.update(self._get_math_ops(kwargs))
+        ops.update(self._get_linalg_ops(kwargs))
+        ops.update(self._get_nn_ops(kwargs))
+        ops.update(self._get_creation_ops(kwargs))
+        ops.update(self._get_array_ops(kwargs))
+
+        # Audio/Signal ops shared defaults (usually mapping to tf.signal as a placeholder/fallback)
+        ops.update(
+            {
+                "Dct": "tf.signal.dct({0})",
+                "Idct": "tf.signal.idct({0})",
+                "Mdct": "tf.signal.mdct({0})",
+                "InverseMdct": "tf.signal.inverse_mdct({0})",
+                "Frame": "tf.signal.frame({0})",
+                "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
+                "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
+                "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
+                "MatrixRank": "tf.linalg.matrix_rank",
+                "MatrixTranspose": "tf.linalg.matrix_transpose",
+                "Sqrtm": "tf.linalg.sqrtm",
+            }
+        )
+
+        return ops
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations."""
@@ -197,14 +245,10 @@ class BaseGenerator(
         op_type = getattr(node, "op_type", "")
         ops_map = self.get_ops_map(kwargs)
         if op_type in ops_map:
-            from ml_switcheroo_compiler.backends.formatters import OpFormatter
-            import re
-
             fmt = ops_map[op_type]
             fmt = OpFormatter.format_backend_string(fmt, input_vars, kwargs)
             fmt = re.sub(", \\w+=\\{[^\\}]+\\}", "", fmt)
             return fmt
-        from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
 
         ctx = FormatterContext(
             prefix=self.get_fallback_prefix(),
@@ -216,9 +260,7 @@ class BaseGenerator(
         )
         return OpFormatter.format_generic_fallback(ctx)
 
-    def _emit_input_assignment(
-        self, var_name: str, node: IRNode, input_prefix: str, input_idx: int
-    ) -> None:
+    def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
         """Override in subclasses to handle custom input logic (e.g. keras.Input).
 
         Args:

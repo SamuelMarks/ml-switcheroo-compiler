@@ -1,14 +1,11 @@
 """Numpy-related utilities."""
 
+from typing import Optional  # pragma: no cover
+
 from ml_switcheroo_compiler import ops  # pragma: no cover
 
 
-from typing import Optional  # pragma: no cover
-
-
-def to_categorical(
-    x: object, num_classes: Optional[int] = None, dtype: str = "float32"
-) -> object:  # pragma: no cover
+def to_categorical(x: object, num_classes: Optional[int] = None, dtype: str = "float32") -> object:  # pragma: no cover
     """Converts a class vector (integers) to binary class matrix."""
     if num_classes is None:  # pragma: no cover
         if type(x).__module__ == "numpy":  # pragma: no cover

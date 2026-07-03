@@ -1,8 +1,9 @@
 """Test sparse tensors."""
 
 import numpy as np
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensor, SparseTensorCOO, SparseTensorCSR
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def test_sparse_tensor_coo() -> None:

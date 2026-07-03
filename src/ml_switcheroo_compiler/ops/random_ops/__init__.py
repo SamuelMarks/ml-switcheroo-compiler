@@ -1,10 +1,9 @@
 """Random ops module."""
 
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
 from .frontend import sobol_sample
 from .sobol import SobolSample
-
-
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 @register_op("Binomial")
@@ -341,6 +340,7 @@ class Ball(OpDef):
     op_name = "Ball"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[0] if args else ()
 
 
@@ -351,6 +351,7 @@ class Key(OpDef):
     op_name = "Key"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[0] if args else ()
 
 
@@ -361,6 +362,7 @@ class RngBitGenerator(OpDef):
     op_name = "RngBitGenerator"
 
     def infer_shape(self, key: object, shape: object, dtype: object, **kwargs: object) -> object:
+        """Function docstring."""
         return shape
 
 
@@ -370,9 +372,8 @@ class RngUniform(OpDef):
 
     op_name = "RngUniform"
 
-    def infer_shape(
-        self, a: object, b: object, shape: object, dtype: object, **kwargs: object
-    ) -> object:
+    def infer_shape(self, a: object, b: object, shape: object, dtype: object, **kwargs: object) -> object:
+        """Function docstring."""
         return shape
 
 
@@ -383,6 +384,7 @@ class Beta(OpDef):
     op_name = "Beta"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[0] if args else ()
 
 
@@ -393,6 +395,7 @@ class Gamma(OpDef):
     op_name = "Gamma"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return args[0] if args else ()
 
 

@@ -3,6 +3,7 @@
 import pytest
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -42,8 +43,6 @@ def test_base_generator_compute_node_coverage() -> None:
         shape_metadata=(1, 2),
     )
     graph.nodes["id1"] = node
-
-    from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
     gen = MockGenerator(graph)
     visitor = CodeGeneratorVisitor(gen)

@@ -6,7 +6,7 @@ from typing import Any  # pragma: no cover
 class TypeMapper:  # pragma: no cover
     """Handles mapping between generic IR types and backend-specific types."""
 
-    def __init__(self, type_dict: dict[str, Any] | None = None) -> None:  # noqa: ANN401  # pragma: no cover
+    def __init__(self, type_dict: dict[str, Any] | None = None) -> None:
         """Initialize.
 
         Args:

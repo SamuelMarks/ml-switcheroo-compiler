@@ -1,33 +1,34 @@
 """Tests for operation utilities."""
 
 import pytest
+
 from ml_switcheroo_compiler.utils.operation_utils import (
-    ShapeInferenceStrategy,
-    ReshapeInference,
-    TransposeInference,
     ExpandDimsInference,
-    SqueezeInference,
-    SplitInference,
     MeanInference,
+    ReshapeInference,
+    ShapeInferenceStrategy,
+    SplitInference,
+    SqueezeInference,
+    TransposeInference,
     compute_shape_propagation,
 )
 
 
-def test_shape_inference_strategy_base():
+def test_shape_inference_strategy_base() -> object:
     """Test base class raises NotImplementedError."""
     strategy = ShapeInferenceStrategy()
     with pytest.raises(NotImplementedError):
         strategy((1,), (), {})
 
 
-def test_reshape_inference():
+def test_reshape_inference() -> object:
     """Test reshape inference."""
     strategy = ReshapeInference()
     result = strategy((2, 3), (None, (3, 2)), {})
     assert result == (3, 2)
 
 
-def test_transpose_inference():
+def test_transpose_inference() -> object:
     """Test transpose inference."""
     strategy = TransposeInference()
     # With axes
@@ -38,7 +39,7 @@ def test_transpose_inference():
     assert strategy((2, 3, 4), (None, (2, 0, 1)), {}) == (4, 2, 3)
 
 
-def test_expand_dims_inference():
+def test_expand_dims_inference() -> object:
     """Test expand_dims inference."""
     strategy = ExpandDimsInference()
     # Axis as kwarg
@@ -49,7 +50,7 @@ def test_expand_dims_inference():
     assert strategy((2, 3), (None,), {"axis": -1}) == (2, 3, 1)
 
 
-def test_squeeze_inference():
+def test_squeeze_inference() -> object:
     """Test squeeze inference."""
     strategy = SqueezeInference()
     # No axis
@@ -62,7 +63,7 @@ def test_squeeze_inference():
     assert strategy((1, 2, 1, 3), (None, (0, 2)), {}) == (2, 3)
 
 
-def test_split_inference():
+def test_split_inference() -> object:
     """Test split inference."""
     strategy = SplitInference()
     # Splits, default axis 0
@@ -75,7 +76,7 @@ def test_split_inference():
     assert strategy((4, 6), (None, (2, 4)), {}) == (4, 6)
 
 
-def test_mean_inference_helpers():
+def test_mean_inference_helpers() -> object:
     """Test MeanInference helper methods."""
     strategy = MeanInference()
 
@@ -91,7 +92,7 @@ def test_mean_inference_helpers():
     strategy._validate_datatype_promotion({"dtype": 32})  # Should not raise based on current impl
 
 
-def test_mean_inference():
+def test_mean_inference() -> object:
     """Test mean inference."""
     strategy = MeanInference()
     # Axis as kwarg
@@ -109,7 +110,7 @@ def test_mean_inference():
     assert strategy((2, 3, 4), (None,), {}) == (2, 3, 4)
 
 
-def test_compute_shape_propagation():
+def test_compute_shape_propagation() -> object:
     """Test compute_shape_propagation function dispatcher."""
     # Unknown op
     assert compute_shape_propagation("unknown", (2, 3), (), {}) == (2, 3)

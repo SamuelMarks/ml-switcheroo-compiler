@@ -1,11 +1,14 @@
-"""Custom hardware kernel operations."""
+"""Module docstring."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.config import config
+from dataclasses import dataclass
+from typing import Optional
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 @register_op("CudaKernel")
@@ -20,6 +23,8 @@ class CudaKernelOp(OpDef):
         Args:
             *args (object): Argument *args.
             **kwargs (object): Argument **kwargs.
+
+            launch_config (object): The launch config.\
 
         Returns:
             object: The inferred shape.
@@ -40,6 +45,8 @@ class MetalKernelOp(OpDef):
             *args (object): Argument *args.
             **kwargs (object): Argument **kwargs.
 
+            launch_config (object): The launch config.\
+
         Returns:
             object: The inferred shape.
         """
@@ -59,10 +66,21 @@ class PrecompiledCudaKernelOp(OpDef):
             *args (object): Argument *args.
             **kwargs (object): Argument **kwargs.
 
+            launch_config (object): The launch config.\
+
         Returns:
             object: The inferred shape.
         """
         return ()
+
+
+@dataclass
+class KernelLaunchConfig:
+    """Configuration for kernel launch."""
+
+    grid: tuple[int, ...]
+    block: tuple[int, ...]
+    name: str = "custom_kernel"
 
 
 def cuda_kernel(
@@ -70,9 +88,7 @@ def cuda_kernel(
     inputs: list[Tensor],
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
-    grid: tuple[int, ...],
-    block: tuple[int, ...],
-    name: str = "custom_kernel",
+    launch_config: Optional[KernelLaunchConfig] = None,
 ) -> list[Tensor]:
     """Injects and compiles an inline CUDA kernel.
 
@@ -81,13 +97,17 @@ def cuda_kernel(
         inputs (list[Tensor]): Input tensors.
         output_shapes (list[tuple[int, ...]]): Expected output shapes.
         output_dtypes (list[DType]): Expected output data types.
-        grid (tuple[int, ...]): Grid dimensions.
-        block (tuple[int, ...]): Block dimensions.
-        name (str): Name of the kernel.
+        config: Kernel configuration.
+
+        launch_config (object): The launch config.\
 
     Returns:
         list[Tensor]: Output tensors.
     """
+    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    grid = conf.grid
+    block = conf.block
+    name = conf.name
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "CudaKernel",
@@ -99,10 +119,7 @@ def cuda_kernel(
             block=block,
             name=name,
         )
-        return [
-            Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device))
-            for d, s, dt in zip(data, output_shapes, output_dtypes)
-        ]
+        return [Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device)) for d, s, dt in zip(data, output_shapes, output_dtypes)]
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
@@ -123,9 +140,7 @@ def metal_kernel(
     inputs: list[Tensor],
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
-    grid: tuple[int, ...],
-    block: tuple[int, ...],
-    name: str = "custom_kernel",
+    launch_config: Optional[KernelLaunchConfig] = None,
 ) -> list[Tensor]:
     """Injects and compiles an inline Metal kernel.
 
@@ -134,13 +149,17 @@ def metal_kernel(
         inputs (list[Tensor]): Input tensors.
         output_shapes (list[tuple[int, ...]]): Expected output shapes.
         output_dtypes (list[DType]): Expected output data types.
-        grid (tuple[int, ...]): Grid dimensions.
-        block (tuple[int, ...]): Block dimensions.
-        name (str): Name of the kernel.
+        config: Kernel configuration.
+
+        launch_config (object): The launch config.\
 
     Returns:
         list[Tensor]: Output tensors.
     """
+    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    grid = conf.grid
+    block = conf.block
+    name = conf.name
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "MetalKernel",
@@ -152,10 +171,7 @@ def metal_kernel(
             block=block,
             name=name,
         )
-        return [
-            Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device))
-            for d, s, dt in zip(data, output_shapes, output_dtypes)
-        ]
+        return [Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device)) for d, s, dt in zip(data, output_shapes, output_dtypes)]
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
@@ -176,9 +192,7 @@ def precompiled_cuda_kernel(
     inputs: list[Tensor],
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
-    grid: tuple[int, ...],
-    block: tuple[int, ...],
-    name: str = "custom_kernel",
+    launch_config: Optional[KernelLaunchConfig] = None,
 ) -> list[Tensor]:
     """Injects and executes a precompiled CUDA binary (PTX/CUBIN).
 
@@ -187,13 +201,17 @@ def precompiled_cuda_kernel(
         inputs (list[Tensor]): Input tensors.
         output_shapes (list[tuple[int, ...]]): Expected output shapes.
         output_dtypes (list[DType]): Expected output data types.
-        grid (tuple[int, ...]): Grid dimensions.
-        block (tuple[int, ...]): Block dimensions.
-        name (str): Name of the kernel.
+        config: Kernel configuration.
+
+        launch_config (object): The launch config.\
 
     Returns:
         list[Tensor]: Output tensors.
     """
+    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    grid = conf.grid
+    block = conf.block
+    name = conf.name
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "PrecompiledCudaKernel",
@@ -205,10 +223,7 @@ def precompiled_cuda_kernel(
             block=block,
             name=name,
         )
-        return [
-            Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device))
-            for d, s, dt in zip(data, output_shapes, output_dtypes)
-        ]
+        return [Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device)) for d, s, dt in zip(data, output_shapes, output_dtypes)]
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):

@@ -1,3 +1,5 @@
+"""Module docstring."""
+
 from unittest.mock import patch
 
 import pytest
@@ -5,7 +7,8 @@ import pytest
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
 
-def test_registry_import_error():
+def test_registry_import_error() -> object:
+    """Function docstring."""
     if "fake" in BackendRegistry._registry:
         del BackendRegistry._registry["fake"]
 
@@ -21,7 +24,8 @@ def test_registry_import_error():
     del BackendRegistry._LAZY_MODULES["fake"]
 
 
-def test_registry_torch_alias():
+def test_registry_torch_alias() -> object:
+    """Function docstring."""
     if "torch" in BackendRegistry._registry:
         del BackendRegistry._registry["torch"]
     BackendRegistry._registry["pytorch"] = "mock_class"  # type: ignore

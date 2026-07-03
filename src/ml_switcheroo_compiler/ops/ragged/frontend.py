@@ -1,8 +1,4 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103
 """Ragged frontends."""
-
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 # from ml_switcheroo_compiler.ops.ragged import (
 #    RaggedConstant,
@@ -13,21 +9,23 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 #    RaggedStack,
 ##    RaggedStackDynamicPartitions,
 # )
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+# pragma: no cover
+from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
-def _ragged_op(op_name, *args, **kwargs):
-    # pragma: no cover
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
-
+def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     # pragma: no cover
     op_cls = get_op(op_name)  # pragma: no cover
     if config.eager_mode:  # pragma: no cover
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            op_name, *[getattr(a, "data", a) for a in args], **kwargs
-        )  # pragma: no cover
+        data = backend.execute_op(op_name, *[getattr(a, "data", a) for a in args], **kwargs)  # pragma: no cover
         return Tensor(  # pragma: no cover
             data,  # pragma: no cover
             TensorConfig(  # pragma: no cover
@@ -48,39 +46,48 @@ def _ragged_op(op_name, *args, **kwargs):
     )
 
 
-def ragged_constant(*args, **kwargs):
+def ragged_constant(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedConstant", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_cross(*args, **kwargs):
+def ragged_cross(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)  # Alias  # pragma: no cover
 
 
-def ragged_cross_hashed(*args, **kwargs):
+def ragged_cross_hashed(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_range(*args, **kwargs):
+def ragged_range(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedRange", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_row_splits_to_segment_ids(*args, **kwargs):
+def ragged_row_splits_to_segment_ids(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedRowSplitsToSegmentIds", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_segment_ids_to_row_splits(*args, **kwargs):
+def ragged_segment_ids_to_row_splits(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedSegmentIdsToRowSplits", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_stack(*args, **kwargs):
+def ragged_stack(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedStack", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_stack_dynamic_partitions(*args, **kwargs):
+def ragged_stack_dynamic_partitions(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _ragged_op("RaggedStackDynamicPartitions", *args, **kwargs)  # pragma: no cover
 
 
-def ragged_dot(*args, **kwargs):
+def ragged_dot(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     # pragma: no cover
     # pragma: no cover
     return _ragged_op("RaggedDot", *args, **kwargs)

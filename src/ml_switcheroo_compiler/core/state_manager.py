@@ -37,9 +37,7 @@ def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
     )
 
 
-def _build_functional_outputs(
-    graph_outputs: list[str], state_vars: list[str], state_env: dict[str, str]
-) -> list[str]:
+def _build_functional_outputs(graph_outputs: list[str], state_vars: list[str], state_env: dict[str, str]) -> list[str]:
     """Function docstring.
 
     Args:

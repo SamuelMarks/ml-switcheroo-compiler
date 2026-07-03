@@ -1,6 +1,7 @@
 """Numpy lookup operations."""
 
 import numpy as np
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
@@ -30,9 +31,7 @@ def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object)
 
 
 @numpy_eager_registry.register("Lookup")
-def _np_lookup(
-    backend_module: object, inputs: object, vocabulary: object, **kwargs: object
-) -> object:
+def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:

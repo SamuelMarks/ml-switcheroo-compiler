@@ -3,13 +3,69 @@
 product, and Einstein summation.
 """
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from ml_switcheroo_compiler.ops.linalg.basic import Matmul
-from ml_switcheroo_compiler.ops.linalg.dot import Dot
+# Check 52-53: _emit_linalg_node outside tracing
+import pytest
+
+from ml_switcheroo_compiler.core.config import ConfigContext, config
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.configs import ConvConfig
+from ml_switcheroo_compiler.ops.linalg import (
+    cholesky,
+    conv_general_dilated,
+    cross,
+    det,
+    dot,
+    dot_general,
+    eigh,
+    eigvalsh,
+    fft,
+    fft2d,
+    fft3d,
+    ifft,
+    ifft2d,
+    ifft3d,
+    inv,
+    irfft,
+    irfft2d,
+    irfft3d,
+    matmul,
+    matrix_power,
+    qr,
+    rfft,
+    rfft2d,
+    rfft3d,
+    slogdet,
+    solve,
+    svd,
+)
+from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated
+from ml_switcheroo_compiler.ops.linalg.decompositions import pinv
+from ml_switcheroo_compiler.ops.linalg.dot import Dot, DotGeneral
 from ml_switcheroo_compiler.ops.linalg.einsum import Einsum
+from ml_switcheroo_compiler.ops.linalg.fft_ops import (
+    Fft,
+    Fft2d,
+    Fft3d,
+    Ifft,
+    Ifft2d,
+    Ifft3d,
+    Irfft,
+    Irfft2d,
+    Irfft3d,
+    Rfft,
+    Rfft2d,
+    Rfft3d,
+)
+from ml_switcheroo_compiler.ops.linalg.products import Matmul
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 def test_matmul_op() -> None:
@@ -76,10 +132,6 @@ def test_einsum_op() -> None:
 
 def test_dot_general_opdef() -> None:
     """Test dot_general_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.linalg.dot import DotGeneral
-
     op = DotGeneral()
 
     class DummyShape:
@@ -123,15 +175,6 @@ def test_dot_general_opdef() -> None:
 
 def test_dot_general_frontend() -> None:
     """Test dot_general_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg import dot_general
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((2, 3)), TensorConfig((2, 3), DType.Int32, device))
     y = Tensor(np.ones((3, 4)), TensorConfig((3, 4), DType.Int32, device))
@@ -140,7 +183,7 @@ def test_dot_general_frontend() -> None:
         out = dot_general(x, y, (((1,), (0,)), ((), ())))
         assert isinstance(out, Tensor)
 
-    graph = _tracer.start_tracing("test_dot_general")
+    graph = global_tracing_state.start_tracing("test_dot_general")
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(2, 3), dtype="int32"),
@@ -156,17 +199,12 @@ def test_dot_general_frontend() -> None:
         assert node.op_type == "DotGeneral"
         assert node.attributes["dimension_numbers"] == (((1,), (0,)), ((), ()))
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_conv_general_dilated_opdef() -> None:
     """Test conv_general_dilated_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.linalg.basic import ConvGeneralDilated
-
     op = ConvGeneralDilated()
-    from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     cfg = ConvConfig([1], "SAME")
     assert op.infer_shape(None, None, cfg) == ()
@@ -177,8 +215,6 @@ def test_conv_general_dilated_opdef() -> None:
         shape = (1, 3, 32, 32)
 
     assert op.infer_shape(Dummy(), Dummy(), ConvConfig([1], "SAME")) == ()
-
-    from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     x = np.ones((1, 3, 32, 32))
     w = np.ones((16, 3, 3, 3))
@@ -194,27 +230,14 @@ def test_conv_general_dilated_opdef() -> None:
 
 def test_conv_general_dilated_frontend() -> None:
     """Test conv_general_dilated_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.ones((1, 3, 32, 32)), TensorConfig((1, 3, 32, 32), DType.Float32, device))
     w = Tensor(np.ones((16, 3, 3, 3)), TensorConfig((16, 3, 3, 3), DType.Float32, device))
 
-    from ml_switcheroo_compiler.ops.configs import ConvConfig
-
     with ConfigContext(eager_mode=True):
-        assert conv_general_dilated(
-            x, w, ConvConfig(window_strides=[1, 1], padding="SAME")
-        ).shape == (1, 16, 32, 32)
+        assert conv_general_dilated(x, w, ConvConfig(window_strides=[1, 1], padding="SAME")).shape == (1, 16, 32, 32)
 
-    graph = _tracer.start_tracing("test_conv")
+    graph = global_tracing_state.start_tracing("test_conv")
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(1, 3, 32, 32), dtype="float32"),
@@ -224,23 +247,17 @@ def test_conv_general_dilated_frontend() -> None:
             ProxyTensor(id="w", shape=(16, 3, 3, 3), dtype="float32"),
             TensorConfig((16, 3, 3, 3), DType.Float32, device),
         )
-        out = conv_general_dilated(
-            x_proxy, w_proxy, ConvConfig(window_strides=[1, 1], padding="SAME")
-        )
+        out = conv_general_dilated(x_proxy, w_proxy, ConvConfig(window_strides=[1, 1], padding="SAME"))
         assert out.shape == ()
         node = graph.nodes[out.data.id]
         assert node.op_type == "ConvGeneralDilated"
         assert node.attributes["config"].window_strides == [1, 1]
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_fft_rfft_opdef() -> None:
     """Test fft_rfft_opdef."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.ops.linalg.basic import Fft, Rfft
-
     op_fft = Fft()
     op_rfft = Rfft()
 
@@ -277,15 +294,6 @@ def test_fft_rfft_opdef() -> None:
 
 def test_fft_rfft_frontend() -> None:
     """Test fft_rfft_frontend."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg import fft, rfft
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     device = Device(DeviceType.CPU)
     x = Tensor(np.random.rand(10), TensorConfig((10,), DType.Float32, device))
 
@@ -295,7 +303,7 @@ def test_fft_rfft_frontend() -> None:
         out_r = rfft(x)
         assert out_r.shape == (6,)
 
-    graph = _tracer.start_tracing("test_fft")
+    graph = global_tracing_state.start_tracing("test_fft")
     try:
         x_proxy = Tensor(
             ProxyTensor(id="x", shape=(10,), dtype="float32"),
@@ -311,35 +319,11 @@ def test_fft_rfft_frontend() -> None:
         node2 = graph.nodes[out_r2.data.id]
         assert node2.op_type == "Rfft"
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_linalg_eager_missing() -> None:
     """Test missing linalg eager ops."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg import (
-        cholesky,
-        cross,
-        det,
-        dot,
-        dot_general,
-        eigh,
-        eigvalsh,
-        fft,
-        inv,
-        matmul,
-        matrix_power,
-        qr,
-        rfft,
-        slogdet,
-        solve,
-        svd,
-    )
-
     device = "cpu"
     with ConfigContext(eager_mode=True):
         a = Tensor(np.ones((2, 3)), TensorConfig((2, 3), DType.Float32, device))
@@ -370,9 +354,7 @@ def test_linalg_eager_missing() -> None:
 
     # dot_general tracing with scalar
     with ConfigContext(eager_mode=False):
-        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
-        _tracer.start_tracing("dot_general_scalar")
+        global_tracing_state.start_tracing("dot_general_scalar")
         s = Tensor(ProxyTensor("s", (), "float32"), TensorConfig((), DType.Float32, device))
         dot_general(s, s, (((), ()), ((), ())))
 
@@ -380,12 +362,7 @@ def test_linalg_eager_missing() -> None:
         b = Tensor(ProxyTensor("b", (2, 3), "float32"), TensorConfig((2, 3), DType.Float32, device))
         dot_general(b, b, (((1,), (1,)), ((0,), (0,))))
 
-        _tracer.stop_tracing()
-
-    # Check 52-53: _emit_linalg_node outside tracing
-    import pytest
-
-    from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
+        global_tracing_state.stop_tracing()
 
     with ConfigContext(eager_mode=False), pytest.raises(RuntimeError):
         _emit_linalg_node("Test", [], {}, [()], [DType.Float32])
@@ -393,59 +370,19 @@ def test_linalg_eager_missing() -> None:
 
 def test_decompositions_eager_pinv() -> None:
     """Test eager pinv."""
-    from unittest.mock import MagicMock, patch
-
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.linalg.decompositions import pinv
-
     config.eager_mode = True
     data = np.array([[1.0, 2.0], [3.0, 4.0]])
     inp = Tensor(data, TensorConfig((2, 2), "float32", Device("cpu")))
 
     mock_backend = MagicMock()
     mock_backend.execute_op.return_value = np.array([[1.0]])
-    with patch(
-        "ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend
-    ):
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend):
         pinv(inp)
     config.eager_mode = False
 
 
 def test_all_ffts() -> None:
     """Test all ffts."""
-    from ml_switcheroo_compiler.ops.linalg import (
-        fft,
-        fft2d,
-        fft3d,
-        ifft,
-        ifft2d,
-        ifft3d,
-        rfft,
-        rfft2d,
-        rfft3d,
-        irfft,
-        irfft2d,
-        irfft3d,
-    )
-    from ml_switcheroo_compiler.ops.linalg.basic import (
-        Ifft,
-        Fft2d,
-        Ifft2d,
-        Fft3d,
-        Ifft3d,
-        Rfft2d,
-        Rfft3d,
-        Irfft,
-        Irfft2d,
-        Irfft3d,
-    )
-
-    from ml_switcheroo_compiler.core.tensor import TensorConfig
-
     assert Ifft().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
     assert Fft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
     assert Ifft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
@@ -457,15 +394,9 @@ def test_all_ffts() -> None:
     assert Irfft2d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
     assert Irfft3d().infer_shape(TensorConfig((2,), "float32", "cpu")) == (2,)
 
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.tracing import _tracer
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     device = Device("cpu")
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             a = Tensor("dummy", TensorConfig((4, 4, 4), DType.Float32, device))
             fft(a)
@@ -492,37 +423,13 @@ def test_all_ffts() -> None:
             irfft2d(a, s=(2, 2))
             irfft3d(a, s=(2, 2, 2))
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
 
 
 def test_all_ffts_eager_extra() -> None:
     """Test all ffts eager."""
-    from ml_switcheroo_compiler.ops.linalg import (
-        fft,
-        fft2d,
-        fft3d,
-        ifft,
-        ifft2d,
-        ifft3d,
-        rfft,
-        rfft2d,
-        rfft3d,
-        irfft,
-        irfft2d,
-        irfft3d,
-    )
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
-    import numpy as np
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import TensorConfig
-
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
-        from unittest.mock import patch
-
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
             mock_backend.return_value.execute_op.return_value = np.zeros((1,))
             mock_backend.return_value.array.return_value = np.zeros((1,))

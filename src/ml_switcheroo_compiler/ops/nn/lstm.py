@@ -2,13 +2,12 @@
 
 from typing import Optional
 
-from ml_switcheroo_compiler.ops.binary import add, multiply
-from ml_switcheroo_compiler.ops.shape import split
-
-from ml_switcheroo_compiler.ops.unary import tanh
-from ml_switcheroo_compiler.nn.activations import sigmoid
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.nn.activations import sigmoid
+from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.shape import split
+from ml_switcheroo_compiler.ops.unary import tanh
 
 
 def lstm_cell(

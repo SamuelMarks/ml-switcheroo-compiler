@@ -1,6 +1,13 @@
-# ruff: noqa: F405, F403
 """Shared vision utilities and ops."""
 
+from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
+    RotationConfig,
+    random_crop_eager,
+    random_flip_eager,
+    random_rotation_eager,
+    random_translation_eager,
+    random_zoom_eager,
+)  # pragma: no cover
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
@@ -18,9 +25,7 @@ def _np_augmix(backend_module: object, images: object, factor: float, **kwargs: 
 
 
 @numpy_eager_registry.register("Cutmix")
-def _np_cutmix(
-    backend_module: object, images1: object, images2: object, **kwargs: object
-) -> object:
+def _np_cutmix(backend_module: object, images1: object, images2: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -46,9 +51,7 @@ def _np_mixup(backend_module: object, images1: object, images2: object, **kwargs
 
 
 @numpy_eager_registry.register("RandAugment")
-def _np_rand_augment(
-    backend_module: object, images: object, factor: float, **kwargs: object
-) -> object:
+def _np_rand_augment(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -73,9 +76,7 @@ def _np_random_color_jitter(backend_module: object, images: object, **kwargs: ob
 
 
 @numpy_eager_registry.register("RandomCrop")
-def _np_random_crop(
-    backend_module: object, images: object, size: tuple, seed: object = None
-) -> object:
+def _np_random_crop(backend_module: object, images: object, size: tuple, seed: object = None) -> object:
     """Function docstring.
 
     Args:
@@ -84,15 +85,11 @@ def _np_random_crop(
         size: Arg.
         seed: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_augmentation import random_crop_eager
-
     return random_crop_eager(backend_module, images, size, seed)
 
 
 @numpy_eager_registry.register("RandomErasing")
-def _np_random_erasing(
-    backend_module: object, images: object, factor: float, **kwargs: object
-) -> object:
+def _np_random_erasing(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -105,9 +102,7 @@ def _np_random_erasing(
 
 
 @numpy_eager_registry.register("RandomFlip")
-def _np_random_flip(
-    backend_module: object, images: object, mode: str, seed: object = None
-) -> object:
+def _np_random_flip(backend_module: object, images: object, mode: str, seed: object = None) -> object:
     """Function docstring.
 
     Args:
@@ -116,8 +111,6 @@ def _np_random_flip(
         mode: Arg.
         seed: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_augmentation import random_flip_eager
-
     return random_flip_eager(backend_module, images, mode, seed)
 
 
@@ -130,10 +123,6 @@ def _np_random_rotation(backend_module: object, images: object, **kwargs: object
         images: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_augmentation import random_rotation_eager
-
-    from ml_switcheroo_compiler.backends.eager.vision_augmentation import RotationConfig
-
     return random_rotation_eager(
         backend_module,
         images,
@@ -165,10 +154,6 @@ def _np_random_translation(
         width_factor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
-        random_translation_eager,
-    )  # pragma: no cover
-
     return random_translation_eager(  # pragma: no cover
         backend_module,
         images,
@@ -195,8 +180,6 @@ def _np_random_zoom(
         width_factor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_augmentation import random_zoom_eager
-
     return random_zoom_eager(
         backend_module,
         images,

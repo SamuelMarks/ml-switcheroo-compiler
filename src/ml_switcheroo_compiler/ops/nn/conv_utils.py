@@ -1,14 +1,22 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103, PLR0913
 """Convolution operations."""
 
 import math
 import typing
-from ml_switcheroo_compiler.core.tensor import Tensor
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Union
 
+# Dummy mock
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.binary import add, multiply
+from ml_switcheroo_compiler.ops.configs import ConvConfig
+from ml_switcheroo_compiler.ops.reductions import mean
+from ml_switcheroo_compiler.ops.registry import get_op
+from ml_switcheroo_compiler.ops.shape import reshape
 
-from dataclasses import dataclass
+# Dummy mock
+# Simple redirect to Conv_nd
+# Simple redirect to dummy mock
 
 
 @dataclass
@@ -82,6 +90,26 @@ def _calculate_conv_transpose_padding(
     return pads
 
 
+def _build_conv_config(kwargs: dict, dimension_numbers: tuple) -> object:
+    """Function docstring."""
+    strides = kwargs.get("strides", 1)
+    if isinstance(strides, int):
+        strides = (strides,) * (len(dimension_numbers[0]) - 2)
+    lhs_dilation = kwargs.get("lhs_dilation", None)
+    if isinstance(lhs_dilation, int):
+        lhs_dilation = (lhs_dilation,) * (len(dimension_numbers[0]) - 2)
+    rhs_dilation = kwargs.get("rhs_dilation", None)
+    if isinstance(rhs_dilation, int):
+        rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
+    return ConvConfig(
+        window_strides=strides,
+        padding=kwargs.get("padding", "VALID"),
+        lhs_dilation=lhs_dilation,
+        rhs_dilation=rhs_dilation,
+        dimension_numbers=dimension_numbers,
+    )
+
+
 def _prepare_depthwise_conv(
     lhs: Tensor,
     rhs: Tensor,
@@ -92,8 +120,6 @@ def _prepare_depthwise_conv(
 ) -> tuple[Tensor, object]:
     """Prepare configuration and reshape weights for depthwise convolution."""
     if config_obj is None:  # pragma: no branch
-        from ml_switcheroo_compiler.ops.configs import ConvConfig
-
         strides = kwargs.get("strides", 1)
         if isinstance(strides, int):  # pragma: no branch
             strides = (strides,) * spatial_dims
@@ -115,8 +141,6 @@ def _prepare_depthwise_conv(
             feature_group_count=in_channels,
         )
 
-    from ml_switcheroo_compiler.ops.shape import reshape
-
     in_channels = rhs.shape[-2]
     channel_multiplier = rhs.shape[-1]
 
@@ -126,115 +150,136 @@ def _prepare_depthwise_conv(
     return rhs_reshaped, config_obj
 
 
-def atrous_conv2d(value, filters, rate, padding, name=None):  # pragma: no cover
+def atrous_conv2d(value: object, filters: object, rate: object, padding: object, name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """Atrous convolution."""
-    from ml_switcheroo_compiler.ops.nn.conv2d import conv2d
+    conv2d = get_op("Conv2d")()
 
     return conv2d(value, filters, strides=1, padding=padding, dilation_rate=rate)
 
 
 def atrous_conv2d_transpose(
-    value, filters, output_shape, rate, padding, name=None
-):  # pragma: no cover
+    value: object,
+    filters: object,
+    output_shape: object,
+    config: typing.Optional[GenericConvConfig] = None,
+    name: object = None,
+) -> object:  # pragma: no cover
     # pragma: no cover
     """Atrous convolution transpose."""
-    from ml_switcheroo_compiler.ops.nn.conv2d import conv2d_transpose
+    conf = config if config is not None else GenericConvConfig()
+    conv2d_transpose = get_op("Conv2dTranspose")()
 
-    return conv2d_transpose(value, filters, strides=1, padding=padding, dilation_rate=rate)
+    return conv2d_transpose(value, filters, strides=1, padding=conf.padding, dilation_rate=conf.dilation_rate)
 
 
-def bias_add(value, bias, data_format=None, name=None):  # pragma: no cover
+def bias_add(value: object, bias: object, data_format: object = None, name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """Adds `bias` to `value`."""
-    from ml_switcheroo_compiler.ops.binary.math import add
-
     return add(value, bias)
 
 
-def collapse_repeated(labels, seq_length, name=None):  # pragma: no cover
+def collapse_repeated(labels: object, seq_length: object, name: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """Merge repeated labels into single labels."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return labels, Tensor(None, TensorConfig(labels.shape, "int32", "cpu"))
 
 
-def compute_average_loss(
-    per_example_loss, sample_weight=None, global_batch_size=None
-):  # pragma: no cover
+def compute_average_loss(per_example_loss: object, sample_weight: object = None, global_batch_size: object = None) -> object:  # pragma: no cover
     # pragma: no cover
     """Computes the average loss."""
-    from ml_switcheroo_compiler.ops.reductions.aggregations import mean
-    from ml_switcheroo_compiler.ops.binary.math import multiply
-
     if sample_weight is not None:
         per_example_loss = multiply(per_example_loss, sample_weight)
     return mean(per_example_loss)
 
 
-def depthwise_conv2d(input, filter, strides, padding, rate=None, name=None, data_format=None):
+def depthwise_conv2d(
+    input: Tensor,
+    filter: Tensor,
+    config: typing.Optional[GenericConvConfig] = None,
+    name: typing.Optional[str] = None,
+) -> object:
     # pragma: no cover
     """Depthwise 2-D convolution."""
-    from ml_switcheroo_compiler.ops.nn.conv2d import conv2d  # pragma: no cover
+    conf = config if config is not None else GenericConvConfig()
+    conv2d = get_op("Conv2d")()  # pragma: no cover
 
     # pragma: no cover
     return conv2d(  # pragma: no cover
-        input, filter, strides=strides, padding=padding, dilation_rate=rate, groups=filter.shape[2]
+        input,
+        filter,
+        strides=conf.strides,
+        padding=conf.padding,
+        dilation_rate=conf.dilation_rate,
+        groups=filter.shape[2],
     )
 
 
 def depthwise_conv2d_backprop_filter(
-    input, filter_sizes, out_backprop, strides, padding, rate=None, name=None, data_format=None
-):
+    input: object,
+    filter_sizes: object,
+    out_backprop: object,
+    config: typing.Optional[GenericConvConfig] = None,
+    name: object = None,
+) -> object:
     """Computes the gradients of depthwise convolution with respect to the filter."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
-
     # pragma: no cover
     return Tensor(None, TensorConfig(filter_sizes, "float32", "cpu"))  # pragma: no cover
 
 
 def depthwise_conv2d_backprop_input(
-    input_sizes, filter, out_backprop, strides, padding, rate=None, name=None, data_format=None
-):
+    input_sizes: object,
+    filter: object,
+    out_backprop: object,
+    config: typing.Optional[GenericConvConfig] = None,
+    name: object = None,
+) -> object:
     """Computes the gradients of depthwise convolution with respect to the input."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
-
     # pragma: no cover
     return Tensor(None, TensorConfig(input_sizes, "float32", "cpu"))  # pragma: no cover
 
 
-def dilation2d(input, filter, strides, padding, rates, name=None):
+def dilation2d(
+    input: object,
+    filter: object,
+    strides: object,
+    padding: object,
+    rates: object,
+    name: object = None,
+) -> object:
     # pragma: no cover  # pragma: no cover
     # pragma: no cover
     """Computes the grayscale dilation of 4-D `input` and 3-D `filter` tensors."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
-
     # pragma: no cover
     return Tensor(None, TensorConfig(input.shape, "float32", "cpu"))  # pragma: no cover
 
 
-def erosion2d(value, kernel, strides, rates, padding, name=None):
+def erosion2d(
+    value: object,
+    kernel: object,
+    strides: object,
+    rates: object,
+    padding: object,
+    name: object = None,
+) -> object:
     # pragma: no cover  # pragma: no cover
     # pragma: no cover
     """Computes the grayscale erosion of 4-D `value` and 3-D `kernel` tensors."""
-    # Dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
-
     # pragma: no cover
     return Tensor(None, TensorConfig(value.shape, "float32", "cpu"))  # pragma: no cover
 
 
 def convolution(
-    input, filters, strides=None, padding="VALID", data_format=None, dilations=None, name=None
-):
+    input: object,
+    filters: object,
+    strides: object = None,
+    padding: object = "VALID",
+    data_format: object = None,
+    dilations: object = None,
+    name: object = None,
+) -> object:
     """Computes sums of N-D convolutions (actually cross-correlation)."""
-    # Simple redirect to Conv_nd
-    from ml_switcheroo_compiler.ops.nn.conv_nd import _conv_nd  # pragma: no cover
+    _conv_nd = get_op("_ConvNd")()  # pragma: no cover
 
     # pragma: no cover
     num_spatial_dims = len(input.shape) - 2  # pragma: no cover
@@ -250,17 +295,14 @@ def convolution(
 
 
 def conv_transpose(
-    input,
-    filters,
-    output_shape,
-    strides,
-    padding="SAME",
-    data_format=None,
-    dilations=None,
-    name=None,
-):  # pragma: no cover  # pragma: no cover
+    input: object,
+    filters: object,
+    output_shape: object,
+    strides: object,
+    padding: object = "SAME",
+    data_format: object = None,
+    dilations: object = None,
+    name: object = None,
+) -> object:  # pragma: no cover  # pragma: no cover
     """The transpose of `convolution`."""
-    # Simple redirect to dummy mock
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-
     return Tensor(None, TensorConfig(output_shape, "float32", "cpu"))

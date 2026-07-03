@@ -1,16 +1,12 @@
-# ruff: noqa: E402
-
 """Module docstring."""
 
-"""NumPy code generator and eager execution backend."""
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
-from .numpy_mixins import NumpyVisionMixin, NumpyAudioMixin, NumpyScatterMixin
+from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
+from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
-from ml_switcheroo_compiler.backends.common.generator_mixins import (
-    SharedASTGeneratorMixin,
-    GroupNormConfig,
-)
+
+from .numpy_mixins import NumpyAudioVisitor, NumpyScatterVisitor, NumpyVisionVisitor
 
 
 class NumpyTypeTranslator:
@@ -79,11 +75,6 @@ class NumpyASTVisitor:
         "Adjoint": "tf.linalg.adjoint",
         "BandPart": "tf.linalg.band_part",
         "CholeskySolve": "tf.linalg.cholesky_solve",
-        "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
-        "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
-        "MatrixRank": "tf.linalg.matrix_rank",
-        "MatrixTranspose": "tf.linalg.matrix_transpose",
-        "Sqrtm": "tf.linalg.sqrtm",
         "Add": "np.add",
         "Zeros": "np.zeros",
         "Ones": "np.ones",
@@ -98,12 +89,6 @@ class NumpyASTVisitor:
         "Irfftnd": "np.fft.irfftn({0})",
         "Fftshift": "np.fft.fftshift({0})",
         "Ifftshift": "np.fft.ifftshift({0})",
-        "Dct": "tf.signal.dct({0})",
-        "Idct": "tf.signal.idct({0})",
-        "Mdct": "tf.signal.mdct({0})",
-        "InverseMdct": "tf.signal.inverse_mdct({0})",
-        "Frame": "tf.signal.frame({0})",
-        "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
         "Fft": "np.fft.fft",
         "Rfft": "np.fft.rfft",
         "Fftn": "np.fft.fftn",
@@ -164,6 +149,7 @@ class NumpyASTVisitor:
 
     @classmethod
     def _format_kwargs(cls, kwargs: dict[str, object]) -> str:
+        """Function docstring."""
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
         if "dimension" in kwargs:
             filtered_kwargs["axis"] = kwargs["dimension"]  # pragma: no cover
@@ -201,23 +187,31 @@ class NumpyASTVisitor:
 
 @register_backend("numpy")
 class NumpyGenerator(
-    SharedASTGeneratorMixin,
     PythonStringGenerator,
-    NumpyVisionMixin,
-    NumpyAudioMixin,
-    NumpyScatterMixin,
 ):
     """Generates NumPy python code from IR."""
 
+    def __init__(self, graph: object) -> None:
+        """Init."""
+        super().__init__(graph)
+        self.visitors.extend(
+            [
+                SharedASTGeneratorVisitor(generator=self),
+                NumpyVisionVisitor(),
+                NumpyAudioVisitor(),
+                NumpyScatterVisitor(),
+            ]
+        )
+
     def _get_backend_prefix(self) -> str:
         """Function docstring."""
-        return "np"  # pragma: no cover
+        return "np"
 
     def get_helper_functions(self) -> list[str]:
-        """Get helper functions."""
+        """Function docstring."""
         res = super().get_helper_functions()  # pragma: no cover
         res.extend(  # pragma: no cover
-            self._get_group_norm_code(  # pragma: no cover
+            NNASTVisitor(generator=self)._get_group_norm_code(  # pragma: no cover
                 GroupNormConfig(  # pragma: no cover
                     "np",  # pragma: no cover
                     "numpy as np",  # pragma: no cover
@@ -225,7 +219,6 @@ class NumpyGenerator(
                     "np.mean",  # pragma: no cover
                     "np.var",  # pragma: no cover
                     "np.sqrt",  # pragma: no cover
-                    dim_arg="axis",  # pragma: no cover
                     keepdim_arg="keepdims",  # pragma: no cover
                 )  # pragma: no cover
             )  # pragma: no cover

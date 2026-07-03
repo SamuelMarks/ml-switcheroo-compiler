@@ -1,30 +1,35 @@
-from ml_switcheroo_compiler.ops.distributed import (
-    Pmax,
-    Pmin,
-    PsumScatter,
-    Pswapaxes,
-    Pbroadcast,
-    Pdot,
-    Ppermute,
-    Pshuffle,
-    Infeed,
-    Outfeed,
-    AxisIndex,
-    WithShardingConstraint,
-    infeed,
-    outfeed,
-    axis_index,
-    with_sharding_constraint,
-    AllToAll,
-)
-from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.device import Device
-import numpy as np
+"""Module docstring."""
+
 from unittest.mock import patch
 
+import numpy as np
 
-def test_distributed_infer_shapes():
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.distributed import (
+    AllToAll,
+    AxisIndex,
+    Infeed,
+    Outfeed,
+    Pbroadcast,
+    Pdot,
+    Pmax,
+    Pmin,
+    Ppermute,
+    Pshuffle,
+    PsumScatter,
+    Pswapaxes,
+    WithShardingConstraint,
+    axis_index,
+    infeed,
+    outfeed,
+    with_sharding_constraint,
+)
+
+
+def test_distributed_infer_shapes() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
 
@@ -43,7 +48,8 @@ def test_distributed_infer_shapes():
     assert AllToAll().infer_shape() == ()
 
 
-def test_distributed_helpers():
+def test_distributed_helpers() -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=True):
         device = Device("cpu")
         t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))

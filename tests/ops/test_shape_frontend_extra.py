@@ -2,11 +2,13 @@
 
 import numpy as np
 
+import ml_switcheroo_compiler.ops.shape.frontend as sf
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.frontend import dynamic_slice, update_slice
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 def test_dynamic_slice_indices() -> None:
@@ -42,12 +44,9 @@ def test_update_slice_indices() -> None:
 
 def test_shape_frontend_tracing(monkeypatch: object) -> None:
     """Docstring."""
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
-    import ml_switcheroo_compiler.ops.shape.frontend as sf
-
     config.eager_mode = False
 
-    _tracer.start_tracing("test")
+    global_tracing_state.start_tracing("test")
 
     class MockData:
         """Docstring."""
@@ -69,5 +68,5 @@ def test_shape_frontend_tracing(monkeypatch: object) -> None:
     res3 = sf.strided_slice(x, [0], [3], [1])
     assert res3 is not None
 
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     config.eager_mode = True

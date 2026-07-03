@@ -1,11 +1,10 @@
 """Utility functions for shape ops."""
 
 from __future__ import annotations
-from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+
 # pylint: disable=duplicate-code
-
-
 import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
@@ -13,12 +12,15 @@ from ml_switcheroo_ir import LogicalNode
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
+from ml_switcheroo_compiler.ops.registry import register_util
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
+from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
+@register_util("_emit_shape_node")
 def _emit_shape_node(
     op_type: str,
     inputs: Sequence[Tensor],
@@ -50,15 +52,9 @@ def _emit_shape_node(
         attributes=attrs,
         shape_metadata=out_shape,
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
 
-    dtype_val = (
-        out_dtype.value
-        if hasattr(out_dtype, "value")
-        else str(out_dtype)
-        if hasattr(out_dtype, "name")
-        else out_dtype
-    )
+    dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
     if hasattr(dtype_val, "name") and type(dtype_val).__name__ == "dtype":
         dtype_val = dtype_val.name  # pragma: no cover
 

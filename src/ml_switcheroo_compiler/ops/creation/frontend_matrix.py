@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
 import uuid
 from typing import TYPE_CHECKING
 
@@ -12,16 +9,16 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
-
-
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 from .frontend_utils import _emit_creation_node
+
+if TYPE_CHECKING:
+    pass
 
 
 def eye(
@@ -75,7 +72,7 @@ def identity(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    return eye(n, n, dtype, device)
+    return eye(n, n, 0, dtype, device)
 
 
 def diag(input: Tensor, diagonal: int = 0) -> Tensor:
@@ -94,7 +91,6 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     if config.eager_mode:
         data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
         shape = data.shape if hasattr(data, "shape") else ()
-        from ml_switcheroo_compiler.core.dtype import DType
 
         if dtype is None:
             dtype = getattr(data, "dtype", DType.Float32)
@@ -110,7 +106,7 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
         msg = "diag requires a 1D or 2D tensor."
         raise ValueError(msg)
 
-    if not _tracer.is_tracing:
+    if not global_tracing_state.is_tracing:
         msg = "Cannot emit diag node outside of a tracing context."
         raise RuntimeError(msg)
     out_id = str(uuid.uuid4())
@@ -122,7 +118,7 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
         attributes={"k": diagonal},
         shape_metadata=shape,
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,

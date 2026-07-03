@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.random.state import _emit_random_node

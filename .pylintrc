@@ -1,0 +1,9 @@
+[MASTER]
+disable=too-many-arguments,too-many-locals,duplicate-code
+
+[SIMILARITIES]
+min-similarity-lines=20
+ignore-imports=yes
+ignore-signatures=yes
+ignore-docstrings=yes
+ignore-comments=yes

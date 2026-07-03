@@ -1,12 +1,48 @@
 """Gradient norm clipping primitive."""
 
-from typing import Union
 from collections.abc import Iterable
+from typing import Union
 
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.binary import add, multiply, divide
-from ml_switcheroo_compiler.ops.unary import sqrt, square
+from ml_switcheroo_compiler.ops.binary import add, divide, minimum, multiply, power
+from ml_switcheroo_compiler.ops.reductions import max as reduce_max
 from ml_switcheroo_compiler.ops.reductions import sum as reduce_sum
+from ml_switcheroo_compiler.ops.shape.frontend import stack
+from ml_switcheroo_compiler.ops.unary import abs as abs_op
+from ml_switcheroo_compiler.ops.unary import sqrt, square
+
+
+def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
+    """Computes the global norm of an iterable of parameters."""
+    norms = []
+    for p in parameters:
+        if norm_type == float("inf"):
+            norms.append(reduce_max(abs_op(p)))
+        elif norm_type == 2.0:
+            norms.append(reduce_sum(square(p)))
+        else:
+            norms.append(reduce_sum(power(abs_op(p), norm_type)))
+
+    if norm_type == float("inf"):
+        return reduce_max(stack(norms))
+
+    total_norm = reduce_sum(stack(norms))
+    if norm_type == 2.0:
+        return sqrt(total_norm)
+
+    return power(total_norm, 1.0 / norm_type)
+
+
+def _scale_gradients(parameters: list[Tensor], max_norm: float, total_norm: Tensor) -> list[Tensor]:
+    """Scales gradients in-place based on maximum and total norm."""
+    max_norm_t = max_norm
+    clip_coef = divide(max_norm_t, add(total_norm, 1e-6))
+    clip_coef_clamped = minimum(1.0, clip_coef)
+
+    clipped_params = []
+    for p in parameters:
+        clipped_params.append(multiply(p, clip_coef_clamped))
+    return clipped_params
 
 
 def clip_grad_norm(
@@ -39,58 +75,11 @@ def clip_grad_norm(
         parameters = list(parameters)
 
     if len(parameters) == 0:
-        from ml_switcheroo_compiler.ops.aliases.memory_ops import convert_to_tensor
+        return [], 0.0
 
-        # Return empty list and 0.0 norm
-        return [], convert_to_tensor(0.0)
+    total_norm = _compute_global_norm(parameters, norm_type)
+    clipped_params = _scale_gradients(parameters, max_norm, total_norm)
 
-    # Calculate the total norm
-    norms = []
-    for p in parameters:
-        if norm_type == float("inf"):
-            from ml_switcheroo_compiler.ops.reductions import max as reduce_max
-            from ml_switcheroo_compiler.ops.unary import abs as abs_op
-
-            norms.append(reduce_max(abs_op(p)))
-        elif norm_type == 2.0:
-            norms.append(reduce_sum(square(p)))
-        else:
-            from ml_switcheroo_compiler.ops.binary import power
-            from ml_switcheroo_compiler.ops.unary import abs as abs_op
-
-            norms.append(reduce_sum(power(abs_op(p), norm_type)))
-
-    if norm_type == float("inf"):
-        from ml_switcheroo_compiler.ops.shape.frontend import stack
-        from ml_switcheroo_compiler.ops.reductions import max as reduce_max
-
-        total_norm = reduce_max(stack(norms))
-    else:
-        from ml_switcheroo_compiler.ops.shape.frontend import stack
-
-        total_norm = reduce_sum(stack(norms))
-        if norm_type == 2.0:
-            total_norm = sqrt(total_norm)
-        else:
-            from ml_switcheroo_compiler.ops.binary import power
-
-            total_norm = power(total_norm, 1.0 / norm_type)
-
-    # Scaling logic
-    # clip_coef = max_norm / (total_norm + 1e-6)
-    # clip_coef_clamped = min(1.0, clip_coef)
-    from ml_switcheroo_compiler.ops.binary import minimum
-    from ml_switcheroo_compiler.ops.aliases.memory_ops import convert_to_tensor
-
-    max_norm_t = convert_to_tensor(max_norm)
-    clip_coef = divide(max_norm_t, add(total_norm, convert_to_tensor(1e-6)))
-    clip_coef_clamped = minimum(convert_to_tensor(1.0), clip_coef)
-
-    clipped_params = []
-    for p in parameters:
-        clipped_params.append(multiply(p, clip_coef_clamped))
-
-    # If the user passed a single Tensor originally, return a single Tensor
     if is_single_tensor:
         return clipped_params[0], total_norm
 

@@ -1,5 +1,7 @@
 """Numerical anomaly detection and traceback."""
 
+import numpy as np  # pylint: disable=import-outside-toplevel
+
 
 def format_traceback(exc: Exception) -> str:
     """Format an exception traceback.
@@ -24,8 +26,6 @@ def check_numerical_anomaly(tensor: object) -> None:
     """
     if getattr(tensor, "data", None) is None:
         return
-
-    import numpy as np  # pylint: disable=import-outside-toplevel
 
     try:
         arr = np.asarray(tensor.data)

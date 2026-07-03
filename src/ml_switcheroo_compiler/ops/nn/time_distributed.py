@@ -1,8 +1,9 @@
 """Time distributed wrapper operations."""
 
 from __future__ import annotations
-from ml_switcheroo_compiler.ops.base import OpDef, register_op, dispatch_eager, get_op
+
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
 
 
 @register_op("TimeDistributed")

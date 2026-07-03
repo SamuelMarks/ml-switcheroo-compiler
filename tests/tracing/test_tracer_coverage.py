@@ -2,16 +2,16 @@
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ir.core import IRNode
-from ml_switcheroo_compiler.tracing.tracer import _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 class MockNode(IRNode):
     """Mock Node."""
 
 
-def test_tracer_coverage_brute() -> None:
+def testglobal_tracing_state_coverage_brute() -> None:
     """Execute the requested function."""
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     config.current_stream = "custom"
 
     n = MockNode(id="n1", op_type="Input", inputs=[], attributes={}, shape_metadata=None)
@@ -20,9 +20,9 @@ def test_tracer_coverage_brute() -> None:
     # Let's set hasattr True, and stream is None.
     n.stream = None
 
-    _tracer.add_node(n)
+    global_tracing_state.add_node(n)
 
     assert n.stream == "custom"
 
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     config.current_stream = "default"

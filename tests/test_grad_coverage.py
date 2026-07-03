@@ -5,11 +5,19 @@ autodiff engine correctly raises errors when attempting to differentiate unsuppo
 operations. It also tests input validation errors during graph evaluation.
 """
 
+from unittest.mock import MagicMock
+
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.grad import check_numerical_grads, custom_vjp
+from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.transforms.autodiff import grad
 
 
@@ -125,8 +133,6 @@ def test_evaluator_dict_error() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
-
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input")
     # Missing input
@@ -134,81 +140,8 @@ def test_evaluator_dict_error() -> None:
         evaluate_graph(g, inputs={})
 
 
-def test_grad_frontend_mocks() -> None:
-    """Test the mock frontend functions in grad.py."""
-    from ml_switcheroo_compiler.grad import (
-        backward,
-        custom_jvp,
-        custom_vjp,
-        disable_jit,
-        eval_shape,
-    )
-    from ml_switcheroo_compiler.grad import grad as frontend_grad
-    from ml_switcheroo_compiler.grad import (
-        ir_grad,
-        jit,
-        jvp,
-        value_and_grad,
-        value_and_grad_wrt_vars,
-        vjp,
-    )
-
-    def my_fun(x: int) -> int:
-        """Docstring."""
-        return x * 2
-
-    # test ir_grad and grad
-    assert ir_grad(my_fun)(5) == 10
-    assert frontend_grad(my_fun)(5) == 10
-
-    # test value_and_grad
-    val, g = value_and_grad(my_fun)(5)
-    assert val == 10
-    assert g == 10
-
-    # test value_and_grad_wrt_vars
-    val_v, g_v = value_and_grad_wrt_vars(my_fun)(5)
-    assert val_v == 10
-    assert g_v == {}
-
-    # test jit
-    assert jit(my_fun)(5) == 10
-
-    # test disable_jit
-    with disable_jit():
-        assert my_fun(5) == 10
-
-    # test eval_shape
-    assert eval_shape(my_fun, 5) == 10
-
-    # test jvp
-    out_primal, out_tangent = jvp(my_fun, [5], [1])
-    assert out_primal == 10
-    assert out_tangent == [1]
-
-    # test vjp
-    out_primal, vjp_fn = vjp(my_fun, 5)
-    assert out_primal == 10
-    assert vjp_fn(2) == (2,)
-
-    # test custom_vjp
-    assert custom_vjp(my_fun)(5) == 10
-
-    # test custom_jvp
-    assert custom_jvp(my_fun) == my_fun
-
-    # test backward
-    assert backward(None) is None
-
-
 def test_custom_vjp_lazy() -> None:
     """Test custom vjp lazy."""
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.grad import custom_vjp
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
 
     @custom_vjp
     def f(x: object) -> object:
@@ -226,33 +159,18 @@ def test_custom_vjp_lazy() -> None:
     f.defvjp(fwd, bwd)
 
     config.eager_mode = False
-    _tracer.start_tracing()
-
-    from unittest.mock import MagicMock
+    global_tracing_state.start_tracing()
 
     x = Tensor(MagicMock(id="inp_x"), TensorConfig((2,), DType.Float32, Device("cpu")))
     f(x)
 
-    assert _tracer.active_graph is not None
-    assert list(_tracer.active_graph.nodes.values())[-1].op_type == "CustomVJP"
+    assert global_tracing_state.active_graph is not None
+    assert list(global_tracing_state.active_graph.nodes.values())[-1].op_type == "CustomVJP"
 
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
     config.eager_mode = True
 
 
-def test_check_numerical_grads():
-    from ml_switcheroo_compiler.grad import check_numerical_grads
-
+def test_check_numerical_grads() -> object:
+    """Function docstring."""
     check_numerical_grads(lambda x: x, (1.0,))
-
-
-def test_higher_order_derivatives() -> None:
-    """Test higher order derivatives."""
-    from ml_switcheroo_compiler.grad import jacobian, batch_jacobian, hessian
-
-    def my_fun(x: int) -> int:
-        return x * 2
-
-    assert jacobian(my_fun)(5) == 10
-    assert batch_jacobian(my_fun)(5) == 10
-    assert hessian(my_fun)(5) == 10

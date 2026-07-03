@@ -1,7 +1,6 @@
 """Module docstring."""
 
 
-# ruff: noqa: E402
 def _extract_audio_stft_attributes(node: object) -> tuple:
     """Extract STFT attributes."""
     frame_length = node.attributes.get("frame_length", 2048)  # pragma: no cover

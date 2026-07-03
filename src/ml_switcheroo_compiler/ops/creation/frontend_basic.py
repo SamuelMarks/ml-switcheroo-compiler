@@ -2,26 +2,26 @@
 
 from __future__ import annotations
 
-
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
-
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.unary import cast
+from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
+from .frontend_utils import _emit_constant_node, _emit_creation_node
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-
-
-from .frontend_utils import _emit_creation_node, _emit_constant_node
+    pass
 
 
 def _unpack_shape(shape: tuple) -> tuple:
+    """Function docstring."""
     unpacked_shape = []
     for s in shape:
         if hasattr(s, "data"):
@@ -34,6 +34,39 @@ def _unpack_shape(shape: tuple) -> tuple:
         else:
             unpacked_shape.append(s)
     return tuple(unpacked_shape)
+
+
+def _infer_dtype(val_arr: object) -> DType:
+    """Infers the DType from a backend array."""
+    dtype_str = str(val_arr.dtype)
+    if dtype_str.startswith("<U") or dtype_str.startswith("|S") or dtype_str == "object":
+        return DType.String
+    return DType(dtype_str)
+
+
+def _get_dtype_val(dtype: object) -> object:
+    """Gets the backend dtype value."""
+    if hasattr(dtype, "value"):
+        return dtype.value
+    if hasattr(dtype, "name"):
+        return str(dtype)
+    return dtype
+
+
+def _create_backend_array(object: object, dtype: object) -> object:
+    """Creates the backend array."""
+    backend = get_active_backend()
+    if dtype is None:
+        return backend.array(object)
+
+    dtype_val = _get_dtype_val(dtype)
+    if hasattr(dtype_val, "name") and type(dtype_val).__name__ == "dtype":
+        dtype_val = dtype_val.name  # pragma: no cover
+
+    try:
+        return backend.array(object, dtype=dtype_val)
+    except TypeError:
+        return backend.array(object)
 
 
 def array(
@@ -49,34 +82,18 @@ def array(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
+    val_arr = _create_backend_array(object, dtype)
     if dtype is None:
-        val_arr = get_active_backend().array(object)
-        from ml_switcheroo_compiler.core.dtype import DType
-
-        dtype_str = str(val_arr.dtype)
-        if dtype_str.startswith("<U") or dtype_str.startswith("|S") or dtype_str == "object":
-            dtype = DType.String
-        else:
-            dtype = DType(dtype_str)
-    else:
-        try:
-            dtype_val = (
-                dtype.value
-                if hasattr(dtype, "value")
-                else str(dtype)
-                if hasattr(dtype, "name")
-                else dtype
-            )
-            if hasattr(dtype_val, "name") and type(dtype_val).__name__ == "dtype":
-                dtype_val = dtype_val.name  # pragma: no cover
-            val_arr = get_active_backend().array(object, dtype=dtype_val)  # pragma: no cover
-        except TypeError:
-            val_arr = get_active_backend().array(object)
+        dtype = _infer_dtype(val_arr)
 
     shape = tuple(val_arr.shape)
 
     if config.eager_mode:
         return Tensor(val_arr, TensorConfig(shape, dtype, config.default_device))
+
+    out_id = TracingNodeBuilder.extract_from_constant(val_arr)[0]
+
+    return Tensor(ProxyTensor(out_id, shape, dtype.value), TensorConfig(shape, dtype, config.default_device))
 
     return _emit_constant_node(object, dtype)
 
@@ -96,8 +113,6 @@ def asarray(
     """
     if isinstance(a, Tensor):
         if dtype is not None and a.dtype != dtype:
-            from ml_switcheroo_compiler.ops.unary import cast
-
             return cast(a, dtype)
         return a
     return array(a, dtype=dtype)

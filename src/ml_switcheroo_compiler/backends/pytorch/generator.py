@@ -1,14 +1,13 @@
-# ruff: noqa: E402
-
 """Module docstring."""
 
-from ml_switcheroo_compiler.backends.common.generator_mixins import GroupNormConfig
+import os
 
-"""PyTorch Target Emission."""
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
-from .pytorch_mixins import PyTorchScatterMixin, PyTorchDistributedMixin
+from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
+from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
 from ml_switcheroo_compiler.backends.registry import register_backend
+
+from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchScatterVisitor
 
 
 class PyTorchVisionVisitor:
@@ -26,15 +25,9 @@ class PyTorchVisionVisitor:
         "MedianFilter",
     }
     _handlers = {
-        "ElasticTransform": lambda vars: (
-            f"torchvision.transforms.functional.elastic_transform({vars[0]}, {vars[1]})"
-        ),
-        "PerspectiveTransform": lambda vars: (
-            f"torchvision.transforms.functional.perspective({vars[0]}, {vars[1]}, {vars[2]})"
-        ),
-        "ExtractBoundingBoxes": lambda vars: (
-            f"torchvision.ops.roi_align({vars[0]}, {vars[1]}, 1.0)"
-        ),
+        "ElasticTransform": lambda vars: f"torchvision.transforms.functional.elastic_transform({vars[0]}, {vars[1]})",
+        "PerspectiveTransform": lambda vars: f"torchvision.transforms.functional.perspective({vars[0]}, {vars[1]}, {vars[2]})",
+        "ExtractBoundingBoxes": lambda vars: f"torchvision.ops.roi_align({vars[0]}, {vars[1]}, 1.0)",
         "IoU": lambda vars: f"torchvision.ops.box_iou({vars[0]}, {vars[1]})",
         "NonMaxSuppression": lambda vars: f"torchvision.ops.nms({vars[0]}, {vars[1]}, 0.5)",
         "ResizeBicubic": lambda vars: f"torch.nn.functional.interpolate({vars[0]}, mode='bicubic')",
@@ -69,7 +62,7 @@ class PyTorchAudioVisitor:
 
 @register_backend("pytorch")
 class PyTorchCodeGenerator(
-    SharedASTGeneratorMixin, ClassBasedGenerator, PyTorchScatterMixin, PyTorchDistributedMixin
+    ClassBasedGenerator,
 ):
     """PyTorch code generator."""
 
@@ -78,6 +71,13 @@ class PyTorchCodeGenerator(
         super().__init__(graph)
         self.vision_visitor = PyTorchVisionVisitor()
         self.audio_visitor = PyTorchAudioVisitor()
+        self.visitors.extend(
+            [
+                SharedASTGeneratorVisitor(generator=self),
+                PyTorchScatterVisitor(),
+                PyTorchDistributedVisitor(),
+            ]
+        )
 
     def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Visit."""
@@ -123,6 +123,7 @@ class PyTorchCodeGenerator(
         return "keepdim"
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "TruncateDiv": "torch.trunc({0} / {1})",
             "TruncateMod": "torch.fmod({0}, {1})",
@@ -139,17 +140,13 @@ class PyTorchCodeGenerator(
         }
 
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "Matmul": "torch.matmul({0}, {1})",
             "Trace": "tf.linalg.trace",
             "Adjoint": "tf.linalg.adjoint",
             "BandPart": "tf.linalg.band_part",
             "CholeskySolve": "tf.linalg.cholesky_solve",
-            "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
-            "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
-            "MatrixRank": "tf.linalg.matrix_rank",
-            "MatrixTranspose": "tf.linalg.matrix_transpose",
-            "Sqrtm": "tf.linalg.sqrtm",
             "Dot": "torch.dot({0}, {1})",
             "Fftnd": "torch.fft.fftn({0})",
             "Ifftnd": "torch.fft.ifftn({0})",
@@ -157,12 +154,6 @@ class PyTorchCodeGenerator(
             "Irfftnd": "torch.fft.irfftn({0})",
             "Fftshift": "torch.fft.fftshift({0})",
             "Ifftshift": "torch.fft.ifftshift({0})",
-            "Dct": "tf.signal.dct({0})",
-            "Idct": "tf.signal.idct({0})",
-            "Mdct": "tf.signal.mdct({0})",
-            "InverseMdct": "tf.signal.inverse_mdct({0})",
-            "Frame": "tf.signal.frame({0})",
-            "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
             "Fft": "torch.fft.fft({0})",
             "Rfft": "torch.fft.rfft({0})",
             "Fftn": "torch.fft.fftn({0})",
@@ -188,6 +179,7 @@ class PyTorchCodeGenerator(
         }
 
     def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "Relu": "torch.nn.functional.relu({0})",
             "Relu6": "torch.nn.functional.relu6({0})",
@@ -212,29 +204,16 @@ class PyTorchCodeGenerator(
         }
 
     def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "Arange": "torch.arange({0})",
-            "Zeros": "torch.zeros({shape})"
-            + (
-                ", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)"
-                if "dtype" in kwargs
-                else ""
-            ),
-            "Ones": "torch.ones({shape})"
-            + (
-                ", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)"
-                if "dtype" in kwargs
-                else ""
-            ),
-            "Full": "torch.full({shape}, {fill_value})"
-            + (
-                ", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)"
-                if "dtype" in kwargs
-                else ""
-            ),
+            "Zeros": "torch.zeros({shape})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
+            "Ones": "torch.ones({shape})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
+            "Full": "torch.full({shape}, {fill_value})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
         }
 
     def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "BroadcastTo": "{0}.expand({shape})",
             "Reshape": "torch.reshape({0}, {shape})",
@@ -285,19 +264,13 @@ class PyTorchCodeGenerator(
         Returns:
             Dictionary mapping operation type to format string.
         """
-        ops = {}
-        ops.update(self._get_math_ops(kwargs))
-        ops.update(self._get_linalg_ops(kwargs))
-        ops.update(self._get_nn_ops(kwargs))
-        ops.update(self._get_creation_ops(kwargs))
-        ops.update(self._get_array_ops(kwargs))
+        ops = super().get_ops_map(kwargs)
 
         ops["Beta"] = "torch.distributions.beta.Beta({1}, {2}).sample({shape})"
         ops["Dirichlet"] = "torch.distributions.dirichlet.Dirichlet({1}).sample({shape})"
         ops["Gamma"] = "torch.distributions.gamma.Gamma({1}, 1.0).sample({shape})"
         ops["RngBitGenerator"] = "torch.randint(0, 255, {shape})"
         ops["RngUniform"] = "({1} - {0}) * torch.rand({shape}) + {0}"
-
         ops["Infeed"] = "{0}"
         ops["Outfeed"] = "{0}"
         ops["AxisIndex"] = "0"
@@ -315,15 +288,13 @@ class PyTorchCodeGenerator(
 
     def _get_prefix_code(self) -> list[str]:
         """Return prefix code."""
-        import os
-
         tmpl_path = os.path.join(os.path.dirname(__file__), "pytorch_prefix.py.tmpl")
         with open(tmpl_path) as f:
             pt_prefix_template = f.read()
         return [
             "import torch",
             "import torch.nn as nn",
-            *self._get_group_norm_code(
+            *NNASTVisitor(generator=self)._get_group_norm_code(
                 GroupNormConfig(
                     "pt",
                     "torch",
@@ -336,7 +307,7 @@ class PyTorchCodeGenerator(
                     ", unbiased=False",
                 )
             ),
-            *pt_prefix_template.split("\n"),
+            *pt_prefix_template.splitlines(),
         ]
 
     def _emit_init_body(self) -> bool:
@@ -346,8 +317,6 @@ class PyTorchCodeGenerator(
             if node.op_type == "Constant":
                 val_repr = self.emit_constant(node)
                 var_name = self.assign_var_name(node.id, "const")
-                self.add_line(
-                    f"self.register_parameter('{var_name}', nn.Parameter(torch.tensor({val_repr})))"
-                )
+                self.add_line(f"self.register_parameter('{var_name}', nn.Parameter(torch.tensor({val_repr})))")
                 has_params = True
         return has_params

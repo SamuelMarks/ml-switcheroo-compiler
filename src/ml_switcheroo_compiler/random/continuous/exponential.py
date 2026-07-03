@@ -1,0 +1,10 @@
+"""Module docstring."""
+
+from __future__ import annotations
+
+from ml_switcheroo_compiler.random.state import _dispatch_random
+
+
+def exponential(*args: object, **kwargs: object) -> object:
+    """Execute exponential."""
+    return _dispatch_random("exponential", *args, **kwargs)

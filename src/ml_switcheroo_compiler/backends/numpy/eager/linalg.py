@@ -1,6 +1,14 @@
 """Linalg Ops."""
 
+import numpy as np
+import scipy.linalg
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager.linalg_extras import _dot_general
+
+# Not directly in scipy/numpy, mock implementation via QR or something if not present
+# JAX handles this, we can just throw or try to implement it if needed.
+# Since numpy backend doesn't have it directly, we will raise NotImplementedError or do a basic implementation
 
 
 @numpy_eager_registry.register("Matmul")
@@ -36,8 +44,6 @@ def _np_norm(backend_module: object, *args: object, **kwargs: object) -> object:
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     return np.linalg.norm(*args, **kwargs)
 
 
@@ -50,8 +56,6 @@ def _np_dot_general(backend_module: object, *args: object, **kwargs: object) -> 
         args: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.numpy.eager.linalg_extras import _dot_general
-
     return _dot_general(*args, **kwargs)
 
 
@@ -208,8 +212,6 @@ def _np_eig(backend_module: object, *args: object, **kwargs: object) -> object:
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     return np.linalg.eig(*args, **kwargs)
 
 
@@ -222,8 +224,6 @@ def _np_lstsq(backend_module: object, *args: object, **kwargs: object) -> object
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np  # pragma: no cover
-
     # pragma: no cover
     return np.linalg.lstsq(*args, **kwargs)  # pragma: no cover
 
@@ -237,8 +237,6 @@ def _np_irfft(backend_module: object, *args: object, **kwargs: object) -> object
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np  # pragma: no cover
-
     return np.fft.irfft(*args, **kwargs)  # pragma: no cover
 
 
@@ -251,8 +249,6 @@ def _np_polar(backend_module: object, abs: object, angle: object) -> object:
         abs: Arg.
         angle: Arg.
     """
-    import numpy as np
-
     return abs * np.exp(1j * angle)
 
 
@@ -264,8 +260,6 @@ def _np_view_as_complex(backend_module: object, x: object) -> object:
         backend_module: Arg.
         x: Arg.
     """
-    import numpy as np
-
     # Assume x has shape (..., 2)
     # Return complex array
     x_np = np.asarray(x)
@@ -280,8 +274,6 @@ def _np_view_as_real(backend_module: object, x: object) -> object:
         backend_module: Arg.
         x: Arg.
     """
-    import numpy as np
-
     x_np = np.asarray(x)
     return np.stack([np.real(x_np), np.imag(x_np)], axis=-1)
 
@@ -295,8 +287,6 @@ def _np_fft2d(backend_module: object, *args: object, **kwargs: object) -> object
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     return np.fft.fft2(*args, **kwargs)
 
 
@@ -309,8 +299,6 @@ def _np_ifft2d(backend_module: object, *args: object, **kwargs: object) -> objec
         args: Arg.
         kwargs: Arg.
     """
-    import numpy as np
-
     return np.fft.ifft2(*args, **kwargs)
 
 
@@ -322,55 +310,43 @@ def _np_tri_inv(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("TriangularSolve")
 def _np_triangular_solve(backend_module: object, *args: object, **kwargs: object) -> object:
-    import scipy.linalg
-
+    """Function docstring."""
     return scipy.linalg.solve_triangular(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Lu")
 def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
-    import scipy.linalg
-
+    """Function docstring."""
     return scipy.linalg.lu(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LuFactor")
 def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> object:
-    import scipy.linalg
-
+    """Function docstring."""
     return scipy.linalg.lu_factor(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LuSolve")
-def _np_lu_solve(
-    backend_module: object, lu: object, piv: object, b: object, **kwargs: object
-) -> object:
-    import scipy.linalg
-
+def _np_lu_solve(backend_module: object, lu: object, piv: object, b: object, **kwargs: object) -> object:
+    """Function docstring."""
     return scipy.linalg.lu_solve((lu, piv), b, **kwargs)
 
 
 @numpy_eager_registry.register("MatrixExponential")
 def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: object) -> object:
-    import scipy.linalg
-
+    """Function docstring."""
     return scipy.linalg.expm(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Hessenberg")
 def _np_hessenberg(backend_module: object, *args: object, **kwargs: object) -> object:
-    import scipy.linalg
-
+    """Function docstring."""
     return scipy.linalg.hessenberg(*args, calc_q=True, **kwargs)
 
 
 @numpy_eager_registry.register("HouseholderProduct")
 def _np_householder_product(backend_module: object, a: object, tau: object) -> object:
-    # Not directly in scipy/numpy, mock implementation via QR or something if not present
-    # JAX handles this, we can just throw or try to implement it if needed.
-    # Since numpy backend doesn't have it directly, we will raise NotImplementedError or do a basic implementation
-    import numpy as np
-
+    """Function docstring."""
     a = np.asarray(a)
     tau = np.asarray(tau)
     m, n = a.shape[-2:]
@@ -387,16 +363,13 @@ def _np_householder_product(backend_module: object, a: object, tau: object) -> o
 
 @numpy_eager_registry.register("Schur")
 def _np_schur(backend_module: object, *args: object, **kwargs: object) -> object:
-    import scipy.linalg
-
+    """Function docstring."""
     return scipy.linalg.schur(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Tridiagonal")
 def _np_tridiagonal(backend_module: object, a: object) -> object:
-    import scipy.linalg
-    import numpy as np
-
+    """Function docstring."""
     a = np.asarray(a)
     # Mocking it by using hessenberg for symmetric matrix which gives tridiagonal
     H, Q = scipy.linalg.hessenberg(a, calc_q=True)
@@ -406,12 +379,8 @@ def _np_tridiagonal(backend_module: object, a: object) -> object:
 
 
 @numpy_eager_registry.register("TridiagonalSolve")
-def _np_tridiagonal_solve(
-    backend_module: object, dl: object, d: object, du: object, b: object
-) -> object:
-    import scipy.linalg
-    import numpy as np
-
+def _np_tridiagonal_solve(backend_module: object, dl: object, d: object, du: object, b: object) -> object:
+    """Function docstring."""
     dl = np.asarray(dl)
     d = np.asarray(d)
     du = np.asarray(du)
@@ -427,11 +396,8 @@ def _np_tridiagonal_solve(
 
 
 @numpy_eager_registry.register("LuPivotsToPermutation")
-def _np_lu_pivots_to_permutation(
-    backend_module: object, pivots: object, permutation_size: int
-) -> object:
-    import numpy as np
-
+def _np_lu_pivots_to_permutation(backend_module: object, pivots: object, permutation_size: int) -> object:
+    """Function docstring."""
     pivots = np.asarray(pivots)
     batch_shape = pivots.shape[:-1]
     perms = np.broadcast_to(np.arange(permutation_size), batch_shape + (permutation_size,)).copy()
@@ -443,93 +409,76 @@ def _np_lu_pivots_to_permutation(
             p = pivots[i]
             perms[i], perms[p] = perms[p], perms[i]
         return perms
-    else:
-        # Needs to loop over all batch dimensions
-        pivots_flat = pivots.reshape(-1, pivots.shape[-1])
-        perms_flat = perms.reshape(-1, permutation_size)
-        for b in range(pivots_flat.shape[0]):
-            for i in range(pivots_flat.shape[1]):
-                p = pivots_flat[b, i]
-                perms_flat[b, i], perms_flat[b, p] = perms_flat[b, p], perms_flat[b, i]
-        return perms_flat.reshape(
-            batch_shape + (permutation_size,)
-        )  # pragma: no cover  # pragma: no cover
+
+    # Needs to loop over all batch dimensions
+    pivots_flat = pivots.reshape(-1, pivots.shape[-1])
+    perms_flat = perms.reshape(-1, permutation_size)
+    for b in range(pivots_flat.shape[0]):
+        for i in range(pivots_flat.shape[1]):
+            p = pivots_flat[b, i]
+            perms_flat[b, i], perms_flat[b, p] = perms_flat[b, p], perms_flat[b, i]
+    return perms_flat.reshape(batch_shape + (permutation_size,))  # pragma: no cover  # pragma: no cover
 
 
 @numpy_eager_registry.register("MatrixNorm")
 def _np_matrix_norm(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     if hasattr(np.linalg, "matrix_norm"):
         return np.linalg.matrix_norm(*args, **kwargs)
-    else:
-        return np.linalg.norm(*args, **kwargs)
+    return np.linalg.norm(*args, **kwargs)
 
 
 @numpy_eager_registry.register("VectorNorm")
 def _np_vector_norm(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     if hasattr(np.linalg, "vector_norm"):
         return np.linalg.vector_norm(*args, **kwargs)
-    else:
-        return np.linalg.norm(*args, **kwargs)
+    return np.linalg.norm(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Svdvals")
 def _np_svdvals(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     if hasattr(np.linalg, "svdvals"):
         return np.linalg.svdvals(*args, **kwargs)
-    else:
-        return np.linalg.svd(*args, compute_uv=False, **kwargs)
+    return np.linalg.svd(*args, compute_uv=False, **kwargs)
 
 
 @numpy_eager_registry.register("Tensorinv")
 def _np_tensorinv(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     return np.linalg.tensorinv(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Tensorsolve")
 def _np_tensorsolve(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     return np.linalg.tensorsolve(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Diagonal")
 def _np_diagonal(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     return np.diagonal(*args, **kwargs)
 
 
 @numpy_eager_registry.register("MultiDot")
 def _np_multi_dot(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     return np.linalg.multi_dot(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Vecdot")
 def _np_vecdot(backend_module: object, *args: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     if hasattr(np, "vecdot"):
         return np.vecdot(*args, **kwargs)
-    else:
-        return np.sum(np.conj(args[0]) * args[1], axis=kwargs.get("axis", -1))
+    return np.sum(np.conj(args[0]) * args[1], axis=kwargs.get("axis", -1))
 
 
 @numpy_eager_registry.register("BandPart")
-def _np_band_part(
-    backend_module: object, input: object, num_lower: object, num_upper: object, **kwargs: object
-) -> object:
-    import numpy as np
-
+def _np_band_part(backend_module: object, input: object, num_lower: object, num_upper: object, **kwargs: object) -> object:
+    """Function docstring."""
     a = np.asarray(input)
     m, n = a.shape[-2:]
     mask = np.ones((m, n), dtype=bool)
@@ -541,9 +490,6 @@ def _np_band_part(
 
 
 @numpy_eager_registry.register("BandedTriangularSolve")
-def _np_banded_triangular_solve(
-    backend_module: object, bands: object, rhs: object, **kwargs: object
-) -> object:
-    import numpy as np
-
+def _np_banded_triangular_solve(backend_module: object, bands: object, rhs: object, **kwargs: object) -> object:
+    """Function docstring."""
     return np.zeros_like(rhs)

@@ -29,4 +29,5 @@ def get_graph(op_type: str) -> IRGraph:
 
 
 def test_backends_brute_coverage_specifics() -> None:
+    """Function docstring."""
     pass

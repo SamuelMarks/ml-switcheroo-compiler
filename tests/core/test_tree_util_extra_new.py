@@ -1,10 +1,14 @@
-from ml_switcheroo_compiler.tree_util import tree_leaves, tree_structure, tree_all, tree_reduce
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.device import Device
+"""Module docstring."""
+
 import numpy as np
 
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.tree_util import tree_all, tree_leaves, tree_reduce, tree_structure
 
-def test_tree_util_extra():
+
+def test_tree_util_extra() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t1 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))
     t2 = Tensor(np.ones((2,)), TensorConfig((2,), "float32", device))

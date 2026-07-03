@@ -1,26 +1,26 @@
 """Test infer_shape for text ops."""
 
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.text.ops import (
-    StringToHash,
-    RegexReplace,
-    StringSplit,
-    Lookup,
+    AsString,
+    EditDistance,
     Hashing,
-    StringLookup,
     IntegerLookup,
-    TextVectorization,
-    StringToNumber,
-    StringLower,
-    StringUpper,
+    Lookup,
+    RegexFullMatch,
+    RegexReplace,
     StringJoin,
     StringLength,
+    StringLookup,
+    StringLower,
+    StringSplit,
     StringSubstr,
-    RegexFullMatch,
-    EditDistance,
-    AsString,
+    StringToHash,
+    StringToNumber,
+    StringUpper,
+    TextVectorization,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.dtype import DType
 
 
 def test_text_infer_shape() -> None:

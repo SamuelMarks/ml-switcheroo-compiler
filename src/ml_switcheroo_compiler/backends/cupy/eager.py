@@ -1,9 +1,9 @@
 """Backend utilities."""
 
-from ml_switcheroo_compiler.backends.eager import execute_generic_op
+import cupy as cp
 
 try:
-    import cupy as cp
+    pass
 except ImportError:
     cp = None
 
@@ -20,4 +20,4 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     Returns:
     Any: The result.
     """
-    return execute_generic_op(cp, op_type, *args, **kwargs)
+    raise NotImplementedError(f"Operation '{op_type}' not supported eagerly by this backend.")

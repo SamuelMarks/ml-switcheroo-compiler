@@ -34,11 +34,7 @@ class CSTTransformer(cst.CSTTransformer):
             original_node (cst.ImportFrom): Argument original_node
             updated_node (cst.ImportFrom): Argument updated_node
         """
-        if (
-            self.target_framework == "jax"
-            and updated_node.module
-            and isinstance(updated_node.module, cst.Name)
-        ) and updated_node.module.value == "torch":
+        if (self.target_framework == "jax" and updated_node.module and isinstance(updated_node.module, cst.Name)) and updated_node.module.value == "torch":
             return updated_node.with_changes(module=cst.Name("jax"))
         return updated_node
 

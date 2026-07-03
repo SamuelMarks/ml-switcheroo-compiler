@@ -1,5 +1,7 @@
 """Module docstring."""
 
+import ml_switcheroo_compiler.transforms.passes.dtype_inference as di
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
@@ -17,8 +19,6 @@ def test_dtype_inference_except_branch(monkeypatch: object) -> None:
     graph.nodes["n2"] = n2
     graph.nodes["n3"] = n3
 
-    import ml_switcheroo_compiler.transforms.passes.dtype_inference as di
-
     def mock_promote(*args: object) -> object:
         """Docstring."""
         raise ValueError("mock error")
@@ -31,8 +31,6 @@ def test_dtype_inference_except_branch(monkeypatch: object) -> None:
 
 def test_dtype_inference_3_inputs() -> None:
     """Docstring."""
-    from ml_switcheroo_compiler.core.config import config
-
     config.jax_enable_x64 = True
     graph = IRGraph()
     n0 = IRNode(id="n0", op_type="Constant", inputs=[], attributes={"dtype": DType.Int32.value})

@@ -1,8 +1,16 @@
+"""Module docstring."""
+
+import tensorflow as tf
+
+# TF eager testing
+from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
+from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_tensorflow_generator_coverage():
+def test_tensorflow_generator_coverage() -> object:
+    """Function docstring."""
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
 
@@ -15,9 +23,7 @@ def test_tensorflow_generator_coverage():
     )
     assert "tf_conv_transpose" in gen.visit(n_conv, ["x", "w"])
 
-    n_ragged = IRNode(
-        id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None
-    )
+    n_ragged = IRNode(id="n2", op_type="RaggedDot", inputs=["x", "y"], attributes={}, shape_metadata=None)
     assert "tf_ragged_dot" in gen.visit(n_ragged, ["x", "y"])
 
     assert gen.get_fallback_prefix() == "tf.math"
@@ -45,18 +51,12 @@ def test_tensorflow_generator_coverage():
     gen.code = []
     gen._generate_return_block()
 
-    # TF eager testing
-    from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
-
     try:
         execute_op(None, "UnknownFakeOp", 1)
     except NotImplementedError:
         pass
 
     execute_op(None, "Add", 1, 1)
-
-    from ml_switcheroo_compiler.backends.tensorflow.types import zeros, array, asarray, item
-    import tensorflow as tf
 
     assert zeros(None, (2,)) is not None
     assert array(None, [1, 2]) is not None

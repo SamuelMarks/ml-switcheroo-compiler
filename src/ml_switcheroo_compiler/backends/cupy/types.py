@@ -1,5 +1,7 @@
 """Backend utilities."""
 
+import cupy as cp
+
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
     generic_asarray,
@@ -8,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 try:
-    import cupy as cp
+    pass
 except ImportError:
     cp = None
 

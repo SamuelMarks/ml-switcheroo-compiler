@@ -8,6 +8,8 @@ operations, enabling the computation of gradients during the backward pass
 
 from typing import Callable
 
+from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+
 # Registry mapping op_name to VJP function
 _VJP_REGISTRY: dict[str, Callable] = {}
 
@@ -61,8 +63,6 @@ def get_vjp(op_name: str) -> Callable:
     operation
     """
     if op_name not in _VJP_REGISTRY:
-        from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
         msg = f"VJP not implemented for {op_name}"
         raise UnimplementedMathError(msg)
     return _VJP_REGISTRY[op_name]

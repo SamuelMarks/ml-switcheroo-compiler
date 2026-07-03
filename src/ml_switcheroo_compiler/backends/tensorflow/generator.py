@@ -1,13 +1,23 @@
 """TensorFlow Target Emission."""
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorMixin
+from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
+from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 
 @register_backend("tensorflow")
-class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
+class TensorFlowCodeGenerator(BaseGenerator):
     """Emit TensorFlow-compatible code from IR."""
+
+    def __init__(self, graph: object) -> None:
+        """Init."""
+        super().__init__(graph)
+        self.visitors.extend(
+            [
+                SharedASTGeneratorVisitor(generator=self),
+            ]
+        )
 
     def _get_backend_prefix(self) -> str:
         """Function docstring."""
@@ -70,6 +80,7 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         return "tf.math"
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "TruncateDiv": "tf.math.truncatediv({0}, {1})",
             "TruncateMod": "tf.math.truncatemod({0}, {1})",
@@ -86,6 +97,7 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         }
 
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "Matmul": "tf.linalg.matmul({0}, {1})",
             "Trace": "tf.linalg.trace",
@@ -93,11 +105,6 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
             "BandPart": "tf.linalg.band_part",
             "CholeskySolve": "tf.linalg.cholesky_solve",
             "TriInv": "tf.linalg.inv({0})",
-            "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
-            "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
-            "MatrixRank": "tf.linalg.matrix_rank",
-            "MatrixTranspose": "tf.linalg.matrix_transpose",
-            "Sqrtm": "tf.linalg.sqrtm",
             "Dot": "tf.tensordot({0}, {1}, axes=1)",
             "Fftnd": "tf.signal.fftn({0})",
             "Ifftnd": "tf.signal.ifftn({0})",
@@ -105,18 +112,13 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
             "Irfftnd": "tf.signal.irfftn({0})",
             "Fftshift": "tf.signal.fftshift({0})",
             "Ifftshift": "tf.signal.ifftshift({0})",
-            "Dct": "tf.signal.dct({0})",
-            "Idct": "tf.signal.idct({0})",
-            "Mdct": "tf.signal.mdct({0})",
-            "InverseMdct": "tf.signal.inverse_mdct({0})",
-            "Frame": "tf.signal.frame({0})",
-            "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
             "Fft": "tf.signal.fft({0})",
             "Rfft": "tf.signal.rfft({0})",
             "Fftn": "tf.signal.fftNd({0})",
         }
 
     def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "Relu": "tf.nn.relu({0})",
             "Relu6": "tf.nn.relu6({0})",
@@ -141,6 +143,7 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         }
 
     def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "Arange": "tf.range({0})",
             "Zeros": self._format_zeros_like("zeros", kwargs),
@@ -149,6 +152,7 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         }
 
     def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
+        """Function docstring."""
         return {
             "BroadcastTo": "tf.broadcast_to({0}, {shape})",
             "Reshape": "tf.reshape({0}, {shape})",
@@ -197,19 +201,10 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         Returns:
             Dictionary mapping operation type to format string.
         """
-        ops = {}
-        ops.update(self._get_math_ops(kwargs))
-        ops.update(self._get_linalg_ops(kwargs))
-        ops.update(self._get_nn_ops(kwargs))
-        ops.update(self._get_creation_ops(kwargs))
-        ops.update(self._get_array_ops(kwargs))
+        ops = super().get_ops_map(kwargs)
 
-        ops["Beta"] = (
-            "tf.random.gamma({shape}, alpha={1}) / (tf.random.gamma({shape}, alpha={1}) + tf.random.gamma({shape}, alpha={2}))"
-        )
-        ops["Dirichlet"] = (
-            "tf.random.gamma({shape}, alpha={1}) / tf.reduce_sum(tf.random.gamma({shape}, alpha={1}), axis=-1, keepdims=True)"
-        )
+        ops["Beta"] = "tf.random.gamma({shape}, alpha={1}) / (tf.random.gamma({shape}, alpha={1}) + tf.random.gamma({shape}, alpha={2}))"
+        ops["Dirichlet"] = "tf.random.gamma({shape}, alpha={1}) / tf.reduce_sum(tf.random.gamma({shape}, alpha={1}), axis=-1, keepdims=True)"
         ops["Gamma"] = "tf.random.gamma({shape}, alpha={1})"
         ops["RngBitGenerator"] = "tf.random.uniform({shape}, minval=0, maxval=255, dtype=tf.int32)"
         ops["RngUniform"] = "tf.random.uniform({shape}, minval={0}, maxval={1})"
@@ -230,14 +225,14 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         self.add_line(f"{var_name} = tf.constant({val_repr})")
 
     def _generate_file_header(self) -> list[str]:
+        """Function docstring."""
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
-        from ml_switcheroo_compiler.backends.common.generator_mixins import GroupNormConfig
-
+        """Function docstring."""
         return [
             "import tensorflow as tf\n",
-            *self._get_group_norm_code(
+            *NNASTVisitor(generator=self)._get_group_norm_code(
                 GroupNormConfig(
                     prefix="tf",
                     module="tensorflow as tf",
@@ -252,6 +247,7 @@ class TensorFlowCodeGenerator(SharedASTGeneratorMixin, BaseGenerator):
         ]
 
     def _generate_function_signature(self) -> None:
+        """Function docstring."""
         self.indent_level = 0
         self.add_line("@tf.function")
         self.add_line("def apply_model(*args, **kwargs):")

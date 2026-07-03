@@ -7,23 +7,12 @@ Sin, Cos, Exp, etc.
 
 import numpy as np
 
-from ml_switcheroo_compiler.ops.unary.math import (
-    Abs,
-    Ceil,
-    Cos,
-    Exp,
-    Floor,
-    Log,
-    Negative,
-    Positive,
-    Round,
-    Sign,
-    Sin,
-    Tan,
-    Sqrt,
-    Square,
-    UnaryMathOp,
-)
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.ops.unary.arithmetic import Abs, Ceil, Floor, Negative, Positive, Round, Sign, Sqrt, Square
+from ml_switcheroo_compiler.ops.unary.base import UnaryMathOp
+from ml_switcheroo_compiler.ops.unary.exponential import Exp, Log
+from ml_switcheroo_compiler.ops.unary.special import Bitcast, Cast, Frexp
+from ml_switcheroo_compiler.ops.unary.trigonometric import Cos, Sin, Tan
 
 
 def test_unary_math_ops() -> None:
@@ -119,11 +108,6 @@ def test_unary_base_op() -> None:
 
 def test_unary_special_coverage() -> None:
     """Tests special edge cases and error handling for unary operations."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.unary.special import Bitcast, Cast, Frexp
-
     x = np.array([1.5, 2.5])
 
     cast_op = Cast()

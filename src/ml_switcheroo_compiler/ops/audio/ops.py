@@ -194,7 +194,7 @@ class OverlapAndAdd(OpDef):
         """
         shape = list(a.shape)
         frame_step = kwargs.get("frame_step", 1)  # pragma: no cover
-        if len(shape) >= 2:  # noqa: PLR2004  # pragma: no cover
+        if len(shape) >= 2:
             num_frames = shape[-2]  # pragma: no cover
             frame_length = shape[-1]  # pragma: no cover
             shape.pop()  # pragma: no cover

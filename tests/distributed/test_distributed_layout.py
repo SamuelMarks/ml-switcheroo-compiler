@@ -1,3 +1,5 @@
+"""Module docstring."""
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _dummy_all_gather
@@ -5,7 +7,8 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 
 
-def test_distributed_layout():
+def test_distributed_layout() -> object:
+    """Function docstring."""
     # Setup DeviceMesh and LayoutMap
     mesh = DeviceMesh(shape=(2, 4), axis_names=("data", "model"))
     spec = ShardingSpec(mesh, ("data", None))

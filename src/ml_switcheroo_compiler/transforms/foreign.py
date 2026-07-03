@@ -88,9 +88,7 @@ def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
 
     graph = LogicalGraph(name="torch_fx_ingested")
 
-    if not hasattr(fx_graph_module, "graph") or not hasattr(
-        fx_graph_module.graph, "nodes"
-    ):  # pragma: no branch
+    if not hasattr(fx_graph_module, "graph") or not hasattr(fx_graph_module.graph, "nodes"):  # pragma: no branch
         return graph  # pragma: no cover
 
     handlers = {

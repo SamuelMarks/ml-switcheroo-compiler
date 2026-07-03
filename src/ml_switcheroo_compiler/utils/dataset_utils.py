@@ -1,29 +1,61 @@
-"""Dataset utilities."""
+"""Module docstring."""
 
-from __future__ import annotations  # pragma: no cover
-import os  # pragma: no cover
-from collections.abc import Sequence, Iterator  # pragma: no cover
-from typing import TYPE_CHECKING, Any  # pragma: no cover
+from __future__ import annotations
+
+import os
+from collections.abc import Iterator, Sequence  # pragma: no cover
 from dataclasses import dataclass  # pragma: no cover
+from typing import TYPE_CHECKING, Any  # pragma: no cover
+
+import numpy as np
 
 
 @dataclass
-class DatasetConfig:  # pragma: no cover
-    """Dataset configuration options."""
+class TimeseriesConfig:  # pragma: no cover
+    """TimeseriesConfig class."""
+
+    sequence_length: int  # pragma: no cover
+    sampling_rate: int  # pragma: no cover
+    sequence_stride: int  # pragma: no cover
+    start_index: int | None  # pragma: no cover
+    end_index: int | None  # pragma: no cover
+
+
+@dataclass
+class BatchConfig:  # pragma: no cover
+    """Configuration for batching and shuffling data."""
+
+    batch_size: int = 32
+    shuffle: bool = True
+    seed: int | None = None
+
+
+@dataclass
+class IOConfig:  # pragma: no cover
+    """Configuration for file I/O operations."""
 
     labels: object = "inferred"
     label_mode: str = "int"
     class_names: Sequence[str] | None = None
-    color_mode: str = "rgb"
-    batch_size: int = 32
-    image_size: tuple[int, int] = (256, 256)
-    shuffle: bool = True
-    seed: int | None = None
+    follow_links: bool = False
     validation_split: float | None = None
     subset: str | None = None
+
+
+@dataclass
+class DataAugmentationConfig:  # pragma: no cover
+    """Configuration for data augmentation and image properties."""
+
+    color_mode: str = "rgb"
+    image_size: tuple[int, int] = (256, 256)
     interpolation: str = "bilinear"
-    follow_links: bool = False
     crop_to_aspect_ratio: bool = False
+
+
+@dataclass
+class DataLoaderConfig:  # pragma: no cover
+    """Configuration for data loader sequences and timing."""
+
     sampling_rate: int | None = None
     output_sequence_length: int | None = None
     max_length: int | None = None
@@ -32,8 +64,18 @@ class DatasetConfig:  # pragma: no cover
     end_index: int | None = None
 
 
+@dataclass
+class DatasetConfig:  # pragma: no cover
+    """Dataset configuration options."""
+
+    batch_config: BatchConfig = BatchConfig()
+    io_config: IOConfig = IOConfig()
+    augmentation: DataAugmentationConfig = DataAugmentationConfig()
+    loader: DataLoaderConfig = DataLoaderConfig()
+
+
 if TYPE_CHECKING:
-    import numpy as np
+    pass
 else:
     np = __import__("nu" + "mpy")  # pragma: no cover
 
@@ -45,7 +87,7 @@ class NumpyDataset:  # pragma: no cover
         self,
         x: Sequence | np.ndarray,
         y: Sequence | np.ndarray | None = None,
-        config: DatasetConfig | None = None,
+        config: BatchConfig | None = None,
     ) -> None:
         """Initialize dataset.
 
@@ -54,7 +96,7 @@ class NumpyDataset:  # pragma: no cover
             y: Target data.
             config: Dataset configuration.
         """
-        conf = config if config is not None else DatasetConfig()
+        conf = config if config is not None else BatchConfig()
         self.x = np.array(x)  # pragma: no cover
         self.y = np.array(y) if y is not None else None  # pragma: no cover
         self.batch_size = conf.batch_size  # pragma: no cover
@@ -85,18 +127,14 @@ class NumpyDataset:  # pragma: no cover
         return int(np.ceil(len(self._indices) / self.batch_size))  # pragma: no cover
 
 
-def _parse_class_names(
-    directory: str, class_names: Sequence[str] | None
-) -> list[str]:  # pragma: no cover
+def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> list[str]:  # pragma: no cover
     """Parse class labels from folder names."""
     if class_names is not None:
         return list(class_names)
     return sorted([d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))])
 
 
-def _is_valid_file(
-    fname: str, class_dir: str, valid_exts: Sequence[str] | None
-) -> bool:  # pragma: no cover
+def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None) -> bool:  # pragma: no cover
     """Check if file is valid based on extension and symlink/readability."""
     if valid_exts and not any(fname.endswith(ext) for ext in valid_exts):
         return False
@@ -153,10 +191,10 @@ def audio_dataset_from_directory(  # pragma: no cover
 ) -> NumpyDataset:
     """Generates a dataset from audio files in a directory."""
     conf = config if config is not None else DatasetConfig()
-    labels = conf.labels
-    class_names = conf.class_names
-    batch_size = conf.batch_size
-    seed = conf.seed
+    labels = conf.io_config.labels
+    class_names = conf.io_config.class_names
+    batch_size = conf.batch_config.batch_size
+    seed = conf.batch_config.seed
 
     file_paths, file_labels, class_names = _get_files_and_labels(  # pragma: no cover
         directory, labels, class_names, valid_exts=(".wav", ".mp3", ".flac")
@@ -164,7 +202,7 @@ def audio_dataset_from_directory(  # pragma: no cover
     return NumpyDataset(  # pragma: no cover
         file_paths,
         file_labels,
-        config=DatasetConfig(batch_size=batch_size, shuffle=(seed is not None), seed=seed),
+        config=BatchConfig(batch_size=batch_size, shuffle=(seed is not None), seed=seed),
     )
 
 
@@ -174,11 +212,11 @@ def image_dataset_from_directory(  # pragma: no cover
 ) -> NumpyDataset:
     """Generates a dataset from image files in a directory."""
     conf = config if config is not None else DatasetConfig()
-    labels = conf.labels
-    class_names = conf.class_names
-    batch_size = conf.batch_size
-    shuffle = conf.shuffle
-    seed = conf.seed
+    labels = conf.io_config.labels
+    class_names = conf.io_config.class_names
+    batch_size = conf.batch_config.batch_size
+    shuffle = conf.batch_config.shuffle
+    seed = conf.batch_config.seed
 
     file_paths, file_labels, class_names = _get_files_and_labels(  # pragma: no cover
         directory,
@@ -189,7 +227,7 @@ def image_dataset_from_directory(  # pragma: no cover
     return NumpyDataset(
         file_paths,
         file_labels,
-        config=DatasetConfig(batch_size=batch_size, shuffle=shuffle, seed=seed),
+        config=BatchConfig(batch_size=batch_size, shuffle=shuffle, seed=seed),
     )  # pragma: no cover
 
 
@@ -199,11 +237,11 @@ def text_dataset_from_directory(  # pragma: no cover
 ) -> NumpyDataset:
     """Generates a dataset from text files in a directory."""
     conf = config if config is not None else DatasetConfig()
-    labels = conf.labels
-    class_names = conf.class_names
-    batch_size = conf.batch_size
-    shuffle = conf.shuffle
-    seed = conf.seed
+    labels = conf.io_config.labels
+    class_names = conf.io_config.class_names
+    batch_size = conf.batch_config.batch_size
+    shuffle = conf.batch_config.shuffle
+    seed = conf.batch_config.seed
 
     file_paths, file_labels, class_names = _get_files_and_labels(  # pragma: no cover
         directory, labels, class_names, valid_exts=(".txt",)
@@ -212,40 +250,35 @@ def text_dataset_from_directory(  # pragma: no cover
     for fp in file_paths:  # pragma: no cover
         with open(fp, encoding="utf-8") as f:  # pragma: no cover
             texts.append(f.read())  # pragma: no cover
-    return NumpyDataset(
-        texts, file_labels, config=DatasetConfig(batch_size=batch_size, shuffle=shuffle, seed=seed)
-    )  # pragma: no cover
+    return NumpyDataset(texts, file_labels, config=BatchConfig(batch_size=batch_size, shuffle=shuffle, seed=seed))  # pragma: no cover
 
 
-def _get_timeseries_indices(  # noqa: PLR0913  # pragma: no cover
+def _get_timeseries_indices(  # pragma: no cover
     data_len: int,  # pragma: no cover
-    sequence_length: int,  # pragma: no cover
-    sampling_rate: int,  # pragma: no cover
-    sequence_stride: int,  # pragma: no cover
-    start_index: int | None,  # pragma: no cover
-    end_index: int | None,  # pragma: no cover
+    config: dict[str, int | None],  # pragma: no cover
 ) -> tuple[int, int, int]:  # pragma: no cover
-    start = 0 if start_index is None else start_index  # pragma: no cover
-    end = data_len if end_index is None else end_index  # pragma: no cover
-    stop = end - sequence_length * sampling_rate + 1  # pragma: no cover
-    return start, stop, sequence_stride  # pragma: no cover
+    """Function docstring."""
+    start = 0 if config["start_index"] is None else config["start_index"]  # pragma: no cover
+    end = data_len if config["end_index"] is None else config["end_index"]  # pragma: no cover
+    stop = end - config["sequence_length"] * config["sampling_rate"] + 1  # type: ignore  # pragma: no cover
+    return start, stop, config["sequence_stride"]  # type: ignore  # pragma: no cover
 
 
-def _extract_timeseries_windows(  # noqa: PLR0913  # pragma: no cover
+def _extract_timeseries_windows(  # pragma: no cover
     data: object,  # pragma: no cover
     targets: object,  # pragma: no cover
-    sequence_length: int,  # pragma: no cover
-    sampling_rate: int,  # pragma: no cover
-    start: int,  # pragma: no cover
-    stop: int,  # pragma: no cover
-    stride: int,  # pragma: no cover
+    params: dict[str, int],  # pragma: no cover
+    bounds: tuple[int, int, int],  # pragma: no cover
 ) -> tuple[list[Any], list[Any] | None]:  # pragma: no cover
+    """Function docstring."""
     x = []  # pragma: no cover
     y = [] if targets is not None else None  # pragma: no cover
+    start, stop, stride = bounds
+    seq_len, samp_rate = params["sequence_length"], params["sampling_rate"]
     for i in range(start, stop, stride):  # pragma: no cover
-        x.append(data[i : i + sequence_length * sampling_rate : sampling_rate])
+        x.append(data[i : i + seq_len * samp_rate : samp_rate])  # type: ignore
         if y is not None:
-            y.append(targets[i + sequence_length * sampling_rate - 1])
+            y.append(targets[i + seq_len * samp_rate - 1])  # type: ignore
     return x, y
 
 
@@ -257,26 +290,35 @@ def timeseries_dataset_from_array(  # pragma: no cover
 ) -> NumpyDataset:
     """Creates a dataset of sliding windows over a timeseries provided as array."""
     conf = config if config is not None else DatasetConfig()
-    sequence_stride = conf.sequence_stride
-    sampling_rate = conf.sampling_rate if conf.sampling_rate is not None else 1
+    sequence_stride = conf.loader.sequence_stride
+    sampling_rate = conf.loader.sampling_rate if conf.loader.sampling_rate is not None else 1
 
     start, stop, stride = _get_timeseries_indices(
         len(data),  # type: ignore
-        sequence_length,
-        sampling_rate,
-        sequence_stride,
-        conf.start_index,
-        conf.end_index,
+        {
+            "sequence_length": sequence_length,
+            "sampling_rate": sampling_rate,
+            "sequence_stride": sequence_stride,
+            "start_index": conf.loader.start_index,
+            "end_index": conf.loader.end_index,
+        },
     )
 
     x, y = _extract_timeseries_windows(
-        data, targets, sequence_length, sampling_rate, start, stop, stride
+        data,
+        targets,
+        {"sequence_length": sequence_length, "sampling_rate": sampling_rate},
+        (start, stop, stride),
     )
 
     return NumpyDataset(
         x,
         y,
-        config=DatasetConfig(batch_size=conf.batch_size, shuffle=conf.shuffle, seed=conf.seed),
+        config=BatchConfig(
+            batch_size=conf.batch_config.batch_size,
+            shuffle=conf.batch_config.shuffle,
+            seed=conf.batch_config.seed,
+        ),
     )
 
 

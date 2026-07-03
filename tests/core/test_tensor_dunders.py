@@ -6,11 +6,13 @@ unary, indexing, and type conversion operations in eager mode.
 """
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
 
 
 def test_tensor_dunders() -> None:
@@ -57,15 +59,7 @@ def test_tensor_dunders() -> None:
 
 def test_tensor_dunders_extra() -> None:
     """Tests extra tensor dunders for coverage."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
-    t1 = Tensor(
-        np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU), requires_grad=True)
-    )
+    t1 = Tensor(np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU), requires_grad=True))
     t2 = Tensor(np.array(2), TensorConfig((), DType.Float32, Device(DeviceType.CPU)))
 
     assert t1.requires_grad
@@ -106,14 +100,6 @@ def test_tensor_dunders_extra() -> None:
 
 def test_tensor_errors() -> None:
     """Tests tensor errors."""
-    import numpy as np
-    import pytest
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     t = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Float32, Device(DeviceType.CPU)))
     with pytest.raises(ValueError):
         bool(t)
@@ -128,12 +114,6 @@ def test_tensor_errors() -> None:
 
 def test_tensor_tracing_eval() -> None:
     """Tests tensor eval in tracing."""
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     config.eager_mode = False
     g = _tracer.start_tracing()
     pt = ProxyTensor("test_id", (1,), DType.Float32)
@@ -147,14 +127,6 @@ def test_tensor_tracing_eval() -> None:
 
 def test_tensor_coverage_more() -> None:
     """Tests more tensor coverage."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-
     t1 = Tensor(np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU)))
     assert (+t1).data == 1
 
@@ -166,20 +138,12 @@ def test_tensor_coverage_more() -> None:
     t_tuple = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Float32, Device(DeviceType.CPU)))
     assert t_tuple[(0,)].data == 1
 
-    t_tuple2 = Tensor(
-        np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Float32, Device(DeviceType.CPU))
-    )
+    t_tuple2 = Tensor(np.array([[1, 2], [3, 4]]), TensorConfig((2, 2), DType.Float32, Device(DeviceType.CPU)))
     assert t_tuple2[0, 0].data == 1
 
 
 def test_tensor_coverage_even_more() -> None:
     """Tests even more tensor coverage."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
     t1 = Tensor(np.array(1), TensorConfig((), DType.Float32, Device(DeviceType.CPU)))
     assert (-t1).data == -1
 

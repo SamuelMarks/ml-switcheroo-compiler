@@ -2,6 +2,13 @@
 
 import typing
 
+import jax.numpy as jnp  # pragma: no cover
+import mlx.core as mx  # pragma: no cover
+import scipy.fftpack  # pragma: no cover
+import scipy.signal
+import tensorflow as tf  # pragma: no cover
+import torch  # pragma: no cover
+
 from ml_switcheroo_compiler.backends.eager.utils import _from_numpy_array, _to_numpy_array
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 
@@ -35,8 +42,6 @@ def _get_window(np_mod: object, window: str, frame_length: int) -> object:
         window: Arg.
         frame_length: Arg.
     """
-    import scipy.signal
-
     if window == "hann":  # pragma: no branch
         return scipy.signal.windows.hann(frame_length, sym=False)
     elif window == "hamming":  # pragma: no cover
@@ -58,8 +63,6 @@ def _run_scipy_istft(
         frame_params: Arg.
         center: Arg.
     """
-    import scipy.signal
-
     frame_length, frame_step, fft_length = frame_params
     out_signals = []
     for i in range(stft_np_flat.shape[0]):  # pragma: no branch
@@ -100,9 +103,7 @@ def _apply_istft_batch(
     original_shape = stft_np.shape
     stft_np_flat = stft_np.reshape(-1, original_shape[-2], original_shape[-1])
 
-    out_signals = _run_scipy_istft(
-        stft_np_flat, win, (frame_length, frame_step, fft_length), center
-    )
+    out_signals = _run_scipy_istft(stft_np_flat, win, (frame_length, frame_step, fft_length), center)
 
     out = np_mod.stack(out_signals, axis=0)  # pragma: no cover
     return out.reshape(*original_shape[:-2], -1)  # pragma: no cover
@@ -144,9 +145,7 @@ def _mel_to_hz(mel: float) -> float:
     return MEL_SCALE_DIVISOR * (10.0 ** (mel / MEL_SCALE_MULTIPLIER) - 1.0)
 
 
-def _compute_filterbank_weights(
-    np_mod: object, num_spectrogram_bins: int, num_mel_bins: int, bin_freqs: object, hz_pts: object
-) -> object:
+def _compute_filterbank_weights(np_mod: object, num_spectrogram_bins: int, num_mel_bins: int, bin_freqs: object, hz_pts: object) -> object:
     """Function docstring.
 
     Args:
@@ -184,9 +183,7 @@ def _generate_mel_filterbank_matrix(
 
     bin_freqs = np_mod.linspace(0, sample_rate / 2, num_spectrogram_bins)
 
-    return _compute_filterbank_weights(
-        np_mod, num_spectrogram_bins, num_mel_bins, bin_freqs, hz_pts
-    )
+    return _compute_filterbank_weights(np_mod, num_spectrogram_bins, num_mel_bins, bin_freqs, hz_pts)
 
 
 def mel_filterbank_eager(
@@ -202,8 +199,6 @@ def mel_filterbank_eager(
     is_mlx = name == "mlx.core"
 
     if name == "keras.ops":  # pragma: no branch
-        import tensorflow as tf  # pragma: no cover
-
         res = tf.signal.linear_to_mel_weight_matrix(  # pragma: no cover
             num_mel_bins=config["num_mel_bins"],
             num_spectrogram_bins=config["num_spectrogram_bins"],
@@ -216,16 +211,10 @@ def mel_filterbank_eager(
     weights = _generate_mel_filterbank_matrix(np_mod, config)
 
     if is_torch:  # pragma: no branch
-        import torch  # pragma: no cover
-
         return torch.tensor(weights, dtype=torch.float32)  # pragma: no cover
     if is_mlx:  # pragma: no branch
-        import mlx.core as mx  # pragma: no cover
-
         return mx.array(weights, dtype=mx.float32)  # pragma: no cover
     if name == "jax.numpy":  # pragma: no branch
-        import jax.numpy as jnp  # pragma: no cover
-
         return jnp.array(weights, dtype=jnp.float32)  # pragma: no cover
 
     return np_mod.asarray(weights, dtype=np_mod.float32)
@@ -233,12 +222,8 @@ def mel_filterbank_eager(
 
 def _apply_dct(log_mel_spec: object, num_mfccs: int) -> object:
     """Apply Discrete Cosine Transform to log-mel spectrogram."""
-    import scipy.fftpack  # pragma: no cover
-
     # pragma: no cover
-    return scipy.fftpack.dct(log_mel_spec, type=2, axis=-1, norm="ortho")[
-        ..., :num_mfccs
-    ]  # pragma: no cover
+    return scipy.fftpack.dct(log_mel_spec, type=2, axis=-1, norm="ortho")[..., :num_mfccs]  # pragma: no cover
 
 
 def _power_to_db(np_mod: object, mel_spec: object) -> object:
@@ -248,8 +233,6 @@ def _power_to_db(np_mod: object, mel_spec: object) -> object:
 
 def _mfcc_eager_tf(backend_module: object, spectrogram: object, config: MFCCConfig) -> object:
     """Evaluate mfcc eagerly for TF/Keras."""
-    import tensorflow as tf  # pragma: no cover
-
     sample_rate = config["sample_rate"]  # pragma: no cover
     num_mel_bins = config.get("num_mel_bins", 40)  # pragma: no cover
     lower_edge_hertz = config.get("lower_edge_hertz", 20.0)  # pragma: no cover
@@ -267,9 +250,7 @@ def _mfcc_eager_tf(backend_module: object, spectrogram: object, config: MFCCConf
     )
     mel_spectrogram = tf.matmul(spec_tf, mel_weights)  # pragma: no cover
     log_mel_spectrogram = tf.math.log(mel_spectrogram + 1e-6)  # pragma: no cover
-    mfccs = tf.signal.mfccs_from_log_mel_spectrograms(log_mel_spectrogram)[
-        ..., :num_mfccs
-    ]  # pragma: no cover
+    mfccs = tf.signal.mfccs_from_log_mel_spectrograms(log_mel_spectrogram)[..., :num_mfccs]  # pragma: no cover
     return backend_module.convert_to_tensor(mfccs)  # pragma: no cover
 
 
@@ -287,8 +268,6 @@ def _convert_to_np(np_mod: object, x: object, is_torch: bool, is_mlx: bool) -> o
 def _to_backend_tensor(name: str, mfccs: object, spectrogram: object, np_mod: object) -> object:
     """Convert numpy array back to backend tensor."""
     if name == "torch":  # pragma: no branch  # pragma: no cover
-        import torch  # pragma: no cover
-
         # pragma: no cover
         return torch.tensor(  # pragma: no cover
             mfccs,
@@ -296,13 +275,9 @@ def _to_backend_tensor(name: str, mfccs: object, spectrogram: object, np_mod: ob
             device=spectrogram.device,  # pragma: no cover
         )  # pragma: no cover
     if name == "mlx.core":  # pragma: no branch  # pragma: no cover
-        import mlx.core as mx  # pragma: no cover
-
         # pragma: no cover
         return mx.array(mfccs, dtype=mx.float32)  # pragma: no cover
     if name == "jax.numpy":  # pragma: no branch  # pragma: no cover
-        import jax.numpy as jnp  # pragma: no cover
-
         # pragma: no cover
         return jnp.array(mfccs, dtype=jnp.float32)  # pragma: no cover
     return np_mod.asarray(mfccs, dtype=np_mod.float32)  # pragma: no cover
@@ -355,8 +330,6 @@ def _apply_stft_batch(
         win: Arg.
         config: Arg.
     """
-    import scipy.signal
-
     frame_length = config.frame_length
     frame_step = config.frame_step
     fft_length = config.fft_length if config.fft_length is not None else frame_length
@@ -383,26 +356,16 @@ def _apply_stft_batch(
     return out.reshape(*original_shape[:-1], out.shape[-2], out.shape[-1])
 
 
-def _to_backend_tensor_complex(
-    name: str, out: object, np_mod: object, backend_module: object, **kwargs: object
-) -> object:
+def _to_backend_tensor_complex(name: str, out: object, np_mod: object, backend_module: object, **kwargs: object) -> object:
     """Convert numpy array back to backend complex tensor."""
     if name == "torch":  # pragma: no branch
-        import torch  # pragma: no cover
-
         device = kwargs.get("device")  # pragma: no cover
         return (  # pragma: no cover
-            torch.tensor(out, dtype=torch.complex64, device=device)
-            if device is not None
-            else torch.tensor(out, dtype=torch.complex64)
+            torch.tensor(out, dtype=torch.complex64, device=device) if device is not None else torch.tensor(out, dtype=torch.complex64)
         )
     if name == "mlx.core":  # pragma: no branch
-        import mlx.core as mx  # pragma: no cover
-
         return mx.array(out, dtype=mx.complex64)  # pragma: no cover
     if name == "jax.numpy":  # pragma: no branch
-        import jax.numpy as jnp  # pragma: no cover
-
         return jnp.array(out, dtype=jnp.complex64)  # pragma: no cover
     if name == "keras.ops":  # pragma: no branch
         return backend_module.convert_to_tensor(out, dtype="complex64")  # pragma: no cover

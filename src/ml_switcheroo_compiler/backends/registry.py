@@ -1,18 +1,17 @@
 """Backend Registry."""
 
 import importlib
-from ml_switcheroo_compiler.core.config import config
-from typing import Literal
+import logging
+from typing import TYPE_CHECKING, Literal
 
-from typing import TYPE_CHECKING
+from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.core.config import config
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    pass
 
 
-BackendName = Literal[
-    "jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"
-]
+BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"]
 
 
 class BackendRegistry:
@@ -53,8 +52,6 @@ class BackendRegistry:
             try:
                 importlib.import_module(cls._LAZY_MODULES[name])
             except ImportError as e:
-                import logging
-
                 logging.error(f"FAILED TO IMPORT {cls._LAZY_MODULES[name]}: {e}")
 
     @classmethod

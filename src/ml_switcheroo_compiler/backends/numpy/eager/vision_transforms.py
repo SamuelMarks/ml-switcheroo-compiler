@@ -1,5 +1,10 @@
 """Numpy vision transforms."""
 
+from ml_switcheroo_compiler.backends.eager.vision_geometric import (  # pragma: no cover
+    random_elastic_transform_eager,
+    random_perspective_eager,
+    random_shear_eager,
+)
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
@@ -20,8 +25,6 @@ def _np_random_shear(
         x_factor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_shear_eager
-
     return random_shear_eager(  # pragma: no cover
         backend_module,
         images,
@@ -46,8 +49,6 @@ def _np_random_perspective(
         factor: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_geometric import random_perspective_eager
-
     return random_perspective_eager(  # pragma: no cover
         backend_module,
         images,
@@ -73,10 +74,6 @@ def _np_random_elastic_transform(
         sigma: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager.vision_geometric import (  # pragma: no cover
-        random_elastic_transform_eager,
-    )
-
     return random_elastic_transform_eager(  # pragma: no cover
         backend_module,
         images,

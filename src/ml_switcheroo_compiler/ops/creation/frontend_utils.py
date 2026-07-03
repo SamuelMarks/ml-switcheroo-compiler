@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-
 import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
-
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from ml_switcheroo_compiler.core.dtype import DType
+    pass
 
 
 def _emit_creation_node(
@@ -37,7 +35,7 @@ def _emit_creation_node(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    if not _tracer.is_tracing:
+    if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."
         raise RuntimeError(msg)
 
@@ -49,7 +47,7 @@ def _emit_creation_node(
         attributes={**(attributes or {}), "dtype": dtype.value},
         shape_metadata=shape,
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
 
     proxy = ProxyTensor(
         id=out_id,
@@ -72,14 +70,12 @@ def _emit_constant_node(
     Returns:
         Tensor: A tensor containing the result of the operation.
     """
-    if not _tracer.is_tracing:
+    if not global_tracing_state.is_tracing:
         msg = "Cannot emit Constant node outside of a tracing context."
         raise RuntimeError(msg)
 
     out_id = str(uuid.uuid4())
-    val_arr = get_active_backend().array(
-        value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype))
-    )
+    val_arr = get_active_backend().array(value, dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)))
     shape = tuple(val_arr.shape)
 
     node = LogicalNode(
@@ -89,7 +85,7 @@ def _emit_constant_node(
         attributes={"value": val_arr.tolist() if val_arr.ndim > 0 else val_arr.item()},
         shape_metadata=shape,
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
 
     proxy = ProxyTensor(
         id=out_id,

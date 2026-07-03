@@ -1,9 +1,11 @@
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+
+import builtins
+from collections.abc import Sequence
+
 # pylint: disable=duplicate-code
-
-
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.config import config
@@ -13,7 +15,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 def slice(
@@ -36,8 +38,6 @@ def slice(
     Tensor: The sliced tensor
     """
     if config.eager_mode:
-        import builtins
-
         sl = [builtins.slice(None)] * len(input.shape)
         sl[dim] = builtins.slice(start, end, step)
         data = input.data[tuple(sl)]
@@ -75,8 +75,6 @@ def strided_slice(
     UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
-        import builtins
-
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
         data = input.data[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
@@ -117,8 +115,6 @@ class Choose(OpDef):
     op_name = "Choose"
     np_op_name = "choose"
 
-    def infer_shape(
-        self, a: object, choices: object, out: object = None, mode: str = "raise", **kwargs: object
-    ) -> object:
+    def infer_shape(self, a: object, choices: object, out: object = None, mode: str = "raise", **kwargs: object) -> object:
         """Infer the output shape."""
         return a.shape if hasattr(a, "shape") else ()

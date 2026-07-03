@@ -1,32 +1,28 @@
 """Mixins."""
 
+from ml_switcheroo_compiler.backends.common.audio_utils import (
+    extract_mel_attributes,
+    extract_stft_attributes,
+)
 from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_extract_boxes_attributes,
     _extract_filter_attributes,
     _extract_vision_transform_attributes,
 )
-from ml_switcheroo_compiler.backends.common.audio_utils import (
-    extract_stft_attributes,
-    extract_mel_attributes,
-)
 
 
-class KerasVisionMixin:
+class KerasVisionVisitor:
     """Mixin."""
 
     def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate elastic transform."""
-        interpolation, fill_value, data_format = _extract_vision_transform_attributes(
-            node
-        )  # pragma: no cover
+        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"keras_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"  # pragma: no cover
 
     def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate gaussian blur."""
-        kernel_size, sigma, padding, data_format = _extract_filter_attributes(
-            node
-        )  # pragma: no cover
+        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return (  # pragma: no cover
             f"keras_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
@@ -34,15 +30,11 @@ class KerasVisionMixin:
 
     def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate median filter."""
-        kernel_size, sigma, padding, data_format = _extract_filter_attributes(
-            node
-        )  # pragma: no cover
+        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"keras_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"  # pragma: no cover
 
-    def visit_ExtractBoundingBoxes(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
+    def visit_ExtractBoundingBoxes(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate extract bounding boxes."""
         crop_size, interpolation, extrapolation_value, data_format = (  # pragma: no cover
             _extract_extract_boxes_attributes(node)  # pragma: no cover
@@ -66,9 +58,7 @@ class KerasVisionMixin:
         """Evaluate resize bicubic."""
         size = node.attributes.get("size")  # pragma: no cover
         align_corners = node.attributes.get("align_corners", False)  # pragma: no cover
-        return (
-            f"keras_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"  # pragma: no cover
-        )
+        return f"keras_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"  # pragma: no cover
 
     def visit_ResizeLanczos3(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate resize lanczos3."""
@@ -76,26 +66,20 @@ class KerasVisionMixin:
         align_corners = node.attributes.get("align_corners", False)  # pragma: no cover
         return f"keras_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"  # pragma: no cover
 
-    def visit_PerspectiveTransform(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
+    def visit_PerspectiveTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate perspective transform."""
         """Generate keras.ops.image.perspective_transform."""
-        interpolation, fill_value, data_format = _extract_vision_transform_attributes(
-            node
-        )  # pragma: no cover
+        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"keras.ops.image.perspective_transform({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, interpolation='{interpolation}', fill_value={fill_value}, data_format={df_str})"  # pragma: no cover
 
 
-class KerasAudioMixin:
+class KerasAudioVisitor:
     """Mixin."""
 
     def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate istft."""
-        frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(
-            node
-        )  # pragma: no cover
+        frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(node)  # pragma: no cover
         return f"keras_istft({input_vars[0]}, {frame_length}, {frame_step}, {fft_len_str}, '{window}', {center})"  # pragma: no cover
 
     def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:

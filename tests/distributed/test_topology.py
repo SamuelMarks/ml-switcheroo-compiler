@@ -1,9 +1,12 @@
+"""Module docstring."""
+
 import pytest
 
 from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 
 
-def test_device_mesh():
+def test_device_mesh() -> object:
+    """Function docstring."""
     mesh = DeviceMesh(shape=(2, 4), axis_names=("data", "model"))
     assert mesh.shape == (2, 4)
     assert mesh.axis_names == ("data", "model")
@@ -16,7 +19,8 @@ def test_device_mesh():
         DeviceMesh(shape=(2, 4), axis_names=("data", "model"), devices=tuple(range(4)))
 
 
-def test_layout_map():
+def test_layout_map() -> object:
+    """Function docstring."""
     mesh = DeviceMesh(shape=(2, 4), axis_names=("data", "model"))
     spec1 = ShardingSpec(mesh, ("data", None))
     spec2 = ShardingSpec(mesh, (None, "model"))

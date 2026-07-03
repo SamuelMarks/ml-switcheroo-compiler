@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond
 from ml_switcheroo_compiler.tracing import ProxyTensor
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 device = Device(DeviceType.CPU, 0)
-"""Control flow tests."""
 
 
 def test_cond_eager() -> None:
@@ -42,9 +42,7 @@ def test_cond_trace() -> None:
     None
     """
     with ConfigContext(eager_mode=False):
-        pred = Tensor(
-            ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device)
-        )
+        pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
         def true_fn() -> object:
             """True fn.
@@ -68,9 +66,7 @@ def test_cond_trace() -> None:
                 TensorConfig((), DType.Float32, device),
             )
 
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)
         assert res.dtype == DType.Float32
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()

@@ -5,6 +5,8 @@ it correctly retrieves file and line number references from the call stack under
 edge, and error conditions.
 """
 
+import inspect
+import sys
 from typing import NoReturn
 
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
@@ -44,8 +46,6 @@ def test_linker_edge_cases() -> None:
     Returns:
     None
     """
-    import sys
-
     # Mock currentframe returning None
     old_currentframe = sys._getframe
     try:
@@ -71,7 +71,6 @@ def test_linker_exception(monkeypatch: object) -> None:
     Returns:
     None
     """
-    import inspect
 
     def mock_getframeinfo(*args: object, **kwargs: object) -> NoReturn:
         """Mocks `inspect.getframeinfo` to simulate a failure by raising an exception.

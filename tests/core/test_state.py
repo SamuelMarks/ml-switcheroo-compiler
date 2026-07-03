@@ -6,9 +6,14 @@ also tests the behavior of state-related operations like ReadVariable and
 AssignVariable.
 """
 
+import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.state_manager import lift_state
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
 
 
 def test_lift_state() -> None:
@@ -134,11 +139,6 @@ def test_state_ops() -> None:
     Returns:
     None
     """
-    import pytest
-
-    from ml_switcheroo_compiler.core.errors import CompilationError
-    from ml_switcheroo_compiler.ops.base import get_op
-
     r = get_op("ReadVariable")()
     a = get_op("AssignVariable")()
 
@@ -154,14 +154,9 @@ def test_state_ops() -> None:
 
 def test_keras_batch_normalization_state_lifting() -> None:
     """Validate that state lifting supports Keras moving statistics."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-    from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
-
     graph = IRGraph()
     # Initial read of moving mean
-    graph.nodes["read_mean"] = IRNode(
-        "read_mean", "ReadVariable", attributes={"variable_name": "moving_mean"}
-    )
+    graph.nodes["read_mean"] = IRNode("read_mean", "ReadVariable", attributes={"variable_name": "moving_mean"})
     # Some computation
     graph.nodes["new_mean"] = IRNode("new_mean", "Add", inputs=["read_mean"])
     # Assignment back to moving mean

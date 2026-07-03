@@ -47,8 +47,4 @@ class DeviceMesh:
         """Equality check."""
         if not isinstance(other, DeviceMesh):
             return False
-        return (
-            self.shape == other.shape
-            and self.axis_names == other.axis_names
-            and self.devices == other.devices
-        )
+        return self.shape == other.shape and self.axis_names == other.axis_names and self.devices == other.devices

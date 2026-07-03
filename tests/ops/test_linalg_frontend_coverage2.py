@@ -1,14 +1,15 @@
 """Module docstring."""
 
 from unittest.mock import MagicMock
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 import numpy as np
 
-import ml_switcheroo_compiler.ops.linalg.frontend as lf
+import ml_switcheroo_compiler.ops.linalg.utils as lf
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
 from ml_switcheroo_compiler.ops.linalg import lu, lu_factor, pinv, solve_triangular
 
 
@@ -26,7 +27,7 @@ def test_pinv_lazy(monkeypatch: object) -> None:
             """Docstring."""
             return "n1"
 
-    monkeypatch.setattr(lf, "_tracer", MockTracer())
+    monkeypatch.setattr(lf, "global_tracing_state", MockTracer())
 
     try:
 
@@ -46,7 +47,6 @@ def test_solve_triangular() -> None:
     """Docstring."""
     a = Tensor(np.array([[3, 0, 0], [2, 1, 0], [1, 0, 1]]), TensorConfig((3, 3), "float32", "cpu"))
     b = Tensor(np.array([4, 2, 4]), TensorConfig((3,), "float32", "cpu"))
-    from ml_switcheroo_compiler.ops.configs import TriangularSolveOptions
 
     res = solve_triangular(a, b, TriangularSolveOptions(lower=True))
     assert res.shape == (3,)

@@ -2,6 +2,8 @@
 
 from ml_switcheroo_ir import LogicalGraph, topological_sort
 
+from ml_switcheroo_compiler.ir.core import clone_logical_node
+
 
 def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
     """Resolve structural ambiguities and enforces strict typing using inferred shapes.
@@ -18,8 +20,6 @@ def shape_aware_rewrite(graph: LogicalGraph) -> LogicalGraph:
     Args:
         graph (LogicalGraph): Argument graph
     """
-    from ml_switcheroo_compiler.ir.core import clone_logical_node
-
     new_graph = LogicalGraph(
         name=f"{graph.name}_rewritten",
         outputs=list(graph.outputs),

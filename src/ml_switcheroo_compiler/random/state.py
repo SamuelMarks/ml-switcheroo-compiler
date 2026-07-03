@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
-from __future__ import annotations
-from ml_switcheroo_compiler.backends.registry import get_active_backend
 import uuid
+
 import numpy as np
 from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+
+# In tracing mode, we need to map to OpDefs just like core tensor ops do through get_op
+from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+# It's an OpDef class
 
 
 def _emit_random_node(
@@ -43,9 +50,25 @@ def _emit_random_node(
         attributes=attributes or {},
         shape_metadata=shape,
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
     proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype.value)
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
+
+
+def _get_numpy_rng(key: object) -> np.random.Generator:
+    """Extracts the random seed from a key tensor and returns a NumPy Random Generator.
+
+    Args:
+        key: The PRNG key or integer seed.
+
+    Returns:
+        np.random.Generator: The initialized NumPy RNG.
+    """
+    if isinstance(key, Tensor):
+        seed_val = int(key.data[1]) if hasattr(key.data, "__getitem__") else int(key.data)
+    else:
+        seed_val = 0
+    return np.random.default_rng(seed_val)
 
 
 def PRNGKey(seed: int) -> Tensor:
@@ -72,8 +95,8 @@ def PRNGKey(seed: int) -> Tensor:
         attributes={"seed": seed},
         shape_metadata=(2,),
     )
-    if _tracer.is_tracing:  # pragma: no branch
-        _tracer.add_node(node)
+    if global_tracing_state.is_tracing:  # pragma: no branch
+        global_tracing_state.add_node(node)
     proxy = ProxyTensor(id=out_id, shape=(2,), dtype="uint32")
     return Tensor(proxy, TensorConfig((2,), dtypes.DType.UInt32, config.default_device))
 
@@ -128,25 +151,15 @@ def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
         try:
             return backend.execute_op(op_name, *args, **kwargs)
         except Exception as e:
-            raise NotImplementedError(
-                f"{func_name} is not supported in eager mode without backend support: {e}"
-            ) from e
-
-    # In tracing mode, we need to map to OpDefs just like core tensor ops do through get_op
-    from ml_switcheroo_compiler.ops.base import get_op
+            raise NotImplementedError(f"{func_name} is not supported in eager mode without backend support: {e}") from e
 
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     op_cls = get_op(op_name)
     if op_cls:
-        # It's an OpDef class
-        from ml_switcheroo_compiler.tracing import _tracer
-
-        if not _tracer.is_tracing:
+        if not global_tracing_state.is_tracing:
             raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")
         return op_cls()(*args, **kwargs)  # pragma: no cover
-    raise NotImplementedError(
-        f"{func_name} is not fully supported in tracing mode."
-    )  # pragma: no cover
+    raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")  # pragma: no cover
 
 
 def key(*args: object, **kwargs: object) -> object:

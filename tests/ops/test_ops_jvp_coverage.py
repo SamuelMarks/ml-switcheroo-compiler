@@ -7,6 +7,8 @@ import contextlib
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY
+
 
 def test_all_ops_coverage() -> None:
     """Verifies that all registered operations implement core interface methods.
@@ -20,8 +22,6 @@ def test_all_ops_coverage() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.ops.base import _OP_REGISTRY
-
     g = LogicalGraph()
     n = LogicalNode(id="n", op_type="dummy", inputs=["a", "b"])
 

@@ -8,7 +8,6 @@ intermediate representation (IR) graph for compilation
 
 from __future__ import annotations
 
-
 import uuid
 from typing import Callable
 
@@ -18,7 +17,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
 def _eager_vmap(
@@ -75,9 +74,7 @@ def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
     return a.shape  # pragma: no cover
 
 
-def _create_vmap_dummy_args(
-    args: tuple[object, ...], in_axes: int | tuple[int, ...]
-) -> list[object]:
+def _create_vmap_dummy_args(args: tuple[object, ...], in_axes: int | tuple[int, ...]) -> list[object]:
     """Function docstring.
 
     Args:
@@ -121,7 +118,7 @@ def _trace_vmap(
         attributes={"in_axes": in_axes, "out_axes": out_axes, "body": body_graph},
         shape_metadata=(),
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
 
     arg = args[0]
     proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
@@ -162,7 +159,7 @@ def vmap(
         if config.eager_mode:
             return _eager_vmap(func, in_axes, out_axes, args)
 
-        if not _tracer.is_tracing:
+        if not global_tracing_state.is_tracing:
             msg = "Cannot emit Vmap outside of a tracing context."
             raise RuntimeError(msg)
 

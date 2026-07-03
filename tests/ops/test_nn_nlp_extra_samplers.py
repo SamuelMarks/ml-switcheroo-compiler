@@ -1,46 +1,58 @@
+"""Module docstring."""
+
+from unittest.mock import patch
+
+import numpy as np
+
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.nlp import (
+    NCELossConfig,
+    NLPOpsConfig,
+    SampledSoftmaxConfig,
+    SamplerConfig,
+    SamplingConfig,
     all_candidate_sampler,
     compute_accidental_hits,
+    embedding_lookup,
+    embedding_lookup_sparse,
     fixed_unigram_candidate_sampler,
     learned_unigram_candidate_sampler,
     log_uniform_candidate_sampler,
-    uniform_candidate_sampler,
     nce_loss,
-    sampled_softmax_loss,
-    embedding_lookup,
-    embedding_lookup_sparse,
     safe_embedding_lookup_sparse,
+    sampled_softmax_loss,
+    uniform_candidate_sampler,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.dtype import DType
-import numpy as np
 
 
-def test_samplers_and_losses():
+def test_samplers_and_losses() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t = Tensor(np.ones((2,)), TensorConfig((2,), DType.Int32, device))
     t_f = Tensor(np.ones((2,)), TensorConfig((2,), DType.Float32, device))
 
-    all_candidate_sampler(t, 1, 1, True)
-    compute_accidental_hits(t, t, 1)
+    config = NLPOpsConfig(sampling=SamplingConfig(num_true=1, num_sampled=1, unique=True, range_max=10))
 
-    fixed_unigram_candidate_sampler(t, 1, 1, True, 10)
-    learned_unigram_candidate_sampler(t, 1, 1, True, 10)
-    log_uniform_candidate_sampler(t, 1, 1, True, 10)
-    uniform_candidate_sampler(t, 1, 1, True, 10)
+    all_candidate_sampler(t, config)
+    compute_accidental_hits(t, t, config)
 
-    nce_loss(t_f, t_f, t, t_f, 1, 10)
-    sampled_softmax_loss(t_f, t_f, t, t_f, 1, 10)
+    fixed_unigram_candidate_sampler(t, config=config, sampler_config=SamplerConfig(range_max=10))
+    learned_unigram_candidate_sampler(t, config)
+    log_uniform_candidate_sampler(t, config)
+    uniform_candidate_sampler(t, config)
+
+    nce_loss(t_f, t_f, t, t_f, config=NCELossConfig(num_sampled=1, num_classes=10))
+    sampled_softmax_loss(t_f, t_f, t, t_f, config=SampledSoftmaxConfig(num_sampled=1, num_classes=10))
 
 
-def test_embeddings():
+def test_embeddings() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t = Tensor(np.ones((2,)), TensorConfig((2,), DType.Int32, device))
     t_f = Tensor(np.ones((2,)), TensorConfig((2,), DType.Float32, device))
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from unittest.mock import patch
 
     with ConfigContext(eager_mode=True):
         with patch("ml_switcheroo_compiler.ops.shape.gather") as mock_gather:
@@ -48,7 +60,10 @@ def test_embeddings():
             embedding_lookup(t_f, t)
 
             class MockRagged:
-                def __init__(self, values):
+                """Class docstring."""
+
+                def __init__(self, values: object) -> object:
+                    """Function docstring."""
                     self.values = values
 
             r = MockRagged(t)

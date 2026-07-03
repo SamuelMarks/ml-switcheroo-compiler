@@ -8,9 +8,9 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import scan
 from ml_switcheroo_compiler.tracing import ProxyTensor
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 device = Device(DeviceType.CPU, 0)
-"""Control flow tests."""
 
 
 def test_scan_eager() -> None:
@@ -57,9 +57,7 @@ def test_scan_trace() -> None:
             ProxyTensor(id="mock", shape=(), dtype="float32"),
             TensorConfig((3,), DType.Int32, device),
         )
-        init = Tensor(
-            ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Int32, device)
-        )
+        init = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Int32, device))
 
         def f(carry: object, x: object) -> object:
             """F.
@@ -73,24 +71,14 @@ def test_scan_trace() -> None:
             """
             return carry, x
 
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         _carry, ys = scan(f, init, xs)
         assert ys.dtype == DType.Int32
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_scan_eager_ndarray() -> None:
     """Test scan eager mode returning an ndarray."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.control_flow import scan
-
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
         xs = Tensor(np.array([1, 2, 3]), TensorConfig((3,), DType.Int32, device))

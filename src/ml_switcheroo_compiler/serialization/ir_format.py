@@ -1,6 +1,7 @@
 """IR graph serialization."""
 
 import json
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 

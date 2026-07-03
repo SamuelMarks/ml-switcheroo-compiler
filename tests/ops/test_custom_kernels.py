@@ -2,17 +2,18 @@
 
 from unittest.mock import patch
 
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.kernels import (
+    CudaKernelOp,
+    KernelLaunchConfig,
+    MetalKernelOp,
+    PrecompiledCudaKernelOp,
     cuda_kernel,
     metal_kernel,
     precompiled_cuda_kernel,
-    CudaKernelOp,
-    MetalKernelOp,
-    PrecompiledCudaKernelOp,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.config import ConfigContext
 
 
 @patch("ml_switcheroo_compiler.ops.kernels._emit_shape_node")
@@ -30,8 +31,7 @@ def test_cuda_kernel_tracing(mock_emit: object) -> None:
             inputs=[t1],
             output_shapes=[(2, 2)],
             output_dtypes=[DType.Float32],
-            grid=(1, 1, 1),
-            block=(1, 1, 1),
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
         )
         assert len(outs) == 1
         assert mock_emit.called
@@ -52,8 +52,7 @@ def test_metal_kernel_tracing(mock_emit: object) -> None:
             inputs=[t1],
             output_shapes=[(2, 2)],
             output_dtypes=[DType.Float32],
-            grid=(1, 1, 1),
-            block=(1, 1, 1),
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
         )
         assert len(outs) == 1
         assert mock_emit.called
@@ -74,8 +73,7 @@ def test_precompiled_cuda_kernel_tracing(mock_emit: object) -> None:
             inputs=[t1],
             output_shapes=[(2, 2)],
             output_dtypes=[DType.Float32],
-            grid=(1, 1, 1),
-            block=(1, 1, 1),
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
         )
         assert len(outs) == 1
         assert mock_emit.called
@@ -96,8 +94,7 @@ def test_cuda_kernel_eager(mock_execute_op: object) -> None:
             inputs=[t1],
             output_shapes=[(2, 2)],
             output_dtypes=[DType.Float32],
-            grid=(1, 1, 1),
-            block=(1, 1, 1),
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
         )
         assert len(outs) == 1
         assert mock_execute_op.called
@@ -118,8 +115,7 @@ def test_metal_kernel_eager(mock_execute_op: object) -> None:
             inputs=[t1],
             output_shapes=[(2, 2)],
             output_dtypes=[DType.Float32],
-            grid=(1, 1, 1),
-            block=(1, 1, 1),
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
         )
         assert len(outs) == 1
         assert mock_execute_op.called
@@ -140,8 +136,7 @@ def test_precompiled_cuda_kernel_eager(mock_execute_op: object) -> None:
             inputs=[t1],
             output_shapes=[(2, 2)],
             output_dtypes=[DType.Float32],
-            grid=(1, 1, 1),
-            block=(1, 1, 1),
+            launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"),
         )
         assert len(outs) == 1
         assert mock_execute_op.called

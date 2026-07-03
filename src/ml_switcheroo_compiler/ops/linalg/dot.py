@@ -61,9 +61,7 @@ class DotGeneral(OpDef):
 
         return self._compute_out_shape(lhs.shape, rhs.shape, dimension_numbers)
 
-    def _compute_out_shape(
-        self, lhs_shape: tuple, rhs_shape: tuple, dimension_numbers: tuple
-    ) -> tuple:
+    def _compute_out_shape(self, lhs_shape: tuple, rhs_shape: tuple, dimension_numbers: tuple) -> tuple:
         """Execute _compute_out_shape.
 
         Args:
@@ -79,12 +77,8 @@ class DotGeneral(OpDef):
         lhs_batch, rhs_batch = batch
 
         out_shape = [lhs_shape[b] for b in lhs_batch]
-        out_shape.extend(
-            [lhs_shape[i] for i in range(len(lhs_shape)) if i not in lhs_contracting + lhs_batch]
-        )
-        out_shape.extend(
-            [rhs_shape[i] for i in range(len(rhs_shape)) if i not in rhs_contracting + rhs_batch]
-        )
+        out_shape.extend([lhs_shape[i] for i in range(len(lhs_shape)) if i not in lhs_contracting + lhs_batch])
+        out_shape.extend([rhs_shape[i] for i in range(len(rhs_shape)) if i not in rhs_contracting + rhs_batch])
 
         return tuple(out_shape)
 

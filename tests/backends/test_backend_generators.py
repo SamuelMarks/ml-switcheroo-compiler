@@ -1,9 +1,18 @@
 """Test backend generator basic functionality."""
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from ml_switcheroo_compiler.backends import jax, keras, mlx, pytorch, registry, tensorflow
+from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
+from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
+from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
+from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
+from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor
+from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -60,62 +69,24 @@ def test_registry_coverage() -> None:
 
 def test_truncate_ops_generation() -> None:
     """Test generation of TruncateDiv and TruncateMod ops."""
-    from ml_switcheroo_compiler.ir.core import IRNode
-    from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
-    from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
-    from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
-    from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
-    from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
-    from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
-    from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
-
     node_div = IRNode(id="n1", op_type="TruncateDiv", inputs=["x", "y"])
     node_mod = IRNode(id="n2", op_type="TruncateMod", inputs=["x", "y"])
 
-    assert (
-        TensorFlowCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
-        == "tf.math.truncatediv(x, y)"
-    )
-    assert (
-        TensorFlowCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"])
-        == "tf.math.truncatemod(x, y)"
-    )
-    from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor
+    assert TensorFlowCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "tf.math.truncatediv(x, y)"
+    assert TensorFlowCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "tf.math.truncatemod(x, y)"
 
     assert NumpyASTVisitor.visit_TruncateDiv(node_div, ["x", "y"]) == "np.trunc(np.divide(x, y))"
-    assert (
-        PyTorchCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
-        == "torch.trunc(x / y)"
-    )
-    assert (
-        JAXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
-        == "jnp.trunc(jnp.divide(x, y))"
-    )
-    assert (
-        MLXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
-        == "mx.trunc(mx.divide(x, y))"
-    )
-    assert (
-        KerasCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"])
-        == "keras.ops.trunc(keras.ops.divide(x, y))"
-    )
-    assert (
-        CupyGenerator(MagicMock()).visit_TruncateDiv(node_div, ["x", "y"])
-        == "cp.trunc(cp.divide(x, y))"
-    )
-    assert (
-        DaskGenerator(MagicMock()).visit_TruncateDiv(node_div, ["x", "y"])
-        == "da.trunc(da.divide(x, y))"
-    )
+    assert PyTorchCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "torch.trunc(x / y)"
+    assert JAXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "jnp.trunc(jnp.divide(x, y))"
+    assert MLXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "mx.trunc(mx.divide(x, y))"
+    assert KerasCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "keras.ops.trunc(keras.ops.divide(x, y))"
+    assert CupyGenerator(MagicMock()).visit_TruncateDiv(node_div, ["x", "y"]) == "cp.trunc(cp.divide(x, y))"
+    assert DaskGenerator(MagicMock()).visit_TruncateDiv(node_div, ["x", "y"]) == "da.trunc(da.divide(x, y))"
 
     assert NumpyASTVisitor.visit_TruncateMod(node_mod, ["x", "y"]) == "np.fmod(x, y)"
-    assert (
-        PyTorchCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "torch.fmod(x, y)"
-    )
+    assert PyTorchCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "torch.fmod(x, y)"
     assert JAXCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "jnp.fmod(x, y)"
     assert MLXCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "mx.remainder(x, y)"
-    assert (
-        KerasCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "keras.ops.mod(x, y)"
-    )
+    assert KerasCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "keras.ops.mod(x, y)"
     assert CupyGenerator(MagicMock()).visit_TruncateMod(node_mod, ["x", "y"]) == "cp.fmod(x, y)"
     assert DaskGenerator(MagicMock()).visit_TruncateMod(node_mod, ["x", "y"]) == "da.fmod(x, y)"

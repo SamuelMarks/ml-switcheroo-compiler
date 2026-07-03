@@ -5,6 +5,10 @@ import importlib
 import sys
 from unittest.mock import MagicMock
 
+import ml_switcheroo_compiler.backends.cupy as cupy_mod
+import ml_switcheroo_compiler.backends.dask as dask_mod
+from ml_switcheroo_compiler.backends import jax, keras, mlx, numpy, pytorch, tensorflow
+
 
 def test_backend_classmethods2() -> None:
     """Docstring."""
@@ -12,10 +16,6 @@ def test_backend_classmethods2() -> None:
     sys.modules["cupy"] = MagicMock()
     sys.modules["dask"] = MagicMock()
     sys.modules["dask.array"] = MagicMock()
-
-    import ml_switcheroo_compiler.backends.cupy as cupy_mod
-    import ml_switcheroo_compiler.backends.dask as dask_mod
-    from ml_switcheroo_compiler.backends import jax, keras, mlx, numpy, pytorch, tensorflow
 
     importlib.reload(cupy_mod)
     importlib.reload(dask_mod)
@@ -47,3 +47,5 @@ def test_backend_classmethods2() -> None:
             mod.asarray([1, 2])
         with contextlib.suppress(Exception):
             mod.item([1])
+
+    pass

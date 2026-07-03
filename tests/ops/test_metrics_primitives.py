@@ -1,16 +1,18 @@
+"""Module docstring."""
+
 import numpy as np
 
+from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.reductions.statistical import trapezoidal_integral, confusion_matrix
-from ml_switcheroo_compiler.tracing import _tracer
+from ml_switcheroo_compiler.ops.stats.descriptive import confusion_matrix, trapezoidal_integral
+from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_metrics_primitives_eager_backends():
-    from ml_switcheroo_compiler.backends.registry import BackendRegistry
-
+def test_metrics_primitives_eager_backends() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU)
 
     y_data = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32)
@@ -22,12 +24,8 @@ def test_metrics_primitives_eager_backends():
             try:
                 backend_cls = BackendRegistry.get(backend_name)
                 y = Tensor(backend_cls.array(y_data), TensorConfig((2, 3), DType.Float32, device))
-                labels = Tensor(
-                    backend_cls.array(labels_data), TensorConfig((3,), DType.Int32, device)
-                )
-                preds = Tensor(
-                    backend_cls.array(preds_data), TensorConfig((3,), DType.Int32, device)
-                )
+                labels = Tensor(backend_cls.array(labels_data), TensorConfig((3,), DType.Int32, device))
+                preds = Tensor(backend_cls.array(preds_data), TensorConfig((3,), DType.Int32, device))
 
                 res_trapz = trapezoidal_integral(y, dx=1.0, axis=-1)
                 res_cm = confusion_matrix(labels, preds, num_classes=3)
@@ -51,10 +49,11 @@ def test_metrics_primitives_eager_backends():
                 pass
 
 
-def test_metrics_primitives_tracing():
+def test_metrics_primitives_tracing() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             y = Tensor("dummy_y", TensorConfig((2, 3), DType.Float32, device))
             labels = Tensor("dummy_l", TensorConfig((3,), DType.Int32, device))
@@ -66,4 +65,4 @@ def test_metrics_primitives_tracing():
             res_cm = confusion_matrix(labels, preds, num_classes=3)
             assert res_cm is not None
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()

@@ -1,9 +1,10 @@
 """Core module for ml-switcheroo."""
 
-from .config import ConfigContext, EagerMode, config
 import contextlib
 from collections.abc import Iterator
-from .assertions import evaluate_assertions, record_assertion, clear_assertions
+
+from .assertions import clear_assertions, evaluate_assertions, record_assertion
+from .config import ConfigContext, EagerMode, config
 from .dataset import Dataset
 from .device import Device, DeviceType
 from .dtype import DType, QuantDType
@@ -16,9 +17,9 @@ from .errors import (
     TracingError,
     UnimplementedMathError,
 )
-from .tensor import Tensor
-from .sparse_tensor import SparseTensor, SparseTensorCOO, SparseTensorCSR
 from .ragged_tensor import RaggedTensor
+from .sparse_tensor import SparseTensor, SparseTensorCOO, SparseTensorCSR
+from .tensor import Tensor
 from .tensor_array import TensorArray
 
 

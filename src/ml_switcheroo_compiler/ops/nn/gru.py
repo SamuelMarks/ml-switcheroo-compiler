@@ -1,15 +1,18 @@
 """RNN operations."""
 
 from typing import Optional
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
-from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
-from ml_switcheroo_compiler.ops.shape import split
-
-from ml_switcheroo_compiler.ops.unary import tanh
-from ml_switcheroo_compiler.nn.activations import sigmoid
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.nn.activations import sigmoid
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
 from ml_switcheroo_compiler.ops.linalg import matmul
+from ml_switcheroo_compiler.ops.shape import split
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.unary import tanh
 
 
 def _compute_gru_gates(x_parts: tuple, r_parts: tuple, state: Tensor) -> Tensor:
@@ -62,14 +65,9 @@ class Gru(OpDef):
 
 def gru(*args: object, **kwargs: object) -> Tensor:
     """GRU layer."""
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.core.config import config
-
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("Gru", *[getattr(a, "data", a) for a in args], **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-    from ml_switcheroo_compiler.core.dtype import DType
 
     t_args = [a for a in args if isinstance(a, Tensor)]
     out_shape = getattr(t_args[0], "shape", ()) if t_args else ()

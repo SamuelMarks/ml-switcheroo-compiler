@@ -1,18 +1,18 @@
 """RNN operations."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_4
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_5
-
 from typing import Optional
 
-from ml_switcheroo_compiler.ops.binary import add, multiply
-from ml_switcheroo_compiler.ops.shape import split
-
-from ml_switcheroo_compiler.ops.unary import tanh
-from ml_switcheroo_compiler.nn.activations import sigmoid
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4, MAGIC_VAL_5
 from ml_switcheroo_compiler.core.tensor import Tensor
-
+from ml_switcheroo_compiler.nn.activations import sigmoid
+from ml_switcheroo_compiler.ops.binary import add, multiply
+from ml_switcheroo_compiler.ops.nn.conv import (
+    conv1d,  # pragma: no cover
+    conv2d,  # pragma: no cover
+    conv3d,  # pragma: no cover
+)
+from ml_switcheroo_compiler.ops.shape import split
+from ml_switcheroo_compiler.ops.unary import tanh
 
 from .rnn_utils import ConvLSTMConfig, RNNWeights
 
@@ -97,8 +97,6 @@ def conv1d_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    from ml_switcheroo_compiler.ops.nn.conv import conv1d  # pragma: no cover
-
     h_prev, c_prev = state  # pragma: no cover
 
     conf = config if config is not None else ConvLSTMConfig()  # pragma: no cover
@@ -117,9 +115,7 @@ def conv1d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(
-        x_conv, h_conv, state, weights, conf.data_format
-    )  # pragma: no cover
+    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)  # pragma: no cover
 
 
 def conv2d_lstm_cell(
@@ -139,8 +135,6 @@ def conv2d_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    from ml_switcheroo_compiler.ops.nn.conv import conv2d  # pragma: no cover
-
     h_prev, c_prev = state  # pragma: no cover
 
     conf = config if config is not None else ConvLSTMConfig()  # pragma: no cover
@@ -159,9 +153,7 @@ def conv2d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(
-        x_conv, h_conv, state, weights, conf.data_format
-    )  # pragma: no cover
+    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)  # pragma: no cover
 
 
 def conv3d_lstm_cell(
@@ -181,8 +173,6 @@ def conv3d_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    from ml_switcheroo_compiler.ops.nn.conv import conv3d  # pragma: no cover
-
     h_prev, c_prev = state  # pragma: no cover
 
     conf = config if config is not None else ConvLSTMConfig()  # pragma: no cover
@@ -201,6 +191,4 @@ def conv3d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(
-        x_conv, h_conv, state, weights, conf.data_format
-    )  # pragma: no cover
+    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)  # pragma: no cover

@@ -1,12 +1,14 @@
 """Module docstring."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
 import math
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+# We flatten first two dims
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 
 def _gelu(x: object, *args: object, **kwargs: object) -> object:
@@ -46,8 +48,6 @@ def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> ob
     alpha = 1.6732632423543772848170429916717
     scale = 1.0507009873554804934193349852946
     alpha_p = -alpha * scale
-
-    import numpy as np
 
     rng = np.random.default_rng(kwargs.get("seed", None))
     noise_shape = kwargs.get("noise_shape", None)
@@ -89,8 +89,6 @@ def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
     if not training or rate == 0.0:
         return x
 
-    import numpy as np
-
     rng = np.random.default_rng(kwargs.get("seed", None))
     noise_shape = kwargs.get("noise_shape", None)
     if noise_shape is None:
@@ -109,26 +107,22 @@ def _np_time_distributed(backend_module: object, x: object, **kwargs: object) ->
         x: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager import execute_generic_op
-
     # Extract wrapped op
     wrapped_op_name = kwargs.pop("wrapped_op_name")
 
-    # We flatten first two dims
-    import numpy as np
-
     shape = x.shape
     if len(shape) < MAGIC_VAL_3:
-        return execute_generic_op(backend_module, wrapped_op_name, x, **kwargs)
+        return get_active_backend().execute_op(wrapped_op_name, x, **kwargs)
 
     flat_x = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
-    out = execute_generic_op(backend_module, wrapped_op_name, flat_x, **kwargs)
+
+    out = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
     out_shape = (shape[0], shape[1], *out.shape[1:])
     return np.reshape(out, out_shape)
 
 
 @numpy_eager_registry.register("Rope")
-def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:  # pylint: disable=too-many-locals
     """Apply Rotary Positional Encoding using NumPy."""
     dim = kwargs.get("dim")
     base = kwargs.get("base", 10000.0)
@@ -142,10 +136,7 @@ def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
 
     # Generate frequencies
     half_dim = dim // 2
-    freqs = backend_module.exp(
-        -backend_module.arange(0, half_dim, dtype=x_np.dtype)
-        * (backend_module.log(base) / half_dim)
-    )
+    freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(base) / half_dim))
 
     # Calculate angles
     angles = position[:, None] * freqs[None, :]

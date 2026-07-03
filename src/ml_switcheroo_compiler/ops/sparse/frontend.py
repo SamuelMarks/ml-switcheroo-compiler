@@ -1,8 +1,4 @@
-# ruff: noqa: ANN001, ANN002, ANN003, ANN201, ANN202, D103
 """Sparse frontends."""
-
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 # from ml_switcheroo_compiler.ops.sparse import (
 #    SparseBincount,
@@ -28,21 +24,23 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 #    SparseReduceSum,
 #    SparseSoftmax,
 # )
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.ops.linalg.frontend import _emit_linalg_node
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+# pragma: no cover
+from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
+from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
-def _sparse_op(op_name, *args, **kwargs):
-    # pragma: no cover
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
-
+def _sparse_op(op_name: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     # pragma: no cover
     op_cls = get_op(op_name)  # pragma: no cover
     if config.eager_mode:  # pragma: no cover
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
         backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(
-            op_name, *[getattr(a, "data", a) for a in args], **kwargs
-        )  # pragma: no cover
+        data = backend.execute_op(op_name, *[getattr(a, "data", a) for a in args], **kwargs)  # pragma: no cover
         return Tensor(  # pragma: no cover
             data,  # pragma: no cover
             TensorConfig(  # pragma: no cover
@@ -59,89 +57,111 @@ def _sparse_op(op_name, *args, **kwargs):
     )
 
 
-def sparse_bincount(*args, **kwargs):
+def sparse_bincount(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseBincount", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_cross_hashed(*args, **kwargs):
+def sparse_cross_hashed(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseCrossHashed", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_expand_dims(*args, **kwargs):
+def sparse_expand_dims(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseExpandDims", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_eye(*args, **kwargs):
+def sparse_eye(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseEye", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_fill_empty_rows(*args, **kwargs):
+def sparse_fill_empty_rows(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseFillEmptyRows", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_map_values(*args, **kwargs):
+def sparse_map_values(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseMapValues", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_mask(*args, **kwargs):
+def sparse_mask(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseMask", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_maximum(*args, **kwargs):
+def sparse_maximum(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseMaximum", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_minimum(*args, **kwargs):
+def sparse_minimum(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseMinimum", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_reduce_max(*args, **kwargs):
+def sparse_reduce_max(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseReduceMax", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_reduce_sum(*args, **kwargs):
+def sparse_reduce_sum(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseReduceSum", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_reorder(*args, **kwargs):
+def sparse_reorder(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseReorder", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_reset_shape(*args, **kwargs):
+def sparse_reset_shape(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseResetShape", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_reshape(*args, **kwargs):
+def sparse_reshape(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseReshape", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_retain(*args, **kwargs):
+def sparse_retain(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseRetain", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_segment_mean(*args, **kwargs):
+def sparse_segment_mean(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseSegmentMean", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_segment_sqrt_n(*args, **kwargs):
+def sparse_segment_sqrt_n(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseSegmentSqrtN", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_segment_sum(*args, **kwargs):
+def sparse_segment_sum(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseSegmentSum", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_slice(*args, **kwargs):
+def sparse_slice(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseSlice", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_softmax(*args, **kwargs):
+def sparse_softmax(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseSoftmax", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_to_indicator(*args, **kwargs):
+def sparse_to_indicator(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseToIndicator", *args, **kwargs)  # pragma: no cover
 
 
-def sparse_transpose(*args, **kwargs):
+def sparse_transpose(*args: object, **kwargs: object) -> object:
+    """Function docstring."""
     return _sparse_op("SparseTranspose", *args, **kwargs)  # pragma: no cover

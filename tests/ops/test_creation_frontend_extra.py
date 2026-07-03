@@ -1,8 +1,11 @@
 """Tests for extra random creation frontend ops."""
 
+import pytest
+
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.ops.creation.frontend import manual_seed, rand, randint, randn
-from ml_switcheroo_compiler.tracing.tracer import _tracer
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.ops.creation.frontend import array, diag, manual_seed, rand, randint, randn
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 def test_rand_frontend_eager() -> None:
@@ -20,7 +23,7 @@ def test_rand_frontend_eager() -> None:
 def test_rand_frontend_tracing() -> None:
     """Test function."""
     config.eager_mode = False
-    _tracer.start_tracing("test_rand")
+    global_tracing_state.start_tracing("test_rand")
     t1 = rand(2, 3)
     assert t1.shape == (2, 3)
     t2 = randn(2, 3)
@@ -28,9 +31,6 @@ def test_rand_frontend_tracing() -> None:
     t3 = randint(0, 10, (2, 3))
     assert t3.shape == (2, 3)
     assert manual_seed(42) == 42
-
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.ops.creation.frontend import array, diag
 
     arr = array([1, 2, 3], dtype=DType.Int32)
     assert arr.shape == (3,)
@@ -45,12 +45,10 @@ def test_rand_frontend_tracing() -> None:
     diag_out2 = diag(arr_2d)
     assert diag_out2.shape == (2,)
 
-    import pytest
-
     with pytest.raises(ValueError):
         diag(array(1.0))
 
-    _tracer.stop_tracing()
+    global_tracing_state.stop_tracing()
 
     # Trigger RuntimeError outside tracing
     with pytest.raises(RuntimeError):

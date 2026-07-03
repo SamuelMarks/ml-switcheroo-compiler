@@ -1,3 +1,7 @@
+"""Module docstring."""
+
+import numpy as np
+
 from ml_switcheroo_compiler.backends.numpy.distributed.dummy import (
     _dummy_all_reduce,
     _dummy_reduce_scatter,
@@ -5,15 +9,15 @@ from ml_switcheroo_compiler.backends.numpy.distributed.dummy import (
 from ml_switcheroo_compiler.distributed import DeviceMesh, LayoutMap, ShardingSpec
 
 
-def test_dummy_extras():
-    import numpy as np
-
+def test_dummy_extras() -> object:
+    """Function docstring."""
     tensor = np.ones(5)
     assert _dummy_reduce_scatter(tensor, "sum", 0, None) is tensor
     assert _dummy_all_reduce(tensor, "sum", None) is tensor
 
 
-def test_device_mesh_repr_and_eq():
+def test_device_mesh_repr_and_eq() -> object:
+    """Function docstring."""
     mesh1 = DeviceMesh(shape=(2,), axis_names=("data",))
     mesh2 = DeviceMesh(shape=(2,), axis_names=("data",))
     mesh3 = DeviceMesh(shape=(2,), axis_names=("model",))
@@ -24,7 +28,8 @@ def test_device_mesh_repr_and_eq():
     assert "DeviceMesh" in repr(mesh1)
 
 
-def test_layout_map_repr_and_eq():
+def test_layout_map_repr_and_eq() -> object:
+    """Function docstring."""
     mesh = DeviceMesh(shape=(2,), axis_names=("data",))
     spec1 = ShardingSpec(mesh, ("data",))
     spec2 = ShardingSpec(mesh, ("data",))
@@ -39,6 +44,7 @@ def test_layout_map_repr_and_eq():
     assert "LayoutMap" in repr(layout)
 
 
-def test_device_mesh_explicit_devices():
+def test_device_mesh_explicit_devices() -> object:
+    """Function docstring."""
     mesh = DeviceMesh(shape=(2,), axis_names=("data",), devices=(0, 1))
     assert mesh.devices == (0, 1)

@@ -1,9 +1,11 @@
 """Safetensors format serialization."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_8
-
 import json
 import struct
+
+import numpy as np  # pragma: no cover
+
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_8
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
 
@@ -12,8 +14,6 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
 
     def load(self, filepath: str) -> dict:
         """Load safetensors weights."""
-        import numpy as np  # pragma: no cover
-
         dtype_map = {  # pragma: no cover
             "F64": np.float64,
             "F32": np.float32,
@@ -43,9 +43,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                 f.seek(8 + header_size + offsets[0])  # pragma: no cover
                 buffer = f.read(offsets[1] - offsets[0])  # pragma: no cover
                 dtype = dtype_map.get(v["dtype"], np.float32)  # pragma: no cover
-                arr = (
-                    np.frombuffer(buffer, dtype=dtype).reshape(v["shape"]).copy()
-                )  # pragma: no cover
+                arr = np.frombuffer(buffer, dtype=dtype).reshape(v["shape"]).copy()  # pragma: no cover
                 weights[k] = arr  # pragma: no cover
 
             return weights  # pragma: no cover
@@ -57,9 +55,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         buffers = []  # pragma: no cover
 
         for k, v in weights_np.items():  # pragma: no cover
-            if (
-                not hasattr(v, "dtype") or not hasattr(v, "shape") or not hasattr(v, "tobytes")
-            ):  # pragma: no cover
+            if not hasattr(v, "dtype") or not hasattr(v, "shape") or not hasattr(v, "tobytes"):  # pragma: no cover
                 continue  # pragma: no cover
 
             dtype_map = {  # pragma: no cover

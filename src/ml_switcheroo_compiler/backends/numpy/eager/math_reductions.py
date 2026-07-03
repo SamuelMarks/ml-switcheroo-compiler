@@ -202,9 +202,7 @@ def _np_accumulate_n(backend_module: object, inputs: list, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("CumulativeLogsumexp")
-def _np_cumulative_logsumexp(
-    backend_module: object, x: object, axis: int = 0, **kwargs: object
-) -> object:
+def _np_cumulative_logsumexp(backend_module: object, x: object, axis: int = 0, **kwargs: object) -> object:
     """Execute _np_cumulative_logsumexp.
 
     Args:

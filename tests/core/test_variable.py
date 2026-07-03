@@ -1,14 +1,16 @@
+"""Module docstring."""
+
+import numpy as np
+
+from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Parameter, TensorConfig, Variable
+from ml_switcheroo_compiler.core.tensor import Parameter, Tensor, TensorConfig, Variable
+from ml_switcheroo_compiler.tracing import global_tracing_state
 
 
-def test_variable_and_parameter():
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
+def test_variable_and_parameter() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU, 0)
     data = np.array([1, 2, 3])
 
@@ -29,9 +31,7 @@ def test_variable_and_parameter():
             pass
 
     with ConfigContext(eager_mode=False):
-        from ml_switcheroo_compiler.tracing import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             v = Variable("dummy_v", TensorConfig((3,), DType.Int32, device))
             t = Tensor("dummy_t", TensorConfig((3,), DType.Int32, device))
@@ -39,4 +39,4 @@ def test_variable_and_parameter():
             v.assign_add(t)
             v.assign_sub(t)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()

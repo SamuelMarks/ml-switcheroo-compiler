@@ -5,9 +5,11 @@ multiplication shape inference, and axis normalization functions, including hand
 symbolic dimensions and error conditions.
 """
 
+from collections import namedtuple
+
 import pytest
 
-from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes, matmul_shape
+from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicSolver, SymInt, broadcast_shapes, matmul_shape, normalize_axis
 
 
 def test_broadcast_shapes() -> None:
@@ -120,8 +122,6 @@ def test_normalize_axis() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.ir.shape_system import normalize_axis
-
     # int tests
     assert normalize_axis(0, 3) == 0
     assert normalize_axis(2, 3) == 2
@@ -152,8 +152,6 @@ def test_normalize_axis() -> None:
 
 def test_symint() -> None:
     """Test SymInt."""
-    from ml_switcheroo_compiler.ir.shape_system import SymInt
-
     a = SymInt("A")
     b = SymInt("B")
 
@@ -185,8 +183,6 @@ def test_symint() -> None:
 
 def test_symbolic_solver() -> None:
     """Test SymbolicSolver."""
-    from ml_switcheroo_compiler.ir.shape_system import SymbolicSolver, SymInt
-
     assert SymbolicSolver.is_consistent(2, 2)
     assert not SymbolicSolver.is_consistent(2, 3)
     assert SymbolicSolver.is_consistent(SymInt("A"), SymInt("A"))
@@ -195,10 +191,6 @@ def test_symbolic_solver() -> None:
 
 def test_shape_tracker() -> None:
     """Test ShapeTracker."""
-    from collections import namedtuple
-
-    from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymInt
-
     TensorSpec = namedtuple("TensorSpec", ["shape"])
 
     # infer_elementwise
@@ -224,6 +216,4 @@ def test_shape_tracker() -> None:
 
 def test_symint_hash() -> None:
     """Test symint hash."""
-    from ml_switcheroo_compiler.ir.shape_system import SymInt
-
     assert hash(SymInt("a")) == hash("a")

@@ -6,12 +6,17 @@ construction.
 """
 
 import numpy as np
+import pytest
 
-from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.control_flow import cond, pmap, scan, vmap, while_loop
+from ml_switcheroo_compiler.ops.control_flow import cond, pmap, scan, stop_gradient, vmap, while_loop
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from ml_switcheroo_compiler.ops.unary.arithmetic import Negative
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 device = Device(DeviceType.CPU)
@@ -96,12 +101,10 @@ def test_vmap_trace() -> None:
             """
             return t
 
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         res = vmap(func)(x)
         assert res.dtype == DType.Int32
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_pmap_trace() -> None:
@@ -130,12 +133,10 @@ def test_pmap_trace() -> None:
             """
             return t
 
-        from ml_switcheroo_compiler.tracing.tracer import _tracer
-
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         res = pmap(func)(x)
         assert res.dtype == DType.Int32
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_trace_function_type_error() -> None:
@@ -147,10 +148,6 @@ def test_trace_function_type_error() -> None:
     Returns:
     None
     """
-    import pytest
-
-    from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-    from ml_switcheroo_compiler.tracing.tracer import _tracer
 
     def bad_func(*args: object) -> int:
         """Bad func.
@@ -170,8 +167,8 @@ def test_trace_function_type_error() -> None:
         ):
             _trace_function(bad_func, (), "test")
     finally:
-        _tracer.is_tracing = False
-        _tracer.active_graph = None
+        global_tracing_state.is_tracing = False
+        global_tracing_state.active_graph = None
 
 
 def test_control_flow_outside_tracing() -> None:
@@ -185,21 +182,14 @@ def test_control_flow_outside_tracing() -> None:
     Returns:
     None
     """
-    import pytest
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.ops.control_flow import pmap, vmap
-
     with ConfigContext(eager_mode=False):
-        pred = Tensor(
-            ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device)
-        )
+        pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
         with pytest.raises(
             RuntimeError,
             match="Cannot emit Cond node outside of a tracing context.",
         ):
-            cond(pred, lambda: None, lambda: None)
+            cond(pred, lambda: pred, lambda: pred)
 
         with pytest.raises(
             RuntimeError,
@@ -228,14 +218,6 @@ def test_control_flow_outside_tracing() -> None:
 
 def test_stop_gradient() -> None:
     """Test stop_gradient."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.control_flow import stop_gradient
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     # Test eager mode
     device = Device(DeviceType.CPU)
     t_eager = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
@@ -243,7 +225,7 @@ def test_stop_gradient() -> None:
     assert t_out is t_eager
 
     # Test tracing mode with ProxyTensor
-    graph = _tracer.start_tracing(name="stop_gradient_test")
+    graph = global_tracing_state.start_tracing(name="stop_gradient_test")
     try:
         proxy = ProxyTensor(id="input_proxy", shape=(2,), dtype="float32")
         out_proxy = stop_gradient(proxy)
@@ -268,26 +250,16 @@ def test_stop_gradient() -> None:
         assert stop_gradient(val) is val
 
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_vmap_tuple_axes() -> None:
     """Test vmap with tuple in_axes."""
-    import numpy as np
-
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ops.control_flow import vmap
-
     device = Device("cpu")
     with ConfigContext(eager_mode=True):
 
         def f(x: object) -> object:
             """Docstring."""
-            from ml_switcheroo_compiler.ops.unary.math import Negative
-
             return Negative()(x)
 
         vmap_f = vmap(f, in_axes=(0,), out_axes=(0,))
@@ -296,14 +268,12 @@ def test_vmap_tuple_axes() -> None:
         assert np.array_equal(y.data, np.array([-1, -2]))
 
 
-def test_new_control_flow():
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler import ops
-
+def test_new_control_flow_fori() -> object:
+    """Function docstring."""
     config.eager_mode = True
 
-    # test fori_loop
-    def body_fun(i, x):
+    def body_fun(i: object, x: object) -> object:
+        """Function docstring."""
         return ops.add(x, 1.0)
 
     init_val = ops.array(np.array(0.0).astype(np.float32))
@@ -313,14 +283,22 @@ def test_new_control_flow():
     res = ops.fori_loop(lower, upper, body_fun, init_val)
     assert res is not None
 
-    # test map and vectorized_map
+
+def test_new_control_flow_map() -> object:
+    """Function docstring."""
+    config.eager_mode = True
+
     elems = ops.array(np.array([1.0, 2.0, 3.0]).astype(np.float32))
     res_map = ops.map(lambda x: ops.multiply(x, 2.0), elems)
     res_vmap = ops.vectorized_map(lambda x: ops.multiply(x, 2.0), elems)
     assert res_map is not None
     assert res_vmap is not None
 
-    # test switch
+
+def test_new_control_flow_switch() -> object:
+    """Function docstring."""
+    config.eager_mode = True
+
     index = ops.array(np.array(1).astype(np.int32))
     branches = [
         lambda x: ops.multiply(x, 1.0),
@@ -331,9 +309,16 @@ def test_new_control_flow():
     res_switch = ops.switch(index, branches, arg)
     assert res_switch is not None
 
-    # test custom_gradient
+
+def test_new_control_flow_custom_gradient() -> object:
+    """Function docstring."""
+    config.eager_mode = True
+
+    arg = ops.array(np.array(10.0).astype(np.float32))
+
     @ops.custom_gradient
-    def my_fn(x):
+    def my_fn(x: object) -> object:
+        """Function docstring."""
         return ops.multiply(x, 2.0), lambda g: ops.multiply(g, 2.0)
 
     res_custom = my_fn(arg)

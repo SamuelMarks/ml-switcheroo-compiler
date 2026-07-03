@@ -1,4 +1,3 @@
-# ruff: noqa: F405, F403
 """Core utilities."""
 
 import scipy.special
@@ -15,9 +14,7 @@ def _true_divide(backend_module: object, *args: object, **kwargs: object) -> obj
         args: Arg.
         kwargs: Arg.
     """
-    func = getattr(
-        backend_module, "divide", getattr(backend_module, "true_divide", None)
-    )  # pragma: no cover
+    func = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))  # pragma: no cover
     return func(*args, **kwargs) if func else None  # pragma: no cover
 
 
@@ -92,9 +89,7 @@ def _nan_to_num(backend_module: object, *args: object, **kwargs: object) -> obje
     posinf = kwargs.get("posinf", None)  # pragma: no cover
     neginf = kwargs.get("neginf", None)  # pragma: no cover
     if hasattr(backend_module, "nan_to_num"):  # pragma: no cover
-        return backend_module.nan_to_num(
-            x, nan=nan, posinf=posinf, neginf=neginf
-        )  # pragma: no cover
+        return backend_module.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)  # pragma: no cover
     return None  # pragma: no cover
 
 
@@ -108,11 +103,7 @@ def _einsum(backend_module: object, *args: object, **kwargs: object) -> object:
         kwargs: Arg.
     """
     eq = (  # pragma: no cover
-        kwargs.pop("equation", "")
-        if "equation" in kwargs
-        else args[0]
-        if len(args) > 0 and isinstance(args[0], str)
-        else ""
+        kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     )
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args  # pragma: no cover
     if hasattr(backend_module, "einsum"):  # pragma: no cover

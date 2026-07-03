@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.configs import BlurConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -15,29 +17,24 @@ def gaussian_blur(images: Tensor, config_obj: object | None = None, **kwargs: ob
     Args:
         images (Tensor): Input images.
         config_obj (BlurConfig | None): Configuration.
-        **kwargs: Backward compatibility arguments.
+
+        kwargs (object): Additional kwargs.\
 
     Returns:
         Tensor: Blurred images.
     """
     if config_obj is None:  # pragma: no branch
-        from ml_switcheroo_compiler.ops.configs import BlurConfig
-
         kernel_size = kwargs.get("kernel_size", (3, 3))
         sigma = kwargs.get("sigma", (1.0, 1.0))
         if isinstance(kernel_size, int):
             kernel_size = (kernel_size, kernel_size)
         if isinstance(sigma, (float, int)):
             sigma = (float(sigma), float(sigma))
-        config_obj = BlurConfig(
-            kernel_size=kernel_size, sigma=sigma, data_format=kwargs.get("data_format", None)
-        )
+        config_obj = BlurConfig(kernel_size=kernel_size, sigma=sigma, data_format=kwargs.get("data_format", None))
 
     padding = kwargs.get("padding", "same")
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "GaussianBlur",
@@ -45,9 +42,7 @@ def gaussian_blur(images: Tensor, config_obj: object | None = None, **kwargs: ob
             config=config_obj,
             padding=padding,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node(
         "GaussianBlur",
         [images],
@@ -71,6 +66,8 @@ def median_filter(
         padding (str): Padding mode ('same' or 'valid').
         data_format (str | None): Data format ('channels_last' or 'channels_first').
 
+        kwargs (object): Additional kwargs.\
+
     Returns:
         Tensor: Filtered images.
     """
@@ -78,8 +75,6 @@ def median_filter(
         kernel_size = (kernel_size, kernel_size)
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "MedianFilter",
@@ -88,9 +83,7 @@ def median_filter(
             padding=padding,
             data_format=data_format,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node(
         "MedianFilter",
         [images],
@@ -116,12 +109,12 @@ def iou(
         boxes2 (Tensor): Second set of bounding boxes [M, 4].
         bounding_box_format (str): The format of the bounding boxes ('xyxy', 'yxyx', 'xywh', 'center_xywh').
 
+        kwargs (object): Additional kwargs.\
+
     Returns:
         Tensor: IoU matrix of shape [N, M].
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "IoU",
@@ -158,12 +151,12 @@ def non_max_suppression(
         iou_threshold (float): A float representing the threshold for deciding whether boxes overlap too much with respect to IOU.
         score_threshold (float): A float representing the threshold for deciding when to remove boxes based on score.
 
+        kwargs (object): Additional kwargs.\
+
     Returns:
         Tensor: A 1-D integer tensor of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "NonMaxSuppression",
@@ -197,22 +190,20 @@ def sharpen(images: Tensor, factor: float = 1.0) -> Tensor:
         images (Tensor): Input images.
         factor (float): Sharpening factor.
 
+        kwargs (object): Additional kwargs.\
+
     Returns:
         Tensor: Sharpened images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("Sharpen", images.data, factor=factor)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op
 
-    kwargs = {"factor": factor}
-    return get_op("Sharpen")()(images, **kwargs)
+    return get_op("Sharpen")()(images)
 
 
 def random_gaussian_blur(
@@ -227,14 +218,13 @@ def random_gaussian_blur(
         images (Tensor): Input images.
         kernel_size (int | tuple[int, int]): Size of the filter.
         sigma (float | tuple[float, float]): Standard deviation.
-        **kwargs: Additional kwargs.
+
+        kwargs (object): Additional kwargs.\
 
     Returns:
         Tensor: Blurred images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomGaussianBlur",
@@ -260,22 +250,19 @@ def random_gaussian_blur(
     )
 
 
-def random_sharpness(
-    images: Tensor, factor: float | tuple[float, float], **kwargs: object
-) -> Tensor:
+def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: object) -> Tensor:
     """Randomly adjust sharpness.
 
     Args:
         images (Tensor): Input images.
         factor (float | tuple[float, float]): Sharpness factor.
-        **kwargs: Additional kwargs.
+
+        kwargs (object): Additional kwargs.\
 
     Returns:
         Tensor: Sharpened images.
     """
     if config.eager_mode:  # pragma: no branch
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op(  # pragma: no cover
             "RandomSharpness",

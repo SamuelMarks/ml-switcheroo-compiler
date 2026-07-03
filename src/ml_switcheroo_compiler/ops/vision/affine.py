@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.config import config
-
-from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.config import config as global_config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from dataclasses import dataclass
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.config import config as global_config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 @dataclass
@@ -34,18 +36,10 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
         Tensor: Transformed images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
-        data = backend.execute_op(
-            "AffineTransform", images.data, transforms.data, interpolation=interpolation
-        )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    return _emit_shape_node(
-        "AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32
-    )
+        data = backend.execute_op("AffineTransform", images.data, transforms.data, interpolation=interpolation)
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
+    return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
 def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Tensor:
@@ -61,8 +55,6 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
         Tensor: Generated affine matrices.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "AffineGenerator",
@@ -75,14 +67,10 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
             backend.array(data),
             TensorConfig(backend.array(data).shape, angles.dtype, angles.device),
         )
-    return _emit_shape_node(
-        "AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype
-    )
+    return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(
-    images: Tensor, mode: str = "horizontal_and_vertical", seed: int = None, **kwargs: object
-) -> Tensor:
+def random_flip(images: Tensor, mode: str = "horizontal_and_vertical", seed: int = None, **kwargs: object) -> Tensor:
     """Randomly flip images horizontally and/or vertically.
 
     Args:
@@ -95,15 +83,12 @@ def random_flip(
         Tensor: Flipped images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("RandomFlip", images.data, mode=mode, seed=seed)
         return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op
 
     kwargs = {"mode": mode, "seed": seed}
     return get_op("RandomFlip")()(images, **kwargs)
@@ -127,8 +112,6 @@ def random_rotation(
         Tensor: Rotated images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomRotation",
@@ -165,15 +148,10 @@ def random_crop(images: Tensor, size: tuple, seed: int = None, **kwargs: object)
         Tensor: Cropped images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("RandomCrop", images.data, size=size, seed=seed)
         new_shape = list(backend.array(data).shape)
-        return Tensor(
-            backend.array(data), TensorConfig(tuple(new_shape), images.dtype, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(tuple(new_shape), images.dtype, images.device))
 
     kwargs = {"size": size, "seed": seed}
     return get_op("RandomCrop")()(images, **kwargs)
@@ -198,8 +176,6 @@ def random_zoom(
         Tensor: Zoomed images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomZoom",
@@ -245,8 +221,6 @@ def random_translation(
         Tensor: Translated images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomTranslation",
@@ -290,8 +264,6 @@ def random_shear(
         Tensor: Sheared images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomShear",
@@ -333,8 +305,6 @@ def random_perspective(
         Tensor: Transformed images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomPerspective",
@@ -376,8 +346,6 @@ def random_elastic_transform(
         Tensor: Transformed images.
     """
     if global_config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "RandomElasticTransform",
@@ -415,16 +383,10 @@ def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = Fals
     Tensor: output Tensor of size (N, H, W, 2)
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("AffineGrid", theta.data, size=size, align_corners=align_corners)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, theta.dtype, theta.device)
-        )
-    return _emit_shape_node(
-        "AffineGrid", [theta], {"size": size, "align_corners": align_corners}, (), theta.dtype
-    )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, theta.dtype, theta.device))
+    return _emit_shape_node("AffineGrid", [theta], {"size": size, "align_corners": align_corners}, (), theta.dtype)
 
 
 def grid_sample(
@@ -447,8 +409,6 @@ def grid_sample(
     Tensor: output Tensor
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "GridSample",
@@ -458,9 +418,7 @@ def grid_sample(
             padding_mode=padding_mode,
             align_corners=align_corners,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     return _emit_shape_node(
         "GridSample",
         [input, grid],

@@ -1,5 +1,7 @@
 """Backend utilities."""
 
+import torch
+
 
 def zeros(cls: type, shape: tuple[int, ...]) -> object:
     """Execute zeros.
@@ -11,8 +13,6 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
     Returns:
     Any: The result.
     """
-    import torch
-
     return torch.zeros(shape)
 
 
@@ -27,8 +27,6 @@ def array(cls: type, data: object, dtype: object = None) -> object:
     Returns:
     Any: The result.
     """
-    import torch
-
     if dtype is not None:
         dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
         dt = getattr(torch, dtype_str, None)
@@ -46,8 +44,6 @@ def asarray(cls: type, data: object) -> object:
     Returns:
     Any: The result.
     """
-    import torch
-
     return torch.as_tensor(data)
 
 
@@ -61,6 +57,4 @@ def item(cls: type, data: object) -> float:
     Returns:
     Any: The result.
     """
-    import torch
-
     return torch.as_tensor(data).item()

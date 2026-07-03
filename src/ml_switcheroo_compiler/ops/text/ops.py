@@ -1,8 +1,16 @@
 """Text operations class definitions."""
 
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.core.tensor import (
+    Tensor,
+    TensorConfig,  # pragma: no cover
+)
+from ml_switcheroo_compiler.ops.base import (
+    OpDef,
+    get_op,  # pragma: no cover
+    register_op,
+)
 
 
 @register_op("StringToHash")
@@ -154,17 +162,13 @@ def string_to_hash(inputs: "Tensor", **kwargs: object) -> "Tensor":
     Tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("Hashing", inputs.data, **kwargs)  # pragma: no cover
-        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
 
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     return get_op("Hashing")()(inputs, **kwargs)  # pragma: no cover
 
@@ -180,17 +184,13 @@ def lookup(inputs: "Tensor", **kwargs: object) -> "Tensor":
     Tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("StringLookup", inputs.data, **kwargs)  # pragma: no cover
-        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
 
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     return get_op("StringLookup")()(inputs, **kwargs)  # pragma: no cover
 
@@ -206,17 +206,13 @@ def text_vectorization(inputs: "Tensor", **kwargs: object) -> "Tensor":
     Tensor.
     """
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("TextVectorization", inputs.data, **kwargs)  # pragma: no cover
-        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig  # pragma: no cover
 
         return Tensor(  # pragma: no cover
             backend.array(data),
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
-    from ml_switcheroo_compiler.ops.base import get_op  # pragma: no cover
 
     return get_op("TextVectorization")()(inputs, **kwargs)  # pragma: no cover
 

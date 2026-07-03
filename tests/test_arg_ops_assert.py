@@ -1,12 +1,14 @@
 """Test arg ops, assert, assign."""
 
-import pytest
 import numpy as np
-from ml_switcheroo_compiler.core.config import config
+import pytest
+
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.core.config import config
 
 
-def test_arg_ops():
+def test_arg_ops() -> object:
+    """Function docstring."""
     config.eager_mode = True
 
     ArgSort = numpy_eager_registry.get("ArgSort")

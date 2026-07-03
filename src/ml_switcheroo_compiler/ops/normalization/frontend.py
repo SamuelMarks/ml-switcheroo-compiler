@@ -4,6 +4,8 @@ import typing
 from dataclasses import dataclass
 
 from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.binary import divide  # pragma: no cover
+from ml_switcheroo_compiler.ops.linalg import power_iteration  # pragma: no cover
 
 
 @dataclass
@@ -38,9 +40,7 @@ def group_variance(
     keepdims: bool = False,
 ) -> object:
     """Computes the variance over groups."""
-    return get_op("GroupVariance")()(
-        x, groups=groups, axis=axis, keepdims=keepdims
-    )  # pragma: no cover
+    return get_op("GroupVariance")()(x, groups=groups, axis=axis, keepdims=keepdims)  # pragma: no cover
 
 
 def group_norm(
@@ -82,8 +82,5 @@ def spectral_normalization(
     Returns:
         tuple[object, object]: Normalized weight and new u.
     """
-    from ml_switcheroo_compiler.ops.linalg import power_iteration  # pragma: no cover
-    from ml_switcheroo_compiler.ops.binary import divide  # pragma: no cover
-
     _, u_new, sigma = power_iteration(w, num_iters=num_iters, u=u)  # pragma: no cover
     return divide(w, sigma), u_new  # pragma: no cover

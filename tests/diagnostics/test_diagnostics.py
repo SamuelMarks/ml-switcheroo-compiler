@@ -5,8 +5,6 @@ reconstruction, shape debugging, FLOPs estimation, memory profiling, numerical a
 detection, and graph visualization utilities (Graphviz and HTML exports).
 """
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
-
 from typing import NoReturn
 
 import numpy as np
@@ -15,7 +13,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.diagnostics import (
     check_numerical_anomaly,
     debug_shapes,

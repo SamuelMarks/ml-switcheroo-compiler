@@ -1,13 +1,26 @@
-from ml_switcheroo_compiler.ops.nn.normalization import layer_norm, group_norm, instance_norm
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.core.dtype import DType
+"""Module docstring."""
+
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.nn.normalization import (
+    BatchNormConfig,
+    batch_normalization,
+    group_norm,
+    instance_norm,
+    layer_norm,
+    rms_normalization,
+)
 
-def test_norm_extra():
+
+def test_norm_extra() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t1 = Tensor(np.ones((2, 4, 3, 3)), TensorConfig((2, 4, 3, 3), DType.Float32, device))
     t1_fail = Tensor(np.ones((2, 5, 3, 3)), TensorConfig((2, 5, 3, 3), DType.Float32, device))
@@ -18,8 +31,6 @@ def test_norm_extra():
     offset_gn = Tensor(np.ones((4,)), TensorConfig((4,), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
-        from unittest.mock import patch
-
         with patch("ml_switcheroo_compiler.ops.divide") as mock_divide:
             with patch("ml_switcheroo_compiler.ops.multiply") as mock_multiply:
                 with patch("ml_switcheroo_compiler.ops.add") as mock_add:
@@ -40,9 +51,7 @@ def test_norm_extra():
                             )
 
                             # Layer norm
-                            res1 = layer_norm(
-                                t1, normalized_shape=(3, 3), scale=scale, offset=offset
-                            )
+                            res1 = layer_norm(t1, normalized_shape=(3, 3), scale=scale, offset=offset)
                             assert res1 is not None
 
                             # Group norm
@@ -57,13 +66,8 @@ def test_norm_extra():
                             assert res3 is not None
 
 
-def test_norm_extra_batch_rms():
-    from ml_switcheroo_compiler.ops.nn.normalization import (
-        batch_normalization,
-        rms_normalization,
-        BatchNormConfig,
-    )
-
+def test_norm_extra_batch_rms() -> object:
+    """Function docstring."""
     device = Device("cpu")
     t1 = Tensor(np.ones((2, 4, 3, 3)), TensorConfig((2, 4, 3, 3), DType.Float32, device))
     mean = Tensor(np.ones((2, 4, 3, 3)), TensorConfig((2, 4, 3, 3), DType.Float32, device))
@@ -72,8 +76,6 @@ def test_norm_extra_batch_rms():
     offset = Tensor(np.ones((2, 4, 3, 3)), TensorConfig((2, 4, 3, 3), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
-        from unittest.mock import patch
-
         with patch("ml_switcheroo_compiler.ops.divide") as mock_divide:
             with patch("ml_switcheroo_compiler.ops.multiply") as mock_multiply:
                 with patch("ml_switcheroo_compiler.ops.add") as mock_add:

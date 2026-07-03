@@ -6,7 +6,8 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import creation, linalg, shape
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 def test_lazy_frontend_direct_1() -> None:
@@ -19,7 +20,7 @@ def test_lazy_frontend_direct_1() -> None:
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
 
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
         shape.reshape(x, (4,))
         shape.flatten(x)
@@ -35,7 +36,7 @@ def test_lazy_frontend_direct_1() -> None:
         shape.hsplit(x, 2)
         shape.vsplit(x, 2)
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_lazy_frontend_direct_2() -> None:
@@ -48,7 +49,7 @@ def test_lazy_frontend_direct_2() -> None:
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
 
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
         p_3d = ProxyTensor(id="3d", shape=(2, 2, 2), dtype=DType.Float32)
         t_3d = Tensor(p_3d, TensorConfig((2, 2, 2), DType.Float32, "cpu"))
@@ -85,7 +86,7 @@ def test_lazy_frontend_direct_2() -> None:
         shape.triu(x)
         creation.diag(z)
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_lazy_frontend_direct_3() -> None:
@@ -98,7 +99,7 @@ def test_lazy_frontend_direct_3() -> None:
     x = Tensor(p_x, TensorConfig((2, 2), DType.Float32, "cpu"))
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
 
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
         creation.zeros((2, 2))
         creation.zeros_like(x)
@@ -121,7 +122,7 @@ def test_lazy_frontend_direct_3() -> None:
         linalg.tensordot(x, y, axes=1)
         linalg.einsum("ab,bc->ac", x, y)
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_lazy_frontend_direct_4() -> None:
@@ -136,7 +137,7 @@ def test_lazy_frontend_direct_4() -> None:
     y = Tensor(p_y, TensorConfig((2, 2), DType.Float32, "cpu"))
     z = Tensor(p_z, TensorConfig((4,), DType.Float32, "cpu"))
 
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
         linalg.matrix_power(x, 2)
         with contextlib.suppress(Exception):
@@ -172,4 +173,4 @@ def test_lazy_frontend_direct_4() -> None:
         with contextlib.suppress(Exception):
             linalg.cross(z, z)
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()

@@ -1,16 +1,26 @@
 """Loss operations."""
 
 from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.nn.activations import softplus
+
+# y_true * (log(y_true) - y_pred)
+# usually implemented as y_true * log(y_true) - y_true * y_pred
 from ml_switcheroo_compiler.ops.binary import (
-    subtract,
     add,
-    multiply,
     divide,
+    greater,
+    less_equal,
     maximum,
+    multiply,
+    subtract,
 )
-from ml_switcheroo_compiler.ops.unary import abs, log, square
-from ml_switcheroo_compiler.ops.reductions import mean, sum
 from ml_switcheroo_compiler.ops.creation.frontend import ones_like
+from ml_switcheroo_compiler.ops.nn.normalization import l2_normalize
+from ml_switcheroo_compiler.ops.reductions import mean, sum
+from ml_switcheroo_compiler.ops.shape.frontend import take_along_axis
+from ml_switcheroo_compiler.ops.shape.indexing import where
+from ml_switcheroo_compiler.ops.shape.manipulation import expand_dims
+from ml_switcheroo_compiler.ops.unary import abs, log, square
 
 
 def l1_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
@@ -25,9 +35,6 @@ def mse_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
 
 def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Tensor:
     """Huber Loss."""
-    from ml_switcheroo_compiler.ops.shape.indexing import where
-    from ml_switcheroo_compiler.ops.binary import less_equal
-
     error = subtract(y_true, y_pred)
     abs_error = abs(error)
 
@@ -42,10 +49,7 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Tensor:
 
 def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Tensor:
     """Smooth L1 Loss (similar to Huber with beta)."""
-    from ml_switcheroo_compiler.ops.shape.indexing import where
-    from ml_switcheroo_compiler.ops.binary import less_equal
-
-    if beta < 1e-5:  # noqa: PLR2004
+    if beta < 1e-5:
         return l1_loss(y_true, y_pred)
 
     error = subtract(y_true, y_pred)
@@ -60,8 +64,6 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Tensor:
 
 def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Tensor:
     """Cosine Similarity Loss."""
-    from ml_switcheroo_compiler.ops import l2_normalize
-
     y_true_norm = l2_normalize(y_true, axis=axis)
     y_pred_norm = l2_normalize(y_pred, axis=axis)
 
@@ -76,11 +78,6 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     y_true is expected to be a probability distribution.
     y_pred is expected to be log-probabilities.
     """
-    # y_true * (log(y_true) - y_pred)
-    # usually implemented as y_true * log(y_true) - y_true * y_pred
-    from ml_switcheroo_compiler.ops.shape.indexing import where
-    from ml_switcheroo_compiler.ops.binary import greater
-
     # only compute where y_true > 0 to avoid log(0)
     safe_y_true = where(greater(y_true, 0.0), y_true, ones_like(y_true))
     true_log = multiply(y_true, log(safe_y_true))
@@ -113,7 +110,6 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     # We can use the approximation: x + softplus(-2x) - log(2)
     # or just use log(cosh(x)) if cosh is safe.
     error = subtract(y_pred, y_true)
-    from ml_switcheroo_compiler.nn.activations import softplus
 
     # More numerically stable: log(cosh(x)) = |x| + softplus(-2|x|) - log(2)
     abs_error = abs(error)
@@ -124,9 +120,7 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(stable_logcosh)
 
 
-def margin_ranking_loss(
-    input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0
-) -> Tensor:
+def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> Tensor:
     """Margin Ranking Loss."""
     # max(0, -target * (input1 - input2) + margin)
     diff = subtract(input1, input2)
@@ -140,9 +134,6 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
     y_pred expected to be log-probabilities.
     y_true expected to be class indices.
     """
-    from ml_switcheroo_compiler.ops import take_along_axis
-    from ml_switcheroo_compiler.ops.shape.manipulation import expand_dims
-
     # Gather the log probs corresponding to target indices
     # y_true needs to be expanded
     y_true_expanded = expand_dims(y_true, axis=-1)
@@ -150,11 +141,9 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
     return mean(multiply(-1.0, gathered))
 
 
-def triplet_loss(
-    anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0
-) -> Tensor:
+def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> Tensor:
     """Triplet margin loss."""
-    if p == 2.0:  # noqa: PLR2004
+    if p == 2.0:
         d_pos = sum(square(subtract(anchor, positive)), axis=-1)
         d_neg = sum(square(subtract(anchor, negative)), axis=-1)
     else:

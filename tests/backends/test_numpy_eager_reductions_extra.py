@@ -1,29 +1,40 @@
-import pytest
+"""Module docstring."""
+
 import numpy as np
+import pytest
+
+# if it fails in np.pad inside pytest with None or VALID, it means np.pad doesn't handle empty padding well or something
+# let's mock it
+import ml_switcheroo_compiler.backends.numpy.eager.reductions as red_mod
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import (
+    _apply_base_dilation,
     _calc_same_padding,
     _calculate_padding_for_window,
-    _apply_base_dilation,
-    _reduce_window,
-    _np_trapezoidal_integral,
-    _np_confusion_matrix,
-    _np_cummax,
-    _np_cummin,
-    _np_cumprod,
-    _np_cumlogsumexp,
-    _np_segment_sum,
-    _np_segment_max,
-    _np_segment_min,
-    _np_segment_prod,
+    _create_sliding_window_view,
     _np_adaptive_avg_pool2d,
     _np_adaptive_max_pool2d,
     _np_approx_max_k,
     _np_approx_min_k,
+    _np_confusion_matrix,
+    _np_cumlogsumexp,
+    _np_cummax,
+    _np_cummin,
+    _np_cumprod,
+    _np_reduce_window,
+    _np_segment_max,
+    _np_segment_min,
+    _np_segment_prod,
+    _np_segment_sum,
     _np_top_k,
+    _np_trapezoidal_integral,
+    _reduce_window,
+    _top_k,
 )
+from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
-def test_numpy_reductions_extra():
+def test_numpy_reductions_extra() -> object:
+    """Function docstring."""
     # calc padding
     _calc_same_padding(2, [3, 3])
 
@@ -43,9 +54,7 @@ def test_numpy_reductions_extra():
 
     # confusion matrix
     _np_confusion_matrix(np, np.array([0, 1]), np.array([0, 1]), num_classes=2)
-    _np_confusion_matrix(
-        np, np.array([0, 1]), np.array([0, 1]), num_classes=2, weights=np.array([1, 1])
-    )
+    _np_confusion_matrix(np, np.array([0, 1]), np.array([0, 1]), num_classes=2, weights=np.array([1, 1]))
 
     # cum functions
     _np_cummax(np, np.ones(2))
@@ -78,21 +87,16 @@ def test_numpy_reductions_extra():
             raise ValueError(f"Unknown computation {computation}")
 
 
-def test_numpy_reductions_sliding_window():
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
-    from ml_switcheroo_compiler.backends.numpy.eager.reductions import _create_sliding_window_view
-    import numpy as np
-
+def test_numpy_reductions_sliding_window() -> object:
+    """Function docstring."""
     operand = np.ones((4, 4))
     config = WindowConfig(window_dimensions=[2, 2], window_strides=[1, 1], window_dilation=[1, 1])
     view, axis = _create_sliding_window_view(operand, config)
     assert view.shape == (3, 3, 2, 2)
 
 
-def test_numpy_reductions_top_k():
-    from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
-    import numpy as np
-
+def test_numpy_reductions_top_k() -> object:
+    """Function docstring."""
     val, idx = _top_k(np.array([1, 2, 3]), k=2)
     assert np.allclose(np.sort(val), [2, 3])
     assert np.allclose(idx, [2, 1])
@@ -101,19 +105,15 @@ def test_numpy_reductions_top_k():
     assert np.allclose(val, [[1, 2, 3]])
 
 
-def test_numpy_reductions_reduce_window_valid():
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
-    import numpy as np
-
+def test_numpy_reductions_reduce_window_valid() -> object:
+    """Function docstring."""
     operand = np.ones((4, 4))
     config = WindowConfig(window_dimensions=[2, 2], padding="VALID")
-    # if it fails in np.pad inside pytest with None or VALID, it means np.pad doesn't handle empty padding well or something
-    # let's mock it
-    import ml_switcheroo_compiler.backends.numpy.eager.reductions as red_mod
 
     original_pad = red_mod.np.pad
 
-    def mock_pad(array, pad_width, **kwargs):
+    def mock_pad(array: object, pad_width: object, **kwargs: object) -> object:
+        """Function docstring."""
         return array
 
     red_mod.np.pad = mock_pad
@@ -127,19 +127,15 @@ def test_numpy_reductions_reduce_window_valid():
         red_mod.np.pad = original_pad
 
 
-def test_numpy_reductions_eager_wrappers():
-    from ml_switcheroo_compiler.backends.numpy.eager.reductions import _np_top_k, _np_reduce_window
-    import numpy as np
-
+def test_numpy_reductions_eager_wrappers() -> object:
+    """Function docstring."""
     val, idx = _np_top_k(np, np.array([1, 2, 3]), k=2)
     assert np.allclose(np.sort(val), [2, 3])
 
-    from ml_switcheroo_compiler.ops.configs import WindowConfig
-    import ml_switcheroo_compiler.backends.numpy.eager.reductions as red_mod
-
     original_pad = red_mod.np.pad
 
-    def mock_pad(array, pad_width, **kwargs):
+    def mock_pad(array: object, pad_width: object, **kwargs: object) -> object:
+        """Function docstring."""
         return array
 
     red_mod.np.pad = mock_pad
@@ -151,15 +147,8 @@ def test_numpy_reductions_eager_wrappers():
         red_mod.np.pad = original_pad
 
 
-def test_numpy_reductions_segment_branches():
-    from ml_switcheroo_compiler.backends.numpy.eager.reductions import (
-        _np_cumlogsumexp,
-        _np_segment_max,
-        _np_segment_min,
-        _np_segment_prod,
-    )
-    import numpy as np
-
+def test_numpy_reductions_segment_branches() -> object:
+    """Function docstring."""
     _np_cumlogsumexp(np, np.ones((2, 2)), axis=None)
 
     # trigger empty mask branches for segment ops
@@ -172,13 +161,8 @@ def test_numpy_reductions_segment_branches():
     _np_segment_prod(np, data, segment_ids, num_segments=3)
 
 
-def test_numpy_reductions_approx_k_branches():
-    from ml_switcheroo_compiler.backends.numpy.eager.reductions import (
-        _np_approx_max_k,
-        _np_approx_min_k,
-    )
-    import numpy as np
-
+def test_numpy_reductions_approx_k_branches() -> object:
+    """Function docstring."""
     _np_approx_max_k(np, [], k=1)
     _np_approx_min_k(np, [], k=1)
 
@@ -186,8 +170,6 @@ def test_numpy_reductions_approx_k_branches():
     _np_approx_min_k(np, [1, 2, 3], 2)
 
 
-def test_numpy_reductions_cumlogsumexp():
-    from ml_switcheroo_compiler.backends.numpy.eager.reductions import _np_cumlogsumexp
-    import numpy as np
-
+def test_numpy_reductions_cumlogsumexp() -> object:
+    """Function docstring."""
     _np_cumlogsumexp(np, np.ones((2, 2)), axis=0)

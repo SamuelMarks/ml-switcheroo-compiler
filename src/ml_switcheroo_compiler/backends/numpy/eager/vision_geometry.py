@@ -1,8 +1,9 @@
-# ruff: noqa: F405, F403
 """Shared vision utilities and ops."""
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 import numpy as np
+
+from ml_switcheroo_compiler.backends.eager import iou_eager, nms_eager
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AffineGenerator")
@@ -28,9 +29,7 @@ def _np_affine_generator(
 
 
 @numpy_eager_registry.register("AffineTransform")
-def _np_affine_transform(
-    backend_module: object, images: object, transforms: object, **kwargs: object
-) -> object:
+def _np_affine_transform(backend_module: object, images: object, transforms: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -43,9 +42,7 @@ def _np_affine_transform(
 
 
 @numpy_eager_registry.register("ElasticTransform")
-def _np_elastic_transform(
-    backend_module: object, images: object, displacement: object, **kwargs: object
-) -> object:
+def _np_elastic_transform(backend_module: object, images: object, displacement: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -58,9 +55,7 @@ def _np_elastic_transform(
 
 
 @numpy_eager_registry.register("ExtractBoundingBoxes")
-def _np_extract_bounding_boxes(
-    backend_module: object, images: object, boxes: object, box_indices: object, **kwargs: object
-) -> object:
+def _np_extract_bounding_boxes(backend_module: object, images: object, boxes: object, box_indices: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -88,8 +83,6 @@ def _np_iou(
         boxes2: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager import iou_eager
-
     return iou_eager(backend_module, boxes1, boxes2, **kwargs)
 
 
@@ -110,8 +103,6 @@ def _np_nms(
         max_output_size: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager import nms_eager
-
     return nms_eager(backend_module, boxes, scores, max_output_size=max_output_size, **kwargs)
 
 
@@ -138,9 +129,7 @@ def _np_perspective_transform(
 
 
 @numpy_eager_registry.register("ResizeBicubic")
-def _np_resize_bicubic(
-    backend_module: object, images: object, size: object, **kwargs: object
-) -> object:
+def _np_resize_bicubic(backend_module: object, images: object, size: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -153,9 +142,7 @@ def _np_resize_bicubic(
 
 
 @numpy_eager_registry.register("ResizeLanczos3")
-def _np_resize_lanczos3(
-    backend_module: object, images: object, size: object, **kwargs: object
-) -> object:
+def _np_resize_lanczos3(backend_module: object, images: object, size: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -168,9 +155,7 @@ def _np_resize_lanczos3(
 
 
 @numpy_eager_registry.register("ResizeNearest")
-def _np_resize_nearest(
-    backend_module: object, images: object, size: object, **kwargs: object
-) -> object:
+def _np_resize_nearest(backend_module: object, images: object, size: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -190,8 +175,7 @@ def _np_affine_grid(
     align_corners: bool = False,
     **kwargs: object,
 ) -> object:
-    import numpy as np
-
+    """Function docstring."""
     # Very naive implementation for numpy fallback.
     if isinstance(theta, np.ndarray):
         return np.zeros(list(size[:-1]) + [2], dtype=theta.dtype)
@@ -206,6 +190,7 @@ def _np_affine_transform(
     interpolation: str = "nearest",
     **kwargs: object,
 ) -> object:
+    """Function docstring."""
     # Very naive fallback logic since np doesn't have a direct equivalent
     return images  # pragma: no cover  # pragma: no cover
 

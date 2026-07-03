@@ -1,1 +1,0 @@
-"""Facade for backward compatibility."""

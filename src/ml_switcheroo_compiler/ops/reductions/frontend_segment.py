@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
+from .frontend_utils import _emit_reduction_node
 
 if TYPE_CHECKING:
     pass
-
-
-from .frontend_utils import _emit_reduction_node
 
 
 def _emit_segment_op(
@@ -120,9 +117,7 @@ def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = N
 
 
 @dispatch_eager("UnsortedSegmentMax")
-def unsorted_segment_max(
-    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
-) -> Tensor:
+def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the max of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -137,9 +132,7 @@ def unsorted_segment_max(
 
 
 @dispatch_eager("UnsortedSegmentMean")
-def unsorted_segment_mean(
-    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
-) -> Tensor:
+def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the mean of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -154,9 +147,7 @@ def unsorted_segment_mean(
 
 
 @dispatch_eager("UnsortedSegmentMin")
-def unsorted_segment_min(
-    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
-) -> Tensor:
+def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the min of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -171,9 +162,7 @@ def unsorted_segment_min(
 
 
 @dispatch_eager("UnsortedSegmentProd")
-def unsorted_segment_prod(
-    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
-) -> Tensor:
+def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the prod of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -188,9 +177,7 @@ def unsorted_segment_prod(
 
 
 @dispatch_eager("UnsortedSegmentSqrtN")
-def unsorted_segment_sqrt_n(
-    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
-) -> Tensor:
+def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the sqrt_n of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -205,9 +192,7 @@ def unsorted_segment_sqrt_n(
 
 
 @dispatch_eager("UnsortedSegmentSum")
-def unsorted_segment_sum(
-    data: Tensor, segment_ids: Tensor, num_segments: int | None = None
-) -> Tensor:
+def unsorted_segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Tensor:
     """Computes the sum of tensor elements grouped by unsorted segment_ids.
 
     Args:

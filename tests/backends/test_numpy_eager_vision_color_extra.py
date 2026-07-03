@@ -1,4 +1,9 @@
+"""Module docstring."""
+
 import numpy as np
+
+# equalization
+import ml_switcheroo_compiler.backends.numpy.eager.vision_color as vc_mod
 from ml_switcheroo_compiler.backends.numpy.eager.vision_color import (
     _np_adjust_brightness,
     _np_adjust_contrast,
@@ -13,7 +18,8 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_color import (
 )
 
 
-def test_numpy_vision_color_eager():
+def test_numpy_vision_color_eager() -> object:
+    """Function docstring."""
     img = np.ones((2, 2, 3), dtype=np.uint8) * 128
 
     # brightness
@@ -35,12 +41,10 @@ def test_numpy_vision_color_eager():
     img_ac = np.array([[[0, 0, 0], [255, 255, 255]]], dtype=np.uint8)
     _np_auto_contrast(np, img_ac)
 
-    # equalization
-    import ml_switcheroo_compiler.backends.numpy.eager.vision_color as vc_mod
-
     original_hist = vc_mod.np.histogram
 
-    def mock_hist(*args, **kwargs):
+    def mock_hist(*args: object, **kwargs: object) -> object:
+        """Function docstring."""
         return np.array([1] * 256), None
 
     vc_mod.np.histogram = mock_hist
@@ -52,7 +56,8 @@ def test_numpy_vision_color_eager():
     finally:
         vc_mod.np.histogram = original_hist
 
-    def mock_hist2(*args, **kwargs):
+    def mock_hist2(*args: object, **kwargs: object) -> object:
+        """Function docstring."""
         a = np.zeros(256)
         a[0] = 100
         return a, None

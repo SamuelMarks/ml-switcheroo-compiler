@@ -1,9 +1,10 @@
 """Signal utilities."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
 import typing
 from dataclasses import dataclass
+
+import scipy.ndimage
+import scipy.signal
 
 from ml_switcheroo_compiler.backends.eager.utils import (
     _from_channels_last,
@@ -11,11 +12,11 @@ from ml_switcheroo_compiler.backends.eager.utils import (
     _to_channels_last,
     _to_numpy_array,
 )
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
+from ml_switcheroo_compiler.ops.configs import BlurConfig  # pragma: no cover
 
 
-def _generate_gaussian_kernel(
-    np_mod: object, kernel_size: tuple[int, int], sigma: tuple[float, float]
-) -> object:
+def _generate_gaussian_kernel(np_mod: object, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> object:
     """Function docstring.
 
     Args:
@@ -41,8 +42,6 @@ def _apply_conv2d_batch(np_mod: object, imgs: object, kernel: object, mode: str)
         kernel: Arg.
         mode: Arg.
     """
-    import scipy.signal
-
     B, H, W, C = imgs.shape
     ky, kx = kernel.shape
 
@@ -53,9 +52,7 @@ def _apply_conv2d_batch(np_mod: object, imgs: object, kernel: object, mode: str)
 
     for b in range(B):
         for c in range(C):
-            out[b, ..., c] = scipy.signal.convolve2d(
-                imgs[b, ..., c], kernel, mode=mode, boundary="fill", fillvalue=0.0
-            )
+            out[b, ..., c] = scipy.signal.convolve2d(imgs[b, ..., c], kernel, mode=mode, boundary="fill", fillvalue=0.0)
     return out
 
 
@@ -67,8 +64,6 @@ def _get_blur_config(kwargs: dict, config_obj: typing.Optional[object]) -> objec
         config_obj: Arg.
     """
     if config_obj is None:  # pragma: no branch
-        from ml_switcheroo_compiler.ops.configs import BlurConfig  # pragma: no cover
-
         return BlurConfig(  # pragma: no cover
             kernel_size=kwargs.get("kernel_size", (3, 3)),
             sigma=kwargs.get("sigma", (1.0, 1.0)),
@@ -128,25 +123,17 @@ def _apply_median_filter_channel(imgs: object, out: object, config: FilterConfig
         config: Arg.
         b: Arg.
     """
-    import scipy.ndimage
-
     C = imgs.shape[-1]
     for c in range(C):
-        filtered = scipy.ndimage.median_filter(
-            imgs[b, ..., c], size=(config.ky, config.kx), mode="constant", cval=0.0
-        )
+        filtered = scipy.ndimage.median_filter(imgs[b, ..., c], size=(config.ky, config.kx), mode="constant", cval=0.0)
         if config.padding == "valid":
             pad_y_top = config.ky // 2
             pad_x_left = config.kx // 2
-            filtered = filtered[
-                pad_y_top : pad_y_top + out.shape[1], pad_x_left : pad_x_left + out.shape[2]
-            ]
+            filtered = filtered[pad_y_top : pad_y_top + out.shape[1], pad_x_left : pad_x_left + out.shape[2]]
         out[b, ..., c] = filtered
 
 
-def _apply_median_filter_batch(
-    np_mod: object, imgs: object, kernel_size: tuple[int, int], padding: str
-) -> object:
+def _apply_median_filter_batch(np_mod: object, imgs: object, kernel_size: tuple[int, int], padding: str) -> object:
     """Function docstring.
 
     Args:

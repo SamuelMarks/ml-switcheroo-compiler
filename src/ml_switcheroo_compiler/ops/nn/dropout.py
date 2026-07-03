@@ -1,10 +1,16 @@
 """Dropout operations."""
 
 from __future__ import annotations
-from ml_switcheroo_compiler.ops.base import OpDef, register_op, dispatch_eager, get_op
-from ml_switcheroo_compiler.core.tensor import Tensor
+
 from collections.abc import Sequence
 from dataclasses import dataclass
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 @dataclass
@@ -120,14 +126,9 @@ class Dropout2d(OpDef):
 
 def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
     """Dropout2d."""
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.core.config import config
-
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("Dropout2d", getattr(x, "data", x), p=p, training=training)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-    from ml_switcheroo_compiler.core.dtype import DType
 
     return _emit_shape_node(
         "Dropout2d",
@@ -151,14 +152,9 @@ class Dropout3d(OpDef):
 
 def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
     """Dropout3d."""
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.core.config import config
-
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("Dropout3d", getattr(x, "data", x), p=p, training=training)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-    from ml_switcheroo_compiler.core.dtype import DType
 
     return _emit_shape_node(
         "Dropout3d",

@@ -1,19 +1,35 @@
 """Ragged ops."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-from .frontend import (
-    ragged_constant as ragged_constant,
-    ragged_cross as ragged_cross,
-    ragged_cross_hashed as ragged_cross_hashed,
-    ragged_range as ragged_range,
-    ragged_row_splits_to_segment_ids as ragged_row_splits_to_segment_ids,
-    ragged_segment_ids_to_row_splits as ragged_segment_ids_to_row_splits,
-    ragged_stack as ragged_stack,
-    ragged_stack_dynamic_partitions as ragged_stack_dynamic_partitions,
-    ragged_dot as ragged_dot,
-)
 
 from .core import RaggedDot
+from .frontend import (
+    ragged_constant as ragged_constant,
+)
+from .frontend import (
+    ragged_cross as ragged_cross,
+)
+from .frontend import (
+    ragged_cross_hashed as ragged_cross_hashed,
+)
+from .frontend import (
+    ragged_dot as ragged_dot,
+)
+from .frontend import (
+    ragged_range as ragged_range,
+)
+from .frontend import (
+    ragged_row_splits_to_segment_ids as ragged_row_splits_to_segment_ids,
+)
+from .frontend import (
+    ragged_segment_ids_to_row_splits as ragged_segment_ids_to_row_splits,
+)
+from .frontend import (
+    ragged_stack as ragged_stack,
+)
+from .frontend import (
+    ragged_stack_dynamic_partitions as ragged_stack_dynamic_partitions,
+)
 
 
 @register_op("RaggedGather")
@@ -99,9 +115,7 @@ class RaggedRange(OpDef):
 
     op_name = "RaggedRange"
 
-    def infer_shape(
-        self, starts: object, limits: object, deltas: object, **kwargs: object
-    ) -> object:
+    def infer_shape(self, starts: object, limits: object, deltas: object, **kwargs: object) -> object:
         """Infer shape."""
         return ()  # pragma: no cover
 
@@ -145,9 +159,7 @@ class RaggedStackDynamicPartitions(OpDef):
 
     op_name = "RaggedStackDynamicPartitions"
 
-    def infer_shape(
-        self, data: object, partitions: object, num_partitions: object, **kwargs: object
-    ) -> object:
+    def infer_shape(self, data: object, partitions: object, num_partitions: object, **kwargs: object) -> object:
         """Infer shape."""
         return ()  # pragma: no cover
 

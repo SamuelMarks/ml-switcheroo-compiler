@@ -1,19 +1,26 @@
-from ml_switcheroo_compiler.ops.shape.indexing import (
-    DynamicSliceInDim,
-    DynamicUpdateSliceInDim,
+"""Module docstring."""
+
+from ml_switcheroo_compiler.ops.shape import (
     DynamicIndexInDim,
+    DynamicSliceInDim,
     DynamicUpdateIndexInDim,
-    SliceInDim,
+    DynamicUpdateSliceInDim,
     ScatterApply,
     ScatterMax,
     ScatterMin,
     ScatterMul,
+    SliceInDim,
 )
 
 
-def test_indexing_infer_shape():
+def test_indexing_infer_shape() -> object:
+    """Function docstring."""
+
     class DummyTensor:
-        def __init__(self, shape):
+        """Class docstring."""
+
+        def __init__(self, shape: object) -> object:
+            """Function docstring."""
             self.shape = shape
 
     t = DummyTensor((10, 20))

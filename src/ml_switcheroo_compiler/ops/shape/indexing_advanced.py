@@ -1,9 +1,8 @@
 """Shape operations for Tensor objects."""
 
 from __future__ import annotations
+
 # pylint: disable=duplicate-code
-
-
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -234,9 +233,7 @@ class AssignSub(OpDef):
 class TensorScatterUpdate(OpDef):
     """TensorScatterUpdate operator definition."""
 
-    def infer_shape(
-        self, tensor: object, indices: object, updates: object, **kwargs: object
-    ) -> object:
+    def infer_shape(self, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
         """Infer shape for TensorScatterUpdate."""
         return getattr(tensor, "shape", ())  # pragma: no cover
 
@@ -272,9 +269,7 @@ class Compress(OpDef):
     op_name = "Compress"
     np_op_name = "compress"
 
-    def infer_shape(
-        self, condition: object, a: object, axis: int = None, out: object = None, **kwargs: object
-    ) -> object:
+    def infer_shape(self, condition: object, a: object, axis: int = None, out: object = None, **kwargs: object) -> object:
         """Infer the output shape."""
         return (None,)
 
@@ -286,9 +281,7 @@ class Diagonal(OpDef):
     op_name = "Diagonal"
     np_op_name = "diagonal"
 
-    def infer_shape(
-        self, a: object, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: object
-    ) -> object:
+    def infer_shape(self, a: object, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: object) -> object:
         """Infer the output shape."""
         return (None,)
 
@@ -335,9 +328,7 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(
-        self, tensor: object, mask: object, axis: object = None, **kwargs: object
-    ) -> object:
+    def infer_shape(self, tensor: object, mask: object, axis: object = None, **kwargs: object) -> object:
         """Infer shape."""
         # Typically dynamic size
         return (None,)

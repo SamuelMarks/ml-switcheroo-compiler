@@ -1,13 +1,9 @@
+"""Module docstring."""
+
 import numpy as np
+
 from ml_switcheroo_compiler.backends.numpy.eager.random import (
-    dropout,
     DropoutConfig,
-    _np_rand,
-    _np_randn,
-    _np_seed,
-    _np_manual_seed,
-    _np_randint,
-    _np_key,
     _np_ball,
     _np_beta,
     _np_binomial,
@@ -23,40 +19,55 @@ from ml_switcheroo_compiler.backends.numpy.eager.random import (
     _np_gen_normal,
     _np_geometric,
     _np_gumbel,
+    _np_key,
     _np_key_data,
     _np_key_impl,
     _np_laplace,
     _np_loggamma,
     _np_logistic,
     _np_lognormal,
+    _np_manual_seed,
     _np_maxwell,
     _np_multivariate_normal,
     _np_orthogonal,
     _np_pareto,
     _np_poisson,
     _np_rademacher,
+    _np_rand,
+    _np_randint,
+    _np_randn,
     _np_rayleigh,
+    _np_rng_bit_generator,
+    _np_rng_uniform,
+    _np_seed,
     _np_t,
     _np_triangular,
     _np_wald,
     _np_weibull,
     _np_wrap_key,
-    _np_rng_bit_generator,
-    _np_rng_uniform,
+    _unwrap,
+    dropout,
 )
 
 
-def test_numpy_random_eager_extra():
+def test_numpy_random_eager_extra() -> object:
+    """Function docstring."""
+
     class TensorLike:
-        def __init__(self, data):
+        """Class docstring."""
+
+        def __init__(self, data: object) -> object:
+            """Function docstring."""
             self.data = np.array(data)
             self.shape = self.data.shape
             self.dtype = self.data.dtype
 
-        def __mul__(self, other):
+        def __mul__(self, other: object) -> object:
+            """Function docstring."""
             return TensorLike(self.data * other)
 
-        def __truediv__(self, other):
+        def __truediv__(self, other: object) -> object:
+            """Function docstring."""
             return TensorLike(self.data / other)
 
     t = TensorLike(np.ones((2, 2)))
@@ -106,14 +117,16 @@ def test_numpy_random_eager_extra():
     _np_weibull(np, key, 1.0, 1.0)
 
     _np_wrap_key(np, np.array([0, 42]))
-    _np_rng_bit_generator(np, key, ())
+    _np_rng_bit_generator(np, key, shape=())
     _np_rng_uniform(np, 0.0, 1.0, ())
 
 
-def test_numpy_random_unwrap():
-    from ml_switcheroo_compiler.backends.numpy.eager.random import _unwrap
+def test_numpy_random_unwrap() -> object:
+    """Function docstring."""
 
     class TensorDummy:
+        """Class docstring."""
+
         pass
 
     t = TensorDummy()
@@ -126,28 +139,32 @@ def test_numpy_random_unwrap():
     assert _unwrap([1, 2]) == (1, 2)
 
 
-def test_numpy_random_randint_dtype():
-    from ml_switcheroo_compiler.backends.numpy.eager.random import _np_randint
-    import numpy as np
-
+def test_numpy_random_randint_dtype() -> object:
+    """Function docstring."""
     _np_randint(np, 0, 10, size=(1,), dtype=np.float32)
 
 
-def test_numpy_random_dropout_noise_shape():
+def test_numpy_random_dropout_noise_shape() -> object:
+    """Function docstring."""
+
     class TensorLike:
-        def __init__(self, data):
+        """Class docstring."""
+
+        def __init__(self, data: object) -> object:
+            """Function docstring."""
             self.data = np.array(data)
             self.shape = self.data.shape
             self.dtype = self.data.dtype
 
-        def __mul__(self, other):
+        def __mul__(self, other: object) -> object:
+            """Function docstring."""
             return TensorLike(self.data * other)
 
-        def __truediv__(self, other):
+        def __truediv__(self, other: object) -> object:
+            """Function docstring."""
             return TensorLike(self.data / other)
 
     t = TensorLike(np.ones((2, 2)))
-    from ml_switcheroo_compiler.backends.numpy.eager.random import dropout, DropoutConfig
 
     config = DropoutConfig(training=True, seed=None)
     dropout(np, t, rate=0.5, config=config)
@@ -156,34 +173,26 @@ def test_numpy_random_dropout_noise_shape():
     dropout(np, t, rate=0.5, config=config2)
 
 
-def test_numpy_random_key_data():
-    from ml_switcheroo_compiler.backends.numpy.eager.random import _np_key_data, _np_key_impl
-    import numpy as np
-
+def test_numpy_random_key_data() -> object:
+    """Function docstring."""
     key = np.array([0, 42])
     _np_key_data(np, key)
     _np_key_impl(np, key)
 
 
-def test_numpy_random_dirichlet_int_shape():
-    from ml_switcheroo_compiler.backends.numpy.eager.random import _np_dirichlet
-    import numpy as np
-
+def test_numpy_random_dirichlet_int_shape() -> object:
+    """Function docstring."""
     key = np.array([0, 42])
     _np_dirichlet(np, key, np.array([0.5, 0.5]), shape=2)
 
 
-def test_numpy_random_ball_tuple_shape():
-    from ml_switcheroo_compiler.backends.numpy.eager.random import _np_ball
-    import numpy as np
-
+def test_numpy_random_ball_tuple_shape() -> object:
+    """Function docstring."""
     key = np.array([0, 42])
     _np_ball(np, key, 2, shape=(2,))
 
 
-def test_numpy_random_dirichlet_tuple_shape():
-    from ml_switcheroo_compiler.backends.numpy.eager.random import _np_dirichlet
-    import numpy as np
-
+def test_numpy_random_dirichlet_tuple_shape() -> object:
+    """Function docstring."""
     key = np.array([0, 42])
     _np_dirichlet(np, key, np.array([0.5, 0.5]), shape=(2,))

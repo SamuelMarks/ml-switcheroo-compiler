@@ -2,21 +2,19 @@
 
 from __future__ import annotations
 
-
+import math
 from typing import TYPE_CHECKING
-
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
+from .frontend_utils import _emit_creation_node
 
 if TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.device import Device
-    from ml_switcheroo_compiler.core.dtype import DType
-
-
-from .frontend_utils import _emit_creation_node
+    pass
 
 
 def arange(
@@ -43,7 +41,6 @@ def arange(
     if stop is None:
         stop = start
         start = 0
-    import math
 
     size = max(math.ceil((stop - start) / step), 0)
     shape = (size,)

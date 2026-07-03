@@ -1,8 +1,12 @@
+"""Module docstring."""
+
 import pytest
+
 from ml_switcheroo_compiler.ops.linalg.einsum import Einsum
 
 
-def test_einsum_infer_shape_coverage():
+def test_einsum_infer_shape_coverage() -> object:
+    """Function docstring."""
     op = Einsum()
 
     # 1. Provide kwargs without equation

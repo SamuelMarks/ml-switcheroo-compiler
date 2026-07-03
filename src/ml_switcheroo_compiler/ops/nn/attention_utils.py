@@ -2,14 +2,18 @@
 
 import math
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.binary import multiply, subtract
-from ml_switcheroo_compiler.ops.unary import sin, cos, exp
-from ml_switcheroo_compiler.ops.shape.manipulation import expand_dims
-from ml_switcheroo_compiler.ops.shape.frontend import concatenate
-from ml_switcheroo_compiler.ops.creation import arange
-from ml_switcheroo_compiler.ops.aliases.memory_ops import convert_to_tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.binary import multiply, subtract
+from ml_switcheroo_compiler.ops.creation.frontend import arange
+from ml_switcheroo_compiler.ops.shape.frontend import concatenate
+from ml_switcheroo_compiler.ops.shape.manipulation import expand_dims
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.ops.unary import cos, exp, sin
+
+# slopes: [num_heads, 1, 1]
 
 
 @register_op("Rope")
@@ -48,10 +52,6 @@ def rope(
     Returns:
         The tensor with RoPE applied.
     """
-    from ml_switcheroo_compiler.core.config import config
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "Rope",
@@ -61,9 +61,7 @@ def rope(
             offset=offset,
         )
         return Tensor(data, input.config)
-    return _emit_shape_node(
-        "Rope", [input], {"dim": dim, "base": base, "offset": offset}, input.shape, input.dtype
-    )
+    return _emit_shape_node("Rope", [input], {"dim": dim, "base": base, "offset": offset}, input.shape, input.dtype)
 
 
 def sinusoidal_positional_encoding(
@@ -84,7 +82,7 @@ def sinusoidal_positional_encoding(
         A tensor of shape (seq_len, dim) containing the encodings.
     """
     position = arange(seq_len)
-    div_term = exp(multiply(arange(0, dim, 2), convert_to_tensor(-math.log(base) / dim)))
+    div_term = exp(multiply(arange(0, dim, 2), -math.log(base) / dim))
     pe_sin = sin(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
     pe_cos = cos(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
     return concatenate([pe_sin, pe_cos], dim=-1)
@@ -110,12 +108,9 @@ def alibi_mask(
     positions = arange(seq_len)
     # compute distances: [seq_len, seq_len]
     _ = subtract(expand_dims(positions, 0), expand_dims(positions, 1))
-    # slopes: [num_heads, 1, 1]
-    import math
 
     closest_power_of_2 = 2 ** math.floor(math.log2(num_heads))
     _ = 2 ** (-(2 ** -(math.log2(closest_power_of_2) - 3)))
 
-    # A true functional implementation would compute slopes as a tensor.
     # We will return the base dist tensor for now.
-    return convert_to_tensor(0.0)
+    return 0.0

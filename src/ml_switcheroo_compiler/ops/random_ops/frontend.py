@@ -1,10 +1,14 @@
 """Random ops frontend."""
 
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.tracing import ProxyTensor, _tracer
-from ml_switcheroo_ir import LogicalNode
 import uuid
+
+from ml_switcheroo_ir import LogicalNode
+
+from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType  # pragma: no cover
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
 def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Tensor:
@@ -18,20 +22,16 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Tensor:
     Returns:
         Tensor: A tensor of shape (num_results, dim).
     """
-    from ml_switcheroo_compiler.core.dtype import DType  # pragma: no cover
-
     dtype = DType("float32")  # pragma: no cover
     out_shape = (num_results, dim)  # pragma: no cover
     device = config.default_device  # pragma: no cover
 
     if config.eager_mode:  # pragma: no cover
-        from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-
         backend = get_active_backend()  # pragma: no cover
         data = backend.execute_op("SobolSample", dim, num_results, skip)  # pragma: no cover
         return Tensor(data, TensorConfig(out_shape, dtype, device))  # pragma: no cover
 
-    if not _tracer.is_tracing:  # pragma: no cover
+    if not global_tracing_state.is_tracing:  # pragma: no cover
         msg = "Cannot emit node outside tracing context."  # pragma: no cover
         raise RuntimeError(msg)  # pragma: no cover
 
@@ -43,7 +43,7 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Tensor:
         attributes={"dim": dim, "num_results": num_results, "skip": skip},
         shape_metadata=out_shape,
     )
-    _tracer.add_node(node)  # pragma: no cover
+    global_tracing_state.add_node(node)  # pragma: no cover
 
     proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype.value)  # pragma: no cover
     return Tensor(proxy, TensorConfig(out_shape, dtype, device))  # pragma: no cover

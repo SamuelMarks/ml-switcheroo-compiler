@@ -1,5 +1,7 @@
 """Mixins for code generators."""
 
+import importlib
+
 
 class GeneratorLifecycleMixin:
     """Mixin for the generation lifecycle."""
@@ -44,7 +46,8 @@ class GeneratorLifecycleMixin:
         Args:
             input_prefix (str): The input_prefix parameter for the operation.
         """
-        from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
+        bg = importlib.import_module("ml_switcheroo_compiler.backends.base_generator")
+        IRGraphWalker = bg.IRGraphWalker
 
         walker = IRGraphWalker(self)
         walker.walk(input_prefix)

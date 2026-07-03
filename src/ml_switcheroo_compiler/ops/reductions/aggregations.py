@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.configs import WindowConfig
-
-
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
 
@@ -323,9 +319,7 @@ class ReduceWindow(ReductionOp):
             return ()
 
         in_shape = operand.shape
-        window_dimensions, window_strides, padding, base_dilation, window_dilation = (
-            self._normalize_config(config)
-        )
+        window_dimensions, window_strides, padding, base_dilation, window_dilation = self._normalize_config(config)
 
         out_shape = []
         for i, dim in enumerate(in_shape):
@@ -354,7 +348,7 @@ class ReduceWindow(ReductionOp):
             config = WindowConfig(window_dimensions=[])
         return operand, config
 
-    def _normalize_config(self, config: WindowConfig) -> tuple:
+    def _normalize_config(self, config: WindowConfig) -> tuple[list[int], list[int], list[tuple[int, int]], list[int], list[int]]:
         """Execute _normalize_config.
 
         Args:
@@ -390,24 +384,18 @@ class ReduceWindow(ReductionOp):
         padding: Arg.
         axis: Arg.
         """
-        pad = (
-            padding[axis] if isinstance(padding, (list, tuple)) and axis < len(padding) else (0, 0)
-        )
+        pad = padding[axis] if isinstance(padding, (list, tuple)) and axis < len(padding) else (0, 0)
         return pad if isinstance(pad, tuple) else (0, 0)
 
-    def _extract_window_params(
-        self, axis: int, config: WindowConfig
-    ) -> tuple[int, int, int, int, int, int]:
+    def _extract_window_params(self, axis: int, config: WindowConfig) -> tuple[int, int, int, int, int, int]:
         """Function docstring.
 
         Args:
         axis: Arg.
         config: Arg.
         """
-        window_dimensions, window_strides, padding, base_dilation, window_dilation = (
-            self._normalize_config(config)
-        )
-        pad_low, pad_high = self._get_axis_pad(padding, axis)  # type: ignore
+        window_dimensions, window_strides, padding, base_dilation, window_dilation = self._normalize_config(config)
+        pad_low, pad_high = self._get_axis_pad(padding, axis)
         base_dil = self._get_axis_param(base_dilation, axis, 1)
         win_dil = self._get_axis_param(window_dilation, axis, 1)
         stride = self._get_axis_param(window_strides, axis, 1)
@@ -426,9 +414,7 @@ class ReduceWindow(ReductionOp):
         Returns:
         Any: The result.
         """
-        pad_low, pad_high, base_dil, win_dil, stride, win_dim = self._extract_window_params(
-            axis, config
-        )
+        pad_low, pad_high, base_dil, win_dil, stride, win_dim = self._extract_window_params(axis, config)
         eff_in_dim = (dim - 1) * base_dil + 1 + pad_low + pad_high
         eff_win_dim = (win_dim - 1) * win_dil + 1
         return 0 if eff_in_dim < eff_win_dim else (eff_in_dim - eff_win_dim) // stride + 1

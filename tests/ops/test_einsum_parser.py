@@ -1,8 +1,12 @@
+"""Module docstring."""
+
 import pytest
-from ml_switcheroo_compiler.ops.linalg.einsum import EinsumEquationParser, Einsum
+
+from ml_switcheroo_compiler.ops.linalg.einsum import Einsum, EinsumEquationParser
 
 
-def test_parse_equation_sides():
+def test_parse_equation_sides() -> object:
+    """Function docstring."""
     # Explicit ->
     in_subs, out_sub = EinsumEquationParser.parse_equation_sides("ij, jk -> ik")
     assert in_subs == "ij,jk"
@@ -19,7 +23,8 @@ def test_parse_equation_sides():
     assert out_sub == "...ik"
 
 
-def test_build_axis_size_map():
+def test_build_axis_size_map() -> object:
+    """Function docstring."""
     shapes = [(2, 3), (3, 4)]
     dim_map, ell = EinsumEquationParser.build_axis_size_map("ij,jk", shapes)
     assert dim_map == {"i": 2, "j": 3, "k": 4}
@@ -45,7 +50,8 @@ def test_build_axis_size_map():
         EinsumEquationParser.build_axis_size_map("ij,jkl", shapes)
 
 
-def test_compute_output_shape():
+def test_compute_output_shape() -> object:
+    """Function docstring."""
     dim_map = {"i": 2, "j": 3, "k": 4}
     # Regular
     assert EinsumEquationParser.compute_output_shape("ik", dim_map, None) == (2, 4)
@@ -62,7 +68,8 @@ def test_compute_output_shape():
     assert EinsumEquationParser.compute_output_shape("i...k", dim_map, (5,)) == (2, 5, 4)
 
 
-def test_einsum_infer_shape():
+def test_einsum_infer_shape() -> object:
+    """Function docstring."""
     e = Einsum()
 
     # Missing args and equation
@@ -85,7 +92,8 @@ def test_einsum_infer_shape():
     assert e.infer_shape("ij,jk->ik", (2, 3), (3, 4)) == (2, 4)
 
 
-def test_compute_output_shape_ellipsis_none():
+def test_compute_output_shape_ellipsis_none() -> object:
+    """Function docstring."""
     dim_map = {"i": 2, "k": 4}
     # Ellipsis out but ellipsis_shape is None
     assert EinsumEquationParser.compute_output_shape("i...k", dim_map, None) == (2, 4)

@@ -7,19 +7,17 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import Callable, TypeVar
 
+from ml_switcheroo_ir import LogicalNode
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_ir import LogicalNode
 
 # We import dispatcher directly
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-T = TypeVar("T", bound="OpDef")
-
 # Global operation registry
 
-_OP_REGISTRY: dict[str, type[OpDef]] = {}
+T = TypeVar("T", bound="OpDef")
 
 
 class OpDef(ABC):
@@ -41,31 +39,10 @@ class OpDef(ABC):
 
     def eager_eval(self, *args: object, **kwargs: object) -> object:
         """Execute eager_eval."""
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
         backend = get_active_backend()
         return backend.execute_op(self.op_type, *args, **kwargs)
-
-
-def register_op(name: str) -> Callable[[type[T]], type[T]]:
-    """Register an operation class in the global registry."""
-
-    def decorator(cls: type[T]) -> type[T]:
-        """Function docstring."""
-        if name in _OP_REGISTRY and _OP_REGISTRY[name].__name__ != cls.__name__:
-            msg = f"Operation '{name}' is already registered."
-            raise ValueError(msg)
-        cls.op_type = name
-        _OP_REGISTRY[name] = cls
-        return cls
-
-    return decorator
-
-
-def get_op(name: str) -> type[OpDef]:
-    """Retrieve an operation class by name."""
-    if name not in _OP_REGISTRY:
-        msg = f"Operation '{name}' not found in registry."
-        raise KeyError(msg)
-    return _OP_REGISTRY[name]
 
 
 def emit_ir_node(
@@ -107,6 +84,8 @@ def dispatch_eager(op_name: str) -> Callable:
             kwargs: Arg.
             """
             if config.eager_mode:
+                from ml_switcheroo_compiler.backends.registry import get_active_backend
+
                 backend = get_active_backend()
                 raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
                 data = backend.execute_op(op_name, *raw_args, **kwargs)
@@ -117,15 +96,11 @@ def dispatch_eager(op_name: str) -> Callable:
                     return tuple(
                         Tensor(
                             backend.array(d),
-                            TensorConfig(
-                                backend.array(d).shape, getattr(d, "dtype", dtype), device
-                            ),
+                            TensorConfig(backend.array(d).shape, getattr(d, "dtype", dtype), device),
                         )
                         for d in data
                     )
-                return Tensor(
-                    backend.array(data), TensorConfig(backend.array(data).shape, dtype, device)
-                )
+                return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, dtype, device))
             return func(*args, **kwargs)
 
         return wrapper
@@ -140,3 +115,5 @@ __all__ = [
     "get_op",
     "register_op",
 ]
+
+from ml_switcheroo_compiler.ops.registry import get_op, register_op  # noqa: E402

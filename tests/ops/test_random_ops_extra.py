@@ -1,7 +1,10 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.ops.random_ops import RngBitGenerator, RngUniform
 
 
-def test_random_ops_infer_shape_coverage():
+def test_random_ops_infer_shape_coverage() -> object:
+    """Function docstring."""
     res1 = RngBitGenerator().infer_shape(None, (1, 2), None)
     assert res1 == (1, 2)
 

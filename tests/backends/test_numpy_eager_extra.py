@@ -1,8 +1,14 @@
+"""Module docstring."""
+
 import numpy as np
+
+# test coverage for src/ml_switcheroo_compiler/backends/numpy/eager/random.py
+import ml_switcheroo_compiler.backends.numpy.eager.random as rnd
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
-def test_numpy_eager_conv_extra():
+def test_numpy_eager_conv_extra() -> object:
+    """Function docstring."""
     # test coverage for src/ml_switcheroo_compiler/backends/numpy/eager/conv.py
     ConvTranspose = numpy_eager_registry.get("ConvTranspose")
     # minimal fake call to ensure not implemented or handles
@@ -13,7 +19,8 @@ def test_numpy_eager_conv_extra():
         pass
 
 
-def test_numpy_eager_linalg_extra():
+def test_numpy_eager_linalg_extra() -> object:
+    """Function docstring."""
     # test coverage for src/ml_switcheroo_compiler/backends/numpy/eager/linalg.py
 
     # Try BandPart with specific ndim
@@ -27,7 +34,8 @@ def test_numpy_eager_linalg_extra():
     assert u.shape == (2, 2)
 
 
-def test_numpy_eager_math_extra():
+def test_numpy_eager_math_extra() -> object:
+    """Function docstring."""
     # test coverage for src/ml_switcheroo_compiler/backends/numpy/eager/math.py
     TruncateDiv = numpy_eager_registry.get("TruncateDiv")
     assert np.array_equal(TruncateDiv(np, np.array([5.5]), np.array([2.0])), np.array([2.0]))
@@ -42,10 +50,8 @@ def test_numpy_eager_math_extra():
         pass
 
 
-def test_numpy_eager_random_extra():
-    # test coverage for src/ml_switcheroo_compiler/backends/numpy/eager/random.py
-    import ml_switcheroo_compiler.backends.numpy.eager.random as rnd
-
+def test_numpy_eager_random_extra() -> object:
+    """Function docstring."""
     Dropout = numpy_eager_registry.get("Dropout")
     res = Dropout(np, np.ones((2,)), 0.5)
     assert res.shape == (2,)
@@ -64,7 +70,8 @@ def test_numpy_eager_random_extra():
     assert res5.dtype == np.int32
 
 
-def test_numpy_eager_shape_extra():
+def test_numpy_eager_shape_extra() -> object:
+    """Function docstring."""
     # test coverage for src/ml_switcheroo_compiler/backends/numpy/eager/shape.py
     SparseExpandDims = numpy_eager_registry.get("SparseExpandDims")
     x = np.array([1])

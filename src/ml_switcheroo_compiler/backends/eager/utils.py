@@ -1,11 +1,9 @@
 """Module docstring."""
 
-# ruff: noqa: E402
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_4
-
-import typing
 import importlib
+import typing
+
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4
 
 
 def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
@@ -19,9 +17,7 @@ def _to_numpy_array(np_mod: object, x: object, name: str) -> object:
     return np_mod.asarray(x)
 
 
-def _from_numpy_array(
-    backend_module: object, out: object, name: str, original_tensor: object = None
-) -> object:
+def _from_numpy_array(backend_module: object, out: object, name: str, original_tensor: object = None) -> object:
     """Convert numpy array back to backend tensor."""
     if name == "torch":  # pragma: no branch
         return _torch_from_numpy(out, original_tensor)  # pragma: no cover
@@ -47,9 +43,7 @@ def _torch_from_numpy(out: object, original_tensor: object = None) -> object:
     """
     torch = importlib.import_module("torch")  # pragma: no cover
     if original_tensor is not None:  # pragma: no cover
-        return torch.tensor(
-            out, dtype=original_tensor.dtype, device=original_tensor.device
-        )  # pragma: no cover
+        return torch.tensor(out, dtype=original_tensor.dtype, device=original_tensor.device)  # pragma: no cover
     return torch.tensor(out)  # pragma: no cover
 
 

@@ -1,10 +1,14 @@
+"""Module docstring."""
+
 import numpy as np
-from ml_switcheroo_compiler.ops.nn.linear_ops import linear, bilinear
+
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.ops.nn.linear_ops import bilinear, linear
 
 
-def test_linear():
+def test_linear() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.random.randn(2, 3).astype(np.float32)
     w_data = np.random.randn(4, 3).astype(np.float32)
@@ -18,7 +22,8 @@ def test_linear():
     assert y is not None
 
 
-def test_bilinear():
+def test_bilinear() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x1_data = np.random.randn(2, 3).astype(np.float32)
     x2_data = np.random.randn(2, 4).astype(np.float32)
@@ -34,7 +39,8 @@ def test_bilinear():
     assert y is not None
 
 
-def test_linear_no_bias():
+def test_linear_no_bias() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x_data = np.random.randn(2, 3).astype(np.float32)
     w_data = np.random.randn(4, 3).astype(np.float32)
@@ -46,7 +52,8 @@ def test_linear_no_bias():
     assert y is not None
 
 
-def test_bilinear_no_bias():
+def test_bilinear_no_bias() -> object:
+    """Function docstring."""
     config.eager_mode = True
     x1_data = np.random.randn(2, 3).astype(np.float32)
     x2_data = np.random.randn(2, 4).astype(np.float32)

@@ -1,9 +1,12 @@
+"""Module docstring."""
+
 from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
 from ml_switcheroo_compiler.transforms.passes.state_lifting import state_lifting_pass
 
 
-def test_recursive_state_lifting():
+def test_recursive_state_lifting() -> object:
+    """Function docstring."""
     graph = IRGraph("test")
     block1 = IRBlock("block1", inputs=[], outputs=[], nodes=[])
     node1 = IRNode(
@@ -28,7 +31,8 @@ def test_recursive_state_lifting():
     assert node1.op_type == "Output"
 
 
-def test_recursive_lift_state():
+def test_recursive_lift_state() -> object:
+    """Function docstring."""
     graph = IRGraph("test")
     block1 = IRBlock("block1", inputs=[], outputs=[], nodes=[])
     node1 = IRNode(

@@ -1,11 +1,16 @@
+"""Module docstring."""
+
+import numpy as backend_module
 import numpy as np
+
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
-    random_rotation_eager,
     RotationConfig,
+    random_rotation_eager,
 )
 
 
-def test_random_rotation_eager_direct():
+def test_random_rotation_eager_direct() -> object:
+    """Function docstring."""
     images = np.ones((2, 10, 10, 3), dtype=np.float32)
     config = RotationConfig(
         factor=0.5,
@@ -15,13 +20,13 @@ def test_random_rotation_eager_direct():
         fill_value=0.0,
         data_format="channels_last",
     )
-    import numpy as backend_module
 
     res = random_rotation_eager(backend_module, images, config)
     assert res.shape == (2, 10, 10, 3)
 
 
-def test_random_rotation_eager_nearest():
+def test_random_rotation_eager_nearest() -> object:
+    """Function docstring."""
     images = np.ones((1, 10, 10, 3), dtype=np.float32)
     config = RotationConfig(
         factor=0.5,
@@ -31,7 +36,6 @@ def test_random_rotation_eager_nearest():
         fill_value=0.0,
         data_format="channels_last",
     )
-    import numpy as backend_module
 
     res = random_rotation_eager(backend_module, images, config)
     assert res.shape == (1, 10, 10, 3)

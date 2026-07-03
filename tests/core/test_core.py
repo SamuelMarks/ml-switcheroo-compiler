@@ -5,8 +5,6 @@ correctness of core data types, device representations, custom exceptions, confi
 contexts, and the base Tensor class.
 """
 
-from ml_switcheroo_compiler.core.tensor import TensorConfig
-
 import pytest
 
 from ml_switcheroo_compiler.core import (
@@ -25,6 +23,9 @@ from ml_switcheroo_compiler.core import (
     UnimplementedMathError,
     config,
 )
+from ml_switcheroo_compiler.core.config import ConfigState, EagerMode, StreamContext
+from ml_switcheroo_compiler.core.tensor import TensorConfig
+from ml_switcheroo_compiler.export.export_api import ExportArchive
 
 
 def test_dtype_enums() -> None:
@@ -89,8 +90,6 @@ def test_config() -> None:
     Returns:
     None
     """
-    from ml_switcheroo_compiler.core.config import EagerMode, StreamContext
-
     orig_mode = config.eager_mode
     with ConfigContext(eager_mode=not orig_mode):
         assert config.eager_mode == (not orig_mode)
@@ -122,9 +121,7 @@ def test_config_env_var(monkeypatch: object) -> None:
     Returns:
     None
     """
-
     monkeypatch.setenv("SWITCHEROO_EAGER_MODE", "1")
-    from ml_switcheroo_compiler.core.config import ConfigState
 
     new_state = ConfigState()
     assert new_state.execution.eager_mode is True
@@ -147,3 +144,12 @@ def test_tensor() -> None:
     assert t.device == device
     assert t.requires_grad is True
     assert t.data == [1, 2]
+
+
+def test_export_archive() -> object:
+    """Function docstring."""
+    archive = ExportArchive()
+    archive.track(object())
+    archive.add_endpoint("dummy", lambda x: x)
+    archive.write_out("dummy_path")
+    archive.add_variable_collection("dummy", [])

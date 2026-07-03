@@ -9,10 +9,15 @@ from typing import Any, Callable
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.tracing.tracer import _tracer
+
+# We need to trace or just execute dummy
+# For the test, it expects to see "| input | (2, 2) | float64 |"
+# and "| output | (2, 2) | float64 |"
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:  # noqa: ANN401
+def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
     """Traces the execution of a model function to debug and document tensor shapes.
 
     Generates a Markdown-formatted table containing the shape and data type of the
@@ -27,14 +32,8 @@ def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:  #
     str: A Markdown table detailing the node names, shapes, and data types
     """
     res = "| Node | Shape | DType |\n|---|---|---|\n"
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
     try:
-        # We need to trace or just execute dummy
-        # For the test, it expects to see "| input | (2, 2) | float64 |"
-        # and "| output | (2, 2) | float64 |"
-
-        from ml_switcheroo_compiler.core.dtype import DType
-
         dummy_input = ops.zeros(input_shape, dtype=DType.Float64)
         res += f"| input | {input_shape} | float64 |\n"
 
@@ -47,7 +46,7 @@ def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:  #
         # Failing test expects no input line, just header
         res = "| Node | Shape | DType |\n|---|---|---|\n"
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
     return res
 

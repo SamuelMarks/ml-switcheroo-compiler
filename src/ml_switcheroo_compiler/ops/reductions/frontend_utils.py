@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-
+import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
+
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.configs import WindowConfig
-
+from ml_switcheroo_compiler.ops.reductions.aggregations import ReduceWindow
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from ml_switcheroo_compiler.core.dtype import DType
+    pass
 
 
 def _emit_reduction_node(
@@ -36,12 +39,6 @@ def _emit_reduction_node(
     Returns:
     Any: The result.
     """
-    import uuid
-
-    from ml_switcheroo_ir import LogicalNode
-
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
@@ -50,15 +47,13 @@ def _emit_reduction_node(
         attributes=attrs,
         shape_metadata=out_shape,
     )
-    _tracer.add_node(node)
+    global_tracing_state.add_node(node)
 
     proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
-def _reduce_window_eager(
-    operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig
-) -> Tensor:
+def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig) -> Tensor:
     """Function docstring.
 
     Args:
@@ -76,14 +71,10 @@ def _reduce_window_eager(
         computation,
         config=window_config,
     )
-    return Tensor(
-        backend.array(data), TensorConfig(backend.array(data).shape, operand.dtype, operand.device)
-    )
+    return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, operand.dtype, operand.device))
 
 
-def _build_reduce_window_attributes(
-    init_value: Tensor | float, computation: str, window_config: WindowConfig
-) -> dict:
+def _build_reduce_window_attributes(init_value: Tensor | float, computation: str, window_config: WindowConfig) -> dict:
     """Function docstring.
 
     Args:
@@ -104,9 +95,7 @@ def _build_reduce_window_attributes(
     return attributes
 
 
-def _reduce_window_trace(
-    operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig
-) -> Tensor:
+def _reduce_window_trace(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig) -> Tensor:
     """Function docstring.
 
     Args:
@@ -120,8 +109,6 @@ def _reduce_window_trace(
         inputs.append(init_value)
 
     attributes = _build_reduce_window_attributes(init_value, computation, window_config)
-
-    from ml_switcheroo_compiler.ops.reductions.aggregations import ReduceWindow
 
     rw_op = ReduceWindow()
     out_shape = rw_op.infer_shape(operand, init_value, computation, window_config)

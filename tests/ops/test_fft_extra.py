@@ -1,24 +1,28 @@
+"""Module docstring."""
+
 import numpy as np
 
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.config import ConfigContext
-from ml_switcheroo_compiler.tracing.tracer import _tracer
-from ml_switcheroo_compiler.ops.linalg.fft import fftfreq, hfft, ihfft, rfftfreq
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.linalg.fft import Fftfreq, Hfft, Ihfft, Rfftfreq, fftfreq, hfft, ihfft, rfftfreq
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def _test_op(func, *args, **kwargs):
+def _test_op(func: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=True):
         out_eager = func(*args, **kwargs)
     with ConfigContext(eager_mode=False):
-        _tracer.start_tracing()
+        global_tracing_state.start_tracing()
         try:
             out_traced = func(*args, **kwargs)
         finally:
-            _tracer.stop_tracing()
+            global_tracing_state.stop_tracing()
     return out_eager, out_traced
 
 
-def test_fft_ops():
+def test_fft_ops() -> object:
+    """Function docstring."""
     a = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
 
     e, t = _test_op(fftfreq, 2)
@@ -34,9 +38,8 @@ def test_fft_ops():
     assert e.shape == (2,)
 
 
-def test_opdefs_infer_shapes():
-    from ml_switcheroo_compiler.ops.linalg.fft import Fftfreq, Hfft, Ihfft, Rfftfreq
-
+def test_opdefs_infer_shapes() -> object:
+    """Function docstring."""
     assert Fftfreq().infer_shape(2) == (2,)
     assert Hfft().infer_shape() == ()
     assert Ihfft().infer_shape() == ()

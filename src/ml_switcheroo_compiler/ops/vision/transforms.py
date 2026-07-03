@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from __future__ import annotations
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -23,14 +25,13 @@ def perspective_transform(
         start_points (Tensor): Source points.
         end_points (Tensor): Target points.
         config_obj (PerspectiveConfig | None): Configuration.
-        **kwargs: Backward compatibility arguments.
+
+        kwargs (object): Additional kwargs.\
 
     Returns:
         Tensor: Transformed images.
     """
     if config_obj is None:  # pragma: no branch
-        from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
-
         config_obj = PerspectiveConfig(
             interpolation=kwargs.get("interpolation", "bilinear"),
             fill_value=kwargs.get("fill_value", 0.0),
@@ -38,8 +39,6 @@ def perspective_transform(
         )
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "PerspectiveTransform",
@@ -48,9 +47,7 @@ def perspective_transform(
             end_points.data,
             config=config_obj,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node(
         "PerspectiveTransform",
         [images, start_points, end_points],
@@ -72,14 +69,13 @@ def elastic_transform(
         images (Tensor): Input images.
         displacement (Tensor): Displacement field (dy, dx).
         config_obj (ElasticConfig | None): Configuration.
-        **kwargs: Backward compatibility arguments.
+
+        kwargs (object): Additional kwargs.\
 
     Returns:
         Tensor: Transformed images.
     """
     if config_obj is None:  # pragma: no branch
-        from ml_switcheroo_compiler.ops.configs import ElasticConfig
-
         config_obj = ElasticConfig(
             interpolation=kwargs.get("interpolation", "bilinear"),
             fill_value=kwargs.get("fill_value", 0.0),
@@ -87,8 +83,6 @@ def elastic_transform(
         )
 
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "ElasticTransform",
@@ -96,9 +90,7 @@ def elastic_transform(
             displacement.data,
             config=config_obj,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
     return _emit_shape_node(
         "ElasticTransform",
         [images, displacement],
@@ -114,18 +106,15 @@ def flip_left_right(images: Tensor) -> Tensor:
     Args:
         images (Tensor): Input images.
 
+        kwargs (object): Additional kwargs.\
+
     Returns:
         Tensor: Flipped images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("FlipLeftRight", images.data)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("FlipLeftRight")()(images, dtype=DType.Int32)
 
@@ -136,17 +125,14 @@ def flip_up_down(images: Tensor) -> Tensor:
     Args:
         images (Tensor): Input images.
 
+        kwargs (object): Additional kwargs.\
+
     Returns:
         Tensor: Flipped images.
     """
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op("FlipUpDown", images.data)
-        return Tensor(
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device)
-        )
-    from ml_switcheroo_compiler.ops.base import get_op
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("FlipUpDown")()(images, dtype=DType.Int32)

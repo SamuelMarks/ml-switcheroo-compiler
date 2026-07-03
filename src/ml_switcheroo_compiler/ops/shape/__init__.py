@@ -65,6 +65,7 @@ from .frontend import array_split as array_split
 from .frontend import atleast_1d as atleast_1d
 from .frontend import atleast_2d as atleast_2d
 from .frontend import atleast_3d as atleast_3d
+from .frontend import boolean_mask as boolean_mask
 from .frontend import broadcast_arrays as broadcast_arrays
 from .frontend import broadcast_in_dim as broadcast_in_dim
 from .frontend import broadcast_to as broadcast_to
@@ -81,22 +82,21 @@ from .frontend import diff as diff
 from .frontend import digitize as digitize
 from .frontend import dsplit as dsplit
 from .frontend import dstack as dstack
-from .frontend import dynamic_slice as dynamic_slice
 from .frontend import dynamic_partition as dynamic_partition
+from .frontend import dynamic_shape as dynamic_shape
+from .frontend import dynamic_slice as dynamic_slice
 from .frontend import dynamic_stitch as dynamic_stitch
-from .frontend import tensor_scatter_sub as tensor_scatter_sub
-from .frontend import extract_volume_patches as extract_volume_patches
 from .frontend import dynamic_update_slice as dynamic_update_slice
 from .frontend import expand as expand
 from .frontend import expand_dims as expand_dims
+from .frontend import extract_volume_patches as extract_volume_patches
 from .frontend import flatten as flatten
-from .frontend import unflatten as unflatten
-from .frontend import view as view
 from .frontend import gather as gather
 from .frontend import gather_nd as gather_nd
 from .frontend import hsplit as hsplit
 from .frontend import hstack as hstack
 from .frontend import image_resize as image_resize
+from .frontend import invert_permutation as invert_permutation
 from .frontend import meshgrid as meshgrid
 from .frontend import moveaxis as moveaxis
 from .frontend import pad as pad
@@ -123,43 +123,46 @@ from .frontend import take_along_axis as take_along_axis
 from .frontend import tensor_scatter_add as tensor_scatter_add
 from .frontend import tensor_scatter_max as tensor_scatter_max
 from .frontend import tensor_scatter_min as tensor_scatter_min
+from .frontend import tensor_scatter_sub as tensor_scatter_sub
 from .frontend import tensor_scatter_update as tensor_scatter_update
 from .frontend import tile as tile
 from .frontend import top_k as top_k
 from .frontend import transpose as transpose
 from .frontend import tril as tril
 from .frontend import triu as triu
+from .frontend import unflatten as unflatten
+from .frontend import unravel_index as unravel_index
 from .frontend import unsqueeze as unsqueeze
 from .frontend import unstack as unstack
 from .frontend import update_slice as update_slice
+from .frontend import view as view
 from .frontend import vsplit as vsplit
 from .frontend import vstack as vstack
 from .frontend import where as where
-from .frontend import unravel_index as unravel_index
-from .frontend import boolean_mask as boolean_mask
-from .frontend import invert_permutation as invert_permutation
-from .frontend import dynamic_shape as dynamic_shape
-from .manipulation import (
-    depth_to_space as depth_to_space,
-    space_to_depth as space_to_depth,
-    space_to_batch as space_to_batch,
-    with_space_to_batch as with_space_to_batch,
-)
+from .indexing import DynamicIndexInDim as DynamicIndexInDim
 
 # pylint: disable=duplicate-code
-
-
 from .indexing import DynamicSliceInDim as DynamicSliceInDim
-from .indexing import DynamicUpdateSliceInDim as DynamicUpdateSliceInDim
-from .indexing import DynamicIndexInDim as DynamicIndexInDim
 from .indexing import DynamicUpdateIndexInDim as DynamicUpdateIndexInDim
-from .indexing import SliceInDim as SliceInDim
+from .indexing import DynamicUpdateSliceInDim as DynamicUpdateSliceInDim
 from .indexing import ScatterApply as ScatterApply
 from .indexing import ScatterMax as ScatterMax
 from .indexing import ScatterMin as ScatterMin
 from .indexing import ScatterMul as ScatterMul
-
+from .indexing import SliceInDim as SliceInDim
 from .indexing import put_along_axis as put_along_axis
+from .manipulation import (
+    depth_to_space as depth_to_space,
+)
+from .manipulation import (
+    space_to_batch as space_to_batch,
+)
+from .manipulation import (
+    space_to_depth as space_to_depth,
+)
+from .manipulation import (
+    with_space_to_batch as with_space_to_batch,
+)
 from .splitting import old_split as old_split
 
 __all__ = [

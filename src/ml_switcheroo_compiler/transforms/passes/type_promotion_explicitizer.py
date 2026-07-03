@@ -1,16 +1,16 @@
 """Type Promotion Explicitizer Pass."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
 import uuid
 from typing import Optional
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
 
 
 def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
@@ -59,8 +59,6 @@ def type_promotion_explicitizer_pass(graph: IRGraph) -> bool:
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
-
-    from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
 
     dtype_inference_pass(graph)
 

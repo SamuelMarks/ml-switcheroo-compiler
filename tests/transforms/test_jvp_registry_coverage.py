@@ -2,6 +2,7 @@
 
 import pytest
 
+from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import (
     _JVP_REGISTRY,
     get_jvp,
@@ -25,8 +26,6 @@ def test_jvp_registry_coverage_brute() -> None:
         @register_jvp("fake_op")
         def fake_jvp2() -> None:
             """Docstring."""
-
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
     with pytest.raises(UnimplementedMathError):
         get_jvp("non_existent_op_fake_xyz")

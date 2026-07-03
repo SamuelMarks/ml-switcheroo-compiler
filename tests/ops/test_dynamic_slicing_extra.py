@@ -1,6 +1,26 @@
-def test_dynamic_slicing_emit_backends():
-    from ml_switcheroo_compiler.ops.shape.dynamic_slicing import DynamicSlice, DynamicUpdateSlice
+"""Module docstring."""
 
+import numpy as np
+
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.core.device import Device, DeviceType
+from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.nn.dropout import ActivityRegularization
+from ml_switcheroo_compiler.ops.nn.normalization import group_norm, layer_norm
+from ml_switcheroo_compiler.ops.nn.rnn_utils import (
+    RNNConfig,
+    ScanConfig,
+    _permute_time_major,
+    rnn,
+    scan,
+)
+from ml_switcheroo_compiler.ops.shape.dynamic_slicing import DynamicSlice, DynamicUpdateSlice
+from ml_switcheroo_compiler.ops.shape.reshape import BroadcastInDim, Resize
+from ml_switcheroo_compiler.ops.vision.color import auto_contrast, equalization
+
+
+def test_dynamic_slicing_emit_backends() -> object:
+    """Function docstring."""
     op = DynamicSlice()
     assert op.emit_jax() == "Not implemented"
     assert op.emit_keras() == "Not implemented"
@@ -16,9 +36,8 @@ def test_dynamic_slicing_emit_backends():
     assert op2.emit_tensorflow() == "Not implemented"
 
 
-def test_reshape_emit_backends():
-    from ml_switcheroo_compiler.ops.shape.reshape import BroadcastInDim, Resize
-
+def test_reshape_emit_backends() -> object:
+    """Function docstring."""
     op = BroadcastInDim()
     assert op.emit_jax() == "Not implemented BroadcastInDim"
     assert op.emit_keras() == "Not implemented BroadcastInDim"
@@ -34,13 +53,8 @@ def test_reshape_emit_backends():
     assert op2.emit_tensorflow() == "Not implemented Resize"
 
 
-def test_vision_color_eager():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, DType
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.ops.vision.color import auto_contrast, equalization
-    import numpy as np
-
+def test_vision_color_eager() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU)
     t = Tensor(np.zeros((1, 3, 32, 32)), TensorConfig((1, 3, 32, 32), DType.Float32, device))
     with ConfigContext(eager_mode=True):
@@ -54,56 +68,43 @@ def test_vision_color_eager():
             pass
 
 
-def test_rnn_utils_extra():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, DType
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.ops.nn.rnn_utils import (
-        scan,
-        _permute_time_major,
-        rnn,
-        RNNConfig,
-        ScanConfig,
-    )
-    import numpy as np
-
+def test_rnn_utils_extra() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU)
     t = Tensor(np.zeros((2, 3, 4)), TensorConfig((2, 3, 4), DType.Float32, device))
 
     with ConfigContext(eager_mode=True):
 
-        def scan_fn(carry, x):
+        def scan_fn(carry: object, x: object) -> object:
+            """Function docstring."""
             return carry, x
 
         scan(scan_fn, t, t)
         scan(scan_fn, t, t, config=ScanConfig(reverse=True))
         _permute_time_major(t)
 
-        def cell_fn(inputs, states):
+        def cell_fn(inputs: object, states: object) -> object:
+            """Function docstring."""
             return inputs, states
 
         rnn(t, t, cell_fn, config=RNNConfig(time_major=False))
         rnn(t, t, cell_fn, config=RNNConfig(time_major=True))
 
 
-def test_activity_regularization_infer_shape():
-    from ml_switcheroo_compiler.ops.nn.dropout import ActivityRegularization
-
+def test_activity_regularization_infer_shape() -> object:
+    """Function docstring."""
     op = ActivityRegularization()
 
     class Dummy:
+        """Class docstring."""
+
         shape = (2, 2)
 
     assert op.infer_shape(Dummy()) == (2, 2)
 
 
-def test_normalization_branches():
-    from ml_switcheroo_compiler.core.config import ConfigContext
-    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, DType
-    from ml_switcheroo_compiler.core.device import Device, DeviceType
-    from ml_switcheroo_compiler.ops.nn.normalization import layer_norm, group_norm
-    import numpy as np
-
+def test_normalization_branches() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU)
     t = Tensor(np.zeros((1, 4, 32, 32)), TensorConfig((1, 4, 32, 32), DType.Float32, device))
     t_scale = Tensor(np.ones((4, 32, 32)), TensorConfig((4, 32, 32), DType.Float32, device))

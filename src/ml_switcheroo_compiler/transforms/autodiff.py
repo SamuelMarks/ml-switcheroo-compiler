@@ -2,7 +2,10 @@
 
 import uuid
 
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
+
+from ml_switcheroo_compiler.ir.core import clone_logical_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
 
 def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
@@ -39,8 +42,6 @@ def _copy_graph(graph: LogicalGraph) -> LogicalGraph:
     Returns:
         LogicalGraph: The new graph.
     """
-    from ml_switcheroo_compiler.ir.core import clone_logical_node
-
     new_graph = LogicalGraph(name=f"{graph.name}_grad")
     for nid, node in graph.nodes.items():
         new_graph.nodes[nid] = clone_logical_node(node)
@@ -79,8 +80,6 @@ def _accumulate_gradients(
         adj_id (Any): Argument adj_id.
         adjoints (Any): Argument adjoints.
     """
-    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
-
     try:
         vjp_func = get_vjp(node.op_type)
         input_adjs = vjp_func(new_graph, node, adj_id)
@@ -89,10 +88,7 @@ def _accumulate_gradients(
         raise ValueError(msg) from None
 
     if len(input_adjs) != len(node.inputs):
-        msg = (
-            f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, "
-            f"expected {len(node.inputs)}."
-        )
+        msg = f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
         raise ValueError(msg)
 
     for inp_id, inp_adj_id in zip(node.inputs, input_adjs):
@@ -196,8 +192,6 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str) -> LogicalGraph:
         raise ValueError(msg)
 
     new_graph = _copy_graph(graph)
-
-    from ml_switcheroo_ir import topological_sort
 
     sorted_nodes = topological_sort(new_graph)
 

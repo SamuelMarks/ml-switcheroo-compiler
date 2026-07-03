@@ -5,7 +5,10 @@ modify configuration states such as eager execution and stream contexts. It allo
 to dynamically adjust compiler behavior within specific execution scopes
 """
 
+import copy
 import os
+import sys
+import typing
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -19,9 +22,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 class ExecutionConfig:
     """Execution settings."""
 
-    eager_mode: bool = field(
-        default_factory=lambda: os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1"
-    )
+    eager_mode: bool = field(default_factory=lambda: os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1")
     backend: str = field(default_factory=lambda: os.environ.get("SWITCHEROO_BACKEND", "numpy"))
     current_stream: str = "default"
 
@@ -46,8 +47,6 @@ class ConfigState:
 
     def clone(self) -> "ConfigState":
         """Clone."""
-        import copy
-
         return copy.deepcopy(self)
 
 
@@ -74,6 +73,16 @@ class Config:
     def __init__(self) -> None:
         """Initialize the Config."""
         pass
+
+    @property
+    def seed(self) -> typing.Optional[int]:
+        """Function docstring."""
+        return self._state.env.seed
+
+    @seed.setter
+    def seed(self, value: typing.Optional[int]) -> None:
+        """Function docstring."""
+        self._state.env.seed = value
 
     @property
     def _state(self) -> ConfigState:
@@ -188,10 +197,10 @@ class Config:
         Returns:
             bool: A boolean indicating the result of the check.
         """
-        from ml_switcheroo_compiler.tracing import _tracer
-
-        if _tracer.is_tracing:
-            return False
+        if "ml_switcheroo_compiler.tracing.state" in sys.modules:
+            global_tracing_state = sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state
+            if global_tracing_state.is_tracing:
+                return False
         return self._state.execution.eager_mode
 
     @eager_mode.setter

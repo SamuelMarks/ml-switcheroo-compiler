@@ -1,57 +1,45 @@
 """Mixins."""
 
+from ml_switcheroo_compiler.backends.common.audio_utils import (
+    extract_mel_attributes,
+    extract_stft_attributes,
+)
 from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_extract_boxes_attributes,
     _extract_filter_attributes,
     _extract_vision_transform_attributes,
 )
-from ml_switcheroo_compiler.backends.common.audio_utils import (
-    extract_stft_attributes,
-    extract_mel_attributes,
-)
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-class NumpyVisionMixin:
+class NumpyVisionVisitor:
     """Mixin."""
 
-    def visit_PerspectiveTransform(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
+    def visit_PerspectiveTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate perspective transform."""
-        interpolation, fill_value, data_format = _extract_vision_transform_attributes(
-            node
-        )  # pragma: no cover
+        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"np_perspective_transform({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, '{interpolation}', {fill_value}, {df_str})"  # pragma: no cover
 
     def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate elastic transform."""
-        interpolation, fill_value, data_format = _extract_vision_transform_attributes(
-            node
-        )  # pragma: no cover
+        interpolation, fill_value, data_format = _extract_vision_transform_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"np_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"  # pragma: no cover
 
     def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate gaussian blur."""
-        kernel_size, sigma, padding, data_format = _extract_filter_attributes(
-            node
-        )  # pragma: no cover
+        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"np_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"  # pragma: no cover
 
     def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate median filter."""
-        kernel_size, sigma, padding, data_format = _extract_filter_attributes(
-            node
-        )  # pragma: no cover
+        kernel_size, sigma, padding, data_format = _extract_filter_attributes(node)  # pragma: no cover
         df_str = "None" if data_format is None else f'"{data_format}"'  # pragma: no cover
         return f"np_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"  # pragma: no cover
 
-    def visit_ExtractBoundingBoxes(
-        self, node: object, input_vars: list[str], **kwargs: object
-    ) -> str:
+    def visit_ExtractBoundingBoxes(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate extract bounding boxes."""
         crop_size, interpolation, extrapolation_value, data_format = (  # pragma: no cover
             _extract_extract_boxes_attributes(node)  # pragma: no cover
@@ -62,9 +50,7 @@ class NumpyVisionMixin:
     def visit_IoU(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate iou."""
         bounding_box_format = node.attributes.get("bounding_box_format", "xyxy")  # pragma: no cover
-        return (
-            f"np_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"  # pragma: no cover
-        )
+        return f"np_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"  # pragma: no cover
 
     def visit_NonMaxSuppression(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate nms."""
@@ -83,19 +69,15 @@ class NumpyVisionMixin:
         """Evaluate resize lanczos3."""
         size = node.attributes.get("size")  # pragma: no cover
         align_corners = node.attributes.get("align_corners", False)  # pragma: no cover
-        return (
-            f"np_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"  # pragma: no cover
-        )
+        return f"np_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"  # pragma: no cover
 
 
-class NumpyAudioMixin:
+class NumpyAudioVisitor:
     """Mixin."""
 
     def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate istft."""
-        frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(
-            node
-        )  # pragma: no cover
+        frame_length, frame_step, _, window, center, fft_len_str = extract_stft_attributes(node)  # pragma: no cover
         return f"np_istft({input_vars[0]}, {frame_length}, {frame_step}, {fft_len_str}, '{window}', {center})"  # pragma: no cover
 
     def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:
@@ -127,12 +109,10 @@ class NumpyAudioMixin:
         return f"np_mfcc({input_vars[0]}, {sample_rate}, {num_mel_bins}, {lower_edge_hertz}, {upper_edge_hertz}, {num_mfccs})"  # pragma: no cover
 
 
-class NumpyScatterMixin:
+class NumpyScatterVisitor:
     """Mixin."""
 
-    def visit_TensorScatterUpdate(
-        self, node: IRNode, input_vars: list[str], **kwargs: object
-    ) -> str:
+    def visit_TensorScatterUpdate(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Handle TensorScatterUpdate."""
         return f"(lambda c, i, u: [c.__setitem__(tuple(np.moveaxis(np.asarray(i), -1, 0)), u), c][1])(np.copy({input_vars[0]}), {input_vars[1]}, {input_vars[2]})"  # pragma: no cover
 

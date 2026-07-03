@@ -2,14 +2,17 @@
 
 import ast
 import importlib
-import sys
 import os
+import re
+import sys
+import types
 from typing import Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 
 def _get_exports_from_submodule(modname: str) -> list[str]:
+    """Function docstring."""
     try:
         mod = importlib.import_module(modname)
     except Exception as e:
@@ -28,6 +31,7 @@ def _append_import_lines(
     import_lines: list[str],
     all_exports: list[str],
 ) -> None:
+    """Function docstring."""
     unique_exports = [e for e in sorted(set(exports)) if e not in imported_symbols]
     if unique_exports:
         import_lines.append(f"from {modname} import (")
@@ -44,14 +48,7 @@ def generate_init(
     submodules: list[str],
     extra_imports: Optional[list[tuple[str, list[str]]]] = None,
 ) -> None:
-    """Generate the __init__.py file with explicit imports and __all__ list.
-
-    Args:
-        filepath: The path to the __init__.py file to overwrite.
-        module_name: The base package name.
-        submodules: A list of submodule names.
-        extra_imports: A list of tuples containing an import path and symbols.
-    """
+    """Generate the __init__.py file with explicit imports and __all__ list."""
     all_exports: list[str] = []
     import_lines: list[str] = []
     imported_symbols: set[str] = set()
@@ -70,9 +67,27 @@ def generate_init(
     with open(filepath) as f:
         old_source = f.read()
 
-    new_source = (
-        f'# pylint: disable=too-many-lines\n"""Auto-generated {module_name} module exports."""\n\n'
-    )
+    try:
+        tree = ast.parse(old_source)
+        existing_all = None
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == "__all__":
+                        if isinstance(node.value, (ast.List, ast.Tuple)):
+                            existing_all = []
+                            for elt in node.value.elts:
+                                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                    existing_all.append(elt.value)
+                                elif isinstance(elt, ast.Str):
+                                    existing_all.append(elt.s)
+
+        if existing_all is not None and sorted(list(set(existing_all))) == all_exports:
+            return
+    except SyntaxError:
+        pass
+
+    new_source = f'# pylint: disable=too-many-lines\n"""Auto-generated {module_name} module exports."""\n\n'
     new_source += "\n".join(import_lines) + "\n\n"
     new_source += "__all__ = [\n"
     for e in all_exports:
@@ -88,7 +103,7 @@ def generate_init(
         print(f"Failed to parse AST for {filepath}: {e}")
 
 
-def process_file(filepath: str) -> None:  # noqa: C901, PLR0912, PLR0915
+def process_file(filepath: str) -> None:
     """Process a single file to update its __all__ exports."""
     abs_path = os.path.abspath(filepath)
     src_dir = os.path.abspath("src")
@@ -108,9 +123,30 @@ def process_file(filepath: str) -> None:  # noqa: C901, PLR0912, PLR0915
         print(f"Skipping {filepath} due to import error: {e}")
         return
 
-    exports = getattr(mod, "__all__", None)
-    if exports is None:
-        exports = [n for n in dir(mod) if not n.startswith("_")]
+    with open(filepath) as f:
+        source_for_magic = f.read()
+
+    magic_from = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
+    magic_auto = re.search(r"#\s*auto-generate-all", source_for_magic)
+
+    magic_exclude = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
+    exclude_set = set()
+    if magic_exclude:
+        exclude_set = {m.strip() for m in magic_exclude.group(1).split(",")}
+
+    if magic_from:
+        source_mods = [m.strip() for m in magic_from.group(1).split(",")]
+        exports = []
+        for sm in source_mods:
+            exports.extend(_get_exports_from_submodule(sm))
+        exports = [e for e in set(exports) if e not in exclude_set]
+    elif magic_auto:
+        exports = [n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set]
+
+    else:
+        exports = getattr(mod, "__all__", None)
+        if exports is None:
+            exports = [n for n in dir(mod) if not n.startswith("_")]
 
     exports = sorted(list(set(exports)))
 
@@ -122,7 +158,25 @@ def process_file(filepath: str) -> None:  # noqa: C901, PLR0912, PLR0915
     except SyntaxError:
         return
 
+    existing_all = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    if isinstance(node.value, (ast.List, ast.Tuple)):
+                        existing_all = []
+                        for elt in node.value.elts:
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                existing_all.append(elt.value)
+                            elif isinstance(elt, ast.Str):  # For older pythons
+                                existing_all.append(elt.s)
+
+    if existing_all is not None and sorted(list(set(existing_all))) == exports:
+        # Lists are semantically equal, no need to rewrite
+        return
+
     lines_to_remove = set()
+
     for node in ast.walk(tree):
         is_target = False
         if isinstance(node, ast.Assign):
@@ -132,11 +186,7 @@ def process_file(filepath: str) -> None:  # noqa: C901, PLR0912, PLR0915
         elif isinstance(node, ast.Expr):
             if isinstance(node.value, ast.Call):
                 func = node.value.func
-                if (
-                    isinstance(func, ast.Attribute)
-                    and isinstance(func.value, ast.Name)
-                    and func.value.id == "__all__"
-                ):
+                if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and func.value.id == "__all__":
                     if func.attr in ("extend", "append"):
                         is_target = True
 
@@ -183,6 +233,8 @@ if __name__ == "__main__":
         "interpolation",
         "mixing",
         "transforms",
+        "frontend",
+        "ops",
     ]
     # First, generate vision exports specifically
     generate_init(
@@ -207,3 +259,37 @@ if __name__ == "__main__":
             process_file(f)
 
     print("Successfully normalized __all__ exports across the codebase.")
+
+    ops_subs = [
+        "audio",
+        "base",
+        "control_flow",
+        "creation",
+        "distributed",
+        "io",
+        "shape",
+        "text",
+        "sparse",
+        "ragged",
+        "tensor_array",
+        "state",
+        "device",
+        "raw_ops",
+        "creation.frontend",
+        "binary",
+        "unary",
+        "linalg",
+        "reductions",
+        "random_ops",
+        "nn",
+        "normalization",
+        "loss",
+        "vision",
+        "image",
+        "vision.ops",
+    ]
+    generate_init(
+        "src/ml_switcheroo_compiler/ops/__init__.py",
+        "ml_switcheroo_compiler.ops",
+        ops_subs,
+    )

@@ -1,14 +1,13 @@
-# ruff: noqa: F405, F403
 """Shared vision utilities and ops."""
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 import numpy as np
+
+from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _to_channels_last
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AdjustBrightness")
-def _np_adjust_brightness(
-    backend_module: object, images: object, delta: float, **kwargs: object
-) -> object:
+def _np_adjust_brightness(backend_module: object, images: object, delta: float, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -21,9 +20,7 @@ def _np_adjust_brightness(
 
 
 @numpy_eager_registry.register("AdjustContrast")
-def _np_adjust_contrast(
-    backend_module: object, images: object, contrast_factor: float, **kwargs: object
-) -> object:
+def _np_adjust_contrast(backend_module: object, images: object, contrast_factor: float, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -37,9 +34,7 @@ def _np_adjust_contrast(
 
 
 @numpy_eager_registry.register("AdjustHue")
-def _np_adjust_hue(
-    backend_module: object, images: object, delta: float, **kwargs: object
-) -> object:
+def _np_adjust_hue(backend_module: object, images: object, delta: float, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -52,9 +47,7 @@ def _np_adjust_hue(
 
 
 @numpy_eager_registry.register("AdjustSaturation")
-def _np_adjust_saturation(
-    backend_module: object, images: object, saturation_factor: float, **kwargs: object
-) -> object:
+def _np_adjust_saturation(backend_module: object, images: object, saturation_factor: float, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -82,9 +75,7 @@ def _np_auto_contrast(backend_module: object, images: object, **kwargs: object) 
     diff = high - low
     diff = np.where(diff == 0.0, 1.0, diff)
     out = (images - low) / diff
-    return np.clip(
-        out * (value_range[1] - value_range[0]) + value_range[0], value_range[0], value_range[1]
-    ).astype(images.dtype)
+    return np.clip(out * (value_range[1] - value_range[0]) + value_range[0], value_range[0], value_range[1]).astype(images.dtype)
 
 
 @numpy_eager_registry.register("Equalization")
@@ -106,9 +97,7 @@ def _np_equalization(backend_module: object, images: object, **kwargs: object) -
             if cdf_m.max() - cdf_m.min() == 0:  # pragma: no branch
                 out[b, ..., c] = images_uint8[b, ..., c]  # pragma: no cover
             else:  # pragma: no cover
-                cdf_m = (
-                    (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())
-                )  # pragma: no cover
+                cdf_m = (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())  # pragma: no cover
                 cdf = np.ma.filled(cdf_m, 0).astype("uint8")  # pragma: no cover
                 out[b, ..., c] = cdf[images_uint8[b, ..., c]]  # pragma: no cover
     return out.astype(images.dtype) / 255.0  # pragma: no cover
@@ -154,7 +143,6 @@ def _np_rgb_to_grayscale(backend_module: object, images: object, **kwargs: objec
     """
     np_mod = __import__("numpy")
     data_format = kwargs.get("data_format", "channels_last")
-    from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _from_channels_last
 
     imgs = _to_channels_last(np_mod, images, data_format)
     # rgb to grayscale weights

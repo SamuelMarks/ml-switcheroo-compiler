@@ -10,10 +10,25 @@ propagation.
 import pytest
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape, _tracer
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_compiler.ir.state import create_read_variable
+
+# Test increment through _trace_function
+from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import (
+    ProxyTensor,
+    TracerTape,
+    get_trace_count,
+    increment_trace_count,
+    reset_trace_count,
+)
 
 
-def test_tracer_tape() -> None:
+def testglobal_tracing_state_tape() -> None:
     """Verifies the lifecycle and state transitions of the TracerTape.
 
     This test ensures that nodes cannot be added when tracing is inactive,
@@ -25,21 +40,21 @@ def test_tracer_tape() -> None:
     None.
     """
     tape = TracerTape()
-    assert not tape.is_tracing
+    assert not global_tracing_state.is_tracing
 
     with pytest.raises(RuntimeError):
         tape.add_node(LogicalNode(id="n", op_type="Linear"))
 
     graph = tape.start_tracing("Test")
-    assert tape.is_tracing
+    assert global_tracing_state.is_tracing
     assert graph.name == "Test"
 
     n = LogicalNode(id="n1", op_type="Input")
     tape.add_node(n)
-    assert "n1" in tape.active_graph.nodes
+    assert "n1" in global_tracing_state.active_graph.nodes
 
     out_graph = tape.stop_tracing()
-    assert not tape.is_tracing
+    assert not global_tracing_state.is_tracing
     assert out_graph.nodes["n1"] == n
 
 
@@ -54,7 +69,7 @@ def test_proxy_tensor_math() -> None:
     Returns:
     None.
     """
-    _tracer.start_tracing()
+    global_tracing_state.start_tracing()
 
     a = ProxyTensor(id="a", shape=(2, 3))
     b = ProxyTensor(id="b", shape=(2, 3))
@@ -81,7 +96,7 @@ def test_proxy_tensor_math() -> None:
     n = a @ m
     assert n.shape == (2, 4)
 
-    graph = _tracer.stop_tracing()
+    graph = global_tracing_state.stop_tracing()
     assert len(graph.nodes) > 0
 
 
@@ -98,8 +113,6 @@ def test_proxy_tensor_outside_context() -> None:
     Returns:
     None.
     """
-    from ml_switcheroo_compiler.core.config import config
-
     config.eager_mode = False
 
     a = ProxyTensor(id="a", shape=(2, 3))
@@ -135,14 +148,11 @@ def test_tracer_add_node_with_ast_ref() -> None:
 
 def test_proxy_tensor_assign_operations() -> None:
     """Test assign, assign_add, and assign_sub on ProxyTensor."""
-    from ml_switcheroo_compiler.ir.state import create_read_variable
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
-    graph = _tracer.start_tracing(name="assign_test")
+    graph = global_tracing_state.start_tracing(name="assign_test")
     try:
         # Manually create a variable read to act as our variable proxy
         var_node = create_read_variable("my_var", shape=(2, 2), dtype="float32")
-        _tracer.add_node(var_node)
+        global_tracing_state.add_node(var_node)
         var_proxy = ProxyTensor(id=var_node.id, shape=(2, 2), dtype="float32")
 
         # Test assign
@@ -166,16 +176,11 @@ def test_proxy_tensor_assign_operations() -> None:
         assert assign_node_3.attributes["variable_name"] == "my_var"
 
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
 def test_proxy_tensor_assign_errors() -> None:
     """Test proxy_tensor_assign_errors."""
-    import pytest
-
-    from ml_switcheroo_compiler.ir.core import IRNode
-    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
-
     var_proxy = ProxyTensor(id="foo", shape=(), dtype="float32")
     val_proxy = ProxyTensor(id="bar", shape=(), dtype="float32")
 
@@ -183,19 +188,19 @@ def test_proxy_tensor_assign_errors() -> None:
     with pytest.raises(RuntimeError, match="Cannot perform assign outside of a tracing context."):
         var_proxy.assign(val_proxy)
 
-    _tracer.start_tracing(name="assign_err_test")
+    global_tracing_state.start_tracing(name="assign_err_test")
     try:
         # Test assign on non-existent node
         with pytest.raises(ValueError, match=r"assign\(\) can only be called on a variable proxy."):
             var_proxy.assign(val_proxy)
 
         # Test assign on non-variable node
-        _tracer.add_node(IRNode(id="foo", op_type="Add", inputs=[], shape_metadata=()))
+        global_tracing_state.add_node(IRNode(id="foo", op_type="Add", inputs=[], shape_metadata=()))
         with pytest.raises(ValueError, match=r"assign\(\) can only be called on a variable proxy."):
             var_proxy.assign(val_proxy)
 
         # Test assigning a constant value (not a ProxyTensor)
-        _tracer.add_node(
+        global_tracing_state.add_node(
             IRNode(
                 id="var_node",
                 op_type="ReadVariable",
@@ -207,20 +212,17 @@ def test_proxy_tensor_assign_errors() -> None:
         var_proxy_2 = ProxyTensor(id="var_node", shape=(), dtype="float32")
         out = var_proxy_2.assign(42.0)
         assert out.shape == ()
-        assert _tracer.active_graph.nodes[out.id].op_type == "AssignVariable"
+        assert global_tracing_state.active_graph.nodes[out.id].op_type == "AssignVariable"
 
     finally:
-        _tracer.stop_tracing()
+        global_tracing_state.stop_tracing()
 
 
-def test_trace_counts():
-    from ml_switcheroo_compiler.tracing.tracer import (
-        get_trace_count,
-        increment_trace_count,
-        reset_trace_count,
-    )
+def test_trace_counts() -> object:
+    """Function docstring."""
 
-    def my_func():
+    def my_func() -> object:
+        """Function docstring."""
         pass
 
     reset_trace_count(my_func)
@@ -230,14 +232,8 @@ def test_trace_counts():
     reset_trace_count(my_func)
     assert get_trace_count(my_func) == 0
 
-    # Test increment through _trace_function
-    from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
-
-    def traced_fn():
-        from ml_switcheroo_compiler.core.dtype import DType
-        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-
+    def traced_fn() -> object:
+        """Function docstring."""
         proxy = ProxyTensor(id="out", shape=(), dtype="float32")
         return Tensor(proxy, TensorConfig((), DType.Float32, "cpu"))
 

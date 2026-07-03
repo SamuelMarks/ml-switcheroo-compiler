@@ -2,13 +2,12 @@
 
 import contextlib
 
+from ml_switcheroo_compiler.backends import edge
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def test_edge_coverage2() -> None:
     """Docstring."""
-    from ml_switcheroo_compiler.backends import edge
-
     classes = [
         edge.WebGPUCodeGenerator,
         edge.WebGLCodeGenerator,

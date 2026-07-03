@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
-
 from typing import TYPE_CHECKING
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
+from .frontend_utils import _emit_reduction_node
 
 if TYPE_CHECKING:
     pass
-
-
-from .frontend_utils import _emit_reduction_node
 
 
 def fractional_max_pool2d(
@@ -61,20 +59,14 @@ def adaptive_avg_pool2d(
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
 
-    from ml_switcheroo_compiler.core.config import config
-
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "AdaptiveAvgPool2D",
             operand.data,
             output_size=output_size,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device))
 
     return _emit_reduction_node(
         "AdaptiveAvgPool2D",
@@ -103,20 +95,14 @@ def adaptive_max_pool2d(
         out_shape[-2] = output_size[0]
         out_shape[-1] = output_size[1]
 
-    from ml_switcheroo_compiler.core.config import config
-
     if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
         backend = get_active_backend()
         data = backend.execute_op(
             "AdaptiveMaxPool2D",
             operand.data,
             output_size=output_size,
         )
-        return Tensor(
-            backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device))
 
     return _emit_reduction_node(
         "AdaptiveMaxPool2D",
@@ -140,9 +126,7 @@ def unfold(
     Returns:
         Tensor: The unfolded tensor.
     """
-    return _emit_reduction_node(
-        "Unfold", [operand], {"kernel_size": kernel_size}, (), operand.dtype
-    )
+    return _emit_reduction_node("Unfold", [operand], {"kernel_size": kernel_size}, (), operand.dtype)
 
 
 def fold(

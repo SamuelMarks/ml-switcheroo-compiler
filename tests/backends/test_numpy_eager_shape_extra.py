@@ -1,21 +1,30 @@
+"""Module docstring."""
+
 import numpy as np
+
+# broadcast in dim wrapper
+# mock global registry
+import ml_switcheroo_compiler.backends.eager_registry as reg_mod
 from ml_switcheroo_compiler.backends.numpy.eager.shape import (
     _mvlgamma,
-    _np_dynamic_partition,
-    _np_dynamic_stitch,
-    _np_tensor_scatter_sub,
-    _np_extract_volume_patches,
-    _np_boolean_mask,
-    _np_unravel_index,
+    _np_argpartition,
     _np_argsort,
     _np_argwhere,
-    _np_argpartition,
     _np_assign_add,
     _np_assign_sub,
+    _np_boolean_mask,
+    _np_broadcast_in_dim,
+    _np_broadcast_to,
+    _np_dynamic_partition,
+    _np_dynamic_stitch,
+    _np_extract_volume_patches,
+    _np_tensor_scatter_sub,
+    _np_unravel_index,
 )
 
 
-def test_numpy_shape_eager_extra():
+def test_numpy_shape_eager_extra() -> object:
+    """Function docstring."""
     # mvlgamma
     res = _mvlgamma(np.array([2.0, 3.0]), 2)
 
@@ -66,10 +75,8 @@ def test_numpy_shape_eager_extra():
     _np_assign_sub(np, ref, val)
 
 
-def test_numpy_shape_eager_extra2():
-    from ml_switcheroo_compiler.backends.numpy.eager.shape import _np_boolean_mask, _np_broadcast_to
-    import numpy as np
-
+def test_numpy_shape_eager_extra2() -> object:
+    """Function docstring."""
     tensor = np.array([[1, 2], [3, 4]])
     mask = np.array([True, False])
     _np_boolean_mask(np, tensor, mask, axis=0)
@@ -80,22 +87,12 @@ def test_numpy_shape_eager_extra2():
     _np_broadcast_to(np, np.ones(2), shape=(2, 2))
 
 
-def test_numpy_shape_eager_extra3():
-    from ml_switcheroo_compiler.backends.numpy.eager.shape import (
-        _np_broadcast_in_dim,
-        _np_tensor_scatter_sub,
-        _np_argsort,
-        _np_argpartition,
-    )
-    import numpy as np
-
-    # broadcast in dim wrapper
-    # mock global registry
-    import ml_switcheroo_compiler.backends.eager_registry as reg_mod
-
+def test_numpy_shape_eager_extra3() -> object:
+    """Function docstring."""
     original_get = reg_mod.global_eager_registry.get
 
-    def mock_get(name):
+    def mock_get(name: object) -> object:
+        """Function docstring."""
         return lambda backend, *args, **kwargs: args[0]
 
     reg_mod.global_eager_registry.get = mock_get
@@ -115,10 +112,8 @@ def test_numpy_shape_eager_extra3():
     _np_argpartition(np, np.array([3, 4, 2, 1]), 1, axis=None)
 
 
-def test_numpy_shape_eager_extra4():
-    from ml_switcheroo_compiler.backends.numpy.eager.shape import _np_dynamic_stitch
-    import numpy as np
-
+def test_numpy_shape_eager_extra4() -> object:
+    """Function docstring."""
     indices = [np.array([], dtype=np.int32)]
     data_list = [np.array([])]
     _np_dynamic_stitch(np, indices, data_list)

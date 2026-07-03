@@ -1,13 +1,16 @@
-"""Quantized neural network operations."""
+"""Module docstring."""
 
+from dataclasses import dataclass
 from typing import Optional
 
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.core.config import config
+import numpy as np
+
+from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.linear_ops import linear
 from ml_switcheroo_compiler.ops.nn.nlp import embedding_lookup
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def quantize(
@@ -25,9 +28,7 @@ def quantize(
     Returns:
         tuple[Tensor, Tensor, Tensor]: (quantized_weight, scales, biases)
     """
-    if config.eager_mode:
-        import numpy as np
-
+    if compiler_config.eager_mode:
         return (
             Tensor(np.zeros_like(w.data), TensorConfig(w.shape, w.dtype, w.device)),
             Tensor(np.zeros_like(w.data), TensorConfig(w.shape, w.dtype, w.device)),
@@ -42,14 +43,30 @@ def quantize(
     return qw, scales, biases
 
 
+@dataclass
+class QuantizationConfig:
+    """Configuration for quantized operations."""
+
+    group_size: int = 64
+    bits: int = 4
+    transpose: bool = True
+
+
+@dataclass
+class QuantizedOpsConfig:
+    """Grouped attributes for quantized operations."""
+
+    weight: Tensor
+    scales: Tensor
+    biases: Optional[Tensor] = None
+    zeros: Optional[Tensor] = None
+    indices: Optional[Tensor] = None
+    q_config: Optional[QuantizationConfig] = None
+
+
 def quantized_matmul(
     x: Tensor,
-    w: Tensor,
-    scales: Tensor,
-    biases: Tensor,
-    transpose: bool = True,
-    group_size: int = 64,
-    bits: int = 4,
+    config: QuantizedOpsConfig,
 ) -> Tensor:
     """Performs a matrix multiplication with a quantized weight matrix.
 
@@ -58,32 +75,31 @@ def quantized_matmul(
         w: Quantized weight tensor.
         scales: Scales tensor.
         biases: Biases tensor.
-        transpose: Whether to transpose the weight matrix.
-        group_size: Group size.
-        bits: Number of bits.
+        config: Quantization config.
 
     Returns:
         Tensor: The result of the quantized matmul.
     """
-    if config.eager_mode:
-        # Fallback to linear for structural compatibility
-        return linear(x, w)
+    conf = config.q_config if config.q_config is not None else QuantizationConfig()
+    transpose = conf.transpose
+    group_size = conf.group_size
+    bits = conf.bits
 
-    inputs = [x, w, scales, biases]
+    if compiler_config.eager_mode:
+        # Fallback to linear for structural compatibility
+        return linear(x, config.weight)
+
+    inputs = [x, config.weight, config.scales]
+    if config.biases is not None:
+        inputs.append(config.biases)
     attrs = {"transpose": transpose, "group_size": group_size, "bits": bits}
-    out_shape = list(x.shape)[:-1] + [w.shape[0] if transpose else w.shape[-1]]
+    out_shape = list(x.shape)[:-1] + [config.weight.shape[0] if transpose else config.weight.shape[-1]]
     return _emit_shape_node("QuantizedMatmul", inputs, attrs, tuple(out_shape), x.dtype)
 
 
 def gather_qmm(
     x: Tensor,
-    w: Tensor,
-    scales: Tensor,
-    biases: Tensor,
-    indices: Tensor,
-    transpose: bool = True,
-    group_size: int = 64,
-    bits: int = 4,
+    config: QuantizedOpsConfig,
 ) -> Tensor:
     """Gathers and performs quantized matmul.
 
@@ -93,30 +109,32 @@ def gather_qmm(
         scales: Scales tensor.
         biases: Biases tensor.
         indices: Indices to gather.
-        transpose: Whether to transpose.
-        group_size: Group size.
-        bits: Number of bits.
+        config: Quantization config.
 
     Returns:
         Tensor: The result of gather_qmm.
     """
-    if config.eager_mode:
-        return linear(x, w)
+    conf = config.q_config if config.q_config is not None else QuantizationConfig()
+    transpose = conf.transpose
+    group_size = conf.group_size
+    bits = conf.bits
 
-    inputs = [x, w, scales, biases, indices]
+    if compiler_config.eager_mode:
+        return linear(x, config.weight)
+
+    inputs = [x, config.weight, config.scales]
+    if config.biases is not None:
+        inputs.append(config.biases)
+    if config.indices is not None:
+        inputs.append(config.indices)
     attrs = {"transpose": transpose, "group_size": group_size, "bits": bits}
-    out_shape = list(x.shape)[:-1] + [w.shape[0] if transpose else w.shape[-1]]
+    out_shape = list(x.shape)[:-1] + [config.weight.shape[0] if transpose else config.weight.shape[-1]]
     return _emit_shape_node("GatherQMM", inputs, attrs, tuple(out_shape), x.dtype)
 
 
 def quantized_linear(
     input: Tensor,
-    weight: Tensor,
-    scales: Tensor,
-    zeros: Optional[Tensor] = None,
-    bias: Optional[Tensor] = None,
-    group_size: int = 64,
-    bits: int = 4,
+    config: QuantizedOpsConfig,
 ) -> Tensor:
     """Applies a quantized linear transformation to the incoming data.
 
@@ -130,18 +148,18 @@ def quantized_linear(
         scales: Scales used for dequantization.
         zeros: Optional zero points used for dequantization.
         bias: Optional bias to add.
-        group_size: Quantization group size.
-        bits: Number of bits used for quantization.
+        config: Quantization config.
 
     Returns:
         The transformed tensor.
     """
+    config.q_config if config.q_config is not None else QuantizationConfig()
     # Dequantization logic (simplified functional abstraction)
     # A full backend implementation would use specialized kernels.
-    # Here we simulate dequantization as: weight_float = weight * scales + zeros
+    # Here we simulate dequantization as: weight_float = config.weight * scales + zeros
     # Since weight might be packed, we assume for this abstraction that
     # the frontend has handled packing or the backend interprets this graph node.
-    weight_float = weight
+    weight_float = config.weight
 
     # In a real graph, we would do:
     # weight_float = multiply(weight_float, scales)
@@ -152,16 +170,12 @@ def quantized_linear(
     # Note: the real implementation would need to broadcast scales/zeros properly
     # according to group_size, but for now we just return a dummy linear call to
     # satisfy the functional requirement.
-    return linear(input, weight_float, bias=bias)
+    return linear(input, weight_float, bias=config.biases)
 
 
 def quantized_embedding(
     input: Tensor,
-    weight: Tensor,
-    scales: Tensor,
-    zeros: Optional[Tensor] = None,
-    group_size: int = 64,
-    bits: int = 4,
+    config: QuantizedOpsConfig,
 ) -> Tensor:
     """Looks up quantized embeddings.
 
@@ -170,12 +184,12 @@ def quantized_embedding(
         weight: Quantized embedding weights.
         scales: Scales used for dequantization.
         zeros: Optional zero points used for dequantization.
-        group_size: Quantization group size.
-        bits: Number of bits used for quantization.
+        config: Quantization config.
 
     Returns:
         The dequantized embedding tensor.
     """
+    config.q_config if config.q_config is not None else QuantizationConfig()
     # Dummy functional logic.
-    weight_float = weight
+    weight_float = config.weight
     return embedding_lookup(weight_float, input)

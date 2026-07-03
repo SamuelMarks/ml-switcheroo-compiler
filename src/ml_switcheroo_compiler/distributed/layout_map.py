@@ -1,5 +1,6 @@
 """LayoutMap API for annotating tensors with sharding constraints."""
 
+import re
 from collections.abc import Sequence
 from typing import Optional
 
@@ -60,8 +61,6 @@ class LayoutMap:
         """
         # Simple exact match for now, could be extended to regex
         for k, v in self._map.items():
-            import re
-
             if re.fullmatch(k, path):
                 return v
         return None

@@ -1,12 +1,7 @@
 """Vision ops."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_4
-
+from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-
-
-"""Vision operations class definitions."""
 
 
 @register_op("ResizeBilinear")
@@ -130,9 +125,7 @@ class AdjustBrightness(OpDef):
 class PerspectiveTransform(OpDef):
     """PerspectiveTransform op."""
 
-    def infer_shape(
-        self, images: object, start_points: object, end_points: object, **kwargs: object
-    ) -> tuple[int, ...]:
+    def infer_shape(self, images: object, start_points: object, end_points: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
 
@@ -141,9 +134,7 @@ class PerspectiveTransform(OpDef):
 class ElasticTransform(OpDef):
     """ElasticTransform op."""
 
-    def infer_shape(
-        self, images: object, displacement: object, **kwargs: object
-    ) -> tuple[int, ...]:
+    def infer_shape(self, images: object, displacement: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
 
@@ -170,9 +161,7 @@ class MedianFilter(OpDef):
 class ExtractBoundingBoxes(OpDef):
     """ExtractBoundingBoxes op."""
 
-    def infer_shape(
-        self, images: object, boxes: object, box_indices: object, **kwargs: object
-    ) -> tuple[int, ...]:
+    def infer_shape(self, images: object, boxes: object, box_indices: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
 
@@ -190,9 +179,7 @@ class IoU(OpDef):
 class NonMaxSuppression(OpDef):
     """Non-Max Suppression op."""
 
-    def infer_shape(
-        self, boxes: object, scores: object, max_output_size: object, **kwargs: object
-    ) -> tuple[int, ...]:
+    def infer_shape(self, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> tuple[int, ...]:
         """Infer shape."""
         return ()
 

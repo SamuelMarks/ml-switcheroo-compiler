@@ -2,8 +2,6 @@
 
 import re
 from dataclasses import dataclass
-
-
 from typing import Optional
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
@@ -56,9 +54,7 @@ class ParsedEquationPart:
     def validate_characters(self) -> None:
         """Validates that the string only contains alphabetic characters."""
         if not re.match(r"^[a-zA-Z]*$", self.chars):
-            raise ValueError(
-                f"Invalid characters in einsum subscript: {self.chars}"
-            )  # pragma: no cover
+            raise ValueError(f"Invalid characters in einsum subscript: {self.chars}")  # pragma: no cover
 
     def process_axis_map(self, axis_map: dict[str, int]) -> None:
         """Processes the characters and dimensions to update the axis map."""
@@ -79,13 +75,13 @@ class EinsumPlanner:
 
     @staticmethod
     def _validate_ellipsis_count(part: str, shape: tuple[int, ...]) -> None:
+        """Function docstring."""
         if part.count("...") > 1:
             raise ValueError(f"Shape {shape} cannot match subscript {part}")
 
     @staticmethod
-    def _count_hidden_dims(
-        left_len: int, right_len: int, shape_len: int, part: str, shape: tuple[int, ...]
-    ) -> int:
+    def _count_hidden_dims(left_len: int, right_len: int, shape_len: int, part: str, shape: tuple[int, ...]) -> int:
+        """Function docstring."""
         num_named = left_len + right_len
         num_bcast = shape_len - num_named
         if num_bcast < 0:
@@ -93,9 +89,8 @@ class EinsumPlanner:
         return num_bcast
 
     @staticmethod
-    def _combine_broadcast_shapes(
-        broadcast_shape: Optional[tuple[int, ...]], bcast_dims: tuple[int, ...]
-    ) -> tuple[int, ...]:
+    def _combine_broadcast_shapes(broadcast_shape: Optional[tuple[int, ...]], bcast_dims: tuple[int, ...]) -> tuple[int, ...]:
+        """Function docstring."""
         if broadcast_shape is None:
             return bcast_dims
         new_shape = []
@@ -106,17 +101,14 @@ class EinsumPlanner:
         return tuple(new_shape)
 
     @staticmethod
-    def _handle_ellipsis(
-        part: str, shape: tuple[int, ...], broadcast_shape: Optional[tuple[int, ...]]
-    ) -> tuple[str, tuple[int, ...], Optional[tuple[int, ...]]]:
+    def _handle_ellipsis(part: str, shape: tuple[int, ...], broadcast_shape: Optional[tuple[int, ...]]) -> tuple[str, tuple[int, ...], Optional[tuple[int, ...]]]:
+        """Function docstring."""
         EinsumPlanner._validate_ellipsis_count(part, shape)
         parts_str = part.split("...")
         left_part = parts_str[0]
         right_part = parts_str[1]
 
-        num_bcast = EinsumPlanner._count_hidden_dims(
-            len(left_part), len(right_part), len(shape), part, shape
-        )
+        num_bcast = EinsumPlanner._count_hidden_dims(len(left_part), len(right_part), len(shape), part, shape)
 
         bcast_dims = shape[len(left_part) : len(left_part) + num_bcast]
         broadcast_shape = EinsumPlanner._combine_broadcast_shapes(broadcast_shape, bcast_dims)
@@ -127,6 +119,7 @@ class EinsumPlanner:
 
     @staticmethod
     def _parse_named_part(part: str, shape: tuple[int, ...], axis_map: dict[str, int]) -> None:
+        """Function docstring."""
         parsed_part = ParsedEquationPart(part, shape)
         parsed_part.validate_length()
         parsed_part.validate_characters()
@@ -139,16 +132,13 @@ class EinsumPlanner:
         axis_map: dict[str, int],
         broadcast_shape: Optional[tuple[int, ...]],
     ) -> Optional[tuple[int, ...]]:
-        part_chars, named_shape, new_broadcast_shape = EinsumPlanner._handle_ellipsis(
-            part, shape, broadcast_shape
-        )
+        """Function docstring."""
+        part_chars, named_shape, new_broadcast_shape = EinsumPlanner._handle_ellipsis(part, shape, broadcast_shape)
         EinsumPlanner._parse_named_part(part_chars, named_shape, axis_map)
         return new_broadcast_shape
 
     @staticmethod
-    def build_axis_size_map(
-        in_subs: str, shapes: list[tuple[int, ...]]
-    ) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
+    def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
         """Build a map of character to dimension size."""
         in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
@@ -156,9 +146,7 @@ class EinsumPlanner:
 
         for part, shape in zip(in_parts, shapes):
             if "..." in part:
-                broadcast_shape = EinsumPlanner._parse_ellipsis_part(
-                    part, shape, axis_map, broadcast_shape
-                )
+                broadcast_shape = EinsumPlanner._parse_ellipsis_part(part, shape, axis_map, broadcast_shape)
             else:
                 EinsumPlanner._parse_named_part(part, shape, axis_map)
 
@@ -170,6 +158,7 @@ class EinsumPlanner:
         axis_map: dict[str, int],
         broadcast_shape: Optional[tuple[int, ...]],
     ) -> list[int]:
+        """Function docstring."""
         out_shape: list[int] = []
         for char in parts[0]:
             if char not in axis_map:
@@ -178,6 +167,16 @@ class EinsumPlanner:
         if broadcast_shape is not None:
             out_shape.extend(broadcast_shape)
         for char in parts[1]:
+            if char not in axis_map:
+                raise ValueError(f"Output character {char} not found in inputs")  # pragma: no cover
+            out_shape.append(axis_map[char])
+        return out_shape
+
+    @staticmethod
+    def _resolve_chars(out_sub: str, axis_map: dict[str, int]) -> list[int]:
+        """Function docstring."""
+        out_shape = []
+        for char in out_sub:
             if char not in axis_map:
                 raise ValueError(f"Output character {char} not found in inputs")  # pragma: no cover
             out_shape.append(axis_map[char])
@@ -195,17 +194,9 @@ class EinsumPlanner:
 
         parts = out_sub.split("...")
         if len(parts) == MAGIC_VAL_2:
-            out_shape = EinsumPlanner._compute_output_shape_with_ellipsis(
-                parts, axis_map, broadcast_shape
-            )
+            out_shape = EinsumPlanner._compute_output_shape_with_ellipsis(parts, axis_map, broadcast_shape)
         else:
-            out_shape = []
-            for char in out_sub:
-                if char not in axis_map:
-                    raise ValueError(
-                        f"Output character {char} not found in inputs"
-                    )  # pragma: no cover
-                out_shape.append(axis_map[char])
+            out_shape = EinsumPlanner._resolve_chars(out_sub, axis_map)
 
         return tuple(out_shape)
 
@@ -219,12 +210,20 @@ class EinsumEquationParser:
         return EinsumLexer.parse_equation_sides(equation)
 
     @staticmethod
-    def build_axis_size_map(
-        in_subs: str, shapes: list[tuple[int, ...]]
-    ) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
+    def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
         """Docstring."""
         EinsumValidator.validate_inputs(in_subs, shapes)
         return EinsumPlanner.build_axis_size_map(in_subs, shapes)
+
+    @staticmethod
+    def _resolve_chars(out_sub: str, axis_map: dict[str, int]) -> list[int]:
+        """Function docstring."""
+        out_shape = []
+        for char in out_sub:
+            if char not in axis_map:
+                raise ValueError(f"Output character {char} not found in inputs")  # pragma: no cover
+            out_shape.append(axis_map[char])
+        return out_shape
 
     @staticmethod
     def compute_output_shape(
@@ -254,9 +253,7 @@ class Einsum(OpDef):
     """
 
     @staticmethod
-    def _extract_equation(
-        args: tuple[object, ...], kwargs: dict[str, object]
-    ) -> tuple[str, tuple[object, ...]]:
+    def _extract_equation(args: tuple[object, ...], kwargs: dict[str, object]) -> tuple[str, tuple[object, ...]]:
         """Function docstring.
 
         Args:

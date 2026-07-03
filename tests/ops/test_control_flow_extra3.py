@@ -1,3 +1,5 @@
+"""Module docstring."""
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -7,11 +9,13 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import vmap
 
 
-def test_vmap_in_axes_length_coverage():
+def test_vmap_in_axes_length_coverage() -> object:
+    """Function docstring."""
     device = Device(DeviceType.CPU, 0)
     with ConfigContext(eager_mode=False):
 
-        def my_func(a, b):
+        def my_func(a: object, b: object) -> object:
+            """Function docstring."""
             return a + b
 
         t1 = Tensor(np.zeros((2, 3)), TensorConfig((2, 3), DType.Float32, device))

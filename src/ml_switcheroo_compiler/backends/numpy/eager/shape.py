@@ -1,9 +1,11 @@
 """Module docstring."""
 
-import numpy as np
 import math
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+import numpy as np
+
+from ml_switcheroo_compiler.backends.eager import resize_eager  # pragma: no cover
+from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
 
 
 def _constant_of_shape(shape: object, value: object = 0.0) -> object:
@@ -20,10 +22,7 @@ def _broadcast_in_dim(x: object, shape: object, broadcast_dimensions: object) ->
     return np.broadcast_to(  # pragma: no cover
         np.reshape(
             x,
-            [
-                (x.shape[broadcast_dimensions.index(i)] if (i in broadcast_dimensions) else 1)
-                for i in range(len(shape))
-            ],
+            [(x.shape[broadcast_dimensions.index(i)] if (i in broadcast_dimensions) else 1) for i in range(len(shape))],
         ),
         shape,
     )
@@ -42,9 +41,7 @@ def _np_broadcast_to(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("Resize")
-def _np_resize(
-    backend_module: object, x: object, shape: object, *args: object, **kwargs: object
-) -> object:
+def _np_resize(backend_module: object, x: object, shape: object, *args: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -54,15 +51,11 @@ def _np_resize(
         args: Arg.
         kwargs: Arg.
     """
-    return backend_module.zeros(
-        (x.shape[0], *shape, x.shape[(-1)]), dtype=x.dtype
-    )  # pragma: no cover
+    return backend_module.zeros((x.shape[0], *shape, x.shape[(-1)]), dtype=x.dtype)  # pragma: no cover
 
 
 @numpy_eager_registry.register("ConstantOfShape")
-def _np_constant_of_shape(
-    backend_module: object, shape: object, value: object = 0.0, *args: object, **kwargs: object
-) -> object:
+def _np_constant_of_shape(backend_module: object, shape: object, value: object = 0.0, *args: object, **kwargs: object) -> object:
     """Function docstring.
 
     Args:
@@ -109,17 +102,13 @@ def _np_flatten(backend_module: object, x: object, *args: object, **kwargs: obje
         args: Arg.
         kwargs: Arg.
     """
-    import math  # pragma: no cover
-
     # pragma: no cover
     shape = list(x.shape)  # pragma: no cover
     start_dim = kwargs.get("start_dim", 0)  # pragma: no cover
     end_dim = kwargs.get("end_dim", -1)  # pragma: no cover
     s_dim = start_dim if start_dim >= 0 else start_dim + len(shape)  # pragma: no cover
     e_dim = end_dim if end_dim >= 0 else end_dim + len(shape)  # pragma: no cover
-    new_shape = (
-        shape[:s_dim] + [math.prod(shape[s_dim : e_dim + 1])] + shape[e_dim + 1 :]
-    )  # pragma: no cover
+    new_shape = shape[:s_dim] + [math.prod(shape[s_dim : e_dim + 1])] + shape[e_dim + 1 :]  # pragma: no cover
     return backend_module.reshape(x, tuple(new_shape))  # pragma: no cover
 
 
@@ -133,9 +122,7 @@ def _np_reshape(backend_module: object, x: object, *args: object, **kwargs: obje
         args: Arg.
         kwargs: Arg.
     """
-    shape = (
-        args[0] if (len(args) > 0) else kwargs.get("shape", kwargs.get("newshape"))
-    )  # pragma: no cover
+    shape = args[0] if (len(args) > 0) else kwargs.get("shape", kwargs.get("newshape"))  # pragma: no cover
     return backend_module.reshape(x, shape)  # pragma: no cover
 
 
@@ -176,8 +163,6 @@ def _np_broadcast_in_dim(backend_module: object, *args: object, **kwargs: object
         args: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-
     return global_eager_registry.get("BroadcastInDim")(backend_module, *args, **kwargs)
 
 
@@ -190,11 +175,7 @@ def _np_resize_bicubic(backend_module: object, images: object, **kwargs: object)
         images: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager import resize_eager  # pragma: no cover
-
-    return resize_eager(
-        backend_module, images, interpolation="bicubic", **kwargs
-    )  # pragma: no cover
+    return resize_eager(backend_module, images, interpolation="bicubic", **kwargs)  # pragma: no cover
 
 
 @numpy_eager_registry.register("ResizeLanczos3")
@@ -206,17 +187,11 @@ def _np_resize_lanczos3(backend_module: object, images: object, **kwargs: object
         images: Arg.
         kwargs: Arg.
     """
-    from ml_switcheroo_compiler.backends.eager import resize_eager  # pragma: no cover
-
-    return resize_eager(
-        backend_module, images, interpolation="lanczos3", **kwargs
-    )  # pragma: no cover
+    return resize_eager(backend_module, images, interpolation="lanczos3", **kwargs)  # pragma: no cover
 
 
 def _band_part(input: object, num_lower: object, num_upper: object) -> object:
     """Execute _band_part."""
-    import numpy as np  # pragma: no cover
-
     # pragma: no cover
     input = np.asarray(input)  # pragma: no cover
     (m, n) = input.shape[(-2):]  # pragma: no cover
@@ -229,6 +204,7 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
     out = np.copy(x)  # pragma: no cover
 
     def _to_int(v: object) -> int:
+        """Function docstring."""
         if hasattr(v, "data"):
             v = v.data
         if hasattr(v, "item"):
@@ -236,8 +212,7 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
         return int(v)
 
     slices = tuple(  # pragma: no cover
-        slice(_to_int(start), _to_int(start) + size)
-        for start, size in zip(start_indices, update.shape)
+        slice(_to_int(start), _to_int(start) + size) for start, size in zip(start_indices, update.shape)
     )
     out[slices] = update  # pragma: no cover
     return out  # pragma: no cover
@@ -262,9 +237,8 @@ def _mvlgamma(x: object, p: object) -> object:
 
 
 @numpy_eager_registry.register("DynamicPartition")
-def _np_dynamic_partition(
-    backend_module: object, data: object, partitions: object, num_partitions: int, **kwargs: object
-) -> object:
+def _np_dynamic_partition(backend_module: object, data: object, partitions: object, num_partitions: int, **kwargs: object) -> object:
+    """Function docstring."""
     res = []
     for i in range(num_partitions):
         mask = partitions == i
@@ -273,9 +247,8 @@ def _np_dynamic_partition(
 
 
 @numpy_eager_registry.register("DynamicStitch")
-def _np_dynamic_stitch(
-    backend_module: object, indices: list, data: list, **kwargs: object
-) -> object:
+def _np_dynamic_stitch(backend_module: object, indices: list, data: list, **kwargs: object) -> object:
+    """Function docstring."""
     if not indices:
         raise ValueError("indices must not be empty")  # pragma: no cover
 
@@ -294,9 +267,8 @@ def _np_dynamic_stitch(
 
 
 @numpy_eager_registry.register("TensorScatterSub")
-def _np_tensor_scatter_sub(
-    backend_module: object, tensor: object, indices: object, updates: object, **kwargs: object
-) -> object:
+def _np_tensor_scatter_sub(backend_module: object, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
+    """Function docstring."""
     out = backend_module.copy(tensor)
     if indices.ndim > 1 and indices.shape[-1] > 1:
         # this is a simplification for multi-dimensional indices
@@ -320,32 +292,29 @@ def _np_extract_volume_patches(
     padding: str,
     **kwargs: object,
 ) -> object:
+    """Function docstring."""
     # 5D input: [batch, in_planes, in_rows, in_cols, depth]
     # Very complex to implement efficiently in pure numpy without stride tricks or loops.
     # We will provide a stub that raises NotImplementedError for the eager numpy mode if called directly,
     # or a very naive slow loop implementation.
-    raise NotImplementedError(
-        "ExtractVolumePatches numpy eager implementation not fully optimized."
-    )
+    raise NotImplementedError("ExtractVolumePatches numpy eager implementation not fully optimized.")
 
 
 @numpy_eager_registry.register("BooleanMask")
-def _np_boolean_mask(
-    backend_module: object, tensor: object, mask: object, axis: int = None, **kwargs: object
-) -> object:
+def _np_boolean_mask(backend_module: object, tensor: object, mask: object, axis: int = None, **kwargs: object) -> object:
+    """Function docstring."""
     if axis is None:
         return tensor[mask]
-    else:
-        # Construct an index tuple for advanced indexing
-        idx = [slice(None)] * backend_module.ndim(tensor)
-        idx[axis] = mask
-        return tensor[tuple(idx)]
+
+    # Construct an index tuple for advanced indexing
+    idx = [slice(None)] * backend_module.ndim(tensor)
+    idx[axis] = mask
+    return tensor[tuple(idx)]
 
 
 @numpy_eager_registry.register("UnravelIndex")
-def _np_unravel_index(
-    backend_module: object, indices: object, dims: object, **kwargs: object
-) -> object:
+def _np_unravel_index(backend_module: object, indices: object, dims: object, **kwargs: object) -> object:
+    """Function docstring."""
     return backend_module.unravel_index(indices, dims)
 
 
@@ -385,11 +354,8 @@ for op in [
     def make_mock(op_name: str) -> None:
         """Make mock."""
 
-        def _mock_op(
-            backend_module: object, *args: object, **kwargs: object
-        ) -> object:  # pragma: no cover
-            import numpy as np
-
+        def _mock_op(backend_module: object, *args: object, **kwargs: object) -> object:  # pragma: no cover
+            """Function docstring."""
             # Return dummy output based on input if possible, otherwise scalar
             if args and hasattr(args[0], "shape"):
                 return np.zeros_like(args[0])
@@ -403,8 +369,7 @@ for op in [
 
 @numpy_eager_registry.register("ArgSort")
 def _np_argsort(backend_module: object, x: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     dimension = kwargs.get("dimension", -1)
     if dimension is None:
         dimension = -1
@@ -413,15 +378,13 @@ def _np_argsort(backend_module: object, x: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Argwhere")
 def _np_argwhere(backend_module: object, condition: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     return np.argwhere(condition)
 
 
 @numpy_eager_registry.register("Argpartition")
 def _np_argpartition(backend_module: object, a: object, kth: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     axis = kwargs.get("axis", -1)
     if axis is None:
         axis = -1
@@ -430,22 +393,21 @@ def _np_argpartition(backend_module: object, a: object, kth: object, **kwargs: o
 
 @numpy_eager_registry.register("AssignAdd")
 def _np_assign_add(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     np.copyto(ref, ref + value)
     return ref
 
 
 @numpy_eager_registry.register("AssignSub")
 def _np_assign_sub(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
-    import numpy as np
-
+    """Function docstring."""
     np.copyto(ref, ref - value)
     return ref
 
 
 @numpy_eager_registry.register("Reverse")
 def _np_reverse(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Function docstring."""
     x = args[0]
     dims = kwargs.get("dims")
     return backend_module.flip(x, axis=dims)

@@ -3,12 +3,11 @@
 import ast
 import os
 import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
 from typing import get_args
 
 from ml_switcheroo_compiler.backends.registry import BackendName
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 ALL_BACKENDS = set(get_args(BackendName))
 
@@ -23,6 +22,7 @@ for backend in ALL_BACKENDS:
 
 
 def _check_imports(node: ast.AST, forbidden: set[str], file_path: str) -> bool:
+    """Function docstring."""
     has_error = False
     if isinstance(node, ast.Import):
         for alias in node.names:
@@ -57,10 +57,7 @@ def check_file(file_path: str) -> bool:
     file_path = os.path.normpath(file_path)
 
     forbidden = FORBIDDEN_IMPORTS.get(file_path, set())
-    if (
-        "src/ml_switcheroo_compiler/core/" in file_path
-        or "src/ml_switcheroo_compiler/ops/" in file_path
-    ):
+    if "src/ml_switcheroo_compiler/core/" in file_path or "src/ml_switcheroo_compiler/ops/" in file_path:
         forbidden = ALL_BACKENDS.copy()
 
     if not forbidden:

@@ -1,12 +1,17 @@
+"""Module docstring."""
+
 import numpy as np
-from ml_switcheroo_compiler.grad import compile
-from ml_switcheroo_compiler.nn.activations import prelu, softmin, step
-from ml_switcheroo_compiler.core.config import ConfigContext
+
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.core.config import ConfigContext
+from ml_switcheroo_compiler.nn.activations import prelu, softmin, step
 
 
-def test_grad_compile():
-    def my_func(x):
+def test_grad_compile() -> object:
+    """Function docstring."""
+
+    def my_func(x: object) -> object:
+        """Function docstring."""
         return x
 
     with ConfigContext(eager_mode=True):
@@ -15,7 +20,8 @@ def test_grad_compile():
         assert compiled is not None
 
 
-def test_activations_extra():
+def test_activations_extra() -> object:
+    """Function docstring."""
     with ConfigContext(eager_mode=True):
         x = ops.array(np.array([-1.0, 0.0, 1.0]))
 

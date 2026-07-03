@@ -1,8 +1,12 @@
+"""Module docstring."""
+
 import numpy as np
+
 import ml_switcheroo_compiler.backends.numpy.eager.linalg as mod
 
 
-def test_linalg_future_coverage():
+def test_linalg_future_coverage() -> object:
+    """Function docstring."""
     # matrix_norm
     if not hasattr(np.linalg, "matrix_norm"):
         np.linalg.matrix_norm = lambda x: x
@@ -36,7 +40,8 @@ def test_linalg_future_coverage():
             del np.vecdot
 
 
-def test_linalg_tensorinv_tensorsolve():
+def test_linalg_tensorinv_tensorsolve() -> object:
+    """Function docstring."""
     a = np.eye(4 * 6)
     a.shape = (4, 6, 8, 3)
     mod._np_tensorinv(np, a)

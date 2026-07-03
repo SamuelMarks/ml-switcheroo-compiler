@@ -9,12 +9,11 @@ such as the intermediate representation (IR) or core transforms.
 import ast
 import os
 import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
-
 from typing import get_args
 
 from ml_switcheroo_compiler.backends.registry import BackendName
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 ALL_BACKENDS = list(get_args(BackendName))
 if "numpy" in ALL_BACKENDS:
