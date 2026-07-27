@@ -23,7 +23,7 @@ class MLPlaygroundDirective(Directive):
     has_content = True
 
     def run(self) -> object:
-        """Docstring."""
+        """Execute standard operation."""
         # We output a section with an id that our JS will hydrate
         html = """
 <section id="ml-playground-container" aria-label="ML Switcheroo Playground">

@@ -1,5 +1,10 @@
 """Tracing module."""
 
+from ml_switcheroo_compiler.tracing.autograph import (
+    LoopOptions,
+    do_not_convert,
+    set_loop_options,
+)
 from ml_switcheroo_compiler.tracing.tracer import (
     ProxyTensor,
     TracerTape,
@@ -10,6 +15,9 @@ from ml_switcheroo_compiler.tracing.tracer import (
 )
 
 __all__ = [
+    "LoopOptions",
+    "do_not_convert",
+    "set_loop_options",
     "ProxyTensor",
     "TracerTape",
     "get_trace_count",

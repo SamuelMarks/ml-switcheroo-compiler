@@ -15,16 +15,21 @@ class ReductionOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(
-        self,
-        x: object,
-        axis: object = None,
-        keepdims: bool = False,
-        **kwargs: object,
-    ) -> object:
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        """Universal dispatcher for the operation, handling dim/keepdim aliases."""
+        if "dim" in kwargs and "axis" not in kwargs:
+            kwargs["axis"] = kwargs.pop("dim")
+        if "keepdim" in kwargs and "keepdims" not in kwargs:
+            kwargs["keepdims"] = kwargs.pop("keepdim")
+        from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+        return dispatch_op(self.op_type, *args, **kwargs)
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
+            *args: Args.
             x (object): The first input tensor.
             axis (object): The axis to process.
             keepdims (bool): The keepdims to process.
@@ -39,6 +44,7 @@ class ReductionOp(OpDef):
         """Format args.
 
         Args:
+            *args: Args.
             x (str): The first input tensor.
             **kwargs (object): Additional keyword arguments.
 

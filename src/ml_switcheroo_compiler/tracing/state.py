@@ -14,6 +14,25 @@ class TracingState:
         """Initialize."""
         self.is_tracing: bool = False
         self.active_graph = None
+        self.constant_cache: dict[object, object] = {}
+
+    def _enrich_ast_and_domain(self, node: object) -> None:
+        if getattr(node, "source_ast_ref", None) is None:
+            node.source_ast_ref = get_source_ast_ref()
+        if self.active_graph.name is not None and getattr(node, "domain", "") == "":
+            node.domain = self.active_graph.name
+
+    def _enrich_stream(self, node: object) -> None:
+        if "ml_switcheroo_compiler.core.config" not in sys.modules:
+            return
+        config = sys.modules["ml_switcheroo_compiler.core.config"].config
+        if getattr(node, "stream", "default") is None and config.current_stream != "default":
+            node.stream = config.current_stream
+
+    def _enrich_node(self, node: object) -> None:
+        """Enrich node with implicit metadata."""
+        self._enrich_ast_and_domain(node)
+        self._enrich_stream(node)
 
     def add_node(self, node: object) -> None:
         """Add node.
@@ -25,17 +44,7 @@ class TracingState:
             msg = "Cannot add node: not currently tracing."
             raise RuntimeError(msg)
 
-        if getattr(node, "source_ast_ref", None) is None:
-            node.source_ast_ref = get_source_ast_ref()
-
-        if self.active_graph.name is not None and getattr(node, "domain", "") == "":
-            node.domain = self.active_graph.name
-
-        if "ml_switcheroo_compiler.core.config" in sys.modules:
-            config = sys.modules["ml_switcheroo_compiler.core.config"].config
-            if hasattr(node, "stream") and node.stream is None and config.current_stream != "default":
-                node.stream = config.current_stream
-
+        self._enrich_node(node)
         self.active_graph.nodes[node.id] = node
 
     def start_tracing(self, name: str = "Model") -> object:

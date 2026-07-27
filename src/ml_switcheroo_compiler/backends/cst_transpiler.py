@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Syntactic Transpilation Engine (Whitespace/Comment Preserving)."""
 
 import libcst as cst
@@ -28,7 +29,7 @@ class CSTTransformer(cst.CSTTransformer):
             updated_node (cst.ImportFrom): Argument updated_node
 
         Returns:
-            cst.ImportFrom: The result of the operation
+            cst.ImportFrom: The inferred shape or computed result
 
         Args:
             original_node (cst.ImportFrom): Argument original_node
@@ -49,7 +50,7 @@ class CSTTransformer(cst.CSTTransformer):
             updated_node (cst.Call): Argument updated_node
 
         Returns:
-            cst.CSTNode: The result of the operation
+            cst.CSTNode: The inferred shape or computed result
 
         Args:
             original_node (cst.Call): Argument original_node
@@ -59,10 +60,10 @@ class CSTTransformer(cst.CSTTransformer):
             return updated_node
 
         if not isinstance(updated_node.func.value, cst.Name):
-            return updated_node  # pragma: no cover
+            return updated_node
 
         if updated_node.func.value.value != "torch":
-            return updated_node  # pragma: no cover
+            return updated_node
 
         new_value = cst.Attribute(value=cst.Name("jax"), attr=cst.Name("numpy"))
         new_func = updated_node.func.with_changes(value=new_value)

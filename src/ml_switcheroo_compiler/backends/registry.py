@@ -1,17 +1,63 @@
+# ruff: noqa: E501
 """Backend Registry."""
 
-import importlib
 import logging
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.core.config import config
 
-if TYPE_CHECKING:
-    pass
+
+def _load_numpy() -> None:
+    import ml_switcheroo_compiler.backends.numpy  # noqa: F401
 
 
-BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask"]
+def _load_pytorch() -> None:
+    import ml_switcheroo_compiler.backends.pytorch  # noqa: F401
+
+
+def _load_jax() -> None:
+    import ml_switcheroo_compiler.backends.jax  # noqa: F401
+
+
+def _load_tensorflow() -> None:
+    import ml_switcheroo_compiler.backends.tensorflow  # noqa: F401
+
+
+def _load_mlx() -> None:
+    import ml_switcheroo_compiler.backends.mlx  # noqa: F401
+
+
+def _load_dask() -> None:
+    import ml_switcheroo_compiler.backends.dask  # noqa: F401
+
+
+def _load_keras() -> None:
+    import ml_switcheroo_compiler.backends.keras  # noqa: F401
+
+
+def _load_cupy() -> None:
+    import ml_switcheroo_compiler.backends.cupy  # noqa: F401
+
+
+def _load_pure_python() -> None:
+    import ml_switcheroo_compiler.backends.pure_python  # noqa: F401
+
+
+_LOADERS = {
+    "numpy": _load_numpy,
+    "pytorch": _load_pytorch,
+    "torch": _load_pytorch,
+    "jax": _load_jax,
+    "tensorflow": _load_tensorflow,
+    "mlx": _load_mlx,
+    "dask": _load_dask,
+    "keras": _load_keras,
+    "cupy": _load_cupy,
+    "pure_python": _load_pure_python,
+}
+
+BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python"]
 
 
 class BackendRegistry:
@@ -29,6 +75,7 @@ class BackendRegistry:
         "numpy": "ml_switcheroo_compiler.backends.numpy",
         "cupy": "ml_switcheroo_compiler.backends.cupy",
         "dask": "ml_switcheroo_compiler.backends.dask",
+        "pure_python": "ml_switcheroo_compiler.backends.pure_python",
     }
 
     @classmethod
@@ -43,23 +90,30 @@ class BackendRegistry:
 
     @classmethod
     def _try_load_lazy(cls, name: BackendName) -> None:
-        """Function docstring.
+        """Evaluate and process the try load lazy operation.
 
         Args:
-        name: Arg.
+            name (BackendName): Required parameter for name.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
         if name not in cls._registry and name in cls._LAZY_MODULES:
             try:
-                importlib.import_module(cls._LAZY_MODULES[name])
+                if name in _LOADERS:
+                    _LOADERS[name]()
             except ImportError as e:
                 logging.error(f"FAILED TO IMPORT {cls._LAZY_MODULES[name]}: {e}")
 
     @classmethod
     def _resolve_alias(cls, name: BackendName) -> BackendName:
-        """Function docstring.
+        """Evaluate and process the resolve alias operation.
 
         Args:
-        name: Arg.
+            name (BackendName): Required parameter for name.
+
+        Returns:
+            BackendName: The evaluated or processed output.
         """
         if name not in cls._registry and name == "torch" and "pytorch" in cls._registry:
             return "pytorch"
@@ -91,11 +145,11 @@ class BackendRegistry:
         Returns:
             dict[BackendName, type['BaseGenerator']]: The evaluated output.
         """
-        # Ensure all lazy modules are loaded if we want *all* backends
-        for name, module_path in cls._LAZY_MODULES.items():
+        for name in cls._LAZY_MODULES:
             if name not in cls._registry:
                 try:
-                    importlib.import_module(module_path)
+                    if name in _LOADERS:
+                        _LOADERS[name]()
                 except ImportError:
                     pass
         return cls._registry.copy()

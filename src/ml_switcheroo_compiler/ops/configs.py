@@ -123,40 +123,57 @@ class TriangularSolveOptions:
     check_finite: bool = True
 
 
+@dataclass
 class ConvDimensionNumbers:
     """ConvDimensionNumbers class."""
 
-    pass
+    lhs_spec: Sequence[int]
+    rhs_spec: Sequence[int]
+    out_spec: Sequence[int]
 
 
+@dataclass
 class ConvGeneralDilatedDimensionNumbers:
     """ConvGeneralDilatedDimensionNumbers class."""
 
-    pass
+    lhs_spec: Sequence[int]
+    rhs_spec: Sequence[int]
+    out_spec: Sequence[int]
 
 
+@dataclass
 class DotDimensionNumbers:
     """DotDimensionNumbers class."""
 
-    pass
+    lhs_contracting_dimensions: Sequence[int]
+    rhs_contracting_dimensions: Sequence[int]
+    lhs_batch_dimensions: Sequence[int]
+    rhs_batch_dimensions: Sequence[int]
 
 
+@dataclass
 class GatherDimensionNumbers:
     """GatherDimensionNumbers class."""
 
-    pass
+    offset_dims: Sequence[int]
+    collapsed_slice_dims: Sequence[int]
+    start_index_map: Sequence[int]
 
 
 class GatherScatterMode:
     """GatherScatterMode class."""
 
-    pass
+    STRICT = "strict"
+    PROMISE_IN_BOUNDS = "promise_in_bounds"
+    CLIP = "clip"
 
 
 class Precision:
     """Precision class."""
 
-    pass
+    DEFAULT = "default"
+    HIGH = "high"
+    HIGHEST = "highest"
 
 
 class PrecisionLike:
@@ -168,16 +185,22 @@ class PrecisionLike:
 class RandomAlgorithm:
     """RandomAlgorithm class."""
 
-    pass
+    DEFAULT = "default"
+    THREEFRY = "threefry"
+    RBGS = "rbgs"
 
 
 class RoundingMethod:
     """RoundingMethod class."""
 
-    pass
+    AWAY_FROM_ZERO = "away_from_zero"
+    TO_NEAREST_EVEN = "to_nearest_even"
 
 
+@dataclass
 class ScatterDimensionNumbers:
     """ScatterDimensionNumbers class."""
 
-    pass
+    update_window_dims: Sequence[int]
+    inserted_window_dims: Sequence[int]
+    scatter_dims_to_operand_dims: Sequence[int]

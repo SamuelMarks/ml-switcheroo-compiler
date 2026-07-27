@@ -1,154 +1,165 @@
-"""Module docstring."""
+# ruff: noqa: E501
+"""Core abstractions and logic definitions for nn.py."""
 
 import math
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-
-# We flatten first two dims
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 
 def _gelu(x: object, *args: object, **kwargs: object) -> object:
-    r"""Execute _gelu.\n\n    Args:\n        cls (Any): The class.\n        x (Any): Argument x.\n        *args (Any): Argument *args.\n        **kwargs (Any): Argument **kwargs.\n\n    Returns:\n    Any: The result.\n."""
+    """Evaluate and process the gelu operation.
+
+    Args:
+        x (object): Required parameter for x.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     erf_vec = np.vectorize(math.erf)
-    return (0.5 * x) * (1 + erf_vec(x / np.sqrt(2.0)))
+    return 0.5 * x * (1 + erf_vec(x / np.sqrt(2.0)))
 
 
 @numpy_eager_registry.register("Relu")
 def _np_relu(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the relu logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        x: Arg.
-        args: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     return backend_module.maximum(x, 0.0)
 
 
 @numpy_eager_registry.register("AlphaDropout")
 def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the alpha dropout logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        x: Arg.
-        kwargs: Arg.
-    """
-    rate = kwargs.get("rate", 0.5)
-    training = kwargs.get("training", False)
-    if not training or rate == 0.0:  # pragma: no branch
-        return x
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        **kwargs (Any): Arbitrary keyword arguments.
 
-    # SELU parameters
-    alpha = 1.6732632423543772848170429916717
-    scale = 1.0507009873554804934193349852946
-    alpha_p = -alpha * scale
-
-    rng = np.random.default_rng(kwargs.get("seed", None))
-    noise_shape = kwargs.get("noise_shape", None)
-    if noise_shape is None:
-        noise_shape = x.shape
-
-    mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
-
-    a = 1.0 / np.sqrt(1.0 - rate + rate * rate * alpha_p * alpha_p)
-    b = -a * alpha_p * rate
-
-    return a * (x * mask + alpha_p * (1.0 - mask)) + b
-
-
-@numpy_eager_registry.register("ActivityRegularization")
-def _np_activity_regularization(backend_module: object, x: object, **kwargs: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        x: Arg.
-        kwargs: Arg.
-    """
-    # Just returns x, as the regularization is injected into the loss
-    return x
-
-
-@numpy_eager_registry.register("Dropout")
-def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        x: Arg.
-        kwargs: Arg.
+    Returns:
+        object: The evaluated or processed output.
     """
     rate = kwargs.get("rate", 0.5)
     training = kwargs.get("training", False)
     if not training or rate == 0.0:
         return x
-
+    alpha = 1.6732632423543772
+    scale = 1.0507009873554805
+    alpha_p = -alpha * scale
     rng = np.random.default_rng(kwargs.get("seed", None))
     noise_shape = kwargs.get("noise_shape", None)
     if noise_shape is None:
         noise_shape = x.shape
-
     mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
-    return (x * mask) / (1.0 - rate)
+    a = 1.0 / np.sqrt(1.0 - rate + rate * rate * alpha_p * alpha_p)
+    b = -a * alpha_p * rate
+    return a * (x * mask + alpha_p * (1.0 - mask)) + b
+
+
+@numpy_eager_registry.register("ActivityRegularization")
+def _np_activity_regularization(backend_module: object, x: object, **kwargs: object) -> object:
+    """Evaluate the activity regularization logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
+    return x
+
+
+@numpy_eager_registry.register("Dropout")
+def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
+    """Evaluate the dropout logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
+    rate = kwargs.get("rate", 0.5)
+    training = kwargs.get("training", False)
+    if not training or rate == 0.0:
+        return x
+    rng = np.random.default_rng(kwargs.get("seed", None))
+    noise_shape = kwargs.get("noise_shape", None)
+    if noise_shape is None:
+        noise_shape = x.shape
+    mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
+    return x * mask / (1.0 - rate)
 
 
 @numpy_eager_registry.register("TimeDistributed")
 def _np_time_distributed(backend_module: object, x: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the time distributed logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        x: Arg.
-        kwargs: Arg.
-    """
-    # Extract wrapped op
-    wrapped_op_name = kwargs.pop("wrapped_op_name")
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        **kwargs (Any): Arbitrary keyword arguments.
 
+    Returns:
+        object: The evaluated or processed output.
+    """
+    wrapped_op_name = kwargs.pop("wrapped_op_name")
     shape = x.shape
     if len(shape) < MAGIC_VAL_3:
         return get_active_backend().execute_op(wrapped_op_name, x, **kwargs)
-
     flat_x = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
-
     out = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
     out_shape = (shape[0], shape[1], *out.shape[1:])
     return np.reshape(out, out_shape)
 
 
 @numpy_eager_registry.register("Rope")
-def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:  # pylint: disable=too-many-locals
+def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
     """Apply Rotary Positional Encoding using NumPy."""
-    dim = kwargs.get("dim")
-    base = kwargs.get("base", 10000.0)
-    offset = kwargs.get("offset", 0)
-
     x_np = backend_module.asarray(x)
-    seq_len = x_np.shape[-2]
-
-    # Generate positional indices
-    position = backend_module.arange(offset, offset + seq_len, dtype=x_np.dtype)
-
-    # Generate frequencies
-    half_dim = dim // 2
-    freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(base) / half_dim))
-
-    # Calculate angles
+    half_dim = kwargs.get("dim") // 2
+    position = backend_module.arange(kwargs.get("offset", 0), kwargs.get("offset", 0) + x_np.shape[-2], dtype=x_np.dtype)
+    freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(kwargs.get("base", 10000.0)) / half_dim))
     angles = position[:, None] * freqs[None, :]
 
-    # Apply RoPE
-    sin_val = backend_module.sin(angles)
-    cos_val = backend_module.cos(angles)
+    return backend_module.concatenate(
+        [
+            x_np[..., :half_dim] * backend_module.cos(angles) - x_np[..., half_dim:] * backend_module.sin(angles),
+            x_np[..., :half_dim] * backend_module.sin(angles) + x_np[..., half_dim:] * backend_module.cos(angles),
+        ],
+        axis=-1,
+    )
 
-    x1 = x_np[..., :half_dim]
-    x2 = x_np[..., half_dim:]
 
-    rot_x1 = x1 * cos_val - x2 * sin_val
-    rot_x2 = x1 * sin_val + x2 * cos_val
+@numpy_eager_registry.register("Rrelu")
+def _np_rrelu(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+    """Evaluate the rrelu logic eagerly backed by NumPy."""
+    lower = kwargs.get("lower", 1.0 / 8.0)
+    upper = kwargs.get("upper", 1.0 / 3.0)
+    training = kwargs.get("training", False)
 
-    return backend_module.concatenate([rot_x1, rot_x2], axis=-1)
+    x_data = backend_module.asarray(getattr(x, "data", x))
+    if not training:
+        alpha = (lower + upper) / 2.0
+        return backend_module.where(x_data >= 0, x_data, x_data * alpha)
+
+    alpha = backend_module.random.uniform(lower, upper, size=x_data.shape)
+    return backend_module.where(x_data >= 0, x_data, x_data * alpha)

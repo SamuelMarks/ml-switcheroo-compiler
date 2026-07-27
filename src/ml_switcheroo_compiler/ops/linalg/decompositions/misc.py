@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for misc.py."""
 
 from __future__ import annotations
 
@@ -125,10 +125,10 @@ class PowerIteration(OpDef):
             object: The tuple containing output shapes and dtypes.
         """
         in_shape = args[0].shape
-        v_shape = in_shape[:-2] + (in_shape[-1],)  # pragma: no cover
-        u_shape = in_shape[:-2] + (in_shape[-2],)  # pragma: no cover
-        sigma_shape = in_shape[:-2]  # pragma: no cover
-        return (v_shape, u_shape, sigma_shape), (args[0].dtype,) * 3  # pragma: no cover
+        v_shape = in_shape[:-2] + (in_shape[-1],)
+        u_shape = in_shape[:-2] + (in_shape[-2],)
+        sigma_shape = in_shape[:-2]
+        return (v_shape, u_shape, sigma_shape), (args[0].dtype,) * 3
 
 
 @register_op("Polar")
@@ -234,3 +234,14 @@ def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Tensor:
         data = backend.execute_op("TridiagonalSolve", dl.data, d.data, du.data, b.data)
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
     return _emit_linalg_node("TridiagonalSolve", [dl, d, du, b], {}, [b.shape], [b.dtype])
+
+
+@register_op("TridiagonalMatmul")
+class TridiagonalMatmul(OpDef):
+    """TridiagonalMatmul Operation Definition."""
+
+    op_name = "TridiagonalMatmul"
+
+    def infer_shape(self, dl: object, d: object, du: object, b: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return b.shape

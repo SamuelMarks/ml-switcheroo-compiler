@@ -1,8 +1,8 @@
 """File utilities."""
 
-import os  # pragma: no cover
+import os
 
 
-def exists(path: str) -> bool:  # pragma: no cover
+def exists(path: str) -> bool:
     """Returns True if path exists."""
-    return os.path.exists(path)  # pragma: no cover
+    return os.path.exists(path)

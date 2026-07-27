@@ -1,0 +1,24 @@
+# ruff: noqa: E501
+from ml_switcheroo_compiler.ops.linalg.dot import Dot, DotGeneral, Inner, Outer, Tensordot
+
+
+def test_dot_infer_shapes() -> None:
+
+    class MockTensor:
+        shape = (2, 3)
+
+    t = MockTensor()
+    assert Dot().infer_shape(t, t) is None
+    assert Tensordot().infer_shape(t, t) == ()
+    assert Inner().infer_shape(t, t) == ()
+    assert Outer().infer_shape(t, t) == ()
+    dg = DotGeneral()
+    assert dg.infer_shape(t, t, (((1,), (0,)), ((), ()))) == (2, 3)
+    assert dg.infer_shape(lhs=t, rhs=t, dimension_numbers=(((1,), (0,)), ((), ()))) == (2, 3)
+
+    class BadTensor:
+        pass
+
+    assert dg.infer_shape(BadTensor(), t, (((1,), (0,)), ((), ()))) == ()
+    assert dg._compute_out_shape((2, 3), (3, 4), (((1,), (0,)), ((), ()))) == (2, 4)
+    assert dg._compute_out_shape((5, 2, 3), (5, 3, 4), (((2,), (1,)), ((0,), (0,)))) == (5, 2, 4)

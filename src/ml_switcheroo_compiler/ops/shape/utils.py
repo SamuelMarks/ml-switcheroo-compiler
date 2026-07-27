@@ -55,9 +55,14 @@ def _emit_shape_node(
     global_tracing_state.add_node(node)
 
     dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
-    if hasattr(dtype_val, "name") and type(dtype_val).__name__ == "dtype":
-        dtype_val = dtype_val.name  # pragma: no cover
 
     proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
-    device = inputs[0].device if len(inputs) > 0 else config.default_device
+    device = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
+
+
+def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], keepdims: bool) -> tuple[int, ...]:
+    """Reusable utility to compute the shape after a reduction operation."""
+    if keepdims:
+        return tuple(1 if i in axes else s for i, s in enumerate(x_shape))
+    return tuple(s for i, s in enumerate(x_shape) if i not in axes)

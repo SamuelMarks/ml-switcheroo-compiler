@@ -1,5 +1,6 @@
 """Eager evaluation logic."""
 
+import abc
 from dataclasses import dataclass
 from typing import Any
 
@@ -18,12 +19,13 @@ class EvaluationContext:
     backend: object
 
 
-class EvaluationStrategy:
+class EvaluationStrategy(abc.ABC):
     """Base evaluation strategy."""
 
+    @abc.abstractmethod
     def evaluate(self, ctx: EvaluationContext) -> object:
         """Evaluate."""
-        raise NotImplementedError  # pragma: no cover
+        pass
 
 
 class CustomEagerEvalStrategy(EvaluationStrategy):
@@ -39,7 +41,7 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
 
     def evaluate(self, ctx: EvaluationContext) -> object:
         """Evaluate."""
-        return ctx.backend.execute_op(ctx.op_type, *ctx.raw_args, **ctx.kwargs)  # pragma: no cover
+        return ctx.backend.execute_op(ctx.op_type, *ctx.raw_args, **ctx.kwargs)
 
 
 class EagerEvaluator:
@@ -48,34 +50,19 @@ class EagerEvaluator:
     @staticmethod
     def _get_strategy(op_cls: object) -> EvaluationStrategy:
         """Get the evaluation strategy."""
-        has_custom_eval = hasattr(op_cls, "eager_eval") and op_cls.__dict__.get("eager_eval") is not getattr(  # pragma: no branch
-            __import__("ml_switcheroo_compiler.ops.base", fromlist=["OpDef"]).OpDef,
+        from ml_switcheroo_compiler.ops.base import OpDef
+
+        has_custom_eval = hasattr(op_cls, "eager_eval") and op_cls.__dict__.get("eager_eval") is not getattr(
+            OpDef,
             "eager_eval",
             None,
         )
         if has_custom_eval:
             return CustomEagerEvalStrategy()
-        return BackendExecuteOpStrategy()  # pragma: no cover
+        return BackendExecuteOpStrategy()
 
     @staticmethod
-    def evaluate(op_type: str, *args: object, **kwargs: object) -> object:
-        """Docstring."""
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        backend = get_active_backend()
-
-        from ml_switcheroo_compiler.ops.registry import get_op
-
-        op_cls = get_op(op_type)
-        raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
-
-        ctx = EvaluationContext(op_cls, op_type, raw_args, kwargs, backend)
-        strategy = EagerEvaluator._get_strategy(op_cls)
-        res_data = strategy.evaluate(ctx)
-
-        first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
-        device = first_tensor.device if first_tensor is not None else None
-
+    def _pack_outputs(res_data: object, first_tensor: object, device: object) -> object:
         if isinstance(res_data, (tuple, list)):
             return tuple(
                 Tensor(
@@ -92,3 +79,31 @@ class EagerEvaluator:
         dtype = resolve_dtype(res_data, first_tensor)
         shape = res_data.shape if hasattr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))
+
+    @staticmethod
+    def evaluate(op_type: str, *args: object, **kwargs: object) -> object:
+        """Evaluate and process the evaluate operation.
+
+        Args:
+            op_type (str): Required parameter for op_type.
+            *args (Any): Variable positional arguments.
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            object: The evaluated or processed output.
+        """
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+        from ml_switcheroo_compiler.ops.registry import get_op
+
+        backend = get_active_backend()
+        op_cls = get_op(op_type)
+        raw_args = [a.data if isinstance(a, Tensor) else a for a in args]
+
+        ctx = EvaluationContext(op_cls, op_type, raw_args, kwargs, backend)
+        strategy = EagerEvaluator._get_strategy(op_cls)
+        res_data = strategy.evaluate(ctx)
+
+        first_tensor = next((a for a in args if isinstance(a, Tensor)), None)
+        device = first_tensor.device if first_tensor is not None else None
+
+        return EagerEvaluator._pack_outputs(res_data, first_tensor, device)

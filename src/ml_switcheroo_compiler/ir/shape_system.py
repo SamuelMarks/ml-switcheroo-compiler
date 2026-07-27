@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
+from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 
 if TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import TensorSpec
@@ -37,7 +38,7 @@ class SymInt:
             other (Union['SymInt', int]): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} + {other.expr})")
@@ -50,7 +51,7 @@ class SymInt:
             other (int): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         return SymInt(f"({other} + {self.expr})")
 
@@ -61,7 +62,7 @@ class SymInt:
             other (Union['SymInt', int]): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} - {other.expr})")
@@ -74,7 +75,7 @@ class SymInt:
             other (int): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         return SymInt(f"({other} - {self.expr})")
 
@@ -85,7 +86,7 @@ class SymInt:
             other (Union['SymInt', int]): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} * {other.expr})")
@@ -98,7 +99,7 @@ class SymInt:
             other (int): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         return SymInt(f"({other} * {self.expr})")
 
@@ -109,7 +110,7 @@ class SymInt:
             other (Union['SymInt', int]): Argument other
 
         Returns:
-            'SymInt': The result of the operation
+            'SymInt': The inferred shape or computed result
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} // {other.expr})")
@@ -222,7 +223,7 @@ class ShapeTracker:
         inputs (list[TensorSpec]): Argument inputs
 
         Returns:
-            tuple[Union[int, SymInt], ...]: The result of the operation
+            tuple[Union[int, SymInt], ...]: The inferred shape or computed result
 
         Args:
             inputs (list[TensorSpec]): Argument inputs
@@ -247,7 +248,7 @@ class ShapeTracker:
             input2 (TensorSpec): Argument input2
 
         Returns:
-            tuple[Union[int, SymInt], ...]: The result of the operation
+            tuple[Union[int, SymInt], ...]: The inferred shape or computed result
 
         Args:
             input1 (TensorSpec): Argument input1
@@ -282,9 +283,9 @@ def _broadcast_dim(a: int | str, b: int | str) -> int | str:
         return a
     if isinstance(a, str) or isinstance(b, str):
         msg = f"Cannot broadcast symbolic dimensions {a} and {b}"
-        raise ValueError(msg)
+        raise ShapeMismatchError(msg)
     msg = f"Incompatible dimensions for broadcasting: {a} and {b}"
-    raise ValueError(msg)
+    raise ShapeMismatchError(msg)
 
 
 def broadcast_shapes(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
@@ -339,16 +340,19 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """
     if shape_a[1] != shape_b[0]:
         msg = f"Incompatible 2D matmul shapes: {shape_a}, {shape_b}"
-        raise ValueError(msg)
+        raise ShapeMismatchError(msg)
     return (shape_a[0], shape_b[1])
 
 
 def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, int, int]:
-    """Function docstring.
+    """Retrieve the matmul dims property or mapping.
 
     Args:
-        shape_a: Arg.
-        shape_b: Arg.
+        shape_a (ShapeType): Required parameter for shape_a.
+        shape_b (ShapeType): Required parameter for shape_b.
+
+    Returns:
+        tuple: The evaluated or processed output.
     """
     m_dim = shape_a[-2] if len(shape_a) > 1 else 1
     k_dim_a = shape_a[-1]
@@ -358,10 +362,13 @@ def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, 
 
 
 def _get_batch_dims(shape: ShapeType) -> ShapeType:
-    """Function docstring.
+    """Retrieve the batch dims property or mapping.
 
     Args:
-        shape: Arg.
+        shape (ShapeType): Required parameter for shape.
+
+    Returns:
+        ShapeType: The evaluated or processed output.
     """
     return shape[:-2] if len(shape) > MAGIC_VAL_2 else ()
 
@@ -384,7 +391,7 @@ def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 
     if k_dim_a != k_dim_b:
         msg = f"Incompatible inner dimensions for matmul: {k_dim_a} and {k_dim_b}"
-        raise ValueError(msg)
+        raise ShapeMismatchError(msg)
 
     out_shape = list(out_batch)
     if len(shape_a) > 1:
@@ -410,7 +417,7 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """
     if len(shape_a) == 0 or len(shape_b) == 0:
         msg = "Scalars cannot be matrix multiplied."
-        raise ValueError(msg)
+        raise ShapeMismatchError(msg)
 
     # 1D dot product
     if len(shape_a) == 1 and len(shape_b) == 1:
@@ -428,7 +435,7 @@ def _normalize_single_axis(axis: int, ndim: int) -> int:
     """Normalize a single negative axis to be positive."""
     if axis < -ndim or axis >= ndim:
         msg = f"Axis {axis} is out of bounds for tensor of dimension {ndim}"
-        raise ValueError(msg)
+        raise ShapeMismatchError(msg)
     if axis < 0:
         return axis + ndim
     return axis

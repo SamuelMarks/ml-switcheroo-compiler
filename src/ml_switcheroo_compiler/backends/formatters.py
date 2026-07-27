@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Formatting utilities for backend code generators."""
 
 from dataclasses import dataclass
@@ -48,10 +49,20 @@ class OpFormatter:
             str: The formatted code string.
         """
         args = list(context.input_vars)
-        if "axis" in context.kwargs and context.kwargs["axis"] is not None:
-            args.append(f"{context.axis_kwarg}={context.kwargs['axis']}")
-        if context.kwargs.get("keepdims"):
-            args.append(f"{context.keepdims_kwarg}={context.kwargs['keepdims']}")
+        for k, v in context.kwargs.items():
+            if k == "axis":
+                if v is not None:
+                    args.append(f"{context.axis_kwarg}={v}")
+            elif k == "keepdims":
+                if v:
+                    args.append(f"{context.keepdims_kwarg}={v}")
+            elif k in ["shape_metadata", "metadata", "node_id"]:
+                continue
+            else:
+                if isinstance(v, str) and not v.startswith("("):
+                    args.append(f"{k}='{v}'")
+                else:
+                    args.append(f"{k}={v}")
 
         args_str = ", ".join(args)
         return f"{context.prefix}.{context.op_type.lower()}({args_str})"
@@ -78,13 +89,13 @@ class FallbackHandler:
         Returns:
             str: Generated python code.
         """
-        ctx = FormatterContext(  # pragma: no cover
+        ctx = FormatterContext(
             prefix=prefix,
             op_type=getattr(node, "op_type", "Unknown"),
             input_vars=input_vars,
             kwargs=kwargs,
         )
-        return OpFormatter.format_generic_fallback(ctx)  # pragma: no cover
+        return OpFormatter.format_generic_fallback(ctx)
 
 
 class CodeFormatter:

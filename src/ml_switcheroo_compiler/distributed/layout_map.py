@@ -76,7 +76,7 @@ class LayoutMap:
             key: Path key.
             value: ShardingSpec.
         """
-        self._map[key] = value  # pragma: no cover
+        self._map[key] = value
 
     def __getitem__(self, key: str) -> Optional[ShardingSpec]:
         """Get the sharding spec for a given key.
@@ -87,4 +87,4 @@ class LayoutMap:
         Returns:
             The ShardingSpec or None.
         """
-        return self._map.get(key)  # pragma: no cover
+        return self._map.get(key)

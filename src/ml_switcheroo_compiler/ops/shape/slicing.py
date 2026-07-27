@@ -71,8 +71,6 @@ def strided_slice(
     Returns:
     Tensor: The sliced tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
@@ -118,3 +116,25 @@ class Choose(OpDef):
     def infer_shape(self, a: object, choices: object, out: object = None, mode: str = "raise", **kwargs: object) -> object:
         """Infer the output shape."""
         return a.shape if hasattr(a, "shape") else ()
+
+
+@register_op("IndexInDim")
+class IndexInDim(OpDef):
+    """Return elements of an array at specific indices along a given dimension."""
+
+    op_name = "IndexInDim"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("UpdateSlice")
+class UpdateSlice(OpDef):
+    """Update a slice of an array."""
+
+    op_name = "UpdateSlice"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()

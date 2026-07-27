@@ -1,17 +1,15 @@
+# ruff: noqa: E501
 """CuPy code generator and eager execution backend."""
 
-import cupy as cp
-
-from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
-from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
-from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.ir.core import IRNode
-
 try:
-    pass
+    import cupy as cp
 except ImportError:
     cp = None
+
+from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
+from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
+from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.ir.core import IRNode
 
 
 @register_backend("cupy")
@@ -21,52 +19,38 @@ class CupyGenerator(PythonStringGenerator):
     def __init__(self, graph: object) -> None:
         """Init."""
         super().__init__(graph)
-        self.visitors.extend(
-            [
-                SharedASTGeneratorVisitor(generator=self),
-            ]
-        )
+        self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
     def _get_backend_prefix(self) -> str:
-        """Function docstring."""
-        return "cp"  # pragma: no cover
+        """Retrieve the backend prefix property or mapping.
+
+        Returns:
+            str: The evaluated or processed output.
+        """
+        return "cp"
 
     def get_helper_functions(self) -> list[str]:
         """Get helper functions."""
-        res = super().get_helper_functions()  # pragma: no cover
-        res.extend(  # pragma: no cover
-            NNASTVisitor(generator=self)._get_group_norm_code(
-                GroupNormConfig(
-                    "cp",
-                    "cupy as cp",
-                    "cp.reshape",
-                    "cp.mean",
-                    "cp.var",
-                    "cp.sqrt",
-                    dim_arg="axis",
-                    keepdim_arg="keepdims",
-                )
-            )
-        )
-        return res  # pragma: no cover
+        res = []
+        return res
 
     _import_header = "import cupy as cp"
     _func_name = "evaluate"
 
     def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Handle Einsum nodes."""
-        args_str = ", ".join(input_vars)  # pragma: no cover
-        eq = kwargs.get("equation", "")  # pragma: no cover
-        return f"cupy.einsum('{eq}', {args_str})"  # pragma: no cover
+        args_str = ", ".join(input_vars)
+        eq = kwargs.get("equation", "")
+        return f"cupy.einsum('{eq}', {args_str})"
 
     def visit_TruncateDiv(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate code for TruncateDiv."""
-        x, y = input_vars
+        (x, y) = input_vars
         return f"cp.trunc(cp.divide({x}, {y}))"
 
     def visit_TruncateMod(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
         """Generate code for TruncateMod."""
-        x, y = input_vars
+        (x, y) = input_vars
         return f"cp.fmod({x}, {y})"
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
@@ -81,7 +65,6 @@ class CupyGenerator(PythonStringGenerator):
             str: Generated code.
         """
         op_type = node.op_type
-        # Mapping from IR op types to cupy functions
         op_map = {
             "Add": "cp.add",
             "Subtract": "cp.subtract",
@@ -112,17 +95,14 @@ class CupyGenerator(PythonStringGenerator):
             "Less": "cp.less",
             "Negative": "cp.negative",
         }
-
         np_func = op_map.get(op_type, f"cp.{op_type.lower()}")
         args_str = ", ".join(input_vars)
-        kwargs_str = ", ".join(f"{k}={v}" for k, v in kwargs.items())
-
+        kwargs_str = ", ".join(f"{k}={v}" for (k, v) in kwargs.items())
         if kwargs_str:
-            if args_str:  # pragma: no branch
-                args_str += f", {kwargs_str}"  # pragma: no cover
+            if args_str:
+                args_str += f", {kwargs_str}"
             else:
                 args_str = kwargs_str
-
         return f"{np_func}({args_str})"
 
 

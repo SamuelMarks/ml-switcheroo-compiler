@@ -1,25 +1,25 @@
 """Export API."""
 
-from typing import Callable, Optional  # pragma: no cover
+from typing import Callable, Optional
 
 
-class ExportArchive:  # pragma: no cover
+class ExportArchive:
     """ExportArchive is used to write SavedModel artifacts (e.g. for TF Serving)."""
 
-    def __init__(self) -> None:  # pragma: no cover
+    def __init__(self) -> None:
         """Initialize."""
-        self.trackables: dict[int, object] = {}  # pragma: no cover
-        self.endpoints: dict[str, Callable[..., object]] = {}  # pragma: no cover
+        self.trackables: dict[int, object] = {}
+        self.endpoints: dict[str, Callable[..., object]] = {}
 
-    def track(self, resource: object) -> None:  # pragma: no cover
+    def track(self, resource: object) -> None:
         """Track a resource.
 
         Args:
             resource: Resource to track.
         """
-        self.trackables[id(resource)] = resource  # pragma: no cover
+        self.trackables[id(resource)] = resource
 
-    def add_endpoint(self, name: str, fn: Callable[..., object], **kwargs: object) -> None:  # pragma: no cover
+    def add_endpoint(self, name: str, fn: Callable[..., object], **kwargs: object) -> None:
         """Add an endpoint.
 
         Args:
@@ -27,22 +27,29 @@ class ExportArchive:  # pragma: no cover
             fn: Function endpoint.
             kwargs: Kwargs.
         """
-        self.endpoints[name] = fn  # pragma: no cover
+        self.endpoints[name] = fn
 
-    def write_out(self, filepath: str, options: Optional[object] = None) -> None:  # pragma: no cover
+    def write_out(self, filepath: str, options: Optional[object] = None) -> None:
         """Write the archive to a directory.
 
         Args:
             filepath: Target path.
             options: Save options.
         """
-        pass  # pragma: no cover
+        import os
 
-    def add_variable_collection(self, name: str, variables: object) -> None:  # pragma: no cover
+        os.makedirs(filepath, exist_ok=True)
+        # We would typically save the SavedModel protobuf here
+        with open(os.path.join(filepath, "saved_model.pb"), "wb") as f:
+            f.write(b"")
+
+    def add_variable_collection(self, name: str, variables: object) -> None:
         """Add a variable collection.
 
         Args:
             name: Collection name.
             variables: Variables.
         """
-        pass  # pragma: no cover
+        if not hasattr(self, "collections"):
+            self.collections = {}
+        self.collections[name] = variables

@@ -9,7 +9,9 @@ def _broadcast_dim(d1: int, d2: int, shape1: tuple[int, ...], shape2: tuple[int,
         return d2
     if d2 == 1:
         return d1
-    raise ValueError(f"Shapes {shape1} and {shape2} are incompatible.")
+    from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+
+    raise ShapeMismatchError(f"Shapes {shape1} and {shape2} are incompatible.")
 
 
 def broadcast_shapes(shape1: tuple[int, ...], shape2: tuple[int, ...]) -> tuple[int, ...]:

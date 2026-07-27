@@ -1,8 +1,8 @@
 """IR evaluator using the OpRegistry."""
 
+import ast
 import builtins
 
-import numpy as np
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -39,26 +39,69 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, object]) -> dict[str, 
     return outputs
 
 
+def _parse_slice_call(node: ast.Call) -> object:
+    if not isinstance(node.func, ast.Name):
+        return None
+    if node.func.id == "slice":
+        return builtins.slice(*[_parse_slice_node(arg) for arg in node.args])
+    if node.func.id == "array":
+        return _parse_slice_node(node.args[0])
+    return None
+
+
+def _parse_tuple(node: ast.Tuple) -> object:
+    return tuple(_parse_slice_node(elt) for elt in node.elts)
+
+
+def _parse_list(node: ast.List) -> object:
+    return list(_parse_slice_node(elt) for elt in node.elts)
+
+
+def _parse_constant(node: ast.Constant) -> object:
+    return node.value
+
+
+def _parse_name(node: ast.Name) -> object:
+    return {"None": None, "Ellipsis": Ellipsis, "False": False, "True": True}.get(node.id)
+
+
+def _parse_unary(node: ast.UnaryOp) -> object:
+    if isinstance(node.op, ast.USub) and isinstance(node.operand, ast.Constant):
+        return -node.operand.value
+    return None
+
+
+def _parse_slice_node(node: ast.AST) -> object:
+    dispatch = {
+        ast.Tuple: _parse_tuple,
+        ast.List: _parse_list,
+        ast.Constant: _parse_constant,
+        ast.Name: _parse_name,
+        ast.UnaryOp: _parse_unary,
+        ast.Call: _parse_slice_call,
+    }
+    handler = dispatch.get(type(node))
+    if handler:
+        return handler(node)
+    msg = f"Unsupported slice expression node: {type(node)}"
+    raise ValueError(msg)
+
+
+def _parse_slice_string(s: str) -> object:
+    return _parse_slice_node(ast.parse(str(s), mode="eval").body)
+
+
 def _handle_slice(
     node: LogicalNode,
     env: Environment,
     backend: object,
     in_vals: list[object],
     kwargs: dict[str, object],
-) -> None:  # pragma: no cover
-    """Function docstring."""
+) -> None:
+    """Handle slice operations during evaluation."""
     if "slices" in kwargs:
-        parsed_key = eval(
-            kwargs["slices"],
-            {
-                "slice": builtins.slice,
-                "Ellipsis": Ellipsis,
-                "None": None,
-                "np": np,
-                "array": np.array,
-            },
-        )
-        env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+        parsed_key = _parse_slice_string(str(kwargs["slices"]))
+        env.set(node.id, backend.asarray(in_vals[0])[parsed_key])
         return
 
     dim = kwargs.get("dim", 0)
@@ -68,7 +111,7 @@ def _handle_slice(
 
     sl = [builtins.slice(None)] * len(in_vals[0].shape)
     sl[dim] = builtins.slice(start, end, step)
-    env.set(node.id, backend.array(np.array(in_vals[0])[tuple(sl)]))
+    env.set(node.id, backend.asarray(in_vals[0])[tuple(sl)])
 
 
 def _handle_getitem(
@@ -77,33 +120,30 @@ def _handle_getitem(
     backend: object,
     in_vals: list[object],
     kwargs: dict[str, object],
-) -> None:  # pragma: no cover
-    """Function docstring."""
+) -> None:
+    """Handle getitem operations during evaluation."""
     key = kwargs.get("key")
 
-    parsed_key = eval(
-        key,
-        {
-            "slice": builtins.slice,
-            "Ellipsis": Ellipsis,
-            "None": None,
-            "np": np,
-            "array": np.array,
-        },
-    )
-    env.set(node.id, backend.array(np.array(in_vals[0])[parsed_key]))
+    parsed_key = _parse_slice_string(str(key))
+    env.set(node.id, backend.asarray(in_vals[0])[parsed_key])
 
 
 def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None:
-    """Execute _evaluate_node.
+    """Evaluate a single logical node and update the environment.
 
     Args:
-        node (Any): Argument node.
-        env (Any): Argument env.
-        backend (Any): Argument backend.
+        node (LogicalNode): The node to evaluate.
+        env (Environment): The local variable environment.
+        backend (object): The active compute backend.
     """
     if node.op_type == "Input":
         env.get(node.id)
+        return
+
+    if node.op_type == "Output":
+        in_vals = [env.get(inp) for inp in node.inputs]
+        val = in_vals[0] if len(in_vals) == 1 else tuple(in_vals)
+        env.set(node.id, val)
         return
 
     if node.op_type == "Constant":
@@ -114,15 +154,15 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None
     target_op = _get_op_alias(node.op_type)
     kwargs = _prepare_node_kwargs(node, target_op)
 
-    if target_op == "Slice":  # pragma: no cover
+    if target_op == "Slice":
         _handle_slice(node, env, backend, in_vals, kwargs)
         return
 
-    if target_op == "GetItem":  # pragma: no cover
+    if target_op == "GetItem":
         _handle_getitem(node, env, backend, in_vals, kwargs)
         return
 
-    if target_op == "Meshgrid":  # pragma: no cover
+    if target_op == "Meshgrid":
         idx = kwargs.pop("output_index", 0)
         result = backend.execute_op(target_op, *in_vals, **kwargs)
         env.set(node.id, result[idx])
@@ -133,13 +173,13 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None
 
 
 def _get_op_alias(op_type: str) -> str:
-    """Execute _get_op_alias.
+    """Resolve an operation alias to its standardized name.
 
     Args:
-        op_type (Any): Argument op_type.
+        op_type (str): The raw operation name.
 
     Returns:
-    Any: The result.
+        str: The standardized operation name.
     """
     op_alias = {
         "Sub": "Subtract",
@@ -155,14 +195,14 @@ def _get_op_alias(op_type: str) -> str:
 
 
 def _prepare_node_kwargs(node: LogicalNode, target_op: str) -> dict[str, object]:
-    """Execute _prepare_node_kwargs.
+    """Prepare the keyword arguments required for executing a node.
 
     Args:
-        node (Any): Argument node.
-        target_op (Any): Argument target_op.
+        node (LogicalNode): The target node.
+        target_op (str): The resolved operation name.
 
     Returns:
-    Any: The result.
+        dict: A mapping of argument names to values.
     """
     kwargs = {**node.attributes}
     if getattr(node, "shape_metadata", None):

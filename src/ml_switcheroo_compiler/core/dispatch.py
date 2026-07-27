@@ -1,33 +1,38 @@
 """Dispatch utilities for the ml-switcheroo compiler."""
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
-from ml_switcheroo_compiler.core.config import config as core_config  # pragma: no cover
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config as core_config
 
 
-# pragma: no cover
-# pragma: no cover
-def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) -> object:  # pragma: no cover
+def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) -> object:
     """Dynamically dispatch a function to the active backend.
 
-    Args:  # pragma: no cover
-        module_name (str): The name of the backend submodule (e.g., 'lax').  # pragma: no cover
-        func_name (str): The name of the function to execute (e.g., 'abs_p').  # pragma: no cover
-        *args (object): Positional arguments for the function.  # pragma: no cover
-        **kwargs (object): Keyword arguments for the function.  # pragma: no cover
-    # pragma: no cover
-    Returns:  # pragma: no cover
-        object: The result of the function execution.  # pragma: no cover
-    # pragma: no cover
-    Raises:  # pragma: no cover
-        NotImplementedError: If not supported in the active backend or in tracing mode.  # pragma: no cover
-    """  # pragma: no cover
-    if core_config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        if hasattr(backend.module, module_name):  # pragma: no branch  # pragma: no cover
-            submodule = getattr(backend.module, module_name)  # pragma: no cover
-            if hasattr(submodule, func_name):  # pragma: no cover
-                return getattr(submodule, func_name)(*args, **kwargs)  # pragma: no cover
-        raise NotImplementedError(  # pragma: no cover
-            f"{func_name} is not supported in the active backend."  # pragma: no cover
-        )  # pragma: no cover
-    raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")  # pragma: no cover
+    Args:
+        module_name (str): The name of the backend submodule (e.g., 'lax').
+        func_name (str): The name of the function to execute (e.g., 'abs_p').
+        *args (object): Positional arguments for the function.
+        **kwargs (object): Keyword arguments for the function.
+
+    Returns:
+        object: The result of the function execution.
+
+    Raises:
+        ValueError: If not supported in the active backend or in tracing mode.
+    """
+    if core_config.eager_mode:
+        backend = get_active_backend()
+        if hasattr(backend.module, module_name):
+            submodule = getattr(backend.module, module_name)
+            if hasattr(submodule, func_name):
+                return getattr(submodule, func_name)(*args, **kwargs)
+        raise ValueError(f"{func_name} is not supported in the active backend.")
+    from ml_switcheroo_compiler.ops.registry import get_op
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    try:
+        op_def = get_op(func_name)
+        out_shape = op_def.infer_shape(*args, **kwargs)
+    except Exception:
+        out_shape = ()
+    out_dtype = getattr(args[0], "dtype", "float32") if args else "float32"
+    return _emit_shape_node(func_name, list(args), kwargs, out_shape, out_dtype)

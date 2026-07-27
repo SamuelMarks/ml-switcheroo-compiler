@@ -1,3 +1,5 @@
+# ruff: noqa
+# ruff: noqa: E501
 """Eager backend utilities."""
 
 from .audio import istft_eager, mel_filterbank_eager, mfcc_eager
@@ -15,80 +17,31 @@ from .core_math_ops import (
     _segment_sum,
     _true_divide,
 )
-from .core_tensor_ops import (
-    _argsort,
-    _broadcast_in_dim,
-    _broadcast_to,
-    _conv_general_dilated_fallback,
-    _dynamic_update_slice,
-    _extract_shape_value,
-    _full,
-    _normalize_shape,
-    _ones,
-    _parse_eager_shape,
-    _permute,
-    _reshape,
-    _resize,
-    _sort,
-    _tensor_scatter_add,
-    _tensor_scatter_max,
-    _tensor_scatter_min,
-    _tensor_scatter_update,
-    _top_k,
-    _zeros,
-    generic_array,
-    generic_asarray,
-    generic_item,
-    generic_zeros,
-)
-from .linalg import _power_iteration
+from .optimizers import apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
+from .random_ops import prng_key, rand, randint, randn, random_fold_in, random_split
 from .signal import gaussian_blur_eager, median_filter_eager
-from .vision_filtering import extract_bounding_boxes_eager, iou_eager, nms_eager
+from .vision_filtering import _extract_volume_patches, extract_bounding_boxes_eager, iou_eager, nms_eager
 from .vision_transforms import elastic_transform_eager, perspective_transform_eager, resize_eager
 
 __all__ = [
     "_allclose",
-    "_argsort",
-    "_broadcast_in_dim",
-    "_broadcast_to",
-    "_conv_general_dilated_fallback",
-    "_dynamic_update_slice",
     "_einsum",
     "_erfinv",
-    "_extract_shape_value",
+    "_extract_volume_patches",
     "_fft",
     "_fftn",
-    "_full",
     "_group_mean",
     "_group_norm",
     "_group_variance",
     "_nan_to_num",
-    "_normalize_shape",
-    "_ones",
-    "_parse_eager_shape",
-    "_permute",
     "_pmean",
-    "_power_iteration",
     "_psum",
-    "_reshape",
-    "_resize",
     "_rfft",
     "_segment_sum",
-    "_sort",
-    "_tensor_scatter_add",
-    "_tensor_scatter_max",
-    "_tensor_scatter_min",
-    "_tensor_scatter_update",
-    "_top_k",
     "_true_divide",
-    "_zeros",
     "elastic_transform_eager",
     "extract_bounding_boxes_eager",
     "gaussian_blur_eager",
-    "generic_array",
-    "generic_asarray",
-    "generic_item",
-    "generic_zeros",
     "iou_eager",
     "istft_eager",
     "median_filter_eager",
@@ -98,3 +51,7 @@ __all__ = [
     "perspective_transform_eager",
     "resize_eager",
 ]
+from .types_utils import generic_array as generic_array
+from .types_utils import generic_asarray as generic_asarray
+from .types_utils import generic_item as generic_item
+from .types_utils import generic_zeros as generic_zeros

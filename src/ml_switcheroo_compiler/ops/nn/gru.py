@@ -6,27 +6,29 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.nn.activations import sigmoid
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
 from ml_switcheroo_compiler.ops.linalg import matmul
-from ml_switcheroo_compiler.ops.shape import split
+from ml_switcheroo_compiler.ops.shape.splitting import split
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
 def _compute_gru_gates(x_parts: tuple, r_parts: tuple, state: Tensor) -> Tensor:
-    """Function docstring.
+    """Evaluate and process the compute gru gates operation.
 
     Args:
-        x_parts: Arg.
-        r_parts: Arg.
-        state: Arg.
+        x_parts (tuple): Required parameter for x_parts.
+        r_parts (tuple): Required parameter for r_parts.
+        state (Tensor): Required parameter for state.
+
+    Returns:
+        Tensor: The evaluated or processed output.
     """
     x_z, x_r, x_h = x_parts
     recurrent_z, recurrent_r, recurrent_h = r_parts
-    z = sigmoid(add(x_z, recurrent_z))
-    r = sigmoid(add(x_r, recurrent_r))
+    z = _sigmoid(add(x_z, recurrent_z))
+    r = _sigmoid(add(x_r, recurrent_r))
     hh = tanh(add(x_h, multiply(r, recurrent_h)))
     return add(multiply(z, state), multiply(subtract(1.0, z), hh))
 
@@ -73,3 +75,9 @@ def gru(*args: object, **kwargs: object) -> Tensor:
     out_shape = getattr(t_args[0], "shape", ()) if t_args else ()
     out_dtype = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
     return _emit_shape_node("Gru", list(args), kwargs, out_shape, out_dtype)
+
+
+def _sigmoid(x: object) -> object:
+    from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
+
+    return s(x)

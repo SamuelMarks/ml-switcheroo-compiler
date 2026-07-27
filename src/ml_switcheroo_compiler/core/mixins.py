@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 class TensorArithmeticMixin:
     """Arithmetic mixin."""
 
-    """Provides math dunder methods for Tensor."""
-
     def _get_op(self, name: str) -> object:
         """Execute _get_op.
 
@@ -136,7 +134,7 @@ class TensorArithmeticMixin:
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return self._get_op("Power")(other, self)  # pragma: no cover
+        return self._get_op("Power")(other, self)
 
     def __floordiv__(self, other: object) -> "Tensor":
         """Floordiv.

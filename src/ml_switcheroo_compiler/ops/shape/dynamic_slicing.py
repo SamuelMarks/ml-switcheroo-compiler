@@ -34,8 +34,6 @@ def dynamic_slice(
     Returns:
     Tensor: The dynamically sliced tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         starts = []
@@ -74,8 +72,6 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
     Returns:
     Tensor: The updated tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
@@ -128,66 +124,6 @@ class DynamicSlice(OpDef):
         slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)
 
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
 
 @register_op("DynamicUpdateSlice")
 class DynamicUpdateSlice(OpDef):
@@ -214,63 +150,3 @@ class DynamicUpdateSlice(OpDef):
             object: The evaluated output resulting from this operation.
         """
         return getattr(x, "shape", ())
-
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented"

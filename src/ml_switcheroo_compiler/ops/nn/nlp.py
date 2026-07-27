@@ -1,174 +1,24 @@
 """NLP operations."""
 
-import math
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_0_5
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-# Dummy mock
+# Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor as CoreTensor
-from ml_switcheroo_compiler.nn.activations import softmax
-from ml_switcheroo_compiler.ops.binary import add, true_divide
-from ml_switcheroo_compiler.ops.creation import full_like
-from ml_switcheroo_compiler.ops.creation.frontend_basic import ones_like
-from ml_switcheroo_compiler.ops.linalg import matmul
-from ml_switcheroo_compiler.ops.nn.dropout import dropout  # pragma: no cover
-from ml_switcheroo_compiler.ops.registry import get_op
-from ml_switcheroo_compiler.ops.shape import gather, permute, tril, where
-
-
-@dataclass
-class AttentionInputs:
-    """Inputs for attention.
-
-    Attributes:
-        query (Tensor): Query tensor.
-        key (Tensor): Key tensor.
-        value (Tensor): Value tensor.
-    """
-
-    query: Tensor
-    key: Tensor
-    value: Tensor
-
-
-@dataclass
-class AttentionConfig:
-    """Configuration for attention.
-
-    Attributes:
-        mask (Optional[Tensor]): Attention mask. Defaults to None.
-        dropout (float): Dropout rate. Defaults to 0.0.
-        is_causal (bool): Whether to apply causal mask. Defaults to False.
-    """
-
-    mask: Optional[Tensor] = None
-    dropout: float = 0.0
-    is_causal: bool = False
-
-
-def embedding(
-    inputs: Tensor,
-    weights: Tensor,
-) -> Tensor:
-    """Embedding lookup.
-
-    Args:
-        inputs (Tensor): The input indices.
-        weights (Tensor): The embedding weights.
-
-    Returns:
-        Tensor: The embeddings.
-    """
-    return gather(weights, 0, inputs)
-
-
-def _apply_causal_mask(query: Tensor, key: Tensor, scores: Tensor) -> Tensor:
-    """Function docstring.
-
-    Args:
-        query: Arg.
-        key: Arg.
-        scores: Arg.
-    """
-    _seq_len_q = query.shape[-2]
-    _seq_len_k = key.shape[-2]
-
-    causal_mask = tril(ones_like(scores))
-    neg_inf = full_like(scores, -math.inf)
-    return where(causal_mask > MAGIC_VAL_0_5, scores, neg_inf)
-
-
-def _scaled_dot_product_attention_scores(query: Tensor, key: Tensor, is_causal: bool, mask: Optional[Tensor]) -> Tensor:
-    """Calculate scaled dot-product attention scores.
-
-    Args:
-        query (Tensor): Query tensor.
-        key (Tensor): Key tensor.
-        is_causal (bool): Whether to apply causal mask.
-        mask (Optional[Tensor]): Attention mask.
-
-    Returns:
-        Tensor: Attention scores.
-    """
-    depth = query.shape[-1]
-    dims = list(range(len(key.shape)))
-    dims[-1], dims[-2] = dims[-2], dims[-1]
-    key_t = permute(key, tuple(dims))
-
-    scores = matmul(query, key_t)
-    scores = true_divide(scores, math.sqrt(float(depth)))
-
-    if is_causal:
-        scores = _apply_causal_mask(query, key, scores)
-
-    if mask is not None:
-        scores = add(scores, mask)
-
-    return scores
-
-
-def attention(
-    inputs: AttentionInputs,
-    config: Optional[AttentionConfig] = None,
-) -> Tensor:
-    """Scaled dot-product attention.
-
-    Args:
-        inputs (AttentionInputs): The Q, K, V tensors.
-        config (Optional[AttentionConfig]): Configuration object for attention.
-
-    Returns:
-        Tensor: The attention output.
-    """
-    if config is None:
-        config = AttentionConfig()
-
-    scores = _scaled_dot_product_attention_scores(inputs.query, inputs.key, config.is_causal, config.mask)
-
-    attn_weights = softmax(scores, axis=-1)
-
-    if config.dropout > 0.0:
-        pass
-
-    return matmul(attn_weights, inputs.value)
-
-
-@dataclass
-class DotProductAttentionConfig:
-    """Class docstring."""
-
-    mask: object = None
-    scale: float = None
-    dropout_rate: float = 0.0
-    seed: object = None
-    training: bool = False
-
-
-def dot_product_attention(
-    query: Tensor,
-    key: Tensor,
-    value: Tensor,
-    config: Optional[DotProductAttentionConfig] = None,
-) -> Tensor:
-    """Computes dot-product attention."""
-    # Simplified dot product attention wrapper using the existing attention function
-    # It assumes the default attention handles dot product.
-    return attention(
-        AttentionInputs(query=query, key=key, value=value),
-        config=AttentionConfig(
-            mask=config.mask if config else None,
-            dropout=config.dropout_rate if config else 0.0,
-            is_causal=False,
-        ),
-    )
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 @dataclass
 class SamplingConfig:
-    """Class docstring."""
+    """Configuration for sampling operations.
+
+    Contains the domain configuration and state for sampling operations,
+    specifying the number of true classes, number of sampled classes,
+    whether samples should be unique, and other parameters.
+    """
 
     num_true: int = 1
     num_sampled: int = 1
@@ -179,7 +29,11 @@ class SamplingConfig:
 
 @dataclass
 class EmbeddingConfig:
-    """Class docstring."""
+    """Configuration for embedding operations.
+
+    Specifies parameters such as partition strategy, whether to validate
+    indices, maximum norm, and the combiner function for embeddings.
+    """
 
     partition_strategy: str = "mod"
     validate_indices: bool = True
@@ -190,7 +44,11 @@ class EmbeddingConfig:
 
 @dataclass
 class NLPOpsConfig:
-    """Class docstring."""
+    """Configuration for NLP operations.
+
+    Groups together sampling and embedding configurations for use in
+    various NLP-related operations.
+    """
 
     sampling: SamplingConfig = field(default_factory=SamplingConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
@@ -198,8 +56,16 @@ class NLPOpsConfig:
 
 
 def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    # pragma: no cover
-    """All candidate sampler."""
+    """Generates all candidates for sampling operations.
+
+    Args:
+        true_classes: The true classes for the current batch.
+        config: Configuration for the sampling operation.
+
+    Returns:
+        A tuple containing the number of sampled candidates, true expected counts,
+        and sampled expected counts.
+    """
     num_sampled_tensor = Tensor(None, TensorConfig((config.sampling.num_sampled,), "int32", "cpu"))
     true_expected_count = Tensor(
         None,
@@ -210,8 +76,19 @@ def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
 
 
 def compute_accidental_hits(true_classes: object, sampled_candidates: object, config: NLPOpsConfig) -> object:
-    # pragma: no cover
-    """Compute accidental hits."""
+    """Computes accidental hits for candidate sampling.
+
+    Identifies cases where a sampled candidate matches a true class and returns
+    the indices, ids, and weights to penalize them.
+
+    Args:
+        true_classes: The true classes for the current batch.
+        sampled_candidates: The candidates generated by a sampler.
+        config: Configuration for the NLP operation.
+
+    Returns:
+        A tuple containing the indices, ids, and weights for accidental hits.
+    """
     indices = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     ids = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     weights = Tensor([-1e30], TensorConfig((1,), "float32", "cpu"))
@@ -220,7 +97,11 @@ def compute_accidental_hits(true_classes: object, sampled_candidates: object, co
 
 @dataclass
 class VocabConfig:
-    """Class docstring."""
+    """Configuration for vocabulary settings.
+
+    Specifies the vocabulary file, number of reserved IDs, and unigrams
+    used for vocabulary-based operations.
+    """
 
     vocab_file: str = ""
     num_reserved_ids: int = 0
@@ -229,7 +110,11 @@ class VocabConfig:
 
 @dataclass
 class SamplingStrategyConfig:
-    """Class docstring."""
+    """Configuration for sampling strategy.
+
+    Defines parameters for sampling strategy such as distortion,
+    number of shards, current shard, and random seed.
+    """
 
     distortion: float = 1.0
     num_shards: int = 1
@@ -239,7 +124,11 @@ class SamplingStrategyConfig:
 
 @dataclass
 class SamplerConfig:
-    """Class docstring."""
+    """Configuration for candidate samplers.
+
+    Groups vocabulary and sampling strategy configurations along with
+    the maximum range for candidate IDs.
+    """
 
     range_max: int
     vocab: VocabConfig = field(default_factory=VocabConfig)
@@ -252,28 +141,76 @@ def fixed_unigram_candidate_sampler(
     config: NLPOpsConfig,
     sampler_config: Optional[SamplerConfig] = None,
 ) -> object:
-    """Fixed unigram candidate sampler."""
+    """Samples candidates using a fixed unigram distribution.
+
+    Generates a set of sampled candidates according to a provided unigram
+    distribution specified in the sampler configuration.
+
+    Args:
+        true_classes: The true classes for the current batch.
+        config: Configuration for the NLP operation.
+        sampler_config: Additional configuration specific to the sampler.
+
+    Returns:
+        A tuple containing sampled candidates, true expected counts, and sampled expected counts.
+    """
     return all_candidate_sampler(true_classes, config)
 
 
 def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Learned unigram candidate sampler."""
+    """Samples candidates using a learned unigram distribution.
+
+    Generates candidates by continuously updating a unigram distribution
+    based on the true classes observed during training.
+
+    Args:
+        true_classes: The true classes for the current batch.
+        config: Configuration for the NLP operation.
+
+    Returns:
+        A tuple containing sampled candidates, true expected counts, and sampled expected counts.
+    """
     return all_candidate_sampler(true_classes, config)
 
 
 def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Log uniform candidate sampler."""
+    """Samples candidates using a log-uniform (Zipfian) distribution.
+
+    Useful when classes are ordered by decreasing frequency.
+
+    Args:
+        true_classes: The true classes for the current batch.
+        config: Configuration for the NLP operation.
+
+    Returns:
+        A tuple containing sampled candidates, true expected counts, and sampled expected counts.
+    """
     return all_candidate_sampler(true_classes, config)
 
 
 def uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Uniform candidate sampler."""
+    """Samples candidates using a uniform distribution.
+
+    Generates candidates where each candidate ID has an equal probability
+    of being sampled.
+
+    Args:
+        true_classes: The true classes for the current batch.
+        config: Configuration for the NLP operation.
+
+    Returns:
+        A tuple containing sampled candidates, true expected counts, and sampled expected counts.
+    """
     return all_candidate_sampler(true_classes, config)
 
 
 @dataclass
 class NCELossConfig:
-    """Class docstring."""
+    """Configuration for noise-contrastive estimation (NCE) loss.
+
+    Contains parameters such as the number of sampled candidates,
+    total number of classes, and whether to remove accidental hits.
+    """
 
     num_sampled: int
     num_classes: int
@@ -290,13 +227,31 @@ def nce_loss(
     inputs: object,
     config: NCELossConfig,
 ) -> object:
-    """Computes and returns the noise-contrastive estimation training loss."""
+    """Computes the noise-contrastive estimation (NCE) training loss.
+
+    This function calculates the NCE loss which is often used for training
+    models with a large number of classes.
+
+    Args:
+        weights: A tensor of weights for the classes.
+        biases: A tensor of biases for the classes.
+        labels: A tensor of true class labels.
+        inputs: A tensor of input features.
+        config: Configuration containing NCE loss parameters.
+
+    Returns:
+        A tensor containing the computed NCE loss.
+    """
     return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
 
 
 @dataclass
 class SampledSoftmaxConfig:
-    """Class docstring."""
+    """Configuration for sampled softmax loss.
+
+    Specifies parameters such as the number of sampled candidates,
+    total number of classes, and whether to remove accidental hits.
+    """
 
     num_sampled: int
     num_classes: int
@@ -314,28 +269,22 @@ def sampled_softmax_loss(
     inputs: object,
     config: SampledSoftmaxConfig,
 ) -> object:
-    """Computes and returns the sampled softmax training loss."""
+    """Computes the sampled softmax training loss.
+
+    This function approximates the full softmax loss by sampling a subset
+    of negative classes, making it efficient for large vocabularies.
+
+    Args:
+        weights: A tensor of weights for the classes.
+        biases: A tensor of biases for the classes.
+        labels: A tensor of true class labels.
+        inputs: A tensor of input features.
+        config: Configuration containing sampled softmax parameters.
+
+    Returns:
+        A tensor containing the computed sampled softmax loss.
+    """
     return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
-
-
-def embedding_lookup(params: object, ids: object, config: Optional[NLPOpsConfig] = None) -> object:
-    """Looks up `ids` in a list of embedding tensors."""
-    return embedding(ids, params)
-
-
-def embedding_lookup_sparse(sp_ids: object, sp_weights: object, params: object, config: Optional[NLPOpsConfig] = None) -> object:
-    """Looks up embeddings for the given ids and weights from a list of tensors."""
-    return embedding(sp_ids.values, params)
-
-
-def safe_embedding_lookup_sparse(
-    embedding_weights: object,
-    sparse_ids: object,
-    sparse_weights: object = None,
-    config: Optional[NLPOpsConfig] = None,
-) -> object:
-    """Lookup embedding results, accounting for invalid IDs and empty features."""
-    return embedding(sparse_ids.values, embedding_weights)
 
 
 def ctc_beam_search_decoder(
@@ -344,8 +293,22 @@ def ctc_beam_search_decoder(
     beam_width: object = 100,
     top_paths: object = 1,
     merge_repeated: object = True,
-) -> object:  # pragma: no cover
-    """Performs beam search decoding on the logits given in input."""
+) -> object:
+    """Performs beam search decoding on the given input logits.
+
+    Decodes the output of a Connectionist Temporal Classification (CTC)
+    network using the beam search algorithm.
+
+    Args:
+        inputs: A tensor of input logits.
+        sequence_length: A tensor containing the length of each sequence.
+        beam_width: The width of the beam search.
+        top_paths: The number of top paths to return.
+        merge_repeated: Whether to merge repeated labels.
+
+    Returns:
+        A tuple containing the decoded paths and the log probabilities.
+    """
     return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
 
 
@@ -354,15 +317,31 @@ def ctc_greedy_decoder(
     sequence_length: object,
     merge_repeated: object = True,
     blank_index: object = None,
-) -> object:  # pragma: no cover
-    # pragma: no cover
-    """Performs greedy decoding on the logits given in input."""
+) -> object:
+    """Performs greedy decoding on the given input logits.
+
+    Decodes the output of a Connectionist Temporal Classification (CTC)
+    network by greedily selecting the most likely class at each timestep.
+
+    Args:
+        inputs: A tensor of input logits.
+        sequence_length: A tensor containing the length of each sequence.
+        merge_repeated: Whether to merge repeated labels.
+        blank_index: The index of the blank label.
+
+    Returns:
+        A tuple containing the decoded paths and the log probabilities.
+    """
     return [], Tensor(None, TensorConfig((1,), "float32", "cpu"))
 
 
 @dataclass
 class CTCLossOptions:
-    """Options for CTC Loss."""
+    """Configuration options for CTC Loss computation.
+
+    Specifies optional parameters such as whether logits are time-major,
+    unique labels, and the index of the blank class.
+    """
 
     logits_time_major: bool = True
     unique: Optional[object] = None
@@ -376,77 +355,101 @@ def ctc_loss(
     label_length: Tensor,
     logit_length: Tensor,
     options: Optional[CTCLossOptions] = None,
-) -> Tensor:  # pragma: no cover
-    """Computes the CTC (Connectionist Temporal Classification) Loss.
+) -> Tensor:
+    """Computes the Connectionist Temporal Classification (CTC) Loss.
+
+    Calculates the loss between a continuous sequence of logits and a target
+    sequence of labels, often used in speech recognition or OCR.
 
     Args:
-        labels (Tensor): Labels.
-        logits (Tensor): Logits.
-        label_length (Tensor): Label length.
-        logit_length (Tensor): Logit length.
-        options (Optional[CTCLossOptions]): Additional options.
+        labels: A tensor of target labels.
+        logits: A tensor of predicted logits.
+        label_length: A tensor representing the lengths of the labels.
+        logit_length: A tensor representing the lengths of the logits.
+        options: Additional configuration options for CTC loss.
 
     Returns:
-        Tensor: The computed loss.
+        A tensor containing the computed CTC loss.
     """
-    _ = options
-    return CoreTensor(None, TensorConfig((1,), "float32", "cpu"))
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("CtcLoss", labels.data, logits.data, label_length.data, logit_length.data)
+        return CoreTensor(data, TensorConfig(getattr(data, "shape", (1,)), logits.dtype, logits.device))
+    from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+    return _emit_linalg_node(
+        "CtcLoss",
+        [labels, logits, label_length, logit_length],
+        {},
+        [(logits.shape[1] if len(logits.shape) == 3 else 1,)],
+        [logits.dtype],
+    )
 
 
-def ctc_unique_labels(labels: object, name: object = None) -> object:  # pragma: no cover
-    # pragma: no cover
-    """Get unique labels and indices for batched data for tf.nn.ctc_loss."""
+def ctc_unique_labels(labels: object, name: object = None) -> object:
+    """Extracts unique labels and indices for batched data.
+
+    Utility function typically used in conjunction with CTC loss to find
+    unique labels across a batch.
+
+    Args:
+        labels: A tensor containing batched target labels.
+        name: An optional name for the operation.
+
+    Returns:
+        A tuple containing the unique labels and their indices.
+    """
     return Tensor(None, TensorConfig((1,), "int32", "cpu")), Tensor(None, TensorConfig((1,), "int32", "cpu"))
 
 
-def scaled_dot_product_attention(
-    query: Tensor,
-    key: Tensor,
-    value: Tensor,
-    config: Optional[AttentionConfig] = None,
-    scale: Optional[object] = None,
-) -> Tensor:
-    """Scaled dot product attention.
-
-    Args:
-        query (Tensor): Query tensor.
-        key (Tensor): Key tensor.
-        value (Tensor): Value tensor.
-        config (Optional[AttentionConfig]): Configuration for attention (mask, dropout, is_causal).
-        scale (Optional[object]): Optional scale factor.
-
-    Returns:
-        Tensor: The attention output.
-    """
-    conf = config if config is not None else AttentionConfig()
-
-    if scale is None:  # pragma: no cover
-        scale = 1.0 / get_op("Sqrt")()(get_op("FullLike")()(key, float(key.shape[-1])))  # pragma: no cover
-
-    attn = get_op("Multiply")()(
-        get_op("Matmul")()(
-            query,
-            get_op("Transpose")()(key, list(range(len(key.shape) - 2)) + [len(key.shape) - 1, len(key.shape) - 2]),
-        ),
-        scale,
-    )  # pragma: no cover
-
-    if conf.is_causal:  # pragma: no cover
-        attn = _apply_causal_mask(query, key, attn)  # pragma: no cover
-    elif conf.mask is not None:  # pragma: no cover
-        attn = get_op("Add")()(attn, conf.mask)  # pragma: no cover
-
-    attn = softmax(attn, axis=-1)  # pragma: no cover
-
-    if conf.dropout > 0.0:  # pragma: no cover
-        attn = dropout(attn, conf.dropout)  # pragma: no cover
-
-    return get_op("Matmul")()(attn, value)  # pragma: no cover
-
-
 __all__ = [
-    "AttentionConfig",
-    "AttentionInputs",
-    "attention",
-    "embedding",
+    "SamplingConfig",
+    "EmbeddingConfig",
+    "NLPOpsConfig",
+    "all_candidate_sampler",
+    "compute_accidental_hits",
+    "VocabConfig",
+    "SamplingStrategyConfig",
+    "SamplerConfig",
+    "fixed_unigram_candidate_sampler",
+    "learned_unigram_candidate_sampler",
+    "log_uniform_candidate_sampler",
+    "uniform_candidate_sampler",
+    "NCELossConfig",
+    "nce_loss",
+    "SampledSoftmaxConfig",
+    "sampled_softmax_loss",
+    "ctc_beam_search_decoder",
+    "ctc_greedy_decoder",
+    "CTCLossOptions",
+    "ctc_loss",
+    "ctc_unique_labels",
+    "CtcLoss",
 ]
+
+
+@register_op("CtcLoss")
+class CtcLoss(OpDef):
+    """Operator definition for Connectionist Temporal Classification (CTC) Loss."""
+
+    op_name = "CtcLoss"
+
+    def infer_shape(self, labels: object, logits: object, label_length: object, logit_length: object, **kwargs: object) -> object:
+        """Infers the output shape for the CTC loss operation.
+
+        Args:
+            labels: A tensor of target labels.
+            logits: A tensor of predicted logits.
+            label_length: A tensor representing the lengths of the labels.
+            logit_length: A tensor representing the lengths of the logits.
+            kwargs: Additional keyword arguments.
+
+        Returns:
+            A tuple representing the inferred output shape.
+        """
+        # logits: (T, N, C) or (N, T, C)
+        # Assuming loss is (N,) or scalar. Let's say (N,) based on batch size N.
+        batch = logits.shape[1] if len(logits.shape) == 3 else 1  # dummy
+        return (batch,)

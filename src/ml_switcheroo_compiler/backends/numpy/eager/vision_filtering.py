@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Shared vision utilities and ops."""
 
 from ml_switcheroo_compiler.backends.eager import median_filter_eager
@@ -8,28 +9,30 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 @numpy_eager_registry.register("Degeneration")
 def _np_degeneration(backend_module: object, images: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the degeneration logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        images: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        images (object): Required parameter for images.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     return images
 
 
 @numpy_eager_registry.register("GaussianBlur")
-def _np_gaussian_blur(
-    backend_module: object,
-    images: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring.
+def _np_gaussian_blur(backend_module: object, images: object, **kwargs: object) -> object:
+    """Evaluate the gaussian blur logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        images: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        images (object): Required parameter for images.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     config_obj = kwargs.get("config", kwargs)
     if isinstance(config_obj, dict):
@@ -38,34 +41,35 @@ def _np_gaussian_blur(
             sigma=config_obj.get("sigma", (1.0, 1.0)),
             data_format=config_obj.get("data_format", None),
         )
-
     return gaussian_blur_eager(backend_module, images, config_obj)
 
 
 @numpy_eager_registry.register("MedianFilter")
-def _np_median_filter(
-    backend_module: object,
-    images: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring.
+def _np_median_filter(backend_module: object, images: object, **kwargs: object) -> object:
+    """Evaluate the median filter logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        images: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        images (object): Required parameter for images.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     return median_filter_eager(backend_module, images, **kwargs)
 
 
 @numpy_eager_registry.register("Sharpen")
 def _np_sharpen(backend_module: object, images: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the sharpen logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        images: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        images (object): Required parameter for images.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     return images
 

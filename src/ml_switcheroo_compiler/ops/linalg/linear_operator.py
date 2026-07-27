@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for linear_operator.py."""
 
 from __future__ import annotations
 
@@ -6,124 +6,167 @@ from __future__ import annotations
 class LinearOperator:
     """LinearOperator mock."""
 
-    pass
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs
 
 
 class LinearOperatorAdjoint(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator adjoint."""
 
-    pass
+    def __init__(self, operator: LinearOperator, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(operator=operator, **kwargs)
 
 
 class LinearOperatorBlockDiag(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator block diag."""
 
-    pass
+    def __init__(self, operators: list[LinearOperator], **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(operators=operators, **kwargs)
 
 
 class LinearOperatorBlockLowerTriangular(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator block lower triangular."""
 
-    pass
+    def __init__(self, operators: list[list[LinearOperator]], **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(operators=operators, **kwargs)
 
 
 class LinearOperatorCirculant(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator circulant."""
 
-    pass
+    def __init__(self, spectrum: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(spectrum=spectrum, **kwargs)
 
 
 class LinearOperatorCirculant2D(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator circulant2 d."""
 
-    pass
+    def __init__(self, spectrum: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(spectrum=spectrum, **kwargs)
 
 
 class LinearOperatorCirculant3D(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator circulant3 d."""
 
-    pass
+    def __init__(self, spectrum: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(spectrum=spectrum, **kwargs)
 
 
 class LinearOperatorComposition(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator composition."""
 
-    pass
+    def __init__(self, operators: list[LinearOperator], **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(operators=operators, **kwargs)
 
 
 class LinearOperatorDiag(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator diag."""
 
-    pass
+    def __init__(self, diag: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(diag=diag, **kwargs)
 
 
 class LinearOperatorFullMatrix(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator full matrix."""
 
-    pass
+    def __init__(self, matrix: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(matrix=matrix, **kwargs)
 
 
 class LinearOperatorHouseholder(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator householder."""
 
-    pass
+    def __init__(self, reflection_axis: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(reflection_axis=reflection_axis, **kwargs)
 
 
 class LinearOperatorIdentity(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator identity."""
 
-    pass
+    def __init__(self, num_rows: int, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(num_rows=num_rows, **kwargs)
 
 
 class LinearOperatorInversion(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator inversion."""
 
-    pass
+    def __init__(self, operator: LinearOperator, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(operator=operator, **kwargs)
 
 
 class LinearOperatorKronecker(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator kronecker."""
 
-    pass
+    def __init__(self, operators: list[LinearOperator], **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(operators=operators, **kwargs)
 
 
 class LinearOperatorLowRankUpdate(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator low rank update."""
 
-    pass
+    def __init__(self, base_operator: LinearOperator, u: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(base_operator=base_operator, u=u, **kwargs)
 
 
 class LinearOperatorLowerTriangular(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator lower triangular."""
 
-    pass
+    def __init__(self, tril: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(tril=tril, **kwargs)
 
 
 class LinearOperatorPermutation(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator permutation."""
 
-    pass
+    def __init__(self, perm: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(perm=perm, **kwargs)
 
 
 class LinearOperatorScaledIdentity(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator scaled identity."""
 
-    pass
+    def __init__(self, num_rows: int, multiplier: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(num_rows=num_rows, multiplier=multiplier, **kwargs)
 
 
 class LinearOperatorToeplitz(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator toeplitz."""
 
-    pass
+    def __init__(self, col: object, row: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(col=col, row=row, **kwargs)
 
 
 class LinearOperatorTridiag(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator tridiag."""
 
-    pass
+    def __init__(self, diagonals: object, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(diagonals=diagonals, **kwargs)
 
 
 class LinearOperatorZeros(LinearOperator):
-    """Class docstring."""
+    """Configuration class for linear operator zeros."""
 
-    pass
+    def __init__(self, num_rows: int, num_cols: int, **kwargs: object) -> None:
+        """Initialize."""
+        super().__init__(num_rows=num_rows, num_cols=num_cols, **kwargs)

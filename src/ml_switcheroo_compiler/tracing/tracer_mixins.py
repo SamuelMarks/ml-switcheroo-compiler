@@ -1,0 +1,259 @@
+"""Mixins for Tracer."""
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+
+import uuid
+
+from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+
+class ProxyMathOverloadsMixin:
+    """Math Overloads Mixin."""
+
+    def _binary_op(self, other: object, op_type: str) -> "ProxyTensor":
+        """Help with binary operations.
+
+        Args:
+            other (Any): The right-hand side operand
+            op_type (str): The ONNX operation type (e.g., 'Add')
+
+        Returns:
+            ProxyTensor: A tensor containing the result of the operation.
+        """
+        if not global_tracing_state.is_tracing:
+            msg = f"Cannot perform {op_type} outside of a tracing context."
+            from ml_switcheroo_compiler.core.errors import TracingError
+
+            raise TracingError(
+                msg,
+            )
+
+        other_id = getattr(other, "id", None)
+        other_shape = getattr(other, "shape", ())
+
+        # Broadcast shapes
+        from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
+
+        out_shape = broadcast_shapes(self.shape, other_shape)
+        out_dtype = self.dtype
+
+        if other_id is None:
+            # Constant scalar logic would wrap 'other' in a Constant node
+            other_id = str(uuid.uuid4())
+
+            from ml_switcheroo_compiler.ir.core import IRNode
+
+            const_node = IRNode(
+                id=other_id,
+                op_type="Constant",
+                attributes={"value": other},
+                shape_metadata=(),
+            )
+            global_tracing_state.add_node(const_node)
+
+        out_id = str(uuid.uuid4())
+
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        node = IRNode(
+            id=out_id,
+            op_type=op_type,
+            inputs=[self.id, other_id],
+            shape_metadata=out_shape,
+        )
+        global_tracing_state.add_node(node)
+
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+
+    def _unary_op(self, op_type: str) -> "ProxyTensor":
+        """Evaluate unary op.
+
+        Args:
+            op_type (str): Argument op_type
+
+        Returns:
+            'ProxyTensor': The inferred shape or computed result
+        """
+        if not global_tracing_state.is_tracing:
+            msg = f"Cannot perform {op_type} outside of a tracing context."
+            from ml_switcheroo_compiler.core.errors import TracingError
+
+            raise TracingError(
+                msg,
+            )
+
+        out_id = str(uuid.uuid4())
+
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        node = IRNode(
+            id=out_id,
+            op_type=op_type,
+            inputs=[self.id],
+            shape_metadata=self.shape,
+        )
+        global_tracing_state.add_node(node)
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
+
+    def __getitem__(self, key: object) -> "ProxyTensor":
+        """Evaluate getitem.
+
+        Args:
+            key (object): Argument key
+
+        Returns:
+            'ProxyTensor': The inferred shape or computed result
+        """
+        if not global_tracing_state.is_tracing:
+            msg = "Cannot perform Slice outside of a tracing context."
+            from ml_switcheroo_compiler.core.errors import TracingError
+
+            raise TracingError(msg)
+
+        out_id = str(uuid.uuid4())
+        # Note: True shape tracking for slices is complex and often deferred to
+        # shape inference passes in the pass manager. We approximate it here
+
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        node = IRNode(
+            id=out_id,
+            op_type="Slice",
+            inputs=[self.id],
+            attributes={"slices": str(key)},
+            shape_metadata=self.shape,
+        )
+        global_tracing_state.add_node(node)
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
+
+    def __matmul__(self, other: object) -> "ProxyTensor":
+        """Matrix multiplication.
+
+        Args:
+            other (object): The other parameter for the operation.
+
+        Returns:
+            ProxyTensor: A tensor containing the result of the operation.
+        """
+        if not global_tracing_state.is_tracing:
+            msg = "Cannot perform MatMul outside of a tracing context."
+            from ml_switcheroo_compiler.core.errors import TracingError
+
+            raise TracingError(msg)
+
+        other_id = getattr(other, "id", None)
+        if other_id is None:
+            msg = "MatMul right hand side must be a ProxyTensor."
+            raise ValueError(msg)
+
+        other_shape = getattr(other, "shape", ())
+
+        from ml_switcheroo_compiler.ir.shape_system import matmul_shape
+
+        out_shape = matmul_shape(self.shape, other_shape)
+        out_dtype = self.dtype
+
+        out_id = str(uuid.uuid4())
+
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        node = IRNode(
+            id=out_id,
+            op_type="MatMul",
+            inputs=[self.id, other_id],
+            shape_metadata=out_shape,
+        )
+        global_tracing_state.add_node(node)
+
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
+
+    def assign(self, value: "ProxyTensor") -> "ProxyTensor":
+        """Assign a new value to a variable proxy.
+
+        Args:
+            value (ProxyTensor): The new value to assign
+
+        Returns:
+            ProxyTensor: A proxy tensor representing the updated variable
+        """
+        if not global_tracing_state.is_tracing:
+            msg = "Cannot perform assign outside of a tracing context."
+            from ml_switcheroo_compiler.core.errors import TracingError
+
+            raise TracingError(msg)
+
+        node = global_tracing_state.active_graph.nodes.get(self.id)
+        if node is None or node.op_type not in ("ReadVariable", "AssignVariable"):
+            msg = "assign() can only be called on a variable proxy."
+            raise ValueError(msg)
+
+        var_name = node.attributes.get("variable_name")
+
+        # Constant wrapping if not a proxy tensor
+        value_id = getattr(value, "id", None)
+        value_shape = getattr(value, "shape", ())
+        value_dtype = getattr(value, "dtype", self.dtype)
+
+        if value_id is None:
+            value_id = str(uuid.uuid4())
+
+            from ml_switcheroo_compiler.ir.core import IRNode
+
+            const_node = IRNode(
+                id=value_id,
+                op_type="Constant",
+                attributes={"value": value},
+                shape_metadata=(),
+            )
+            global_tracing_state.add_node(const_node)
+
+        out_id = str(uuid.uuid4())
+
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        assign_node = IRNode(
+            id=out_id,
+            op_type="AssignVariable",
+            inputs=[value_id],
+            attributes={"variable_name": var_name},
+            shape_metadata=value_shape,
+        )
+        global_tracing_state.add_node(assign_node)
+
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        return ProxyTensor(id=out_id, shape=value_shape, dtype=value_dtype)
+
+    def assign_add(self, value: "ProxyTensor") -> "ProxyTensor":
+        """Add value to variable proxy and return updated proxy.
+
+        Args:
+            value (ProxyTensor): The value to add
+
+        Returns:
+            ProxyTensor: A proxy tensor representing the updated variable
+        """
+        return self.assign(self + value)
+
+    def assign_sub(self, value: "ProxyTensor") -> "ProxyTensor":
+        """Subtract value from variable proxy and return updated proxy.
+
+        Args:
+            value (ProxyTensor): The value to subtract
+
+        Returns:
+            ProxyTensor: A proxy tensor representing the updated variable
+        """
+        return self.assign(self - value)

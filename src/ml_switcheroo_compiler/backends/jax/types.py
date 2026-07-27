@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Backend utilities."""
 
 import jax.numpy as jnp

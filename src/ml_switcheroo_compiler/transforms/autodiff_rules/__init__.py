@@ -1,15 +1,35 @@
 """Autodiff rules registry."""
 
-from ml_switcheroo_compiler.transforms.autodiff_rules import binary_rules as binary_rules
-from ml_switcheroo_compiler.transforms.autodiff_rules import linalg_rules as linalg_rules
-from ml_switcheroo_compiler.transforms.autodiff_rules import reduction_rules as reduction_rules
-from ml_switcheroo_compiler.transforms.autodiff_rules import shape_rules as shape_rules
-from ml_switcheroo_compiler.transforms.autodiff_rules import unary_rules as unary_rules
+from ml_switcheroo_compiler.transforms.autodiff_rules import (
+    binary_division_rules,
+    binary_math_rules,
+    binary_special_rules,
+    binary_trig_rules,
+    custom_rules,
+    nn_extra_rules,
+    reduction_rules,
+    shape_creation_rules,
+    shape_misc_rules,
+    shape_shape_rules,
+    signal_rules,
+    unary_math_rules,
+    unary_misc_rules,
+    unary_nn_rules,
+)
 
 __all__ = [
-    "binary_rules",
-    "linalg_rules",
+    "binary_division_rules",
+    "binary_math_rules",
+    "binary_special_rules",
+    "binary_trig_rules",
+    "custom_rules",
+    "nn_extra_rules",
     "reduction_rules",
-    "shape_rules",
-    "unary_rules",
+    "shape_creation_rules",
+    "shape_misc_rules",
+    "shape_shape_rules",
+    "signal_rules",
+    "unary_math_rules",
+    "unary_misc_rules",
+    "unary_nn_rules",
 ]

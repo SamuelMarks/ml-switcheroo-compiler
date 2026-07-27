@@ -31,6 +31,18 @@ class Bitcast(Cast):
     """An operation that bitcasts an input array to a specified data type without copying."""
 
 
+@register_op("CanCast")
+class CanCast(OpDef):
+    """CanCast operation."""
+
+    op_name = "CanCast"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # CanCast returns a boolean scalar
+        return ()
+
+
 @register_op("Frexp")
 class Frexp(OpDef):
     """An operation that decomposes a floating-point array into mantissa and exponent."""
@@ -253,3 +265,31 @@ class Spence(UnaryMathOp):
     """Spence operation."""
 
     op_name = "Spence"
+
+
+@register_op("ModifiedBesselI0")
+class ModifiedBesselI0(UnaryMathOp):
+    """ModifiedBesselI0 operation."""
+
+    op_name = "ModifiedBesselI0"
+
+
+@register_op("ModifiedBesselI1")
+class ModifiedBesselI1(UnaryMathOp):
+    """ModifiedBesselI1 operation."""
+
+    op_name = "ModifiedBesselI1"
+
+
+@register_op("ModifiedBesselK0")
+class ModifiedBesselK0(UnaryMathOp):
+    """ModifiedBesselK0 operation."""
+
+    op_name = "ModifiedBesselK0"
+
+
+@register_op("ModifiedBesselK1")
+class ModifiedBesselK1(UnaryMathOp):
+    """ModifiedBesselK1 operation."""
+
+    op_name = "ModifiedBesselK1"

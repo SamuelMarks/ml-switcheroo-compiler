@@ -13,14 +13,32 @@ from ml_switcheroo_compiler.ops.vmap import vmap
 
 
 def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:
-    """Docstring."""
+    """Evaluate and process the cond eager operation.
+
+    Args:
+        pred (Tensor): Required parameter for pred.
+        true_fn (Callable): Required parameter for true_fn.
+        false_fn (Callable): Required parameter for false_fn.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     if bool(pred.data):
         return true_fn()
     return false_fn()
 
 
 def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object) -> object:
-    """Docstring."""
+    """Evaluate and process the while loop eager operation.
+
+    Args:
+        cond_fn (Callable): Required parameter for cond_fn.
+        body_fn (Callable): Required parameter for body_fn.
+        init_val (object): Required parameter for init_val.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     val = init_val
     res = cond_fn(val)
     while bool(res.data if hasattr(res, "data") else res):
@@ -31,7 +49,16 @@ def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], 
 
 
 def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
-    """Docstring."""
+    """Evaluate and process the stack scan outputs operation.
+
+    Args:
+        ys (list): Required parameter for ys.
+        init (object): Required parameter for init.
+        last_y (object): Required parameter for last_y.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     if len(ys) > 0 and isinstance(ys[0], tuple):
         stacked_ys = get_active_backend().execute_op("Stack", ys)
         return Tensor(
@@ -51,7 +78,17 @@ def _stack_scan_outputs(ys: list, init: object, last_y: object) -> Tensor:
 
 
 def scan_eager(f: Callable, init: object, xs: object, length: int | None = None) -> tuple[object, object]:
-    """Docstring."""
+    """Evaluate and process the scan eager operation.
+
+    Args:
+        f (Callable): Required parameter for f.
+        init (object): Required parameter for init.
+        xs (object): Required parameter for xs.
+        length (Any): Required parameter for length.
+
+    Returns:
+        tuple: The evaluated or processed output.
+    """
     carry = init
     ys = []
     scan_length = length if length is not None else (xs.shape[0] if xs is not None else 0)
@@ -65,12 +102,28 @@ def scan_eager(f: Callable, init: object, xs: object, length: int | None = None)
 
 
 def _map_fn_eager_get_length(elems: Tensor) -> int:
-    """Function docstring."""
+    """Evaluate and process the map fn eager get length operation.
+
+    Args:
+        elems (Tensor): Required parameter for elems.
+
+    Returns:
+        int: The evaluated or processed output.
+    """
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
 
 def _map_fn_eager_execute(fn: Callable, elems: Tensor, length: int) -> list[Any]:
-    """Function docstring."""
+    """Evaluate and process the map fn eager execute operation.
+
+    Args:
+        fn (Callable): Required parameter for fn.
+        elems (Tensor): Required parameter for elems.
+        length (int): Required parameter for length.
+
+    Returns:
+        list: The evaluated or processed output.
+    """
     ys = []
     for i in range(length):
         x = Tensor(elems.data[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
@@ -80,7 +133,16 @@ def _map_fn_eager_execute(fn: Callable, elems: Tensor, length: int) -> list[Any]
 
 
 def _map_fn_eager_stack(ys: list[Any], elems: Tensor, dtype: DType | None) -> Tensor:
-    """Function docstring."""
+    """Evaluate and process the map fn eager stack operation.
+
+    Args:
+        ys (list): Required parameter for ys.
+        elems (Tensor): Required parameter for elems.
+        dtype (Any): Required parameter for dtype.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     if len(ys) > 0 and isinstance(ys[0], tuple):
         stacked_ys = get_active_backend().execute_op("Stack", ys)
         return Tensor(stacked_ys, TensorConfig(stacked_ys.shape, elems.dtype, elems.device))
@@ -91,20 +153,40 @@ def _map_fn_eager_stack(ys: list[Any], elems: Tensor, dtype: DType | None) -> Te
 
 
 def map_fn_eager(fn: Callable, elems: Tensor, dtype: DType | None = None) -> Tensor:
-    """Docstring."""
+    """Evaluate and process the map fn eager operation.
+
+    Args:
+        fn (Callable): Required parameter for fn.
+        elems (Tensor): Required parameter for elems.
+        dtype (Any): Required parameter for dtype.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     length = _map_fn_eager_get_length(elems)
     ys = _map_fn_eager_execute(fn, elems, length)
     return _map_fn_eager_stack(ys, elems, dtype)
 
 
 def pmap_eager(func: Callable, axis_name: str | None = None) -> Callable:
-    """Docstring."""
+    """Evaluate and process the pmap eager operation.
+
+    Args:
+        func (Callable): Required parameter for func.
+        axis_name (Any): Required parameter for axis_name.
+
+    Returns:
+        Callable: The evaluated or processed output.
+    """
 
     def wrapped(*args: object) -> object:
-        """Function docstring.
+        """Evaluate and process the wrapped operation.
 
         Args:
-        args: Arg.
+            *args (Any): Variable positional arguments.
+
+        Returns:
+            object: The evaluated or processed output.
         """
         return vmap(func)(*args)
 
@@ -112,10 +194,25 @@ def pmap_eager(func: Callable, axis_name: str | None = None) -> Callable:
 
 
 def stop_gradient_eager(x: object) -> object:
-    """Docstring."""
+    """Evaluate and process the stop gradient eager operation.
+
+    Args:
+        x (object): Required parameter for x.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     return x
 
 
 def assert_value_eager(condition: object, message: str = "") -> None:
-    """Docstring."""
+    """Evaluate and process the assert value eager operation.
+
+    Args:
+        condition (object): Required parameter for condition.
+        message (str): Required parameter for message.
+
+    Returns:
+        Any: The evaluated or processed output.
+    """
     record_assertion(condition, message)

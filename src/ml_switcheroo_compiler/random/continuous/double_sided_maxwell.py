@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for double_sided_maxwell.py."""
 
 from __future__ import annotations
 

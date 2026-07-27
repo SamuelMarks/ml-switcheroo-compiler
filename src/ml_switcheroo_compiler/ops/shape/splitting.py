@@ -216,15 +216,28 @@ def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         backend = get_active_backend()
         datas = backend.execute_op("Vsplit", ary.data, indices_or_sections)
         return tuple(Tensor(d, TensorConfig(d.shape, ary.dtype, ary.device)) for d in datas)
-    return (
-        _emit_shape_node(
-            "Vsplit",
-            [ary],
-            {"indices_or_sections": indices_or_sections},
-            ary.shape,
-            ary.dtype,
-        ),
-    )
+
+    num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
+    node = _emit_shape_node("Vsplit", [ary], {"indices_or_sections": indices_or_sections}, ary.shape, ary.dtype)
+    out_tensors = []
+
+    # Calculate output shapes
+    out_shapes = []
+    if isinstance(indices_or_sections, int):
+        s = list(ary.shape)
+        if len(s) > 0:
+            s[0] = s[0] // indices_or_sections
+        out_shapes = [tuple(s)] * num_splits
+    else:
+        # Just approximate
+        out_shapes = [ary.shape] * num_splits
+
+    for i in range(num_splits):
+        item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
+        item_node._shape = out_shapes[i]
+        item_node.config = TensorConfig(out_shapes[i], item_node.dtype, item_node.device)
+        out_tensors.append(item_node)
+    return tuple(out_tensors)
 
 
 def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
@@ -242,15 +255,26 @@ def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         backend = get_active_backend()
         datas = backend.execute_op("Hsplit", ary.data, indices_or_sections)
         return tuple(Tensor(d, TensorConfig(d.shape, ary.dtype, ary.device)) for d in datas)
-    return (
-        _emit_shape_node(
-            "Hsplit",
-            [ary],
-            {"indices_or_sections": indices_or_sections},
-            ary.shape,
-            ary.dtype,
-        ),
-    )
+
+    num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
+    node = _emit_shape_node("Hsplit", [ary], {"indices_or_sections": indices_or_sections}, ary.shape, ary.dtype)
+    out_tensors = []
+
+    out_shapes = []
+    if isinstance(indices_or_sections, int):
+        s = list(ary.shape)
+        if len(s) > 1:
+            s[1] = s[1] // indices_or_sections
+        out_shapes = [tuple(s)] * num_splits
+    else:
+        out_shapes = [ary.shape] * num_splits
+
+    for i in range(num_splits):
+        item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
+        item_node._shape = out_shapes[i]
+        item_node.config = TensorConfig(out_shapes[i], item_node.dtype, item_node.device)
+        out_tensors.append(item_node)
+    return tuple(out_tensors)
 
 
 def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
@@ -268,15 +292,26 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         backend = get_active_backend()
         datas = backend.execute_op("Dsplit", ary.data, indices_or_sections)
         return tuple(Tensor(d, TensorConfig(d.shape, ary.dtype, ary.device)) for d in datas)
-    return (
-        _emit_shape_node(
-            "Dsplit",
-            [ary],
-            {"indices_or_sections": indices_or_sections},
-            ary.shape,
-            ary.dtype,
-        ),
-    )
+
+    num_splits = len(indices_or_sections) + 1 if not isinstance(indices_or_sections, int) else indices_or_sections
+    node = _emit_shape_node("Dsplit", [ary], {"indices_or_sections": indices_or_sections}, ary.shape, ary.dtype)
+    out_tensors = []
+
+    out_shapes = []
+    if isinstance(indices_or_sections, int):
+        s = list(ary.shape)
+        if len(s) > 2:
+            s[2] = s[2] // indices_or_sections
+        out_shapes = [tuple(s)] * num_splits
+    else:
+        out_shapes = [ary.shape] * num_splits
+
+    for i in range(num_splits):
+        item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
+        item_node._shape = out_shapes[i]
+        item_node.config = TensorConfig(out_shapes[i], item_node.dtype, item_node.device)
+        out_tensors.append(item_node)
+    return tuple(out_tensors)
 
 
 @register_op("GetItem")
@@ -290,3 +325,14 @@ class GetItemOp(OpDef):
 
 
 old_split = split
+
+
+@register_op("Unstack")
+class Unstack(OpDef):
+    """Unstack op for shape inference."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape for Unstack."""
+        input_shape = args[0].shape
+        dim = kwargs.get("axis", kwargs.get("dim", 0))
+        return tuple([input_shape[:dim] + input_shape[dim + 1 :]] * input_shape[dim])

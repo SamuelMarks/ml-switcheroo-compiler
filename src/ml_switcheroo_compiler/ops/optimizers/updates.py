@@ -1,4 +1,7 @@
-"""Functional optimizer updates."""
+# ruff: noqa
+"""Implementations of functional optimizer update steps for various algorithms."""
+
+from typing import Optional
 
 from dataclasses import dataclass
 
@@ -9,8 +12,51 @@ from ml_switcheroo_compiler.ops.unary import sign, sqrt, square
 
 
 @dataclass
+class SGDConfig:
+    """Configuration settings for the Stochastic Gradient Descent (SGD) optimizer."""
+
+    lr: float
+    momentum: float = 0.0
+    dampening: float = 0.0
+    weight_decay: float = 0.0
+    nesterov: bool = False
+
+
+@dataclass
+class AdagradConfig:
+    """Configuration settings for the Adagrad optimization algorithm."""
+
+    lr: float
+    lr_decay: float = 0.0
+    weight_decay: float = 0.0
+    initial_accumulator_value: float = 0.0
+    eps: float = 1e-10
+    step: int = 1
+
+
+@dataclass
+class AdadeltaConfig:
+    """Configuration parameters for the Adadelta optimization algorithm."""
+
+    lr: float = 1.0
+    rho: float = 0.9
+    eps: float = 1e-6
+    weight_decay: float = 0.0
+
+
+@dataclass
+class LionConfig:
+    """Configuration parameters for the Lion optimization algorithm."""
+
+    lr: float
+    beta1: float = 0.9
+    beta2: float = 0.99
+    weight_decay: float = 0.0
+
+
+@dataclass
 class AdamHyperparams:
-    """Class docstring."""
+    """Hyperparameters and configuration state for the Adam optimization algorithm."""
 
     lr: float
     beta1: float = 0.9
@@ -22,7 +68,7 @@ class AdamHyperparams:
 
 @dataclass
 class AdamWHyperparams:
-    """Class docstring."""
+    """Hyperparameters and configuration state for the AdamW optimization algorithm."""
 
     lr: float
     beta1: float = 0.9
@@ -34,7 +80,7 @@ class AdamWHyperparams:
 
 @dataclass
 class RMSPropHyperparams:
-    """Class docstring."""
+    """Hyperparameters and configuration state for the RMSprop optimization algorithm."""
 
     lr: float
     alpha: float = 0.99
@@ -46,7 +92,7 @@ class RMSPropHyperparams:
 
 @dataclass
 class AdamaxHyperparams:
-    """Class docstring."""
+    """Hyperparameters and configuration state for the Adamax optimization algorithm."""
 
     lr: float
     beta1: float = 0.9
@@ -59,25 +105,31 @@ class AdamaxHyperparams:
 def sgd_update(
     param: Tensor,
     grad: Tensor,
-    lr: float,
-    momentum: float = 0.0,
-    dampening: float = 0.0,
-    nesterov: bool = False,
-    weight_decay: float = 0.0,
-    state: dict[str, Tensor] = None,
+    config: SGDConfig,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional SGD update."""
+    """Applies a functional Stochastic Gradient Descent (SGD) update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        config: The configuration settings for the SGD optimizer.
+        state: The optimizer state dictionary containing moving averages. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
-    lr_t = lr
-    if weight_decay != 0.0:
-        wd_t = weight_decay
+    lr_t = config.lr
+    if config.weight_decay != 0.0:
+        wd_t = config.weight_decay
         grad = add(grad, multiply(param, wd_t))
 
-    if momentum != 0.0:
-        mom_t = momentum
-        damp_t = 1.0 - dampening
+    if config.momentum != 0.0:
+        mom_t = config.momentum
+        damp_t = 1.0 - config.dampening
 
         if "momentum_buffer" not in state:
             buf = grad
@@ -87,7 +139,7 @@ def sgd_update(
 
         state["momentum_buffer"] = buf
 
-        if nesterov:
+        if config.nesterov:
             grad = add(grad, multiply(buf, mom_t))
         else:
             grad = buf
@@ -100,9 +152,19 @@ def adam_update(
     param: Tensor,
     grad: Tensor,
     hp: AdamHyperparams,
-    state: dict[str, Tensor] = None,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional Adam update."""
+    """Applies a functional Adam optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        hp: The hyperparameters and configuration for the Adam optimizer.
+        state: The optimizer state dictionary containing moving averages. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
@@ -144,9 +206,19 @@ def adamw_update(
     param: Tensor,
     grad: Tensor,
     hp: AdamWHyperparams,
-    state: dict[str, Tensor] = None,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional AdamW update."""
+    """Applies a functional AdamW optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        hp: The hyperparameters and configuration for the AdamW optimizer.
+        state: The optimizer state dictionary containing moving averages. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
@@ -185,26 +257,32 @@ def adamw_update(
 def adagrad_update(
     param: Tensor,
     grad: Tensor,
-    lr: float,
-    lr_decay: float = 0.0,
-    weight_decay: float = 0.0,
-    eps: float = 1e-10,
-    step: int = 1,
-    state: dict[str, Tensor] = None,
+    config: AdagradConfig,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional Adagrad update."""
+    """Applies a functional Adagrad optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        config: The configuration settings for the Adagrad optimizer.
+        state: The optimizer state dictionary containing the sum of squared gradients. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
-    if weight_decay != 0.0:
-        wd_t = weight_decay
+    if config.weight_decay != 0.0:
+        wd_t = config.weight_decay
         grad = add(grad, multiply(param, wd_t))
 
-    clr = lr / (1 + (step - 1) * lr_decay)
+    clr = config.lr / (1 + (config.step - 1) * config.lr_decay)
     clr_t = clr
-    eps_t = eps
+    eps_t = config.eps
 
-    sum_sq = state.get("sum", 0.0)
+    sum_sq = state.get("sum", config.initial_accumulator_value)
     sum_sq = add(sum_sq, square(grad))
     state["sum"] = sum_sq
 
@@ -219,9 +297,19 @@ def rmsprop_update(
     param: Tensor,
     grad: Tensor,
     hp: RMSPropHyperparams,
-    state: dict[str, Tensor] = None,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional RMSprop update."""
+    """Applies a functional RMSprop optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        hp: The hyperparameters and configuration for the RMSprop optimizer.
+        state: The optimizer state dictionary containing moving averages. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
@@ -262,24 +350,31 @@ def rmsprop_update(
 def adadelta_update(
     param: Tensor,
     grad: Tensor,
-    lr: float = 1.0,
-    rho: float = 0.9,
-    eps: float = 1e-6,
-    weight_decay: float = 0.0,
-    state: dict[str, Tensor] = None,
+    config: AdadeltaConfig,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional AdaDelta update."""
+    """Applies a functional Adadelta optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        config: The configuration settings for the Adadelta optimizer.
+        state: The optimizer state dictionary containing moving averages. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
-    if weight_decay != 0.0:
-        wd_t = weight_decay
+    if config.weight_decay != 0.0:
+        wd_t = config.weight_decay
         grad = add(grad, multiply(param, wd_t))
 
-    rho_t = rho
-    one_minus_rho = 1.0 - rho
-    eps_t = eps
-    lr_t = lr
+    rho_t = config.rho
+    one_minus_rho = 1.0 - config.rho
+    eps_t = config.eps
+    lr_t = config.lr
 
     square_avg = state.get("square_avg", 0.0)
     acc_delta = state.get("acc_delta", 0.0)
@@ -301,9 +396,19 @@ def adamax_update(
     param: Tensor,
     grad: Tensor,
     hp: AdamaxHyperparams,
-    state: dict[str, Tensor] = None,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional Adamax update."""
+    """Applies a functional Adamax optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        hp: The hyperparameters and configuration for the Adamax optimizer.
+        state: The optimizer state dictionary containing moving averages and maximums. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
@@ -337,24 +442,31 @@ def adamax_update(
 def lion_update(
     param: Tensor,
     grad: Tensor,
-    lr: float,
-    beta1: float = 0.9,
-    beta2: float = 0.99,
-    weight_decay: float = 0.0,
-    state: dict[str, Tensor] = None,
+    config: LionConfig,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional Lion update."""
+    """Applies a functional Lion optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        config: The configuration settings for the Lion optimizer.
+        state: The optimizer state dictionary containing exponential moving averages. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
-    if weight_decay != 0.0:
-        param = multiply(param, 1.0 - lr * weight_decay)
+    if config.weight_decay != 0.0:
+        param = multiply(param, 1.0 - config.lr * config.weight_decay)
 
-    b1_t = beta1
-    b2_t = beta2
-    one_minus_b1 = 1.0 - beta1
-    one_minus_b2 = 1.0 - beta2
-    lr_t = lr
+    b1_t = config.beta1
+    b2_t = config.beta2
+    one_minus_b1 = 1.0 - config.beta1
+    one_minus_b2 = 1.0 - config.beta2
+    lr_t = config.lr
 
     exp_avg = state.get("exp_avg", 0.0)
 
@@ -372,9 +484,19 @@ def adafactor_update(
     param: Tensor,
     grad: Tensor,
     lr: float,
-    state: dict[str, Tensor] = None,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional Adafactor update."""
+    """Applies a functional Adafactor optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        lr: The learning rate for the update step.
+        state: The optimizer state dictionary. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
@@ -389,9 +511,20 @@ def muon_update(
     grad: Tensor,
     lr: float,
     momentum: float = 0.95,
-    state: dict[str, Tensor] = None,
+    state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Functional Muon update."""
+    """Applies a functional Muon optimization update to a parameter.
+
+    Args:
+        param: The current parameter tensor to be updated.
+        grad: The gradient tensor with respect to the parameter.
+        lr: The learning rate for the update step.
+        momentum: The momentum factor for the update. Defaults to 0.95.
+        state: The optimizer state dictionary. Defaults to None.
+
+    Returns:
+        A tuple containing the updated parameter tensor and the updated state dictionary.
+    """
     if state is None:
         state = {}
 
@@ -399,3 +532,112 @@ def muon_update(
     # Muon uses Newton-Schulz iteration
     new_param = subtract(param, multiply(grad, lr))
     return new_param, state
+
+
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+
+@register_op("ApplyAdam")
+class ApplyAdam(OpDef):
+    """Apply Adam optimizer step."""
+
+    op_name = "ApplyAdam"
+
+    def infer_shape(self, param: object, m: object, v: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(param, "shape", ())
+
+
+@register_op("ApplyAdagrad")
+class ApplyAdagrad(OpDef):
+    """Apply Adagrad optimizer step."""
+
+    op_name = "ApplyAdagrad"
+
+    def infer_shape(self, param: object, accum: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(param, "shape", ())
+
+
+@register_op("ApplyFtrl")
+class ApplyFtrl(OpDef):
+    """Apply FTRL optimizer step."""
+
+    op_name = "ApplyFtrl"
+
+    def infer_shape(self, param: object, accum: object, linear: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(param, "shape", ())
+
+
+@register_op("ApplyRMSProp")
+class ApplyRMSProp(OpDef):
+    """Apply RMSProp optimizer step."""
+
+    op_name = "ApplyRMSProp"
+
+    def infer_shape(self, param: object, ms: object, mom: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(param, "shape", ())
+
+
+def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
+    """Apply Adam update."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("ApplyAdam", param, m, v, grad, lr=lr)
+    # fallback shape node
+    out = _emit_shape_node("ApplyAdam", [param, m, v, grad], {"lr": lr}, param.shape, param.dtype)
+    return out, m, v
+
+
+def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor]:
+    """Apply Adagrad update."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("ApplyAdagrad", param, accum, grad, lr=lr)
+    out = _emit_shape_node("ApplyAdagrad", [param, accum, grad], {"lr": lr}, param.shape, param.dtype)
+    return out, accum
+
+
+def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
+    """Apply FTRL update."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("ApplyFtrl", param, accum, linear, grad, lr=lr)
+    out = _emit_shape_node("ApplyFtrl", [param, accum, linear, grad], {"lr": lr}, param.shape, param.dtype)
+    return out, accum, linear
+
+
+def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
+    """Apply RMSProp update."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        return backend.execute_op("ApplyRMSProp", param, ms, mom, grad, lr=lr)
+    out = _emit_shape_node("ApplyRMSProp", [param, ms, mom, grad], {"lr": lr}, param.shape, param.dtype)
+    return out, ms, mom
+
+
+@register_op("LionConfig")
+class LionConfigOp(OpDef):
+    """LionConfig operation."""
+
+    op_name = "LionConfig"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())
+
+
+@register_op("AdamaxHyperparams")
+class AdamaxHyperparamsOp(OpDef):
+    """AdamaxHyperparams operation."""
+
+    op_name = "AdamaxHyperparams"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())

@@ -86,6 +86,11 @@ def constant_folding_pass(graph: IRGraph) -> bool:
                 continue
             except (ValueError, TypeError, RuntimeError):
                 pass
+            except Exception as e:
+                if type(e).__name__ == "UnimplementedMathError":
+                    pass
+                else:
+                    raise
 
         id_map[node.id] = node.id
 

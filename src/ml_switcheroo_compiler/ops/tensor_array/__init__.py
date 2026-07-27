@@ -5,7 +5,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 @register_op("TensorArrayRead")
 class TensorArrayRead(OpDef):
-    """TensorArrayRead operation."""
+    """Tensor array read."""
 
     op_name = "TensorArrayRead"
 
@@ -17,18 +17,18 @@ class TensorArrayRead(OpDef):
 
 @register_op("TensorArrayWrite")
 class TensorArrayWrite(OpDef):
-    """TensorArrayWrite operation."""
+    """Tensor array write."""
 
     op_name = "TensorArrayWrite"
 
     def infer_shape(self, handle: object, index: object, value: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()  # pragma: no cover
+        return ()
 
 
 @register_op("TensorArrayStack")
 class TensorArrayStack(OpDef):
-    """TensorArrayStack operation."""
+    """Tensor array stack."""
 
     op_name = "TensorArrayStack"
 
@@ -37,8 +37,8 @@ class TensorArrayStack(OpDef):
         # Adds a dimension
         elem_shape = getattr(handle, "element_shape", ())
         size = getattr(handle, "size", None)
-        if size is not None and isinstance(size, int):  # pragma: no branch
-            return (size,) + elem_shape  # pragma: no cover
+        if size is not None and isinstance(size, int):
+            return (size,) + elem_shape
         return (None,) + elem_shape
 
 

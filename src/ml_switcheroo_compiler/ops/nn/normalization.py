@@ -4,13 +4,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Optional, Union
 
-# Dummy mock
+# Base logic implementation
 from ml_switcheroo_compiler.core.tensor import (
     Tensor,
-    TensorConfig,  # pragma: no cover
+    TensorConfig,
 )
-from ml_switcheroo_compiler.ops import (  # pragma: no cover
-    maximum,  # pragma: no cover
+from ml_switcheroo_compiler.ops import (
+    maximum,
     multiply,
     true_divide,
 )
@@ -20,11 +20,11 @@ from ml_switcheroo_compiler.ops.creation import full_like
 from ml_switcheroo_compiler.ops.reductions import (
     mean,
     reduce_window,
-    sum,  # pragma: no cover
-    variance,  # pragma: no cover
+    sum,
+    variance,
 )
-from ml_switcheroo_compiler.ops.shape import reshape
-from ml_switcheroo_compiler.ops.unary import sqrt  # pragma: no cover
+from ml_switcheroo_compiler.ops.shape.frontend import reshape
+from ml_switcheroo_compiler.ops.unary import sqrt
 
 
 @dataclass
@@ -66,24 +66,12 @@ def local_response_normalization(
     return divide(operand, power(denom, full_like(operand, beta)))
 
 
-# pragma: no cover
-
-# pragma: no cover
-
-
-# pragma: no cover
 def batch_normalization(
-    # pragma: no cover
     x: Tensor,
-    # pragma: no cover
     mean: Tensor,
-    # pragma: no cover
     variance: Tensor,
-    # pragma: no cover
     axis: Union[int, Sequence[int]],
-    # pragma: no cover
     config: Optional[BatchNormConfig] = None,
-    # pragma: no cover
 ) -> Tensor:
     """Batch normalization.
 
@@ -106,9 +94,9 @@ def batch_normalization(
     x_minus_mean = subtract(x, mean)
     normalized_x = divide(x_minus_mean, stddev)
 
-    if conf.scale is not None:  # pragma: no branch
+    if conf.scale is not None:
         normalized_x = multiply(normalized_x, conf.scale)
-    if conf.offset is not None:  # pragma: no branch
+    if conf.offset is not None:
         normalized_x = add(normalized_x, conf.offset)
 
     return normalized_x
@@ -139,72 +127,147 @@ def rms_normalization(
     return multiply(normalized, scale)
 
 
+@dataclass
+class BatchNormGlobalConfig:
+    """Configuration for batch_norm_with_global_normalization."""
+
+    variance_epsilon: float = 1e-5
+    scale_after_normalization: bool = True
+    name: object = None
+
+
 def batch_norm_with_global_normalization(
     t: object,
     m: object,
     v: object,
     beta: object,
     gamma: object,
-    variance_epsilon: object,
-    scale_after_normalization: object,
-    name: object = None,
+    **kwargs: object,
 ) -> object:
     """Batch normalization with global normalization."""
-    return batch_normalization(  # pragma: no cover
+    config = kwargs.get("config", BatchNormGlobalConfig())
+    bn_config = BatchNormConfig(
+        offset=beta,
+        scale=gamma if config.scale_after_normalization else None,
+        epsilon=config.variance_epsilon,
+    )
+    return batch_normalization(
         t,
         m,
         v,
-        offset=beta,
-        scale=gamma if scale_after_normalization else None,
-        variance_epsilon=variance_epsilon,
+        axis=-1,  # Default to last axis if not provided
+        config=bn_config,
     )
 
 
 def lrn(input: object, config: LRNConfig = None, name: object = None) -> object:
-    """Function docstring."""
+    """Evaluate and process the lrn operation.
+
+    Args:
+        input (object): Required parameter for input.
+        config (LRNConfig): Required parameter for config.
+        name (object): Required parameter for name.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     config = config or LRNConfig()
     depth_radius = config.depth_radius
     bias = config.bias
     alpha = config.alpha
     beta = config.beta
-    # pragma: no cover
+
     """Local Response Normalization."""
 
-    # pragma: no cover
-    return local_response_normalization(input, depth_radius, bias, alpha, beta)  # pragma: no cover
+    return local_response_normalization(input, depth_radius, bias, alpha, beta)
 
 
 def l2_normalize(x: object, axis: object = None, epsilon: object = 1e-12, name: object = None, dim: object = None) -> object:
-    # pragma: no cover
     """Normalizes along dimension axis using an L2 norm."""
-    # pragma: no cover
-    square_sum = sum(multiply(x, x), axis=axis or dim, keepdims=True)  # pragma: no cover
-    x_inv_norm = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))  # pragma: no cover
-    return multiply(x, x_inv_norm)  # pragma: no cover
+    square_sum = sum(multiply(x, x), axis=axis or dim, keepdims=True)
+    x_inv_norm = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))
+    return multiply(x, x_inv_norm)
 
 
 def moments(x: object, axes: object, shift: object = None, keepdims: object = False, name: object = None) -> object:
-    # pragma: no cover
     """Calculate the mean and variance of x."""
-    # pragma: no cover
-    return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)  # pragma: no cover
+    return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
 
 def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shift: object, name: object = None) -> object:
-    # pragma: no cover
     """Calculate the mean and variance of based on the sufficient statistics."""
-    # pragma: no cover
-    return Tensor(None, TensorConfig(counts.shape, "float32", "cpu")), Tensor(  # pragma: no cover
-        None, TensorConfig(counts.shape, "float32", "cpu")
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        return get_active_backend().execute_op("NormalizeMoments", counts, mean_ss, variance_ss, shift, name=name)
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+    out_id_mean = str(uuid.uuid4())
+    out_id_variance = str(uuid.uuid4())
+
+    node = LogicalNode(
+        id=out_id_mean,
+        op_type="NormalizeMoments",
+        inputs=[getattr(counts, "id", counts), getattr(mean_ss, "id", mean_ss), getattr(variance_ss, "id", variance_ss), getattr(shift, "id", shift)],
+        attributes={"name": name, "secondary_id": out_id_variance},
+        shape_metadata=getattr(counts, "shape", ()),
+    )
+    global_tracing_state.add_node(node)
+
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
+
+    return (
+        Tensor(proxy_mean, TensorConfig(getattr(counts, "shape", ()), getattr(counts, "dtype", "float32"), "cpu")),
+        Tensor(proxy_variance, TensorConfig(getattr(counts, "shape", ()), getattr(counts, "dtype", "float32"), "cpu")),
     )
 
 
 def sufficient_statistics(x: object, axes: object, shift: object = None, keepdims: object = False, name: object = None) -> object:
-    # pragma: no cover
     """Calculate the sufficient statistics for the mean and variance of x."""
-    # pragma: no cover
-    dummy = Tensor(None, TensorConfig(x.shape, "float32", "cpu"))  # pragma: no cover
-    return dummy, dummy, dummy, dummy  # pragma: no cover
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        return get_active_backend().execute_op("SufficientStatistics", x, axes, shift=shift, keepdims=keepdims, name=name)
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+    out_id_counts = str(uuid.uuid4())
+    out_id_mean_ss = str(uuid.uuid4())
+    out_id_variance_ss = str(uuid.uuid4())
+    out_id_shift = str(uuid.uuid4())
+
+    node = LogicalNode(
+        id=out_id_counts,
+        op_type="SufficientStatistics",
+        inputs=[getattr(x, "id", x), getattr(axes, "id", axes)],
+        attributes={"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]},
+        shape_metadata=getattr(x, "shape", ()),
+    )
+    global_tracing_state.add_node(node)
+
+    config_tensor = TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")
+    return (
+        Tensor(ProxyTensor(id=out_id_counts, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32")), config_tensor),
+        Tensor(ProxyTensor(id=out_id_mean_ss, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32")), config_tensor),
+        Tensor(ProxyTensor(id=out_id_variance_ss, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32")), config_tensor),
+        Tensor(ProxyTensor(id=out_id_shift, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32")), config_tensor),
+    )
 
 
 def weighted_moments(
@@ -214,19 +277,45 @@ def weighted_moments(
     name: object = None,
     keepdims: object = False,
 ) -> object:
-    # pragma: no cover
     """Returns the frequency-weighted mean and variance of x."""
-    # pragma: no cover
-    return Tensor(None, TensorConfig(x.shape, "float32", "cpu")), Tensor(  # pragma: no cover
-        None, TensorConfig(x.shape, "float32", "cpu")
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        return get_active_backend().execute_op("WeightedMoments", x, axes, frequency_weights, name=name, keepdims=keepdims)
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+    from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+    out_id_mean = str(uuid.uuid4())
+    out_id_variance = str(uuid.uuid4())
+
+    node = LogicalNode(
+        id=out_id_mean,
+        op_type="WeightedMoments",
+        inputs=[getattr(x, "id", x), getattr(axes, "id", axes), getattr(frequency_weights, "id", frequency_weights)],
+        attributes={"name": name, "keepdims": keepdims, "secondary_id": out_id_variance},
+        shape_metadata=getattr(x, "shape", ()),
+    )
+    global_tracing_state.add_node(node)
+
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
+
+    return (
+        Tensor(proxy_mean, TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")),
+        Tensor(proxy_variance, TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")),
     )
 
 
 def zero_fraction(value: object, name: object = None) -> object:
-    # pragma: no cover
     """Returns the fraction of zeros in value."""
-    # pragma: no cover
-    return Tensor(0.0, TensorConfig((), "float32", "cpu"))  # pragma: no cover
+    return Tensor(0.0, TensorConfig((), "float32", "cpu"))
 
 
 def layer_norm(

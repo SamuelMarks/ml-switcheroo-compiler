@@ -1,13 +1,13 @@
-"""Module docstring."""
+# ruff: noqa: E501
+"""Core abstractions and logic definitions for generator.py."""
 
 import os
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
-from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
+from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.registry import register_backend
 
-from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchScatterVisitor
+from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor
 
 
 class PyTorchVisionVisitor:
@@ -37,10 +37,19 @@ class PyTorchVisionVisitor:
     }
 
     def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Visit."""
-        op_type = getattr(node, "op_type", "")  # pragma: no cover
-        handler = self._handlers.get(op_type)  # pragma: no cover
-        return handler(input_vars) if handler else ""  # pragma: no cover
+        """Process a vision operation node and produce corresponding PyTorch code.
+
+        Args:
+            node (object): The IR node representing the vision operation to process.
+            input_vars (list[str]): The names of the variables used as inputs for the operation.
+            **kwargs (object): Additional keyword arguments representing operation attributes.
+
+        Returns:
+            str: The generated PyTorch code for the given node.
+        """
+        op_type = getattr(node, "op_type", "")
+        handler = self._handlers.get(op_type)
+        return handler(input_vars) if handler else ""
 
 
 class PyTorchAudioVisitor:
@@ -54,76 +63,138 @@ class PyTorchAudioVisitor:
     }
 
     def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Visit."""
-        op_type = getattr(node, "op_type", "")  # pragma: no cover
-        handler = self._handlers.get(op_type)  # pragma: no cover
-        return handler(input_vars) if handler else ""  # pragma: no cover
+        """Process an audio operation node and produce corresponding PyTorch code.
+
+        Args:
+            node (object): The IR node representing the audio operation to process.
+            input_vars (list[str]): The names of the variables used as inputs for the operation.
+            **kwargs (object): Additional keyword arguments representing operation attributes.
+
+        Returns:
+            str: The generated PyTorch code for the given node.
+        """
+        op_type = getattr(node, "op_type", "")
+        handler = self._handlers.get(op_type)
+        return handler(input_vars) if handler else ""
 
 
 @register_backend("pytorch")
-class PyTorchCodeGenerator(
-    ClassBasedGenerator,
-):
+class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerator):
     """PyTorch code generator."""
 
     def __init__(self, graph: object) -> None:
-        """Init."""
+        """Initialize the PyTorch code generator with the given computation graph.
+
+        Args:
+            graph (object): The computation graph to compile.
+        """
         super().__init__(graph)
         self.vision_visitor = PyTorchVisionVisitor()
         self.audio_visitor = PyTorchAudioVisitor()
-        self.visitors.extend(
-            [
-                SharedASTGeneratorVisitor(generator=self),
-                PyTorchScatterVisitor(),
-                PyTorchDistributedVisitor(),
-            ]
-        )
+        self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor(), PyTorchDistributedVisitor()])
 
     def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Visit."""
+        """Process an IR node and produce the corresponding PyTorch code string.
+
+        Args:
+            node (object): The IR node representing the operation.
+            input_vars (list[str]): The names of the input variables for the operation.
+            **kwargs (object): Additional attributes and parameters for the operation.
+
+        Returns:
+            str: The generated PyTorch code string.
+        """
         op_type = getattr(node, "op_type", "")
         if op_type in self.vision_visitor.handled_ops:
-            return self.vision_visitor.visit(node, input_vars, **kwargs)  # pragma: no cover
+            return self.vision_visitor.visit(node, input_vars, **kwargs)
         if op_type in self.audio_visitor.handled_ops:
-            return self.audio_visitor.visit(node, input_vars, **kwargs)  # pragma: no cover
+            return self.audio_visitor.visit(node, input_vars, **kwargs)
         return super().visit(node, input_vars, **kwargs)
 
     def _get_backend_prefix(self) -> str:
-        """Function docstring."""
-        return "pt"  # pragma: no cover
+        """Retrieve the short prefix used for backend-specific variables and namespaces.
 
-    """Emit PyTorch-compatible code from IR."""
+        Returns:
+            str: The backend prefix string ("pt" for PyTorch).
+        """
+        return "pt"
 
     def visit_PowerIteration(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate power iteration."""
+        """Generate PyTorch code for a power iteration operation.
+
+        Args:
+            node (object): The IR node representing the power iteration.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional arguments such as iteration counts.
+
+        Returns:
+            str: The generated PyTorch code for power iteration.
+        """
         num_iters = node.attributes.get("num_iters", 1)
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"pt_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
     def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate RaggedDot."""
+        """Generate PyTorch code for a ragged dot product operation.
+
+        Args:
+            node (object): The IR node representing the ragged dot.
+            input_vars (list[str]): The names of the input matrices.
+            **kwargs (object): Additional operation attributes.
+
+        Returns:
+            str: The generated PyTorch code for the ragged dot operation.
+        """
         return f"pt_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Handle Einsum nodes."""
-        args_str = ", ".join(input_vars)  # pragma: no cover
-        eq = kwargs.get("equation", "")  # pragma: no cover
-        return f"torch.einsum('{eq}', {args_str})"  # pragma: no cover
+        """Generate PyTorch code for an Einstein summation operation.
+
+        Args:
+            node (object): The IR node representing the einsum operation.
+            input_vars (list[str]): The input variable names.
+            **kwargs (object): Additional parameters, including the equation string.
+
+        Returns:
+            str: The generated PyTorch code using torch.einsum.
+        """
+        args_str = ", ".join(input_vars)
+        eq = kwargs.get("equation", "")
+        return f"torch.einsum('{eq}', {args_str})"
 
     def get_fallback_prefix(self) -> str:
-        """Get the fallback prefix for generic operations."""
+        """Retrieve the fallback library prefix used for missing generic operations.
+
+        Returns:
+            str: The fallback prefix string ("torch").
+        """
         return "torch"
 
     def get_fallback_axis_kwarg(self) -> str:
-        """Get the fallback axis keyword argument name."""
+        """Retrieve the keyword argument name used for specifying dimensions.
+
+        Returns:
+            str: The axis keyword argument name ("dim").
+        """
         return "dim"
 
     def get_fallback_keepdims_kwarg(self) -> str:
-        """Get the fallback keepdims keyword argument name."""
+        """Retrieve the keyword argument name used for keeping dimensions.
+
+        Returns:
+            str: The keepdims keyword argument name ("keepdim").
+        """
         return "keepdim"
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Provide a dictionary mapping math operations to their PyTorch code templates.
+
+        Args:
+            kwargs (dict): Parameters dictionary to evaluate operation templates.
+
+        Returns:
+            dict[str, str]: The dictionary of math operation templates.
+        """
         return {
             "TruncateDiv": "torch.trunc({0} / {1})",
             "TruncateMod": "torch.fmod({0}, {1})",
@@ -139,72 +210,15 @@ class PyTorchCodeGenerator(
             "NanToNum": "torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})",
         }
 
-    def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
-        return {
-            "Matmul": "torch.matmul({0}, {1})",
-            "Trace": "tf.linalg.trace",
-            "Adjoint": "tf.linalg.adjoint",
-            "BandPart": "tf.linalg.band_part",
-            "CholeskySolve": "tf.linalg.cholesky_solve",
-            "Dot": "torch.dot({0}, {1})",
-            "Fftnd": "torch.fft.fftn({0})",
-            "Ifftnd": "torch.fft.ifftn({0})",
-            "Rfftnd": "torch.fft.rfftn({0})",
-            "Irfftnd": "torch.fft.irfftn({0})",
-            "Fftshift": "torch.fft.fftshift({0})",
-            "Ifftshift": "torch.fft.ifftshift({0})",
-            "Fft": "torch.fft.fft({0})",
-            "Rfft": "torch.fft.rfft({0})",
-            "Fftn": "torch.fft.fftn({0})",
-            "Cholesky": "torch.linalg.cholesky({0})",
-            "Svd": "torch.linalg.svd({0})",
-            "Qr": "torch.linalg.qr({0})",
-            "Inv": "torch.linalg.inv({0})",
-            "Pinv": "torch.linalg.pinv({0})",
-            "Det": "torch.linalg.det({0})",
-            "Slogdet": "torch.linalg.slogdet({0})",
-            "Eigh": "torch.linalg.eigh({0})",
-            "Eigvalsh": "torch.linalg.eigvalsh({0})",
-            "MatrixPower": "torch.linalg.matrix_power({0}, {n})",
-            "Solve": "torch.linalg.solve({0}, {1})",
-            "TriInv": "torch.linalg.inv({0})",
-            "TriangularSolve": "torch.linalg.solve_triangular({0}, {1}, upper=not {lower}, unitriangular={unit_diagonal})",
-            "Lu": "torch.linalg.lu({0})",
-            "LuFactor": "torch.linalg.lu_factor({0})",
-            "LuSolve": "torch.linalg.lu_solve({0}, {1}, {2})",
-            "Norm": "torch.linalg.norm({0}, ord={ord}, dim={axis}, keepdim={keepdims})",
-            "MatrixExponential": "torch.linalg.matrix_exp({0})",
-            "Cross": "torch.cross({0}, {1}, dim={axis})",
-        }
-
-    def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
-        return {
-            "Relu": "torch.nn.functional.relu({0})",
-            "Relu6": "torch.nn.functional.relu6({0})",
-            "LeakyRelu": "torch.nn.functional.leaky_relu({0}, negative_slope={alpha})",
-            "Elu": "torch.nn.functional.elu({0})",
-            "Selu": "torch.nn.functional.selu({0})",
-            "Gelu": "torch.nn.functional.gelu({0}, approximate='tanh' if {approximate} else 'none')",
-            "Sigmoid": "torch.sigmoid({0})",
-            "Softmax": "torch.nn.functional.softmax({0}, dim={axis})",
-            "LogSoftmax": "torch.nn.functional.log_softmax({0}, dim={axis})",
-            "Softplus": "torch.nn.functional.softplus({0})",
-            "Softsign": "torch.nn.functional.softsign({0})",
-            "Conv1D": "torch.nn.functional.conv1d({0}, {1}, stride={stride}, padding='{padding}'.lower())",
-            "Conv2D": "torch.nn.functional.conv2d({0}, {1}, stride={strides}, padding='{padding}'.lower())",
-            "Conv3D": "torch.nn.functional.conv3d({0}, {1}, stride={strides}, padding='{padding}'.lower())",
-            "MaxPool1D": "torch.nn.functional.max_pool1d({0}, kernel_size={ksize}, stride={strides}, padding='{padding}'.lower())",
-            "MaxPool2D": "torch.nn.functional.max_pool2d({0}, kernel_size={ksize}, stride={strides}, padding='{padding}'.lower())",
-            "MaxPool3D": "torch.nn.functional.max_pool3d({0}, kernel_size={ksize}, stride={strides}, padding='{padding}'.lower())",
-            "AvgPool1D": "torch.nn.functional.avg_pool1d({0}, kernel_size={ksize}, stride={strides}, padding='{padding}'.lower())",
-            "AvgPool2D": "torch.nn.functional.avg_pool2d({0}, kernel_size={ksize}, stride={strides}, padding='{padding}'.lower())",
-            "AvgPool3D": "torch.nn.functional.avg_pool3d({0}, kernel_size={ksize}, stride={strides}, padding='{padding}'.lower())",
-        }
-
     def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Provide a dictionary mapping tensor creation operations to PyTorch templates.
+
+        Args:
+            kwargs (dict): Parameters dictionary used for evaluating creation logic.
+
+        Returns:
+            dict[str, str]: The dictionary of creation operation templates.
+        """
         return {
             "Arange": "torch.arange({0})",
             "Zeros": "torch.zeros({shape})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
@@ -213,7 +227,14 @@ class PyTorchCodeGenerator(
         }
 
     def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Provide a dictionary mapping array operations to PyTorch code templates.
+
+        Args:
+            kwargs (dict): The parameters dictionary required for shaping the templates.
+
+        Returns:
+            dict[str, str]: The dictionary mapping operations to PyTorch strings.
+        """
         return {
             "BroadcastTo": "{0}.expand({shape})",
             "Reshape": "torch.reshape({0}, {shape})",
@@ -256,16 +277,15 @@ class PyTorchCodeGenerator(
         }
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Execute get_ops_map.
+        """Retrieve the complete dictionary mapping all supported operations to PyTorch code templates.
 
         Args:
-            kwargs (Any): Argument kwargs.
+            kwargs (dict): The keyword arguments dict for resolving dynamic parameters.
 
         Returns:
-            Dictionary mapping operation type to format string.
+            dict[str, str]: A dictionary mapping operation type names to format strings.
         """
         ops = super().get_ops_map(kwargs)
-
         ops["Beta"] = "torch.distributions.beta.Beta({1}, {2}).sample({shape})"
         ops["Dirichlet"] = "torch.distributions.dirichlet.Dirichlet({1}).sample({shape})"
         ops["Gamma"] = "torch.distributions.gamma.Gamma({1}, 1.0).sample({shape})"
@@ -274,44 +294,46 @@ class PyTorchCodeGenerator(
         ops["Infeed"] = "{0}"
         ops["Outfeed"] = "{0}"
         ops["AxisIndex"] = "0"
+        ops["AllToAll"] = "{0}"
+        ops["Pmax"] = "{0}"
+        ops["Pmin"] = "{0}"
+        ops["PsumScatter"] = "{0}"
+        ops["Pswapaxes"] = "{0}"
+        ops["Ppermute"] = "{0}"
+        ops["Pshuffle"] = "{0}"
+        ops["CreateToken"] = "0"
         ops["WithShardingConstraint"] = "{0}"
         return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
-        """Evaluate emit constant assignment.
+        """Emit the code to assign a constant parameter to a local variable.
 
         Args:
-            var_name (str): Argument var_name
-            val_repr (str): Argument val_repr
+            var_name (str): The name of the variable to bind.
+            val_repr (str): The string representation of the constant value.
+
+        Returns:
+            None
         """
         self.add_line(f"{var_name} = self.{var_name}")
 
     def _get_prefix_code(self) -> list[str]:
-        """Return prefix code."""
+        """Generate the prefix code required for the PyTorch module, including imports and utilities.
+
+        Returns:
+            list[str]: A list of string code lines to be emitted before the main class.
+        """
         tmpl_path = os.path.join(os.path.dirname(__file__), "pytorch_prefix.py.tmpl")
         with open(tmpl_path) as f:
             pt_prefix_template = f.read()
-        return [
-            "import torch",
-            "import torch.nn as nn",
-            *NNASTVisitor(generator=self)._get_group_norm_code(
-                GroupNormConfig(
-                    "pt",
-                    "torch",
-                    "torch.reshape",
-                    "torch.mean",
-                    "torch.var",
-                    "torch.sqrt",
-                    "dim",
-                    "keepdim",
-                    ", unbiased=False",
-                )
-            ),
-            *pt_prefix_template.splitlines(),
-        ]
+        return ["import torch", "import torch.nn as nn", *pt_prefix_template.splitlines()]
 
     def _emit_init_body(self) -> bool:
-        """Emit initialization code. Return True if params were emitted, False otherwise."""
+        """Emit the initialization code for the PyTorch module's parameters.
+
+        Returns:
+            bool: True if any parameters were registered in the module, False otherwise.
+        """
         has_params = False
         for node in self.sorted_nodes:
             if node.op_type == "Constant":
@@ -320,3 +342,31 @@ class PyTorchCodeGenerator(
                 self.add_line(f"self.register_parameter('{var_name}', nn.Parameter(torch.tensor({val_repr})))")
                 has_params = True
         return has_params
+
+    @classmethod
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+        """Load."""
+        import numpy as np
+
+        return np.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
+
+    @classmethod
+    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+        """Save."""
+        import numpy as np
+
+        np.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+
+    @classmethod
+    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+        """Savez."""
+        import numpy as np
+
+        np.savez(file, *args, **kwds)
+
+    @classmethod
+    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+        """Savez compressed."""
+        import numpy as np
+
+        np.savez_compressed(file, *args, **kwds)

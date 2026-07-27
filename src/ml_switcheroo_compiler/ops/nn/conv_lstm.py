@@ -4,12 +4,11 @@ from typing import Optional
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4, MAGIC_VAL_5
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.nn.activations import sigmoid
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.nn.conv import (
-    conv1d,  # pragma: no cover
-    conv2d,  # pragma: no cover
-    conv3d,  # pragma: no cover
+    conv1d,
+    conv2d,
+    conv3d,
 )
 from ml_switcheroo_compiler.ops.shape import split
 from ml_switcheroo_compiler.ops.unary import tanh
@@ -34,23 +33,15 @@ def conv_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    ndim = len(inputs.shape)  # pragma: no cover
-    if ndim == MAGIC_VAL_3:  # pragma: no cover
-        return conv1d_lstm_cell(  # pragma: no cover
-            inputs, state, weights, config
-        )
-    elif ndim == MAGIC_VAL_4:  # pragma: no cover
-        return conv2d_lstm_cell(  # pragma: no cover
-            inputs, state, weights, config
-        )
-    elif ndim == MAGIC_VAL_5:  # pragma: no cover
-        return conv3d_lstm_cell(  # pragma: no cover
-            inputs, state, weights, config
-        )
+    ndim = len(inputs.shape)
+    if ndim == MAGIC_VAL_3:
+        return conv1d_lstm_cell(inputs, state, weights, config)
+    elif ndim == MAGIC_VAL_4:
+        return conv2d_lstm_cell(inputs, state, weights, config)
+    elif ndim == MAGIC_VAL_5:
+        return conv3d_lstm_cell(inputs, state, weights, config)
     else:
-        raise ValueError(  # pragma: no cover
-            f"Unsupported input dimension for conv_lstm_cell: {ndim}. Expected 3, 4, or 5."
-        )
+        raise ValueError(f"Unsupported input dimension for conv_lstm_cell: {ndim}. Expected 3, 4, or 5.")
 
 
 def _apply_conv_lstm_gates(
@@ -61,23 +52,23 @@ def _apply_conv_lstm_gates(
     data_format: str,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """Apply LSTM gates."""
-    h_prev, c_prev = state  # pragma: no cover
-    gates = add(x_conv, h_conv)  # pragma: no cover
-    if weights.bias is not None:  # pragma: no cover
-        gates = add(gates, weights.bias)  # pragma: no cover
+    h_prev, c_prev = state
+    gates = add(x_conv, h_conv)
+    if weights.bias is not None:
+        gates = add(gates, weights.bias)
 
-    dim = -1 if data_format == "channels_last" else 1  # pragma: no cover
-    i, f, c, o = split(gates, 4, dim=dim)  # pragma: no cover
+    dim = -1 if data_format == "channels_last" else 1
+    i, f, c, o = split(gates, 4, dim=dim)
 
-    i = sigmoid(i)  # pragma: no cover
-    f = sigmoid(f)  # pragma: no cover
-    c = tanh(c)  # pragma: no cover
-    o = sigmoid(o)  # pragma: no cover
+    i = _sigmoid(i)
+    f = _sigmoid(f)
+    c = tanh(c)
+    o = _sigmoid(o)
 
-    new_c = add(multiply(f, c_prev), multiply(i, c))  # pragma: no cover
-    new_h = multiply(o, tanh(new_c))  # pragma: no cover
+    new_c = add(multiply(f, c_prev), multiply(i, c))
+    new_h = multiply(o, tanh(new_c))
 
-    return new_h, (new_h, new_c)  # pragma: no cover
+    return new_h, (new_h, new_c)
 
 
 def conv1d_lstm_cell(
@@ -97,17 +88,17 @@ def conv1d_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    h_prev, c_prev = state  # pragma: no cover
+    h_prev, c_prev = state
 
-    conf = config if config is not None else ConvLSTMConfig()  # pragma: no cover
+    conf = config if config is not None else ConvLSTMConfig()
     x_conv = conv1d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
-    )  # pragma: no cover
-    h_conv = conv1d(  # pragma: no cover
+    )
+    h_conv = conv1d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -115,7 +106,7 @@ def conv1d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)  # pragma: no cover
+    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
 
 
 def conv2d_lstm_cell(
@@ -135,17 +126,17 @@ def conv2d_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    h_prev, c_prev = state  # pragma: no cover
+    h_prev, c_prev = state
 
-    conf = config if config is not None else ConvLSTMConfig()  # pragma: no cover
+    conf = config if config is not None else ConvLSTMConfig()
     x_conv = conv2d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
-    )  # pragma: no cover
-    h_conv = conv2d(  # pragma: no cover
+    )
+    h_conv = conv2d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -153,7 +144,7 @@ def conv2d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)  # pragma: no cover
+    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
 
 
 def conv3d_lstm_cell(
@@ -173,17 +164,17 @@ def conv3d_lstm_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
     """
-    h_prev, c_prev = state  # pragma: no cover
+    h_prev, c_prev = state
 
-    conf = config if config is not None else ConvLSTMConfig()  # pragma: no cover
+    conf = config if config is not None else ConvLSTMConfig()
     x_conv = conv3d(
         inputs,
         weights.kernel,
         strides=conf.strides,
         padding=conf.padding,
         data_format=conf.data_format,
-    )  # pragma: no cover
-    h_conv = conv3d(  # pragma: no cover
+    )
+    h_conv = conv3d(
         h_prev,
         weights.recurrent_kernel,
         strides=conf.strides,
@@ -191,4 +182,11 @@ def conv3d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)  # pragma: no cover
+    return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
+
+
+def _sigmoid(x: object) -> object:
+    """Sigmoid."""
+    from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
+
+    return s(x)

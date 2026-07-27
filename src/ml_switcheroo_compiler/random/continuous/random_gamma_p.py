@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for random_gamma_p.py."""
 
 from __future__ import annotations
 

@@ -1,8 +1,7 @@
 """NPZ format serialization."""
 
-import numpy as np  # pragma: no cover
-
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader
+from ml_switcheroo_compiler.serialization.utils import parse_npz
 
 
 class NpzWeightFormat(WeightLoader):
@@ -10,5 +9,13 @@ class NpzWeightFormat(WeightLoader):
 
     def load(self, filepath: str) -> dict:
         """Load npz weights."""
-        with np.load(filepath) as npz:  # pragma: no cover
-            return {k: npz[k] for k in npz.files}  # pragma: no cover
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "load_npz"):
+            try:
+                return backend.load_npz(filepath)
+            except NotImplementedError:
+                pass
+
+        return parse_npz(filepath)

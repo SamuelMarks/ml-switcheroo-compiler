@@ -1,15 +1,7 @@
-"""Defines the unified backend array base class for ml-switcheroo.
+"""Defines the unified backend array base class for ml-switcheroo."""
 
-This module provides the Tensor class, which serves as the core multi-dimensional array
-abstraction across different execution backends and tracing modes
-"""
-
-import uuid
-from collections.abc import Sequence
 from dataclasses import dataclass
-
-import numpy as np
-from ml_switcheroo_ir import LogicalNode
+from typing import Union
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
@@ -20,7 +12,8 @@ from ml_switcheroo_compiler.core.mixins import (
     TensorLogicalMixin,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+from .tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPropertiesMixin
 
 
 class ArrayAt:
@@ -113,14 +106,21 @@ class ArrayAtIndexer:
 class TensorConfig:
     """Configuration for a Tensor."""
 
-    shape: tuple[int, ...]
+    shape: tuple[Union[int, str], ...]
     dtype: "DType"
     device: "Device"
     requires_grad: bool = False
     trainable: bool = False
 
 
-class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
+class Tensor(
+    TensorPropertiesMixin,
+    TensorConversionMixin,
+    TensorIndexingMixin,
+    TensorArithmeticMixin,
+    TensorBitwiseMixin,
+    TensorLogicalMixin,
+):
     """The unified backend array base class for ml-switcheroo.
 
     Represents a multi-dimensional array that wraps underlying backend-specific
@@ -135,57 +135,19 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             config (TensorConfig): The tensor configuration.
         """
         self._data = data
-        self._shape = tuple(int(s) for s in config.shape)
+
+        def _parse_dim(s: object) -> Union[int, str]:
+            """Parse dimension."""
+            try:
+                return int(s)  # type: ignore
+            except (ValueError, TypeError):
+                return str(s)
+
+        self._shape: tuple[Union[int, str], ...] = tuple(_parse_dim(s) for s in config.shape)
         self._dtype = config.dtype
         self._device = config.device
         self._requires_grad = config.requires_grad
         self.config = config
-
-    @property
-    def shape(self) -> Sequence[int]:
-        """Get the shape of the tensor.
-
-        Args:
-        Returns:
-            Sequence[int]: The result of the operation
-        """
-        return self._shape
-
-    @property
-    def dtype(self) -> DType:
-        """Get the data type of the tensor.
-
-        Returns:
-            DType: The data type associated with the tensor.
-        """
-        return self._dtype
-
-    @property
-    def device(self) -> Device:
-        """Get the device of the tensor.
-
-        Returns:
-            Device: The device associated with the tensor.
-        """
-        return self._device
-
-    @property
-    def requires_grad(self) -> bool:
-        """Check if the tensor requires gradient computation.
-
-        Returns:
-            bool: A boolean indicating the result of the check.
-        """
-        return self._requires_grad
-
-    @property
-    def data(self) -> object:
-        """Get the underlying data payload.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return self._data
 
     def eval(self) -> "Tensor":
         """Trigger evaluation of a lazy tensor.
@@ -201,114 +163,6 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             if self.data.id not in graph.outputs:
                 graph.outputs.append(self.data.id)
         return self
-
-    def __array__(self, dtype: object = None) -> object:
-        """Array.
-
-        Args:
-            dtype (object): The dtype to process.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        backend = get_active_backend()
-
-        if hasattr(self.data, "id"):
-            data = backend.zeros(self.shape)
-        else:
-            data = self.data
-
-        try:
-            return np.asarray(data, dtype=dtype) if dtype is not None else np.asarray(data)
-        except Exception:  # pragma: no cover
-            return np.array(data.tolist() if hasattr(data, "tolist") else data, dtype=dtype)  # pragma: no cover
-
-    def __bool__(self) -> bool:
-        """Bool.
-
-        Returns:
-            bool: A boolean indicating the result of the check.
-        """
-        arr = self.__array__()
-        if getattr(arr, "size", 1) == 1:
-            return bool(getattr(arr, "item", lambda: arr)())
-        msg = "The truth value of an array with more than one element is ambiguous."
-        raise ValueError(
-            msg,
-        )
-
-    def __len__(self) -> int:
-        """Len.
-
-        Returns:
-            int: The evaluated output resulting from this operation.
-        """
-        return self.shape[0] if self.shape else 0
-
-    def __iter__(self) -> object:
-        """Iter.
-
-        Returns:
-            The computed shape or evaluation result.
-        """
-        arr = self.__array__()
-        shape = getattr(arr, "shape", [0])
-        if not shape:
-            raise TypeError("iteration over a 0-d tensor")
-        for i in range(shape[0]):
-            yield Tensor(arr[i], TensorConfig(arr[i].shape, self.dtype, self.device))
-
-    def __getitem__(self, key: object) -> "Tensor":
-        """Getitem.
-
-        Args:
-            key (object): The key to process.
-
-        Returns:
-            Tensor: A new tensor with the selected element.
-        """
-        arr = self.__array__()
-        if hasattr(key, "data"):
-            key = key.data
-        elif isinstance(key, tuple):
-            key = tuple(getattr(k, "data", k) for k in key)
-
-        res = arr[key]
-        if config.eager_mode:
-            return Tensor(res, TensorConfig(getattr(res, "shape", ()), self.dtype, self.device))
-
-        nid = f"getitem_{uuid.uuid4().hex[:6]}"
-        input_id = getattr(self.data, "id", "const")
-
-        node = LogicalNode(
-            id=nid,
-            op_type="GetItem",
-            inputs=[input_id],
-            attributes={"key": str(key)},
-            shape_metadata=(),
-        )
-        if global_tracing_state.is_tracing:
-            global_tracing_state.add_node(node)
-        else:
-            raise RuntimeError("Cannot add node: not currently tracing.")
-
-        return Tensor(ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device))
-
-    def __setitem__(self, key: object, value: object) -> None:
-        """Setitem.
-
-        Args:
-            key (object): The key to process.
-            value (object): The value to set or add.
-        """
-        if config.eager_mode:
-            val = getattr(value, "data", value)
-            self.data[key] = val
-        else:
-            msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
-            raise TypeError(msg)
 
     def backward(self, *args: object, **kwargs: object) -> None:
         """Triggers the reverse-mode auto-differentiation.
@@ -348,20 +202,6 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
         """
         return self
 
-    def item(self) -> float:
-        """Returns the value of this tensor as a standard Python number.
-
-        Returns:
-            float: The evaluated output resulting from this operation.
-        """
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        backend = get_active_backend()
-
-        if self.eval().__class__.__name__ == "Tensor":
-            return backend.item(self.eval().data)
-        return backend.item(self.eval())
-
     def detach(self) -> "Tensor":
         """Returns a new Tensor, detached from the current graph.
 
@@ -369,15 +209,6 @@ class Tensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
             'Tensor': A tensor containing the result of the operation.
         """
         return Tensor(self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))
-
-    @property
-    def at(self) -> ArrayAtIndexer:
-        """Get ArrayAtIndexer for the tensor.
-
-        Returns:
-            ArrayAtIndexer: The indexer
-        """
-        return ArrayAtIndexer(self)
 
 
 class Variable(Tensor):
@@ -427,15 +258,12 @@ class Variable(Tensor):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("Add", self._data, value.data)
+            self._data = backend.execute_op("AssignAdd", self._data, value.data)
         else:
-            from ml_switcheroo_compiler.ops.registry import get_op
-
-            new_val = get_op("Add")()(self, value)
             from ml_switcheroo_compiler.ops.registry import get_util
 
             _emit_shape_node = get_util("_emit_shape_node")
-            _emit_shape_node("Assign", [self, new_val], {}, self.shape, self.dtype)
+            _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
     def assign_sub(self, value: Tensor) -> "Variable":
@@ -451,15 +279,12 @@ class Variable(Tensor):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("Subtract", self._data, value.data)
+            self._data = backend.execute_op("AssignSub", self._data, value.data)
         else:
-            from ml_switcheroo_compiler.ops.registry import get_op
-
-            new_val = get_op("Subtract")()(self, value)
             from ml_switcheroo_compiler.ops.registry import get_util
 
             _emit_shape_node = get_util("_emit_shape_node")
-            _emit_shape_node("Assign", [self, new_val], {}, self.shape, self.dtype)
+            _emit_shape_node("AssignSub", [self, value], {}, self.shape, self.dtype)
         return self
 
 
@@ -476,3 +301,11 @@ class Parameter(Variable):
         # Override config.trainable to True for Parameter
         config = TensorConfig(config.shape, config.dtype, config.device, config.requires_grad, True)
         super().__init__(data, config)
+
+    def __index__(self) -> int:
+        """Return the integer representation of the tensor.
+
+        Returns:
+            int: The integer value.
+        """
+        return int(self.numpy())

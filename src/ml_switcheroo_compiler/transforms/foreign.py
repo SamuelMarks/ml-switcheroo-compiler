@@ -7,23 +7,29 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
 def _handle_fx_placeholder(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Function docstring.
+    """Evaluate and process the handle fx placeholder operation.
 
     Args:
-        node: Arg.
-        graph: Arg.
-        node_map: Arg.
+        node (object): Required parameter for node.
+        graph (LogicalGraph): Required parameter for graph.
+        node_map (dict): Required parameter for node_map.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     node_map[node.name] = node.name
 
 
 def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Function docstring.
+    """Evaluate and process the handle fx call function operation.
 
     Args:
-        node: Arg.
-        graph: Arg.
-        node_map: Arg.
+        node (object): Required parameter for node.
+        graph (LogicalGraph): Required parameter for graph.
+        node_map (dict): Required parameter for node_map.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     target_name = getattr(node.target, "__name__", str(node.target))
 
@@ -32,7 +38,7 @@ def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[s
         "mul": "Mul",
     }
     op_type = "Unknown"
-    for key, val in op_map.items():  # pragma: no branch
+    for key, val in op_map.items():
         if key in target_name:
             op_type = val
             break
@@ -58,18 +64,21 @@ def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[s
 
 
 def _handle_fx_output(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Function docstring.
+    """Evaluate and process the handle fx output operation.
 
     Args:
-        node: Arg.
-        graph: Arg.
-        node_map: Arg.
+        node (object): Required parameter for node.
+        graph (LogicalGraph): Required parameter for graph.
+        node_map (dict): Required parameter for node_map.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     outputs = []
     args = node.args[0]
     if isinstance(args, tuple):
         outputs.extend([arg.name for arg in args if hasattr(arg, "name")])
-    elif hasattr(args, "name"):  # pragma: no branch
+    elif hasattr(args, "name"):
         outputs.append(args.name)
     graph.outputs = outputs
 
@@ -88,8 +97,8 @@ def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
 
     graph = LogicalGraph(name="torch_fx_ingested")
 
-    if not hasattr(fx_graph_module, "graph") or not hasattr(fx_graph_module.graph, "nodes"):  # pragma: no branch
-        return graph  # pragma: no cover
+    if not hasattr(fx_graph_module, "graph") or not hasattr(fx_graph_module.graph, "nodes"):
+        return graph
 
     handlers = {
         "placeholder": _handle_fx_placeholder,
@@ -99,7 +108,7 @@ def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
 
     node_map: dict[str, str] = {}
     for node in fx_graph_module.graph.nodes:
-        if node.op in handlers:  # pragma: no branch
+        if node.op in handlers:
             handlers[node.op](node, graph, node_map)
 
     return graph
@@ -112,7 +121,20 @@ def _extract_jaxpr_constants(jaxpr: object, graph: LogicalGraph) -> None:
         jaxpr (object): The JAX jaxpr.
         graph (LogicalGraph): The logical graph to populate.
     """
-    pass
+    if hasattr(jaxpr, "consts"):
+        constvars = getattr(jaxpr, "constvars", None)
+        for i, const_val in enumerate(jaxpr.consts):
+            const_id = str(id(constvars[i])) if constvars else f"const_{i}"
+            l_node = LogicalNode(
+                id=const_id,
+                op_type="Constant",
+                domain="ai.onnx",
+                version=1,
+                attributes={"value": const_val},
+                inputs=[],
+                shape_metadata=getattr(const_val, "shape", ()),
+            )
+            graph.nodes[const_id] = l_node
 
 
 def _translate_jax_equation(eqn: object, graph: LogicalGraph) -> None:
@@ -126,7 +148,7 @@ def _translate_jax_equation(eqn: object, graph: LogicalGraph) -> None:
     primitive_name = getattr(eqn.primitive, "name", str(eqn.primitive))
     if primitive_name == "add":
         op_type = "Add"
-    elif primitive_name == "mul":  # pragma: no branch
+    elif primitive_name == "mul":
         op_type = "Mul"
 
     inputs = []
@@ -163,7 +185,7 @@ def ingest_jaxpr(jaxpr: object) -> LogicalGraph:
 
     _extract_jaxpr_constants(jaxpr, graph)
 
-    if hasattr(jaxpr, "eqns"):  # pragma: no branch
+    if hasattr(jaxpr, "eqns"):
         for eqn in jaxpr.eqns:
             _translate_jax_equation(eqn, graph)
 

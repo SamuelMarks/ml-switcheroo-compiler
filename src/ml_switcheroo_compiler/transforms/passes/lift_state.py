@@ -48,32 +48,38 @@ def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:
 
 
 def _get_nodes(block: object) -> Iterable[IRNode]:
-    """Function docstring.
+    """Retrieve the nodes property or mapping.
 
     Args:
-        block: Arg.
+        block (object): Required parameter for block.
+
+    Returns:
+        Iterable: The evaluated or processed output.
     """
     nodes = getattr(block, "nodes", [])
-    if isinstance(nodes, dict):  # pragma: no branch
+    if isinstance(nodes, dict):
         return nodes.values()
-    return nodes  # pragma: no cover
+    return nodes
 
 
 def _lift_node(node: IRNode, block: object) -> bool:
-    """Function docstring.
+    """Evaluate and process the lift node operation.
 
     Args:
-        node: Arg.
-        block: Arg.
+        node (IRNode): Required parameter for node.
+        block (object): Required parameter for block.
+
+    Returns:
+        bool: The evaluated or processed output.
     """
     if node.op_type == "ReadVariable":
         node.op_type = "Input"
         return True
     if node.op_type in ("AssignVariable", "Assign"):
         node.op_type = "Output"
-        if len(node.inputs) > 1:  # pragma: no branch
+        if len(node.inputs) > 1:
             # For Assign(var, value), we only want to output the new value
-            node.inputs = [node.inputs[1]]  # pragma: no cover
+            node.inputs = [node.inputs[1]]
         if hasattr(block, "outputs") and node.id not in block.outputs:
             block.outputs.append(node.id)
         return True
@@ -81,10 +87,13 @@ def _lift_node(node: IRNode, block: object) -> bool:
 
 
 def _lift_block_ir(block: object) -> bool:
-    """Function docstring.
+    """Evaluate and process the lift block ir operation.
 
     Args:
-        block: Arg.
+        block (object): Required parameter for block.
+
+    Returns:
+        bool: The evaluated or processed output.
     """
     mod = False
     for node in _get_nodes(block):

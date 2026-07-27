@@ -14,12 +14,15 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_infer
 
 
 def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[int, ...]) -> str:
-    """Function docstring.
+    """Evaluate and process the inject broadcast node operation.
 
     Args:
-        graph: Arg.
-        input_id: Arg.
-        target_shape: Arg.
+        graph (IRGraph): Required parameter for graph.
+        input_id (str): Required parameter for input_id.
+        target_shape (tuple): Required parameter for target_shape.
+
+    Returns:
+        str: The evaluated or processed output.
     """
     new_id = f"broadcast_{uuid.uuid4().hex[:6]}"
     new_node = LogicalNode(
@@ -34,17 +37,20 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
 
 
 def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]) -> Optional[tuple[int, ...]]:
-    """Function docstring.
+    """Evaluate and process the needs broadcast operation.
 
     Args:
-        shape1: Arg.
-        shape2: Arg.
+        shape1 (Optional): Required parameter for shape1.
+        shape2 (Optional): Required parameter for shape2.
+
+    Returns:
+        Optional: The evaluated or processed output.
     """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None
     try:
         return broadcast_shapes(shape1, shape2)
-    except ValueError:
+    except Exception:
         return None
 
 

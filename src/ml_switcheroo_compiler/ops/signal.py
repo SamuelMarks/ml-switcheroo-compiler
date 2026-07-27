@@ -1,354 +1,121 @@
-# pragma: no cover
 """Signal processing operations."""
-# pragma: no cover
 
-# pragma: no cover
 from dataclasses import dataclass
 from typing import Optional
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-# pragma: no cover
 from ml_switcheroo_compiler.core.config import config
-
-# pragma: no cover
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
-
-# pragma: no cover
-
-# pragma: no cover
+from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-# pragma: no cover
 @register_op("Convolve2d")
-# pragma: no cover
 class Convolve2d(OpDef):
-    # pragma: no cover
     """Convolve2d."""
 
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         """Infer shape."""
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         return args[0].shape
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 @register_op("Fftconvolve")
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 class Fftconvolve(OpDef):
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     """Fftconvolve."""
 
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         """Infer shape."""
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         return args[0].shape
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 @register_op("Welch")
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 class Welch(OpDef):
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     """Welch."""
 
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         """Infer shape."""
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         return args[0].shape
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 def _emit_signal_node(
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     op_type: str,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     inputs: list[Tensor],
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     attrs: dict[str, object],
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     out_shape: tuple[int, ...],
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     dtype: str,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
 ) -> Tensor:
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     """Emit a signal node."""
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
+def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
+    if in1.shape is None or in2.shape is None:
+        raise ValueError("Inputs to convolve2d must have statically known shapes.")
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
+def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, object]:
+    return {"mode": mode, "boundary": boundary, "fillvalue": fillvalue}
+
+
 def convolve2d(
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     in1: Tensor,
     in2: Tensor,
     mode: str = "full",
     boundary: str = "fill",
     fillvalue: float = 0.0,
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
 ) -> Tensor:
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    """Evaluate convolve2d."""
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
-    if config.eager_mode:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
+    """Evaluate convolve2d.
 
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
+    Args:
+        in1: First input.
+        in2: Second input.
+        mode: The mode.
+        boundary: The boundary condition.
+        fillvalue: The fill value.
+
+    Returns:
+        The convolved tensor.
+    """
+    _validate_conv2d_args(in1, in2)
+    kwargs = _calculate_padding(mode, boundary, fillvalue)
+
+    if config.eager_mode:
         backend = get_active_backend()
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
-        data = backend.execute_op(
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-            "Convolve2d",
-            in1.data,
-            in2.data,
-            mode=mode,
-            boundary=boundary,
-            fillvalue=fillvalue,
-            # pragma: no cover
-            # pragma: no cover
-            # pragma: no cover
-        )
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
+        data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
         return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
+
     return _emit_signal_node(
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         "Convolve2d",
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         [in1, in2],
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
-        {"mode": mode, "boundary": boundary, "fillvalue": fillvalue},
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
+        kwargs,
         in1.shape,
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         in1.dtype,
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
     )
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = None) -> Tensor:
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     """Evaluate fftconvolve."""
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
     if config.eager_mode:
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
-
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         backend = get_active_backend()
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
+
         data = backend.execute_op("Fftconvolve", in1.data, in2.data, mode=mode, axes=axes)
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
+
         return Tensor(data, TensorConfig(data.shape, in1.dtype, in1.device))
-    # pragma: no cover
-    # pragma: no cover
-    # pragma: no cover
+
     return _emit_signal_node(
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
         "Fftconvolve",
         [in1, in2],
         {"mode": mode, "axes": axes},
         in1.shape,
         in1.dtype,
-        # pragma: no cover
-        # pragma: no cover
-        # pragma: no cover
     )
-
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-
-
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
 
 
 @dataclass
 @dataclass
 class WindowConfig:
-    """Class docstring."""
+    """Configuration class for window config."""
 
     fs: float = 1.0
     window: str = "hann"
@@ -359,7 +126,7 @@ class WindowConfig:
 
 @dataclass
 class FilterState:
-    """Class docstring."""
+    """Configuration class for filter state."""
 
     detrend: str = "constant"
     return_onesided: bool = True
@@ -370,7 +137,7 @@ class FilterState:
 
 @dataclass
 class WelchConfig:
-    """Class docstring."""
+    """Configuration class for welch config."""
 
     window_config: WindowConfig = WindowConfig()
     filter_state: FilterState = FilterState()
@@ -412,16 +179,16 @@ def welch(
         "Welch",
         [x],
         {
-            "fs": config_params.fs,
-            "window": config_params.window,
-            "nperseg": config_params.nperseg,
-            "noverlap": config_params.noverlap,
-            "nfft": config_params.nfft,
-            "detrend": config_params.detrend,
-            "return_onesided": config_params.return_onesided,
-            "scaling": config_params.scaling,
-            "axis": config_params.axis,
-            "average": config_params.average,
+            "fs": config_params.window_config.fs,
+            "window": config_params.window_config.window,
+            "nperseg": config_params.window_config.nperseg,
+            "noverlap": config_params.window_config.noverlap,
+            "nfft": config_params.window_config.nfft,
+            "detrend": config_params.filter_state.detrend,
+            "return_onesided": config_params.filter_state.return_onesided,
+            "scaling": config_params.filter_state.scaling,
+            "axis": config_params.filter_state.axis,
+            "average": config_params.filter_state.average,
         },
         [f_shape, Pxx_shape],
         [x.dtype, x.dtype],
@@ -429,18 +196,445 @@ def welch(
     return f, Pxx
 
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
+@register_op("Fft")
+class Fft(OpDef):
+    """Fft class."""
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape
 
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
-__all__ = ["convolve2d", "fftconvolve", "welch"]
-# pragma: no cover
-# pragma: no cover
-# pragma: no cover
+
+def fft(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the one-dimensional discrete Fourier Transform."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Fft", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
+    return _emit_signal_node("Fft", [input], kwargs, input.shape, input.dtype)
+
+
+__all__ = ["convolve2d", "fftconvolve", "welch", "fft", "window_hann", "window_hamming", "stft", "istft", "ifft", "fftn", "ifftn", "rfftn", "irfftn", "ifft2", "rfft2", "irfft2", "fftnd", "ifftnd", "rfftnd", "irfftnd", "fftshift", "ifftshift", "hfft", "rfftfreq"]
+
+
+@register_op("Rfft")
+class Rfft(OpDef):
+    """Rfft class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape
+
+
+@register_op("Fft2")
+class Fft2(OpDef):
+    """Fft2 class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape
+
+
+@register_op("Fftfreq")
+class Fftfreq(OpDef):
+    """Fftfreq class."""
+
+    def infer_shape(self, n: object, d: object = 1.0, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return (n,) if isinstance(n, int) else ()
+
+
+@register_op("Irfft")
+class Irfft(OpDef):
+    """Irfft class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape
+
+
+@register_op("Ihfft")
+class Ihfft(OpDef):
+    """Ihfft class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape
+
+
+@register_op("WindowHann")
+class WindowHann(OpDef):
+    """WindowHann class."""
+
+    def infer_shape(self, length: int, **kwargs: object) -> object:
+        """Infer shape."""
+        return (length,)
+
+
+@register_op("WindowHamming")
+class WindowHamming(OpDef):
+    """WindowHamming class."""
+
+    def infer_shape(self, length: int, **kwargs: object) -> object:
+        """Infer shape."""
+        return (length,)
+
+
+@register_op("Stft")
+class Stft(OpDef):
+    """Stft class."""
+
+    def infer_shape(self, x: object, nfft: int, noverlap: int = 0, **kwargs: object) -> object:
+        """infer_shape function."""
+        if not hasattr(x, "shape") or not x.shape:
+            return ()
+        step = nfft - noverlap
+        if step <= 0:
+            raise ValueError("noverlap must be less than nfft")
+        num_frames = (x.shape[-1] - noverlap) // step
+        return x.shape[:-1] + (nfft // 2 + 1, num_frames)
+
+
+@register_op("Istft")
+class Istft(OpDef):
+    """Istft class."""
+
+    def infer_shape(self, x: object, nfft: int, noverlap: int = 0, **kwargs: object) -> object:
+        """infer_shape function."""
+        if not hasattr(x, "shape") or not x.shape or len(x.shape) < 2:
+            return ()
+        step = nfft - noverlap
+        if step <= 0:
+            raise ValueError("noverlap must be less than nfft")
+        T = x.shape[-1]
+        L = (T - 1) * step + nfft
+        return x.shape[:-2] + (L,)
+
+
+def window_hann(length: int) -> Tensor:
+    """Generates a Hann window."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("WindowHann", length)
+        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
+    # Note: Using float32 as default dtype for window
+    return _emit_shape_node("WindowHann", [], {"length": length}, (length,), "float32")
+
+
+def window_hamming(length: int) -> Tensor:
+    """Generates a Hamming window."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("WindowHamming", length)
+        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
+    return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
+
+
+def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Tensor:
+    """Computes the Short Time Fourier Transform."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
+        out_shape = getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
+    out_shape = Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    return _emit_shape_node("Stft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "complex64")
+
+
+def istft(x: Tensor, nfft: int, noverlap: int = 0) -> Tensor:
+    """Computes the Inverse Short Time Fourier Transform."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
+        out_shape = getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
+    out_shape = Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    return _emit_shape_node("Istft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "float32")
+
+
+@register_op("Ifft")
+class Ifft(OpDef):
+    """Ifft class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def ifft(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Ifft operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Ifft", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Ifft", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Fftn")
+class Fftn(OpDef):
+    """Fftn class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def fftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Fftn operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Fftn", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Fftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Ifftn")
+class Ifftn(OpDef):
+    """Ifftn class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def ifftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Ifftn operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftn", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Ifftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Rfftn")
+class Rfftn(OpDef):
+    """Rfftn class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def rfftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Rfftn operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftn", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Rfftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Irfftn")
+class Irfftn(OpDef):
+    """Irfftn class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def irfftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Irfftn operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Irfftn", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Irfftn", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Ifft2")
+class Ifft2(OpDef):
+    """Ifft2 class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def ifft2(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Ifft2 operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Ifft2", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Ifft2", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Rfft2")
+class Rfft2(OpDef):
+    """Rfft2 class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def rfft2(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Rfft2 operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Rfft2", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Rfft2", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Irfft2")
+class Irfft2(OpDef):
+    """Irfft2 class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def irfft2(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Irfft2 operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Irfft2", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Irfft2", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Fftnd")
+class Fftnd(OpDef):
+    """Fftnd class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def fftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Fftnd operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Fftnd", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Fftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Ifftnd")
+class Ifftnd(OpDef):
+    """Ifftnd class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def ifftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Ifftnd operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftnd", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Ifftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Rfftnd")
+class Rfftnd(OpDef):
+    """Rfftnd class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def rfftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Rfftnd operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftnd", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Rfftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Irfftnd")
+class Irfftnd(OpDef):
+    """Irfftnd class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def irfftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Irfftnd operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Irfftnd", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Irfftnd", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Fftshift")
+class Fftshift(OpDef):
+    """Fftshift class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def fftshift(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Fftshift operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Fftshift", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Fftshift", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Ifftshift")
+class Ifftshift(OpDef):
+    """Ifftshift class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def ifftshift(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Ifftshift operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Ifftshift", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Ifftshift", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Hfft")
+class Hfft(OpDef):
+    """Hfft class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def hfft(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Hfft operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Hfft", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Hfft", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+
+
+@register_op("Rfftfreq")
+class Rfftfreq(OpDef):
+    """Rfftfreq class."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+def rfftfreq(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+    """Compute the Rfftfreq operation."""
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Rfftfreq", input.data, *args, **kwargs)
+        return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
+    return _emit_signal_node("Rfftfreq", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))

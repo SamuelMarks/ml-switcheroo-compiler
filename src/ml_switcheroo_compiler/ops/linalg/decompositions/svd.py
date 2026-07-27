@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for svd.py."""
 
 from __future__ import annotations
 
@@ -22,7 +22,22 @@ class Svd(OpDef):
         Returns:
             object: The shape.
         """
-        return ()
+        if not args:
+            return ()
+        a_shape = args[0].shape
+        full_matrices = kwargs.get("full_matrices", True)
+        m, n = a_shape[-2], a_shape[-1]
+        k = min(m, n)
+        s_shape = a_shape[:-2] + (k,)
+        if full_matrices:
+            u_shape = a_shape[:-2] + (m, m)
+            vh_shape = a_shape[:-2] + (n, n)
+        else:
+            u_shape = a_shape[:-2] + (m, k)
+            vh_shape = a_shape[:-2] + (k, n)
+        if kwargs.get("compute_uv", True):
+            return u_shape, s_shape, vh_shape
+        return (s_shape,)
 
 
 def svd(
@@ -50,21 +65,41 @@ def svd(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        u, s, vh = backend.execute_op(
+        res = backend.execute_op(
             "Svd",
             input.data,
             full_matrices=full_matrices,
             compute_uv=compute_uv,
         )
+        if not compute_uv:
+            return Tensor(res, TensorConfig(res.shape, input.dtype, input.device))
+        u, s, vh = res
         return (
             Tensor(u, TensorConfig(u.shape, input.dtype, input.device)),
             Tensor(s, TensorConfig(s.shape, input.dtype, input.device)),
             Tensor(vh, TensorConfig(vh.shape, input.dtype, input.device)),
         )
+    m, n = input.shape[-2], input.shape[-1]
+    k = min(m, n)
+    s_shape = input.shape[:-2] + (k,)
+    if full_matrices:
+        u_shape = input.shape[:-2] + (m, m)
+        vh_shape = input.shape[:-2] + (n, n)
+    else:
+        u_shape = input.shape[:-2] + (m, k)
+        vh_shape = input.shape[:-2] + (k, n)
+    if not compute_uv:
+        return _emit_linalg_node(
+            "Svd",
+            [input],
+            {"full_matrices": full_matrices, "compute_uv": compute_uv},
+            [s_shape],
+            [input.dtype],
+        )
     return _emit_linalg_node(
         "Svd",
         [input],
         {"full_matrices": full_matrices, "compute_uv": compute_uv},
-        [input.shape, input.shape[:-1], input.shape],
+        [u_shape, s_shape, vh_shape],
         [input.dtype] * 3,
     )

@@ -75,6 +75,14 @@ def identity(
     return eye(n, n, 0, dtype, device)
 
 
+def _diag_eager(input: Tensor, diagonal: int, device: object, dtype: object) -> Tensor:
+    data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
+    shape = data.shape if hasattr(data, "shape") else ()
+    if dtype is None:
+        dtype = getattr(data, "dtype", DType.Float32)
+    return Tensor(data, TensorConfig(shape, dtype, device))
+
+
 def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
@@ -89,17 +97,10 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     dtype = getattr(input, "dtype", None)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
-        shape = data.shape if hasattr(data, "shape") else ()
+        return _diag_eager(input, diagonal, device, dtype)
 
-        if dtype is None:
-            dtype = getattr(data, "dtype", DType.Float32)
-        return Tensor(data, TensorConfig(shape, dtype, device))
     input_shape = getattr(input, "shape", ())
-    if len(input_shape) == 1:
-        n = input_shape[0] + abs(diagonal)
-        shape = (n, n)
-    elif len(input_shape) == MAGIC_VAL_2:
+    if len(input_shape) == MAGIC_VAL_2:
         n = min(input_shape) - abs(diagonal)
         shape = (max(0, n),)
     else:

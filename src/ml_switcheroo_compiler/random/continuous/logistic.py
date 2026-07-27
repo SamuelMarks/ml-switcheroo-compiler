@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for logistic.py."""
 
 from __future__ import annotations
 

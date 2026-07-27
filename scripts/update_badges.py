@@ -1,4 +1,4 @@
-"""Updates test and documentation coverage badges in the README.md file.
+"""Update test and documentation coverage badges in the README.md file.
 
 This script retrieves test coverage by running the coverage tool and generating a JSON
 report, gets documentation coverage, formats these values, determines appropriate badge
@@ -11,14 +11,14 @@ import re
 import subprocess
 
 
-def get_color(pct: object) -> object:
-    """Determines the badge color based on the coverage percentage.
+def get_color(pct: float) -> str:
+    """Determine the badge color based on the coverage percentage.
 
     Args:
-    pct (float | int): The coverage percentage.
+        pct (float | int): The coverage percentage.
 
     Returns:
-    str: The color name corresponding to the coverage range.
+        str: The color name corresponding to the coverage range.
     """
     threshold_brightgreen = 100
     threshold_green = 90
@@ -39,63 +39,130 @@ def get_color(pct: object) -> object:
     return "red"
 
 
-def format_cov(cov: object) -> object:
-    """Formats a coverage percentage value into a string.
+def format_cov(cov: float) -> str:
+    """Format a coverage percentage value into a string.
 
     If the coverage is a whole number, it is formatted as an integer. Otherwise, it is
     formatted as a float with one decimal place.
 
     Args:
-    cov (float | int): The coverage percentage to format.
+        cov (float | int): The coverage percentage to format.
 
     Returns:
-    str: The formatted coverage percentage.
+        str: The formatted coverage percentage.
     """
     if int(cov) == cov:
         return str(int(cov))
     return f"{cov:.1f}"
 
 
-def get_test_coverage() -> object:
-    """Retrieves the total test coverage percentage from the coverage tool.
+def get_test_coverage() -> float:
+    """Retrieve the total test coverage percentage from the coverage tool.
 
     Runs the `coverage json` command to generate a report, parses the resulting JSON
     file, and extracts the total percentage covered. If an error occurs, it defaults
-    to 0.0.
+    to None to avoid overriding existing coverage with 0.0 improperly.
 
     Returns:
-    float: The total test coverage percentage.
+        float | None: The total test coverage percentage or None if no data is available.
     """
     try:
-        subprocess.run(["coverage", "json", "-o", "coverage.json"], check=False)
+        # Run coverage json, check=True will raise an exception if it fails (e.g. no .coverage file)
+        subprocess.run(["coverage", "json", "-o", "coverage.json"], check=True, capture_output=True)
         with open("coverage.json") as f:
             data = json.load(f)
             return data["totals"]["percent_covered"]
     except Exception:
-        return 0.0
+        return None
 
 
-def get_doc_coverage() -> object:
-    """Retrieves the documentation coverage percentage.
+def get_doc_coverage() -> float:
+    """Retrieve the documentation coverage percentage using an AST linter.
 
-    Currently acts as a placeholder returning a default value of 100.0.
+    Parses the Python files in the source directory to check for the presence of
+    docstrings on modules, classes, and public functions/methods.
 
     Returns:
-    float: The documentation coverage percentage.
+        float: The documentation coverage percentage.
     """
-    # Placeholder for actual AST linter coverage logic
-    return 100.0
+    import ast
+
+    class DocVisitor(ast.NodeVisitor):
+        def __init__(self):
+            self.total_nodes = 0
+            self.nodes_with_docstrings = 0
+
+        def visit_ClassDef(self, node):
+            if not node.name.startswith("_"):
+                self.total_nodes += 1
+                if ast.get_docstring(node):
+                    self.nodes_with_docstrings += 1
+                # Visit methods
+                self.generic_visit(node)
+
+        def visit_FunctionDef(self, node):
+            if not node.name.startswith("_"):
+                self.total_nodes += 1
+                if ast.get_docstring(node):
+                    self.nodes_with_docstrings += 1
+            # Do not visit inner functions/classes
+
+        def visit_AsyncFunctionDef(self, node):
+            if not node.name.startswith("_"):
+                self.total_nodes += 1
+                if ast.get_docstring(node):
+                    self.nodes_with_docstrings += 1
+            # Do not visit inner functions/classes
+
+    total_nodes = 0
+    nodes_with_docstrings = 0
+
+    # We can walk the source directory
+    src_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "ml_switcheroo_compiler")
+
+    if not os.path.exists(src_dir):
+        return 0.0
+
+    for root, _, files in os.walk(src_dir):
+        for file in files:
+            if file.endswith(".py"):
+                # Similar to interrogate -i, ignore module docstrings for __init__.py
+                if file == "__init__.py":
+                    continue
+
+                path = os.path.join(root, file)
+                with open(path, encoding="utf-8") as f:
+                    try:
+                        content = f.read()
+                        tree = ast.parse(content, filename=path)
+
+                        # Check module docstring
+                        total_nodes += 1
+                        if ast.get_docstring(tree):
+                            nodes_with_docstrings += 1
+
+                        visitor = DocVisitor()
+                        visitor.visit(tree)
+                        total_nodes += visitor.total_nodes
+                        nodes_with_docstrings += visitor.nodes_with_docstrings
+
+                    except Exception:
+                        pass
+
+    if total_nodes == 0:
+        return 0.0
+    return (nodes_with_docstrings / total_nodes) * 100.0
 
 
-def update_readme() -> object:
-    """Updates the coverage badges in the README.md file.
+def update_readme() -> None:
+    """Update the coverage badges in the README.md file.
 
     Reads the README.md file, retrieves the current test and documentation coverage
     percentages, formats them, and replaces the existing shields.io badge markdown
     links with updated values and colors.
 
     Returns:
-    None
+        None
     """
     if not os.path.exists("README.md"):
         return
@@ -103,32 +170,30 @@ def update_readme() -> object:
     test_cov = get_test_coverage()
     doc_cov = get_doc_coverage()
 
-    test_str = format_cov(test_cov)
-    doc_str = format_cov(doc_cov)
-
-    test_color = get_color(test_cov)
-    doc_color = get_color(doc_cov)
-
     with open("README.md") as f:
         content = f.read()
 
-    # Generic replacements that handle both the cdd-go markdown format with the `#`
-    # anchor and the older ml-switcheroo format
-    test_re = re.compile(
-        r"\[?\!\[Test Coverage\]\(https://img\.shields\.io/badge/(?:[tT]est_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
-    )
-    content = test_re.sub(
-        f"[![Test Coverage](https://img.shields.io/badge/test_coverage-{test_str}%25-{test_color}.svg)](#)",
-        content,
-    )
+    if test_cov is not None:
+        test_str = format_cov(test_cov)
+        test_color = get_color(test_cov)
+        test_re = re.compile(
+            r"\[?\!\[Test Coverage\]\(https://img\.shields\.io/badge/(?:[tT]est_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
+        )
+        content = test_re.sub(
+            f"[![Test Coverage](https://img.shields.io/badge/test_coverage-{test_str}%25-{test_color}.svg)](#)",
+            content,
+        )
 
-    doc_re = re.compile(
-        r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
-    )
-    content = doc_re.sub(
-        f"[![Doc Coverage](https://img.shields.io/badge/doc_coverage-{doc_str}%25-{doc_color}.svg)](#)",
-        content,
-    )
+    if doc_cov is not None:
+        doc_str = format_cov(doc_cov)
+        doc_color = get_color(doc_cov)
+        doc_re = re.compile(
+            r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
+        )
+        content = doc_re.sub(
+            f"[![Doc Coverage](https://img.shields.io/badge/doc_coverage-{doc_str}%25-{doc_color}.svg)](#)",
+            content,
+        )
 
     with open("README.md", "w") as f:
         f.write(content)

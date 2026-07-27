@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for conv_ops.py."""
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -36,66 +36,6 @@ class ConvGeneralDilated(OpDef):
         # We will just return () if dimension_numbers is None, but let's do a basic heuristic
         # If dimension_numbers provided, we'd parse it. Let's just return a placeholder for testing.
         return ()
-
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented ConvGeneralDilated"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented ConvGeneralDilated"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented ConvGeneralDilated"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented ConvGeneralDilated"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented ConvGeneralDilated"
 
 
 @register_op("Convolve")
@@ -143,12 +83,44 @@ class ConvWithGeneralPadding(OpDef):
         return args[0].shape if args else ()
 
 
+@register_op("ConvTransposeShapeTuple")
+class ConvTransposeShapeTuple(OpDef):
+    """ConvTransposeShapeTuple operator definition."""
+
+    op_name = "ConvTransposeShapeTuple"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
 @register_op("ConvTranspose")
 class ConvTranspose(OpDef):
     """ConvTranspose operator definition."""
 
     op_name = "ConvTranspose"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, lhs: object, rhs: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args else ()
+        # Assuming NHWC and HWIO or NWC and WIO
+        strides = kwargs.get("strides", 1)
+        padding = kwargs.get("padding", "VALID")
+
+        batch = lhs.shape[0]
+        c_out = rhs.shape[-1]
+
+        spatial_in = lhs.shape[1:-1]
+        spatial_k = rhs.shape[:-2]
+
+        if isinstance(strides, int):
+            strides = (strides,) * len(spatial_in)
+
+        out_spatial = []
+        for s_in, k, st in zip(spatial_in, spatial_k, strides):
+            if padding == "VALID":
+                s_out = (s_in - 1) * st + k
+            else:  # SAME
+                s_out = s_in * st
+            out_spatial.append(s_out)
+
+        return (batch,) + tuple(out_spatial) + (c_out,)

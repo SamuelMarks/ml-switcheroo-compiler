@@ -1,14 +1,30 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for conv.py."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 from ml_switcheroo_compiler.ops.configs import ConvConfig
-from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvGeneralDilatedLocal, ConvGeneralDilatedPatches, ConvWithGeneralPadding
+from ml_switcheroo_compiler.ops.linalg.conv_ops import (
+    ConvGeneralDilated,
+    ConvGeneralDilatedLocal,
+    ConvGeneralDilatedPatches,
+    ConvWithGeneralPadding,
+)
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+
+@dataclass
+class ConvLocalHyperparams:
+    """ConvLocalHyperparams."""
+
+    window_strides: object
+    padding: object
+    filter_shape: object
+
 
 if TYPE_CHECKING:
     pass
@@ -54,12 +70,18 @@ def conv_general_dilated(
 def conv_general_dilated_local(
     lhs: Tensor,
     rhs: Tensor,
-    window_strides: object,
-    padding: object,
-    filter_shape: object,
+    config: ConvLocalHyperparams,
     **kwargs: object,
 ) -> Tensor:
-    """ConvGeneralDilatedLocal."""
+    """ConvGeneralDilatedLocal.
+
+    Args:
+        lhs (Tensor): lhs.
+        rhs (Tensor): rhs.
+        config (ConvLocalHyperparams): config.
+        kwargs (object): kwargs.
+    """
+    window_strides, padding, filter_shape = config.window_strides, config.padding, config.filter_shape
     inputs = [lhs, rhs]
     attributes = {
         "window_strides": window_strides,

@@ -1,9 +1,8 @@
+# ruff: noqa: E501
 """Backend utilities."""
 
-import dask.array as da
-
 try:
-    pass
+    import dask.array as da
 except ImportError:
     da = None
 

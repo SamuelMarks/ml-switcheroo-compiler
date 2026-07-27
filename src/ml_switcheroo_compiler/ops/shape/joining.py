@@ -12,8 +12,9 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.frontend import asarray
-from ml_switcheroo_compiler.ops.shape.manipulation import flatten, reshape
+from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if TYPE_CHECKING:
@@ -116,7 +117,7 @@ def vstack(tup: Sequence[Tensor]) -> Tensor:
         data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = inputs[0].shape
+    out_shape = get_op("Vstack").infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
@@ -134,7 +135,7 @@ def hstack(tup: Sequence[Tensor]) -> Tensor:
         data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = inputs[0].shape
+    out_shape = get_op("Hstack").infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
@@ -152,7 +153,7 @@ def dstack(tup: Sequence[Tensor]) -> Tensor:
         data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(data.shape, tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = inputs[0].shape
+    out_shape = get_op("Dstack").infer_shape([t.shape for t in inputs])
     return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
@@ -179,8 +180,8 @@ def append(arr: object, values: object, axis: int | None = None) -> Tensor:
     values_t = asarray(values)
 
     if axis is None:
-        arr_t = flatten(arr_t)
-        values_t = flatten(values_t)
+        arr_t = reshape(arr_t, (-1,))
+        values_t = reshape(values_t, (-1,))
         axis = 0
 
     return concatenate([arr_t, values_t], dim=axis)

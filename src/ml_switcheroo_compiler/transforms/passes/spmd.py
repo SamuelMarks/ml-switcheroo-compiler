@@ -6,11 +6,14 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tuple[bool, bool]:
-    """Function docstring.
+    """Evaluate and process the is boundary transition operation.
 
     Args:
-        inp_sharding: Arg.
-        node_sharding: Arg.
+        inp_sharding (object): Required parameter for inp_sharding.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        tuple: The evaluated or processed output.
     """
     inp_sharded = any(m is not None for m in inp_sharding.mesh_mapping)
     node_sharded = any(m is not None for m in node_sharding.mesh_mapping)
@@ -18,11 +21,14 @@ def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tupl
 
 
 def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
-    """Function docstring.
+    """Evaluate and process the create all gather node operation.
 
     Args:
-        inp_id: Arg.
-        node_sharding: Arg.
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
     """
     return IRNode(
         id=f"{inp_id}_all_gather",
@@ -33,11 +39,14 @@ def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
 
 
 def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
-    """Function docstring.
+    """Evaluate and process the create reduce scatter node operation.
 
     Args:
-        inp_id: Arg.
-        node_sharding: Arg.
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
     """
     return IRNode(
         id=f"{inp_id}_reduce_scatter",
@@ -48,13 +57,16 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
 
 
 def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
-    """Function docstring.
+    """Evaluate and process the inject all gather operation.
 
     Args:
-        node: Arg.
-        idx: Arg.
-        inp_id: Arg.
-        node_sharding: Arg.
+        node (IRNode): Required parameter for node.
+        idx (int): Required parameter for idx.
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
     """
     gather_node = _create_all_gather_node(inp_id, node_sharding)
     node.inputs[idx] = gather_node.id
@@ -62,13 +74,16 @@ def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: objec
 
 
 def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
-    """Function docstring.
+    """Evaluate and process the inject reduce scatter operation.
 
     Args:
-        node: Arg.
-        idx: Arg.
-        inp_id: Arg.
-        node_sharding: Arg.
+        node (IRNode): Required parameter for node.
+        idx (int): Required parameter for idx.
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
     """
     scatter_node = _create_reduce_scatter_node(inp_id, node_sharding)
     node.inputs[idx] = scatter_node.id
@@ -76,14 +91,17 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: o
 
 
 def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: object) -> typing.Optional[IRNode]:
-    """Function docstring.
+    """Evaluate and process the process spmd input operation.
 
     Args:
-        node: Arg.
-        idx: Arg.
-        inp_id: Arg.
-        graph: Arg.
-        node_sharding: Arg.
+        node (IRNode): Required parameter for node.
+        idx (int): Required parameter for idx.
+        inp_id (str): Required parameter for inp_id.
+        graph (IRGraph): Required parameter for graph.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     if inp_id not in graph.nodes:
         return None
@@ -91,8 +109,8 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     inp_node = graph.nodes[inp_id]
     inp_sharding = getattr(inp_node, "sharding", None)
 
-    if not inp_sharding:  # pragma: no branch
-        return None  # pragma: no cover
+    if not inp_sharding:
+        return None
 
     inp_sharded, node_sharded = _is_boundary_transition(inp_sharding, node_sharding)
 
@@ -104,18 +122,21 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     is_grad = node.op_type == "Grad"
     handler = dispatch.get((inp_sharded, node_sharded, is_grad))
 
-    if handler:  # pragma: no branch
+    if handler:
         return handler(node, idx, inp_id, node_sharding)
 
-    return None  # pragma: no cover
+    return None
 
 
 def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]]:
-    """Function docstring.
+    """Evaluate and process the process spmd node operation.
 
     Args:
-        node: Arg.
-        graph: Arg.
+        node (IRNode): Required parameter for node.
+        graph (IRGraph): Required parameter for graph.
+
+    Returns:
+        tuple: The evaluated or processed output.
     """
     modified = False
     injected_nodes = []

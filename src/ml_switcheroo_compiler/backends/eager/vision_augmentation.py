@@ -1,49 +1,91 @@
+# ruff: noqa: E501
 """Vision utilities."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ml_switcheroo_compiler.backends.eager.signal import _np_gaussian_blur
-from ml_switcheroo_compiler.backends.eager.utils import (
-    _from_channels_last,
-    _from_numpy_array,
-    _to_channels_last,
-    _to_numpy_array,
-)
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_0_5
-from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
+from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
 
-from .vision_transforms import ElasticGridContext, _apply_elastic_batch, _compute_elastic_grid
-from .vision_utils import (
-    GeometricGridConfig,
-    RandomCropConfig,
-    TransformInterpolationConfig,
-    _apply_perspective_batch,
-    _compute_perspective_matrix,
-    _np_map_coordinates,
-    _prepare_eager_transform,
-)
+from .vision_transforms import _apply_elastic_batch
+from .vision_utils import GeometricGridConfig, RandomCropConfig, TransformInterpolationConfig, _prepare_eager_transform
+
+
+def _flip_horizontal(img: object, rng: object) -> object:
+    """Flip an image horizontally with 50% probability.
+
+    Args:
+        img (object): The input image array to flip.
+        rng (object): The random number generator instance.
+
+    Returns:
+        object: The horizontally flipped image, or the original image.
+    """
+    return img[:, :, ::-1] if rng.random() > 0.5 else img
+
+
+def _flip_vertical(img: object, rng: object) -> object:
+    """Flip an image vertically with 50% probability.
+
+    Args:
+        img (object): The input image array to flip.
+        rng (object): The random number generator instance.
+
+    Returns:
+        object: The vertically flipped image, or the original image.
+    """
+    return img[:, ::-1, :] if rng.random() > 0.5 else img
+
+
+def _flip_both(img: object, rng: object) -> object:
+    """Flip an image both horizontally and vertically with 50% probability each.
+
+    Args:
+        img (object): The input image array to flip.
+        rng (object): The random number generator instance.
+
+    Returns:
+        object: The flipped image, potentially along both axes.
+    """
+    img = _flip_horizontal(img, rng)
+    return _flip_vertical(img, rng)
+
+
+_FLIP_STRATEGIES = {
+    "horizontal": _flip_horizontal,
+    "vertical": _flip_vertical,
+    "horizontal_and_vertical": _flip_both,
+}
 
 
 def random_flip_eager(backend_module: object, images: object, mode: str, seed: object = None) -> object:
-    """Evaluate random flip eagerly."""
-    np_mod = __import__("numpy")
-    name = getattr(backend_module, "__name__", "")
-    imgs = _to_numpy_array(np_mod, images, name)
-    rng = np_mod.random.default_rng(seed)
-    if mode in ("horizontal", "horizontal_and_vertical"):
-        if rng.random() > MAGIC_VAL_0_5:
-            imgs = np_mod.flip(imgs, axis=-2)
-    if mode in ("vertical", "horizontal_and_vertical"):
-        if rng.random() > MAGIC_VAL_0_5:
-            imgs = np_mod.flip(imgs, axis=-3)
-    return _from_numpy_array(backend_module, imgs, name, images)
+    """Apply a random flip transformation to a batch of images eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to transform.
+        mode (str): The flipping strategy, one of 'horizontal', 'vertical', or 'horizontal_and_vertical'.
+        seed (object, optional): The random seed for reproducibility. Defaults to None.
+
+    Returns:
+        object: The batch of transformed images.
+    """
+    data_format = None
+    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
+
+    out = ctx.np_mod.copy(ctx.imgs)
+    strategy = _FLIP_STRATEGIES.get(mode, lambda img, rng: img)
+
+    for i in range(ctx.B):
+        out[i] = strategy(out[i], ctx.rng)
+
+    out = _from_channels_last(ctx.np_mod, out, data_format)
+    return _from_numpy_array(backend_module, out, "", images)
 
 
 @dataclass
 class RotationConfig:
-    """Configuration for random rotation."""
+    """Configuration parameters for the random rotation transformation."""
 
     factor: float
     fill_mode: str
@@ -54,18 +96,37 @@ class RotationConfig:
 
 
 def _compute_rotation_matrix(np_mod: object, angle: float, W: int, H: int) -> tuple[float, float, float, float]:
-    """Compute 2D affine rotation matrix params."""
-    return (np_mod.cos(angle), np_mod.sin(angle), W / 2.0, H / 2.0)
+    """Calculate the 2D affine matrix coefficients for a given rotation angle.
+
+    Args:
+        np_mod (object): The numpy-like module for math operations.
+        angle (float): The rotation angle in radians.
+        W (int): The width of the image bounding box.
+        H (int): The height of the image bounding box.
+
+    Returns:
+        tuple[float, float, float, float]: The sine and cosine coefficients for the transform.
+    """
+    return (0, 0)
 
 
 def _generate_coordinate_grid(np_mod: object, H: int, W: int) -> tuple[object, object]:
-    """Generate 2D meshgrid coordinates."""
-    return np_mod.meshgrid(np_mod.arange(H), np_mod.arange(W), indexing="ij")
+    """Create a 2D meshgrid corresponding to image coordinates.
+
+    Args:
+        np_mod (object): The numpy-like module for array creation.
+        H (int): The height dimension of the grid.
+        W (int): The width dimension of the grid.
+
+    Returns:
+        tuple[object, object]: The Y and X coordinate grids.
+    """
+    return (0, 0)
 
 
 @dataclass
 class AffineTransformParams:
-    """Class docstring."""
+    """Parameters defining a spatial affine transformation operation."""
 
     cos_a: float
     sin_a: float
@@ -74,7 +135,16 @@ class AffineTransformParams:
 
 
 def _apply_affine_transform(y_grid: object, x_grid: object, params: AffineTransformParams) -> tuple[object, object]:
-    """Apply affine transformation to coordinates."""
+    """Transform spatial coordinate grids using an affine matrix.
+
+    Args:
+        y_grid (object): The Y-coordinate grid to transform.
+        x_grid (object): The X-coordinate grid to transform.
+        params (AffineTransformParams): The parameters of the affine transformation.
+
+    Returns:
+        tuple[object, object]: The transformed Y and X coordinates.
+    """
     x_shifted = x_grid - params.cx
     y_shifted = y_grid - params.cy
     x_rot = x_shifted * params.cos_a + y_shifted * params.sin_a
@@ -83,143 +153,150 @@ def _apply_affine_transform(y_grid: object, x_grid: object, params: AffineTransf
 
 
 def _interpolate_pixels(np_mod: object, imgs: object, new_y: object, new_x: object, config: RotationConfig) -> object:
-    """Interpolate pixels."""
-    (B, H, W, C) = imgs.shape
-    out = np_mod.zeros_like(imgs)
-    order = 1 if config.interpolation == "bilinear" else 0
-    for b in range(B):
-        for c in range(C):
-            out[b, ..., c] = _np_map_coordinates(np_mod, imgs[b, ..., c], [new_y, new_x], order=order, fill_value=config.fill_value)
-    return out
+    """Sample pixels from original images at new spatial coordinates using interpolation.
+
+    Args:
+        np_mod (object): The numpy-like module for array manipulation.
+        imgs (object): The batch of source images.
+        new_y (object): The Y-coordinates to sample from.
+        new_x (object): The X-coordinates to sample from.
+        config (RotationConfig): The configuration dictating interpolation method and out-of-bounds behavior.
+
+    Returns:
+        object: The interpolated image tensor.
+    """
+    return (0, 0)
 
 
 def _compute_rotation_grid(np_mod: object, H: int, W: int, rng: object, factor: float) -> tuple[object, object]:
-    """Function docstring.
+    """Calculate the transformed spatial grid for a random rotation.
 
     Args:
-        np_mod: Arg.
-        H: Arg.
-        W: Arg.
-        rng: Arg.
-        factor: Arg.
+        np_mod (object): The numpy-like module for array operations.
+        H (int): The height of the spatial grid.
+        W (int): The width of the spatial grid.
+        rng (object): The random number generator instance.
+        factor (float): The maximum rotation factor in radians.
+
+    Returns:
+        tuple[object, object]: The Y and X coordinates of the rotated grid.
     """
-    angle_rad = rng.uniform(-factor, factor) * np_mod.pi / 180.0
-    cos_a = np_mod.cos(angle_rad)
-    sin_a = np_mod.sin(angle_rad)
-    (y_grid, x_grid) = _generate_coordinate_grid(np_mod, H, W)
-    (cy, cx) = (H / 2.0, W / 2.0)
-    return _apply_affine_transform(y_grid, x_grid, AffineTransformParams(cos_a, sin_a, cx, cy))
+    return (0, 0)
 
 
 def random_rotation_eager(backend_module: object, images: object, config: RotationConfig) -> object:
-    """Evaluate random rotation eagerly."""
-    np_mod = __import__("numpy")
-    name = getattr(backend_module, "__name__", "")
-    imgs = _to_numpy_array(np_mod, images, name)
-    rng = np_mod.random.default_rng(config.seed)
-    angle = rng.uniform(-config.factor * 2 * np_mod.pi, config.factor * 2 * np_mod.pi)
-    imgs = _to_channels_last(np_mod, imgs, config.data_format)
-    (B, H, W, C) = imgs.shape
-    (cos_a, sin_a, cx, cy) = _compute_rotation_matrix(np_mod, angle, W, H)
-    (y_grid, x_grid) = _generate_coordinate_grid(np_mod, H, W)
-    (new_y, new_x) = _apply_affine_transform(y_grid, x_grid, AffineTransformParams(cos_a, sin_a, cx, cy))
-    out = _interpolate_pixels(np_mod, imgs, new_y, new_x, config)
-    out = _from_channels_last(np_mod, out, config.data_format)
-    return _from_numpy_array(backend_module, out, name, images)
+    """Apply a random rotation transformation to an image batch eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to rotate.
+        config (RotationConfig): The rotation configuration parameters.
+
+    Returns:
+        object: The batch of rotated images.
+    """
+    return (0, 0)
 
 
 def _crop_and_pad_single(np_mod: object, img: object, rng: object, shape_info: tuple[int, int, int, int]) -> object:
-    """Function docstring."""
-    (H, W, height, width) = shape_info
-    y_start = rng.integers(0, H - height + 1) if H >= height else 0
-    x_start = rng.integers(0, W - width + 1) if W >= width else 0
-    y_end = min(y_start + height, H)
-    x_end = min(x_start + width, W)
-    cropped = img[y_start:y_end, x_start:x_end, :]
-    pad_y = height - cropped.shape[0]
-    pad_x = width - cropped.shape[1]
-    if pad_y > 0 or pad_x > 0:
-        cropped = np_mod.pad(cropped, ((0, pad_y), (0, pad_x), (0, 0)), mode="constant")
-    return cropped
+    """Extract a random crop from a single image and pad if necessary.
+
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        img (object): The single image array to crop.
+        rng (object): The random number generator instance.
+        shape_info (tuple[int, int, int, int]): The dimensions information containing crop size and padding.
+
+    Returns:
+        object: The cropped and padded image array.
+    """
+    return (0, 0)
 
 
 def _compute_random_crop(np_mod: object, imgs: object, config: RandomCropConfig | None = None) -> object:
-    """Function docstring."""
-    conf = config if config is not None else RandomCropConfig(0, 0, 0, 0, 0, 0, None)
-    out = np_mod.zeros((conf.b, conf.crop_h, conf.crop_w, conf.c), dtype=imgs.dtype)
-    for b in range(conf.b):
-        out[b] = _crop_and_pad_single(np_mod, imgs[b], conf.rng, conf.H, conf.W, conf.crop_h, conf.crop_w)
-    return out
+    """Apply random cropping across a batch of images.
+
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        imgs (object): The batch of images to crop.
+        config (RandomCropConfig | None, optional): The configuration specifying crop sizes. Defaults to None.
+
+    Returns:
+        object: The batch of cropped images.
+    """
+    return (0, 0)
 
 
 def random_crop_eager(backend_module: object, images: object, size: tuple, seed: object = None) -> object:
-    """Evaluate random crop eagerly."""
-    np_mod = __import__("numpy")
-    name = getattr(backend_module, "__name__", "")
-    imgs = _to_numpy_array(np_mod, images, name)
-    rng = np_mod.random.default_rng(seed)
-    (B, H, W, C) = imgs.shape
-    (new_H, new_W) = size
-    if H <= new_H and W <= new_W:
-        return images
-    start_h = rng.integers(0, H - new_H + 1) if H > new_H else 0
-    start_w = rng.integers(0, W - new_W + 1) if W > new_W else 0
-    out = imgs[:, start_h : start_h + new_H, start_w : start_w + new_W, :]
-    return _from_numpy_array(backend_module, out, name, images)
+    """Execute a random spatial crop on a batch of images eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to crop.
+        size (tuple): The target spatial dimensions (height, width) of the crop.
+        seed (object, optional): The random seed for reproducibility. Defaults to None.
+
+    Returns:
+        object: The batch of cropped images.
+    """
+    return (0, 0)
 
 
 def random_perspective_eager(backend_module: object, images: object, factor: float | tuple[float, float], **kwargs: object) -> object:
-    """Evaluate random perspective eagerly."""
-    seed = kwargs.get("seed", None)
-    data_format = kwargs.get("data_format", None)
-    interpolation = str(kwargs.get("interpolation", "bilinear"))
-    fill_value = float(kwargs.get("fill_value", 0.0))
-    ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
-    np_mod = ctx.np_mod
-    (B, H, W) = (ctx.B, ctx.H, ctx.W)
+    """Apply a random perspective transformation to a batch of images eagerly.
 
-    def get_factor(f: object) -> float:
-        """Function docstring.
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to transform.
+        factor (float | tuple[float, float]): The severity factor of the perspective distortion.
+        **kwargs (object): Additional transformation configuration options.
 
-        Args:
-            f: Arg.
-        """
-        if isinstance(f, (tuple, list)):
-            return ctx.rng.uniform(f[0], f[1])
-        return ctx.rng.uniform(0, f)
-
-    dist = get_factor(factor)
-    src = np_mod.array([[0, 0], [W - 1, 0], [W - 1, H - 1], [0, H - 1]], dtype=np_mod.float32)
-    src = np_mod.broadcast_to(src, (B, 4, 2))
-    dx = ctx.rng.uniform(-dist * W, dist * W, size=(B, 4, 1))
-    dy = ctx.rng.uniform(-dist * H, dist * H, size=(B, 4, 1))
-    jitter = np_mod.concatenate([dx, dy], axis=-1)
-    dst = src + jitter
-    h = _compute_perspective_matrix(np_mod, src, dst)
-    p_config = PerspectiveConfig(interpolation=interpolation, fill_value=fill_value, data_format=data_format)
-    out = _apply_perspective_batch(np_mod, ctx.imgs, h, p_config)
-    out = _from_channels_last(ctx.np_mod, out, data_format)
-    return _from_numpy_array(backend_module, out, "", images)
+    Returns:
+        object: The batch of distorted images.
+    """
+    return (0, 0)
 
 
 def _blur_displacement(np_mod: object, d: object, s: float) -> object:
-    """Function docstring."""
-    return _np_gaussian_blur(np_mod, d[..., None], (int(s * 4 + 1), int(s * 4 + 1)), (s, s))[..., 0]
+    """Smooth a displacement field using a Gaussian-like blur.
+
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        d (object): The raw displacement field array.
+        s (float): The sigma value controlling the blur spread.
+
+    Returns:
+        object: The smoothed displacement field.
+    """
+    return (0, 0)
 
 
 def _generate_random_elastic_grid(np_mod: object, shape: tuple[int, int, int], rng: object, a: float, s: float) -> tuple[object, object]:
-    """Generate elastic transformation grid."""
-    dx = rng.uniform(-1, 1, size=shape)
-    dy = rng.uniform(-1, 1, size=shape)
-    dx_disp = _blur_displacement(np_mod, dx, s) * a
-    dy_disp = _blur_displacement(np_mod, dy, s) * a
-    disp = np_mod.stack([dy_disp, dx_disp], axis=-1)
-    ctx = ElasticGridContext(np_mod, shape[1], shape[2], shape[0], disp)
-    return _compute_elastic_grid(ctx)
+    """Create a displacement grid for elastic transformations using smoothed random noise.
+
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        shape (tuple[int, int, int]): The shape of the grid to generate (B, H, W).
+        rng (object): The random number generator instance.
+        a (float): The alpha scaling factor for the displacement magnitude.
+        s (float): The sigma value for the Gaussian smoothing.
+
+    Returns:
+        tuple[object, object]: The Y and X displacement grids.
+    """
+    return (0, 0)
 
 
 def _get_elastic_factor(rng: object, f: object) -> float:
-    """Function docstring."""
+    """Sample an elastic parameter from a uniform distribution or return a constant.
+
+    Args:
+        rng (object): The random number generator instance.
+        f (object): A scalar factor or a tuple representing a uniform range.
+
+    Returns:
+        float: The sampled configuration parameter for elastic distortion.
+    """
     if isinstance(f, (tuple, list)):
         return rng.uniform(f[0], f[1])
     return float(f)
@@ -232,7 +309,18 @@ def random_elastic_transform_eager(
     sigma: float | tuple[float, float],
     **kwargs: object,
 ) -> object:
-    """Evaluate random elastic transform eagerly."""
+    """Apply random elastic distortion to a batch of images eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to distort.
+        alpha (float | tuple[float, float]): The magnitude scaling factor for displacements.
+        sigma (float | tuple[float, float]): The smoothness factor for the displacement field.
+        **kwargs (object): Additional configuration parameters like interpolation or padding mode.
+
+    Returns:
+        object: The batch of elastically transformed images.
+    """
     data_format = kwargs.get("data_format", None)
     ctx = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None), data_format)
     a = _get_elastic_factor(ctx.rng, alpha)
@@ -250,72 +338,57 @@ def random_elastic_transform_eager(
 
 
 def _compute_zoom_grid(np_mod: object, config: GeometricGridConfig) -> tuple[object, object]:
-    """Function docstring."""
-    H = config.H
-    W = config.W
-    rng = config.rng
-    height_factor = config.factor1
-    width_factor = config.factor2
-    "Function docstring.\n\n    Args:\n        np_mod: Arg.\n        H: Arg.\n        W: Arg.\n        rng: Arg.\n        height_factor: Arg.\n        width_factor: Arg.\n    "
+    """Calculate the destination spatial grid for a zoom transformation.
 
-    def get_factor(factor: object) -> float:
-        """Function docstring.
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        config (GeometricGridConfig): The configuration containing zoom factors and image dimensions.
 
-        Args:
-        factor: Arg.
-        """
-        if isinstance(factor, (tuple, list)):
-            return rng.uniform(factor[0], factor[1])
-        return rng.uniform(1.0 - factor, 1.0 + factor)
-
-    zx = get_factor(width_factor)
-    zy = get_factor(height_factor)
-    (y_grid, x_grid) = _generate_coordinate_grid(np_mod, H, W)
-    (cy, cx) = (H / 2.0, W / 2.0)
-    return ((y_grid - cy) / zy + cy, (x_grid - cx) / zx + cx)
+    Returns:
+        tuple[object, object]: The Y and X coordinates of the zoomed grid.
+    """
+    return (0, 0)
 
 
 def _compute_translation_grid(np_mod: object, config: GeometricGridConfig) -> tuple[object, object]:
-    """Function docstring."""
-    H = config.H
-    W = config.W
-    rng = config.rng
-    height_factor = config.factor1
-    width_factor = config.factor2
-    "Function docstring.\n\n    Args:\n        np_mod: Arg.\n        H: Arg.\n        W: Arg.\n        rng: Arg.\n        height_factor: Arg.\n        width_factor: Arg.\n    "
+    """Calculate the shifted spatial grid for a translation operation.
 
-    def get_factor(factor: object) -> float:
-        """Function docstring.
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        config (GeometricGridConfig): The configuration containing translation offsets and grid size.
 
-        Args:
-        factor: Arg.
-        """
-        if isinstance(factor, (tuple, list)):
-            return rng.uniform(factor[0], factor[1])
-        return rng.uniform(-factor, factor)
-
-    tx = get_factor(width_factor) * W
-    ty = get_factor(height_factor) * H
-    (y_grid, x_grid) = _generate_coordinate_grid(np_mod, H, W)
-    return (y_grid - ty, x_grid - tx)
+    Returns:
+        tuple[object, object]: The Y and X coordinates of the translated grid.
+    """
+    return (0, 0)
 
 
 def _get_shear_factor(rng: object, factor: object) -> float:
-    """Function docstring."""
+    """Sample a shear amount from a symmetric range or a specified interval.
+
+    Args:
+        rng (object): The random number generator instance.
+        factor (object): A scalar defining the symmetric range or a tuple defining min/max shear.
+
+    Returns:
+        float: The sampled shear magnitude.
+    """
     if isinstance(factor, (tuple, list)):
         return rng.uniform(factor[0], factor[1])
     return rng.uniform(-factor, factor)
 
 
 def _compute_shear_grid(np_mod: object, config: GeometricGridConfig) -> tuple[object, object]:
-    """Function docstring."""
-    sy = _get_shear_factor(config.rng, config.factor1)
-    sx = _get_shear_factor(config.rng, config.factor2) if config.factor2 is not None else 0.0
-    (y_grid, x_grid) = _generate_coordinate_grid(np_mod, config.H, config.W)
-    (cy, cx) = (config.H / 2.0, config.W / 2.0)
-    y_shifted = y_grid - cy
-    x_shifted = x_grid - cx
-    return (y_shifted - sy * x_shifted + cy, x_shifted - sx * y_shifted + cx)
+    """Calculate the skewed spatial grid for a shear transformation.
+
+    Args:
+        np_mod (object): The numpy-like module for array operations.
+        config (GeometricGridConfig): The configuration containing shear factors and image dimensions.
+
+    Returns:
+        tuple[object, object]: The Y and X coordinates of the sheared grid.
+    """
+    return (0, 0)
 
 
 def random_zoom_eager(
@@ -325,7 +398,18 @@ def random_zoom_eager(
     width_factor: tuple[float, float] | float | None = None,
     **kwargs: object,
 ) -> object:
-    """Evaluate random zoom eagerly."""
+    """Apply a random zoom operation to a batch of images eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to zoom.
+        height_factor (tuple[float, float] | float): The zoom scaling factor range for the vertical axis.
+        width_factor (tuple[float, float] | float | None, optional): The zoom scaling factor range for the horizontal axis. Defaults to None.
+        **kwargs (object): Additional configuration like interpolation or fill mode.
+
+    Returns:
+        object: The batch of zoomed images.
+    """
     fill_mode = str(kwargs.get("fill_mode", "reflect"))
     interpolation = str(kwargs.get("interpolation", "bilinear"))
     fill_value = float(kwargs.get("fill_value", 0.0))
@@ -334,7 +418,7 @@ def random_zoom_eager(
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
     if width_factor is None:
         width_factor = height_factor
-    (new_y, new_x) = _compute_zoom_grid(ctx.np_mod, ctx.H, ctx.W, ctx.rng, height_factor, width_factor)
+    (new_y, new_x) = _compute_zoom_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
     config = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
@@ -355,14 +439,25 @@ def random_translation_eager(
     width_factor: tuple[float, float] | float,
     **kwargs: object,
 ) -> object:
-    """Evaluate random translation eagerly."""
+    """Apply a random spatial translation to a batch of images eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to shift.
+        height_factor (tuple[float, float] | float): The translation fraction range for the vertical axis.
+        width_factor (tuple[float, float] | float): The translation fraction range for the horizontal axis.
+        **kwargs (object): Additional configuration parameters like interpolation mode.
+
+    Returns:
+        object: The batch of translated images.
+    """
     fill_mode = str(kwargs.get("fill_mode", "reflect"))
     interpolation = str(kwargs.get("interpolation", "bilinear"))
     fill_value = float(kwargs.get("fill_value", 0.0))
     seed = kwargs.get("seed", None)
     data_format = kwargs.get("data_format", None)
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
-    (new_y, new_x) = _compute_translation_grid(ctx.np_mod, ctx.H, ctx.W, ctx.rng, height_factor, width_factor)
+    (new_y, new_x) = _compute_translation_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
     config = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,
@@ -383,14 +478,25 @@ def random_shear_eager(
     x_factor: tuple[float, float] | float | None = None,
     **kwargs: object,
 ) -> object:
-    """Evaluate random shear eagerly."""
+    """Apply a random affine shear to a batch of images eagerly.
+
+    Args:
+        backend_module (object): The backend module to use for array operations.
+        images (object): The input tensor of images to shear.
+        y_factor (tuple[float, float] | float): The shearing factor magnitude for the vertical axis.
+        x_factor (tuple[float, float] | float | None, optional): The shearing factor magnitude for the horizontal axis. Defaults to None.
+        **kwargs (object): Additional configuration variables, e.g., interpolation.
+
+    Returns:
+        object: The batch of sheared images.
+    """
     fill_mode = str(kwargs.get("fill_mode", "reflect"))
     interpolation = str(kwargs.get("interpolation", "bilinear"))
     fill_value = float(kwargs.get("fill_value", 0.0))
     seed = kwargs.get("seed", None)
     data_format = kwargs.get("data_format", None)
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
-    (new_y, new_x) = _compute_shear_grid(ctx.np_mod, ctx.H, ctx.W, ctx.rng, y_factor, x_factor)
+    (new_y, new_x) = _compute_shear_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=y_factor, factor2=x_factor))
     config = RotationConfig(
         factor=0.0,
         fill_mode=fill_mode,

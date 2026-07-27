@@ -4,11 +4,14 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
 
 def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
-    """Function docstring.
+    """Evaluate and process the process assign node operation.
 
     Args:
-        node: Arg.
-        state_env: Arg.
+        node (LogicalNode): Required parameter for node.
+        state_env (dict): Required parameter for state_env.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     target = node.inputs[0]
     new_val = node.inputs[1]
@@ -17,11 +20,14 @@ def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
 
 
 def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
-    """Function docstring.
+    """Evaluate and process the rewrite node operation.
 
     Args:
-        node: Arg.
-        state_env: Arg.
+        node (LogicalNode): Required parameter for node.
+        state_env (dict): Required parameter for state_env.
+
+    Returns:
+        LogicalNode: The evaluated or processed output.
     """
     new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
     return LogicalNode(
@@ -38,12 +44,15 @@ def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
 
 
 def _build_functional_outputs(graph_outputs: list[str], state_vars: list[str], state_env: dict[str, str]) -> list[str]:
-    """Function docstring.
+    """Evaluate and process the build functional outputs operation.
 
     Args:
-        graph_outputs: Arg.
-        state_vars: Arg.
-        state_env: Arg.
+        graph_outputs (list): Required parameter for graph_outputs.
+        state_vars (list): Required parameter for state_vars.
+        state_env (dict): Required parameter for state_env.
+
+    Returns:
+        list: The evaluated or processed output.
     """
     functional_outputs = list(graph_outputs)
     for v in state_vars:

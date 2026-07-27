@@ -1,10 +1,11 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for norms.py."""
 
 from __future__ import annotations
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
 
 def matrix_power(input: Tensor, n: int) -> Tensor:
@@ -21,28 +22,26 @@ def matrix_power(input: Tensor, n: int) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("MatrixPower", input.data, n)
-        return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
-    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [input.dtype])
+        data = backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n)
+        return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))
+    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])
 
 
 def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None, keepdims: bool) -> tuple[int, ...]:
-    """Function docstring."""
+    """Evaluate and process the norm out shape operation.
+
+    Args:
+        x_shape (tuple): Required parameter for x_shape.
+        axis (Any): Required parameter for axis.
+        keepdims (bool): Required parameter for keepdims.
+
+    Returns:
+        tuple: The evaluated or processed output.
+    """
     if axis is None:
-        if not keepdims:
-            return ()
-        return tuple(1 for _ in x_shape)
-
+        return tuple(1 for _ in x_shape) if keepdims else ()
     axes = (axis,) if isinstance(axis, int) else axis
-
-    out_shape = []
-    for i, s in enumerate(x_shape):
-        if i in axes:
-            if keepdims:
-                out_shape.append(1)
-        else:
-            out_shape.append(s)
-    return tuple(out_shape)
+    return compute_reduction_shape(x_shape, axes, keepdims)
 
 
 def norm(
@@ -68,11 +67,11 @@ def norm(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Norm", x.data, ord=ord, axis=axis, keepdims=keepdims)
+        data = backend.execute_op("Norm", (x.data if type(x).__name__ == "Tensor" else x), ord=ord, axis=axis, keepdims=keepdims)
 
-        return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
+        return Tensor(data, TensorConfig(out_shape, getattr(x, "dtype", None), getattr(x, "device", None)))
 
-    return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [x.dtype])
+    return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])
 
 
 def matrix_exponential(a: Tensor) -> Tensor:
@@ -88,9 +87,21 @@ def matrix_exponential(a: Tensor) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("MatrixExponential", a.data)
-        return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
-    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [a.dtype])
+        data = backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a))
+        return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))
+    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
+
+
+def matrix_exp(a: Tensor) -> Tensor:
+    """Compute the matrix exponential of a square matrix.
+
+    Args:
+        a (Tensor): The input square matrix.
+
+    Returns:
+    Tensor: The matrix exponential.
+    """
+    return matrix_exponential(a)
 
 
 def _power_iteration_eager(
@@ -105,15 +116,15 @@ def _power_iteration_eager(
 
     v_data, u_data, sigma_data = backend.execute_op(
         "PowerIteration",
-        input.data,
+        (input.data if type(input).__name__ == "Tensor" else input),
         num_iters=num_iters,
-        u=u.data if u is not None else None,
+        u=(u.data if type(u).__name__ == "Tensor" else u) if u is not None else None,
     )
 
     return (
-        Tensor(v_data, TensorConfig(v_data.shape, input.dtype, input.device)),
-        Tensor(u_data, TensorConfig(u_data.shape, input.dtype, input.device)),
-        Tensor(sigma_data, TensorConfig(sigma_data.shape, input.dtype, input.device)),
+        Tensor(v_data, TensorConfig(v_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+        Tensor(u_data, TensorConfig(u_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+        Tensor(sigma_data, TensorConfig(sigma_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
     )
 
 
@@ -153,5 +164,5 @@ def power_iteration(
         inputs,
         {"num_iters": num_iters},
         [v_shape, u_shape, sigma_shape],
-        [input.dtype, input.dtype, input.dtype],
+        [getattr(input, "dtype", None), getattr(input, "dtype", None), getattr(input, "dtype", None)],
     )

@@ -54,7 +54,16 @@ def conv(
     kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Tensor:
-    """Docstring."""
+    """Evaluate and process the conv operation.
+
+    Args:
+        inputs (Tensor): Required parameter for inputs.
+        kernel (Tensor): Required parameter for kernel.
+        config (Any): Required parameter for config.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     conf = config if config is not None else GenericConvConfig()
     """Generic convolution.
 
@@ -88,7 +97,7 @@ def conv(
             lhs_dilation=1,
             rhs_dilation=conf.dilation_rate,
         )
-    elif spatial_rank == MAGIC_VAL_3:  # pragma: no branch
+    elif spatial_rank == MAGIC_VAL_3:
         return conv3d(
             inputs,
             kernel,
@@ -98,7 +107,7 @@ def conv(
             rhs_dilation=conf.dilation_rate,
         )
     else:
-        raise ValueError(f"Unsupported spatial rank: {spatial_rank}")  # pragma: no cover
+        raise ValueError(f"Unsupported spatial rank: {spatial_rank}")
 
 
 def depthwise_conv(
@@ -106,7 +115,16 @@ def depthwise_conv(
     kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Tensor:
-    """Docstring."""
+    """Evaluate and process the depthwise conv operation.
+
+    Args:
+        inputs (Tensor): Required parameter for inputs.
+        kernel (Tensor): Required parameter for kernel.
+        config (Any): Required parameter for config.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     conf = config if config is not None else GenericConvConfig()
     """Generic depthwise convolution.
 
@@ -131,8 +149,8 @@ def depthwise_conv(
             lhs_dilation=1,
             rhs_dilation=conf.dilation_rate,
         )
-    elif spatial_rank == MAGIC_VAL_2:  # pragma: no branch
-        return depthwise_conv2d(  # pragma: no cover
+    elif spatial_rank == MAGIC_VAL_2:
+        return depthwise_conv2d(
             inputs,
             kernel,
             config=GenericConvConfig(
@@ -142,7 +160,7 @@ def depthwise_conv(
             ),
         )
     else:
-        raise ValueError(f"Unsupported spatial rank for depthwise_conv: {spatial_rank}")  # pragma: no cover
+        raise ValueError(f"Unsupported spatial rank for depthwise_conv: {spatial_rank}")
 
 
 def separable_conv(
@@ -151,7 +169,17 @@ def separable_conv(
     pointwise_kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Tensor:
-    """Docstring."""
+    """Evaluate and process the separable conv operation.
+
+    Args:
+        inputs (Tensor): Required parameter for inputs.
+        depthwise_kernel (Tensor): Required parameter for depthwise_kernel.
+        pointwise_kernel (Tensor): Required parameter for pointwise_kernel.
+        config (Any): Required parameter for config.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     conf = config if config is not None else GenericConvConfig()
     """Generic separable convolution.
 
@@ -178,8 +206,8 @@ def separable_conv(
             lhs_dilation=1,
             rhs_dilation=conf.dilation_rate,
         )
-    elif spatial_rank == MAGIC_VAL_2:  # pragma: no branch
-        return separable_conv2d(  # pragma: no cover
+    elif spatial_rank == MAGIC_VAL_2:
+        return separable_conv2d(
             inputs,
             depthwise_kernel,
             pointwise_kernel,
@@ -189,4 +217,4 @@ def separable_conv(
             rhs_dilation=conf.dilation_rate,
         )
     else:
-        raise ValueError(f"Unsupported spatial rank for separable_conv: {spatial_rank}")  # pragma: no cover
+        raise ValueError(f"Unsupported spatial rank for separable_conv: {spatial_rank}")

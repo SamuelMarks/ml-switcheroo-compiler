@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for solve.py."""
 
 from __future__ import annotations
 
@@ -25,6 +25,15 @@ class Solve(OpDef):
         return ()
 
 
+@register_op("SolveEx")
+class SolveEx(OpDef):
+    """SolveEx Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
 def solve(a: Tensor, b: Tensor) -> Tensor:
     """Solves a linear matrix equation, or system of linear scalar equations.
 
@@ -46,6 +55,34 @@ def solve(a: Tensor, b: Tensor) -> Tensor:
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
+
+
+def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> tuple[Tensor, Tensor]:
+    """Solves a linear matrix equation with info tensor.
+
+    Args:
+        a (Tensor): Coefficient matrix
+        b (Tensor): Ordinate or 'dependent variable' values
+        check_errors (bool): If True, throws an error if the decomposition fails
+
+    Returns:
+        tuple[Tensor, Tensor]: Solution to the system of linear equations and info tensor
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        sol, info = backend.execute_op(
+            "SolveEx",
+            (a.data if hasattr(a, "device") else a),
+            (b.data if hasattr(b, "device") else b),
+            check_errors=check_errors,
+        )
+        return (
+            Tensor(sol, TensorConfig(sol.shape, a.dtype, a.device)),
+            Tensor(info, TensorConfig(info.shape, "int32", a.device)),
+        )
+    return _emit_linalg_node("SolveEx", [a, b], {"check_errors": check_errors}, [b.shape, a.shape[:-2]], [a.dtype, "int32"])
 
 
 def solve_triangular(
@@ -75,12 +112,13 @@ def solve_triangular(
             b.data,
             lower=lower,
             unit_diagonal=unit_diagonal,
+            adjoint=False,
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node(
         "TriangularSolve",
         [a, b],
-        {"lower": lower, "unit_diagonal": unit_diagonal},
+        {"lower": lower, "unit_diagonal": unit_diagonal, "adjoint": False},
         [b.shape],
         [a.dtype],
     )

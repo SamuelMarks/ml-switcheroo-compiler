@@ -140,7 +140,7 @@ def correlate(a: object, v: object, mode: str = "valid") -> Tensor:
     """Cross-correlation of two 1-dimensional sequences."""
     if config.eager_mode:
         data = get_active_backend().execute_op("Correlate", getattr(a, "data", a), getattr(v, "data", v), mode=mode)
-        return Tensor(data, TensorConfig(data.shape, "float32", getattr(a, "device", None)))  # pragma: no cover
+        return Tensor(data, TensorConfig(data.shape, "float32", getattr(a, "device", None)))
     return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")
 
 
@@ -166,7 +166,7 @@ def cov(
     """
     allowed_keys = {"rowvar", "bias", "ddof", "fweights", "aweights"}
     for k in kwargs:
-        if k not in allowed_keys:  # pragma: no branch
+        if k not in allowed_keys:
             raise ValueError(f"Invalid keyword argument to cov: {k}")
 
     rowvar = kwargs.get("rowvar", True)

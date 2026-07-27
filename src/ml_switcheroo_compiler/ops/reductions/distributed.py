@@ -12,10 +12,11 @@ class Psum(ReductionOp):
 
     op_name = "Psum"
 
-    def infer_shape(self, x: object, axis_name: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
+            *args: Args.
             x (object): The input x tensor.
             axis_name (object): The axis_name parameter for the operation.
             **kwargs: Additional keyword arguments.
@@ -23,67 +24,8 @@ class Psum(ReductionOp):
         Returns:
             object: The evaluated output resulting from this operation.
         """
+        x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())
-
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Psum"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Psum"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Psum"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Psum"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Psum"
 
 
 @register_op("Pmean")
@@ -92,10 +34,11 @@ class Pmean(ReductionOp):
 
     op_name = "Pmean"
 
-    def infer_shape(self, x: object, axis_name: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape.
 
         Args:
+            *args: Args.
             x (object): The input x tensor.
             axis_name (object): The axis_name parameter for the operation.
             **kwargs: Additional keyword arguments.
@@ -103,64 +46,5 @@ class Pmean(ReductionOp):
         Returns:
             object: The evaluated output resulting from this operation.
         """
+        x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())
-
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Pmean"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Pmean"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Pmean"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Pmean"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented Pmean"

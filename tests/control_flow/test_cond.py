@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Control flow tests."""
 
 import numpy as np
@@ -14,33 +15,28 @@ device = Device(DeviceType.CPU, 0)
 
 
 def test_cond_eager() -> None:
-    """Tests the eager execution of the conditional operator.
-
-    Verifies that cond correctly evaluates the predicate and executes the
-    corresponding branch function (true or false) when eager mode is enabled
+    """Test the cond eager behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
+    "Tests the eager execution of the conditional operator.\n\n    Verifies that cond correctly evaluates the predicate and executes the\n    corresponding branch function (true or false) when eager mode is enabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=True):
         pred = Tensor(np.array(True), TensorConfig((), DType.Bool, device))
         res = cond(pred, lambda: 1, lambda: 0)
         assert res == 1
-
         pred2 = Tensor(np.array(False), TensorConfig((), DType.Bool, device))
         res2 = cond(pred2, lambda: 1, lambda: 0)
         assert res2 == 0
 
 
 def test_cond_trace() -> None:
-    """Tests the tracing behavior of the conditional operator.
-
-    Verifies that cond correctly records the conditional operation into the
-    active tracing graph when eager mode is disabled
+    """Test the cond trace behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
+    "Tests the tracing behavior of the conditional operator.\n\n    Verifies that cond correctly records the conditional operation into the\n    active tracing graph when eager mode is disabled\n\n    Returns:\n    None\n    "
     with ConfigContext(eager_mode=False):
         pred = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Bool, device))
 
@@ -48,23 +44,17 @@ def test_cond_trace() -> None:
             """True fn.
 
             Returns:
-                object: The resulting output.
+            object: The resulting output.
             """
-            return Tensor(
-                ProxyTensor(id="mock", shape=(), dtype="float32"),
-                TensorConfig((), DType.Float32, device),
-            )
+            return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
         def false_fn() -> object:
             """False fn.
 
             Returns:
-                object: The resulting output.
+            object: The resulting output.
             """
-            return Tensor(
-                ProxyTensor(id="mock", shape=(), dtype="float32"),
-                TensorConfig((), DType.Float32, device),
-            )
+            return Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
 
         global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)

@@ -5,141 +5,319 @@ from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 
 @register_op("NormPdf")
 class NormPdf(OpDef):
-    """NormPdf."""
+    """Operation for calculating the probability density function (PDF) of a normal distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the normal PDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `x`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `x`.
+        """
         return args[0].shape
 
 
 @register_op("NormCdf")
 class NormCdf(OpDef):
-    """NormCdf."""
+    """Operation for calculating the cumulative distribution function (CDF) of a normal distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the normal CDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `x`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `x`.
+        """
         return args[0].shape
 
 
 @register_op("GammaPdf")
 class GammaPdf(OpDef):
-    """GammaPdf."""
+    """Operation for calculating the probability density function (PDF) of a gamma distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the gamma PDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `x`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `x`.
+        """
         return args[0].shape
 
 
 @register_op("GammaCdf")
 class GammaCdf(OpDef):
-    """GammaCdf."""
+    """Operation for calculating the cumulative distribution function (CDF) of a gamma distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the gamma CDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `x`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `x`.
+        """
         return args[0].shape
 
 
 @register_op("BetaPdf")
 class BetaPdf(OpDef):
-    """BetaPdf."""
+    """Operation for calculating the probability density function (PDF) of a beta distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the beta PDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `x`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `x`.
+        """
         return args[0].shape
 
 
 @register_op("BetaCdf")
 class BetaCdf(OpDef):
-    """BetaCdf."""
+    """Operation for calculating the cumulative distribution function (CDF) of a beta distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the beta CDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `x`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `x`.
+        """
         return args[0].shape
 
 
 @register_op("PoissonPmf")
 class PoissonPmf(OpDef):
-    """PoissonPmf."""
+    """Operation for calculating the probability mass function (PMF) of a Poisson distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the Poisson PMF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `k`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `k`.
+        """
         return args[0].shape
 
 
 @register_op("PoissonCdf")
 class PoissonCdf(OpDef):
-    """PoissonCdf."""
+    """Operation for calculating the cumulative distribution function (CDF) of a Poisson distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the Poisson CDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `k`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `k`.
+        """
         return args[0].shape
 
 
 @register_op("BinomPmf")
 class BinomPmf(OpDef):
-    """BinomPmf."""
+    """Operation for calculating the probability mass function (PMF) of a binomial distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the binomial PMF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `k`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `k`.
+        """
         return args[0].shape
 
 
 @register_op("BinomCdf")
 class BinomCdf(OpDef):
-    """BinomCdf."""
+    """Operation for calculating the cumulative distribution function (CDF) of a binomial distribution."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the binomial CDF operation.
+
+        Args:
+            *args: Positional arguments, where the first argument is the input tensor `k`.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            object: The inferred shape, matching the shape of the input tensor `k`.
+        """
         return args[0].shape
 
 
 def norm_pdf(x: object, loc: float = 0.0, scale: float = 1.0) -> object:
-    """Evaluate norm_pdf."""
+    """Calculate the probability density function (PDF) for a normal distribution.
+
+    Args:
+        x: The input values at which to evaluate the normal PDF.
+        loc: The mean (center) of the normal distribution.
+        scale: The standard deviation (spread) of the normal distribution.
+
+    Returns:
+        object: A tensor containing the evaluated normal PDF values.
+    """
     return get_op("NormPdf")()(x, loc, scale)
 
 
 def norm_cdf(x: object, loc: float = 0.0, scale: float = 1.0) -> object:
-    """Evaluate norm_cdf."""
+    """Calculate the cumulative distribution function (CDF) for a normal distribution.
+
+    Args:
+        x: The input values at which to evaluate the normal CDF.
+        loc: The mean (center) of the normal distribution.
+        scale: The standard deviation (spread) of the normal distribution.
+
+    Returns:
+        object: A tensor containing the evaluated normal CDF values.
+    """
     return get_op("NormCdf")()(x, loc, scale)
 
 
 def gamma_pdf(x: object, a: object, loc: float = 0.0, scale: float = 1.0) -> object:
-    """Evaluate gamma_pdf."""
+    """Calculate the probability density function (PDF) for a gamma distribution.
+
+    Args:
+        x: The input values at which to evaluate the gamma PDF.
+        a: The shape parameter of the gamma distribution.
+        loc: The location parameter (shift) of the gamma distribution.
+        scale: The scale parameter of the gamma distribution.
+
+    Returns:
+        object: A tensor containing the evaluated gamma PDF values.
+    """
     return get_op("GammaPdf")()(x, a, loc, scale)
 
 
 def gamma_cdf(x: object, a: object, loc: float = 0.0, scale: float = 1.0) -> object:
-    """Evaluate gamma_cdf."""
+    """Calculate the cumulative distribution function (CDF) for a gamma distribution.
+
+    Args:
+        x: The input values at which to evaluate the gamma CDF.
+        a: The shape parameter of the gamma distribution.
+        loc: The location parameter (shift) of the gamma distribution.
+        scale: The scale parameter of the gamma distribution.
+
+    Returns:
+        object: A tensor containing the evaluated gamma CDF values.
+    """
     return get_op("GammaCdf")()(x, a, loc, scale)
 
 
 def beta_pdf(x: object, a: object, b: object, loc: float = 0.0, scale: float = 1.0) -> object:
-    """Evaluate beta_pdf."""
+    """Calculate the probability density function (PDF) for a beta distribution.
+
+    Args:
+        x: The input values at which to evaluate the beta PDF.
+        a: The first shape parameter (alpha) of the beta distribution.
+        b: The second shape parameter (beta) of the beta distribution.
+        loc: The location parameter (shift) of the beta distribution.
+        scale: The scale parameter of the beta distribution.
+
+    Returns:
+        object: A tensor containing the evaluated beta PDF values.
+    """
     return get_op("BetaPdf")()(x, a, b, loc, scale)
 
 
 def beta_cdf(x: object, a: object, b: object, loc: float = 0.0, scale: float = 1.0) -> object:
-    """Evaluate beta_cdf."""
+    """Calculate the cumulative distribution function (CDF) for a beta distribution.
+
+    Args:
+        x: The input values at which to evaluate the beta CDF.
+        a: The first shape parameter (alpha) of the beta distribution.
+        b: The second shape parameter (beta) of the beta distribution.
+        loc: The location parameter (shift) of the beta distribution.
+        scale: The scale parameter of the beta distribution.
+
+    Returns:
+        object: A tensor containing the evaluated beta CDF values.
+    """
     return get_op("BetaCdf")()(x, a, b, loc, scale)
 
 
 def poisson_pmf(k: object, mu: object, loc: float = 0.0) -> object:
-    """Evaluate poisson_pmf."""
+    """Calculate the probability mass function (PMF) for a Poisson distribution.
+
+    Args:
+        k: The input values at which to evaluate the Poisson PMF.
+        mu: The expected number of events (lambda/rate parameter).
+        loc: The location parameter (shift) of the Poisson distribution.
+
+    Returns:
+        object: A tensor containing the evaluated Poisson PMF values.
+    """
     return get_op("PoissonPmf")()(k, mu, loc)
 
 
 def poisson_cdf(k: object, mu: object, loc: float = 0.0) -> object:
-    """Evaluate poisson_cdf."""
+    """Calculate the cumulative distribution function (CDF) for a Poisson distribution.
+
+    Args:
+        k: The input values at which to evaluate the Poisson CDF.
+        mu: The expected number of events (lambda/rate parameter).
+        loc: The location parameter (shift) of the Poisson distribution.
+
+    Returns:
+        object: A tensor containing the evaluated Poisson CDF values.
+    """
     return get_op("PoissonCdf")()(k, mu, loc)
 
 
 def binom_pmf(k: object, n: object, p: object, loc: float = 0.0) -> object:
-    """Evaluate binom_pmf."""
+    """Calculate the probability mass function (PMF) for a binomial distribution.
+
+    Args:
+        k: The input values at which to evaluate the binomial PMF.
+        n: The number of trials.
+        p: The probability of success for each trial.
+        loc: The location parameter (shift) of the binomial distribution.
+
+    Returns:
+        object: A tensor containing the evaluated binomial PMF values.
+    """
     return get_op("BinomPmf")()(k, n, p, loc)
 
 
 def binom_cdf(k: object, n: object, p: object, loc: float = 0.0) -> object:
-    """Evaluate binom_cdf."""
+    """Calculate the cumulative distribution function (CDF) for a binomial distribution.
+
+    Args:
+        k: The input values at which to evaluate the binomial CDF.
+        n: The number of trials.
+        p: The probability of success for each trial.
+        loc: The location parameter (shift) of the binomial distribution.
+
+    Returns:
+        object: A tensor containing the evaluated binomial CDF values.
+    """
     return get_op("BinomCdf")()(k, n, p, loc)
 
 

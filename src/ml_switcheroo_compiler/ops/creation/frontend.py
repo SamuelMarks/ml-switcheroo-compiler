@@ -5,6 +5,8 @@
 from .frontend_basic import (
     array,
     asarray,
+    convert_to_numpy,
+    convert_to_tensor,
     empty,
     empty_like,
     full,
@@ -17,24 +19,20 @@ from .frontend_basic import (
 from .frontend_matrix import diag, eye, identity
 from .frontend_random import manual_seed, rand, randint, randn
 from .frontend_sequence import arange, linspace
-from .frontend_windows import bartlett, blackman, hamming, hanning, kaiser
 
 __all__ = [
     "arange",
     "array",
     "asarray",
-    "bartlett",
-    "blackman",
+    "convert_to_numpy",
+    "convert_to_tensor",
     "diag",
     "empty",
     "empty_like",
     "eye",
     "full",
     "full_like",
-    "hamming",
-    "hanning",
     "identity",
-    "kaiser",
     "linspace",
     "manual_seed",
     "ones",

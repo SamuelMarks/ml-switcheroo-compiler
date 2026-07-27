@@ -1,5 +1,8 @@
 [MASTER]
-disable=too-many-arguments,too-many-locals,duplicate-code
+disable=too-many-arguments,too-many-locals,duplicate-code,too-few-public-methods,too-many-positional-arguments
+
+[DESIGN]
+max-attributes=10
 
 [SIMILARITIES]
 min-similarity-lines=20

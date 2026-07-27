@@ -3,10 +3,9 @@
 from typing import Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.nn.activations import sigmoid
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.linalg import matmul
-from ml_switcheroo_compiler.ops.shape import split
+from ml_switcheroo_compiler.ops.shape.splitting import split
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
@@ -39,12 +38,18 @@ def lstm_cell(
     # Split z into i, f, c_bar, o
     i, f, c_bar, o = split(z, 4, dim=-1)
 
-    i = sigmoid(i)
-    f = sigmoid(f)
+    i = _sigmoid(i)
+    f = _sigmoid(f)
     c_bar = tanh(c_bar)
-    o = sigmoid(o)
+    o = _sigmoid(o)
 
     c_new = add(multiply(f, c), multiply(i, c_bar))
     h_new = multiply(o, tanh(c_new))
 
     return h_new, (h_new, c_new)
+
+
+def _sigmoid(x: object) -> object:
+    from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
+
+    return s(x)

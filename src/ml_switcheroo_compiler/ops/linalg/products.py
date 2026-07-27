@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for products.py."""
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
@@ -26,12 +26,12 @@ class Diag(OpDef):
 
     def infer_shape(self, input: object, **kwargs: object) -> object:
         """Infer shape."""
-        if isinstance(input, tuple):  # pragma: no branch
-            if len(input) == 1:  # pragma: no branch
-                return (input[0], input[0])  # pragma: no cover
-            elif len(input) >= MAGIC_VAL_2:  # pragma: no branch
+        if isinstance(input, tuple):
+            if len(input) == 1:
+                return (input[0], input[0])
+            elif len(input) >= MAGIC_VAL_2:
                 return input[:-1]
-        return None  # pragma: no cover
+        return None
 
 
 @register_op("Matmul")
@@ -61,10 +61,13 @@ class Matmul(OpDef):
 
 
 def _has_valid_shape(obj: object) -> bool:
-    """Function docstring.
+    """Evaluate and process the has valid shape operation.
 
     Args:
-        obj: Arg.
+        obj (object): Required parameter for obj.
+
+    Returns:
+        bool: The evaluated or processed output.
     """
     return hasattr(obj, "shape") and bool(obj.shape)
 
@@ -186,6 +189,18 @@ class Diagonal(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
+        return ()
+
+
+@register_op("EinsumPath")
+class EinsumPath(OpDef):
+    """EinsumPath operator definition."""
+
+    op_name = "EinsumPath"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Typically returns a tuple representing the path and a string representation.
         return ()
 
 

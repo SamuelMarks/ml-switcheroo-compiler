@@ -24,18 +24,27 @@ repos:
     files: ^src/ml_switcheroo_compiler/transforms/pass_manager.py
 - repo: local
   hooks:
+  - id: update-badges
+    name: Update Badges
+    entry: python3 scripts/update_badges.py
+    language: python
+    additional_dependencies: [coverage]
+    pass_filenames: false
   - id: generate-exports
     name: Generate Module Exports
     entry: python3 scripts/generate_exports.py
     language: system
     files: ^src/ml_switcheroo_compiler/.*\.py$
     pass_filenames: false
-  - id: detect-leaks
-    name: Detect Dependency Leaks
-    entry: ./scripts/detect_leaks.py
-    language: system
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    entry: pylint --disable=all --enable=too-many-instance-attributes
+    language: python
+    types: [python]
     files: ^src/ml_switcheroo_compiler/
-    pass_filenames: false
+    additional_dependencies: [pylint]
 - repo: local
   hooks:
   - id: radon
@@ -44,5 +53,15 @@ repos:
     language: python
     types:
     - python
+    files: ^src/ml_switcheroo_compiler/
     additional_dependencies:
     - radon
+- repo: local
+  hooks:
+  - id: xenon
+    name: xenon
+    entry: xenon --max-absolute D --max-modules B --max-average A
+    language: python
+    types: [python]
+    files: ^src/ml_switcheroo_compiler/
+    additional_dependencies: [xenon]

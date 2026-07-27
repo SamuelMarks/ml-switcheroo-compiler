@@ -195,6 +195,13 @@ Generates native Python scripts allowing one to "export" a trained JAX model exp
 - **Keras / TensorFlow / MLX:** Emits functional topologies tailored to those libraries.
 
 ### Edge & Web Native Backends
+### Hardware Backends & Code Generation
+- **CPU (LLVM/C++)**: Emits purely vectorized CPU fallback code.
+- **CUDA/PTX**: Targeted emission for NVIDIA architectures.
+- **ROCm**: Targeted emission for AMD hardware.
+- **Metal Shading Language (MSL)**: Targeted emission for Apple Silicon natively.
+- **StableHLO**: Export functionality to the standard StableHLO dialect.
+
 - **WebGPU:** Translates the IR directly into Jinja2-templated WGSL shaders (calculating workgroup layouts, buffer bindings, and memory allocations) alongside a JS Orchestrator script.
 - **WebGL 2.0:** A fallback mapping 2D fragment textures to computation matrices.
 - **WASM SIMD:** Emits C++ standard headers implementing operations via hardware intrinsics (`wasm_f32x4_*`), compiled silently using `emcc` into executable modules.

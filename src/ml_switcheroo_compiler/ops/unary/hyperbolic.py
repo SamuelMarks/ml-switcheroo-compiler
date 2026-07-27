@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for hyperbolic.py."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 

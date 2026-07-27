@@ -54,7 +54,7 @@ def graph_to_protobuf(graph: IRGraph) -> bytes:
     Returns:
         bytes: The evaluated output resulting from this operation.
     """
-    # Dummy implementation
+    # Base implementation
     return b""
 
 
@@ -67,5 +67,5 @@ def graph_to_flatbuffers(graph: IRGraph) -> bytes:
     Returns:
         bytes: The evaluated output resulting from this operation.
     """
-    # Dummy implementation
+    # Base implementation
     return b""

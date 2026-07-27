@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -269,16 +269,16 @@ def augmix(images: Tensor, factor: float = 0.3) -> Tensor:
     Returns:
         Tensor.
     """
-    if config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("AugMix", images.data, factor=factor)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("AugMix", images.data, factor=factor)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}  # pragma: no cover
-    return get_op("AugMix")()(images, **kwargs)  # pragma: no cover
+    kwargs = {"factor": factor}
+    return get_op("AugMix")()(images, **kwargs)
 
 
 def auto_contrast(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
@@ -291,7 +291,7 @@ def auto_contrast(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
     Returns:
         Tensor.
     """
-    if config.eager_mode:  # pragma: no branch
+    if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AutoContrast", images.data)
         return Tensor(
@@ -299,7 +299,7 @@ def auto_contrast(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    return get_op("AutoContrast")()(images, value_range=value_range)  # pragma: no cover
+    return get_op("AutoContrast")()(images, value_range=value_range)
 
 
 def rand_augment(images: Tensor, factor: float = 0.5) -> Tensor:
@@ -312,16 +312,16 @@ def rand_augment(images: Tensor, factor: float = 0.5) -> Tensor:
     Returns:
         Tensor.
     """
-    if config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("RandAugment", images.data, factor=factor)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("RandAugment", images.data, factor=factor)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}  # pragma: no cover
-    return get_op("RandAugment")()(images, **kwargs)  # pragma: no cover
+    kwargs = {"factor": factor}
+    return get_op("RandAugment")()(images, **kwargs)
 
 
 def random_erasing(images: Tensor, factor: float = 1.0) -> Tensor:
@@ -334,16 +334,16 @@ def random_erasing(images: Tensor, factor: float = 1.0) -> Tensor:
     Returns:
         Tensor.
     """
-    if config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("RandomErasing", images.data, factor=factor)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("RandomErasing", images.data, factor=factor)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    kwargs = {"factor": factor}  # pragma: no cover
-    return get_op("RandomErasing")()(images, **kwargs)  # pragma: no cover
+    kwargs = {"factor": factor}
+    return get_op("RandomErasing")()(images, **kwargs)
 
 
 def equalization(images: Tensor) -> Tensor:
@@ -355,7 +355,7 @@ def equalization(images: Tensor) -> Tensor:
     Returns:
         Tensor.
     """
-    if config.eager_mode:  # pragma: no branch
+    if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Equalization", images.data)
         return Tensor(
@@ -363,7 +363,7 @@ def equalization(images: Tensor) -> Tensor:
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
 
-    return get_op("Equalization")()(images)  # pragma: no cover
+    return get_op("Equalization")()(images)
 
 
 def rgb_to_yiq(images: Tensor) -> Tensor:
@@ -440,3 +440,131 @@ def yuv_to_rgb(images: Tensor) -> Tensor:
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
     return _emit_shape_node("YuvToRgb", [images], {}, (), images.dtype)
+
+
+@register_op("AdjustBrightness")
+class AdjustBrightness(OpDef):
+    """AdjustBrightness operation."""
+
+    op_name = "AdjustBrightness"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("AdjustContrast")
+class AdjustContrast(OpDef):
+    """AdjustContrast operation."""
+
+    op_name = "AdjustContrast"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("AdjustHue")
+class AdjustHue(OpDef):
+    """AdjustHue operation."""
+
+    op_name = "AdjustHue"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("AdjustSaturation")
+class AdjustSaturation(OpDef):
+    """AdjustSaturation operation."""
+
+    op_name = "AdjustSaturation"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("AugMix")
+class AugMix(OpDef):
+    """AugMix operation."""
+
+    op_name = "AugMix"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("AutoContrast")
+class AutoContrast(OpDef):
+    """AutoContrast operation."""
+
+    op_name = "AutoContrast"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("Equalization")
+class Equalization(OpDef):
+    """Equalization operation."""
+
+    op_name = "Equalization"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("Invert")
+class Invert(OpDef):
+    """Invert operation."""
+
+    op_name = "Invert"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("Posterize")
+class Posterize(OpDef):
+    """Posterize operation."""
+
+    op_name = "Posterize"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())
+
+
+@register_op("RgbToGrayscale")
+class RgbToGrayscale(OpDef):
+    """RgbToGrayscale operation."""
+
+    op_name = "RgbToGrayscale"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        s = list(getattr(images, "shape", ()))
+        if len(s) > 0:
+            data_format = kwargs.get("data_format", "channels_last")
+            if data_format == "channels_first":
+                s[-3] = 1
+            else:
+                s[-1] = 1
+        return tuple(s)
+
+
+@register_op("Solarize")
+class Solarize(OpDef):
+    """Solarize operation."""
+
+    op_name = "Solarize"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())

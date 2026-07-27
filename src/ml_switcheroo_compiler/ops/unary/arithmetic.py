@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for arithmetic.py."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 
@@ -24,6 +24,14 @@ class Abs(UnaryMathOp):
     """Computes the absolute value element-wise."""
 
     op_name = "Abs"
+
+
+@register_op("Fabs")
+class Fabs(UnaryMathOp):
+    """Computes the absolute value element-wise, specifically returning floats."""
+
+    op_name = "Fabs"
+    np_op_name = "fabs"
 
 
 @register_op("Negative")
@@ -121,3 +129,31 @@ class ReciprocalNoNan(UnaryMathOp):
     """ReciprocalNoNan operation."""
 
     op_name = "ReciprocalNoNan"
+
+
+@register_op("Rint")
+class Rint(UnaryMathOp):
+    """Rint op."""
+
+    op_name = "Rint"
+
+
+@register_op("LogSigmoid")
+class LogSigmoid(UnaryMathOp):
+    """LogSigmoid operation."""
+
+    op_name = "LogSigmoid"
+
+
+@register_op("LogSoftmax")
+class LogSoftmax(UnaryMathOp):
+    """LogSoftmax operation."""
+
+    op_name = "LogSoftmax"
+
+
+@register_op("Softsign")
+class Softsign(UnaryMathOp):
+    """Softsign operation."""
+
+    op_name = "Softsign"

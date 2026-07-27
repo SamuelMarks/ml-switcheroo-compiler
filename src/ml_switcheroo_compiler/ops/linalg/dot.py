@@ -5,10 +5,13 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 def _has_valid_shape(obj: object) -> bool:
-    """Function docstring.
+    """Evaluate and process the has valid shape operation.
 
     Args:
-        obj: Arg.
+        obj (object): Required parameter for obj.
+
+    Returns:
+        bool: The evaluated or processed output.
     """
     return hasattr(obj, "shape") and bool(obj.shape)
 
@@ -82,66 +85,6 @@ class DotGeneral(OpDef):
 
         return tuple(out_shape)
 
-    def emit_jax(self, *args: object, **kwargs: object) -> object:
-        """Emit jax code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented DotGeneral"
-
-    def emit_keras(self, *args: object, **kwargs: object) -> object:
-        """Emit keras code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented DotGeneral"
-
-    def emit_mlx(self, *args: object, **kwargs: object) -> object:
-        """Emit mlx code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented DotGeneral"
-
-    def emit_pytorch(self, *args: object, **kwargs: object) -> object:
-        """Emit pytorch code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented DotGeneral"
-
-    def emit_tensorflow(self, *args: object, **kwargs: object) -> object:
-        """Emit tensorflow code.
-
-        Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        return "Not implemented DotGeneral"
-
 
 @register_op("Tensordot")
 class Tensordot(OpDef):
@@ -204,3 +147,22 @@ class Outer(OpDef):
             object: The evaluated output resulting from this operation.
         """
         return ()
+
+
+@register_op("Pdot")
+class Pdot(OpDef):
+    """Parallel dot product operator."""
+
+    op_name = "Pdot"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): lhs, rhs.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            object: Computed shape.
+        """
+        return args[0].shape if args and hasattr(args[0], "shape") else ()

@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 if TYPE_CHECKING:
@@ -93,3 +94,53 @@ def _emit_constant_node(
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
     )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
+
+
+@register_op("FromDlpack")
+class FromDlpack(OpDef):
+    """Create a switcheroo array from a DLPack capsule."""
+
+    op_name = "FromDlpack"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("Frompyfunc")
+class Frompyfunc(OpDef):
+    """Takes an arbitrary Python function and returns a NumPy ufunc."""
+
+    op_name = "Frompyfunc"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
+
+
+@register_op("Geomspace")
+class Geomspace(OpDef):
+    """Return numbers spaced evenly on a log scale (a geometric progression)."""
+
+    op_name = "Geomspace"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        if "num" in kwargs:
+            return (kwargs["num"],)
+        if len(args) > 2:
+            return (args[2],)
+        return (50,)  # Default
+
+
+@register_op("Geometric")
+class Geometric(OpDef):
+    """Draw samples from the geometric distribution."""
+
+    op_name = "Geometric"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        if "size" in kwargs and kwargs["size"] is not None:
+            return tuple(kwargs["size"]) if isinstance(kwargs["size"], (list, tuple)) else (kwargs["size"],)
+        return ()

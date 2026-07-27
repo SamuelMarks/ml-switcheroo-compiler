@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Mixin module."""
 
 from __future__ import annotations
@@ -6,6 +7,26 @@ from .common import CommonASTVisitor
 
 
 class LinearAlgebraASTVisitor(CommonASTVisitor):
+    """LinearAlgebra AST visitor."""
+
+    def visit_CholeskyVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate CholeskyVjp."""
+        if not hasattr(self.generator, "_cholesky_vjp_imported"):
+            self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _cholesky_vjp_eager")
+            self.generator._cholesky_vjp_imported = True
+        pfx = self.generator._get_backend_prefix()
+        backend_name = pfx[:-1] if pfx.endswith(".") else pfx
+        return f"_cholesky_vjp_eager({backend_name}, {input_vars[0]}, {input_vars[1]})"
+
+    def visit_LuVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate LuVjp."""
+        if not hasattr(self.generator, "_lu_vjp_imported"):
+            self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _lu_vjp_eager")
+            self.generator._lu_vjp_imported = True
+        pfx = self.generator._get_backend_prefix()
+        backend_name = pfx[:-1] if pfx.endswith(".") else pfx
+        return f"_lu_vjp_eager({backend_name}, {input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {input_vars[3]})"
+
     # pylint: disable=abstract-method
     """Linear algebra AST generator mixin."""
 
@@ -83,3 +104,22 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         if pfx in ("mlx", "mx"):
             return f"mx.gather_qmm({x}, {w}, {scales}, {biases}, {indices}, transpose={transpose}, group_size={group_size}, bits={bits})"
         return f"{pfx}.matmul({x}, {w}[{indices}].T if {transpose} else {w}[{indices}])"
+
+    def visit_QrVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate QrVjp."""
+        if not hasattr(self.generator, "_qr_vjp_imported"):
+            self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _qr_vjp_eager")
+            self.generator._qr_vjp_imported = True
+        pfx = self.generator._get_backend_prefix()
+        return f"_qr_vjp_eager({pfx}, {input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
+
+    def visit_SvdVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Evaluate SvdVjp."""
+        if not hasattr(self.generator, "_svd_vjp_imported"):
+            self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _svd_vjp_eager")
+            self.generator._svd_vjp_imported = True
+        pfx = self.generator._get_backend_prefix()
+        compute_uv = kwargs.get("compute_uv", True)
+        if not compute_uv:
+            return f"_svd_vjp_eager({pfx}, {input_vars[0]}, {input_vars[1]}, compute_uv=False)"
+        return f"_svd_vjp_eager({pfx}, {input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {input_vars[3]}, compute_uv=True)"

@@ -1,6 +1,5 @@
+# ruff: noqa: E501
 """Backend utilities."""
-
-import cupy as cp
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -10,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 try:
-    pass
+    import cupy as cp
 except ImportError:
     cp = None
 

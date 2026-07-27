@@ -27,14 +27,14 @@ def simple_rnn_cell(
     Returns:
         tuple[Tensor, tuple[Tensor, ...]]: The output and new state.
     """
-    h_prev = state[0]  # pragma: no cover
+    h_prev = state[0]
 
-    matrix_x = matmul(inputs, kernel)  # pragma: no cover
-    if bias is not None:  # pragma: no cover
-        matrix_x = add(matrix_x, bias)  # pragma: no cover
+    matrix_x = matmul(inputs, kernel)
+    if bias is not None:
+        matrix_x = add(matrix_x, bias)
 
-    matrix_inner = matmul(h_prev, recurrent_kernel)  # pragma: no cover
+    matrix_inner = matmul(h_prev, recurrent_kernel)
 
-    h_new = tanh(add(matrix_x, matrix_inner))  # pragma: no cover
+    h_new = tanh(add(matrix_x, matrix_inner))
 
-    return h_new, (h_new,)  # pragma: no cover
+    return h_new, (h_new,)

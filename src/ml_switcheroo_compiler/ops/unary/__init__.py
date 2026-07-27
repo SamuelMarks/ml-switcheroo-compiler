@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for __init__.py."""
 
 import ml_switcheroo_compiler.ops.binary.special as _binary_special
 import ml_switcheroo_compiler.ops.unary.arithmetic as _arith
@@ -33,10 +33,13 @@ conj = get_op("Conj")()
 cos = get_op("Cos")()
 cosh = get_op("Cosh")()
 deg2rad = get_op("Deg2Rad")()
+degrees = get_op("Degrees")()
+radians = get_op("Radians")()
 digamma = get_op("Digamma")()
 erf = get_op("Erf")()
 erfc = get_op("Erfc")()
 erfinv = get_op("Erfinv")()
+erf_inv = erfinv
 bessel_i0e = get_op("BesselI0e")()
 bessel_i1e = get_op("BesselI1e")()
 exp = get_op("Exp")()
@@ -47,6 +50,8 @@ floor = get_op("Floor")()
 imag = get_op("Imag")()
 isfinite = get_op("Isfinite")()
 isinf = get_op("Isinf")()
+isneginf = get_op("Isneginf")()
+isposinf = get_op("Isposinf")()
 isnan = get_op("Isnan")()
 lgamma = get_op("Lgamma")()
 log = get_op("Log")()
@@ -87,3 +92,42 @@ bessel_i1 = get_op("BesselI1")()
 erfcinv = get_op("Erfcinv")()
 ndtri = get_op("Ndtri")()
 lbeta = get_op("Lbeta")()
+
+rint = get_op("Rint")()
+
+
+reciprocal_no_nan = get_op("ReciprocalNoNan")()
+zero_fraction = get_op("ZeroFraction")()
+is_non_decreasing = get_op("IsNonDecreasing")()
+is_strictly_increasing = get_op("IsStrictlyIncreasing")()
+
+
+try:
+    modified_bessel_i0 = get_op("ModifiedBesselI0")()
+except KeyError:
+    modified_bessel_i0 = None
+
+
+try:
+    modified_bessel_i1 = get_op("ModifiedBesselI1")()
+except KeyError:
+    modified_bessel_i1 = None
+
+
+try:
+    modified_bessel_k0 = get_op("ModifiedBesselK0")()
+except KeyError:
+    modified_bessel_k0 = None
+
+
+try:
+    modified_bessel_k1 = get_op("ModifiedBesselK1")()
+except KeyError:
+    modified_bessel_k1 = None
+iscomplex = get_op("Iscomplex")()
+isreal = get_op("Isreal")()
+iscomplexobj = get_op("Iscomplexobj")()
+isrealobj = get_op("Isrealobj")()
+issubdtype = get_op("Issubdtype")()
+isin = get_op("Isin")()
+ediff1d = get_op("Ediff1d")()

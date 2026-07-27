@@ -1,7 +1,5 @@
 """Numerical anomaly detection and traceback."""
 
-import numpy as np  # pylint: disable=import-outside-toplevel
-
 
 def format_traceback(exc: Exception) -> str:
     """Format an exception traceback.
@@ -28,8 +26,9 @@ def check_numerical_anomaly(tensor: object) -> None:
         return
 
     try:
-        arr = np.asarray(tensor.data)
-        if np.isnan(arr).any() or np.isinf(arr).any():
+        from ml_switcheroo_compiler import ops
+
+        if bool(ops.any(ops.isnan(tensor))) or bool(ops.any(ops.isinf(tensor))):
             msg = "Tensor contains NaN or Inf."
             raise ValueError(msg)
     except (TypeError, ValueError) as e:

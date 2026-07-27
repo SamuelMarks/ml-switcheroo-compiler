@@ -23,7 +23,7 @@ def gaussian_blur(images: Tensor, config_obj: object | None = None, **kwargs: ob
     Returns:
         Tensor: Blurred images.
     """
-    if config_obj is None:  # pragma: no branch
+    if config_obj is None:
         kernel_size = kwargs.get("kernel_size", (3, 3))
         sigma = kwargs.get("sigma", (1.0, 1.0))
         if isinstance(kernel_size, int):
@@ -167,9 +167,7 @@ def non_max_suppression(
             score_threshold=score_threshold,
         )
         # Note: output of NMS is typically integer indices
-        return Tensor(  # pragma: no cover
-            backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, boxes.device)
-        )
+        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, boxes.device))
     return _emit_shape_node(
         "NonMaxSuppression",
         [boxes, scores],
@@ -233,7 +231,7 @@ def random_gaussian_blur(
             sigma=sigma,
             **kwargs,
         )
-        return Tensor(  # pragma: no cover
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )
@@ -262,15 +260,15 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
     Returns:
         Tensor: Sharpened images.
     """
-    if config.eager_mode:  # pragma: no branch
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op(  # pragma: no cover
+    if config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op(
             "RandomSharpness",
             images.data,
             factor=factor,
             **kwargs,
         )
-        return Tensor(  # pragma: no cover
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, images.dtype, images.device),
         )

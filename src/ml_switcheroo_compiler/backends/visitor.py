@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Code generator visitor for traversing IR."""
 
 from typing import TYPE_CHECKING

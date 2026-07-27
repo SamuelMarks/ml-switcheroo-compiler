@@ -41,8 +41,8 @@ class BinaryMathOp(OpDef):
         """
         # Broadcasting logic should ideally happen here, but for now we return x
         # This will be replaced by a proper shape inference pass
-        if all(isinstance(s, tuple) for s in shapes):
-            return _bs(*shapes)
+        if shapes and all(isinstance(s, tuple) for s in shapes):
+            return _bs(*shapes) if len(shapes) > 1 else shapes[0]
         return shapes[0] if shapes else ()
 
 
@@ -346,6 +346,14 @@ class Remainder(BinaryMathOp):
     np_op_name = "remainder"
 
 
+@register_op("Rem")
+class Rem(BinaryMathOp):
+    """Binary operation for element-wise floating-point remainder."""
+
+    op_name = "Rem"
+    np_op_name = "fmod"
+
+
 @register_op("RightShift")
 class RightShift(BinaryMathOp):
     """Binary operation for element-wise right shift of the first operand by the second."""
@@ -360,6 +368,43 @@ class Equal(BinaryMathOp):
 
     op_name = "Equal"
     np_op_name = "equal"
+
+
+@register_op("Diff")
+class Diff(OpDef):
+    """Diff operation."""
+
+    op_name = "Diff"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Typically out_shape is similar to input, maybe -1 on one axis
+        return ()
+
+
+@register_op("Digitize")
+class Digitize(OpDef):
+    """Digitize operation."""
+
+    op_name = "Digitize"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Returns indices matching input shape
+        if args and hasattr(args[0], "shape"):
+            return args[0].shape
+        return ()
+
+
+@register_op("ArrayEquiv")
+class ArrayEquiv(OpDef):
+    """ArrayEquiv operation."""
+
+    op_name = "ArrayEquiv"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return ()
 
 
 @register_op("Xlogy")
@@ -412,10 +457,10 @@ class Betainc(OpDef):
 
     def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
         """Infer shape."""
-        shape_a = getattr(a, "shape", ())  # pragma: no cover
-        shape_b = getattr(b, "shape", ())  # pragma: no cover
-        shape_x = getattr(x, "shape", ()) if x is not None else ()  # pragma: no cover
-        return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)  # pragma: no cover
+        shape_a = getattr(a, "shape", ())
+        shape_b = getattr(b, "shape", ())
+        shape_x = getattr(x, "shape", ()) if x is not None else ()
+        return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)
 
 
 @register_op("DivideNoNan")
@@ -468,12 +513,13 @@ class TruncateMod(BinaryMathOp):
 
 
 @register_op("Polyadd")
-class Polyadd(OpDef):
+class Polyadd(BinaryMathOp):
     """Polyadd operator definition."""
 
     op_name = "Polyadd"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -487,12 +533,13 @@ class Polyadd(OpDef):
 
 
 @register_op("Polysub")
-class Polysub(OpDef):
+class Polysub(BinaryMathOp):
     """Polysub operator definition."""
 
     op_name = "Polysub"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -506,12 +553,13 @@ class Polysub(OpDef):
 
 
 @register_op("Polymul")
-class Polymul(OpDef):
+class Polymul(BinaryMathOp):
     """Polymul operator definition."""
 
     op_name = "Polymul"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -525,12 +573,13 @@ class Polymul(OpDef):
 
 
 @register_op("Polydiv")
-class Polydiv(OpDef):
+class Polydiv(BinaryMathOp):
     """Polydiv operator definition."""
 
     op_name = "Polydiv"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -544,12 +593,13 @@ class Polydiv(OpDef):
 
 
 @register_op("Polyval")
-class Polyval(OpDef):
+class Polyval(BinaryMathOp):
     """Polyval operator definition."""
 
     op_name = "Polyval"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -563,12 +613,13 @@ class Polyval(OpDef):
 
 
 @register_op("Poly")
-class Poly(OpDef):
+class Poly(BinaryMathOp):
     """Poly operator definition."""
 
     op_name = "Poly"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -582,12 +633,13 @@ class Poly(OpDef):
 
 
 @register_op("Polyder")
-class Polyder(OpDef):
+class Polyder(BinaryMathOp):
     """Polyder operator definition."""
 
     op_name = "Polyder"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -601,12 +653,13 @@ class Polyder(OpDef):
 
 
 @register_op("Polyfit")
-class Polyfit(OpDef):
+class Polyfit(BinaryMathOp):
     """Polyfit operator definition."""
 
     op_name = "Polyfit"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -620,12 +673,13 @@ class Polyfit(OpDef):
 
 
 @register_op("Polyint")
-class Polyint(OpDef):
+class Polyint(BinaryMathOp):
     """Polyint operator definition."""
 
     op_name = "Polyint"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -639,12 +693,13 @@ class Polyint(OpDef):
 
 
 @register_op("Roots")
-class Roots(OpDef):
+class Roots(BinaryMathOp):
     """Roots operator definition."""
 
     op_name = "Roots"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -683,3 +738,114 @@ class Atan2(BinaryMathOp):
     """Binary operation for element-wise arctangent of y/x."""
 
     op_name = "Atan2"
+
+
+@register_op("Clip")
+class Clip(OpDef):
+    """Operator Clip."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        if args and hasattr(args[0], "shape"):
+            return args[0].shape
+        return ()
+
+
+def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: object) -> object:
+    """Clip values in a tensor."""
+    from ml_switcheroo_compiler.core.config import config
+
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        return get_active_backend().execute_op("Clip", x, min=min_val, max=max_val, **kwargs)
+    from ml_switcheroo_compiler.ops.base import emit_ir_node
+
+    kwargs["a_min"] = min_val
+    kwargs["a_max"] = max_val
+    return emit_ir_node(None, "Clip", [x], getattr(x, "shape_metadata", None), kwargs)
+
+
+def rem(*args: object, **kwargs: object) -> object:
+    """Evaluate rem.
+
+    Args:
+        *args: Positional arguments.
+        **kwargs: Keyword arguments.
+
+    Returns:
+        The result of the Rem op.
+    """
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("Rem")(*args, **kwargs)
+
+
+@register_op("ChebyshevPolynomialT")
+class ChebyshevPolynomialT(BinaryMathOp):
+    """ChebyshevPolynomialT operation."""
+
+    op_name = "ChebyshevPolynomialT"
+
+
+@register_op("ChebyshevPolynomialU")
+class ChebyshevPolynomialU(BinaryMathOp):
+    """ChebyshevPolynomialU operation."""
+
+    op_name = "ChebyshevPolynomialU"
+
+
+@register_op("ShiftedChebyshevPolynomialT")
+class ShiftedChebyshevPolynomialT(BinaryMathOp):
+    """ShiftedChebyshevPolynomialT operation."""
+
+    op_name = "ShiftedChebyshevPolynomialT"
+
+
+@register_op("ShiftedChebyshevPolynomialU")
+class ShiftedChebyshevPolynomialU(BinaryMathOp):
+    """ShiftedChebyshevPolynomialU operation."""
+
+    op_name = "ShiftedChebyshevPolynomialU"
+
+
+@register_op("ShiftedChebyshevPolynomialV")
+class ShiftedChebyshevPolynomialV(BinaryMathOp):
+    """ShiftedChebyshevPolynomialV operation."""
+
+    op_name = "ShiftedChebyshevPolynomialV"
+
+
+@register_op("ShiftedChebyshevPolynomialW")
+class ShiftedChebyshevPolynomialW(BinaryMathOp):
+    """ShiftedChebyshevPolynomialW operation."""
+
+    op_name = "ShiftedChebyshevPolynomialW"
+
+
+@register_op("HermitePolynomialH")
+class HermitePolynomialH(BinaryMathOp):
+    """HermitePolynomialH operation."""
+
+    op_name = "HermitePolynomialH"
+
+
+@register_op("HermitePolynomialHe")
+class HermitePolynomialHe(BinaryMathOp):
+    """HermitePolynomialHe operation."""
+
+    op_name = "HermitePolynomialHe"
+
+
+@register_op("LaguerrePolynomialL")
+class LaguerrePolynomialL(BinaryMathOp):
+    """LaguerrePolynomialL operation."""
+
+    op_name = "LaguerrePolynomialL"
+
+
+@register_op("LegendrePolynomialP")
+class LegendrePolynomialP(BinaryMathOp):
+    """LegendrePolynomialP operation."""
+
+    op_name = "LegendrePolynomialP"

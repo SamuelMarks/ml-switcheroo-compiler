@@ -1,3 +1,5 @@
+import dataclasses
+
 def keras_mel_filterbank(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):
     import tensorflow as tf
     return keras.ops.convert_to_tensor(tf.signal.linear_to_mel_weight_matrix(
@@ -13,7 +15,20 @@ def keras_mfcc(spectrogram, sample_rate, num_mel_bins, lower_edge_hertz, upper_e
     log_mel = tf.math.log(mel_spec + 1e-6)
     mfccs = tf.signal.mfccs_from_log_mel_spectrograms(log_mel)[..., :num_mfccs]
     return keras.ops.convert_to_tensor(mfccs)
-def keras_istft(stft_tensor, frame_length, frame_step, fft_length, window, center):
+@dataclasses.dataclass
+class STFTConfig:
+    frame_length: int
+    frame_step: int
+    fft_length: object
+    window: str
+    center: bool
+
+def keras_istft(stft_tensor, config):
+    frame_length = config.frame_length
+    frame_step = config.frame_step
+    fft_length = config.fft_length
+    window = config.window
+    center = config.center
     import tensorflow as tf
     stft_tensor = keras.ops.convert_to_tensor(stft_tensor)
     if fft_length is None: fft_length = frame_length
@@ -38,7 +53,18 @@ def keras_nms(boxes, scores, max_output_size, iou_threshold, score_threshold):
     scores_tf = keras.ops.convert_to_tensor(scores)
     out = tf.image.non_max_suppression(boxes_tf, scores_tf, max_output_size, iou_threshold, score_threshold)
     return keras.ops.convert_to_tensor(out)
-def keras_extract_bounding_boxes(images, boxes, box_indices, crop_size, interpolation='bilinear', extrapolation_value=0.0, data_format=None):
+@dataclasses.dataclass
+class BoundingBoxExtractionConfig:
+    crop_size: object
+    interpolation: str = 'bilinear'
+    extrapolation_value: float = 0.0
+    data_format: object = None
+
+def keras_extract_bounding_boxes(images, boxes, box_indices, config):
+    crop_size = config.crop_size
+    interpolation = config.interpolation
+    extrapolation_value = config.extrapolation_value
+    data_format = config.data_format
     import tensorflow as tf
     images_tf = keras.ops.convert_to_tensor(images)
     if data_format == "channels_first":

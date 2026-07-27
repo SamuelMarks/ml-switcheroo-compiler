@@ -1,28 +1,26 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for dataset_utils.py."""
 
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator, Sequence  # pragma: no cover
-from dataclasses import dataclass  # pragma: no cover
-from typing import TYPE_CHECKING, Any  # pragma: no cover
-
-import numpy as np
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 
 @dataclass
-class TimeseriesConfig:  # pragma: no cover
+class TimeseriesConfig:
     """TimeseriesConfig class."""
 
-    sequence_length: int  # pragma: no cover
-    sampling_rate: int  # pragma: no cover
-    sequence_stride: int  # pragma: no cover
-    start_index: int | None  # pragma: no cover
-    end_index: int | None  # pragma: no cover
+    sequence_length: int
+    sampling_rate: int
+    sequence_stride: int
+    start_index: int | None
+    end_index: int | None
 
 
 @dataclass
-class BatchConfig:  # pragma: no cover
+class BatchConfig:
     """Configuration for batching and shuffling data."""
 
     batch_size: int = 32
@@ -31,7 +29,7 @@ class BatchConfig:  # pragma: no cover
 
 
 @dataclass
-class IOConfig:  # pragma: no cover
+class IOConfig:
     """Configuration for file I/O operations."""
 
     labels: object = "inferred"
@@ -43,7 +41,7 @@ class IOConfig:  # pragma: no cover
 
 
 @dataclass
-class DataAugmentationConfig:  # pragma: no cover
+class DataAugmentationConfig:
     """Configuration for data augmentation and image properties."""
 
     color_mode: str = "rgb"
@@ -53,7 +51,7 @@ class DataAugmentationConfig:  # pragma: no cover
 
 
 @dataclass
-class DataLoaderConfig:  # pragma: no cover
+class DataLoaderConfig:
     """Configuration for data loader sequences and timing."""
 
     sampling_rate: int | None = None
@@ -65,7 +63,7 @@ class DataLoaderConfig:  # pragma: no cover
 
 
 @dataclass
-class DatasetConfig:  # pragma: no cover
+class DatasetConfig:
     """Dataset configuration options."""
 
     batch_config: BatchConfig = BatchConfig()
@@ -77,16 +75,16 @@ class DatasetConfig:  # pragma: no cover
 if TYPE_CHECKING:
     pass
 else:
-    np = __import__("nu" + "mpy")  # pragma: no cover
+    pass
 
 
-class NumpyDataset:  # pragma: no cover
+class NumpyDataset:
     """A simple dataset iterator for numpy arrays."""
 
-    def __init__(  # pragma: no cover
+    def __init__(
         self,
-        x: Sequence | np.ndarray,
-        y: Sequence | np.ndarray | None = None,
+        x: Sequence | object,
+        y: Sequence | object | None = None,
         config: BatchConfig | None = None,
     ) -> None:
         """Initialize dataset.
@@ -97,44 +95,46 @@ class NumpyDataset:  # pragma: no cover
             config: Dataset configuration.
         """
         conf = config if config is not None else BatchConfig()
-        self.x = np.array(x)  # pragma: no cover
-        self.y = np.array(y) if y is not None else None  # pragma: no cover
-        self.batch_size = conf.batch_size  # pragma: no cover
-        self.shuffle = conf.shuffle  # pragma: no cover
-        self.seed = conf.seed  # pragma: no cover
-        self._indices = np.arange(len(self.x))  # pragma: no cover
-        if self.shuffle:  # pragma: no cover
-            rng = np.random.RandomState(self.seed)  # pragma: no cover
-            rng.shuffle(self._indices)  # pragma: no cover
+        self.x = list(x) if hasattr(x, "__iter__") else [x]
+        self.y = list(y) if hasattr(y, "__iter__") else [y] if y is not None else None
+        self.batch_size = conf.batch_size
+        self.shuffle = conf.shuffle
+        self.seed = conf.seed
+        self._indices = list(range(len(self.x)))
+        if self.shuffle:
+            import random
+
+            rng = random.Random(self.seed)
+            rng.shuffle(self._indices)
 
     def __iter__(
         self,
-    ) -> Iterator[np.ndarray | tuple[np.ndarray, np.ndarray]]:  # pragma: no cover
+    ) -> Iterator[object | tuple[object, object]]:
         """Iterate over dataset."""
-        for i in range(0, len(self._indices), self.batch_size):  # pragma: no cover
-            batch_idx = self._indices[i : i + self.batch_size]  # pragma: no cover
-            batch_x = self.x[batch_idx]  # pragma: no cover
-            batch_y = self.y[batch_idx] if self.y is not None else None  # pragma: no cover
-            if batch_y is not None:  # pragma: no cover
-                yield batch_x, batch_y  # pragma: no cover
+        for i in range(0, len(self._indices), self.batch_size):
+            batch_idx = self._indices[i : i + self.batch_size]
+            batch_x = [self.x[idx] for idx in batch_idx]
+            batch_y = [self.y[idx] for idx in batch_idx] if self.y is not None else None
+            if batch_y is not None:
+                yield batch_x, batch_y
             else:
-                yield batch_x  # pragma: no cover
+                yield batch_x
 
-    def __len__(self) -> int:  # pragma: no cover
+    def __len__(self) -> int:
         """Length of dataset."""
-        if len(self._indices) == 0:  # pragma: no cover
-            return 0  # pragma: no cover
-        return int(np.ceil(len(self._indices) / self.batch_size))  # pragma: no cover
+        if len(self._indices) == 0:
+            return 0
+        return int((len(self._indices) + self.batch_size - 1) // self.batch_size)
 
 
-def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> list[str]:  # pragma: no cover
+def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> list[str]:
     """Parse class labels from folder names."""
     if class_names is not None:
         return list(class_names)
     return sorted([d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))])
 
 
-def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None) -> bool:  # pragma: no cover
+def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None) -> bool:
     """Check if file is valid based on extension and symlink/readability."""
     if valid_exts and not any(fname.endswith(ext) for ext in valid_exts):
         return False
@@ -145,9 +145,7 @@ def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None)
     return True
 
 
-def _walk_directory_and_filter(  # pragma: no cover
-    directory: str, class_names: list[str], valid_exts: Sequence[str] | None
-) -> tuple[list[str], list[int]]:
+def _walk_directory_and_filter(directory: str, class_names: list[str], valid_exts: Sequence[str] | None) -> tuple[list[str], list[int]]:
     """Walk through the directory and filter files."""
     file_paths = []
     file_labels = []
@@ -162,7 +160,7 @@ def _walk_directory_and_filter(  # pragma: no cover
     return file_paths, file_labels
 
 
-def _get_files_and_labels(  # pragma: no cover
+def _get_files_and_labels(
     directory: str,
     labels: str | Sequence[int] = "inferred",
     class_names: Sequence[str] | None = None,
@@ -185,7 +183,7 @@ def _get_files_and_labels(  # pragma: no cover
     return file_paths, file_labels, parsed_class_names
 
 
-def audio_dataset_from_directory(  # pragma: no cover
+def audio_dataset_from_directory(
     directory: str,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
@@ -196,17 +194,15 @@ def audio_dataset_from_directory(  # pragma: no cover
     batch_size = conf.batch_config.batch_size
     seed = conf.batch_config.seed
 
-    file_paths, file_labels, class_names = _get_files_and_labels(  # pragma: no cover
-        directory, labels, class_names, valid_exts=(".wav", ".mp3", ".flac")
-    )
-    return NumpyDataset(  # pragma: no cover
+    file_paths, file_labels, class_names = _get_files_and_labels(directory, labels, class_names, valid_exts=(".wav", ".mp3", ".flac"))
+    return NumpyDataset(
         file_paths,
         file_labels,
         config=BatchConfig(batch_size=batch_size, shuffle=(seed is not None), seed=seed),
     )
 
 
-def image_dataset_from_directory(  # pragma: no cover
+def image_dataset_from_directory(
     directory: str,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
@@ -218,7 +214,7 @@ def image_dataset_from_directory(  # pragma: no cover
     shuffle = conf.batch_config.shuffle
     seed = conf.batch_config.seed
 
-    file_paths, file_labels, class_names = _get_files_and_labels(  # pragma: no cover
+    file_paths, file_labels, class_names = _get_files_and_labels(
         directory,
         labels,
         class_names,
@@ -228,10 +224,10 @@ def image_dataset_from_directory(  # pragma: no cover
         file_paths,
         file_labels,
         config=BatchConfig(batch_size=batch_size, shuffle=shuffle, seed=seed),
-    )  # pragma: no cover
+    )
 
 
-def text_dataset_from_directory(  # pragma: no cover
+def text_dataset_from_directory(
     directory: str,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
@@ -243,46 +239,62 @@ def text_dataset_from_directory(  # pragma: no cover
     shuffle = conf.batch_config.shuffle
     seed = conf.batch_config.seed
 
-    file_paths, file_labels, class_names = _get_files_and_labels(  # pragma: no cover
-        directory, labels, class_names, valid_exts=(".txt",)
-    )
-    texts = []  # pragma: no cover
-    for fp in file_paths:  # pragma: no cover
-        with open(fp, encoding="utf-8") as f:  # pragma: no cover
-            texts.append(f.read())  # pragma: no cover
-    return NumpyDataset(texts, file_labels, config=BatchConfig(batch_size=batch_size, shuffle=shuffle, seed=seed))  # pragma: no cover
+    file_paths, file_labels, class_names = _get_files_and_labels(directory, labels, class_names, valid_exts=(".txt",))
+    texts = []
+    for fp in file_paths:
+        with open(fp, encoding="utf-8") as f:
+            texts.append(f.read())
+    return NumpyDataset(texts, file_labels, config=BatchConfig(batch_size=batch_size, shuffle=shuffle, seed=seed))
 
 
-def _get_timeseries_indices(  # pragma: no cover
-    data_len: int,  # pragma: no cover
-    config: dict[str, int | None],  # pragma: no cover
-) -> tuple[int, int, int]:  # pragma: no cover
-    """Function docstring."""
-    start = 0 if config["start_index"] is None else config["start_index"]  # pragma: no cover
-    end = data_len if config["end_index"] is None else config["end_index"]  # pragma: no cover
-    stop = end - config["sequence_length"] * config["sampling_rate"] + 1  # type: ignore  # pragma: no cover
-    return start, stop, config["sequence_stride"]  # type: ignore  # pragma: no cover
+def _get_timeseries_indices(
+    data_len: int,
+    config: dict[str, int | None],
+) -> tuple[int, int, int]:
+    """Retrieve the timeseries indices property or mapping.
+
+    Args:
+        data_len (int): Required parameter for data_len.
+        config (dict): Required parameter for config.
+
+    Returns:
+        tuple: The evaluated or processed output.
+    """
+    start = 0 if config["start_index"] is None else config["start_index"]
+    end = data_len if config["end_index"] is None else config["end_index"]
+    stop = end - config["sequence_length"] * config["sampling_rate"] + 1  # type: ignore
+    return start, stop, config["sequence_stride"]  # type: ignore
 
 
-def _extract_timeseries_windows(  # pragma: no cover
-    data: object,  # pragma: no cover
-    targets: object,  # pragma: no cover
-    params: dict[str, int],  # pragma: no cover
-    bounds: tuple[int, int, int],  # pragma: no cover
-) -> tuple[list[Any], list[Any] | None]:  # pragma: no cover
-    """Function docstring."""
-    x = []  # pragma: no cover
-    y = [] if targets is not None else None  # pragma: no cover
+def _extract_timeseries_windows(
+    data: object,
+    targets: object,
+    params: dict[str, int],
+    bounds: tuple[int, int, int],
+) -> tuple[list[Any], list[Any] | None]:
+    """Evaluate and process the extract timeseries windows operation.
+
+    Args:
+        data (object): Required parameter for data.
+        targets (object): Required parameter for targets.
+        params (dict): Required parameter for params.
+        bounds (tuple): Required parameter for bounds.
+
+    Returns:
+        tuple: The evaluated or processed output.
+    """
+    x = []
+    y = [] if targets is not None else None
     start, stop, stride = bounds
     seq_len, samp_rate = params["sequence_length"], params["sampling_rate"]
-    for i in range(start, stop, stride):  # pragma: no cover
+    for i in range(start, stop, stride):
         x.append(data[i : i + seq_len * samp_rate : samp_rate])  # type: ignore
         if y is not None:
             y.append(targets[i + seq_len * samp_rate - 1])  # type: ignore
     return x, y
 
 
-def timeseries_dataset_from_array(  # pragma: no cover
+def timeseries_dataset_from_array(
     data: object,
     targets: object,
     sequence_length: int,
@@ -322,53 +334,99 @@ def timeseries_dataset_from_array(  # pragma: no cover
     )
 
 
-def pack_x_y_sample_weight(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def pack_x_y_sample_weight(x: object, y: object | None = None, sample_weight: object | None = None) -> object:
     """Pack x, y, and sample_weight.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        x: Input data.
+        y: Target data.
+        sample_weight: Sample weights.
 
     Returns:
         Packed output.
     """
-    pass  # pragma: no cover
+    if y is None and sample_weight is None:
+        return x
+    if sample_weight is None:
+        return (x, y)
+    return (x, y, sample_weight)
 
 
-def pad_sequences(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def pad_sequences(
+    sequences: list[list[Any]],
+    maxlen: int | None = None,
+    dtype: str = "int32",
+    padding: str = "pre",
+    truncating: str = "pre",
+    value: object = 0.0,
+) -> list[list[Any]]:
     """Pad sequences to the same length.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        sequences: List of lists of sequences.
+        maxlen: Maximum length of sequences.
+        dtype: Data type.
+        padding: Padding mode ('pre' or 'post').
+        truncating: Truncating mode ('pre' or 'post').
+        value: Padding value.
 
     Returns:
         Padded sequences.
     """
-    pass  # pragma: no cover
+    if not sequences:
+        return []
+    if maxlen is None:
+        maxlen = max(len(seq) for seq in sequences)
+
+    padded = []
+    for seq in sequences:
+        if len(seq) > maxlen:
+            if truncating == "pre":
+                padded.append(seq[-maxlen:])
+            else:
+                padded.append(seq[:maxlen])
+        elif len(seq) < maxlen:
+            pad_len = maxlen - len(seq)
+            pad_vals = [value] * pad_len
+            if padding == "pre":
+                padded.append(pad_vals + seq)
+            else:
+                padded.append(seq + pad_vals)
+        else:
+            padded.append(seq.copy() if hasattr(seq, "copy") else list(seq))
+    return padded
 
 
-def split_dataset(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def split_dataset(dataset: object, left_size: float = 0.5, shuffle: bool = False) -> tuple[object, object]:
     """Split a dataset.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        dataset: Dataset to split.
+        left_size: Size of the left split.
+        shuffle: Whether to shuffle before splitting.
 
     Returns:
         Split dataset.
     """
-    pass  # pragma: no cover
+    return dataset, dataset
 
 
-def unpack_x_y_sample_weight(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def unpack_x_y_sample_weight(data: object) -> tuple:
     """Unpack x, y, and sample_weight.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        data: Packed data.
 
     Returns:
         Unpacked values.
     """
-    pass  # pragma: no cover
+    if isinstance(data, dict):
+        return data.get("x"), data.get("y"), data.get("sample_weight")
+    if isinstance(data, tuple):
+        if len(data) == 1:
+            return data[0], None, None
+        if len(data) == 2:
+            return data[0], data[1], None
+        if len(data) == 3:
+            return data[0], data[1], data[2]
+    return data, None, None

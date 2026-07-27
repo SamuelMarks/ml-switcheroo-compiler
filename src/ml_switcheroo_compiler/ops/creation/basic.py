@@ -320,3 +320,26 @@ class TriuIndicesFrom(OpDef):
             object: Computed shape.
         """
         return args[0] if args else ()
+
+
+@register_op("Logspace")
+class Logspace(CreationOp):
+    """Logspace op."""
+
+    op_name = "Logspace"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return (kwargs.get("num", args[2] if len(args) > 2 and isinstance(args[2], int) else 50),)
+
+
+@register_op("Frombuffer")
+class Frombuffer(OpDef):
+    """Operator Frombuffer."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Typically 1D array of elements depending on dtype and buffer size
+        if "count" in kwargs and kwargs["count"] != -1:
+            return (kwargs["count"],)
+        return None  # Dynamic otherwise

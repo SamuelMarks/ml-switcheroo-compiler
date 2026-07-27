@@ -1,18 +1,55 @@
 """Distributed execution and sharding primitives."""
 
-import contextlib  # pragma: no cover
+import contextlib
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 from typing import Optional
 
-from ml_switcheroo_compiler.core import config  # pragma: no cover
-from ml_switcheroo_compiler.ops import distributed  # pragma: no cover
+from ml_switcheroo_compiler.core import config
+from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
 
 
-class DataParallel:
+class Distribution:
+    """Base class for distributed strategies."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize Distribution.
+
+        Args:
+            *args: arguments.
+            **kwargs: keyword arguments.
+        """
+        self.device_mesh = kwargs.get("device_mesh", None)
+
+    def scope(self) -> ContextManager[None]:
+        """Scope context manager.
+
+        Returns:
+            ContextManager[None]: the context manager scope.
+        """
+
+        @contextlib.contextmanager
+        def _scope() -> Iterator[None]:
+            r"""Activate this distribution strategy within the enclosing context block.
+
+            Yields:
+                None
+            .
+            """
+            _old = _DIST_STATE["dist"]
+            _DIST_STATE["dist"] = self  # type: ignore
+            try:
+                yield
+            finally:
+                _DIST_STATE["dist"] = _old
+
+        return _scope()
+
+
+class DataParallel(Distribution):
     """DataParallel strategy for distributed execution."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
@@ -22,10 +59,10 @@ class DataParallel:
             *args: arguments.
             **kwargs: keyword arguments.
         """
-        pass  # pragma: no cover
+        super().__init__(*args, **kwargs)
 
 
-class ModelParallel:
+class ModelParallel(Distribution):
     """ModelParallel strategy for distributed execution."""
 
     def __init__(
@@ -45,17 +82,28 @@ class ModelParallel:
             *args: Extra args.
             **kwargs: Extra kwargs.
         """
-        self.layout_map = layout_map  # pragma: no cover
+        self.layout_map = layout_map
 
 
-def TensorLayout(*args: object, **kwargs: object) -> None:
+class TensorLayoutClass:
+    """Class representing TensorLayout."""
+
+    def __init__(self, axes: tuple) -> None:
+        self.axes = axes
+
+
+def TensorLayout(*args: object, **kwargs: object) -> object:
     """Create a TensorLayout.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
+
+    Returns:
+        TensorLayoutClass instance.
     """
-    pass  # pragma: no cover
+    axes = kwargs.get("axes", args[0] if args else ())
+    return TensorLayoutClass(axes)
 
 
 def initialize(*args: object, **kwargs: object) -> None:
@@ -65,53 +113,33 @@ def initialize(*args: object, **kwargs: object) -> None:
         *args: arguments.
         **kwargs: keyword arguments.
     """
-    pass  # pragma: no cover
+    try:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "initialize_distributed"):
+            backend.initialize_distributed(*args, **kwargs)
+    except Exception:
+        pass
 
 
-def list_devices(*args: object, **kwargs: object) -> None:
+def list_devices(*args: object, **kwargs: object) -> list:
     """List available devices.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
+
+    Returns:
+        List of devices.
     """
-    pass  # pragma: no cover
+    from ml_switcheroo_compiler.core.device import get_physical_devices
+
+    return get_physical_devices()
 
 
-class Distribution:
-    """Base class for distributed strategies."""
-
-    def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize Distribution.
-
-        Args:
-            *args: arguments.
-            **kwargs: keyword arguments.
-        """
-        pass  # pragma: no cover
-
-    def scope(self) -> ContextManager[None]:
-        """Scope context manager.
-
-        Returns:
-            ContextManager[None]: the context manager scope.
-        """
-
-        @contextlib.contextmanager  # pragma: no cover
-        def _scope() -> Iterator[None]:  # pragma: no cover
-            """Function docstring."""
-            global _dist
-            _old = _dist  # pragma: no cover
-            _dist = self  # type: ignore  # pragma: no cover
-            try:  # pragma: no cover
-                yield  # pragma: no cover
-            finally:
-                _dist = _old  # pragma: no cover
-
-        return _scope()  # pragma: no cover
-
-
-_dist: Optional[Distribution] = None
+_dist = None
+_DIST_STATE: dict = {"dist": None}
 
 
 def distribution(*args: object, **kwargs: object) -> Optional[Distribution]:
@@ -124,8 +152,7 @@ def distribution(*args: object, **kwargs: object) -> Optional[Distribution]:
     Returns:
         Optional[Distribution]: current active distribution.
     """
-    global _dist
-    return _dist  # pragma: no cover
+    return _DIST_STATE["dist"]
 
 
 def set_distribution(dist: Distribution, *args: object, **kwargs: object) -> None:
@@ -136,8 +163,7 @@ def set_distribution(dist: Distribution, *args: object, **kwargs: object) -> Non
         *args: arguments.
         **kwargs: keyword arguments.
     """
-    global _dist
-    _dist = dist  # pragma: no cover
+    _DIST_STATE["dist"] = dist
 
 
 def distribute_tensor(*args: object, **kwargs: object) -> object:
@@ -150,18 +176,15 @@ def distribute_tensor(*args: object, **kwargs: object) -> object:
     Returns:
         object: distributed tensor.
     """
-    global _dist
-    if _dist is None:  # pragma: no cover
-        return args[0] if args else kwargs.get("tensor")  # pragma: no cover
+    if _DIST_STATE["dist"] is None:
+        return args[0] if args else kwargs.get("tensor")
 
-    if config.eager_mode:  # pragma: no cover
-        return args[0] if args else kwargs.get("tensor")  # pragma: no cover
+    if config.eager_mode:
+        return args[0] if args else kwargs.get("tensor")
 
-    return distributed.shard_tensor(*args, **kwargs)  # pragma: no cover
+    return distributed_ops.shard_tensor(*args, **kwargs)
 
 
 __all__ = [
-    "DeviceMesh",
-    "LayoutMap",
     "ShardingSpec",
 ]

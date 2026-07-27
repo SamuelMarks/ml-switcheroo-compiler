@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Backend code generators for ML Switcheroo Compiler."""
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator

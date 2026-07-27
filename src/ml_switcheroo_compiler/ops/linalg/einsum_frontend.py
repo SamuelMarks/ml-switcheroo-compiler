@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for einsum_frontend.py."""
 
 from __future__ import annotations
 
@@ -48,7 +48,16 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
 
 
 def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> Tensor:
-    """Function docstring."""
+    """Evaluate and process the tensordot einsum routing operation.
+
+    Args:
+        a (Tensor): Required parameter for a.
+        b (Tensor): Required parameter for b.
+        axes (tuple): Required parameter for axes.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     axes_a, axes_b = _validate_tensordot_axes(axes)
     a_str, b_str, out_str = _generate_tensordot_einsum_strings(a.shape, b.shape, axes_a, axes_b)
     eq = f"{a_str},{b_str}->{out_str}"
@@ -98,12 +107,15 @@ def einsum(equation: str, *operands: Tensor) -> Tensor:
 
 
 def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Sequence[int]) -> list[int]:
-    """Function docstring.
+    """Retrieve the remaining dims property or mapping.
 
     Args:
-        shape_len: Arg.
-        contracting: Arg.
-        batch: Arg.
+        shape_len (int): Required parameter for shape_len.
+        contracting (Sequence): Required parameter for contracting.
+        batch (Sequence): Required parameter for batch.
+
+    Returns:
+        list: The evaluated or processed output.
     """
     contract_set = set(contracting)
     batch_set = set(batch)

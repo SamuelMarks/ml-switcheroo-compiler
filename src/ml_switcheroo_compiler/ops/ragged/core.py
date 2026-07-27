@@ -12,7 +12,7 @@ class RaggedDot(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         # Typically returns the shape of the dense representation or similar.
-        # For simplicity we # pragma: no cover
+        # For simplicity we
         # return () or a basic shape derived from inputs.
-        # pragma: no cover
+
         return ()

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Unit tests for the diagnostics module of the ml_switcheroo_compiler framework.
 
 This module contains comprehensive unit tests verifying the correctness of traceback
@@ -13,6 +14,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.diagnostics import (
     check_numerical_anomaly,
@@ -26,187 +28,207 @@ from ml_switcheroo_compiler.diagnostics import (
 
 
 def test_traceback_reconstructor() -> None:
-    """Verifies that TracebackReconstructor correctly formats exception tracebacks.
+    """Test the traceback reconstructor behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
-    exc = ValueError("test error")
-    formatted = format_traceback(exc)
-    assert "TracebackReconstructor: test error" in formatted
+    try:
+        "Verifies that TracebackReconstructor correctly formats exception tracebacks.\n\n    Returns:\n    None\n    "
+        exc = ValueError("test error")
+        formatted = format_traceback(exc)
+        assert "TracebackReconstructor: test error" in formatted
+    except Exception as e:
+        raise e
+        pass
 
 
 def test_debug_shapes() -> None:
-    """Verifies the shape debugging utility under various model execution scenarios.
+    """Test the debug shapes behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
+    try:
+        "Verifies the shape debugging utility under various model execution scenarios.\n\n    Returns:\n    None\n    "
 
-    def dummy_model(x: object) -> object:
-        """Dummy model.
+        def dummy_model(x: object) -> object:
+            """Dummy model.
 
-        Args:
+            Args:
             x (object): The first input tensor.
 
-        Returns:
+            Returns:
             object: The resulting output.
-        """
-        return x + 1.0
+            """
+            return x + 1.0
 
-    res = debug_shapes(dummy_model, (2, 2))
-    assert "| input | (2, 2) | float64 |" in res
-    assert "| output | (2, 2) | float64 |" in res
+        res = debug_shapes(dummy_model, (2, 2))
+        assert "| input | (2, 2) | float64 |" in res
+        assert "| output | (2, 2) | float64 |" in res
 
-    def dummy_model_no_shape(x: object) -> int:
-        """Dummy model no shape.
+        def dummy_model_no_shape(x: object) -> int:
+            """Dummy model no shape.
 
-        Args:
+            Args:
             x (object): The first input tensor.
 
-        Returns:
+            Returns:
             int: The resulting output.
-        """
-        return 5
+            """
+            return 5
 
-    res = debug_shapes(dummy_model_no_shape, (2, 2))
-    assert "| output | unknown | float64 |" in res
+        res = debug_shapes(dummy_model_no_shape, (2, 2))
+        assert "| output | unknown | float64 |" in res
 
-    def failing_model(x: object) -> NoReturn:
-        """Failing model.
+        def failing_model(x: object) -> NoReturn:
+            """Failing model.
 
-        Args:
+            Args:
             x (object): The first input tensor.
 
-        Returns:
+            Returns:
             NoReturn: The resulting output.
-        """
-        msg = "fail"
-        raise RuntimeError(msg)
+            """
+            msg = "fail"
+            raise RuntimeError(msg)
 
-    res_fail = debug_shapes(failing_model, (2, 2))
-    assert "| Node | Shape | DType |" in res_fail
-    assert "input" not in res_fail
+        res_fail = debug_shapes(failing_model, (2, 2))
+        assert "| Node | Shape | DType |" in res_fail
+        assert "input" not in res_fail
+    except Exception as e:
+        raise e
+        pass
 
 
 def test_estimate_flops() -> None:
-    """Verifies the FLOPs estimation utility for logical graphs.
+    """Test the estimate flops behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
-    graph = LogicalGraph(name="test")
-    graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
-    graph.nodes["n2"] = LogicalNode(id="n2", op_type="MatMul", shape_metadata=(10, 10))
-    graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add")  # no shape
-    graph.nodes["n4"] = LogicalNode(id="n4", op_type="Foo")  # unknown op
+    try:
+        "Verifies the FLOPs estimation utility for logical graphs.\n\n    Returns:\n    None\n    "
+        graph = LogicalGraph(name="test")
+        graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
+        graph.nodes["n2"] = LogicalNode(id="n2", op_type="MatMul", shape_metadata=(10, 10))
+        graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add")
+        graph.nodes["n4"] = LogicalNode(id="n4", op_type="Foo")
 
-    class BadShape:
-        """Bad Shape class."""
+        class BadShape:
+            """Bad Shape class."""
 
-        def __iter__(self) -> object:
-            """Iter.
+            def __iter__(self) -> object:
+                """Iter.
 
-            Returns:
+                Returns:
                 object: The resulting output.
-            """
-            msg = "bad iterator"
-            raise TypeError(msg)
+                """
+                msg = "bad iterator"
+                raise TypeError(msg)
 
-    graph.nodes["n5"] = LogicalNode(id="n5", op_type="Add", shape_metadata=BadShape())
-
-    flops = estimate_flops(graph)
-    # n1: 100
-    # n2: 100 (fixed rough estimate)
-    # n3: 1 (fallback)
-    # n4: 0
-    # n5: 1 (fallback exception)
-    assert flops == 202
+        graph.nodes["n5"] = LogicalNode(id="n5", op_type="Add", shape_metadata=BadShape())
+        flops = estimate_flops(graph)
+        assert flops == 202
+    except Exception as e:
+        raise e
+        pass
 
 
 def test_memory_profiler() -> None:
-    """Verifies the memory profiling utility for logical graphs.
+    """Test the memory profiler behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
-    graph = LogicalGraph(name="test")
-    graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
-    graph.nodes["n2"] = LogicalNode(id="n2", op_type="Add")  # no shape
+    try:
+        "Verifies the memory profiling utility for logical graphs.\n\n    Returns:\n    None\n    "
+        graph = LogicalGraph(name="test")
+        graph.nodes["n1"] = LogicalNode(id="n1", op_type="Add", shape_metadata=(10, 10))
+        graph.nodes["n2"] = LogicalNode(id="n2", op_type="Add")
 
-    class BadShape:
-        """Bad Shape class."""
+        class BadShape:
+            """Bad Shape class."""
 
-        def __iter__(self) -> object:
-            """Iter.
+            def __iter__(self) -> object:
+                """Iter.
 
-            Returns:
+                Returns:
                 object: The resulting output.
-            """
-            msg = "bad iterator"
-            raise TypeError(msg)
+                """
+                msg = "bad iterator"
+                raise TypeError(msg)
 
-    graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add", shape_metadata=BadShape())
-
-    mem = memory_profiler(graph)
-    # n1: 100 * 4 = 400
-    # n2: 4 (fallback)
-    # n3: 4 (fallback exception)
-    assert mem == 408
+        graph.nodes["n3"] = LogicalNode(id="n3", op_type="Add", shape_metadata=BadShape())
+        mem = memory_profiler(graph)
+        assert mem == 408
+    except Exception as e:
+        raise e
+        pass
 
 
 def test_numerical_anomaly_detector() -> None:
-    """Verifies the numerical anomaly detector's ability to identify NaNs and Infs.
+    """Test the numerical anomaly detector behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
-    device = Device(DeviceType.CPU, 0)
+    try:
+        "Verifies the numerical anomaly detector's ability to identify NaNs and Infs.\n\n    Returns:\n    None\n    "
+        from ml_switcheroo_compiler.core.config import config
 
-    # Valid
-    t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
-    check_numerical_anomaly(t1)
+        config.eager_mode = True
+        device = Device(DeviceType.CPU, 0)
+        t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
+        check_numerical_anomaly(t1)
+        t_none = Tensor(None, TensorConfig((2,), DType.Float32, device))
+        check_numerical_anomaly(t_none)
+        t2 = Tensor(np.array([1.0, np.nan]), TensorConfig((2,), DType.Float32, device))
+        with pytest.raises((ValueError, ShapeMismatchError), match="NaN or Inf"):
+            check_numerical_anomaly(t2)
 
-    # None data
-    t_none = Tensor(None, TensorConfig((2,), DType.Float32, device))
-    check_numerical_anomaly(t_none)
+        class NonArray:
+            """Non Array class."""
 
-    # NaN
-    t2 = Tensor(np.array([1.0, np.nan]), TensorConfig((2,), DType.Float32, device))
-    with pytest.raises(ValueError, match="NaN or Inf"):
-        check_numerical_anomaly(t2)
-
-    # Non-array-like
-    class NonArray:
-        """Non Array class."""
-
-    t3 = Tensor(NonArray(), TensorConfig((2,), DType.Float32, device))
-    # Should silently pass or catch TypeError
-    check_numerical_anomaly(t3)
+        t3 = Tensor(NonArray(), TensorConfig((2,), DType.Float32, device))
+        check_numerical_anomaly(t3)
+        config.eager_mode = False
+    except Exception as e:
+        raise e
+        pass
 
 
 def test_to_graphviz() -> None:
-    """Verifies the Graphviz DOT export utility for logical graphs.
+    """Test the to graphviz behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
-    graph = LogicalGraph(name="test")
-    graph.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
-    graph.nodes["n2"] = LogicalNode(id="n2", op_type="Relu", inputs=["n1"])
-
-    dot = to_graphviz(graph)
-    assert "digraph G {" in dot
-    assert 'label="Input"' in dot
-    assert '"n1" -> "n2"' in dot
+    try:
+        "Verifies the Graphviz DOT export utility for logical graphs.\n\n    Returns:\n    None\n    "
+        graph = LogicalGraph(name="test")
+        graph.nodes["n1"] = LogicalNode(id="n1", op_type="Input")
+        graph.nodes["n2"] = LogicalNode(id="n2", op_type="Relu", inputs=["n1"])
+        dot = to_graphviz(graph)
+        assert "digraph G {" in dot
+        assert 'label="Input"' in dot
+        assert '"n1" -> "n2"' in dot
+    except Exception as e:
+        raise e
+        pass
 
 
 def test_to_html() -> None:
-    """Verifies the HTML export utility for logical graphs.
+    """Test the to html behavior.
 
     Returns:
-    None
+        Any: The inferred shape or computed result.
     """
-    graph = LogicalGraph(name="test")
-    html = to_html(graph)
-    assert "<h1>IR Graph</h1>" in html
+    try:
+        "Verifies the HTML export utility for logical graphs.\n\n    Returns:\n    None\n    "
+        graph = LogicalGraph(name="test")
+        html = to_html(graph)
+        assert "<h1>IR Graph</h1>" in html
+    except Exception as e:
+        raise e
+        pass

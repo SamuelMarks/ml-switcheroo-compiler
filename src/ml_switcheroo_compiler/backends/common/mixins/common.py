@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Mixin module."""
 
 from __future__ import annotations
@@ -28,4 +29,4 @@ class CommonASTVisitor:
 
     def _get_backend_prefix(self) -> str:
         """Returns the backend prefix (e.g., 'jax', 'pt', 'mx')."""
-        raise NotImplementedError  # pragma: no cover
+        return ""

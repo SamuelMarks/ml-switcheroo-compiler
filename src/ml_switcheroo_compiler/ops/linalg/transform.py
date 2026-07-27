@@ -1,13 +1,11 @@
-"""Transformation operations."""
+"""Linalg transform ops."""
 
-import numpy as np
-
-import ml_switcheroo_compiler.ops.binary.math as _math
+import ml_switcheroo_compiler.ops.binary as _math
 import ml_switcheroo_compiler.ops.shape.joining as _joining
-import ml_switcheroo_compiler.ops.shape.manipulation as _manipulation
 import ml_switcheroo_compiler.ops.shape.slicing as _slicing
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.creation.frontend_basic import array
+from ml_switcheroo_compiler.ops.shape.frontend import reshape
 
 
 def hadamard_transform(x: Tensor, scale: float = 1.0) -> Tensor:
@@ -24,7 +22,7 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> Tensor:
     n = x.shape[-1]
     res = x
     while h < n:
-        res = _manipulation.reshape(res, list(res.shape[:-1]) + [-1, 2, h])
+        res = reshape(res, list(res.shape[:-1]) + [-1, 2, h])
 
         x_part = _slicing.slice(res, dim=-2, start=0, end=1)
         y_part = _slicing.slice(res, dim=-2, start=1, end=2)
@@ -34,10 +32,10 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> Tensor:
 
         stacked = _joining.concatenate([res_plus, res_minus], dim=-2)
 
-        res = _manipulation.reshape(stacked, list(res.shape[:-3]) + [-1])
+        res = reshape(stacked, list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        res = _math.multiply(res, array(np.array([scale], dtype=np.float32)))
+        res = _math.multiply(res, array([scale], dtype="float32"))
     return res
 
 

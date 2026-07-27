@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -40,7 +39,13 @@ def _emit_random_node(
         Tensor: The result.
     """
     if config.eager_mode:
-        raise NotImplementedError(f"{op_type} not implemented in eager mode via _emit_random_node")
+        attrs = dict(attributes) if attributes is not None else {}
+        if "shape" not in attrs:
+            attrs["shape"] = shape
+        if "dtype" not in attrs:
+            attrs["dtype"] = getattr(dtype, "value", dtype)
+        res = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **attrs)
+        return Tensor(res, TensorConfig(shape, dtype, config.default_device))
 
     out_id = str(uuid.uuid4())
     node = LogicalNode(
@@ -55,22 +60,6 @@ def _emit_random_node(
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
-def _get_numpy_rng(key: object) -> np.random.Generator:
-    """Extracts the random seed from a key tensor and returns a NumPy Random Generator.
-
-    Args:
-        key: The PRNG key or integer seed.
-
-    Returns:
-        np.random.Generator: The initialized NumPy RNG.
-    """
-    if isinstance(key, Tensor):
-        seed_val = int(key.data[1]) if hasattr(key.data, "__getitem__") else int(key.data)
-    else:
-        seed_val = 0
-    return np.random.default_rng(seed_val)
-
-
 def PRNGKey(seed: int) -> Tensor:
     """Creates a PRNG key given an integer seed.
 
@@ -81,10 +70,8 @@ def PRNGKey(seed: int) -> Tensor:
         Tensor: A tensor containing the result of the operation.
     """
     if config.eager_mode:
-        return Tensor(
-            np.array([0, seed], dtype=np.uint32),
-            TensorConfig((2,), dtypes.DType.UInt32, config.default_device),
-        )
+        res = _dispatch_random_eager("prng_key", "PRNGKey", seed)
+        return Tensor(res, TensorConfig((2,), dtypes.DType.UInt32, config.default_device))
 
     # Trace as a creation node
     out_id = str(uuid.uuid4())
@@ -95,7 +82,7 @@ def PRNGKey(seed: int) -> Tensor:
         attributes={"seed": seed},
         shape_metadata=(2,),
     )
-    if global_tracing_state.is_tracing:  # pragma: no branch
+    if global_tracing_state.is_tracing:
         global_tracing_state.add_node(node)
     proxy = ProxyTensor(id=out_id, shape=(2,), dtype="uint32")
     return Tensor(proxy, TensorConfig((2,), dtypes.DType.UInt32, config.default_device))
@@ -112,10 +99,8 @@ def split(key: Tensor, num: int = 2) -> Tensor:
         Tensor: A tensor containing the result of the operation.
     """
     if config.eager_mode:
-        return Tensor(
-            np.random.randint(0, 2**32, size=(num, 2), dtype=np.uint32),
-            TensorConfig((num, 2), dtypes.DType.UInt32, config.default_device),
-        )
+        res = _dispatch_random_eager("split", "RandomSplit", key.data, num=num)
+        return Tensor(res, TensorConfig((num, 2), dtypes.DType.UInt32, config.default_device))
     return _emit_random_node("RandomSplit", [key], (num, 2), dtypes.DType.UInt32, {"num": num})
 
 
@@ -130,36 +115,38 @@ def fold_in(key: Tensor, data: int) -> Tensor:
         Tensor: A tensor containing the result of the operation.
     """
     if config.eager_mode:
-        return Tensor(
-            np.array([key.data[0] + data, key.data[1]], dtype=np.uint32),
-            TensorConfig((2,), dtypes.DType.UInt32, config.default_device),
-        )
+        res = _dispatch_random_eager("fold_in", "RandomFoldIn", key.data, data=data)
+        return Tensor(res, TensorConfig((2,), dtypes.DType.UInt32, config.default_device))
     return _emit_random_node("RandomFoldIn", [key], (2,), dtypes.DType.UInt32, {"data": data})
 
 
+def _dispatch_random_eager(func_name: str, op_name: str, *args: object, **kwargs: object) -> object:
+    """Helper to dispatch random functions in eager mode."""
+    backend = get_active_backend()
+    return backend.execute_op(op_name, *args, **kwargs)
+
+
 def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate and process the dispatch random operation.
 
     Args:
-        func_name: Arg.
-        args: Arg.
-        kwargs: Arg.
-    """
-    if config.eager_mode:
-        backend = get_active_backend()
-        op_name = "".join(word.capitalize() for word in func_name.split("_"))
-        try:
-            return backend.execute_op(op_name, *args, **kwargs)
-        except Exception as e:
-            raise NotImplementedError(f"{func_name} is not supported in eager mode without backend support: {e}") from e
+        func_name (str): Required parameter for func_name.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
 
+    Returns:
+        object: The evaluated or processed output.
+    """
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
+    if config.eager_mode:
+        return _dispatch_random_eager(func_name, op_name, *args, **kwargs)
+
     op_cls = get_op(op_name)
     if op_cls:
-        if not global_tracing_state.is_tracing:
-            raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")
-        return op_cls()(*args, **kwargs)  # pragma: no cover
-    raise NotImplementedError(f"{func_name} is not fully supported in tracing mode.")  # pragma: no cover
+        return op_cls()(*args, **kwargs)
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+    return _emit_shape_node(op_name, list(args), kwargs, (), "float32")
 
 
 def key(*args: object, **kwargs: object) -> object:
@@ -219,3 +206,9 @@ def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> ob
         object: Random values.
     """
     return _dispatch_random("rng_uniform", a, b, shape=shape, dtype=dtype)
+
+
+def _get_numpy_rng(*args: object, **kwargs: object) -> object:
+    import numpy as np
+
+    return np.random.default_rng(*args, **kwargs)

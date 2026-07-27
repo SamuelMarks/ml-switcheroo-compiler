@@ -14,14 +14,21 @@ from ml_switcheroo_compiler.ops.unary import cast
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-from .frontend_utils import _emit_constant_node, _emit_creation_node
+from .frontend_utils import _emit_creation_node
 
 if TYPE_CHECKING:
     pass
 
 
 def _unpack_shape(shape: tuple) -> tuple:
-    """Function docstring."""
+    """Evaluate and process the unpack shape operation.
+
+    Args:
+        shape (tuple): Required parameter for shape.
+
+    Returns:
+        tuple: The evaluated or processed output.
+    """
     unpacked_shape = []
     for s in shape:
         if hasattr(s, "data"):
@@ -39,8 +46,10 @@ def _unpack_shape(shape: tuple) -> tuple:
 def _infer_dtype(val_arr: object) -> DType:
     """Infers the DType from a backend array."""
     dtype_str = str(val_arr.dtype)
-    if dtype_str.startswith("<U") or dtype_str.startswith("|S") or dtype_str == "object":
+    if dtype_str.startswith("<U") or dtype_str.startswith("|S"):
         return DType.String
+    if dtype_str == "object" or dtype_str == "O":
+        return DType.Object
     return DType(dtype_str)
 
 
@@ -53,20 +62,29 @@ def _get_dtype_val(dtype: object) -> object:
     return dtype
 
 
+def _try_create_array(backend: object, obj: object, dtype_val: object = None) -> object:
+    """Try create array."""
+    if dtype_val is None:
+        try:
+            return backend.array(obj)
+        except ValueError:
+            return backend.array(obj, dtype="object")
+    try:
+        return backend.array(obj, dtype=dtype_val)
+    except TypeError:
+        return backend.array(obj)
+
+
 def _create_backend_array(object: object, dtype: object) -> object:
     """Creates the backend array."""
     backend = get_active_backend()
-    if dtype is None:
-        return backend.array(object)
+    dtype_val = None
+    if dtype is not None:
+        dtype_val = _get_dtype_val(dtype)
 
-    dtype_val = _get_dtype_val(dtype)
-    if hasattr(dtype_val, "name") and type(dtype_val).__name__ == "dtype":
-        dtype_val = dtype_val.name  # pragma: no cover
+    res = _try_create_array(backend, object, dtype_val)
 
-    try:
-        return backend.array(object, dtype=dtype_val)
-    except TypeError:
-        return backend.array(object)
+    return res
 
 
 def array(
@@ -95,8 +113,6 @@ def array(
 
     return Tensor(ProxyTensor(out_id, shape, dtype.value), TensorConfig(shape, dtype, config.default_device))
 
-    return _emit_constant_node(object, dtype)
-
 
 def asarray(
     a: object,
@@ -116,6 +132,22 @@ def asarray(
             return cast(a, dtype)
         return a
     return array(a, dtype=dtype)
+
+
+def convert_to_tensor(
+    x: object,
+    dtype: DType | None = None,
+) -> Tensor:
+    """Converts the given object to a Tensor.
+
+    Args:
+        x (object): Object to convert.
+        dtype (Optional[DType]): The data type.
+
+    Returns:
+        Tensor: A tensor containing the result of the operation.
+    """
+    return asarray(x, dtype=dtype)
 
 
 def zeros(
@@ -176,6 +208,22 @@ def ones(
     return _emit_creation_node("Ones", shape, dtype, {})
 
 
+def _extract_fill_value(fill_value: object) -> object:
+    """Extract fill value."""
+    if hasattr(fill_value, "data"):
+        fill_value = fill_value.data
+    if hasattr(fill_value, "item"):
+        fill_value = fill_value.item()
+    return fill_value
+
+
+def _full_eager(shape: tuple[int, ...], fill_value: object, dtype: DType, device: Device) -> Tensor:
+    """Full eager."""
+    dt_val = dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype))
+    data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dt_val)
+    return Tensor(data, TensorConfig(shape, dtype, device))
+
+
 def full(
     shape: int | Sequence[int],
     fill_value: float,
@@ -196,21 +244,11 @@ def full(
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
     shape = _unpack_shape((shape,) if isinstance(shape, int) else tuple(shape))
-    if hasattr(fill_value, "data"):
-        fill_value = fill_value.data
-        if hasattr(fill_value, "item"):
-            fill_value = fill_value.item()
-    elif hasattr(fill_value, "item"):
-        fill_value = fill_value.item()
+    fill_value = _extract_fill_value(fill_value)
 
     if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "Full",
-            shape,
-            fill_value,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
-        )
-        return Tensor(data, TensorConfig(shape, dtype, device))
+        return _full_eager(shape, fill_value, dtype, device)
+
     return _emit_creation_node(
         "Full",
         shape,
@@ -348,3 +386,50 @@ def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
         Tensor: A tensor containing the result of the operation.
     """
     return empty(x.shape, dtype=dtype if dtype is not None else x.dtype)
+
+
+def convert_to_numpy(x: Tensor) -> object:
+    """Converts a tensor to a numpy array.
+
+    Args:
+        x (Tensor): Input tensor.
+
+    Returns:
+        object: A numpy array.
+    """
+    if hasattr(x, "numpy"):
+        return x.numpy()
+    import numpy as np
+
+    return np.array(getattr(x, "data", x))
+
+
+def frombuffer(
+    buffer: object,
+    dtype: DType | None = None,
+    count: int = -1,
+    offset: int = 0,
+) -> Tensor:
+    """Create a 1-D tensor from a buffer.
+
+    Args:
+        buffer (object): An object that exposes the buffer interface.
+        dtype (Optional[DType]): Data type of the returned array.
+        count (int): Number of items to read. -1 means all data in the buffer.
+        offset (int): Start reading the buffer from this offset.
+
+    Returns:
+        Tensor: A tensor containing the result.
+    """
+    dtype = dtype or config.default_float_dtype
+    if config.eager_mode:
+        data = get_active_backend().execute_op(
+            "Frombuffer",
+            buffer,
+            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            count=count,
+            offset=offset,
+        )
+        shape = data.shape if hasattr(data, "shape") else ()
+        return Tensor(data, TensorConfig(shape, dtype, config.default_device))
+    return _emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset})

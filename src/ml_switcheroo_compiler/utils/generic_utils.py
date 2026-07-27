@@ -1,23 +1,23 @@
 """Generic utilities."""
 
-from __future__ import annotations  # pragma: no cover
+from __future__ import annotations
 
-import os  # pragma: no cover
-import random  # pragma: no cover
-import sys  # pragma: no cover
-import tarfile  # pragma: no cover
-import time  # pragma: no cover
-import urllib.request  # pragma: no cover
-import zipfile  # pragma: no cover
+import os
+import random
+import sys
+import tarfile
+import time
+import urllib.request
+import zipfile
 from dataclasses import dataclass
 from typing import Any
 
-from ml_switcheroo_compiler.core import config  # pragma: no cover
+from ml_switcheroo_compiler.core import config
 
 
 @dataclass
-class HashConfig:  # pragma: no cover
-    """Class docstring."""
+class HashConfig:
+    """Configuration class for hash config."""
 
     md5_hash: str | None = None
     file_hash: str | None = None
@@ -25,8 +25,8 @@ class HashConfig:  # pragma: no cover
 
 
 @dataclass
-class ArchiveConfig:  # pragma: no cover
-    """Class docstring."""
+class ArchiveConfig:
+    """Configuration class for archive config."""
 
     untar: bool = False
     extract: bool = False
@@ -34,15 +34,15 @@ class ArchiveConfig:  # pragma: no cover
 
 
 @dataclass
-class CacheConfig:  # pragma: no cover
-    """Class docstring."""
+class CacheConfig:
+    """Configuration class for cache config."""
 
     cache_subdir: str = "datasets"
     cache_dir: str | None = None
 
 
 @dataclass
-class GetFileConfig:  # pragma: no cover
+class GetFileConfig:
     """GetFile configuration."""
 
     hash_config: HashConfig = HashConfig()
@@ -51,7 +51,7 @@ class GetFileConfig:  # pragma: no cover
 
 
 @dataclass
-class ProgbarConfig:  # pragma: no cover
+class ProgbarConfig:
     """Progbar configuration."""
 
     width: int = 30
@@ -61,52 +61,48 @@ class ProgbarConfig:  # pragma: no cover
     unit_name: str = "step"
 
 
-# pragma: no cover
-
-
-def set_random_seed(seed: int) -> None:  # pragma: no cover
+def set_random_seed(seed: int) -> None:
     """Sets all random seeds for the program."""
-    config.seed = seed  # pragma: no cover
-    try:  # pragma: no cover
-        if "numpy" in sys.modules:  # pragma: no cover
-            sys.modules["numpy"].random.seed(seed)  # pragma: no cover
-    except (ImportError, AttributeError):  # pragma: no cover
-        pass  # pragma: no cover
-    try:  # pragma: no cover
-        random.seed(seed)  # pragma: no cover
-    except ImportError:  # pragma: no cover
-        pass  # pragma: no cover
+    config.seed = seed
+    try:
+        from ml_switcheroo_compiler.backends.numpy.utils import set_numpy_seed
+
+        set_numpy_seed(seed)
+    except (ImportError, AttributeError):
+        pass
+    try:
+        random.seed(seed)
+    except ImportError:
+        pass
 
 
-def _validate_cache(fpath: str) -> bool:  # pragma: no cover
+def _validate_cache(fpath: str) -> bool:
     """Validate the cache."""
     return os.path.exists(fpath)
 
 
-def _download_remote_file(origin: str, fpath: str) -> None:  # pragma: no cover
+def _download_remote_file(origin: str, fpath: str) -> None:
     """Download a remote file."""
-    try:  # pragma: no cover
-        urllib.request.urlretrieve(origin, fpath)  # pragma: no cover
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:  # pragma: no cover
-        raise RuntimeError(  # pragma: no cover
-            f"URL fetch failure on {origin}: {e} -- Please check your internet connection."
-        ) from e
+    try:
+        urllib.request.urlretrieve(origin, fpath)
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+        raise RuntimeError(f"URL fetch failure on {origin}: {e} -- Please check your internet connection.") from e
 
 
-def _extract_archive(fpath: str, datadir: str) -> None:  # pragma: no cover
+def _extract_archive(fpath: str, datadir: str) -> None:
     """Extract an archive."""
-    if fpath.endswith(".tar.gz") or fpath.endswith(".tgz"):  # pragma: no cover
-        with tarfile.open(fpath, "r:gz") as archive:  # pragma: no cover
-            archive.extractall(datadir)  # pragma: no cover
-    elif fpath.endswith(".tar"):  # pragma: no cover
-        with tarfile.open(fpath, "r:") as archive:  # pragma: no cover
-            archive.extractall(datadir)  # pragma: no cover
-    elif fpath.endswith(".zip"):  # pragma: no cover
-        with zipfile.ZipFile(fpath, "r") as archive:  # pragma: no cover
-            archive.extractall(datadir)  # pragma: no cover
+    if fpath.endswith(".tar.gz") or fpath.endswith(".tgz"):
+        with tarfile.open(fpath, "r:gz") as archive:
+            archive.extractall(datadir)
+    elif fpath.endswith(".tar"):
+        with tarfile.open(fpath, "r:") as archive:
+            archive.extractall(datadir)
+    elif fpath.endswith(".zip"):
+        with zipfile.ZipFile(fpath, "r") as archive:
+            archive.extractall(datadir)
 
 
-def get_file(  # pragma: no cover
+def get_file(
     fname: str,
     origin: str,
     config: GetFileConfig | None = None,
@@ -118,28 +114,28 @@ def get_file(  # pragma: no cover
     extract = conf.archive_config.extract
     cache_dir = conf.cache_config.cache_dir
 
-    if cache_dir is None:  # pragma: no cover
-        cache_dir = os.path.join(os.path.expanduser("~"), ".keras")  # pragma: no cover
+    if cache_dir is None:
+        cache_dir = os.path.join(os.path.expanduser("~"), ".keras")
 
-    datadir = os.path.join(cache_dir, cache_subdir)  # pragma: no cover
-    os.makedirs(datadir, exist_ok=True)  # pragma: no cover
+    datadir = os.path.join(cache_dir, cache_subdir)
+    os.makedirs(datadir, exist_ok=True)
 
-    fpath = os.path.join(datadir, fname)  # pragma: no cover
+    fpath = os.path.join(datadir, fname)
 
-    if _validate_cache(fpath):  # pragma: no cover
+    if _validate_cache(fpath):
         return fpath
 
-    _download_remote_file(origin, fpath)  # pragma: no cover
+    _download_remote_file(origin, fpath)
 
-    if untar or extract:  # pragma: no cover
-        _extract_archive(fpath, datadir)  # pragma: no cover
+    if untar or extract:
+        _extract_archive(fpath, datadir)
 
-    return fpath  # pragma: no cover
+    return fpath
 
 
 @dataclass
 class ProgbarState:
-    """Class docstring."""
+    """Configuration class for progbar state."""
 
     dynamic_display: bool
     total_width: int
@@ -150,10 +146,10 @@ class ProgbarState:
     last_update: float
 
 
-class Progbar:  # pragma: no cover
+class Progbar:
     """Displays a progress bar."""
 
-    def __init__(  # pragma: no cover
+    def __init__(
         self,
         target: int | None,
         config: ProgbarConfig | None = None,
@@ -161,21 +157,35 @@ class Progbar:  # pragma: no cover
         """Initialize progress bar."""
         conf = config if config is not None else ProgbarConfig()
 
-        self.target = target  # pragma: no cover
+        self.target = target
         self.config = conf
+
+        self.stateful_metrics = set(conf.stateful_metrics) if conf.stateful_metrics else set()
+        self._values = {}
+        self._values_order = []
+        self._seen_so_far = 0
+        self._last_update = 0.0
 
         self.state = ProgbarState(
             dynamic_display=hasattr(sys.stdout, "isatty") and sys.stdout.isatty(),
             total_width=0,
             seen_so_far=0,
-            values={},
-            values_order=[],
+            values=self._values,
+            values_order=self._values_order,
             start_time=time.time(),
             last_update=0.0,
         )
 
-    def _update_values(self, current: int, values: list[Any]) -> None:  # pragma: no cover
-        """Function docstring."""
+    def _update_values(self, current: int, values: list[Any]) -> None:
+        """Evaluate and process the update values operation.
+
+        Args:
+            current (int): Required parameter for current.
+            values (list): Required parameter for values.
+
+        Returns:
+            Any: The evaluated or processed output.
+        """
         for k, v in values:
             if k not in self._values_order:
                 self._values_order.append(k)
@@ -184,89 +194,142 @@ class Progbar:  # pragma: no cover
             else:
                 self._update_stateless_metric(k, v, current)
 
-    def _update_stateless_metric(self, k: str, v: float, current: int) -> None:  # pragma: no cover
-        """Function docstring."""
+    def _update_stateless_metric(self, k: str, v: float, current: int) -> None:
+        """Evaluate and process the update stateless metric operation.
+
+        Args:
+            k (str): Required parameter for k.
+            v (float): Required parameter for v.
+            current (int): Required parameter for current.
+
+        Returns:
+            Any: The evaluated or processed output.
+        """
         if k not in self._values:
             self._values[k] = [
-                v * (current - self._seen_so_far),
-                current - self._seen_so_far,
+                v * current,
+                current,
             ]
         else:
-            self._values[k][0] += v * (current - self._seen_so_far)
-            self._values[k][1] += current - self._seen_so_far
+            self._values[k][0] += v * current
+            self._values[k][1] += current
 
-    def _should_finalize(self, current: int, finalize: bool | None) -> bool:  # pragma: no cover
-        """Function docstring."""
+    def _should_finalize(self, current: int, finalize: bool | None) -> bool:
+        """Evaluate and process the should finalize operation.
+
+        Args:
+            current (int): Required parameter for current.
+            finalize (Any): Required parameter for finalize.
+
+        Returns:
+            bool: The evaluated or processed output.
+        """
         if finalize is not None:
             return finalize
         return self.target is None or current >= self.target
 
-    def _should_update(self, now: float, finalize: bool) -> bool:  # pragma: no cover
-        """Function docstring."""
-        return finalize or (now - self._last_update > self.interval)
+    def _should_update(self, now: float, finalize: bool) -> bool:
+        """Evaluate and process the should update operation.
 
-    def _format_info(self, current: int) -> str:  # pragma: no cover
-        """Function docstring."""
+        Args:
+            now (float): Required parameter for now.
+            finalize (bool): Required parameter for finalize.
+
+        Returns:
+            bool: The evaluated or processed output.
+        """
+        return finalize or (now - self._last_update > self.config.interval)
+
+    def _format_info(self, current: int) -> str:
+        """Format the info configuration or node into a backend-specific string.
+
+        Args:
+            current (int): Required parameter for current.
+
+        Returns:
+            str: The evaluated or processed output.
+        """
         return f" - {current}/{self.target}" if self.target is not None else f" - {current}"
 
-    def update(  # pragma: no cover
-        self, current: int, values: list[Any] | None = None, finalize: bool | None = None
-    ) -> None:
+    def update(self, current: int, values: list[Any] | None = None, finalize: bool | None = None) -> None:
         """Updates the progress bar."""
-        values = values or []  # pragma: no cover
-        self._update_values(current, values)  # pragma: no cover
-        self._seen_so_far = current  # pragma: no cover
+        values = values or []
+        self._update_values(current, values)
+        self._seen_so_far = current
 
-        now = time.time()  # pragma: no cover
-        should_finalize = self._should_finalize(current, finalize)  # pragma: no cover
+        now = time.time()
+        should_finalize = self._should_finalize(current, finalize)
 
-        if self._should_update(now, should_finalize):  # pragma: no cover
-            self._last_update = now  # pragma: no cover
-            if self.verbose == 1:  # pragma: no cover
-                print(self._format_info(current))  # pragma: no cover
+        if self._should_update(now, should_finalize):
+            self._last_update = now
+            if self.config.verbose == 1:
+                print(self._format_info(current))
 
 
-class FeatureSpace:  # pragma: no cover
+class FeatureSpace:
     """FeatureSpace utility class."""
 
-    pass  # pragma: no cover
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs
 
 
-class Config:  # pragma: no cover
+class Config:
     """Config utility class."""
 
-    pass  # pragma: no cover
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs
 
 
-class CustomObjectScope:  # pragma: no cover
+class CustomObjectScope:
     """Scope for custom objects."""
 
-    pass  # pragma: no cover
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs
+
+    def __enter__(self) -> CustomObjectScope:
+        """Enter."""
+        return self
+
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        """Exit."""
+        pass
 
 
-class PyDataset:  # pragma: no cover
+class PyDataset:
     """PyDataset utility class."""
 
-    pass  # pragma: no cover
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs
 
 
-class Sequence:  # pragma: no cover
+class Sequence:
     """Sequence utility class."""
 
-    pass  # pragma: no cover
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs
 
 
-def clear_session(*args: object, **kwargs: object) -> None:  # pragma: no cover
+def clear_session(*args: object, **kwargs: object) -> None:
     """Clear the Keras session.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
     """
-    pass  # pragma: no cover
+    config.clear_cache()
 
 
-def custom_object_scope(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def custom_object_scope(*args: object, **kwargs: object) -> object:
     """Create a custom object scope.
 
     Args:
@@ -276,10 +339,10 @@ def custom_object_scope(*args: object, **kwargs: object) -> object:  # pragma: n
     Returns:
         The scope.
     """
-    pass  # pragma: no cover
+    return CustomObjectScope(*args, **kwargs)
 
 
-def deserialize_keras_object(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def deserialize_keras_object(*args: object, **kwargs: object) -> object:
     """Deserialize a Keras object.
 
     Args:
@@ -289,30 +352,30 @@ def deserialize_keras_object(*args: object, **kwargs: object) -> object:  # prag
     Returns:
         The deserialized object.
     """
-    pass  # pragma: no cover
+    return None
 
 
-def disable_interactive_logging(*args: object, **kwargs: object) -> None:  # pragma: no cover
+def disable_interactive_logging(*args: object, **kwargs: object) -> None:
     """Disable interactive logging.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
     """
-    pass  # pragma: no cover
+    config._state.env.interactive_logging = False
 
 
-def enable_interactive_logging(*args: object, **kwargs: object) -> None:  # pragma: no cover
+def enable_interactive_logging(*args: object, **kwargs: object) -> None:
     """Enable interactive logging.
 
     Args:
         *args: arguments.
         **kwargs: keyword arguments.
     """
-    pass  # pragma: no cover
+    config._state.env.interactive_logging = True
 
 
-def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:  # pragma: no cover
+def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:
     """Get custom objects.
 
     Args:
@@ -322,10 +385,10 @@ def get_custom_objects(*args: object, **kwargs: object) -> dict[str, object]:  #
     Returns:
         A dictionary of custom objects.
     """
-    return {}  # pragma: no cover
+    return {}
 
 
-def get_registered_name(*args: object, **kwargs: object) -> str:  # pragma: no cover
+def get_registered_name(*args: object, **kwargs: object) -> str:
     """Get registered name.
 
     Args:
@@ -335,10 +398,10 @@ def get_registered_name(*args: object, **kwargs: object) -> str:  # pragma: no c
     Returns:
         The registered name.
     """
-    return ""  # pragma: no cover
+    return ""
 
 
-def get_registered_object(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def get_registered_object(*args: object, **kwargs: object) -> object:
     """Get registered object.
 
     Args:
@@ -348,10 +411,10 @@ def get_registered_object(*args: object, **kwargs: object) -> object:  # pragma:
     Returns:
         The registered object.
     """
-    pass  # pragma: no cover
+    return None
 
 
-def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:  # pragma: no cover
+def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:
     """Check if interactive logging is enabled.
 
     Args:
@@ -361,10 +424,10 @@ def is_interactive_logging_enabled(*args: object, **kwargs: object) -> bool:  # 
     Returns:
         Whether interactive logging is enabled.
     """
-    return False  # pragma: no cover
+    return False
 
 
-def is_keras_tensor(*args: object, **kwargs: object) -> bool:  # pragma: no cover
+def is_keras_tensor(*args: object, **kwargs: object) -> bool:
     """Check if an object is a Keras tensor.
 
     Args:
@@ -374,10 +437,10 @@ def is_keras_tensor(*args: object, **kwargs: object) -> bool:  # pragma: no cove
     Returns:
         Whether the object is a Keras tensor.
     """
-    return False  # pragma: no cover
+    return False
 
 
-def register_keras_serializable(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def register_keras_serializable(*args: object, **kwargs: object) -> object:
     """Register an object with Keras serialization.
 
     Args:
@@ -387,10 +450,14 @@ def register_keras_serializable(*args: object, **kwargs: object) -> object:  # p
     Returns:
         The decorator.
     """
-    pass  # pragma: no cover
+
+    def decorator(cls: object) -> object:
+        return cls
+
+    return decorator
 
 
-def serialize_keras_object(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def serialize_keras_object(*args: object, **kwargs: object) -> object:
     """Serialize a Keras object.
 
     Args:
@@ -400,10 +467,10 @@ def serialize_keras_object(*args: object, **kwargs: object) -> object:  # pragma
     Returns:
         The serialized object.
     """
-    pass  # pragma: no cover
+    return None
 
 
-def standardize_dtype(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def standardize_dtype(*args: object, **kwargs: object) -> object:
     """Standardize a dtype.
 
     Args:
@@ -413,10 +480,13 @@ def standardize_dtype(*args: object, **kwargs: object) -> object:  # pragma: no 
     Returns:
         The standardized dtype.
     """
-    pass  # pragma: no cover
+    return args[0] if args else None
 
 
-class bounding_boxes:  # pragma: no cover
+class bounding_boxes:
     """Bounding boxes utilities namespace."""
 
-    pass  # pragma: no cover
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize."""
+        self.args = args
+        self.kwargs = kwargs

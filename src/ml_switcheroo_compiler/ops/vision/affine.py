@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -426,3 +426,47 @@ def grid_sample(
         (),
         input.dtype,
     )
+
+
+@register_op("AffineGenerator")
+class AffineGenerator(OpDef):
+    """AffineGenerator operation."""
+
+    op_name = "AffineGenerator"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())
+
+
+@register_op("AffineGrid")
+class AffineGrid(OpDef):
+    """AffineGrid operation."""
+
+    op_name = "AffineGrid"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())
+
+
+@register_op("AffineTransform")
+class AffineTransform(OpDef):
+    """AffineTransform operation."""
+
+    op_name = "AffineTransform"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())
+
+
+@register_op("PerspectiveTransform")
+class PerspectiveTransform(OpDef):
+    """PerspectiveTransform operation."""
+
+    op_name = "PerspectiveTransform"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())

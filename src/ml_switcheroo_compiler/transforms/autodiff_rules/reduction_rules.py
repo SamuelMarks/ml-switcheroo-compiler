@@ -7,6 +7,7 @@ import math
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.unary_misc_rules import _zero_jvp, _zero_vjp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
@@ -322,3 +323,138 @@ def logsumexp_jvp(graph: object, node: object, tangent: str) -> str:
     softmax_x = emit_ir_node(graph, "Exp", [x_minus_y], graph.nodes[x].shape_metadata, {})
     scaled_tangent = emit_ir_node(graph, "Multiply", [softmax_x, tangent], graph.nodes[x].shape_metadata, {})
     return emit_ir_node(graph, "Sum", [scaled_tangent], node.shape_metadata, node.attributes)
+
+
+@register_vjp("Average")
+def average_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """Computes the Vector-Jacobian Product (VJP) for the Average operation."""
+    x = node.inputs[0]
+    bcast = emit_ir_node(
+        graph,
+        "BroadcastTo",
+        [cotangent],
+        graph.nodes[x].shape_metadata,
+        {"shape": graph.nodes[x].shape_metadata},
+    )
+    import math
+
+    n = 1.0
+    if graph.nodes[x].shape_metadata and node.shape_metadata:
+        n = math.prod(graph.nodes[x].shape_metadata) / (math.prod(node.shape_metadata) if node.shape_metadata else 1.0)
+    n_id = emit_ir_node(graph, "Constant", [], graph.nodes[x].shape_metadata, {"value": float(n)})
+    res = emit_ir_node(graph, "TrueDivide", [bcast, n_id], graph.nodes[x].shape_metadata)
+    return (res,)
+
+
+@register_jvp("Average")
+def average_jvp(graph: object, node: object, tangent: str) -> str:
+    """Computes the JVP for the Average operation."""
+    return emit_ir_node(graph, "Average", [tangent], node.shape_metadata, node.attributes)
+
+
+@register_vjp("AllReduce")
+@register_vjp("NcclAllReduce")
+@register_vjp("HierarchicalCopyAllReduce")
+@register_vjp("Reduce")
+def allreduce_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for AllReduce-like operations."""
+    # VJP of sum-allreduce is sum-allreduce of cotangent
+    # Note: we assume sum for simplicity or we should pass the reduce_type.
+    # We will just pass the same op and attributes.
+    res = emit_ir_node(graph, node.op_type, [cotangent], node.shape_metadata, node.attributes)
+    return (res,)
+
+
+@register_jvp("AllReduce")
+@register_jvp("NcclAllReduce")
+@register_jvp("HierarchicalCopyAllReduce")
+@register_jvp("Reduce")
+def allreduce_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for AllReduce-like operations."""
+    return emit_ir_node(graph, node.op_type, [tangent], node.shape_metadata, node.attributes)
+
+
+@register_vjp("ReduceScatter")
+def reduce_scatter_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for ReduceScatter."""
+    # VJP of ReduceScatter is AllGather
+    # We might not have AllGather perfectly aligned, but we emit it.
+    res = emit_ir_node(graph, "AllGather", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
+    return (res,)
+
+
+@register_jvp("ReduceScatter")
+def reduce_scatter_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for ReduceScatter."""
+    return emit_ir_node(graph, "ReduceScatter", [tangent], node.shape_metadata, node.attributes)
+
+
+@register_vjp("AllGather")
+def all_gather_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for AllGather."""
+    # VJP of AllGather is ReduceScatter
+    res = emit_ir_node(graph, "ReduceScatter", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
+    return (res,)
+
+
+@register_jvp("AllGather")
+def all_gather_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for AllGather."""
+    return emit_ir_node(graph, "AllGather", [tangent], node.shape_metadata, node.attributes)
+
+
+@register_vjp("ShardTensor")
+def shard_tensor_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for ShardTensor."""
+    res = emit_ir_node(graph, "ShardTensor", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
+    return (res,)
+
+
+@register_jvp("ShardTensor")
+def shard_tensor_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for ShardTensor."""
+    return emit_ir_node(graph, "ShardTensor", [tangent], node.shape_metadata, node.attributes)
+
+
+for op in [
+    "Prod",
+    "Cumprod",
+    "Nancumprod",
+    "Nanprod",
+    "Cummax",
+    "Cummin",
+    "Nanmax",
+    "Nanmean",
+    "Nanmedian",
+    "Nanmin",
+    "Nansum",
+    "Nanpercentile",
+    "Nanquantile",
+    "Nanstd",
+    "Nanvar",
+    "Median",
+    "Variance",
+    "Std",
+    "Percentile",
+    "Quantile",
+    "Descriptive",
+    "Bincount",
+]:
+    register_vjp(op)(_zero_vjp)
+    register_jvp(op)(_zero_jvp)
+
+
+@register_vjp("Broadcast")
+def broadcast_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Broadcast."""
+    attrs = {"root_rank": node.attributes.get("root_rank", 0), "op_type": "sum"}
+    res = emit_ir_node(graph, "Reduce", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, attrs)
+    return (res,)
+
+
+@register_jvp("Broadcast")
+def broadcast_jvp(graph: object, node: object, tangent: str) -> str:
+    """JVP for Broadcast."""
+    if tangent is None:
+        return None
+    return emit_ir_node(graph, "Broadcast", [tangent], node.shape_metadata, node.attributes)

@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.base import get_op
+from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -31,7 +31,7 @@ def perspective_transform(
     Returns:
         Tensor: Transformed images.
     """
-    if config_obj is None:  # pragma: no branch
+    if config_obj is None:
         config_obj = PerspectiveConfig(
             interpolation=kwargs.get("interpolation", "bilinear"),
             fill_value=kwargs.get("fill_value", 0.0),
@@ -75,7 +75,7 @@ def elastic_transform(
     Returns:
         Tensor: Transformed images.
     """
-    if config_obj is None:  # pragma: no branch
+    if config_obj is None:
         config_obj = ElasticConfig(
             interpolation=kwargs.get("interpolation", "bilinear"),
             fill_value=kwargs.get("fill_value", 0.0),
@@ -136,3 +136,14 @@ def flip_up_down(images: Tensor) -> Tensor:
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, DType.Int32, images.device))
 
     return get_op("FlipUpDown")()(images, dtype=DType.Int32)
+
+
+@register_op("ElasticTransform")
+class ElasticTransform(OpDef):
+    """ElasticTransform operation."""
+
+    op_name = "ElasticTransform"
+
+    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(images, "shape", ())

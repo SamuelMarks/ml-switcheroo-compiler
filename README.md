@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
-[![Test Coverage](https://img.shields.io/badge/test_coverage-95.8%25-green.svg)](#)
+[![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
 
 The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution.
@@ -51,6 +51,15 @@ flowchart LR
 - **Middle-End Optimization:** Executes high-level passes (state transformation, type promotion) and low-level passes (buffer allocation, kernel fusion, loop tiling) before code generation.
 - **Python Emission:** Emits idiomatic source code for the target Python framework (e.g., PyTorch `nn.Module`s, JAX Pytrees, Keras subclassed models, MLX classes).
 - **Web & Edge Emission:** Translates computation graphs into WGSL shaders for WebGPU parallel compute and C++/Rust for WASM SIMD (v128) CPU compute.
+
+
+## Advanced Transformations and Distributed Support
+
+The engine supports a comprehensive suite of advanced optimizations and parity features across all backends:
+- **Compiler Optimizations:** Built-in Dead Code Elimination (DCE), Common Subexpression Elimination (CSE), Constant Folding, Operator Fusion, Loop Unrolling, Memory Planning, and Scheduling logic via the `PassManager`.
+- **Automatic Differentiation:** Full support for `jvp` (Forward-Mode), `vjp` / `grad` (Reverse-Mode), and `hvp` (Higher-Order Derivatives), accompanied by memory-efficient checkpointing/rematerialization and custom gradient hooks.
+- **Hardware Targets:** Support for LLVM/C++ fallbacks, WebAssembly (WASM), WebGPU WGSL, CUDA, ROCm, Metal Shading Language, ONNX, and StableHLO native exports.
+- **Distributed Parity:** Collectives (`AllReduce`, `AllGather`, `AllToAll`, `ReduceScatter`), SPMD annotations, and pipeline parallelism primitives.
 
 ## Core Execution Modes
 

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Backend utilities."""
 
 import mlx.core as mx
@@ -47,7 +48,9 @@ def asarray(cls: type, data: object) -> object:
     Returns:
     Any: The result.
     """
-    return generic_asarray(mx, data)
+    if hasattr(mx, "asarray"):
+        return generic_asarray(mx, data)
+    return generic_array(mx, data)
 
 
 def item(cls: type, data: object) -> float:

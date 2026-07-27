@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for trigonometric.py."""
 
 from ml_switcheroo_compiler.ops.base import register_op
 
@@ -57,6 +57,22 @@ class Rad2Deg(UnaryMathOp):
 
     op_name = "Rad2Deg"
     np_op_name = "rad2deg"
+
+
+@register_op("Degrees")
+class Degrees(UnaryMathOp):
+    """Converts angles from radians to degrees element-wise."""
+
+    op_name = "Degrees"
+    np_op_name = "degrees"
+
+
+@register_op("Radians")
+class Radians(UnaryMathOp):
+    """Converts angles from degrees to radians element-wise."""
+
+    op_name = "Radians"
+    np_op_name = "radians"
 
 
 @register_op("Sinc")

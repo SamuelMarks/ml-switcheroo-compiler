@@ -25,6 +25,8 @@ class ExecutionConfig:
     eager_mode: bool = field(default_factory=lambda: os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1")
     backend: str = field(default_factory=lambda: os.environ.get("SWITCHEROO_BACKEND", "numpy"))
     current_stream: str = "default"
+    op_determinism: bool = False
+    tensor_float_32_execution: bool = True
 
 
 @dataclass
@@ -36,6 +38,7 @@ class EnvironmentConfig:
     default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
     jax_enable_x64: bool = False
     layout_map: object = None
+    interactive_logging: bool = True
 
 
 @dataclass
@@ -72,21 +75,24 @@ class Config:
 
     def __init__(self) -> None:
         """Initialize the Config."""
-        pass
 
     @property
     def seed(self) -> typing.Optional[int]:
-        """Function docstring."""
+        """Get the global random seed."""
         return self._state.env.seed
 
     @seed.setter
     def seed(self, value: typing.Optional[int]) -> None:
-        """Function docstring."""
+        """Set the global random seed.
+
+        Args:
+            value (int, optional): The random seed value.
+        """
         self._state.env.seed = value
 
     @property
     def _state(self) -> ConfigState:
-        """Function docstring."""
+        """Get the current configuration state object."""
         return _config_state_var.get()
 
     @property
@@ -96,10 +102,10 @@ class Config:
 
     @backend.setter
     def backend(self, value: str) -> None:
-        """Function docstring.
+        """Set the active execution backend.
 
         Args:
-        value: Arg.
+            value (str): The name of the backend (e.g., 'numpy', 'mlx').
         """
         self._state.execution.backend = value
 
@@ -110,12 +116,15 @@ class Config:
 
     @default_float_dtype.setter
     def default_float_dtype(self, value: DType) -> None:
-        """Function docstring.
+        """Evaluate and process the default float dtype operation.
 
         Args:
-        value: Arg.
+            value (DType): Required parameter for value.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
-        self._state.env.default_float_dtype = value  # pragma: no cover
+        self._state.env.default_float_dtype = value
 
     @property
     def default_int_dtype(self) -> DType:
@@ -124,12 +133,15 @@ class Config:
 
     @default_int_dtype.setter
     def default_int_dtype(self, value: DType) -> None:
-        """Function docstring.
+        """Evaluate and process the default int dtype operation.
 
         Args:
-        value: Arg.
+            value (DType): Required parameter for value.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
-        self._state.env.default_int_dtype = value  # pragma: no cover
+        self._state.env.default_int_dtype = value
 
     @property
     def default_device(self) -> Device:
@@ -138,12 +150,15 @@ class Config:
 
     @default_device.setter
     def default_device(self, value: Device) -> None:
-        """Function docstring.
+        """Evaluate and process the default device operation.
 
         Args:
-        value: Arg.
+            value (Device): Required parameter for value.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
-        self._state.env.default_device = value  # pragma: no cover
+        self._state.env.default_device = value
 
     @property
     def current_stream(self) -> str:
@@ -152,10 +167,13 @@ class Config:
 
     @current_stream.setter
     def current_stream(self, value: str) -> None:
-        """Function docstring.
+        """Evaluate and process the current stream operation.
 
         Args:
-        value: Arg.
+            value (str): Required parameter for value.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
         self._state.execution.current_stream = value
 
@@ -166,10 +184,13 @@ class Config:
 
     @layout_map.setter
     def layout_map(self, value: object) -> None:
-        """Function docstring.
+        """Evaluate and process the layout map operation.
 
         Args:
-        value: Arg.
+            value (object): Required parameter for value.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
         self._state.env.layout_map = value
 
@@ -180,15 +201,41 @@ class Config:
 
     @jax_enable_x64.setter
     def jax_enable_x64(self, value: bool) -> None:
-        """Function docstring.
+        """Evaluate and process the jax enable x64 operation.
 
         Args:
-        value: Arg.
+            value (bool): Required parameter for value.
+
+        Returns:
+            Any: The evaluated or processed output.
         """
         self._state.env.jax_enable_x64 = value
 
+    @property
+    def op_determinism(self) -> bool:
+        """Get op_determinism."""
+        return self._state.execution.op_determinism
+
+    @op_determinism.setter
+    def op_determinism(self, value: bool) -> None:
+        """op_determinism function."""
+        self._state.execution.op_determinism = value
+
+    @property
+    def tensor_float_32_execution(self) -> bool:
+        """Get tensor_float_32_execution."""
+        return self._state.execution.tensor_float_32_execution
+
+    @tensor_float_32_execution.setter
+    def tensor_float_32_execution(self, value: bool) -> None:
+        """tensor_float_32_execution function."""
+        self._state.execution.tensor_float_32_execution = value
+
     def clear_cache(self) -> None:
         """Clear memory cache. Hook for backends like MLX."""
+        from ml_switcheroo_compiler.core.device import clear_cache
+
+        clear_cache()
 
     @property
     def eager_mode(self) -> bool:
@@ -201,6 +248,8 @@ class Config:
             global_tracing_state = sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state
             if global_tracing_state.is_tracing:
                 return False
+        if os.environ.get("SWITCHEROO_EAGER_MODE") == "1":
+            return True
         return self._state.execution.eager_mode
 
     @eager_mode.setter
@@ -216,9 +265,9 @@ class Config:
         """Clone the current configuration.
 
         Returns:
-            ConfigState: The result of the operation
+            ConfigState: The inferred shape or computed result
         """
-        return self._state.clone()  # pragma: no cover
+        return self._state.clone()
 
 
 # Singleton instance proxy
@@ -295,3 +344,18 @@ def disable_compile() -> None:
 def enable_compile() -> None:
     """Enables compilation globally (disables eager mode)."""
     config.eager_mode = False
+
+
+def enable_op_determinism() -> None:
+    """Enable operation determinism."""
+    config.op_determinism = True
+
+
+def enable_tensor_float_32_execution(enabled: bool) -> None:
+    """Enable or disable TF32 execution."""
+    config.tensor_float_32_execution = enabled
+
+
+def tensor_float_32_execution_enabled() -> bool:
+    """Check if TF32 execution is enabled."""
+    return config.tensor_float_32_execution

@@ -1,0 +1,49 @@
+"""Numpy implementations for optimizer update steps."""
+
+import numpy as np
+
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+
+@numpy_eager_registry.register("ApplyAdam")
+def _np_apply_adam(backend_module: object, param: object, m: object, v: object, grad: object, **kwargs: object) -> tuple:
+    p, m_, v_, g = np.asarray(param), np.asarray(m), np.asarray(v), np.asarray(grad)
+    lr = kwargs.get("lr", 0.001)
+    beta1, beta2, eps = 0.9, 0.999, 1e-8
+    m_new = m_ * beta1 + g * (1.0 - beta1)
+    v_new = v_ * beta2 + (g**2) * (1.0 - beta2)
+    update = m_new / (np.sqrt(v_new) + eps)
+    p_new = p - lr * update
+    return p_new, m_new, v_new
+
+
+@numpy_eager_registry.register("ApplyAdagrad")
+def _np_apply_adagrad(backend_module: object, param: object, accum: object, grad: object, **kwargs: object) -> tuple:
+    p, a, g = np.asarray(param), np.asarray(accum), np.asarray(grad)
+    lr = kwargs.get("lr", 0.01)
+    a_new = a + g**2
+    update = g / (np.sqrt(a_new) + 1e-10)
+    p_new = p - lr * update
+    return p_new, a_new
+
+
+@numpy_eager_registry.register("ApplyFtrl")
+def _np_apply_ftrl(backend_module: object, param: object, accum: object, linear: object, grad: object, **kwargs: object) -> tuple:
+    p, a, lin, g = np.asarray(param), np.asarray(accum), np.asarray(linear), np.asarray(grad)
+    lr = kwargs.get("lr", 0.001)
+    a_new = a + g**2
+    sigma = (np.sqrt(a_new) - np.sqrt(a)) / lr
+    l_new = lin - g + sigma * p
+    p_new = p - lr * g
+    return p_new, a_new, l_new
+
+
+@numpy_eager_registry.register("ApplyRMSProp")
+def _np_apply_rmsprop(backend_module: object, param: object, ms: object, mom: object, grad: object, **kwargs: object) -> tuple:
+    p, m, mo, g = np.asarray(param), np.asarray(ms), np.asarray(mom), np.asarray(grad)
+    lr = kwargs.get("lr", 0.001)
+    rho, momentum, eps = 0.9, 0.0, 1e-8
+    m_new = m * rho + (g**2) * (1.0 - rho)
+    mo_new = mo * momentum + g / (np.sqrt(m_new) + eps)
+    p_new = p - lr * mo_new
+    return p_new, m_new, mo_new

@@ -20,22 +20,17 @@ class TimeDistributed(OpDef):
 @dispatch_eager("TimeDistributed")
 def time_distributed(
     x: Tensor,
-    wrapped_op_name: str,
-    *args: object,
     **kwargs: object,
 ) -> Tensor:
     """TimeDistributed operation.
 
     Args:
         x: Input tensor.
-        wrapped_op_name: Name of the wrapped operation.
-        *args: Additional arguments for the wrapped operation.
-        **kwargs: Additional keyword arguments for the wrapped operation.
+        **kwargs: Additional keyword arguments for the wrapped operation, must include 'wrapped_op_name'.
 
     Returns:
         Tensor.
     """
     # For eager, we flatten the time dimension, apply the op, and unflatten.
     # We map this to TimeDistributed IR node with attributes.
-    kwargs["wrapped_op_name"] = wrapped_op_name  # pragma: no cover
-    return get_op("TimeDistributed")()(x, *args, **kwargs)  # pragma: no cover
+    return get_op("TimeDistributed")()(x, **kwargs)

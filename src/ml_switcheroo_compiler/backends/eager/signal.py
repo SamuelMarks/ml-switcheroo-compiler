@@ -1,70 +1,75 @@
+# ruff: noqa: E501
 """Signal utilities."""
 
 import typing
-from dataclasses import dataclass
 
-import scipy.ndimage
-import scipy.signal
-
-from ml_switcheroo_compiler.backends.eager.utils import (
-    _from_channels_last,
-    _from_numpy_array,
-    _to_channels_last,
-    _to_numpy_array,
-)
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
-from ml_switcheroo_compiler.ops.configs import BlurConfig  # pragma: no cover
+from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
 def _generate_gaussian_kernel(np_mod: object, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> object:
-    """Function docstring.
+    """Evaluate and process the generate gaussian kernel operation.
 
     Args:
-        np_mod: Arg.
-        kernel_size: Arg.
-        sigma: Arg.
+        np_mod (object): Required parameter for np_mod.
+        kernel_size (tuple): Required parameter for kernel_size.
+        sigma (tuple): Required parameter for sigma.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    ky, kx = kernel_size
-    sy, sx = sigma
-    y = np_mod.arange(-ky // 2 + 1, ky // 2 + 1)
-    x = np_mod.arange(-kx // 2 + 1, kx // 2 + 1)
-    yy, xx = np_mod.meshgrid(y, x, indexing="ij")
-    kernel = np_mod.exp(-(yy**2 / (2.0 * sy**2) + xx**2 / (2.0 * sx**2)))
+    kx, ky = kernel_size
+    sx, sy = sigma
+    ax = np_mod.arange(-kx // 2 + 1.0, kx // 2 + 1.0)
+    ay = np_mod.arange(-ky // 2 + 1.0, ky // 2 + 1.0)
+    xx, yy = np_mod.meshgrid(ax, ay)
+    kernel = np_mod.exp(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
     return kernel / np_mod.sum(kernel)
 
 
 def _apply_conv2d_batch(np_mod: object, imgs: object, kernel: object, mode: str) -> object:
-    """Function docstring.
+    """Evaluate and process the apply conv2d batch operation.
 
     Args:
-        np_mod: Arg.
-        imgs: Arg.
-        kernel: Arg.
-        mode: Arg.
+        np_mod (object): Required parameter for np_mod.
+        imgs (object): Required parameter for imgs.
+        kernel (object): Required parameter for kernel.
+        mode (str): Required parameter for mode.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    B, H, W, C = imgs.shape
-    ky, kx = kernel.shape
-
-    if mode == "valid":  # pragma: no branch
-        out = np_mod.zeros((B, H - ky + 1, W - kx + 1, C), dtype=imgs.dtype)  # pragma: no cover
-    else:
-        out = np_mod.zeros_like(imgs)
-
-    for b in range(B):
-        for c in range(C):
-            out[b, ..., c] = scipy.signal.convolve2d(imgs[b, ..., c], kernel, mode=mode, boundary="fill", fillvalue=0.0)
+    # Basic implementation for 4D images (B, C, H, W)
+    if imgs.ndim != 4:
+        raise ValueError("Images must be 4D")
+    B, C, H, W = imgs.shape
+    kH, kW = kernel.shape
+    pad_h = kH // 2
+    pad_w = kW // 2
+    padded = np_mod.pad(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
+    out = np_mod.zeros_like(imgs)
+    # Simple nested loops or vectorization
+    # Since np_mod might be cupy or jax, use standard indexing
+    for y in range(H):
+        for x in range(W):
+            region = padded[:, :, y : y + kH, x : x + kW]
+            # kernel shape is (kH, kW), expand to (1, 1, kH, kW)
+            expanded_kernel = np_mod.expand_dims(np_mod.expand_dims(kernel, 0), 0)
+            out[:, :, y, x] = np_mod.sum(region * expanded_kernel, axis=(-2, -1))
     return out
 
 
 def _get_blur_config(kwargs: dict, config_obj: typing.Optional[object]) -> object:
-    """Function docstring.
+    """Retrieve the blur config property or mapping.
 
     Args:
-        kwargs: Arg.
-        config_obj: Arg.
+        kwargs (dict): Required parameter for kwargs.
+        config_obj (Any): Required parameter for config_obj.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    if config_obj is None:  # pragma: no branch
-        return BlurConfig(  # pragma: no cover
+    if config_obj is None:
+        return BlurConfig(
             kernel_size=kwargs.get("kernel_size", (3, 3)),
             sigma=kwargs.get("sigma", (1.0, 1.0)),
             data_format=kwargs.get("data_format", None),
@@ -72,87 +77,39 @@ def _get_blur_config(kwargs: dict, config_obj: typing.Optional[object]) -> objec
     return config_obj
 
 
-def gaussian_blur_eager(
-    backend_module: object,
-    images: object,
-    config_obj: typing.Optional[object] = None,
-    **kwargs: object,
-) -> object:
+def gaussian_blur_eager(backend_module: object, images: object, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
     """Evaluate gaussian blur eagerly."""
-    name = getattr(backend_module, "__name__", "")
-    np_mod = __import__("numpy")
-
-    config_obj = _get_blur_config(kwargs, config_obj)
-    padding = kwargs.get("padding", "same")
-
-    imgs = _to_numpy_array(np_mod, images, name)
-    kernel = _generate_gaussian_kernel(np_mod, config_obj.kernel_size, config_obj.sigma)
-
-    original_ndim = imgs.ndim
-    if original_ndim == MAGIC_VAL_3:  # pragma: no branch
-        imgs = imgs[None, ...]  # pragma: no cover
-
-    imgs = _to_channels_last(np_mod, imgs, config_obj.data_format)
-
-    mode = "same" if padding == "same" else "valid"
-    out = _apply_conv2d_batch(np_mod, imgs, kernel, mode)
-
-    out = _from_channels_last(np_mod, out, config_obj.data_format)
-
-    if original_ndim == MAGIC_VAL_3:  # pragma: no branch
-        out = out[0]  # pragma: no cover
-
-    return _from_numpy_array(backend_module, out, name, images)
-
-
-@dataclass
-class FilterConfig:
-    """Configuration for filtering."""
-
-    ky: int
-    kx: int
-    padding: str
-
-
-def _apply_median_filter_channel(imgs: object, out: object, config: FilterConfig, b: int) -> None:
-    """Function docstring.
-
-    Args:
-        imgs: Arg.
-        out: Arg.
-        config: Arg.
-        b: Arg.
-    """
-    C = imgs.shape[-1]
-    for c in range(C):
-        filtered = scipy.ndimage.median_filter(imgs[b, ..., c], size=(config.ky, config.kx), mode="constant", cval=0.0)
-        if config.padding == "valid":
-            pad_y_top = config.ky // 2
-            pad_x_left = config.kx // 2
-            filtered = filtered[pad_y_top : pad_y_top + out.shape[1], pad_x_left : pad_x_left + out.shape[2]]
-        out[b, ..., c] = filtered
+    config = _get_blur_config(kwargs, config_obj)
+    kernel = _generate_gaussian_kernel(backend_module, config.kernel_size, config.sigma)
+    return _apply_conv2d_batch(backend_module, images, kernel, "reflect")
 
 
 def _apply_median_filter_batch(np_mod: object, imgs: object, kernel_size: tuple[int, int], padding: str) -> object:
-    """Function docstring.
+    """Evaluate and process the apply median filter batch operation.
 
     Args:
-        np_mod: Arg.
-        imgs: Arg.
-        kernel_size: Arg.
-        padding: Arg.
+        np_mod (object): Required parameter for np_mod.
+        imgs (object): Required parameter for imgs.
+        kernel_size (tuple): Required parameter for kernel_size.
+        padding (str): Required parameter for padding.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    B, H, W, C = imgs.shape
-    ky, kx = kernel_size
-
-    if padding == "valid":
-        out = np_mod.zeros((B, H - ky + 1, W - kx + 1, C), dtype=imgs.dtype)
-    else:
-        out = np_mod.zeros_like(imgs)
-
-    config = FilterConfig(ky=ky, kx=kx, padding=padding)
-    for b in range(B):
-        _apply_median_filter_channel(imgs, out, config, b)
+    if imgs.ndim != 4:
+        raise ValueError("Images must be 4D")
+    B, C, H, W = imgs.shape
+    kH, kW = kernel_size
+    pad_h = kH // 2
+    pad_w = kW // 2
+    padded = np_mod.pad(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
+    out = np_mod.zeros_like(imgs)
+    for y in range(H):
+        for x in range(W):
+            region = padded[:, :, y : y + kH, x : x + kW]
+            # flattening the last two dims and taking median
+            flat_region = np_mod.reshape(region, (B, C, kH * kW))
+            out[:, :, y, x] = np_mod.median(flat_region, axis=-1)
     return out
 
 
@@ -164,22 +121,4 @@ def median_filter_eager(
     data_format: object = None,
 ) -> object:
     """Evaluate median filter eagerly."""
-    name = getattr(backend_module, "__name__", "")
-    np_mod = __import__("numpy")
-
-    imgs = _to_numpy_array(np_mod, images, name)
-
-    original_ndim = imgs.ndim
-    if original_ndim == MAGIC_VAL_3:  # pragma: no branch
-        imgs = imgs[None, ...]  # pragma: no cover
-
-    imgs = _to_channels_last(np_mod, imgs, data_format)
-
-    out = _apply_median_filter_batch(np_mod, imgs, kernel_size, padding)
-
-    out = _from_channels_last(np_mod, out, data_format)
-
-    if original_ndim == MAGIC_VAL_3:  # pragma: no branch
-        out = out[0]  # pragma: no cover
-
-    return _from_numpy_array(backend_module, out, name, images)
+    return _apply_median_filter_batch(backend_module, images, kernel_size, padding)

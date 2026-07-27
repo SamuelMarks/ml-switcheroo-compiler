@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Mixin module."""
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Fallback implementation: we assume the frontend has provided a TimeDistributed node.
         # Natively, backends might want to generate a loop or a vmap.
         # For simplicity in this mixin, we return a function call to a backend-specific time_distributed utility.
-        return f"{self.generator._get_backend_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"  # pragma: no cover
+        return f"{self.generator._get_backend_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
 
     def visit_Assert(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Evaluate Assert."""

@@ -9,12 +9,12 @@ from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
 from ml_switcheroo_compiler.ops.nn.dropout import dropout
 from ml_switcheroo_compiler.ops.shape import (
-    concatenate,  # pragma: no cover
+    concatenate,
     permute,
     stack,
     unstack,
 )
-from ml_switcheroo_compiler.ops.shape import reverse as cf_reverse  # pragma: no cover
+from ml_switcheroo_compiler.ops.shape import flip as cf_reverse
 
 
 @dataclass
@@ -95,7 +95,7 @@ def scan(
     """
     conf = config if config is not None else ScanConfig()
 
-    if global_config.eager_mode or conf.unroll:  # pragma: no branch
+    if global_config.eager_mode or conf.unroll:
         xs_unstacked = unstack(xs, dim=0)
 
         if conf.reverse:
@@ -110,12 +110,12 @@ def scan(
 
         return carry, stack(ys, dim=0)
     else:
-        if conf.reverse:  # pragma: no cover
-            xs = cf_reverse(xs, (0,))  # pragma: no cover
+        if conf.reverse:
+            xs = cf_reverse(xs, (0,))
 
-        carry, y = cf_scan(f, init, xs, conf.length)  # pragma: no cover
+        carry, y = cf_scan(f, init, xs, conf.length)
 
-        return carry, y  # pragma: no cover
+        return carry, y
 
 
 def bidirectional(
@@ -135,35 +135,35 @@ def bidirectional(
         tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
             Merged output sequence, forward final states, backward final states.
     """
-    conf = config if config is not None else BidirectionalConfig()  # pragma: no cover
-    forward_out, forward_state = rnn(  # pragma: no cover
-        inputs.forward_inputs,  # pragma: no cover
-        inputs.forward_initial_state,  # pragma: no cover
-        cell_fn,  # pragma: no cover
-        config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),  # pragma: no cover
-    )  # pragma: no cover
-    # pragma: no cover
-    backward_out, backward_state = rnn(  # pragma: no cover
-        inputs.backward_inputs,  # pragma: no cover
-        inputs.backward_initial_state,  # pragma: no cover
-        cell_fn,  # pragma: no cover
-        config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),  # pragma: no cover
-    )  # pragma: no cover
-    # pragma: no cover
-    conf = config if config is not None else BidirectionalConfig()  # pragma: no cover
-    if conf.merge_mode == "concat":  # pragma: no cover
-        merged_out = concatenate([forward_out, backward_out], dim=-1)  # pragma: no cover
-    if conf.merge_mode == "sum":  # pragma: no cover
-        merged_out = add(forward_out, backward_out)  # pragma: no cover
-    if conf.merge_mode == "mul":  # pragma: no cover
-        merged_out = multiply(forward_out, backward_out)  # pragma: no cover
-    if conf.merge_mode == "ave":  # pragma: no cover
-        merged_out = multiply(add(forward_out, backward_out), 0.5)  # pragma: no cover
+    conf = config if config is not None else BidirectionalConfig()
+    forward_out, forward_state = rnn(
+        inputs.forward_inputs,
+        inputs.forward_initial_state,
+        cell_fn,
+        config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),
+    )
+
+    backward_out, backward_state = rnn(
+        inputs.backward_inputs,
+        inputs.backward_initial_state,
+        cell_fn,
+        config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),
+    )
+
+    conf = config if config is not None else BidirectionalConfig()
+    if conf.merge_mode == "concat":
+        merged_out = concatenate([forward_out, backward_out], dim=-1)
+    elif conf.merge_mode == "sum":
+        merged_out = add(forward_out, backward_out)
+    elif conf.merge_mode == "mul":
+        merged_out = multiply(forward_out, backward_out)
+    elif conf.merge_mode == "ave":
+        merged_out = multiply(add(forward_out, backward_out), 0.5)
     else:
         # None
-        merged_out = (forward_out, backward_out)  # pragma: no cover
+        merged_out = (forward_out, backward_out)
 
-    return merged_out, forward_state, backward_state  # pragma: no cover
+    return merged_out, forward_state, backward_state
 
 
 def _permute_time_major(inputs: Tensor) -> Tensor:
@@ -199,11 +199,14 @@ def rnn(
         inputs = _permute_time_major(inputs)
 
     def scan_fn(carry: Tensor, x: Tensor) -> tuple[Tensor, Tensor]:
-        """Function docstring.
+        """Evaluate and process the scan fn operation.
 
         Args:
-        carry: Arg.
-        x: Arg.
+            carry (Tensor): Required parameter for carry.
+            x (Tensor): Required parameter for x.
+
+        Returns:
+            tuple: The evaluated or processed output.
         """
         out, new_carry = cell_fn(x, carry)
         return new_carry, out
@@ -214,8 +217,8 @@ def rnn(
         inputs,
         config=ScanConfig(reverse=conf.go_backwards, unroll=conf.unroll),
     )
-    if not conf.return_all_outputs:  # pragma: no branch
-        outputs = outputs[-1] if conf.time_major else outputs[:, -1]  # pragma: no cover
+    if not conf.return_all_outputs:
+        outputs = outputs[-1] if conf.time_major else outputs[:, -1]
 
     if not conf.time_major:
         outputs = _permute_time_major(outputs)
@@ -281,10 +284,10 @@ class RNNCellDropoutWrapper:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
         """
         if self._config.input_keep_prob < 1.0:
-            inputs = dropout(inputs, 1.0 - self._config.input_keep_prob)
+            inputs = dropout(inputs, rate=1.0 - self._config.input_keep_prob)
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._config.output_keep_prob < 1.0:
-            out = dropout(out, 1.0 - self._config.output_keep_prob)
+            out = dropout(out, rate=1.0 - self._config.output_keep_prob)
         return out, new_state
 
 
@@ -300,7 +303,7 @@ class RNNCellResidualWrapper:
         """Call."""
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._residual_fn is not None:
-            out = self._residual_fn(inputs, out)  # pragma: no cover
+            out = self._residual_fn(inputs, out)
         else:
             out = add(inputs, out)
         return out, new_state

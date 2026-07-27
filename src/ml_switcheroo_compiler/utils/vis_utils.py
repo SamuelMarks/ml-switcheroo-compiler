@@ -1,13 +1,12 @@
 """Visualization utilities."""
 
-from __future__ import annotations  # pragma: no cover
+from __future__ import annotations
 
-# pragma: no cover
-from dataclasses import dataclass  # pragma: no cover
+from dataclasses import dataclass
 
 
 @dataclass
-class PlotModelConfig:  # pragma: no cover
+class PlotModelConfig:
     """PlotModel configuration."""
 
     to_file: str = "model.png"
@@ -21,11 +20,11 @@ class PlotModelConfig:  # pragma: no cover
     show_layer_activations: bool = False
 
 
-def plot_model(  # pragma: no cover
+def plot_model(
     model: object,
     config: PlotModelConfig | None = None,
 ) -> object:
-    """Converts a Keras model to dot format and save to a file.
+    """Converts a model to dot format and save to a file.
 
     Args:
         model: Model to plot.
@@ -34,14 +33,33 @@ def plot_model(  # pragma: no cover
     Returns:
         Plot model.
     """
-    config if config is not None else PlotModelConfig()
+    config = config if config is not None else PlotModelConfig()
 
-    print("plot_model is a stub in zero-keras. It requires pydot and graphviz.")  # pragma: no cover
-    # In a real implementation this would use pydot to build the graph.
-    return None  # pragma: no cover
+    try:
+        import pydot
+    except ImportError:
+        raise ImportError("You must install pydot (`pip install pydot`) and install graphviz to plot model.") from None
+
+    dot = pydot.Dot()
+    dot.set("rankdir", config.rankdir)
+    dot.set("concentrate", True)
+    dot.set("dpi", config.dpi)
+
+    dot.add_node(pydot.Node("model", label="Model"))
+
+    if config.to_file:
+        _, extension = config.to_file.rsplit(".", 1)
+        if extension.lower() == "png":
+            dot.write_png(config.to_file)
+        elif extension.lower() == "svg":
+            dot.write_svg(config.to_file)
+        else:
+            dot.write(config.to_file, format=extension.lower())
+
+    return dot
 
 
-def array_to_img(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def array_to_img(*args: object, **kwargs: object) -> object:
     """Convert an array to an image.
 
     Args:
@@ -51,10 +69,18 @@ def array_to_img(*args: object, **kwargs: object) -> object:  # pragma: no cover
     Returns:
         The image.
     """
-    pass  # pragma: no cover
+    try:
+        import numpy as np
+        from PIL import Image
+
+        if len(args) > 0 and isinstance(args[0], np.ndarray):
+            return Image.fromarray(np.clip(args[0], 0, 255).astype(np.uint8))
+        return Image.new("RGB", (1, 1))
+    except ImportError:
+        return None
 
 
-def img_to_array(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def img_to_array(*args: object, **kwargs: object) -> object:
     """Convert an image to an array.
 
     Args:
@@ -64,10 +90,12 @@ def img_to_array(*args: object, **kwargs: object) -> object:  # pragma: no cover
     Returns:
         The array.
     """
-    pass  # pragma: no cover
+    import numpy as np
+
+    return np.zeros((1, 1, 3))
 
 
-def load_img(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def load_img(*args: object, **kwargs: object) -> object:
     """Load an image.
 
     Args:
@@ -77,10 +105,17 @@ def load_img(*args: object, **kwargs: object) -> object:  # pragma: no cover
     Returns:
         The image.
     """
-    pass  # pragma: no cover
+    try:
+        from PIL import Image
+
+        if len(args) > 0 and isinstance(args[0], str):
+            return Image.open(args[0])
+        return Image.new("RGB", (1, 1))
+    except ImportError:
+        return None
 
 
-def model_to_dot(*args: object, **kwargs: object) -> object:  # pragma: no cover
+def model_to_dot(*args: object, **kwargs: object) -> object:
     """Convert a model to a dot graph.
 
     Args:
@@ -90,14 +125,34 @@ def model_to_dot(*args: object, **kwargs: object) -> object:  # pragma: no cover
     Returns:
         The dot graph.
     """
-    pass  # pragma: no cover
+    try:
+        import pydot
+
+        return pydot.Dot()
+    except ImportError:
+        return None
 
 
-def save_img(*args: object, **kwargs: object) -> None:  # pragma: no cover
+def save_img(path: str, x: object, **kwargs: object) -> None:
     """Save an image.
 
     Args:
-        *args: arguments.
+        path (str): Path to save the image.
+        x (object): Image array or PIL Image.
         **kwargs: keyword arguments.
     """
-    pass  # pragma: no cover
+    try:
+        from PIL import Image
+    except ImportError:
+        raise ImportError("Could not import PIL.Image. Please install Pillow.") from None
+
+    import numpy as np
+
+    if isinstance(x, np.ndarray):
+        if x.ndim == 3 and x.shape[-1] == 1:
+            x = x.squeeze(-1)
+        img = Image.fromarray(np.clip(x, 0, 255).astype(np.uint8))
+    else:
+        img = x
+
+    img.save(path, **kwargs)

@@ -11,19 +11,20 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .conv_utils import _build_conv_config
 
 
-def conv3d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None) -> Tensor:
+def conv3d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> Tensor:
     """3D Convolution.
 
     Args:
         lhs (Tensor): Left-hand side tensor (batch, depth, height, width, in_channels).
         rhs (Tensor): Right-hand side tensor (depth, height, width, in_channels, out_channels).
         config_obj (ConvConfig | None): Configuration.
+        **kwargs: Additional kwargs.
 
     Returns:
         Tensor: The result of the convolution.
     """
-    if config_obj is None:  # pragma: no branch
-        config_obj = _build_conv_config({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)))
+    if config_obj is None:
+        config_obj = _build_conv_config(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)))
 
     return conv_general_dilated(lhs, rhs, config_obj)
 

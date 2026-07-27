@@ -1,3 +1,4 @@
+# ruff: noqa
 """Attention mechanism operations."""
 
 import math
@@ -8,8 +9,8 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import multiply, subtract
 from ml_switcheroo_compiler.ops.creation.frontend import arange
-from ml_switcheroo_compiler.ops.shape.frontend import concatenate
-from ml_switcheroo_compiler.ops.shape.manipulation import expand_dims
+from ml_switcheroo_compiler.ops.shape.joining import concatenate
+from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import cos, exp, sin
 
@@ -114,3 +115,14 @@ def alibi_mask(
 
     # We will return the base dist tensor for now.
     return 0.0
+
+
+@register_op("ScaledDotProductAttention")
+class ScaledDotProductAttention(OpDef):
+    """ScaledDotProductAttention OpDef."""
+
+    op_name = "ScaledDotProductAttention"
+
+    def infer_shape(self, query: object, key: object, value: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return query.shape

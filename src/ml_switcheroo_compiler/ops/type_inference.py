@@ -9,12 +9,12 @@ def resolve_dtype(res_data: object, first_tensor: object) -> object:
     """Resolve the dtype for the eager result."""
     if hasattr(res_data, "dtype"):
         dtype_str = str(res_data.dtype)
-        if "dtype" in dtype_str:  # pragma: no branch
-            m = re.search(r"dtype\('(.*?)'\)", dtype_str)  # pragma: no cover
-            if m:  # pragma: no cover
-                dtype_str = m.group(1)  # pragma: no cover
-        if dtype_str.startswith("dtype"):  # pragma: no branch
-            dtype_str = "float32"  # pragma: no cover
+        if "dtype" in dtype_str:
+            m = re.search(r"dtype\('(.*?)'\)", dtype_str)
+            if m:
+                dtype_str = m.group(1)
+        if dtype_str.startswith("dtype"):
+            dtype_str = "float32"
         dtype_str = dtype_str.split(".")[-1]
         try:
             return DType(dtype_str)

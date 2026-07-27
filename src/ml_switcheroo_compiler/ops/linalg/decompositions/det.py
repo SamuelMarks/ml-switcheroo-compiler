@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for det.py."""
 
 from __future__ import annotations
 
@@ -55,9 +55,12 @@ def det(input: Tensor) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Det", input.data)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
-    return _emit_linalg_node("Det", [input], {}, [()], [input.dtype])
+        data = backend.execute_op("Det", (input.data if type(input).__name__ == "Tensor" else input))
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+        )
+    return _emit_linalg_node("Det", [input], {}, [()], [getattr(input, "dtype", None)])
 
 
 def slogdet(input: Tensor) -> tuple[Tensor, Tensor]:
@@ -76,15 +79,15 @@ def slogdet(input: Tensor) -> tuple[Tensor, Tensor]:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sign, logdet = backend.execute_op("Slogdet", input.data)
+        sign, logdet = backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input))
         return (
             Tensor(
                 backend.array(sign),
-                TensorConfig(backend.array(sign).shape, input.dtype, input.device),
+                TensorConfig(backend.array(sign).shape, getattr(input, "dtype", None), getattr(input, "device", None)),
             ),
             Tensor(
                 backend.array(logdet),
-                TensorConfig(backend.array(logdet).shape, input.dtype, input.device),
+                TensorConfig(backend.array(logdet).shape, getattr(input, "dtype", None), getattr(input, "device", None)),
             ),
         )
-    return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [input.dtype] * 2)
+    return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [getattr(input, "dtype", None)] * 2)

@@ -66,7 +66,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite)
-        return Tensor(  # pragma: no cover
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
         )
@@ -89,7 +89,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> Tensor:
     Returns:
         Tensor: Boolean tensor of matches.
     """
-    if global_config.eager_mode:  # pragma: no cover
+    if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RegexFullMatch", input_tensor.data, pattern=pattern)
         return Tensor(
@@ -115,7 +115,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> Tensor:
     Returns:
         Tensor: Joined string tensor.
     """
-    if global_config.eager_mode:  # pragma: no cover
+    if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringJoin", [t.data for t in inputs], separator=separator)
         return Tensor(
@@ -140,7 +140,7 @@ def string_length(input_tensor: Tensor) -> Tensor:
     Returns:
         Tensor: Lengths (Int32).
     """
-    if global_config.eager_mode:  # pragma: no cover
+    if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringLength", input_tensor.data)
         return Tensor(
@@ -167,7 +167,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
     Returns:
         Tensor: Substrings.
     """
-    if global_config.eager_mode:  # pragma: no cover
+    if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringSubstr", input_tensor.data, pos=pos, len=len)
         return Tensor(
@@ -184,15 +184,18 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
 
 
 def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
-    """Function docstring.
+    """Evaluate and process the string split eager operation.
 
     Args:
-        input_tensor: Arg.
-        delimiter: Arg.
+        input_tensor (Tensor): Required parameter for input_tensor.
+        delimiter (str): Required parameter for delimiter.
+
+    Returns:
+        tuple: The evaluated or processed output.
     """
-    backend = get_active_backend()  # pragma: no cover
-    tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)  # pragma: no cover
-    return (  # pragma: no cover
+    backend = get_active_backend()
+    tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)
+    return (
         Tensor(
             backend.array(tokens),
             TensorConfig(backend.array(tokens).shape, DType.String, input_tensor.device),
@@ -205,11 +208,14 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
 
 
 def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
-    """Function docstring.
+    """Evaluate and process the string split trace operation.
 
     Args:
-        input_tensor: Arg.
-        delimiter: Arg.
+        input_tensor (Tensor): Required parameter for input_tensor.
+        delimiter (str): Required parameter for delimiter.
+
+    Returns:
+        tuple: The evaluated or processed output.
     """
     if not global_tracing_state.is_tracing:
         raise RuntimeError("Cannot emit StringSplit node outside of a tracing context.")
@@ -247,8 +253,8 @@ def string_split(input_tensor: Tensor, delimiter: str = " ") -> tuple[Tensor, Te
     Returns:
         tuple[Tensor, Tensor]: Tokens and their lengths.
     """
-    if global_config.eager_mode:  # pragma: no branch
-        return _string_split_eager(input_tensor, delimiter)  # pragma: no cover
+    if global_config.eager_mode:
+        return _string_split_eager(input_tensor, delimiter)
     return _string_split_trace(input_tensor, delimiter)
 
 
@@ -262,10 +268,10 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Tensor:
     Returns:
         Tensor: Integer indices.
     """
-    if global_config.eager_mode:  # pragma: no branch
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
         )
@@ -288,14 +294,14 @@ def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
     Returns:
         Tensor.
     """
-    if global_config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Int32, input_tensor.device),
         )
-    return _emit_shape_node(  # pragma: no cover
+    return _emit_shape_node(
         "TextVectorization",
         [input_tensor],
         kwargs,
@@ -314,14 +320,14 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
     Returns:
         Tensor: Parsed numeric tensor.
     """
-    if global_config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, dtype, input_tensor.device),
         )
-    return _emit_shape_node(  # pragma: no cover
+    return _emit_shape_node(
         "StringToNumber",
         [input_tensor],
         {"dtype": dtype},
@@ -339,14 +345,14 @@ def string_lower(input_tensor: Tensor) -> Tensor:
     Returns:
         Tensor: Lowercased string tensor.
     """
-    if global_config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("StringLower", input_tensor.data)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("StringLower", input_tensor.data)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
         )
-    return _emit_shape_node(  # pragma: no cover
+    return _emit_shape_node(
         "StringLower",
         [input_tensor],
         {},
@@ -364,14 +370,14 @@ def string_upper(input_tensor: Tensor) -> Tensor:
     Returns:
         Tensor: Uppercased string tensor.
     """
-    if global_config.eager_mode:  # pragma: no cover
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("StringUpper", input_tensor.data)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("StringUpper", input_tensor.data)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
         )
-    return _emit_shape_node(  # pragma: no cover
+    return _emit_shape_node(
         "StringUpper",
         [input_tensor],
         {},
@@ -391,10 +397,10 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     Returns:
         Tensor: The edit distances.
     """
-    if global_config.eager_mode:  # pragma: no branch
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.Float32, hypothesis.device),
         )
@@ -433,10 +439,10 @@ def as_string(
         Tensor: A string tensor of the same shape.
     """
     kwargs = _as_string_config_to_dict(config)
-    if global_config.eager_mode:  # pragma: no branch
-        backend = get_active_backend()  # pragma: no cover
-        data = backend.execute_op("AsString", input_tensor.data, **kwargs)  # pragma: no cover
-        return Tensor(  # pragma: no cover
+    if global_config.eager_mode:
+        backend = get_active_backend()
+        data = backend.execute_op("AsString", input_tensor.data, **kwargs)
+        return Tensor(
             backend.array(data),
             TensorConfig(backend.array(data).shape, DType.String, input_tensor.device),
         )

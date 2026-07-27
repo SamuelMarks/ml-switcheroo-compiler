@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.ops.registry import get_util
 _emit_shape_node = get_util("_emit_shape_node")
 
 
-def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:  # pragma: no cover
+def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
     """Scatters values from a source tensor into the input tensor along a specified.
 
     dimension
@@ -27,8 +27,6 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:  # p
     Returns:
     Tensor: The updated tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -47,7 +45,7 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:  # p
     )
 
 
-def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor:  # pragma: no cover
+def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor:
     """Scatters updates into a new tensor of specified shape using indices.
 
     Args:
@@ -58,8 +56,6 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
     Returns:
     Tensor: The output tensor with scattered updates
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -76,7 +72,7 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
     )
 
 
-def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:  # pragma: no cover
+def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
     """Adds values from a source tensor to the input tensor at specified indices along a.
 
     dimension
@@ -90,8 +86,6 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor: 
     Returns:
     Tensor: The updated tensor
 
-    Raises:
-    UnimplementedMathError: If called in eager mode
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -110,7 +104,7 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor: 
     )
 
 
-def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:  # pragma: no cover
+def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
     """Updates the value of a tensor at given indices.
 
     Args:
@@ -140,7 +134,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> T
     )
 
 
-def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:  # pragma: no cover
+def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
     """Updates a tensor at given indices with the maximum of the current value and the update.
 
     Args:
@@ -170,7 +164,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     )
 
 
-def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:  # pragma: no cover
+def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
     """Updates a tensor at given indices with the minimum of the current value and the update.
 
     Args:
@@ -200,7 +194,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     )
 
 
-def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:  # pragma: no cover
+def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
     """Adds updates to a tensor at given indices.
 
     Args:

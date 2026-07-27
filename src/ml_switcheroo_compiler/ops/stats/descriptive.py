@@ -18,6 +18,41 @@ class Mean(ReductionOp):
     op_name = "Mean"
 
 
+@register_op("ApplyOverAxes")
+class ApplyOverAxes(OpDef):
+    """Apply a function repeatedly over multiple axes."""
+
+    op_name = "ApplyOverAxes"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Typically shape does not change for some functions or reduces, fallback to None
+        return None
+
+
+@register_op("Bincount")
+class Bincount(OpDef):
+    """Bincount operation."""
+
+    op_name = "Bincount"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        # Typically returns a 1D tensor whose size depends on max value, fallback to (None,)
+        return (None,)
+
+
+@register_op("Average")
+class Average(ReductionOp):
+    """Average reduction operation.
+
+    Computes the weighted average along the specified axis
+    """
+
+    op_name = "Average"
+    np_op_name = "average"
+
+
 @register_op("Variance")
 class Variance(ReductionOp):
     """Variance reduction operation.
@@ -49,7 +84,7 @@ class Corrcoef(OpDef):
     op_name = "Corrcoef"
     np_op_name = "corrcoef"
 
-    def infer_shape(self, x: object, y: object = None, rowvar: bool = True, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape."""
         return (None, None)
 
@@ -61,7 +96,7 @@ class Correlate(OpDef):
     op_name = "Correlate"
     np_op_name = "correlate"
 
-    def infer_shape(self, a: object, v: object, mode: str = "valid", **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape."""
         return (None,)
 
@@ -73,7 +108,7 @@ class Cov(OpDef):
     op_name = "Cov"
     np_op_name = "cov"
 
-    def infer_shape(self, m: object, y: object = None, rowvar: bool = True, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape."""
         return (None, None)
 
@@ -82,11 +117,12 @@ class Cov(OpDef):
 class TrapezoidalIntegral(OpDef):
     """TrapezoidalIntegral operation."""
 
-    def infer_shape(self, y: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
+        y = args[0] if len(args) > 0 else kwargs.get("y")
         shape = list(y)
         axis = kwargs.get("axis", -1)
-        if axis < 0:  # pragma: no branch
+        if axis < 0:
             axis += len(shape)
         shape.pop(axis)
         return tuple(shape)
@@ -102,7 +138,7 @@ def trapezoidal_integral(y: Tensor, x: Tensor = None, dx: float = 1.0, axis: int
 class ConfusionMatrix(OpDef):
     """ConfusionMatrix operation."""
 
-    def infer_shape(self, labels: object, predictions: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         num_classes = kwargs.get("num_classes", 0)
         return (num_classes, num_classes)
@@ -122,3 +158,29 @@ def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[obj
     m = mean_op(x, axis=axes, keepdims=keepdims)
     v = variance_op(x, axis=axes, keepdims=keepdims)
     return m, v
+
+
+@register_op("Descriptive")
+class Descriptive(OpDef):
+    """Descriptive operation."""
+
+    op_name = "Descriptive"
+
+
+@dispatch_eager("Descriptive")
+def descriptive(a: object) -> object:
+    """Function for descriptive."""
+    return get_op("Descriptive")()(a)
+
+
+@register_op("Distributions")
+class Distributions(OpDef):
+    """Distributions operation."""
+
+    op_name = "Distributions"
+
+
+@dispatch_eager("Distributions")
+def distributions(a: object) -> object:
+    """Function for distributions."""
+    return get_op("Distributions")()(a)

@@ -17,9 +17,20 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
 def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:
-    """Docstring."""
+    """Evaluate and process the cond tracing operation.
+
+    Args:
+        pred (Tensor): Required parameter for pred.
+        true_fn (Callable): Required parameter for true_fn.
+        false_fn (Callable): Required parameter for false_fn.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     if not global_tracing_state.is_tracing:
-        raise RuntimeError("Cannot emit Cond node outside of a tracing context.")
+        from ml_switcheroo_compiler.core.errors import TracingError
+
+        raise TracingError("Cannot emit Cond node outside of a tracing context.")
     true_graph = _trace_function(true_fn, (), "true_branch")
     false_graph = _trace_function(false_fn, (), "false_branch")
     out_id = str(uuid.uuid4())
@@ -36,9 +47,20 @@ def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[]
 
 
 def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object) -> object:
-    """Docstring."""
+    """Evaluate and process the while loop tracing operation.
+
+    Args:
+        cond_fn (Callable): Required parameter for cond_fn.
+        body_fn (Callable): Required parameter for body_fn.
+        init_val (object): Required parameter for init_val.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     if not global_tracing_state.is_tracing:
-        raise RuntimeError("Cannot emit While node outside of a tracing context.")
+        from ml_switcheroo_compiler.core.errors import TracingError
+
+        raise TracingError("Cannot emit While node outside of a tracing context.")
     args = (init_val,) if isinstance(init_val, Tensor) else tuple(typing.cast(typing.Iterable[Tensor], init_val))
     cond_graph = _trace_function(cond_fn, args, "cond")
     body_graph = _trace_function(body_fn, args, "body")
@@ -58,7 +80,14 @@ def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any]
 
 
 def _flatten_inputs(obj: object) -> list[str]:
-    """Docstring."""
+    """Evaluate and process the flatten inputs operation.
+
+    Args:
+        obj (object): Required parameter for obj.
+
+    Returns:
+        list: The evaluated or processed output.
+    """
     if isinstance(obj, Tensor):
         return [obj.data.id]
     elif isinstance(obj, (list, tuple)):
@@ -70,9 +99,21 @@ def _flatten_inputs(obj: object) -> list[str]:
 
 
 def scan_tracing(f: Callable, init: object, xs: object, length: int | None = None) -> tuple[Any, Any]:
-    """Docstring."""
+    """Evaluate and process the scan tracing operation.
+
+    Args:
+        f (Callable): Required parameter for f.
+        init (object): Required parameter for init.
+        xs (object): Required parameter for xs.
+        length (Any): Required parameter for length.
+
+    Returns:
+        tuple: The evaluated or processed output.
+    """
     if not global_tracing_state.is_tracing:
-        raise RuntimeError("Cannot emit Scan node outside of a tracing context.")
+        from ml_switcheroo_compiler.core.errors import TracingError
+
+        raise TracingError("Cannot emit Scan node outside of a tracing context.")
     x_shape = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
     proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=xs.dtype.value)
     dummy_x = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
@@ -93,9 +134,20 @@ def scan_tracing(f: Callable, init: object, xs: object, length: int | None = Non
 
 
 def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> Tensor:
-    """Docstring."""
+    """Evaluate and process the map fn tracing operation.
+
+    Args:
+        fn (Callable): Required parameter for fn.
+        elems (Tensor): Required parameter for elems.
+        dtype (Any): Required parameter for dtype.
+
+    Returns:
+        Tensor: The evaluated or processed output.
+    """
     if not global_tracing_state.is_tracing:
-        raise RuntimeError("Cannot emit Map node outside of a tracing context.")
+        from ml_switcheroo_compiler.core.errors import TracingError
+
+        raise TracingError("Cannot emit Map node outside of a tracing context.")
     x_shape = elems.shape[1:] if elems is not None and len(elems.shape) > 0 else ()
     proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=elems.dtype.value)
     dummy_x = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
@@ -116,16 +168,29 @@ def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> T
 
 
 def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
-    """Docstring."""
+    """Evaluate and process the pmap tracing operation.
+
+    Args:
+        func (Callable): Required parameter for func.
+        axis_name (Any): Required parameter for axis_name.
+
+    Returns:
+        Callable: The evaluated or processed output.
+    """
 
     def wrapped(*args: object) -> object:
-        """Function docstring.
+        """Evaluate and process the wrapped operation.
 
         Args:
-        args: Arg.
+            *args (Any): Variable positional arguments.
+
+        Returns:
+            object: The evaluated or processed output.
         """
         if not global_tracing_state.is_tracing:
-            raise RuntimeError("Cannot emit Pmap outside of a tracing context.")
+            from ml_switcheroo_compiler.core.errors import TracingError
+
+            raise TracingError("Cannot emit Pmap outside of a tracing context.")
         dummy_args = []
         for a in args:
             if isinstance(a, Tensor):
@@ -152,7 +217,14 @@ def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
 
 
 def stop_gradient_tracing(x: object) -> object:
-    """Docstring."""
+    """Evaluate and process the stop gradient tracing operation.
+
+    Args:
+        x (object): Required parameter for x.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     if not global_tracing_state.is_tracing:
         return x
     if isinstance(x, Tensor) and isinstance(x.data, ProxyTensor):
@@ -170,7 +242,15 @@ def stop_gradient_tracing(x: object) -> object:
 
 
 def assert_value_tracing(condition: object, message: str = "") -> None:
-    """Docstring."""
+    """Evaluate and process the assert value tracing operation.
+
+    Args:
+        condition (object): Required parameter for condition.
+        message (str): Required parameter for message.
+
+    Returns:
+        Any: The evaluated or processed output.
+    """
     if not global_tracing_state.is_tracing:
         record_assertion(condition, message)
         return

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Mixin module."""
 
 from __future__ import annotations
@@ -10,64 +11,154 @@ class ArrayASTVisitor(CommonASTVisitor):
     """Array and shape manipulation AST generator mixin."""
 
     def visit_ApproxMaxK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ApproxMaxK."""
+        """Generate the AST string for an approximate maximum k-elements operation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'k' and 'reduction_dimension'.
+
+        Returns:
+            A string containing the backend-specific code for the approximate max k operation.
+        """
         pfx = self.generator._get_backend_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
 
     def visit_ApproxMaxKIndices(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ApproxMaxKIndices."""
+        """Generate the AST string for retrieving the indices of an approximate maximum k-elements operation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'k' and 'reduction_dimension'.
+
+        Returns:
+            A string containing the backend-specific code to get the indices of the approximate max k elements.
+        """
         pfx = self.generator._get_backend_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
 
     def visit_ApproxMinK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ApproxMinK."""
+        """Generate the AST string for an approximate minimum k-elements operation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'k' and 'reduction_dimension'.
+
+        Returns:
+            A string containing the backend-specific code for the approximate min k operation.
+        """
         pfx = self.generator._get_backend_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
 
     def visit_ApproxMinKIndices(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ApproxMinKIndices."""
+        """Generate the AST string for retrieving the indices of an approximate minimum k-elements operation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'k' and 'reduction_dimension'.
+
+        Returns:
+            A string containing the backend-specific code to get the indices of the approximate min k elements.
+        """
         pfx = self.generator._get_backend_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
 
     def visit_ArgSort(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ArgSort."""
+        """Generate the AST string for computing the indices that would sort an array.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'dimension'.
+
+        Returns:
+            A string containing the backend-specific code for the argsort operation.
+        """
         pfx = self.generator._get_backend_prefix()
         dimension = kwargs.get("dimension", -1)
         return f"{pfx}_argsort({input_vars[0]}, dimension={dimension})"
 
     def visit_Argwhere(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate Argwhere."""
+        """Generate the AST string for finding the indices of array elements that are non-zero.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for the argwhere operation.
+        """
         pfx = self.generator._get_backend_prefix()
         return f"{pfx}_argwhere({input_vars[0]})"
 
     def visit_Argpartition(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate Argpartition."""
+        """Generate the AST string for performing an indirect partition along the given axis.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'kth' and 'axis'.
+
+        Returns:
+            A string containing the backend-specific code for the argpartition operation.
+        """
         pfx = self.generator._get_backend_prefix()
         kth = kwargs.get("kth")
         axis = kwargs.get("axis", -1)
         return f"{pfx}_argpartition({input_vars[0]}, kth={kth}, axis={axis})"
 
     def visit_AsString(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate AsString."""
+        """Generate the AST string for converting a tensor to its string representation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for string conversion.
+        """
         pfx = self.generator._get_backend_prefix()
         return f"{pfx}_as_string({input_vars[0]})"
 
     def visit_AxisIndex(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate AxisIndex."""
+        """Generate the AST string for returning the index along a mapped axis.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments, including 'axis_name'.
+
+        Returns:
+            A string containing the backend-specific code for retrieving the axis index.
+        """
         pfx = self.generator._get_backend_prefix()
         axis_name = kwargs.get("axis_name", "")
         return f"{pfx}_axis_index(axis_name='{axis_name}')"
 
     def visit_TopK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate TopK."""
+        """Generate the AST string for finding the k largest entries for the given dimensions.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for computing the top k elements.
+        """
         k = node.attributes.get("k", 1)
         k_val = k.expr if hasattr(k, "expr") else str(k)
         is_idx = node.attributes.get("return_indices", False)
@@ -81,7 +172,17 @@ class ArrayASTVisitor(CommonASTVisitor):
         return self._topk_sort_fallback(pfx, var, k_val, is_idx)
 
     def _topk_native_dispatch(self, pfx: str, var: str, k_val: str, is_idx: bool) -> str | None:
-        """Gets native top_k AST string if supported."""
+        """Retrieve the native top-k implementation string if it is supported by the backend.
+
+        Args:
+            pfx: A string indicating the backend prefix.
+            var: The input variable string.
+            k_val: A string representation of the k value.
+            is_idx: A boolean indicating whether to return indices instead of values.
+
+        Returns:
+            A string with the native backend call, or None if no native function is defined.
+        """
         idx_int = 1 if is_idx else 0
         idx_str = "indices" if is_idx else "values"
 
@@ -96,13 +197,32 @@ class ArrayASTVisitor(CommonASTVisitor):
         return dispatch.get(pfx)
 
     def _topk_sort_fallback(self, pfx: str, var: str, k_val: str, is_idx: bool) -> str:
-        """Generates fallback top_k using sort/argsort and slicing."""
+        """Generate a fallback implementation for top-k using sorting and slicing.
+
+        Args:
+            pfx: A string indicating the backend prefix.
+            var: The input variable string.
+            k_val: A string representation of the k value.
+            is_idx: A boolean indicating whether to return indices instead of values.
+
+        Returns:
+            A string computing the top-k values or indices using a sort fallback.
+        """
         op_pfx = "mx" if pfx == "mlx" else pfx
         op_fn = f"{op_pfx}.argsort" if is_idx else f"{op_pfx}.sort"
         return f"{op_fn}({var}, axis=-1)[..., -({k_val}):][..., ::-1]"
 
     def visit_Meshgrid(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate Meshgrid."""
+        """Generate the AST string for creating coordinate matrices from coordinate vectors.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for generating a meshgrid.
+        """
         idx = node.attributes.get("output_index", 0)
         indexing = node.attributes.get("indexing", "ij")
         pfx = self.generator._get_backend_prefix()
@@ -117,7 +237,16 @@ class ArrayASTVisitor(CommonASTVisitor):
             return f"np.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
     def visit_Slice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate Slice."""
+        """Generate the AST string for a tensor slicing operation.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for the slice operation.
+        """
         dim = node.attributes.get("dim")
         start = node.attributes.get("start")
         end = node.attributes.get("end")
@@ -133,7 +262,16 @@ class ArrayASTVisitor(CommonASTVisitor):
             return f"{input_vars[0]}[(slice(None),) * ({dim}) + (slice({start_str}, {end_str}, {step_str}),) + (...,)]"
 
     def visit_DynamicSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate DynamicSlice."""
+        """Generate the AST string for dynamically slicing a tensor.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for dynamic slicing.
+        """
         operand = input_vars[0]
         starts = input_vars[1:]
         slice_sizes = node.attributes.get("slice_sizes", [])
@@ -150,7 +288,16 @@ class ArrayASTVisitor(CommonASTVisitor):
             return f"{operand}[tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {list(slice_sizes)}))]"
 
     def visit_DynamicUpdateSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate DynamicUpdateSlice."""
+        """Generate the AST string for dynamically updating a slice of a tensor.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for the dynamic update slice operation.
+        """
         operand = input_vars[0]
         update = input_vars[1]
         starts = input_vars[2:]
@@ -166,10 +313,28 @@ class ArrayASTVisitor(CommonASTVisitor):
             return f"(lambda out: [out.__setitem__(tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {update}.shape)), {update}), out][1])({operand}.{copy_meth})"
 
     def visit_GetItem(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate GetItem."""
+        """Generate the AST string for fetching an item from an array via an index or slice.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code to get an item from the array.
+        """
         key = node.attributes.get("key", "")
         return f"{input_vars[0]}[{key}]"
 
     def visit_PutAlongAxis(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate PutAlongAxis."""
+        """Generate the AST string for placing values into a destination array along a specified axis.
+
+        Args:
+            node: The AST node representing the operation.
+            input_vars: A list of string variables representing the inputs to the operation.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            A string containing the backend-specific code for putting elements along a specified axis.
+        """
         return f"{self.generator._get_backend_prefix()}.put_along_axis({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, axis={node.attributes.get('axis', None)})"

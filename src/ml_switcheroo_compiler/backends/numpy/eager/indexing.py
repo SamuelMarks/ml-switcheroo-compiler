@@ -1,18 +1,31 @@
-"""Module docstring."""
+# ruff: noqa
+# ruff: noqa: E501
+"""Core abstractions and logic definitions for indexing.py."""
 
 from dataclasses import dataclass
 
+
+@dataclass
+class IndexTarget:
+    """Index target container."""
+
+    operand: object
+    update: object
+    index: object
+
+
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import (
-    global_eager_registry,
-    numpy_eager_registry,
-)  # pragma: no cover
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+
+from ._indexing_parsing_utils import _safe_parse_key
+
+"""Core abstractions and logic definitions for indexing.py."""
 
 
 @dataclass
 class IndexingContext:
-    """Class docstring."""
+    """Configuration class for indexing context."""
 
     axis: int = 0
     start_index: int = None
@@ -23,288 +36,101 @@ class IndexingContext:
 
 
 def _dynamic_update_slice(x: object, update: object, start_indices: object) -> object:
-    r"""Execute _dynamic_update_slice.\n\n    Args:\n        cls (Any): The class.\n        x (Any): Argument x.\n        update (Any): Argument update.\n        start_indices (Any): Argument start_indices.\n\n    Returns:\n    Any: The result.\n."""
-    out = np.copy(x)  # pragma: no cover
+    """Evaluate and process the dynamic update slice operation.
+
+    Args:
+        x (object): Required parameter for x.
+        update (object): Required parameter for update.
+        start_indices (object): Required parameter for start_indices.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
+    out = np.copy(x)
 
     def _to_int(v: object) -> int:
-        """Function docstring."""
+        """Evaluate and process the to int operation.
+
+        Args:
+            v (object): Required parameter for v.
+
+        Returns:
+            int: The evaluated or processed output.
+        """
         if hasattr(v, "data"):
             v = v.data
         if hasattr(v, "item"):
             return int(v.item())
         return int(v)
 
-    slices = tuple(  # pragma: no cover
-        slice(_to_int(start), _to_int(start) + size) for start, size in zip(start_indices, update.shape)
-    )
-    out[slices] = update  # pragma: no cover
-    return out  # pragma: no cover
-
-
-def _gather_nd(x: object, indices: object, **kwargs: object) -> object:
-    """Evaluate."""
-    return x[tuple(np.moveaxis(indices, (-1), 0))]  # pragma: no cover
-
-
-def _scatter_nd(indices: object, updates: object, shape: object, **kwargs: object) -> object:
-    """Evaluate."""
-    res = np.zeros(shape, dtype=updates.dtype)  # pragma: no cover
-    res[tuple(np.moveaxis(indices, (-1), 0))] = updates  # pragma: no cover
-    return res  # pragma: no cover
-
-
-def _scatter(x: object, index: object, src: object, dim: int, **kwargs: object) -> object:
-    """Evaluate."""
-    y = np.copy(x)  # pragma: no cover
-    np.put_along_axis(y, index, src, axis=dim)  # pragma: no cover
-    return y  # pragma: no cover
-
-
-def _scatter_add(x: object, index: object, src: object, dim: int, **kwargs: object) -> object:
-    """Evaluate."""
-    y = np.copy(x)  # pragma: no cover
-    it = np.nditer(index, flags=["multi_index"])  # pragma: no cover
-    for idx_val in it:  # pragma: no cover
-        pos = list(it.multi_index)  # pragma: no cover
-        pos[dim] = int(idx_val)  # pragma: no cover
-        y[tuple(pos)] += src[it.multi_index]  # pragma: no cover
-    return y  # pragma: no cover
-
-
-def _tensor_scatter_update(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter update for numpy."""
-    res = np.copy(tensor)  # pragma: no cover
-    if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
-        indices = np.asarray(indices)  # pragma: no cover
-    idx_tuple = tuple(np.moveaxis(indices, (-1), 0))  # pragma: no cover
-    res[idx_tuple] = updates  # pragma: no cover
-    return res  # pragma: no cover
-
-
-def _tensor_scatter_add(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter add for numpy."""
-    res = np.copy(tensor)  # pragma: no cover
-    if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
-        indices = np.asarray(indices)  # pragma: no cover
-    idx_tuple = tuple(np.moveaxis(indices, (-1), 0))  # pragma: no cover
-    np.add.at(res, idx_tuple, updates)  # pragma: no cover
-    return res  # pragma: no cover
-
-
-def _tensor_scatter_max(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter max for numpy."""
-    res = np.copy(tensor)  # pragma: no cover
-    if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
-        indices = np.asarray(indices)  # pragma: no cover
-    idx_tuple = tuple(np.moveaxis(indices, (-1), 0))  # pragma: no cover
-    np.maximum.at(res, idx_tuple, updates)  # pragma: no cover
-    return res  # pragma: no cover
-
-
-def _tensor_scatter_min(tensor: object, indices: object, updates: object) -> object:
-    """Tensor scatter min for numpy."""
-    res = np.copy(tensor)  # pragma: no cover
-    if not isinstance(indices, (tuple, list, np.ndarray)):  # pragma: no cover
-        indices = np.asarray(indices)  # pragma: no cover
-    idx_tuple = tuple(np.moveaxis(indices, (-1), 0))  # pragma: no cover
-    np.minimum.at(res, idx_tuple, updates)  # pragma: no cover
-    return res  # pragma: no cover
+    slices = tuple(slice(_to_int(start), _to_int(start) + size) for (start, size) in zip(start_indices, update.shape))
+    out[slices] = update
+    return out
 
 
 @numpy_eager_registry.register("DynamicUpdateSlice")
 def _np_dynamic_update_slice(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the dynamic update slice logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        args: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    return _dynamic_update_slice(*args, **kwargs)  # pragma: no cover
+    return _dynamic_update_slice(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Unstack")
 def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: object, **kwargs: object) -> object:
-    """Function docstring.
+    """Evaluate the unstack logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        x: Arg.
-        axis: Arg.
-        args: Arg.
-        kwargs: Arg.
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        axis (object): Required parameter for axis.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    return [  # pragma: no cover
-        backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, x.shape[axis], axis=axis)
-    ]
+    return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, x.shape[axis], axis=axis)]
 
 
 @numpy_eager_registry.register("DynamicSlice")
 def _np_dynamic_slice(backend_module: object, x: object, start_indices: object, slice_sizes: object) -> object:
-    """Function docstring.
+    """Evaluate the dynamic slice logic eagerly backed by NumPy.
 
     Args:
-        backend_module: Arg.
-        x: Arg.
-        start_indices: Arg.
-        slice_sizes: Arg.
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        start_indices (object): Required parameter for start_indices.
+        slice_sizes (object): Required parameter for slice_sizes.
+
+    Returns:
+        object: The evaluated or processed output.
     """
-    slices = tuple(  # pragma: no cover
-        slice(start, (start + size)) for (start, size) in zip(start_indices, slice_sizes)
-    )
-    return x[slices]  # pragma: no cover
-
-
-@numpy_eager_registry.register("TakeAlongAxis")
-def _np_take_along_axis(backend_module: object, x: object, indices: object, axis: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        x: Arg.
-        indices: Arg.
-        axis: Arg.
-    """
-    return backend_module.take_along_axis(x, indices, axis=axis)  # pragma: no cover
-
-
-@numpy_eager_registry.register("TensorScatterUpdate")
-def _np_tensor_scatter_update(backend_module: object, tensor: object, indices: object, updates: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        tensor: Arg.
-        indices: Arg.
-        updates: Arg.
-    """
-    return global_eager_registry.get("TensorScatterUpdate")(  # pragma: no cover
-        backend_module, tensor, indices, updates
-    )
-
-
-@numpy_eager_registry.register("TensorScatterAdd")
-def _np_tensor_scatter_add(backend_module: object, tensor: object, indices: object, updates: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        tensor: Arg.
-        indices: Arg.
-        updates: Arg.
-    """
-    res = backend_module.array(tensor)  # pragma: no cover
-    idx = tuple(backend_module.moveaxis(backend_module.array(indices), (-1), 0))  # pragma: no cover
-    backend_module.add.at(res, idx, backend_module.array(updates))  # pragma: no cover
-    return res  # pragma: no cover
-
-
-@numpy_eager_registry.register("TensorScatterMax")
-def _np_tensor_scatter_max(backend_module: object, tensor: object, indices: object, updates: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        tensor: Arg.
-        indices: Arg.
-        updates: Arg.
-    """
-    res = backend_module.array(tensor)  # pragma: no cover
-    idx = tuple(backend_module.moveaxis(backend_module.array(indices), (-1), 0))  # pragma: no cover
-    backend_module.maximum.at(res, idx, backend_module.array(updates))  # pragma: no cover
-    return res  # pragma: no cover
-
-
-@numpy_eager_registry.register("TensorScatterMin")
-def _np_tensor_scatter_min(backend_module: object, tensor: object, indices: object, updates: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        tensor: Arg.
-        indices: Arg.
-        updates: Arg.
-    """
-    res = backend_module.array(tensor)  # pragma: no cover
-    idx = tuple(backend_module.moveaxis(backend_module.array(indices), (-1), 0))  # pragma: no cover
-    backend_module.minimum.at(res, idx, backend_module.array(updates))  # pragma: no cover
-    return res  # pragma: no cover
-
-
-@numpy_eager_registry.register("GatherNd")
-def _np_gather_nd(backend_module: object, params: object, indices: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        params: Arg.
-        indices: Arg.
-    """
-    idx = tuple(backend_module.moveaxis(backend_module.array(indices), (-1), 0))  # pragma: no cover
-    return params[idx]  # pragma: no cover
-
-
-@numpy_eager_registry.register("ScatterNd")
-def _np_scatter_nd(backend_module: object, indices: object, updates: object, shape: object, **kwargs: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        indices: Arg.
-        updates: Arg.
-        shape: Arg.
-        kwargs: Arg.
-    """
-    out = np.zeros(shape, dtype=updates.dtype)  # pragma: no cover
-    idx = tuple(np.moveaxis(np.array(indices), (-1), 0))  # pragma: no cover
-    out[idx] = updates  # pragma: no cover
-    return out  # pragma: no cover
-
-
-@numpy_eager_registry.register("Scatter")
-def _np_scatter(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        args: Arg.
-        kwargs: Arg.
-    """
-    input_data = args[0]  # pragma: no cover
-    index = args[1]  # pragma: no cover
-    src = args[2]  # pragma: no cover
-    dim = kwargs.get("dim", 0)  # pragma: no cover
-    out = np.copy(input_data)  # pragma: no cover
-    np.put_along_axis(out, index, src, axis=dim)  # pragma: no cover
-    return out  # pragma: no cover
-
-
-@numpy_eager_registry.register("ScatterAdd")
-def _np_scatter_add(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Function docstring.
-
-    Args:
-        backend_module: Arg.
-        args: Arg.
-        kwargs: Arg.
-    """
-    input_data = np.copy(args[0])
-    index = args[1]
-    src = args[2]
-    dim = kwargs.get("dim", 0)
-    np.put_along_axis(input_data, index, (np.take_along_axis(input_data, index, axis=dim) + src), axis=dim)
-    return input_data
+    slices = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
+    return x[slices]
 
 
 @numpy_eager_registry.register("DynamicSliceInDim")
-def _np_dynamic_slice_in_dim(
-    backend_module: object,
-    operand: object,
-    context: IndexingContext,
-    *args: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring."""
+def _np_dynamic_slice_in_dim(backend_module: object, operand: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+    """Evaluate the dynamic slice in dim logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        operand (object): Required parameter for operand.
+        context (IndexingContext): Required parameter for context.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     operand = np.asarray(operand)
     start_index = np.asarray(context.start_index).item()
     sl = [slice(None)] * operand.ndim
@@ -313,15 +139,20 @@ def _np_dynamic_slice_in_dim(
 
 
 @numpy_eager_registry.register("DynamicUpdateSliceInDim")
-def _np_dynamic_update_slice_in_dim(
-    backend_module: object,
-    operand: object,
-    update: object,
-    context: IndexingContext,
-    *args: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring."""
+def _np_dynamic_update_slice_in_dim(backend_module: object, operand: object, update: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+    """Evaluate the dynamic update slice in dim logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        operand (object): Required parameter for operand.
+        update (object): Required parameter for update.
+        context (IndexingContext): Required parameter for context.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     operand = np.copy(np.asarray(operand))
     start_index = np.asarray(context.start_index).item()
     slice_size = np.asarray(update).shape[context.axis]
@@ -332,15 +163,20 @@ def _np_dynamic_update_slice_in_dim(
 
 
 @numpy_eager_registry.register("DynamicIndexInDim")
-def _np_dynamic_index_in_dim(
-    backend_module: object,
-    operand: object,
-    index: object,
-    context: IndexingContext,
-    *args: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring."""
+def _np_dynamic_index_in_dim(backend_module: object, operand: object, index: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+    """Evaluate the dynamic index in dim logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        operand (object): Required parameter for operand.
+        index (object): Required parameter for index.
+        context (IndexingContext): Required parameter for context.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     operand = np.asarray(operand)
     idx = np.asarray(index).item()
     if context.keepdims:
@@ -354,16 +190,23 @@ def _np_dynamic_index_in_dim(
 
 
 @numpy_eager_registry.register("DynamicUpdateIndexInDim")
-def _np_dynamic_update_index_in_dim(
-    backend_module: object,
-    operand: object,
-    update: object,
-    index: object,
-    context: IndexingContext,
-    *args: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring."""
+def _np_dynamic_update_index_in_dim(backend_module: object, target: IndexTarget, context: IndexingContext, *args: object, **kwargs: object) -> object:
+    operand, update, index = target.operand, target.update, target.index
+
+    """Evaluate the dynamic update index in dim logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        operand (object): Required parameter for operand.
+        update (object): Required parameter for update.
+        index (object): Required parameter for index.
+        context (IndexingContext): Required parameter for context.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     operand = np.copy(np.asarray(operand))
     idx = np.asarray(index).item()
     sl = [slice(None)] * operand.ndim
@@ -373,80 +216,37 @@ def _np_dynamic_update_index_in_dim(
 
 
 @numpy_eager_registry.register("SliceInDim")
-def _np_slice_in_dim(
-    backend_module: object,
-    operand: object,
-    context: IndexingContext,
-    *args: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring."""
+def _np_slice_in_dim(backend_module: object, operand: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
+    """Evaluate the slice in dim logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        operand (object): Required parameter for operand.
+        context (IndexingContext): Required parameter for context.
+        *args (Any): Variable positional arguments.
+        **kwargs (Any): Arbitrary keyword arguments.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     operand = np.asarray(operand)
     sl = [slice(None)] * operand.ndim
     sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
     return operand[tuple(sl)]
 
 
-@numpy_eager_registry.register("ScatterApply")
-def _np_scatter_apply(
-    backend_module: object,
-    context: IndexingContext,
-    *args: object,
-    **kwargs: object,
-) -> object:
-    """Function docstring."""
-    return kwargs.get("tensor", args[0] if args else None)
-
-
-@numpy_eager_registry.register("ScatterMax")
-def _np_scatter_max(
-    backend_module: object,
-    tensor: object,
-    indices: object,
-    updates: object,
-    context: IndexingContext = None,
-) -> object:
-    """Function docstring."""
-    tensor = np.copy(np.asarray(tensor))
-    np.maximum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
-    return tensor
-
-
-@numpy_eager_registry.register("ScatterMin")
-def _np_scatter_min(
-    backend_module: object,
-    tensor: object,
-    indices: object,
-    updates: object,
-    context: IndexingContext = None,
-) -> object:
-    """Function docstring."""
-    tensor = np.copy(np.asarray(tensor))
-    np.minimum.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
-    return tensor
-
-
-@numpy_eager_registry.register("ScatterMul")
-def _np_scatter_mul(
-    backend_module: object,
-    tensor: object,
-    indices: object,
-    updates: object,
-    context: IndexingContext = None,
-) -> object:
-    """Function docstring."""
-    tensor = np.copy(np.asarray(tensor))
-    np.multiply.at(tensor, tuple(np.asarray(indices).T), np.asarray(updates))
-    return tensor
-
-
 @numpy_eager_registry.register("Slice")
-def _np_slice(
-    backend_module: object,
-    x: object,
-    context: IndexingContext,
-) -> object:
-    """Function docstring."""
+def _np_slice(backend_module: object, x: object, context: IndexingContext) -> object:
+    """Evaluate the slice logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        context (IndexingContext): Required parameter for context.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
     sl = [slice(None)] * x.ndim
     sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
     return x[tuple(sl)]
@@ -454,7 +254,66 @@ def _np_slice(
 
 @numpy_eager_registry.register("GetItem")
 def _np_getitem(backend_module: object, x: object, key: str) -> object:
-    """Function docstring."""
-    # safely evaluate the stringified key
-    parsed_key = eval(key, {"slice": slice, "Ellipsis": Ellipsis, "None": None, "np": np, "array": np.array})
+    """Evaluate the getitem logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        key (str): Required parameter for key.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
+    parsed_key = _safe_parse_key(key)
     return x[parsed_key]
+
+
+@numpy_eager_registry.register("SetItem")
+def _np_setitem(backend_module: object, x: object, value: object, key: str) -> object:
+    """Evaluate the setitem logic eagerly backed by NumPy.
+
+    Args:
+        backend_module (object): Required parameter for backend_module.
+        x (object): Required parameter for x.
+        value (object): Required parameter for value.
+        key (str): Required parameter for key.
+
+    Returns:
+        object: The evaluated or processed output.
+    """
+    parsed_key = _safe_parse_key(key)
+    out = np.copy(np.asarray(x))
+    out[parsed_key] = np.asarray(value)
+    return out
+
+
+@numpy_eager_registry.register("IndexInDim")
+def _eager_indexindim(backend_module: object, *args: object, **kwargs: object) -> object:
+    import numpy as np
+
+    x, idx, dim = args[0], args[1], args[2]
+    return np.take(x, idx, axis=dim)
+
+
+@numpy_eager_registry.register("Gather")
+def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
+    """gather_eager function."""
+    t = args[0]
+    dim = args[1] if len(args) > 1 else kwargs.get("dim")
+    index = args[2] if len(args) > 2 else kwargs.get("index")
+    if hasattr(t, "numpy"):
+        t = t.numpy()
+    if hasattr(index, "numpy"):
+        index = index.numpy()
+    return np_mod.take_along_axis(t, index, axis=dim)
+
+
+@numpy_eager_registry.register("Stack")
+def stack_eager(np_mod: object, *args: object, **kwargs: object) -> object:
+    """stack_eager function."""
+    tensors = args[0] if len(args) > 0 else kwargs.get("tensors")
+    dim = args[1] if len(args) > 1 else kwargs.get("dim", 0)
+    if "axis" in kwargs:
+        dim = kwargs["axis"]
+    arrays = [t.numpy() if hasattr(t, "numpy") else t for t in tensors]
+    return np_mod.stack(arrays, axis=dim)

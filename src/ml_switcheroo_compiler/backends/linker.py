@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Provides utility functions for inspecting the call stack and retrieving source code."""
 
 from __future__ import annotations

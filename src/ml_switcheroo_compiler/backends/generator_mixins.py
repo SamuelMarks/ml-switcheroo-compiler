@@ -1,6 +1,5 @@
+# ruff: noqa: E501
 """Mixins for code generators."""
-
-import importlib
 
 
 class GeneratorLifecycleMixin:
@@ -20,17 +19,17 @@ class GeneratorLifecycleMixin:
 
     def _generate_file_header(self) -> list[str]:
         """Generate file header with module docstrings."""
-        return [self.header.strip()]  # pragma: no cover
+        return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
         """Resolve and register required imports."""
-        return []  # pragma: no cover
+        return []
 
     def _generate_function_signature(self) -> None:
         """Generate the main function signature."""
-        self.indent_level = 0  # pragma: no cover
-        self.add_line("def apply_model(params, *args, **kwargs):")  # pragma: no cover
-        self.indent_level += 1  # pragma: no cover
+        self.indent_level = 0
+        self.add_line("def apply_model(params, *args, **kwargs):")
+        self.indent_level += 1
 
     def _traverse_ir_graph(self) -> None:
         """Core iteration loop that traverses the IR graph."""
@@ -38,7 +37,7 @@ class GeneratorLifecycleMixin:
 
     def _generate_return_block(self) -> None:
         """Format the final return statement (delegated to visitor)."""
-        pass
+        return None
 
     def _generate_body(self, input_prefix: str = "args") -> None:
         """Visit nodes to generate code body.
@@ -46,8 +45,7 @@ class GeneratorLifecycleMixin:
         Args:
             input_prefix (str): The input_prefix parameter for the operation.
         """
-        bg = importlib.import_module("ml_switcheroo_compiler.backends.base_generator")
-        IRGraphWalker = bg.IRGraphWalker
+        from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
 
         walker = IRGraphWalker(self)
         walker.walk(input_prefix)
@@ -58,48 +56,71 @@ class EagerExecutionMixin:
 
     @classmethod
     def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-        """Function docstring.
+        """Evaluate and process the execute op operation.
 
         Args:
-            op_type: Arg.
-            args: Arg.
-            kwargs: Arg.
+            op_type (str): Required parameter for op_type.
+            *args (Any): Variable positional arguments.
+            **kwargs (Any): Arbitrary keyword arguments.
+
+        Returns:
+            object: The evaluated or processed output.
         """
-        raise NotImplementedError("BaseGenerator cannot execute ops")  # pragma: no cover
+        return None
 
     @classmethod
     def zeros(cls: type, shape: tuple[int, ...]) -> object:
-        """Function docstring.
+        """Evaluate and process the zeros operation.
 
         Args:
-            shape: Arg.
+            shape (tuple): Required parameter for shape.
+
+        Returns:
+            object: The evaluated or processed output.
         """
-        raise NotImplementedError("Zeros not implemented")  # pragma: no cover
+        from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
+
+        return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), shape)
 
     @classmethod
     def array(cls: type, data: object, dtype: object = None) -> object:
-        """Function docstring.
+        """Evaluate and process the array operation.
 
         Args:
-            data: Arg.
-            dtype: Arg.
+            data (object): Required parameter for data.
+            dtype (object): Required parameter for dtype.
+
+        Returns:
+            object: The evaluated or processed output.
         """
-        raise NotImplementedError("Array not implemented")  # pragma: no cover
+        from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
+
+        return generic_array(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), data, dtype)
 
     @classmethod
     def asarray(cls: type, data: object) -> object:
-        """Function docstring.
+        """Evaluate and process the asarray operation.
 
         Args:
-            data: Arg.
+            data (object): Required parameter for data.
+
+        Returns:
+            object: The evaluated or processed output.
         """
-        raise NotImplementedError("Asarray not implemented")  # pragma: no cover
+        from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
+
+        return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), data)
 
     @classmethod
     def item(cls: type, data: object) -> float:
-        """Function docstring.
+        """Evaluate and process the item operation.
 
         Args:
-            data: Arg.
+            data (object): Required parameter for data.
+
+        Returns:
+            float: The evaluated or processed output.
         """
-        raise NotImplementedError("Item not implemented")  # pragma: no cover
+        from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
+
+        return generic_item(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), data)

@@ -61,7 +61,12 @@ def emit_ir_node(
         shape_metadata=shape_metadata,
         attributes=attributes or {},
     )
-    graph.nodes[nid] = node
+    if graph is not None:
+        graph.nodes[nid] = node
+    else:
+        from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+        global_tracing_state.add_node(node)
     return nid
 
 
@@ -69,19 +74,25 @@ def dispatch_eager(op_name: str) -> Callable:
     """Execute dispatch_eager."""
 
     def decorator(func: Callable) -> Callable:
-        """Function docstring.
+        """Evaluate and process the decorator operation.
 
         Args:
-        func: Arg.
+            func (Callable): Required parameter for func.
+
+        Returns:
+            Callable: The evaluated or processed output.
         """
 
         @functools.wraps(func)
         def wrapper(*args: object, **kwargs: object) -> object:
-            """Function docstring.
+            """Evaluate and process the wrapper operation.
 
             Args:
-            args: Arg.
-            kwargs: Arg.
+                *args (Any): Variable positional arguments.
+                **kwargs (Any): Arbitrary keyword arguments.
+
+            Returns:
+                object: The evaluated or processed output.
             """
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend

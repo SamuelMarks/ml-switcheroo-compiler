@@ -2,10 +2,23 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+
+@dataclass
+class ExtractPatchesOptions:
+    """Options for extracting patches."""
+
+    strides: int | tuple[int, int] | list[int] | None = None
+    dilation_rate: int | tuple[int, int] | list[int] | None = None
+    padding: str = "valid"
+    data_format: str | None = None
 
 
 def crop_and_resize(
@@ -99,13 +112,13 @@ def extract_bounding_boxes(
     Returns:
         Tensor: Cropped and resized images of shape [num_boxes, crop_height, crop_width, C].
     """
-    if config_obj is None:  # pragma: no branch
-        from ml_switcheroo_compiler.ops.configs import BBoxConfig  # pragma: no cover
+    if config_obj is None:
+        from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
-        crop_size = kwargs.get("crop_size", (0, 0))  # pragma: no cover
-        if isinstance(crop_size, int):  # pragma: no cover
-            crop_size = (crop_size, crop_size)  # pragma: no cover
-        config_obj = BBoxConfig(  # pragma: no cover
+        crop_size = kwargs.get("crop_size", (0, 0))
+        if isinstance(crop_size, int):
+            crop_size = (crop_size, crop_size)
+        config_obj = BBoxConfig(
             crop_size=crop_size,
             interpolation=kwargs.get("interpolation", "bilinear"),
             extrapolation_value=kwargs.get("extrapolation_value", 0.0),
@@ -321,10 +334,7 @@ def crop_images(
 def extract_patches(
     images: Tensor,
     size: int | tuple[int, int] | list[int],
-    strides: int | tuple[int, int] | list[int] | None = None,
-    dilation_rate: int | tuple[int, int] | list[int] | None = None,
-    padding: str = "valid",
-    data_format: str | None = None,
+    options: ExtractPatchesOptions | None = None,
     **kwargs: object,
 ) -> Tensor:
     """Extracts patches from images.
@@ -332,15 +342,13 @@ def extract_patches(
     Args:
         images (Tensor): Input images.
         size (int | tuple[int, int] | list[int]): Patch size.
+        options (ExtractPatchesOptions): Options.
         **kwargs: Extra arguments.
-        strides (int | tuple[int, int] | list[int] | None): Strides.
-        dilation_rate (int | tuple[int, int] | list[int] | None): Dilation rate.
-        padding (str): Padding.
-        data_format (str | None): Data format.
 
     Returns:
         Tensor: Patches.
     """
+    options = options or ExtractPatchesOptions()
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -349,10 +357,10 @@ def extract_patches(
             "ExtractPatches",
             images.data,
             size=size,
-            strides=strides,
-            dilation_rate=dilation_rate,
-            padding=padding,
-            data_format=data_format,
+            strides=options.strides,
+            dilation_rate=options.dilation_rate,
+            padding=options.padding,
+            data_format=options.data_format,
         )
         return Tensor(
             backend.array(data),
@@ -363,10 +371,10 @@ def extract_patches(
         [images],
         {
             "size": size,
-            "strides": strides,
-            "dilation_rate": dilation_rate,
-            "padding": padding,
-            "data_format": data_format,
+            "strides": options.strides,
+            "dilation_rate": options.dilation_rate,
+            "padding": options.padding,
+            "data_format": options.data_format,
         },
         (),
         images.dtype,
@@ -424,3 +432,36 @@ def pad_images(
         (),
         images.dtype,
     )
+
+
+@register_op("ExtractBoundingBoxes")
+class ExtractBoundingBoxes(OpDef):
+    """ExtractBoundingBoxes operation."""
+
+    op_name = "ExtractBoundingBoxes"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())
+
+
+@register_op("Iou")
+class Iou(OpDef):
+    """Iou operation."""
+
+    op_name = "Iou"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())
+
+
+@register_op("Nms")
+class Nms(OpDef):
+    """Nms operation."""
+
+    op_name = "Nms"
+
+    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return getattr(inputs, "shape", ())

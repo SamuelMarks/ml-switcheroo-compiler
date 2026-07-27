@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for lu.py."""
 
 from __future__ import annotations
 
@@ -31,7 +31,9 @@ class LuPivotsToPermutation(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape[:-1] + (kwargs["permutation_size"],)
+        if not args:
+            return ()
+        return args[0].shape[:-1] + (kwargs.get("permutation_size", 0),)
 
 
 def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Cupy Code Generator Package."""
 
 from .eager import execute_op
@@ -9,5 +10,3 @@ CupyGenerator.array = classmethod(array)
 CupyGenerator.asarray = classmethod(asarray)
 CupyGenerator.item = classmethod(item)
 CupyGenerator.execute_op = classmethod(execute_op)
-
-__all__ = ["CupyGenerator"]

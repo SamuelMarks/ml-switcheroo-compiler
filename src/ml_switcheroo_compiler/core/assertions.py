@@ -14,7 +14,7 @@ def _is_iterable_non_string(c: object) -> bool:
     Args:
         c: Arg.
     """
-    return hasattr(c, "__iter__") and not isinstance(c, (str, bytes))  # pragma: no cover
+    return hasattr(c, "__iter__") and not isinstance(c, (str, bytes))
 
 
 def _evaluate_iterable(c: object) -> bool:
@@ -23,26 +23,29 @@ def _evaluate_iterable(c: object) -> bool:
     Args:
         c: Arg.
     """
-    if _is_iterable_non_string(c):  # pragma: no cover
-        return all(bool(x) for x in c)  # pragma: no cover
-    raise ValueError(f"Could not evaluate boolean value of {type(c)}")  # pragma: no cover
+    if _is_iterable_non_string(c):
+        return all(bool(x) for x in c)
+    raise ValueError(f"Could not evaluate boolean value of {type(c)}")
 
 
 def _evaluate_single_condition(cond: object) -> bool:
-    """Function docstring.
+    """Evaluate and process the evaluate single condition operation.
 
     Args:
-        cond: Arg.
+        cond (object): Required parameter for cond.
+
+    Returns:
+        bool: The evaluated or processed output.
     """
     c = cond.numpy() if hasattr(cond, "numpy") else cond
 
-    if hasattr(c, "all") and callable(c.all):  # pragma: no branch
+    if hasattr(c, "all") and callable(c.all):
         return bool(c.all())
 
-    try:  # pragma: no cover
-        return bool(c)  # pragma: no cover
-    except ValueError:  # pragma: no cover
-        return _evaluate_iterable(c)  # pragma: no cover
+    try:
+        return bool(c)
+    except ValueError:
+        return _evaluate_iterable(c)
 
 
 def evaluate_assertions() -> None:

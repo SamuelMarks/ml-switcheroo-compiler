@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for logical.py."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -35,6 +35,22 @@ class Isnan(UnaryMathOp):
 
     op_name = "Isnan"
     np_op_name = "isnan"
+
+
+@register_op("Isneginf")
+class Isneginf(UnaryMathOp):
+    """Tests element-wise for negative infinity."""
+
+    op_name = "Isneginf"
+    np_op_name = "isneginf"
+
+
+@register_op("Isposinf")
+class Isposinf(UnaryMathOp):
+    """Tests element-wise for positive infinity."""
+
+    op_name = "Isposinf"
+    np_op_name = "isposinf"
 
 
 @register_op("LogicalNot")
@@ -131,3 +147,62 @@ class ReducePrecision(UnaryMathOp):
     """Reduce precision."""
 
     op_name = "ReducePrecision"
+
+
+@register_op("Iscomplex")
+class Iscomplex(UnaryMathOp):
+    """Tests element-wise for complex type."""
+
+    op_name = "Iscomplex"
+    np_op_name = "iscomplex"
+
+
+@register_op("Isreal")
+class Isreal(UnaryMathOp):
+    """Tests element-wise for real type."""
+
+    op_name = "Isreal"
+    np_op_name = "isreal"
+
+
+@register_op("Iscomplexobj")
+class Iscomplexobj(UnaryMathOp):
+    """Tests element-wise for complex object type."""
+
+    op_name = "Iscomplexobj"
+    np_op_name = "iscomplexobj"
+
+
+@register_op("Isrealobj")
+class Isrealobj(UnaryMathOp):
+    """Tests element-wise for real object type."""
+
+    op_name = "Isrealobj"
+    np_op_name = "isrealobj"
+
+
+@register_op("Issubdtype")
+class Issubdtype(UnaryMathOp):
+    """Tests whether first argument is a typecode lower/equal in type hierarchy."""
+
+    op_name = "Issubdtype"
+    np_op_name = "issubdtype"
+
+
+@register_op("Isin")
+class Isin(OpDef):
+    """Calculates element in test_elements, broadcasting over element only."""
+
+    op_name = "Isin"
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
+        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+
+@register_op("Ediff1d")
+class Ediff1d(UnaryMathOp):
+    """Differences between consecutive elements of an array."""
+
+    op_name = "Ediff1d"
+    np_op_name = "ediff1d"

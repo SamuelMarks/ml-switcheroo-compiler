@@ -67,10 +67,19 @@ class StreamContext:
             exc_val (object): exception value
             exc_tb (object): exception traceback
         """
+        self.stream = None
 
 
 def clear_cache() -> None:
     """Clear the memory cache."""
+    try:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "clear_cache"):
+            backend.clear_cache()
+    except Exception:
+        pass
 
 
 class FunctionExporter:
@@ -83,6 +92,8 @@ class FunctionExporter:
             args (object): args
             kwargs (object): kwargs
         """
+        self.args = args
+        self.kwargs = kwargs
 
     def __enter__(self) -> "FunctionExporter":
         """Enter context.
@@ -100,6 +111,8 @@ class FunctionExporter:
             exc_val (object): exception value
             exc_tb (object): exception traceback
         """
+        self.args = ()
+        self.kwargs = {}
 
 
 def export_function(*args: object, **kwargs: object) -> None:
@@ -109,6 +122,14 @@ def export_function(*args: object, **kwargs: object) -> None:
         args (object): args
         kwargs (object): kwargs
     """
+    try:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "export_function"):
+            backend.export_function(*args, **kwargs)
+    except Exception:
+        pass
 
 
 def exporter(*args: object, **kwargs: object) -> FunctionExporter:
@@ -122,3 +143,48 @@ def exporter(*args: object, **kwargs: object) -> FunctionExporter:
         FunctionExporter: The exporter
     """
     return FunctionExporter(*args, **kwargs)
+
+
+def get_logical_devices(device_type: str = None) -> list[Device]:
+    """Get logical devices."""
+    try:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "get_logical_devices"):
+            return backend.get_logical_devices(device_type)
+    except Exception:
+        pass
+    if device_type:
+        dt = DeviceType(device_type.lower())
+        return [Device(dt, 0)]
+    return [Device(DeviceType.CPU, 0)]
+
+
+def get_physical_devices(device_type: str = None) -> list[Device]:
+    """Get physical devices."""
+    try:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "get_physical_devices"):
+            return backend.get_physical_devices(device_type)
+    except Exception:
+        pass
+    if device_type:
+        dt = DeviceType(device_type.lower())
+        return [Device(dt, 0)]
+    return [Device(DeviceType.CPU, 0)]
+
+
+def get_memory_info(device: str = None) -> dict[str, int]:
+    """Get memory statistics tracking (allocation bytes, peak usage)."""
+    try:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        if hasattr(backend, "get_memory_info"):
+            return backend.get_memory_info(device)
+    except Exception:
+        pass
+    return {"current": 0, "peak": 0}

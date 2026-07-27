@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for eig.py."""
 
 from __future__ import annotations
 
@@ -6,6 +6,23 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
+
+
+@register_op("Eig")
+class Eig(OpDef):
+    """Eig Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
 
 
 @register_op("Eigh")
@@ -61,12 +78,12 @@ def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        w, v = backend.execute_op("Eigh", input.data, UPLO=UPLO)
+        w, v = backend.execute_op("Eigh", (input.data if type(input).__name__ == "Tensor" else input), UPLO=UPLO)
         return (
-            Tensor(w, TensorConfig(w.shape, input.dtype, input.device)),
-            Tensor(v, TensorConfig(v.shape, input.dtype, input.device)),
+            Tensor(w, TensorConfig(w.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+            Tensor(v, TensorConfig(v.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
         )
-    return _emit_linalg_node("Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [input.dtype] * 2)
+    return _emit_linalg_node("Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [getattr(input, "dtype", None)] * 2)
 
 
 def eigvalsh(input: Tensor, UPLO: str = "L") -> Tensor:
@@ -84,6 +101,70 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Eigvalsh", input.data, UPLO=UPLO)
-        return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
-    return _emit_linalg_node("Eigvalsh", [input], {"UPLO": UPLO}, [input.shape[:-1]], [input.dtype])
+        data = backend.execute_op("Eigvalsh", (input.data if type(input).__name__ == "Tensor" else input), UPLO=UPLO)
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+        )
+    return _emit_linalg_node("Eigvalsh", [input], {"UPLO": UPLO}, [input.shape[:-1]], [getattr(input, "dtype", None)])
+
+
+@register_op("Eigvals")
+class Eigvals(OpDef):
+    """Eigvals Operation Definition."""
+
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: The shape.
+        """
+        return ()
+
+
+def eigvals(input: Tensor) -> Tensor:
+    """Computes the eigenvalues of a general matrix.
+
+    Args:
+        input (Tensor): The general square matrix
+
+    Returns:
+    Tensor: The eigenvalues
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        data = backend.execute_op("Eigvals", (input.data if type(input).__name__ == "Tensor" else input))
+        return Tensor(
+            backend.array(data),
+            TensorConfig(backend.array(data).shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+        )
+    return _emit_linalg_node("Eigvals", [input], {}, [input.shape[:-1]], [getattr(input, "dtype", None)])
+
+
+def eig(input: Tensor) -> tuple[Tensor, Tensor]:
+    """Computes the eigenvalues and eigenvectors of a square matrix.
+
+    Args:
+        input (Tensor): The square matrix.
+
+    Returns:
+    tuple[Tensor, Tensor]: A tuple containing:
+        - eigenvalues (Tensor): The eigenvalues.
+        - eigenvectors (Tensor): The right eigenvectors.
+    """
+    if config.eager_mode:
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
+        w, v = backend.execute_op("Eig", (input.data if type(input).__name__ == "Tensor" else input))
+        return (
+            Tensor(w, TensorConfig(w.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+            Tensor(v, TensorConfig(v.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+        )
+    return _emit_linalg_node("Eig", [input], {}, [input.shape[:-1], input.shape], [getattr(input, "dtype", None)] * 2)

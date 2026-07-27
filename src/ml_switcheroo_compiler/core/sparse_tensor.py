@@ -1,5 +1,10 @@
 """Sparse tensor representations."""
 
+from collections.abc import Sequence
+from typing import Union
+
+from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 
@@ -11,6 +16,26 @@ class SparseTensor:
         self.values = values
         self.dense_shape = dense_shape
         self.format = "base"
+
+    @property
+    def shape(self) -> Sequence[Union[int, str]]:
+        """Get the shape of the tensor."""
+        return self.dense_shape
+
+    @property
+    def dtype(self) -> DType:
+        """Get the data type of the tensor."""
+        return self.values.dtype
+
+    @property
+    def device(self) -> Device:
+        """Get the device of the tensor."""
+        return self.values.device
+
+    @property
+    def requires_grad(self) -> bool:
+        """Check if the tensor requires gradient computation."""
+        return self.values.requires_grad
 
 
 class SparseTensorCOO(SparseTensor):

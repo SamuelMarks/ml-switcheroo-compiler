@@ -19,13 +19,16 @@ def _emit_segment_op(
     segment_ids: Tensor,
     num_segments: int | None = None,
 ) -> Tensor:
-    """Function docstring.
+    """Emit a segment op operation into the active computation graph.
 
     Args:
-        op_type: Arg.
-        data: Arg.
-        segment_ids: Arg.
-        num_segments: Arg.
+        op_type (str): Required parameter for op_type.
+        data (Tensor): Required parameter for data.
+        segment_ids (Tensor): Required parameter for segment_ids.
+        num_segments (Any): Required parameter for num_segments.
+
+    Returns:
+        Tensor: The evaluated or processed output.
     """
     inputs = [data, segment_ids]
     attributes = {}

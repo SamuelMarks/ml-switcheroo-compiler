@@ -162,25 +162,18 @@ def variance_scaling(config: InitializerConfig) -> object:
     """
 
     def init(key: object, shape: object, dtype: object = None) -> object:
-        """Function docstring.
+        """Initialize the instance.
 
         Args:
-        key: Arg.
-        shape: Arg.
-        dtype: Arg.
-        """
-        if dtype is None:  # pragma: no branch
-            dtype = config.dtype
-        """Execute init.
-
-        Args:
-            key (Any): Argument key.
-            shape (Any): Argument shape.
-            dtype (Any): Argument dtype.
+            key (object): The key parameter.
+            shape (object): The shape parameter.
+            dtype (object): The dtype parameter.
 
         Returns:
-        Any: The result.
+            object: The inferred shape or computed result.
         """
+        if dtype is None:
+            dtype = config.dtype
         return zeros(key, shape, dtype)
 
     return init

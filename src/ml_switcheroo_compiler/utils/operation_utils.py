@@ -1,27 +1,29 @@
 """Operation utilities."""
 
+import abc
 from typing import Any, Optional, Union
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 
 
-def get_source_inputs(tensor: object) -> list[object]:  # pragma: no cover
+def get_source_inputs(tensor: object) -> list[object]:
     """Returns the list of input tensors that a tensor depends on."""
     # This is a dummy implementation if no node history.
-    if hasattr(tensor, "_keras_history"):  # pragma: no cover
-        node = tensor._keras_history.node  # pragma: no cover
-        if not node.operation.inputs:  # pragma: no cover
-            return [tensor]  # pragma: no cover
-        res = []  # pragma: no cover
-        for inp in node.operation.inputs:  # pragma: no cover
-            res.extend(get_source_inputs(inp))  # pragma: no cover
-        return res  # pragma: no cover
-    return [tensor]  # pragma: no cover
+    if hasattr(tensor, "_keras_history"):
+        node = tensor._keras_history.node
+        if not node.operation.inputs:
+            return [tensor]
+        res = []
+        for inp in node.operation.inputs:
+            res.extend(get_source_inputs(inp))
+        return res
+    return [tensor]
 
 
-class ShapeInferenceStrategy:
+class ShapeInferenceStrategy(abc.ABC):
     """Base class for shape inference strategies."""
 
+    @abc.abstractmethod
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
         """Compute shape propagation.
 
@@ -33,7 +35,7 @@ class ShapeInferenceStrategy:
         Returns:
             The output shape.
         """
-        raise NotImplementedError("ShapeInferenceStrategy must implement __call__")
+        pass
 
 
 class ReshapeInference(ShapeInferenceStrategy):
@@ -104,9 +106,9 @@ def _validate_squeeze_dims(shape: tuple[int, ...], axes: list[int]) -> None:
     """Validates that squeezed dimensions have size 1."""
     for a in axes:
         if a < 0 or a >= len(shape):
-            raise ValueError(f"Squeeze axis {a} is out of bounds for shape {shape}")  # pragma: no cover
+            raise ValueError(f"Squeeze axis {a} is out of bounds for shape {shape}")
         if shape[a] != 1:
-            raise ValueError(f"Cannot squeeze dimension {a} of size {shape[a]}")  # pragma: no cover
+            raise ValueError(f"Cannot squeeze dimension {a} of size {shape[a]}")
 
 
 def _squeeze_all_ones(shape: tuple[int, ...]) -> tuple[int, ...]:
@@ -162,7 +164,7 @@ class SplitInference(ShapeInferenceStrategy):
             sub_shape = list(shape)
             sub_shape[axis] = sub_shape[axis] // num_or_size_splits if sub_shape[axis] is not None else None
             return [tuple(sub_shape) for _ in range(num_or_size_splits)]
-        return shape  # pragma: no cover (fallback if not int, based on original missing else)
+        return shape  # (fallback if not int, based on original missing else)
 
 
 class MeanInference(ShapeInferenceStrategy):
@@ -179,18 +181,42 @@ class MeanInference(ShapeInferenceStrategy):
         """Validate datatype promotion based on kwargs."""
         dtype = kwargs.get("dtype")
         if dtype is not None and not isinstance(dtype, str):
-            pass  # pragma: no cover
+            return None
 
     def _compute_keepdims_shape(self, shape: tuple[int, ...], normalized_axis: set[int]) -> tuple[int, ...]:
-        """Function docstring."""
+        """Evaluate and process the compute keepdims shape operation.
+
+        Args:
+            shape (tuple): Required parameter for shape.
+            normalized_axis (set): Required parameter for normalized_axis.
+
+        Returns:
+            tuple: The evaluated or processed output.
+        """
         return tuple(1 if i in normalized_axis else s for i, s in enumerate(shape))
 
     def _compute_reduced_shape(self, shape: tuple[int, ...], normalized_axis: set[int]) -> tuple[int, ...]:
-        """Function docstring."""
+        """Evaluate and process the compute reduced shape operation.
+
+        Args:
+            shape (tuple): Required parameter for shape.
+            normalized_axis (set): Required parameter for normalized_axis.
+
+        Returns:
+            tuple: The evaluated or processed output.
+        """
         return tuple(s for i, s in enumerate(shape) if i not in normalized_axis)
 
     def _extract_axis(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Optional[object]:
-        """Function docstring."""
+        """Evaluate and process the extract axis operation.
+
+        Args:
+            args (tuple): Required parameter for args.
+            kwargs (dict): Required parameter for kwargs.
+
+        Returns:
+            Optional: The evaluated or processed output.
+        """
         if "axis" in kwargs:
             return kwargs["axis"]
         if len(args) > 1:
@@ -203,7 +229,7 @@ class MeanInference(ShapeInferenceStrategy):
 
         axis = self._extract_axis(args, kwargs)
         if axis is None:
-            return shape  # pragma: no cover (fallback if axis is None)
+            return shape  # (fallback if axis is None)
 
         keepdims = kwargs.get("keepdims", False)
         normalized_axis = self._resolve_axis(axis, len(shape))

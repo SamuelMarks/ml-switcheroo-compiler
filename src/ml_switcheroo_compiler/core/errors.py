@@ -26,4 +26,4 @@ class BackendNotSupportedError(SwitcherooError):
 
 
 class UnimplementedMathError(SwitcherooError):
-    """Raised if NumPy/SciPy fallback is missing in Eager Mode."""
+    """Raised when an operation lacks a mathematical equivalent."""

@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for utils.py."""
 
 from __future__ import annotations
 
@@ -19,13 +19,16 @@ def _build_linalg_output_tensors(
     out_dtypes: Sequence[DType],
     device: object,
 ) -> list[Tensor]:
-    """Function docstring.
+    """Evaluate and process the build linalg output tensors operation.
 
     Args:
-        out_ids: Arg.
-        out_shapes: Arg.
-        out_dtypes: Arg.
-        device: Arg.
+        out_ids (list): Required parameter for out_ids.
+        out_shapes (Sequence): Required parameter for out_shapes.
+        out_dtypes (Sequence): Required parameter for out_dtypes.
+        device (object): Required parameter for device.
+
+    Returns:
+        list: The evaluated or processed output.
     """
     tensors = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):

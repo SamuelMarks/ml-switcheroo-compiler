@@ -12,7 +12,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 
 def _get_exports_from_submodule(modname: str) -> list[str]:
-    """Function docstring."""
+    """Retrieve the exported symbols from a submodule.
+
+    Args:
+        modname (str): The fully qualified name of the module to import.
+
+    Returns:
+        list[str]: A sorted list of the module's exported symbol names.
+    """
     try:
         mod = importlib.import_module(modname)
     except Exception as e:
@@ -31,7 +38,18 @@ def _append_import_lines(
     import_lines: list[str],
     all_exports: list[str],
 ) -> None:
-    """Function docstring."""
+    """Append import statements for new exports to the given lists.
+
+    Args:
+        modname (str): The module name to import from.
+        exports (list[str]): The list of symbols to import.
+        imported_symbols (set[str]): The set of symbols that have already been imported.
+        import_lines (list[str]): The list of formatted import statements to append to.
+        all_exports (list[str]): The list of all exported symbols to append to.
+
+    Returns:
+        None
+    """
     unique_exports = [e for e in sorted(set(exports)) if e not in imported_symbols]
     if unique_exports:
         import_lines.append(f"from {modname} import (")
@@ -48,7 +66,17 @@ def generate_init(
     submodules: list[str],
     extra_imports: Optional[list[tuple[str, list[str]]]] = None,
 ) -> None:
-    """Generate the __init__.py file with explicit imports and __all__ list."""
+    """Generate the __init__.py file with explicit imports and __all__ list.
+
+    Args:
+        filepath (str): The path to the __init__.py file to write.
+        module_name (str): The base name of the module.
+        submodules (list[str]): A list of submodules to import from.
+        extra_imports (Optional[list[tuple[str, list[str]]]]): A list of tuples containing an external module name and a list of symbols to import.
+
+    Returns:
+        None
+    """
     all_exports: list[str] = []
     import_lines: list[str] = []
     imported_symbols: set[str] = set()
@@ -69,7 +97,7 @@ def generate_init(
 
     try:
         tree = ast.parse(old_source)
-        existing_all = None
+        existing_all: Optional[list[str]] = None
         for node in ast.walk(tree):
             if isinstance(node, ast.Assign):
                 for target in node.targets:
@@ -78,9 +106,7 @@ def generate_init(
                             existing_all = []
                             for elt in node.value.elts:
                                 if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                                    existing_all.append(elt.value)
-                                elif isinstance(elt, ast.Str):
-                                    existing_all.append(elt.s)
+                                    existing_all.append(str(elt.value))
 
         if existing_all is not None and sorted(list(set(existing_all))) == all_exports:
             return
@@ -104,7 +130,14 @@ def generate_init(
 
 
 def process_file(filepath: str) -> None:
-    """Process a single file to update its __all__ exports."""
+    """Process a single file to update its __all__ exports.
+
+    Args:
+        filepath (str): The path to the Python file to process.
+
+    Returns:
+        None
+    """
     abs_path = os.path.abspath(filepath)
     src_dir = os.path.abspath("src")
     if not abs_path.startswith(src_dir):
@@ -144,9 +177,11 @@ def process_file(filepath: str) -> None:
         exports = [n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set]
 
     else:
-        exports = getattr(mod, "__all__", None)
-        if exports is None:
+        exports_attr = getattr(mod, "__all__", None)
+        if exports_attr is None:
             exports = [n for n in dir(mod) if not n.startswith("_")]
+        else:
+            exports = list(exports_attr)
 
     exports = sorted(list(set(exports)))
 
@@ -158,7 +193,7 @@ def process_file(filepath: str) -> None:
     except SyntaxError:
         return
 
-    existing_all = None
+    existing_all: Optional[list[str]] = None
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
@@ -167,15 +202,13 @@ def process_file(filepath: str) -> None:
                         existing_all = []
                         for elt in node.value.elts:
                             if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                                existing_all.append(elt.value)
-                            elif isinstance(elt, ast.Str):  # For older pythons
-                                existing_all.append(elt.s)
+                                existing_all.append(str(elt.value))
 
     if existing_all is not None and sorted(list(set(existing_all))) == exports:
         # Lists are semantically equal, no need to rewrite
         return
 
-    lines_to_remove = set()
+    lines_to_remove: set[int] = set()
 
     for node in ast.walk(tree):
         is_target = False
@@ -191,8 +224,9 @@ def process_file(filepath: str) -> None:
                         is_target = True
 
         if is_target:
-            for line_num in range(node.lineno, node.end_lineno + 1):
-                lines_to_remove.add(line_num)
+            if hasattr(node, "lineno") and hasattr(node, "end_lineno") and node.end_lineno is not None:
+                for line_num in range(node.lineno, node.end_lineno + 1):
+                    lines_to_remove.add(line_num)
 
     if not lines_to_remove and not getattr(mod, "__all__", None):
         return
@@ -207,8 +241,8 @@ def process_file(filepath: str) -> None:
         new_lines.pop()
 
     new_source = "\n".join(new_lines) + "\n\n__all__ = [\n"
-    for e in exports:
-        new_source += f'    "{e}",\n'
+    for e_exp in exports:
+        new_source += f'    "{e_exp}",\n'
     new_source += "]\n"
 
     try:
@@ -234,7 +268,7 @@ if __name__ == "__main__":
         "mixing",
         "transforms",
         "frontend",
-        "ops",
+        "ops_package",
     ]
     # First, generate vision exports specifically
     generate_init(
@@ -265,15 +299,22 @@ if __name__ == "__main__":
         "base",
         "control_flow",
         "creation",
-        "distributed",
         "io",
         "shape",
         "text",
+        "signal",
         "sparse",
+        "dummy_ops",
         "ragged",
         "tensor_array",
         "state",
         "device",
+        "generated.missing_ops",
+        "generated.polynomials",
+        "generated.histograms",
+        "generated.creation",
+        "generated.math_extras",
+        "generated.shape_extras",
         "raw_ops",
         "creation.frontend",
         "binary",
@@ -283,10 +324,50 @@ if __name__ == "__main__":
         "random_ops",
         "nn",
         "normalization",
-        "loss",
         "vision",
         "image",
-        "vision.ops",
+        "vision.ops_package",
+        "stats.descriptive_extras",
+        "stats.cumulative",
+        "stats.type_testing",
+        "stats.limits",
+        "stats.math_misc",
+        "stats.linalg_misc",
+        "stats.sort_search",
+        "stats.utils",
+        "manipulation.function_application",
+        "manipulation.slicing",
+        "manipulation.axis",
+        "manipulation.indices",
+        "manipulation.mutations",
+        "manipulation.formatting",
+        "manipulation.creation",
+        "manipulation.solvers",
+        "manipulation.sets",
+        "manipulation.clipping",
+        "manipulation.properties",
+        "manipulation.equivalence",
+        "manipulation.statistics",
+        "manipulation.bitwise",
+        "manipulation.sorting",
+        "manipulation.math_signals",
+        "manipulation.misc",
+        "advanced_math.associative",
+        "advanced_math.special",
+        "advanced_math.bitwise",
+        "advanced_math.type_utils",
+        "advanced_math.distributions",
+        "advanced_math.prng",
+        "advanced_math.scatter",
+        "advanced_math.precision",
+        "stats.descriptive_extras",
+        "stats.cumulative",
+        "stats.type_testing",
+        "stats.limits",
+        "stats.math_misc",
+        "stats.linalg_misc",
+        "stats.sort_search",
+        "stats",
     ]
     generate_init(
         "src/ml_switcheroo_compiler/ops/__init__.py",

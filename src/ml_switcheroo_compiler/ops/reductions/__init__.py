@@ -8,10 +8,9 @@ import ml_switcheroo_compiler.ops.reductions.nan as _nan
 import ml_switcheroo_compiler.ops.reductions.pooling as _pooling
 import ml_switcheroo_compiler.ops.stats.descriptive as _statistical
 from ml_switcheroo_compiler.ops.base import get_op
-from ml_switcheroo_compiler.ops.stats.descriptive import moments
 
-from .aggregations import ReduceWindow
-from .distributed import Pmean, Psum
+from .distributed import Pmean as Pmean
+from .distributed import Psum as Psum
 from .frontend import adaptive_avg_pool2d as adaptive_avg_pool2d
 from .frontend import adaptive_max_pool2d as adaptive_max_pool2d
 from .frontend import approx_max_k as approx_max_k
@@ -43,79 +42,164 @@ _ = _distributed
 _ = _statistical
 
 
-sum = get_op("Sum")()
-prod = get_op("Prod")()
-mean = get_op("Mean")()
-variance = get_op("Variance")()
-std = get_op("Std")()
-max = get_op("Max")()
-min = get_op("Min")()
-argmax = get_op("Argmax")()
-argmin = get_op("Argmin")()
-all = get_op("All")()
-any = get_op("Any")()
+try:
+    sum = get_op("Sum")()
+except KeyError:
+    sum = None
+try:
+    prod = get_op("Prod")()
+except KeyError:
+    prod = None
+try:
+    mean = get_op("Mean")()
+except KeyError:
+    mean = None
+try:
+    variance = get_op("Variance")()
+except KeyError:
+    variance = None
+try:
+    std = get_op("Std")()
+except KeyError:
+    std = None
+try:
+    max = get_op("Max")()
+except KeyError:
+    max = None
+try:
+    min = get_op("Min")()
+except KeyError:
+    min = None
+try:
+    argmax = get_op("Argmax")()
+except KeyError:
+    argmax = None
+try:
+    argmin = get_op("Argmin")()
+except KeyError:
+    argmin = None
+try:
+    all = get_op("All")()
+except KeyError:
+    all = None
+try:
+    any = get_op("Any")()
+except KeyError:
+    any = None
 
-logsumexp = get_op("Logsumexp")()
-nanargmax = get_op("Nanargmax")()
-nanargmin = get_op("Nanargmin")()
-nancumprod = get_op("Nancumprod")()
-nancumsum = get_op("Nancumsum")()
-nanmax = get_op("Nanmax")()
-nanmean = get_op("Nanmean")()
-nanmedian = get_op("Nanmedian")()
-nanmin = get_op("Nanmin")()
-nanpercentile = get_op("Nanpercentile")()
-nanprod = get_op("Nanprod")()
-nanquantile = get_op("Nanquantile")()
-nanstd = get_op("Nanstd")()
-nansum = get_op("Nansum")()
-nanvar = get_op("Nanvar")()
-bincount = get_op("Bincount")()
+try:
+    logsumexp = get_op("Logsumexp")()
+except KeyError:
+    logsumexp = None
+try:
+    nanargmax = get_op("Nanargmax")()
+except KeyError:
+    nanargmax = None
+try:
+    nanargmin = get_op("Nanargmin")()
+except KeyError:
+    nanargmin = None
+try:
+    nancumprod = get_op("Nancumprod")()
+except KeyError:
+    nancumprod = None
+try:
+    nancumsum = get_op("Nancumsum")()
+except KeyError:
+    nancumsum = None
+try:
+    nanmax = get_op("Nanmax")()
+except KeyError:
+    nanmax = None
+try:
+    nanmean = get_op("Nanmean")()
+except KeyError:
+    nanmean = None
+try:
+    nanmedian = get_op("Nanmedian")()
+except KeyError:
+    nanmedian = None
+try:
+    nanmin = get_op("Nanmin")()
+except KeyError:
+    nanmin = None
+try:
+    nanpercentile = get_op("Nanpercentile")()
+except KeyError:
+    nanpercentile = None
+try:
+    nanprod = get_op("Nanprod")()
+except KeyError:
+    nanprod = None
+try:
+    nanquantile = get_op("Nanquantile")()
+except KeyError:
+    nanquantile = None
+try:
+    nanstd = get_op("Nanstd")()
+except KeyError:
+    nanstd = None
+try:
+    nansum = get_op("Nansum")()
+except KeyError:
+    nansum = None
+try:
+    nanvar = get_op("Nanvar")()
+except KeyError:
+    nanvar = None
 
-count_nonzero = get_op("CountNonzero")()
-norm = get_op("Norm")()
-cumsum = get_op("Cumsum")()
 
-logcumsumexp = get_op("Logcumsumexp")()
+try:
+    count_nonzero = get_op("CountNonzero")()
+except KeyError:
+    count_nonzero = None
+try:
+    norm = get_op("Norm")()
+except KeyError:
+    norm = None
+try:
+    cumsum = get_op("Cumsum")()
+except KeyError:
+    cumsum = None
 
-__all__ = [
-    "Pmean",
-    "Psum",
-    "ReduceWindow",
-    "all",
-    "any",
-    "approx_max_k",
-    "approx_min_k",
-    "argmax",
-    "argmin",
-    "corrcoef",
-    "correlate",
-    "count_nonzero",
-    "cov",
-    "cumsum",
-    "logcumsumexp",
-    "logsumexp",
-    "max",
-    "mean",
-    "min",
-    "moments",
-    "norm",
-    "pmean",
-    "prod",
-    "psum",
-    "reduce_window",
-    "segment_max",
-    "segment_mean",
-    "segment_min",
-    "segment_prod",
-    "segment_sum",
-    "std",
-    "sum",
-    "unsorted_segment_max",
-    "unsorted_segment_mean",
-    "unsorted_segment_min",
-    "unsorted_segment_prod",
-    "unsorted_segment_sqrt_n",
-    "unsorted_segment_sum",
-    "variance",
-]
+try:
+    cummax = get_op("Cummax")()
+except KeyError:
+    cummax = None
+try:
+    cummin = get_op("Cummin")()
+except KeyError:
+    cummin = None
+
+try:
+    cumprod = get_op("Cumprod")()
+except KeyError:
+    cumprod = None
+
+
+try:
+    logcumsumexp = get_op("Logcumsumexp")()
+except KeyError:
+    logcumsumexp = None
+
+
+try:
+    accumulate_n = get_op("AccumulateN")()
+except KeyError:
+    accumulate_n = None
+try:
+    add_n = get_op("AddN")()
+except KeyError:
+    add_n = None
+try:
+    cumulative_logsumexp = get_op("CumulativeLogsumexp")()
+except KeyError:
+    cumulative_logsumexp = None
+try:
+    reduce_euclidean_norm = get_op("ReduceEuclideanNorm")()
+except KeyError:
+    reduce_euclidean_norm = None
+try:
+    reduce_logsumexp = get_op("Logsumexp")()
+except KeyError:
+    reduce_logsumexp = None

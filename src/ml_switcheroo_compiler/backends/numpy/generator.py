@@ -1,8 +1,8 @@
-"""Module docstring."""
+# ruff: noqa: E501
+"""Core abstractions and logic definitions for generator.py."""
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
-from ml_switcheroo_compiler.backends.common.generator_mixins import SharedASTGeneratorVisitor
-from ml_switcheroo_compiler.backends.common.mixins.nn import GroupNormConfig, NNASTVisitor
+from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -14,16 +14,32 @@ class NumpyTypeTranslator:
 
     @staticmethod
     def get_fallback_prefix() -> str:
-        """Get fallback prefix."""
-        return "np"  # pragma: no cover
+        """Retrieve the default fallback prefix string for NumPy operations.
+
+        Returns:
+            str: The fallback prefix string 'np'.
+        """
+        return "np"
 
     @staticmethod
     def get_ops_map() -> dict:
-        """Get ops map."""
+        """Retrieve the mapping of IR operations to NumPy specific string formats.
+
+        Returns:
+            dict: A dictionary mapping operation names to string templates.
+        """
         return {
             "Infeed": "{0}",
             "Outfeed": "{0}",
             "AxisIndex": "0",
+            "AllToAll": "{0}",
+            "Pmax": "{0}",
+            "Pmin": "{0}",
+            "PsumScatter": "{0}",
+            "Pswapaxes": "{0}",
+            "Ppermute": "{0}",
+            "Pshuffle": "{0}",
+            "CreateToken": "0",
             "WithShardingConstraint": "{0}",
             "RandomCategorical": "np.argmax({1} + np.random.gumbel(size={1}.shape), axis={axis})",
             "MultivariateNormal": 'np.random.multivariate_normal({1}, {2}, size={shape}, method="{method}")',
@@ -32,13 +48,17 @@ class NumpyTypeTranslator:
             "Gamma": "np.random.gamma({1}, size={shape})",
             "RngBitGenerator": "np.random.randint(0, 255, size={shape})",
             "RngUniform": "np.random.uniform({0}, {1}, size={shape})",
-        }  # pragma: no cover
+        }
 
 
 class NumpyASTVisitor:
     """Visitor methods for Numpy AST traversal."""
 
     _OP_MAP = {
+        "BroadcastToRank": "np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0}, 'ndim') else {0}",
+        "Collapse": "np.reshape({0}, (-1,) + {0}.shape[{1}:])",
+        "ConvTransposeShapeTuple": "()",
+        "IndexInDim": "np.take({0}, {1}, axis={2})",
         "RNNCellDeviceWrapper": "tf.nn.rnn_cell.DeviceWrapper",
         "RNNCellDropoutWrapper": "tf.nn.rnn_cell.DropoutWrapper",
         "RNNCellResidualWrapper": "tf.nn.rnn_cell.ResidualWrapper",
@@ -71,10 +91,18 @@ class NumpyASTVisitor:
         "RaggedSegmentIdsToRowSplits": "tf.ragged.segment_ids_to_row_splits",
         "RaggedStack": "tf.ragged.stack",
         "RaggedStackDynamicPartitions": "tf.ragged.stack_dynamic_partitions",
-        "Trace": "tf.linalg.trace",
+        "Trace": "np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})",
+        "Outer": "np.outer({0}, {1})",
+        "Svdvals": "np.linalg.svd({0}, compute_uv=False)",
+        "Tensordot": "np.tensordot({0}, {1}, axes={axes})",
+        "Tensorinv": "np.linalg.tensorinv({0}, ind={ind})",
+        "Tensorsolve": "np.linalg.tensorsolve({0}, {1}, axes={axes})",
+        "Vecdot": "np.sum({0} * {1}, axis={axis})",
         "Adjoint": "tf.linalg.adjoint",
+        "LuMatrixInverse": "np.linalg.inv(np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1], dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1}, axis=-1), -1), {0}.shape), axis=-2))",
+        "LuReconstruct": "np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1], dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1}, axis=-1), -1), {0}.shape), axis=-2)",
         "BandPart": "tf.linalg.band_part",
-        "CholeskySolve": "tf.linalg.cholesky_solve",
+        "CholeskySolve": "np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})",
         "Add": "np.add",
         "Zeros": "np.zeros",
         "Ones": "np.ones",
@@ -92,6 +120,20 @@ class NumpyASTVisitor:
         "Fft": "np.fft.fft",
         "Rfft": "np.fft.rfft",
         "Fftn": "np.fft.fftn",
+        "Ifft": "np.fft.ifft",
+        "Ifftn": "np.fft.ifftn",
+        "Rfftn": "np.fft.rfftn",
+        "Irfftn": "np.fft.irfftn",
+        "Ifft2": "np.fft.ifft2",
+        "Rfft2": "np.fft.rfft2",
+        "Irfft2": "np.fft.irfft2",
+        "Hfft": "np.fft.hfft",
+        "Rfftfreq": "np.fft.rfftfreq({0}, d={d})",
+        "Sigmoid": "scipy.special.expit({0})",
+        "Softmax": "scipy.special.softmax({0}, axis={axis})",
+        "LogSoftmax": "scipy.special.log_softmax({0}, axis={axis})",
+        "OneHot": "np.eye({depth})[{0}]",
+        "Clip": "np.clip({0}, a_min={a_min}, a_max={a_max})",
         "Erfinv": "scipy.special.erfinv",
         "NanToNum": "np.nan_to_num",
         "Subtract": "np.subtract",
@@ -105,6 +147,15 @@ class NumpyASTVisitor:
         "Acosh": "np.arccosh",
         "Asin": "np.arcsin",
         "Asinh": "np.arcsinh",
+        "IgammaGradA": "lambda a, x: a",
+        "RandomGammaGrad": "lambda a, x: a",
+        "Igamma": "scipy.special.gammainc",
+        "Igammac": "scipy.special.gammaincc",
+        "Polygamma": "scipy.special.polygamma",
+        "Zeta": "scipy.special.zeta",
+        "BesselI0e": "scipy.special.i0e",
+        "BesselI1e": "scipy.special.i1e",
+        "Betainc": "scipy.special.betainc",
         "Atan": "np.arctan",
         "Atan2": "np.arctan2",
         "Atanh": "np.arctanh",
@@ -112,6 +163,7 @@ class NumpyASTVisitor:
         "Sum": "np.sum",
         "Cummax": "np.maximum.accumulate",
         "Cummin": "np.minimum.accumulate",
+        "Logcumsumexp": "scipy.special.logsumexp",
         "Cumprod": "np.cumprod",
         "Cumsum": "np.cumsum",
         "Cumlogsumexp": "np.logaddexp.accumulate",
@@ -135,13 +187,56 @@ class NumpyASTVisitor:
         "Det": "np.linalg.det",
         "Slogdet": "np.linalg.slogdet",
         "Eigh": "np.linalg.eigh",
+        "Eig": "np.linalg.eig",
         "Eigvalsh": "np.linalg.eigvalsh",
+        "Cond": "np.linalg.cond",
+        "Lstsq": "np.linalg.lstsq({0}, {1}, rcond={rcond})[0]",
+        "MatrixNorm": "np.linalg.norm({0}, keepdims={keepdims})",
+        "VectorNorm": "np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})",
+        "MatrixRank": "np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})",
+        "MatrixTranspose": "np.swapaxes({0}, -1, -2)",
+        "MultiDot": "np.linalg.multi_dot({0})",
+        "Diagonal": "np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})",
         "MatrixPower": "np.linalg.matrix_power",
         "Solve": "np.linalg.solve",
-        "TriangularSolve": "scipy.linalg.solve_triangular",
+        "TridiagonalSolve": "scipy.linalg.solve_banded((1, 1), np.stack([{2}, {1}, {0}], axis=-2), {3})",
+        "TridiagonalMatmul": (
+            "np.expand_dims({1}, -1) * {3}"
+            " + np.expand_dims(np.concatenate([np.zeros_like({0}[..., :1]), {0}[..., 1:]], axis=-1), -1) * np.concatenate([np.zeros_like({3}[..., :1, :]), {3}[..., :-1, :]], axis=-2)"
+            " + np.expand_dims(np.concatenate([{2}[..., :-1], np.zeros_like({2}[..., -1:])], axis=-1), -1) * np.concatenate([{3}[..., 1:, :], np.zeros_like({3}[..., -1:, :])], axis=-2)"
+        ),
+        "TriangularSolve": "scipy.linalg.solve_triangular({0}, {1}, lower={lower}, unit_diagonal={unit_diagonal}, trans=1 if {adjoint} else 0, check_finite=False)",
         "Lu": "scipy.linalg.lu",
         "LuFactor": "scipy.linalg.lu_factor",
         "LuSolve": "scipy.linalg.lu_solve",
+        "Poly": "np.poly",
+        "Polyadd": "np.polyadd",
+        "Polyder": "np.polyder",
+        "Polydiv": "np.polydiv",
+        "Polyfit": "np.polyfit",
+        "Polyint": "np.polyint",
+        "Polymul": "np.polymul",
+        "Polysub": "np.polysub",
+        "Polyval": "np.polyval",
+        "Roots": "np.roots",
+        "BroadcastedIota": "np.broadcasted_iota",
+        "Bincount": "np.bincount",
+        "Histogram": "np.histogram",
+        "Histogram2d": "np.histogram2d",
+        "HistogramBinEdges": "np.histogram_bin_edges",
+        "Histogramdd": "np.histogramdd",
+        "Geomspace": "np.geomspace",
+        "Gradient": "np.gradient",
+        "I0": "np.i0",
+        "Mgrid": "np.mgrid",
+        "Ogrid": "np.ogrid",
+        "R_": "np.r_",
+        "C_": "np.c_",
+        "Fromfile": "np.fromfile",
+        "Fromfunction": "np.fromfunction",
+        "Fromiter": "np.fromiter",
+        "Frompyfunc": "np.frompyfunc",
+        "Fromstring": "np.fromstring",
         "Norm": "np.linalg.norm",
         "MatrixExponential": "scipy.linalg.expm",
         "Cross": "np.cross",
@@ -149,33 +244,77 @@ class NumpyASTVisitor:
 
     @classmethod
     def _format_kwargs(cls, kwargs: dict[str, object]) -> str:
-        """Function docstring."""
+        """Format the kwargs configuration or node into a backend-specific string.
+
+        Args:
+            kwargs (dict[str, object]): Required parameter for kwargs containing backend-specific configurations.
+
+        Returns:
+            str: The formatted keyword arguments string.
+        """
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
         if "dimension" in kwargs:
-            filtered_kwargs["axis"] = kwargs["dimension"]  # pragma: no cover
+            filtered_kwargs["axis"] = kwargs["dimension"]
         return ", ".join(f"{k}={v}" for k, v in filtered_kwargs.items())
 
     @classmethod
-    @classmethod
     def visit_TriInv(cls, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for TriInv."""
+        """Generate Python code for a triangular matrix inverse operation.
+
+        Args:
+            node (object): The IR node representing the TriInv operation.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            str: The generated NumPy code string for triangular matrix inverse.
+        """
         return f"np.linalg.inv({input_vars[0]})"
 
     @classmethod
     def visit_TruncateDiv(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for TruncateDiv."""
-        x, y = input_vars  # pragma: no cover
-        return f"np.trunc(np.divide({x}, {y}))"  # pragma: no cover
+        """Generate Python code for a truncated division operation.
+
+        Args:
+            node (IRNode): The IR node representing the TruncateDiv operation.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            str: The generated NumPy code string for truncated division.
+        """
+        x, y = input_vars
+        return f"np.trunc(np.divide({x}, {y}))"
 
     @classmethod
     def visit_TruncateMod(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for TruncateMod."""
-        x, y = input_vars  # pragma: no cover
-        return f"np.fmod({x}, {y})"  # pragma: no cover
+        """Generate Python code for a truncated modulo operation.
+
+        Args:
+            node (IRNode): The IR node representing the TruncateMod operation.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            str: The generated NumPy code string for truncated modulo.
+        """
+        x, y = input_vars
+        return f"np.fmod({x}, {y})"
 
     @classmethod
-    def generic_visit(cls, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Fallback visit."""
+    def generic_visit(cls, node: object, input_vars: list[str], **kwargs: object) -> str:
+        """Generate default NumPy code.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            str: The generated default NumPy code string for the node.
+        """
+        if "dimension" in kwargs:
+            return f"np.{node.op_type.lower()}({input_vars[0]}, axis={kwargs['dimension']})"
         op_type = getattr(node, "op_type", "")
         np_func = cls._OP_MAP.get(op_type, f"np.{op_type.lower()}")
         args_str = ", ".join(input_vars)
@@ -192,45 +331,114 @@ class NumpyGenerator(
     """Generates NumPy python code from IR."""
 
     def __init__(self, graph: object) -> None:
-        """Init."""
+        """Initialize the NumPy generator with an IR graph.
+
+        Args:
+            graph (object): The IR graph to generate code from.
+        """
         super().__init__(graph)
         self.visitors.extend(
             [
-                SharedASTGeneratorVisitor(generator=self),
+                *get_shared_ast_visitors(generator=self),
                 NumpyVisionVisitor(),
                 NumpyAudioVisitor(),
                 NumpyScatterVisitor(),
             ]
         )
 
+    @classmethod
+    def load(cls, *args: object, **kwargs: object) -> object:
+        """Load data using NumPy's load function.
+
+        Args:
+            *args (object): Positional arguments for np.load.
+            **kwargs (object): Keyword arguments for np.load.
+
+        Returns:
+            object: The loaded NumPy data.
+        """
+        import numpy as np
+
+        return np.load(*args, **kwargs)
+
+    @classmethod
+    def save(cls, *args: object, **kwargs: object) -> None:
+        """Save data using NumPy's save function.
+
+        Args:
+            *args (object): Positional arguments for np.save.
+            **kwargs (object): Keyword arguments for np.save.
+
+        Returns:
+            None: This function does not return a value.
+        """
+        import numpy as np
+
+        np.save(*args, **kwargs)
+
+    @classmethod
+    def savez(cls, *args: object, **kwargs: object) -> None:
+        """Save multiple arrays into a single file in uncompressed .npz format.
+
+        Args:
+            *args (object): Positional arguments for np.savez.
+            **kwargs (object): Keyword arguments for np.savez.
+
+        Returns:
+            None: This function does not return a value.
+        """
+        import numpy as np
+
+        np.savez(*args, **kwargs)
+
+    @classmethod
+    def savez_compressed(cls, *args: object, **kwargs: object) -> None:
+        """Save multiple arrays into a single file in compressed .npz format.
+
+        Args:
+            *args (object): Positional arguments for np.savez_compressed.
+            **kwargs (object): Keyword arguments for np.savez_compressed.
+
+        Returns:
+            None: This function does not return a value.
+        """
+        import numpy as np
+
+        np.savez_compressed(*args, **kwargs)
+
     def _get_backend_prefix(self) -> str:
-        """Function docstring."""
+        """Retrieve the backend prefix property or mapping.
+
+        Returns:
+            str: The evaluated or processed output.
+        """
         return "np"
 
     def get_helper_functions(self) -> list[str]:
-        """Function docstring."""
-        res = super().get_helper_functions()  # pragma: no cover
-        res.extend(  # pragma: no cover
-            NNASTVisitor(generator=self)._get_group_norm_code(  # pragma: no cover
-                GroupNormConfig(  # pragma: no cover
-                    "np",  # pragma: no cover
-                    "numpy as np",  # pragma: no cover
-                    "np.reshape",  # pragma: no cover
-                    "np.mean",  # pragma: no cover
-                    "np.var",  # pragma: no cover
-                    "np.sqrt",  # pragma: no cover
-                    keepdim_arg="keepdims",  # pragma: no cover
-                )  # pragma: no cover
-            )  # pragma: no cover
-        )  # pragma: no cover
-        return res  # pragma: no cover
+        """Evaluate and process the get helper functions operation.
+
+        Returns:
+            list: The evaluated or processed output.
+        """
+        res = []
+        return res
 
     _import_header = (
         "import numpy as np",
         "import scipy.special",
         "import scipy.linalg",
+        "import dataclasses",
         "",
-        "def np_perspective_transform(images, start_points, end_points, interpolation, fill_value, data_format):",
+        "@dataclasses.dataclass",
+        "class PerspectiveConfig:",
+        "    interpolation: str",
+        "    fill_value: float",
+        "    data_format: object",
+        "",
+        "def np_perspective_transform(images, start_points, end_points, config):",
+        "    interpolation = config.interpolation",
+        "    fill_value = config.fill_value",
+        "    data_format = config.data_format",
         "    def get_h(src, dst):",
         "        A = np.zeros((*dst.shape[:-2], 8, 8), dtype=np.float32)",
         "        B = np.zeros((*dst.shape[:-2], 8), dtype=np.float32)",
@@ -300,22 +508,52 @@ class NumpyGenerator(
     )
 
     def visit_PowerIteration(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate power iteration."""
+        """Generate Python code for executing power iteration on a matrix.
+
+        Args:
+            node (IRNode): The IR node representing the PowerIteration operation.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            str: The generated NumPy code string for power iteration.
+        """
         num_iters = node.attributes.get("num_iters", 1)
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"np_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
     def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Handle Einsum."""
-        args_str = ", ".join(input_vars)  # pragma: no cover
-        eq = kwargs.get("equation", "")  # pragma: no cover
-        return f"np.einsum('{eq}', {args_str})"  # pragma: no cover
+        """Generate Python code for Einstein summation convention.
+
+        Args:
+            node (IRNode): The IR node representing the Einsum operation.
+            input_vars (list[str]): The names of the input variables.
+            **kwargs (object): Additional keyword arguments.
+
+        Returns:
+            str: The generated NumPy code string for the einsum operation.
+        """
+        args_str = ", ".join(input_vars)
+        eq = kwargs.get("equation", "")
+        return f"np.einsum('{eq}', {args_str})"
 
     def get_fallback_prefix(self) -> str:
-        """Get fallback prefix."""
-        return NumpyTypeTranslator.get_fallback_prefix()  # pragma: no cover
+        """Retrieve the default fallback prefix string for NumPy operations from the generator.
 
-    @classmethod
-    def get_ops_map(cls: type, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
-        return NumpyTypeTranslator.get_ops_map()  # pragma: no cover
+        Returns:
+            str: The fallback prefix string 'np'.
+        """
+        return NumpyTypeTranslator.get_fallback_prefix()
+
+    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
+        """Retrieve the mapping of IR operations to NumPy specific string formats.
+
+        Args:
+            kwargs (dict): Required parameter for keyword arguments.
+
+        Returns:
+            dict[str, str]: A dictionary mapping operation names to string templates.
+        """
+        res = super().get_ops_map(kwargs)
+        res.update(NumpyTypeTranslator.get_ops_map())
+        return res

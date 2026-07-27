@@ -26,7 +26,7 @@ def _infer_constant_shape(node: object, shapes: dict) -> tuple:
     return getattr(arr, "shape", ())
 
 
-def _infer_output_shape(node: object, shapes: dict) -> tuple | None:  # pragma: no cover
+def _infer_output_shape(node: object, shapes: dict) -> tuple | None:
     """Execute _infer_output_shape.
 
     Args:
@@ -36,16 +36,19 @@ def _infer_output_shape(node: object, shapes: dict) -> tuple | None:  # pragma: 
     Returns:
     Any: The result.
     """
-    if node.inputs:  # pragma: no cover
-        return shapes.get(node.inputs[0])  # pragma: no cover
-    return None  # pragma: no cover
+    if node.inputs:
+        return shapes.get(node.inputs[0])
+    return None
 
 
 def _prepare_op_kwargs(node: object) -> dict:
-    """Function docstring.
+    """Evaluate and process the prepare op kwargs operation.
 
     Args:
-        node: Arg.
+        node (object): Required parameter for node.
+
+    Returns:
+        dict: The evaluated or processed output.
     """
     kwargs = {**node.attributes}
     if hasattr(node, "shape_metadata") and node.shape_metadata:
@@ -74,11 +77,14 @@ def _infer_op_shape(node: object, shapes: dict) -> tuple | None:
 
 
 def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...]]) -> tuple[int, ...] | None:
-    """Function docstring.
+    """Evaluate and process the determine node shape operation.
 
     Args:
-        node: Arg.
-        shapes: Arg.
+        node (IRNode): Required parameter for node.
+        shapes (dict): Required parameter for shapes.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     handlers = {
         "Constant": lambda: _infer_constant_shape(node, shapes),
@@ -93,9 +99,9 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...]]) -> t
         return _infer_op_shape(node, shapes)
     except KeyError:
         return node.shape_metadata
-    except (ValueError, TypeError, NotImplementedError) as e:  # pragma: no cover
-        msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"  # pragma: no cover
-        raise CompilationError(msg) from e  # pragma: no cover
+    except (ValueError, TypeError, Exception) as e:
+        msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
+        raise CompilationError(msg) from e
 
 
 def shape_inference_pass(graph: IRGraph) -> bool:

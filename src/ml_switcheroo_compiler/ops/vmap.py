@@ -26,13 +26,16 @@ def _eager_vmap(
     out_axes: int | tuple[int, ...],
     args: tuple[object, ...],
 ) -> object:
-    """Function docstring.
+    """Evaluate and process the eager vmap operation.
 
     Args:
-        func: Arg.
-        in_axes: Arg.
-        out_axes: Arg.
-        args: Arg.
+        func (Callable): Required parameter for func.
+        in_axes (Any): Required parameter for in_axes.
+        out_axes (Any): Required parameter for out_axes.
+        args (tuple): Required parameter for args.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     arg = args[0]
     in_axis = in_axes if isinstance(in_axes, int) else in_axes[0]
@@ -53,33 +56,42 @@ def _eager_vmap(
 
 
 def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
-    """Function docstring.
+    """Evaluate and process the resolve vmap axis operation.
 
     Args:
-        in_axes: Arg.
-        i: Arg.
+        in_axes (Any): Required parameter for in_axes.
+        i (int): Required parameter for i.
+
+    Returns:
+        Any: The evaluated or processed output.
     """
     return in_axes if isinstance(in_axes, int) else (in_axes[i] if i < len(in_axes) else 0)
 
 
 def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
-    """Function docstring.
+    """Evaluate and process the compute vmap shape operation.
 
     Args:
-        a: Arg.
-        axis: Arg.
+        a (Tensor): Required parameter for a.
+        axis (Any): Required parameter for axis.
+
+    Returns:
+        tuple: The evaluated or processed output.
     """
-    if axis is not None and len(a.shape) > 0:  # pragma: no branch
+    if axis is not None and len(a.shape) > 0:
         return tuple(s for j, s in enumerate(a.shape) if j != axis)
-    return a.shape  # pragma: no cover
+    return a.shape
 
 
 def _create_vmap_dummy_args(args: tuple[object, ...], in_axes: int | tuple[int, ...]) -> list[object]:
-    """Function docstring.
+    """Evaluate and process the create vmap dummy args operation.
 
     Args:
-        args: Arg.
-        in_axes: Arg.
+        args (tuple): Required parameter for args.
+        in_axes (Any): Required parameter for in_axes.
+
+    Returns:
+        list: The evaluated or processed output.
     """
     dummy_args = []
     for i, a in enumerate(args):
@@ -99,13 +111,16 @@ def _trace_vmap(
     out_axes: int | tuple[int, ...],
     args: tuple[object, ...],
 ) -> object:
-    """Function docstring.
+    """Evaluate and process the trace vmap operation.
 
     Args:
-        func: Arg.
-        in_axes: Arg.
-        out_axes: Arg.
-        args: Arg.
+        func (Callable): Required parameter for func.
+        in_axes (Any): Required parameter for in_axes.
+        out_axes (Any): Required parameter for out_axes.
+        args (tuple): Required parameter for args.
+
+    Returns:
+        object: The evaluated or processed output.
     """
     dummy_args = _create_vmap_dummy_args(args, in_axes)
     body_graph = _trace_function(func, tuple(dummy_args), "vmap_body")

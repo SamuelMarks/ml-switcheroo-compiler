@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Base generator for emitting backend code from IR."""
 
 import re
@@ -46,7 +47,7 @@ class FormatterProxyMixin:
     @var_names.setter
     def var_names(self, value: dict[str, str]) -> None:
         """Proxy property for formatter var_names."""
-        self.formatter.var_names = value  # pragma: no cover
+        self.formatter.var_names = value
 
     @property
     def code(self) -> list[str]:
@@ -76,11 +77,11 @@ class FormatterProxyMixin:
     @header.setter
     def header(self, value: str) -> None:
         """Proxy property for formatter header."""
-        self.formatter.header = value  # pragma: no cover
+        self.formatter.header = value
 
     def get_indent(self) -> str:
         """Evaluate get indent."""
-        return self.formatter.get_indent()  # pragma: no cover
+        return self.formatter.get_indent()
 
     def add_line(self, line: str) -> None:
         """Add line."""
@@ -165,23 +166,58 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         return self.generic_visit(node, input_vars, **kwargs)
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Retrieve the math ops property or mapping.
+
+        Args:
+            kwargs (dict): Required parameter for kwargs.
+
+        Returns:
+            dict: The evaluated or processed output.
+        """
         return {}
 
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Retrieve the linalg ops property or mapping.
+
+        Args:
+            kwargs (dict): Required parameter for kwargs.
+
+        Returns:
+            dict: The evaluated or processed output.
+        """
         return {}
 
     def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Retrieve the nn ops property or mapping.
+
+        Args:
+            kwargs (dict): Required parameter for kwargs.
+
+        Returns:
+            dict: The evaluated or processed output.
+        """
         return {}
 
     def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Retrieve the creation ops property or mapping.
+
+        Args:
+            kwargs (dict): Required parameter for kwargs.
+
+        Returns:
+            dict: The evaluated or processed output.
+        """
         return {}
 
     def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
-        """Function docstring."""
+        """Retrieve the array ops property or mapping.
+
+        Args:
+            kwargs (dict): Required parameter for kwargs.
+
+        Returns:
+            dict: The evaluated or processed output.
+        """
         return {}
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
@@ -221,7 +257,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations."""
-        return "np"  # pragma: no cover
+        return "np"
 
     def get_fallback_axis_kwarg(self) -> str:
         """Get the fallback axis keyword argument name."""
@@ -280,7 +316,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             returns (str): The returns parameter for the operation.
         """
         if not hasattr(self, "_output_returns"):
-            self._output_returns = []  # pragma: no cover
+            self._output_returns = []
         self._output_returns.append(returns)
 
 
@@ -295,7 +331,7 @@ class PythonStringGenerator(BaseGenerator):
         self.code = [self.header]
         if isinstance(self._import_header, str):
             self.add_line(self._import_header)
-        elif isinstance(self._import_header, (tuple, list)):  # pragma: no cover
+        elif isinstance(self._import_header, (tuple, list)):
             self.add_line("\n".join(self._import_header))
         self.add_line("")
         self.add_line(f"def {self._func_name}(args):")
@@ -312,7 +348,7 @@ class ClassBasedGenerator(BaseGenerator):
 
     def _get_prefix_code(self) -> list[str]:
         """Return the code to be inserted before the class definition."""
-        return []  # pragma: no cover
+        return []
 
     def _emit_init_body(self) -> bool:
         """Emit initialization code. Return True if params were emitted, False otherwise."""

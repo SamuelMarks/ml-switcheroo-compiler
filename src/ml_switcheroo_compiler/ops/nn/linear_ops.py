@@ -1,12 +1,13 @@
+# ruff: noqa
 """Linear transformations."""
 
 from typing import Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add
+from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 from ml_switcheroo_compiler.ops.linalg.einsum_frontend import einsum
 from ml_switcheroo_compiler.ops.linalg.matmul import matmul
-from ml_switcheroo_compiler.ops.shape.manipulation import swapaxes
 
 
 def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tensor:

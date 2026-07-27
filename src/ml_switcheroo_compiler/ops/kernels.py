@@ -1,4 +1,4 @@
-"""Module docstring."""
+"""Core abstractions and logic definitions for kernels.py."""
 
 from dataclasses import dataclass
 from typing import Optional
@@ -83,6 +83,35 @@ class KernelLaunchConfig:
     name: str = "custom_kernel"
 
 
+@dataclass
+class KernelContext:
+    """Context for kernel execution."""
+
+    op_type: str
+    code_or_binary: object
+    output_shapes: list[tuple[int, ...]]
+    output_dtypes: list[DType]
+    launch_config: KernelLaunchConfig
+
+
+def _eager_custom_kernel(
+    inputs: list[Tensor],
+    ctx: KernelContext,
+) -> list[Tensor]:
+    data = get_active_backend().execute_op(
+        ctx.op_type,
+        ctx.code_or_binary,
+        [getattr(t, "data", t) for t in inputs],
+        output_shapes=ctx.output_shapes,
+        output_dtypes=[getattr(dt, "value", dt) for dt in ctx.output_dtypes],
+        grid=ctx.launch_config.grid,
+        block=ctx.launch_config.block,
+        name=ctx.launch_config.name,
+    )
+    device = inputs[0].device if inputs else config.default_device
+    return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(data, ctx.output_shapes, ctx.output_dtypes)]
+
+
 def cuda_kernel(
     source: str,
     inputs: list[Tensor],
@@ -105,29 +134,16 @@ def cuda_kernel(
         list[Tensor]: Output tensors.
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
-    grid = conf.grid
-    block = conf.block
-    name = conf.name
     if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "CudaKernel",
-            source,
-            [getattr(t, "data", t) for t in inputs],
-            output_shapes=output_shapes,
-            output_dtypes=[getattr(dt, "value", dt) for dt in output_dtypes],
-            grid=grid,
-            block=block,
-            name=name,
-        )
-        return [Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device)) for d, s, dt in zip(data, output_shapes, output_dtypes)]
+        return _eager_custom_kernel(inputs, KernelContext("CudaKernel", source, output_shapes, output_dtypes, conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
         attrs = {
             "source": source,
-            "grid": grid,
-            "block": block,
-            "name": name,
+            "grid": conf.grid,
+            "block": conf.block,
+            "name": conf.name,
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
@@ -157,29 +173,16 @@ def metal_kernel(
         list[Tensor]: Output tensors.
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
-    grid = conf.grid
-    block = conf.block
-    name = conf.name
     if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "MetalKernel",
-            source,
-            [getattr(t, "data", t) for t in inputs],
-            output_shapes=output_shapes,
-            output_dtypes=[getattr(dt, "value", dt) for dt in output_dtypes],
-            grid=grid,
-            block=block,
-            name=name,
-        )
-        return [Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device)) for d, s, dt in zip(data, output_shapes, output_dtypes)]
+        return _eager_custom_kernel(inputs, KernelContext("MetalKernel", source, output_shapes, output_dtypes, conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
         attrs = {
             "source": source,
-            "grid": grid,
-            "block": block,
-            "name": name,
+            "grid": conf.grid,
+            "block": conf.block,
+            "name": conf.name,
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
@@ -209,29 +212,16 @@ def precompiled_cuda_kernel(
         list[Tensor]: Output tensors.
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
-    grid = conf.grid
-    block = conf.block
-    name = conf.name
     if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "PrecompiledCudaKernel",
-            binary,
-            [getattr(t, "data", t) for t in inputs],
-            output_shapes=output_shapes,
-            output_dtypes=[getattr(dt, "value", dt) for dt in output_dtypes],
-            grid=grid,
-            block=block,
-            name=name,
-        )
-        return [Tensor(d, TensorConfig(s, dt, inputs[0].device if inputs else config.default_device)) for d, s, dt in zip(data, output_shapes, output_dtypes)]
+        return _eager_custom_kernel(inputs, KernelContext("PrecompiledCudaKernel", binary, output_shapes, output_dtypes, conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
         attrs = {
             "binary": binary,
-            "grid": grid,
-            "block": block,
-            "name": name,
+            "grid": conf.grid,
+            "block": conf.block,
+            "name": conf.name,
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }

@@ -10,10 +10,10 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
 
     def load(self, filepath: str) -> dict:
         """Load pickle weights."""
-        with open(filepath, "rb") as f:  # pragma: no cover
-            return pickle.load(f)  # pragma: no cover
+        with open(filepath, "rb") as f:
+            return pickle.load(f)
 
     def save(self, weights_np: dict, filepath: str) -> None:
         """Save pickle weights."""
-        with open(filepath, "wb") as f:  # pragma: no cover
-            pickle.dump(weights_np, f)  # pragma: no cover
+        with open(filepath, "wb") as f:
+            pickle.dump(weights_np, f)

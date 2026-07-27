@@ -7,7 +7,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, minimum, multiply, power
 from ml_switcheroo_compiler.ops.reductions import max as reduce_max
 from ml_switcheroo_compiler.ops.reductions import sum as reduce_sum
-from ml_switcheroo_compiler.ops.shape.frontend import stack
+from ml_switcheroo_compiler.ops.shape.joining import stack
 from ml_switcheroo_compiler.ops.unary import abs as abs_op
 from ml_switcheroo_compiler.ops.unary import sqrt, square
 
