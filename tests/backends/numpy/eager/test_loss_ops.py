@@ -1,66 +1,55 @@
-import inspect
-
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.loss_ops as lo
+from ml_switcheroo_compiler.backends.numpy.eager.loss_ops import (
+    _np_categorical_generalized_cross_entropy,
+    _np_circle_loss,
+    _np_ctc_loss,
+)
 
 
-def test_loss_ops_coverage():
-    ops = [getattr(lo, name) for name in dir(lo) if name.startswith("_") and callable(getattr(lo, name))]
-    arg = np.array([1.0, 2.0])
-
-    for op in ops:
-        sig = inspect.signature(op)
-        args_to_pass = []
-        for p in sig.parameters.values():
-            if p.name == "backend_module":
-                args_to_pass.append(np)
-            elif p.name in ("target", "y_true", "y_pred", "labels", "logits"):
-                args_to_pass.append(arg)
-            else:
-                args_to_pass.append(arg)
-
-        try:
-            op(*args_to_pass)
-        except Exception:
-            pass
-
-        try:
-            op(*args_to_pass[:-1])
-        except Exception:
-            pass
+class DummyBackend:
+    @staticmethod
+    def zeros(shape):
+        return np.zeros(shape)
 
 
-def test_loss_ops_ctc_branches():
-    import ml_switcheroo_compiler.backends.numpy.eager.loss_ops as lo
-
-    # 12-18
-    lo._np_ctc_loss_update_alpha(1, 3, np.array([0, 1, 2]), np.ones((5, 5)), np.ones((5, 5)), 3, 0)
-    lo._np_ctc_loss_update_alpha(1, 4, np.array([0, 1, 0, 1]), np.ones((5, 5)), np.ones((5, 5)), 3, 0)
-
-    # 47
-    labels = np.array([[1]])
+def test_loss_ops():
+    # CTC Loss
+    labels = np.array([[1, 2]])
     logits = np.ones((5, 1, 3))
-    label_length = np.array([1])
+    label_length = np.array([2])
     logit_length = np.array([5])
-    lo._np_ctc_loss(np, labels, logits, label_length, logit_length)
+    logit_length_3 = np.array([3])
 
-    # 79-80
-    logits_1d = np.ones((5,))
-    try:
-        lo._np_ctc_loss(np, labels, logits_1d, label_length, logit_length, logits_time_major=False)
-    except:
-        pass
+    assert _np_ctc_loss(DummyBackend(), labels, logits, label_length, logit_length).shape == (1,)
 
+    # 2D logits
+    logits2 = np.ones((5, 3))
+    assert _np_ctc_loss(DummyBackend(), labels, logits2, label_length, logit_length).shape == (1,)
 
-def test_missing_loss_ops():
-    import ml_switcheroo_compiler.backends.numpy.eager.loss_ops as lo
+    # 1D logits
+    logits1 = np.ones((3,))
+    assert _np_ctc_loss(DummyBackend(), labels, logits1, label_length, logit_length_3).shape == (1,)
 
-    labels = np.array([[1]])
-    logits_2d = np.ones((5, 1))
-    label_length = np.array([1])
-    logit_length = np.array([5])
-    try:
-        lo._np_ctc_loss(np, labels, logits_2d, label_length, logit_length, logits_time_major=True)
-    except:
-        pass
+    # Time major = False
+    logits_batch_major = np.ones((1, 5, 3))
+    assert _np_ctc_loss(DummyBackend(), labels, logits_batch_major, label_length, logit_length, logits_time_major=False).shape == (1,)
+
+    # 1D labels
+    labels_1d = np.array([1, 2])
+    assert _np_ctc_loss(DummyBackend(), labels_1d, logits, label_length, logit_length).shape == (1,)
+
+    # No labels
+    assert _np_ctc_loss(DummyBackend(), np.array([[]], dtype=int), logits, np.array([0]), logit_length).shape == (1,)
+
+    # Circle Loss
+    y_true = np.array([1, 0])
+    y_pred = np.array([0.9, 0.1])
+    assert _np_circle_loss(DummyBackend(), y_true, y_pred).shape == ()
+    assert _np_circle_loss(DummyBackend(), 1) == 0  # < 2 args returns 0
+
+    # Categorical GCE
+    y_true_cce = np.array([[1, 0], [0, 1]])
+    y_pred_cce = np.array([[0.9, 0.1], [0.2, 0.8]])
+    assert _np_categorical_generalized_cross_entropy(DummyBackend(), y_true_cce, y_pred_cce).shape == ()
+    assert _np_categorical_generalized_cross_entropy(DummyBackend(), 1) == 0  # < 2 args returns 0

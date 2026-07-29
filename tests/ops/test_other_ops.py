@@ -4,20 +4,14 @@ def test_shape_misc_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Flatnonzero, Lexsort, Nonzero, Percentile, Quantile, RavelMultiIndex, Repeat, Searchsorted, SortComplex, Tile, Unique]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape(Dummy(), Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
+        assert op.infer_shape(Dummy(), Dummy()) is not None
+        assert op.infer_shape() is not None
 
 
 def test_shape_slicing_stubs():
@@ -26,12 +20,12 @@ def test_shape_slicing_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [IndexInDim, UpdateSlice]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
         try:
             op.infer_shape()
         except Exception:
@@ -44,28 +38,16 @@ def test_creation_frontend_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Geometric, Geomspace, FromDlpack, Frompyfunc]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape(Dummy(), Dummy(), Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape(size=(1, 2))
-        except Exception:
-            pass
-        try:
-            op.infer_shape(num=5)
-        except Exception:
-            pass
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
+        assert op.infer_shape(Dummy(), Dummy(), Dummy()) is not None
+        assert op.infer_shape(size=(1, 2)) is not None
+        assert op.infer_shape(num=5) is not None
+        assert op.infer_shape() is not None
 
 
 def test_nn_activations_stubs():
@@ -74,12 +56,12 @@ def test_nn_activations_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [HardSilu, HardSwish, Squareplus]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
         try:
             op.infer_shape()
         except Exception:
@@ -92,12 +74,12 @@ def test_distributed_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Outfeed, Pshuffle, Pswapaxes, Ppermute, PsumScatter, Pmax, Pmin]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
         try:
             op.infer_shape()
         except Exception:
@@ -110,20 +92,14 @@ def test_random_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Rademacher]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape(shape=(1, 2))
-        except Exception:
-            pass
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
+        assert op.infer_shape(shape=(1, 2)) is not None
+        assert op.infer_shape() is not None
 
 
 def test_unary_logical_stubs():
@@ -132,12 +108,12 @@ def test_unary_logical_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Iscomplex, Iscomplexobj, Isreal, Isrealobj, Issubdtype, Isin, Ediff1d]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
         try:
             op.infer_shape()
         except Exception:
@@ -150,12 +126,12 @@ def test_linalg_dot_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Pdot]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
         try:
             op.infer_shape()
         except Exception:
@@ -168,21 +144,12 @@ def test_io_stubs():
     class Dummy:
         shape = (2, 2)
 
+        def __iter__(self):
+            return iter(self.shape)
+
     for OpClass in [Fromfile, Fromstring, Fromiter, Fromfunction]:
         op = OpClass()
-        try:
-            op.infer_shape(Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape(Dummy(), Dummy())
-        except Exception:
-            pass
-        try:
-            op.infer_shape(shape=(2, 2))
-        except Exception:
-            pass
-        try:
-            op.infer_shape()
-        except Exception:
-            pass
+        assert op.infer_shape(Dummy()) is not None
+        assert op.infer_shape(Dummy(), Dummy()) is not None
+        assert op.infer_shape(shape=(2, 2)) is not None
+        assert op.infer_shape() is not None

@@ -91,12 +91,7 @@ import os
 import sys
 
 # All target directories relative to the current conf.py
-projects = [
-    "../ml-switcheroo-compiler", "../ml-switcheroo-ir", "../zero-chex",
-    "../zero-flax", "../zero-grain", "../zero-jax", "../zero-keras",
-    "../zero-mlx", "../zero-optax", "../zero-orbax", "../zero-pax",
-    "../zero-pytorch", "../zero-tensorflow"
-]
+projects = ["../ml-switcheroo-compiler", "../ml-switcheroo-ir", "../zero-chex", "../zero-flax", "../zero-grain", "../zero-jax", "../zero-keras", "../zero-mlx", "../zero-optax", "../zero-orbax", "../zero-pax", "../zero-pytorch", "../zero-tensorflow"]
 
 for p in projects:
     sys.path.insert(0, os.path.abspath(p))

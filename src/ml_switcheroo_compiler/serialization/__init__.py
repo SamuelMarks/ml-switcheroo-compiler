@@ -536,7 +536,6 @@ class custom_object_scope:
             *args: args
             **kwargs: kwargs
         """
-        pass
 
 
 class CustomObjectScope:
@@ -713,16 +712,17 @@ def load_variable(path: str, name: str) -> Tensor:
     """Load variable from V2 checkpoint."""
     import os
 
-    import numpy as np
-
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+    backend_cls = BackendRegistry.get("numpy")
 
     var_path = os.path.join(path, f"{name}.npy")
     if os.path.exists(var_path):
-        data = np.load(var_path)
+        data = backend_cls.load(var_path)
     else:
-        data = np.zeros((1,))
-    return Tensor(data, TensorConfig(data.shape, str(data.dtype), "cpu"))
+        data = backend_cls.zeros((1,))
+    return Tensor(data, TensorConfig(data.shape, str(getattr(data, "dtype", "float32")), "cpu"))
 
 
 def run_restore_ops(path: str) -> None:

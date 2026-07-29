@@ -53,36 +53,6 @@ def _np_test_eager_op(backend_module: object, *args: object, **kwargs: object) -
     return backend_module.array([1, 2, 3], dtype=backend_module.float32)
 
 
-@numpy_eager_registry.register("DummyBinary")
-def _np_dummy_binary(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the dummy binary logic eagerly backed by NumPy.
-
-    Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
-
-    Returns:
-        object: The evaluated or processed output.
-    """
-    return "dummy"
-
-
-@numpy_eager_registry.register("DummyUnary")
-def _np_dummy_unary(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the dummy unary logic eagerly backed by NumPy.
-
-    Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
-
-    Returns:
-        object: The evaluated or processed output.
-    """
-    return 0.0
-
-
 @numpy_eager_registry.register("Unknown")
 def _np_unknown(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate the unknown logic eagerly backed by NumPy.

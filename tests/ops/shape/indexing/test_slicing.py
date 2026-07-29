@@ -53,6 +53,10 @@ def test_choose_class():
 
 
 def test_index_in_dim_update_slice_coverage():
-    assert IndexInDim().infer_shape() == ()
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor((2,))) == (2, 3)
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor((2,)), axis=1, keepdims=False) == (2, 2)
+    assert IndexInDim().infer_shape(MockTensor((2, 3)), MockTensor(()), keepdims=False) == (3,)
+    assert IndexInDim().infer_shape(MockTensor(()), MockTensor(())) == ()
     assert UpdateSlice().infer_shape(MockTensor((2, 3))) == (2, 3)
-    assert UpdateSlice().infer_shape() == ()
+    assert UpdateSlice().infer_shape(MockTensor((2, 3)), MockTensor((2, 3))) == (2, 3)
+    assert UpdateSlice().infer_shape(MockTensor(())) == ()

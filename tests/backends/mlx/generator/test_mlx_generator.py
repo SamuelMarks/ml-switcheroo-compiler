@@ -68,7 +68,7 @@ def test_mlx_shape_ops_visitor():
     assert vis.visit_TopK(DummyNode({"k": 2, "axis": 1}), ["a"]) == "mx.topk(a, 2, axis=1)"
     assert vis.visit_Moveaxis(DummyNode({"source": 1, "destination": 2}), ["a"]) == "mx.moveaxis(a, 1, 2)"
     assert vis.visit_RaggedDot(DummyNode(), ["a", "b"]) == "mx.matmul(a, b)"
-    assert vis.visit_NanToNum(DummyNode({"nan": 1.0, "posinf": 2.0, "neginf": -2.0}), ["a"]) == "mx.array(np.nan_to_num(np.array(a), nan=1.0, posinf=2.0, neginf=-2.0))"
+    assert vis.visit_NanToNum(DummyNode({"nan": 1.0, "posinf": 2.0, "neginf": -2.0}), ["a"]) == "mx.nan_to_num(a, nan=1.0, posinf=2.0, neginf=-2.0)"
     assert vis.visit_Einsum(DummyNode({"equation": "i->i", "operands": [1]}), ["a", "b"]) == "mx.einsum('i->i', *a)"
     assert vis.visit_Einsum(DummyNode({"equation": "i->i"}), ["a", "b"]) == "mx.einsum('i->i', a, b)"
     assert vis.visit_Zeros(DummyNode({"shape": [1, 2], "dtype": "int32"}), ["a"]) == "mx.zeros((1, 2), dtype=mx.int32)"

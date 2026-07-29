@@ -10,7 +10,10 @@ class DummyNode:
         self.id = "n1"
 
 
-def test_generator_basics():
+def test_generator_basics(monkeypatch):
+    import numpy as np
+    import torch
+
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)
     assert gen._get_backend_prefix() == "pt"
@@ -57,14 +60,15 @@ def test_generator_basics():
     assert PyTorchAudioVisitor().visit(DummyNode({}, "Unknown"), []) == ""
     assert PyTorchVisionVisitor().visit(DummyNode({}, "Unknown"), []) == ""
 
-    # Save/load static methods
-    pass
-    import numpy as np
+    # Mock torch load and save
+    monkeypatch.setattr(torch, "save", lambda *args, **kwargs: "mock_save")
+    monkeypatch.setattr(torch, "load", lambda *args, **kwargs: "mock_load")
 
-    PyTorchCodeGenerator.save("path", np.array([1, 2, 3]))
-    PyTorchCodeGenerator.load("path.npy")
-    PyTorchCodeGenerator.savez("path")
-    PyTorchCodeGenerator.savez_compressed("path")
+    # Save/load static methods
+    assert PyTorchCodeGenerator.save("path", np.array([1, 2, 3])) is None
+    assert PyTorchCodeGenerator.load("path.npy") == "mock_load"
+    assert PyTorchCodeGenerator.savez("path") is None
+    assert PyTorchCodeGenerator.savez_compressed("path") is None
 
 
 def test_pytorch_scatter_visitor():

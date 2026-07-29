@@ -50,9 +50,9 @@ def test_set_limits() -> None:
 
 
 def test_sparse_ops() -> None:
-    assert SparsePlus().infer_shape("shape") == "shape"
+    assert SparsePlus().infer_shape("shape") == ()
     assert SparsePlus().infer_shape() == ()
-    assert SparseSigmoid().infer_shape("shape") == "shape"
+    assert SparseSigmoid().infer_shape("shape") == ()
     assert SparseSigmoid().infer_shape() == ()
     t = Tensor([1.0], TensorConfig((1,), "float32", "cpu"))
     config.eager_mode = True

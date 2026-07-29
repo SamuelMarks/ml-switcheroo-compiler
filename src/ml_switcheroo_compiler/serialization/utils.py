@@ -16,7 +16,7 @@ def _extract_numpy_weights(weights: dict) -> dict:
         try:
             weights_np[k] = w.tolist() if hasattr(w, "tolist") else w
         except (ValueError, TypeError):
-            pass
+            weights_np[k] = w
     return weights_np
 
 
@@ -145,11 +145,12 @@ def get_npz_bytes(weights: dict) -> bytes:
 
 def parse_npz(file_obj: object) -> dict:
     """Parse npz file."""
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
     try:
-        with np.load(file_obj) as data:
-            return {k: data[k] for k in data.files}
+        backend_cls = BackendRegistry.get("numpy")
+        with backend_cls.load(file_obj) as data:
+            return {k: data[k] for k in getattr(data, "files", [])}
     except Exception:
         return {}
 
@@ -162,8 +163,10 @@ def load_npz(file_obj: object) -> list:
     if hasattr(backend, "load_npz"):
         try:
             return backend.load_npz(file_obj)
-        except NotImplementedError:
-            pass
+        except Exception as e:
+            import logging
+
+            logging.getLogger(__name__).warning(f"Backend load_npz failed: {e}. Falling back.")
 
     parsed = parse_npz(file_obj)
     # the original load_npz returned a list of weights (assuming ordered arrays or dict?)

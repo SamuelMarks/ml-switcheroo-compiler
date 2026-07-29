@@ -144,19 +144,6 @@ def dynamic_update_slice_in_dim(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("DynamicUpdateSliceInDim", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def flatnonzero(*args: object, **kwargs: object) -> object:
-    """Flatnonzero frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Flatnonzero", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Flatnonzero", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def gather(*args: object, **kwargs: object) -> object:
     """Gather frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -207,123 +194,6 @@ def hstack(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Hstack", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def index_in_dim(*args: object, **kwargs: object) -> object:
-    """IndexInDim frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("IndexInDim", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("IndexInDim", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def lexsort(*args: object, **kwargs: object) -> object:
-    """Lexsort frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Lexsort", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Lexsort", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def nonzero(*args: object, **kwargs: object) -> object:
-    """Nonzero frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Nonzero", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Nonzero", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def percentile(*args: object, **kwargs: object) -> object:
-    """Percentile frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Percentile", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Percentile", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def ppermute(*args: object, **kwargs: object) -> object:
-    """Ppermute frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Ppermute", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Ppermute", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def psum_scatter(*args: object, **kwargs: object) -> object:
-    """PsumScatter frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("PsumScatter", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("PsumScatter", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def quantile(*args: object, **kwargs: object) -> object:
-    """Quantile frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Quantile", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Quantile", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def ravel_multi_index(*args: object, **kwargs: object) -> object:
-    """RavelMultiIndex frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("RavelMultiIndex", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("RavelMultiIndex", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def repeat(*args: object, **kwargs: object) -> object:
-    """Repeat frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Repeat", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Repeat", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def scatter_add(*args: object, **kwargs: object) -> object:
@@ -404,19 +274,6 @@ def scatter_nd(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("ScatterNd", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def searchsorted(*args: object, **kwargs: object) -> object:
-    """Searchsorted frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Searchsorted", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Searchsorted", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def slice_in_dim(*args: object, **kwargs: object) -> object:
     """SliceInDim frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -441,32 +298,6 @@ def sort(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Sort", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def sort_complex(*args: object, **kwargs: object) -> object:
-    """SortComplex frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("SortComplex", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("SortComplex", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def sort_key_val(*args: object, **kwargs: object) -> object:
-    """SortKeyVal frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("SortKeyVal", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("SortKeyVal", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def split(*args: object, **kwargs: object) -> object:
@@ -508,19 +339,6 @@ def strided_slice(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("StridedSlice", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def tile(*args: object, **kwargs: object) -> object:
-    """Tile frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Tile", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Tile", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def transpose(*args: object, **kwargs: object) -> object:
     """Transpose frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -532,32 +350,6 @@ def transpose(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Transpose", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def unique(*args: object, **kwargs: object) -> object:
-    """Unique frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Unique", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Unique", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def update_slice(*args: object, **kwargs: object) -> object:
-    """UpdateSlice frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("UpdateSlice", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("UpdateSlice", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def vsplit(*args: object, **kwargs: object) -> object:
@@ -611,38 +403,22 @@ __all__ = [
     "dynamic_slice_in_dim",
     "dynamic_update_index_in_dim",
     "dynamic_update_slice_in_dim",
-    "flatnonzero",
     "gather",
     "gather_nd",
     "hsplit",
     "hstack",
-    "index_in_dim",
-    "lexsort",
-    "nonzero",
-    "percentile",
-    "ppermute",
-    "psum_scatter",
-    "quantile",
-    "ravel_multi_index",
-    "repeat",
     "scatter_add",
     "scatter_apply",
     "scatter_max",
     "scatter_min",
     "scatter_mul",
     "scatter_nd",
-    "searchsorted",
     "slice_in_dim",
     "sort",
-    "sort_complex",
-    "sort_key_val",
     "split",
     "squeeze",
     "strided_slice",
-    "tile",
     "transpose",
-    "unique",
-    "update_slice",
     "vsplit",
     "vstack",
     "where",

@@ -107,20 +107,20 @@ def TensorLayout(*args: object, **kwargs: object) -> object:
 
 
 def initialize(*args: object, **kwargs: object) -> None:
-    """Initialize distributed execution.
+    """Initialize the distributed environment.
 
     Args:
-        *args: arguments.
-        **kwargs: keyword arguments.
+        *args: positional args.
+        **kwargs: keyword args.
     """
-    try:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    import ml_switcheroo_compiler.backends.registry as registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        backend = get_active_backend()
-        if hasattr(backend, "initialize_distributed"):
-            backend.initialize_distributed(*args, **kwargs)
-    except Exception:
-        pass
+    backend = registry.get_active_backend()
+    if hasattr(backend, "initialize_distributed"):
+        backend.initialize_distributed(*args, **kwargs)
+    else:
+        raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support initialize_distributed()")
 
 
 def list_devices(*args: object, **kwargs: object) -> list:

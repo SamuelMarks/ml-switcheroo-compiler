@@ -6,11 +6,93 @@ from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_a
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
 
-_MLX_RESIZE_TMPL = "def mlx_resize(images, size, interpolation, align_corners):\n    import mlx.core as mx\n    from ml_switcheroo_compiler.backends.eager.vision_geometric import resize_eager\n    from ml_switcheroo_compiler.ops.configs import ResizeOptions\n    # Fallback to eager numpy for bicubic/lanczos3 on mlx\n\n    imgs_np = np.array(images)\n    config = ResizeOptions(interpolation=interpolation, align_corners=align_corners)\n    out = resize_eager(np, imgs_np, size, config)\n    return mx.array(out)"  # noqa: E501
-_MLX_ISTFT_TMPL = "def mlx_istft(matrix, config: STFTConfig):\n    import mlx.core as mx\n\n    from ml_switcheroo_compiler.backends.eager.audio import istft_eager\n    from ml_switcheroo_compiler.ops.configs import STFTConfig\n    config = STFTConfig(frame_length=config.frame_length, frame_step=config.frame_step, fft_length=config.fft_length, window=config.window, center=config.center)\n    out = istft_eager(np, np.array(matrix), config)\n    return mx.array(out)"  # noqa: E501
-_MLX_MEL_FILTERBANK_TMPL = "def mlx_mel_filterbank(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):\n    import mlx.core as mx\n\n    from ml_switcheroo_compiler.backends.eager.audio import mel_filterbank_eager\n    from ml_switcheroo_compiler.ops.configs import MelConfig\n    config = MelConfig(num_mel_bins=config.num_mel_bins, num_spectrogram_bins=num_spectrogram_bins, sample_rate=config.sample_rate, lower_edge_hertz=config.lower_edge_hertz, upper_edge_hertz=config.upper_edge_hertz)\n    out = mel_filterbank_eager(np, config)\n    return mx.array(out)"  # noqa: E501
-_MLX_MFCC_TMPL = "def mlx_mfcc(spectrogram, config: MFCCConfig):\n    import mlx.core as mx\n\n    from ml_switcheroo_compiler.backends.eager.audio import mfcc_eager\n    from ml_switcheroo_compiler.ops.configs import MelConfig\n    config = MelConfig(num_mel_bins=config.num_mel_bins, num_spectrogram_bins=spectrogram.shape[-1], sample_rate=config.sample_rate, lower_edge_hertz=config.lower_edge_hertz, upper_edge_hertz=config.upper_edge_hertz, num_mfccs=config.num_mfccs)\n    out = mfcc_eager(np, np.array(spectrogram), config)\n    return mx.array(out)"  # noqa: E501
-_MLX_POWER_ITERATION_TMPL = "def mlx_power_iteration(w, num_iters, u=None):\n    import mlx.core as mx\n    if u is None:\n        u = mx.ones(w.shape[:-2] + [w.shape[-2], 1], dtype=w.dtype)\n    def body_fn(val):\n        i, u_curr, _ = val\n        w_t = mx.swapaxes(w, -1, -2)\n        v_next = mx.matmul(w_t, u_curr)\n        v_next = v_next / (mx.linalg.norm(v_next, axis=-2, keepdims=True) + 1e-12)\n        u_next = mx.matmul(w, v_next)\n        u_next = u_next / (mx.linalg.norm(u_next, axis=-2, keepdims=True) + 1e-12)\n        return i + 1, u_next, v_next\n    def cond_fn(val):\n        return val[0] < num_iters\n    init_v = mx.zeros(w.shape[:-2] + [w.shape[-1], 1], dtype=w.dtype)\n    _, u_final, v_final = mx.while_loop(cond_fn, body_fn)( (mx.array(0), u, init_v) )\n    sigma = mx.matmul(mx.swapaxes(u_final, -1, -2), mx.matmul(w, v_final))\n    return mx.squeeze(v_final, -1), mx.squeeze(u_final, -1), mx.squeeze(mx.squeeze(sigma, -1), -1)"  # noqa: E501
+_MLX_RESIZE_TMPL = """def mlx_resize(images, size, interpolation, align_corners):
+    import mlx.core as mx
+    N, H, W, C = images.shape
+    new_H, new_W = size
+    if align_corners:
+        h_idx = mx.round(mx.arange(new_H) * ((H - 1) / max(1, new_H - 1)))
+        w_idx = mx.round(mx.arange(new_W) * ((W - 1) / max(1, new_W - 1)))
+    else:
+        h_idx = mx.floor(mx.arange(new_H) * (H / new_H))
+        w_idx = mx.floor(mx.arange(new_W) * (W / new_W))
+    h_idx = mx.clip(h_idx.astype(mx.int32), 0, H - 1)
+    w_idx = mx.clip(w_idx.astype(mx.int32), 0, W - 1)
+    return images[:, h_idx[:, None], w_idx[None, :], :]
+"""
+
+_MLX_ISTFT_TMPL = """def mlx_istft(matrix, config):
+    import mlx.core as mx
+    frames = matrix.shape[-2] if matrix.ndim == 3 else matrix.shape[-3]
+    window = mx.array(config.window) if config.window is not None else mx.ones((config.fft_length,))
+    if matrix.dtype != mx.complex64:
+        comp_matrix = matrix[..., 0] + 1j * matrix[..., 1]
+    else:
+        comp_matrix = matrix
+    time_frames = mx.fft.irfft(comp_matrix, n=config.fft_length, axis=-1)
+    time_frames = time_frames * window
+    expected_length = (frames - 1) * config.frame_step + config.fft_length
+    batch_shape = time_frames.shape[:-2]
+    out = mx.zeros((*batch_shape, expected_length))
+    for i in range(frames):
+        start = i * config.frame_step
+        out[..., start:start + config.fft_length] = out[..., start:start + config.fft_length] + time_frames[..., i, :]
+    return out
+"""
+
+_MLX_MEL_FILTERBANK_TMPL = """def mlx_mel_filterbank(num_mel_bins, num_spectrogram_bins, sample_rate, lower_edge_hertz, upper_edge_hertz):
+    import mlx.core as mx
+    def hz_to_mel(hz): return 2595.0 * mx.log10(1.0 + hz / 700.0)
+    def mel_to_hz(mel): return 700.0 * (10.0 ** (mel / 2595.0) - 1.0)
+    mel_low = hz_to_mel(mx.array(lower_edge_hertz))
+    mel_high = hz_to_mel(mx.array(upper_edge_hertz))
+    mel_points = mx.linspace(mel_low, mel_high, num_mel_bins + 2)
+    hz_points = mel_to_hz(mel_points)
+    bin_freqs = mx.linspace(0.0, sample_rate / 2.0, num_spectrogram_bins)
+    fbank = mx.zeros((num_spectrogram_bins, num_mel_bins))
+    for i in range(num_mel_bins):
+        low, center, high = hz_points[i], hz_points[i+1], hz_points[i+2]
+        up_slope = (bin_freqs - low) / (center - low)
+        down_slope = (high - bin_freqs) / (high - center)
+        weights = mx.maximum(mx.zeros_like(bin_freqs), mx.minimum(up_slope, down_slope))
+        fbank[:, i] = weights
+    return fbank
+"""
+
+_MLX_MFCC_TMPL = """def mlx_mfcc(spectrogram, config):
+    import mlx.core as mx
+    mel_weights = mlx_mel_filterbank(config.num_mel_bins, spectrogram.shape[-1], config.sample_rate, config.lower_edge_hertz, config.upper_edge_hertz)
+    mel_spectrogram = mx.matmul(spectrogram, mel_weights)
+    log_mel = mx.log(mel_spectrogram + 1e-6)
+    N = config.num_mel_bins
+    n_mfcc = config.num_mfccs
+    n = mx.arange(N)
+    k = mx.arange(n_mfcc)[:, None]
+    dct_mat = mx.cos(3.141592653589793 / N * (n + 0.5) * k)
+    dct_mat = dct_mat * mx.sqrt(2.0 / N)
+    dct_mat[0, :] = dct_mat[0, :] * 0.7071067811865476
+    return mx.matmul(log_mel, dct_mat.T)
+"""
+
+_MLX_POWER_ITERATION_TMPL = """def mlx_power_iteration(w, num_iters, u=None):
+    import mlx.core as mx
+    if u is None:
+        u = mx.ones(w.shape[:-2] + [w.shape[-2], 1], dtype=w.dtype)
+    def body_fn(val):
+        i, u_curr, _ = val
+        w_t = mx.swapaxes(w, -1, -2)
+        v_next = mx.matmul(w_t, u_curr)
+        v_next = v_next / (mx.linalg.norm(v_next, axis=-2, keepdims=True) + 1e-12)
+        u_next = mx.matmul(w, v_next)
+        u_next = u_next / (mx.linalg.norm(u_next, axis=-2, keepdims=True) + 1e-12)
+        return i + 1, u_next, v_next
+    def cond_fn(val):
+        return val[0] < num_iters
+    init_v = mx.zeros(w.shape[:-2] + [w.shape[-1], 1], dtype=w.dtype)
+    _, u_final, v_final = mx.while_loop(cond_fn, body_fn)( (mx.array(0), u, init_v) )
+    sigma = mx.matmul(mx.swapaxes(u_final, -1, -2), mx.matmul(w, v_final))
+    return mx.squeeze(v_final, -1), mx.squeeze(u_final, -1), mx.squeeze(mx.squeeze(sigma, -1), -1)
+"""
 
 
 class MLXCodeGenerator(ClassBasedGenerator):
@@ -105,27 +187,33 @@ class MLXCodeGenerator(ClassBasedGenerator):
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load."""
-        import numpy as np
+        import mlx.core as mx
 
-        return np.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
+        # Note: MLX load does not use allow_pickle, fix_imports, or encoding
+        return mx.load(filepath)
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save."""
-        import numpy as np
+        import mlx.core as mx
 
-        np.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        mx.save(file, arr)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez."""
-        import numpy as np
+        import mlx.core as mx
 
-        np.savez(file, *args, **kwds)
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data.update(kwds)
+        mx.save_safetensors(file, data)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed."""
-        import numpy as np
+        import mlx.core as mx
 
-        np.savez_compressed(file, *args, **kwds)
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data.update(kwds)
+        # MLX doesn't have a specific compressed method, safetensors is efficient
+        mx.save_safetensors(file, data)

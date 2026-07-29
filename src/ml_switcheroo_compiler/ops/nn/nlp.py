@@ -449,7 +449,12 @@ class CtcLoss(OpDef):
         Returns:
             A tuple representing the inferred output shape.
         """
-        # logits: (T, N, C) or (N, T, C)
-        # Assuming loss is (N,) or scalar. Let's say (N,) based on batch size N.
-        batch = logits.shape[1] if len(logits.shape) == 3 else 1  # dummy
-        return (batch,)
+        # logits: (T, N, C) if time_major else (N, T, C)
+        time_major = kwargs.get("logits_time_major", True)
+        if hasattr(logits, "shape"):
+            if len(logits.shape) == 3:
+                batch = logits.shape[1] if time_major else logits.shape[0]
+                return (batch,)
+            elif len(logits.shape) == 2:
+                return (1,)
+        return (1,)

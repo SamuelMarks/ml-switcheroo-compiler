@@ -21,15 +21,6 @@ class BinaryMathOp(OpDef):
     op_name: str = ""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Execute infer_shape.
-
-        Args:
-            *shapes (Any): Argument *shapes.
-            **kwargs (Any): Argument **kwargs.
-
-        Returns:
-        Any: The result.
-        """
         """Infer the output shape of the operation.
 
         Args:
@@ -39,8 +30,6 @@ class BinaryMathOp(OpDef):
         Returns:
             The computed shape or evaluation result.
         """
-        # Broadcasting logic should ideally happen here, but for now we return x
-        # This will be replaced by a proper shape inference pass
         if shapes and all(isinstance(s, tuple) for s in shapes):
             return _bs(*shapes) if len(shapes) > 1 else shapes[0]
         return shapes[0] if shapes else ()
@@ -519,7 +508,6 @@ class Polyadd(BinaryMathOp):
     op_name = "Polyadd"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -529,7 +517,14 @@ class Polyadd(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polysub")
@@ -539,7 +534,6 @@ class Polysub(BinaryMathOp):
     op_name = "Polysub"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -549,7 +543,14 @@ class Polysub(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polymul")
@@ -559,7 +560,6 @@ class Polymul(BinaryMathOp):
     op_name = "Polymul"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -569,7 +569,14 @@ class Polymul(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polydiv")
@@ -579,7 +586,6 @@ class Polydiv(BinaryMathOp):
     op_name = "Polydiv"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -589,7 +595,14 @@ class Polydiv(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polyval")
@@ -599,7 +612,6 @@ class Polyval(BinaryMathOp):
     op_name = "Polyval"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -609,7 +621,14 @@ class Polyval(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Poly")
@@ -619,7 +638,6 @@ class Poly(BinaryMathOp):
     op_name = "Poly"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -629,7 +647,14 @@ class Poly(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polyder")
@@ -639,7 +664,6 @@ class Polyder(BinaryMathOp):
     op_name = "Polyder"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -649,7 +673,14 @@ class Polyder(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polyfit")
@@ -659,7 +690,6 @@ class Polyfit(BinaryMathOp):
     op_name = "Polyfit"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -669,7 +699,14 @@ class Polyfit(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Polyint")
@@ -679,7 +716,6 @@ class Polyint(BinaryMathOp):
     op_name = "Polyint"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -689,7 +725,14 @@ class Polyint(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("Roots")
@@ -699,7 +742,6 @@ class Roots(BinaryMathOp):
     op_name = "Roots"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
         """Infer shape.
 
         Args:
@@ -709,7 +751,14 @@ class Roots(BinaryMathOp):
         Returns:
             object: Computed shape.
         """
-        return args[0] if args else ()
+        if args:
+            if hasattr(args[0], "shape"):
+                from collections import namedtuple
+
+                ShapeHolder = namedtuple("ShapeHolder", ["shape"])
+                return ShapeHolder(getattr(args[0], "shape", ()))
+            return args[0]
+        return ()
 
 
 @register_op("IgammaGradA")
@@ -849,3 +898,24 @@ class LegendrePolynomialP(BinaryMathOp):
     """LegendrePolynomialP operation."""
 
     op_name = "LegendrePolynomialP"
+
+
+def igamma_grad_a(*args: object, **kwargs: object) -> object:
+    """Computes the gradient of the regularized incomplete gamma function."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("IgammaGradA", *args, **kwargs)
+
+
+def random_gamma_grad(*args: object, **kwargs: object) -> object:
+    """Computes the derivative of a Gamma random variable."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("RandomGammaGrad", *args, **kwargs)
+
+
+def sort_key_val(*args: object, **kwargs: object) -> object:
+    """Sort keys and values."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("SortKeyVal", *args, **kwargs)

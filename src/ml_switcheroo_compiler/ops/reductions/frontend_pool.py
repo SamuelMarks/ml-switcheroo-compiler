@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -21,10 +20,6 @@ class UnpoolOptions:
     stride: int | tuple | None = None
     padding: int | tuple = 0
     output_size: tuple | None = None
-
-
-if TYPE_CHECKING:
-    pass
 
 
 def fractional_max_pool2d(

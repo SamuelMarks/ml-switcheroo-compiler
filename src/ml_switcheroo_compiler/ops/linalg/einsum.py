@@ -226,13 +226,13 @@ class EinsumPlanner:
         out_shape: list[int] = []
         for char in parts[0]:
             if char not in axis_map:
-                pass
+                continue
             out_shape.append(axis_map[char])
         if broadcast_shape is not None:
             out_shape.extend(broadcast_shape)
         for char in parts[1]:
             if char not in axis_map:
-                pass
+                continue
             out_shape.append(axis_map[char])
         return out_shape
 
@@ -250,7 +250,7 @@ class EinsumPlanner:
         out_shape = []
         for char in out_sub:
             if char not in axis_map:
-                pass
+                continue
             out_shape.append(axis_map[char])
         return out_shape
 
@@ -316,7 +316,7 @@ class EinsumEquationParser:
         out_shape = []
         for char in out_sub:
             if char not in axis_map:
-                pass
+                continue
             out_shape.append(axis_map[char])
         return out_shape
 

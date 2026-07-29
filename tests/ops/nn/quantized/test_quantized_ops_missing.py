@@ -18,4 +18,6 @@ def test_quantized_ops_missing():
     config = QuantizedOpsConfig(weight, scales, biases=None)
 
     with ConfigContext(eager_mode=True):
-        quantized_conv(input, config)
+        res = quantized_conv(input, config)
+        assert isinstance(res, Tensor)
+        np.testing.assert_array_equal(res.numpy(), np.array([[[[4.0]]]]))

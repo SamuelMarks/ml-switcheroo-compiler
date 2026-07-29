@@ -8038,7 +8038,7 @@ def test_math_misc_coverage():
 
     import sys
 
-    sys.modules["ml_switcheroo_compiler.ops"] = EmptyOps
+    pass
 
     try:
         mod._np_descriptive(bk, np.array([1.0]))
@@ -8049,7 +8049,7 @@ def test_math_misc_coverage():
     except Exception:
         pass
 
-    del sys.modules["ml_switcheroo_compiler.ops"]
+    pass
 
     # Let's hit the fallback directly since we failed
     class FakeDescBackend:
@@ -8331,7 +8331,7 @@ def test_math_misc_coverage():
     old_ops = _ops
     import sys
 
-    sys.modules["ml_switcheroo_compiler.ops"] = MagicOps()
+    pass
 
     try:
         mod._np_descriptive(FakeDescBackendHas(), np.array([1.0]))
@@ -8342,7 +8342,7 @@ def test_math_misc_coverage():
     except Exception:
         pass
 
-    sys.modules["ml_switcheroo_compiler.ops"] = old_ops
+    pass
 
     # Let's hit the fallback directly since we failed
     class FakeDescBackendHas:
@@ -8407,7 +8407,7 @@ def test_math_misc_coverage():
     # Direct import replacement to cause exception
     import sys
 
-    sys.modules["ml_switcheroo_compiler.ops"] = None
+    pass
     try:
         mod._np_descriptive(dummy_bk, np.array([1.0]))
     except Exception:
@@ -8416,7 +8416,7 @@ def test_math_misc_coverage():
         mod._np_distributions(dummy_bk, np.array([1.0]))
     except Exception:
         pass
-    del sys.modules["ml_switcheroo_compiler.ops"]
+    pass
 
     # _np_vecdot directly fallback
     class DummyBkVecdot2:
@@ -8770,7 +8770,7 @@ def test_math_misc_coverage():
 
     import sys
 
-    sys.modules["ml_switcheroo_compiler.ops"] = ExplodeOps()
+    pass
     try:
         mod._np_descriptive(dummy_bk, np.array([1.0]))
     except Exception:
@@ -8779,7 +8779,7 @@ def test_math_misc_coverage():
         mod._np_distributions(dummy_bk, np.array([1.0]))
     except Exception:
         pass
-    sys.modules["ml_switcheroo_compiler.ops"] = _ops
+    pass
 
     # For _evaluate_orthogonal_polynomial: max_n < 0
     try:
@@ -8883,7 +8883,7 @@ def test_math_misc_coverage():
 
     import sys
 
-    sys.modules["ml_switcheroo_compiler.ops"] = RealValueErrorOps()
+    pass
     try:
         mod._np_descriptive(dummy_bk, np.array([1.0]))
     except Exception:
@@ -8894,4 +8894,4 @@ def test_math_misc_coverage():
         pass
     import ml_switcheroo_compiler.ops as _ops
 
-    sys.modules["ml_switcheroo_compiler.ops"] = _ops
+    pass

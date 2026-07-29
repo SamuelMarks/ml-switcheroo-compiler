@@ -177,30 +177,39 @@ class KerasCodeGenerator(BaseGenerator):
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load."""
-        import numpy as np
+        import pickle
 
-        return np.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
+        with open(filepath, "rb") as f:
+            return pickle.load(f)
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save."""
-        import numpy as np
+        import pickle
 
-        np.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        with open(file, "wb") as f:
+            pickle.dump(arr, f)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez."""
-        import numpy as np
+        import pickle
 
-        np.savez(file, *args, **kwds)
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data.update(kwds)
+        with open(file, "wb") as f:
+            pickle.dump(data, f)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed."""
-        import numpy as np
+        import gzip
+        import pickle
 
-        np.savez_compressed(file, *args, **kwds)
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data.update(kwds)
+        with gzip.open(file, "wb") as f:
+            pickle.dump(data, f)
 
     def _get_backend_prefix(self) -> str:
         """Retrieve the backend prefix property or mapping.

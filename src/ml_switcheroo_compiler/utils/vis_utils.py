@@ -90,9 +90,14 @@ def img_to_array(*args: object, **kwargs: object) -> object:
     Returns:
         The array.
     """
-    import numpy as np
+    try:
+        import numpy as np
 
-    return np.zeros((1, 1, 3))
+        if len(args) > 0 and hasattr(args[0], "size") and hasattr(args[0], "getdata"):
+            return np.array(args[0])
+        return np.zeros((1, 1, 3))
+    except ImportError:
+        return None
 
 
 def load_img(*args: object, **kwargs: object) -> object:
@@ -146,12 +151,26 @@ def save_img(path: str, x: object, **kwargs: object) -> None:
     except ImportError:
         raise ImportError("Could not import PIL.Image. Please install Pillow.") from None
 
-    import numpy as np
+    try:
+        import numpy as np
 
-    if isinstance(x, np.ndarray):
+        has_np = True
+    except ImportError:
+        has_np = False
+
+    if has_np and isinstance(x, np.ndarray):
         if x.ndim == 3 and x.shape[-1] == 1:
             x = x.squeeze(-1)
         img = Image.fromarray(np.clip(x, 0, 255).astype(np.uint8))
+    elif hasattr(x, "numpy"):
+        # For tensors
+        if has_np:
+            val = x.numpy()
+            if val.ndim == 3 and val.shape[-1] == 1:
+                val = val.squeeze(-1)
+            img = Image.fromarray(np.clip(val, 0, 255).astype(np.uint8))
+        else:
+            img = x
     else:
         img = x
 

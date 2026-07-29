@@ -100,7 +100,7 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np
         return _exchange_ipc_data_worker(rank, size, tensor_data, timeout, retry_interval)
 
 
-def _dummy_all_gather(tensor: object, axis: int, mesh: object) -> object:
+def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
     """Evaluate and process the multi-process IPC all gather operation.
 
     Args:
@@ -126,7 +126,7 @@ def _dummy_all_gather(tensor: object, axis: int, mesh: object) -> object:
     return np.expand_dims(t, axis=axis) if axis is not None else t
 
 
-def _dummy_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> object:
+def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> object:
     """Evaluate and process the multi-process IPC reduce scatter operation.
 
     Args:
@@ -166,7 +166,7 @@ def _dummy_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> o
     return t
 
 
-def _dummy_all_reduce(tensor: object, op: str, mesh: object) -> object:
+def _ipc_all_reduce(tensor: object, op: str, mesh: object) -> object:
     """Evaluate and process the multi-process IPC all reduce operation.
 
     Args:

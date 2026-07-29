@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
@@ -24,10 +23,6 @@ class ConvLocalHyperparams:
     window_strides: object
     padding: object
     filter_shape: object
-
-
-if TYPE_CHECKING:
-    pass
 
 
 @dispatch_eager("ConvGeneralDilated")

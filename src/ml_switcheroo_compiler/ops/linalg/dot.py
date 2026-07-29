@@ -1,6 +1,5 @@
 """Dot product operations."""
 
-from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -47,22 +46,16 @@ class DotGeneral(OpDef):
     op_name = "DotGeneral"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer shape."""
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        Args:
-            *args (object): lhs, rhs, dimension_numbers.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            object: The evaluated output resulting from this operation.
-        """
-        lhs = args[0] if len(args) > 0 else kwargs["lhs"]
-        rhs = args[1] if len(args) > 1 else kwargs["rhs"]
-        dimension_numbers = args[2] if len(args) > MAGIC_VAL_2 else kwargs["dimension_numbers"]
-        if not _has_valid_shape(lhs) or not _has_valid_shape(rhs):
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
             return ()
-
-        return self._compute_out_shape(lhs.shape, rhs.shape, dimension_numbers)
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
     def _compute_out_shape(self, lhs_shape: tuple, rhs_shape: tuple, dimension_numbers: tuple) -> tuple:
         """Execute _compute_out_shape.
@@ -156,13 +149,26 @@ class Pdot(OpDef):
     op_name = "Pdot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer shape."""
+        lhs = args[0] if len(args) > 0 else None
+        rhs = args[1] if len(args) > 1 else None
+        lhs_shape = getattr(lhs, "shape", ())
+        rhs_shape = getattr(rhs, "shape", ())
+        if len(lhs_shape) == 1 and len(rhs_shape) == 1:
+            return ()
+        elif len(lhs_shape) == 2 and len(rhs_shape) == 2:
+            return (lhs_shape[0], rhs_shape[1])
+        elif len(lhs_shape) == 0 or len(rhs_shape) == 0:
+            # scalar multiplication
+            return lhs_shape if len(lhs_shape) > 0 else rhs_shape
+        elif len(rhs_shape) == 1:
+            return lhs_shape[:-1]
+        else:
+            return lhs_shape[:-1] + rhs_shape[:-2] + rhs_shape[-1:]
 
-        Args:
-            *args (object): lhs, rhs.
-            **kwargs: Additional keyword arguments.
 
-        Returns:
-            object: Computed shape.
-        """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+def pdot(*args: object, **kwargs: object) -> object:
+    """Compute the parallel dot product."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Pdot", *args, **kwargs)

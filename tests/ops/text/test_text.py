@@ -28,6 +28,9 @@ def test_text_ops_eager(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
+    mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend_front.execute_op.return_value = ("res1", "res2")
+    mock_backend_front.array.side_effect = lambda x: MockTensor((2, 3))
     mock_backend.execute_op.return_value = "res"
     mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
     assert string_to_hash(t).config.shape == (2, 3)
@@ -75,7 +78,7 @@ def test_text_eager_mode_exceptions() -> object:
         device = Device(DeviceType.CPU, 0)
         img = Tensor(np.array(["test"]), TensorConfig((1,), DType.String, device))
         with ConfigContext(eager_mode=True):
-            with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+            with mock.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend") as mock_backend:
                 mock_backend.return_value.execute_op.return_value = (np.zeros((1,)), np.zeros((1,)))
                 mock_backend.return_value.array.return_value = np.zeros((1,))
                 try:
@@ -152,7 +155,7 @@ def test_text_new_ops_eager() -> None:
         device = Device(DeviceType.CPU, 0)
         img = Tensor(np.array(["test"]), TensorConfig((1,), DType.String, device))
         with ConfigContext(eager_mode=True):
-            with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+            with mock.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend") as mock_backend:
                 mock_backend.return_value.execute_op.return_value = np.zeros((1,))
                 mock_backend.return_value.array.return_value = np.zeros((1,))
                 try:
@@ -178,7 +181,10 @@ def test_text_ops_eager_additional(mocker):
 
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
+    mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend_front.execute_op.return_value = ("res1", "res2")
+    mock_backend_front.array.side_effect = lambda x: MockTensor((2, 3))
     mock_backend.execute_op.return_value = "res"
     mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
 
@@ -205,7 +211,10 @@ def test_text_ops_eager_additional_more(mocker):
 
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
+    mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend_front.execute_op.return_value = ("res1", "res2")
+    mock_backend_front.array.side_effect = lambda x: MockTensor((2, 3))
     mock_backend.execute_op.return_value = ("res1", "res2")
     mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
 
@@ -234,7 +243,10 @@ def test_text_ops_eager_additional_last(mocker):
 
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.text.ops.get_active_backend").return_value
+    mock_backend_front = mocker.patch("ml_switcheroo_compiler.ops.text.frontend.get_active_backend").return_value
+    mock_backend_front.execute_op.return_value = ("res1", "res2")
+    mock_backend_front.array.side_effect = lambda x: MockTensor((2, 3))
     mock_backend.execute_op.return_value = "res"
     mock_backend.array.side_effect = lambda x: MockTensor((2, 3))
 

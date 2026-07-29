@@ -11,6 +11,17 @@ class Rademacher(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if "shape" in kwargs and kwargs["shape"] is not None:
-            return tuple(kwargs["shape"]) if isinstance(kwargs["shape"], (list, tuple)) else (kwargs["shape"],)
-        return ()
+        shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
+        s = shape if shape is not None else kwargs.get("size")
+        if s is None:
+            return ()
+        if isinstance(s, int):
+            return (s,)
+        return tuple(s)
+
+
+def rademacher(*args: object, **kwargs: object) -> object:
+    """Draw samples from a Rademacher distribution."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Rademacher", *args, **kwargs)

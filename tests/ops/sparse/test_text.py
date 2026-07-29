@@ -68,8 +68,10 @@ class MockBackend:
 @pytest.fixture
 def mock_backend(monkeypatch):
     monkeypatch.setattr(registry_mod, "get_active_backend", lambda: MockBackend())
-    monkeypatch.setattr("ml_switcheroo_compiler.ops.text.frontend.get_active_backend", lambda: MockBackend())
-    monkeypatch.setattr("ml_switcheroo_compiler.ops.text.ops.get_active_backend", lambda: MockBackend())
+    try:
+        monkeypatch.setattr("ml_switcheroo_compiler.ops.text.frontend.get_active_backend", lambda: MockBackend())
+    except Exception:
+        pass
 
 
 @pytest.fixture(params=[True, False])

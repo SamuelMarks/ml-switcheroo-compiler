@@ -346,27 +346,31 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load."""
-        import numpy as np
+        import torch
 
-        return np.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
+        return torch.load(filepath, weights_only=not allow_pickle)
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save."""
-        import numpy as np
+        import torch
 
-        np.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        torch.save(arr, file)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez."""
-        import numpy as np
+        import torch
 
-        np.savez(file, *args, **kwds)
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data.update(kwds)
+        torch.save(data, file)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed."""
-        import numpy as np
+        import torch
 
-        np.savez_compressed(file, *args, **kwds)
+        data = {f"arr_{i}": arg for i, arg in enumerate(args)}
+        data.update(kwds)
+        torch.save(data, file)

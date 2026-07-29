@@ -32,11 +32,24 @@ def test_nn_activations_coverage():
     assert LogSoftmax().infer_shape() == ()
     assert Sigmoid().infer_shape(DummyShape()) == (1, 2)
     assert Sigmoid().infer_shape() == ()
-    assert OneHot().infer_shape(DummyShape(), 5) == (1, 2, 5)
-    assert OneHot().infer_shape(DummyShape(), depth=5) == (1, 2, 5)
+    assert OneHot().infer_shape(DummyShape(), DummyShape(), 5) == (1, 2)
+    assert OneHot().infer_shape(DummyShape(), DummyShape(), depth=5) == (1, 2)
     assert OneHot().infer_shape() == ()
     assert Rrelu().infer_shape(DummyShape()) == (1, 2)
     assert Rrelu().infer_shape() == ()
+
+    from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, Squareplus
+
+    assert HardSilu().infer_shape(DummyShape(), DummyShape()) == (1, 2)
+    assert HardSilu().infer_shape() == ()
+    assert HardSwish().infer_shape(DummyShape(), DummyShape()) == (1, 2)
+    assert HardSwish().infer_shape() == ()
+    assert Squareplus().infer_shape(DummyShape(), DummyShape()) == (1, 2)
+    assert Squareplus().infer_shape() == ()
+    assert Softmax().infer_shape(DummyShape(), DummyShape()) == (1, 2)
+    assert LogSoftmax().infer_shape(DummyShape(), DummyShape()) == (1, 2)
+    assert Sigmoid().infer_shape(DummyShape(), DummyShape()) == (1, 2)
+    assert Rrelu().infer_shape(DummyShape(), DummyShape()) == (1, 2)
 
     # tracing
     original_eager = config.eager_mode

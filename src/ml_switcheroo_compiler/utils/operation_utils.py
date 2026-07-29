@@ -35,7 +35,7 @@ class ShapeInferenceStrategy(abc.ABC):
         Returns:
             The output shape.
         """
-        pass
+        _ = None
 
 
 class ReshapeInference(ShapeInferenceStrategy):

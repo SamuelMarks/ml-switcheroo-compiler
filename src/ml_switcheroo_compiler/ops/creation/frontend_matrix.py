@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -16,9 +15,6 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 from .frontend_utils import _emit_creation_node
-
-if TYPE_CHECKING:
-    pass
 
 
 def eye(

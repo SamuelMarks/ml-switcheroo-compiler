@@ -432,14 +432,16 @@ def quantized_linear(
         Tensor: The transformed output tensor.
     """
     if compiler_config.eager_mode:
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        w_val = np.asarray(config.weight.data)
-        scales_val = np.asarray(config.scales.data)
+        backend = get_active_backend()
+
+        w_val = backend.asarray(config.weight.data)
+        scales_val = backend.asarray(config.scales.data)
         if config.zeros is not None:
-            zeros_val = np.asarray(config.zeros.data)
+            zeros_val = backend.asarray(config.zeros.data)
         elif config.biases is not None:
-            zeros_val = np.asarray(config.biases.data)
+            zeros_val = backend.asarray(config.biases.data)
         else:
             zeros_val = 0.0
 
@@ -468,14 +470,16 @@ def quantized_embedding(
         Tensor: The dequantized embedding tensor corresponding to the input indices.
     """
     if compiler_config.eager_mode:
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        w_val = np.asarray(config.weight.data)
-        scales_val = np.asarray(config.scales.data)
+        backend = get_active_backend()
+
+        w_val = backend.asarray(config.weight.data)
+        scales_val = backend.asarray(config.scales.data)
         if config.zeros is not None:
-            zeros_val = np.asarray(config.zeros.data)
+            zeros_val = backend.asarray(config.zeros.data)
         elif config.biases is not None:
-            zeros_val = np.asarray(config.biases.data)
+            zeros_val = backend.asarray(config.biases.data)
         else:
             zeros_val = 0.0
 
@@ -510,16 +514,18 @@ def dequantize(
         Tensor: The dequantized floating point tensor.
     """
     if compiler_config.eager_mode:
-        import numpy as np
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
+        backend = get_active_backend()
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        in_val = np.asarray(input.data)
-        scales_val = np.asarray(scales.data)
+        in_val = backend.asarray(input.data)
+        scales_val = backend.asarray(scales.data)
         if biases is not None:
-            biases_val = np.asarray(biases.data)
+            biases_val = backend.asarray(biases.data)
         else:
-            biases_val = np.zeros(1, dtype=np.float32)
+            biases_val = backend.execute_op("Zeros", 1, dtype="float32")
 
         res_val = (in_val - biases_val) * scales_val
         return Tensor(res_val, TensorConfig(res_val.shape, scales.dtype, input.device))

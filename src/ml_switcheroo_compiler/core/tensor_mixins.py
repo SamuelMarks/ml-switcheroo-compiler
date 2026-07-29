@@ -4,7 +4,6 @@ import uuid
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-import numpy as np
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -35,7 +34,7 @@ class TensorPropertiesMixin:
         prod = 1
         for s in self._shape:
             if isinstance(s, str):
-                pass  # Ignore symbolic dims or handle differently? Keras usually expects an int or None.
+                return None
             else:
                 prod *= s
         return prod
@@ -92,16 +91,12 @@ class TensorConversionMixin:
 
     def numpy(self) -> object:
         """Numpy."""
+        from ml_switcheroo_compiler.backends.registry import get_active_backend
+
         try:
-            import importlib.util
-
-            import numpy as np
-
-            if importlib.util.find_spec("ml_switcheroo_compiler.backends.numpy.utils") is None:
-                pass
-        except ImportError as e:
-            raise ImportError("numpy is required") from e
-        return np.asarray(self._data)
+            return get_active_backend().numpy(self._data)
+        except Exception:
+            return get_active_backend().asarray(self._data)
 
     def __array__(self, dtype: object = None) -> object:
         """Array.
@@ -122,9 +117,9 @@ class TensorConversionMixin:
             data = self.data
 
         try:
-            return np.asarray(data, dtype=dtype) if dtype is not None else np.asarray(data)
+            return backend.array(data, dtype=dtype) if dtype is not None else backend.asarray(data)
         except Exception:
-            return np.array(data.tolist() if hasattr(data, "tolist") else data, dtype=dtype)
+            return backend.array(data.tolist() if hasattr(data, "tolist") else data, dtype=dtype)
 
     def item(self) -> float:
         """Returns the value of this tensor as a standard Python number.
@@ -215,7 +210,7 @@ class TensorIndexingMixin:
         try:
             res = arr[tuple(key) if isinstance(key, list) else key]
             res_shape = getattr(res, "shape", ())
-        except IndexError:
+        except IndexError as e:
             if config.eager_mode:
                 raise
             res_shape = ()
@@ -224,10 +219,7 @@ class TensorIndexingMixin:
             # will raise IndexError: only integers... We want to let it pass and build a node,
             # UNLESS it's truly an invalid indexing like too many dims.
             # We will just raise IndexError if it's too many indices for array, so Keras catches it.
-            import traceback
-
-            err_msg = traceback.format_exc()
-            if "too many indices for array" in err_msg:
+            if "too many indices for array" in str(e):
                 raise
             # Otherwise we continue and create a lazy node
 

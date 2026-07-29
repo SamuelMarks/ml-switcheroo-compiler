@@ -207,15 +207,15 @@ def test_opdefs_infer_shape():
     assert DecodeBase64().infer_shape(t) == (2, 3)
     assert ParseSequenceExample().infer_shape(t) == (2, 3)
 
-    assert SparsePlus().infer_shape(t) == t
+    assert SparsePlus().infer_shape(t) == (2, 3)
     assert SparsePlus().infer_shape() == ()
 
-    assert SparseSigmoid().infer_shape(t) == t
+    assert SparseSigmoid().infer_shape(t) == (2, 3)
     assert SparseSigmoid().infer_shape() == ()
 
-    assert Fromfile().infer_shape() == ()
-    assert Fromstring().infer_shape() == ()
-    assert Fromiter().infer_shape() == ()
+    assert Fromfile().infer_shape() == (None,)
+    assert Fromstring().infer_shape() == (None,)
+    assert Fromiter().infer_shape() == (None,)
 
     assert Fromfunction().infer_shape(None, (4, 5)) == (4, 5)
     assert Fromfunction().infer_shape(None, shape=(6, 7)) == (6, 7)

@@ -95,6 +95,9 @@ def test_signal_funcs(mocker):
     assert convolve2d(t, t) == "node"
     assert fftconvolve(t, t) == "node"
     assert welch(t) == ("node", "node")
+    from ml_switcheroo_compiler.ops.signal import WelchConfig
+
+    assert welch(t, WelchConfig()) == ("node", "node")
     assert fft(t) == "node"
     assert ifft(t) == "node"
     assert fftn(t) == "node"

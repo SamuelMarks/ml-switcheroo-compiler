@@ -14,10 +14,6 @@ MAX_DIMENSIONS = 4
 MAX_RANK = 5
 
 
-if TYPE_CHECKING:
-    pass
-
-
 class SymInt:
     """Symbolic Integer to trace graphs with dynamic dimensions."""
 

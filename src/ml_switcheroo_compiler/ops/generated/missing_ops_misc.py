@@ -326,84 +326,6 @@ def finfo(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Finfo", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def from_dlpack(*args: object, **kwargs: object) -> object:
-    """FromDlpack frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("FromDlpack", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("FromDlpack", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def fromfile(*args: object, **kwargs: object) -> object:
-    """Fromfile frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Fromfile", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Fromfile", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def fromfunction(*args: object, **kwargs: object) -> object:
-    """Fromfunction frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Fromfunction", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Fromfunction", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def fromiter(*args: object, **kwargs: object) -> object:
-    """Fromiter frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Fromiter", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Fromiter", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def frompyfunc(*args: object, **kwargs: object) -> object:
-    """Frompyfunc frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Frompyfunc", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Frompyfunc", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def fromstring(*args: object, **kwargs: object) -> object:
-    """Fromstring frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Fromstring", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Fromstring", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def gamma(*args: object, **kwargs: object) -> object:
     """Gamma frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -415,58 +337,6 @@ def gamma(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Gamma", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def geometric(*args: object, **kwargs: object) -> object:
-    """Geometric frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Geometric", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Geometric", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def geomspace(*args: object, **kwargs: object) -> object:
-    """Geomspace frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Geomspace", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Geomspace", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def get_printoptions(*args: object, **kwargs: object) -> object:
-    """GetPrintoptions frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("GetPrintoptions", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("GetPrintoptions", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def gradient(*args: object, **kwargs: object) -> object:
-    """Gradient frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Gradient", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Gradient", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def gumbel(*args: object, **kwargs: object) -> object:
@@ -495,32 +365,6 @@ def hanning(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Hanning", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def hard_silu(*args: object, **kwargs: object) -> object:
-    """HardSilu frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("HardSilu", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("HardSilu", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def hard_swish(*args: object, **kwargs: object) -> object:
-    """HardSwish frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("HardSwish", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("HardSwish", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def hessenberg(*args: object, **kwargs: object) -> object:
     """Hessenberg frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -532,84 +376,6 @@ def hessenberg(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Hessenberg", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def histogram(*args: object, **kwargs: object) -> object:
-    """Histogram frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Histogram", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Histogram", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def histogram_bin_edges(*args: object, **kwargs: object) -> object:
-    """HistogramBinEdges frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("HistogramBinEdges", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("HistogramBinEdges", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def histogram2d(*args: object, **kwargs: object) -> object:
-    """Histogram2d frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Histogram2d", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Histogram2d", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def histogramdd(*args: object, **kwargs: object) -> object:
-    """Histogramdd frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Histogramdd", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Histogramdd", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def i0(*args: object, **kwargs: object) -> object:
-    """I0 frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("I0", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("I0", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def igamma_grad_a(*args: object, **kwargs: object) -> object:
-    """IgammaGradA frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("IgammaGradA", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("IgammaGradA", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def ihfft(*args: object, **kwargs: object) -> object:
@@ -625,71 +391,6 @@ def ihfft(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Ihfft", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def iinfo(*args: object, **kwargs: object) -> object:
-    """Iinfo frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Iinfo", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Iinfo", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def indices(*args: object, **kwargs: object) -> object:
-    """Indices frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Indices", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Indices", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def infeed(*args: object, **kwargs: object) -> object:
-    """Infeed frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Infeed", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Infeed", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def interp(*args: object, **kwargs: object) -> object:
-    """Interp frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Interp", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Interp", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def intersect1d(*args: object, **kwargs: object) -> object:
-    """Intersect1d frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Intersect1d", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Intersect1d", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def irfft(*args: object, **kwargs: object) -> object:
     """Irfft frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -701,45 +402,6 @@ def irfft(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Irfft", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def isscalar(*args: object, **kwargs: object) -> object:
-    """Isscalar frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Isscalar", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Isscalar", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def iterable(*args: object, **kwargs: object) -> object:
-    """Iterable frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Iterable", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Iterable", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def ix_(*args: object, **kwargs: object) -> object:
-    """Ix frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Ix", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Ix", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def kaiser(*args: object, **kwargs: object) -> object:
@@ -794,19 +456,6 @@ def key_impl(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("KeyImpl", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def kron(*args: object, **kwargs: object) -> object:
-    """Kron frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Kron", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Kron", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def laplace(*args: object, **kwargs: object) -> object:
     """Laplace frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -833,84 +482,6 @@ def lu_pivots_to_permutation(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("LuPivotsToPermutation", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def mask_indices(*args: object, **kwargs: object) -> object:
-    """MaskIndices frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("MaskIndices", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("MaskIndices", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def median(*args: object, **kwargs: object) -> object:
-    """Median frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Median", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Median", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def mgrid(*args: object, **kwargs: object) -> object:
-    """Mgrid frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Mgrid", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Mgrid", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def mish(*args: object, **kwargs: object) -> object:
-    """Mish frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Mish", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Mish", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def modf(*args: object, **kwargs: object) -> object:
-    """Modf frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Modf", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Modf", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def ogrid(*args: object, **kwargs: object) -> object:
-    """Ogrid frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Ogrid", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Ogrid", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def orthogonal(*args: object, **kwargs: object) -> object:
     """Orthogonal frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -922,19 +493,6 @@ def orthogonal(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Orthogonal", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def outfeed(*args: object, **kwargs: object) -> object:
-    """Outfeed frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Outfeed", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Outfeed", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def packbits(*args: object, **kwargs: object) -> object:
@@ -961,19 +519,6 @@ def pareto(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Pareto", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def piecewise(*args: object, **kwargs: object) -> object:
-    """Piecewise frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Piecewise", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Piecewise", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def poisson(*args: object, **kwargs: object) -> object:
@@ -1054,58 +599,6 @@ def polyval(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Polyval", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def population_count(*args: object, **kwargs: object) -> object:
-    """PopulationCount frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("PopulationCount", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("PopulationCount", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def promote_types(*args: object, **kwargs: object) -> object:
-    """PromoteTypes frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("PromoteTypes", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("PromoteTypes", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def pshuffle(*args: object, **kwargs: object) -> object:
-    """Pshuffle frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Pshuffle", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Pshuffle", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def pswapaxes(*args: object, **kwargs: object) -> object:
-    """Pswapaxes frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Pswapaxes", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Pswapaxes", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def qdwh(*args: object, **kwargs: object) -> object:
     """Qdwh frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -1132,58 +625,6 @@ def qr(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Qr", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def r_(*args: object, **kwargs: object) -> object:
-    """R frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("R", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("R", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def rademacher(*args: object, **kwargs: object) -> object:
-    """Rademacher frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Rademacher", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Rademacher", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def reduce_precision(*args: object, **kwargs: object) -> object:
-    """ReducePrecision frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("ReducePrecision", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("ReducePrecision", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def result_type(*args: object, **kwargs: object) -> object:
-    """ResultType frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("ResultType", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("ResultType", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def roll(*args: object, **kwargs: object) -> object:
     """Roll frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -1208,19 +649,6 @@ def roots(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Roots", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def rot90(*args: object, **kwargs: object) -> object:
-    """Rot90 frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Rot90", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Rot90", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def schur(*args: object, **kwargs: object) -> object:
@@ -1273,19 +701,6 @@ def solve(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Solve", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def squareplus(*args: object, **kwargs: object) -> object:
-    """Squareplus frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Squareplus", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Squareplus", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def swapaxes(*args: object, **kwargs: object) -> object:
@@ -1353,32 +768,6 @@ def top_k(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("TopK", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def trapezoid(*args: object, **kwargs: object) -> object:
-    """Trapezoid frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Trapezoid", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Trapezoid", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def tri(*args: object, **kwargs: object) -> object:
-    """Tri frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Tri", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Tri", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def triangular(*args: object, **kwargs: object) -> object:
     """Triangular frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -1405,19 +794,6 @@ def tridiagonal(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Tridiagonal", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def tril(*args: object, **kwargs: object) -> object:
-    """Tril frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Tril", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Tril", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def tril_indices(*args: object, **kwargs: object) -> object:
     """TrilIndices frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -1442,32 +818,6 @@ def tril_indices_from(*args: object, **kwargs: object) -> object:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("TrilIndicesFrom", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def trim_zeros(*args: object, **kwargs: object) -> object:
-    """TrimZeros frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("TrimZeros", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("TrimZeros", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def triu(*args: object, **kwargs: object) -> object:
-    """Triu frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Triu", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Triu", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def triu_indices(*args: object, **kwargs: object) -> object:
@@ -1522,45 +872,6 @@ def unpackbits(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Unpackbits", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def unwrap(*args: object, **kwargs: object) -> object:
-    """Unwrap frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Unwrap", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Unwrap", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def vander(*args: object, **kwargs: object) -> object:
-    """Vander frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Vander", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Vander", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
-def vectorize(*args: object, **kwargs: object) -> object:
-    """Vectorize frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Vectorize", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Vectorize", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def wald(*args: object, **kwargs: object) -> object:
     """Wald frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -1613,101 +924,48 @@ __all__ = [
     "fft2",
     "fftfreq",
     "finfo",
-    "from_dlpack",
-    "fromfile",
-    "fromfunction",
-    "fromiter",
-    "frompyfunc",
-    "fromstring",
     "gamma",
-    "geometric",
-    "geomspace",
-    "get_printoptions",
-    "gradient",
     "gumbel",
     "hanning",
-    "hard_silu",
-    "hard_swish",
     "hessenberg",
-    "histogram",
-    "histogram2d",
-    "histogram_bin_edges",
-    "histogramdd",
-    "i0",
-    "igamma_grad_a",
     "ihfft",
-    "iinfo",
-    "indices",
-    "infeed",
-    "interp",
-    "intersect1d",
     "irfft",
-    "isscalar",
-    "iterable",
-    "ix_",
     "kaiser",
     "key",
     "key_data",
     "key_impl",
-    "kron",
     "laplace",
     "lu_pivots_to_permutation",
-    "mask_indices",
-    "median",
-    "mgrid",
-    "mish",
-    "modf",
-    "ogrid",
     "orthogonal",
-    "outfeed",
     "packbits",
     "pareto",
-    "piecewise",
     "poisson",
     "poly",
     "polyder",
     "polyfit",
     "polyint",
     "polyval",
-    "population_count",
-    "promote_types",
-    "pshuffle",
-    "pswapaxes",
     "qdwh",
     "qr",
-    "r_",
-    "rademacher",
-    "reduce_precision",
-    "result_type",
     "roll",
     "roots",
-    "rot90",
     "schur",
     "setdiff1d",
     "setxor1d",
     "solve",
-    "squareplus",
     "swapaxes",
     "t",
     "take",
     "take_along_axis",
     "top_k",
-    "trapezoid",
-    "tri",
     "triangular",
     "tridiagonal",
-    "tril",
     "tril_indices",
     "tril_indices_from",
-    "trim_zeros",
-    "triu",
     "triu_indices",
     "triu_indices_from",
     "union1d",
     "unpackbits",
-    "unwrap",
-    "vander",
-    "vectorize",
     "wald",
     "wrap_key_data",
 ]

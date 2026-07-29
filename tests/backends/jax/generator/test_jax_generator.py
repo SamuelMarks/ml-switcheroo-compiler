@@ -89,12 +89,6 @@ def test_jax_generator_generate_full() -> object:
 
 "Test module."
 
-sys.modules["jax"] = MagicMock()
-
-sys.modules["jax.ops"] = MagicMock()
-
-sys.modules["jax.numpy"] = MagicMock()
-
 sys.modules["jax.scipy"] = MagicMock()
 
 sys.modules["jax.scipy.special"] = MagicMock()
@@ -196,12 +190,6 @@ def test_jax_audio_visitor():
 
 
 "Test module."
-
-sys.modules["jax"] = MagicMock()
-
-sys.modules["jax.ops"] = MagicMock()
-
-sys.modules["jax.numpy"] = MagicMock()
 
 sys.modules["jax.scipy"] = MagicMock()
 

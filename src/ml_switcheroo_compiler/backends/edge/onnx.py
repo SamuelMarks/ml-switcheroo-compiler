@@ -99,8 +99,9 @@ class ONNXCodeGenerator(BaseGenerator):
             str: Serialized ONNX printable text representation.
         """
         try:
-            import numpy as np
-            from onnx import TensorProto, helper, numpy_helper
+            import math
+
+            from onnx import TensorProto, helper
 
             input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
             onnx_inputs = []
@@ -133,11 +134,14 @@ class ONNXCodeGenerator(BaseGenerator):
                     val = node.attributes.get("value", 0.0)
                     dt = getattr(node, "dtype", "float32")
                     shape = getattr(node, "shape_metadata", ()) or ()
-                    if shape:
-                        arr = np.full(shape, val, dtype=np.dtype(dt))
-                    else:
-                        arr = np.array(val, dtype=np.dtype(dt))
-                    tensor_proto = numpy_helper.from_array(arr, name=nid)
+                    proto_type = self._get_proto_type(dt, TensorProto)
+                    num_elements = math.prod(shape) if shape else 1
+                    tensor_proto = helper.make_tensor(
+                        name=nid,
+                        data_type=proto_type,
+                        dims=list(shape),
+                        vals=[val] * num_elements,
+                    )
                     onnx_nodes.append(
                         helper.make_node(
                             "Constant",
@@ -186,8 +190,9 @@ class ONNXCodeGenerator(BaseGenerator):
         Raises:
             ImportError: If the 'onnx' library is not installed.
         """
-        import numpy as np
-        from onnx import TensorProto, helper, numpy_helper
+        import math
+
+        from onnx import TensorProto, helper
 
         input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
         onnx_inputs = []
@@ -220,11 +225,14 @@ class ONNXCodeGenerator(BaseGenerator):
                 val = node.attributes.get("value", 0.0)
                 dt = getattr(node, "dtype", "float32")
                 shape = getattr(node, "shape_metadata", ()) or ()
-                if shape:
-                    arr = np.full(shape, val, dtype=np.dtype(dt))
-                else:
-                    arr = np.array(val, dtype=np.dtype(dt))
-                tensor_proto = numpy_helper.from_array(arr, name=nid)
+                proto_type = self._get_proto_type(dt, TensorProto)
+                num_elements = math.prod(shape) if shape else 1
+                tensor_proto = helper.make_tensor(
+                    name=nid,
+                    data_type=proto_type,
+                    dims=list(shape),
+                    vals=[val] * num_elements,
+                )
                 onnx_nodes.append(
                     helper.make_node(
                         "Constant",

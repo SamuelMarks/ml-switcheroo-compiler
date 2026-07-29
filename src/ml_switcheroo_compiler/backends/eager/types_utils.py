@@ -3,11 +3,7 @@
 
 def generic_zeros(mod: object, shape: tuple) -> object:
     """Generic zeros."""
-    if hasattr(mod, "zeros"):
-        return mod.zeros(shape)
-    import numpy as np
-
-    return np.zeros(shape)
+    return mod.zeros(shape)
 
 
 def generic_array(mod: object, data: object, dtype: object = None) -> object:

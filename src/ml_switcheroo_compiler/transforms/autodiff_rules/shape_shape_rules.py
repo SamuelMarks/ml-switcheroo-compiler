@@ -37,8 +37,7 @@ def reshape_vjp(graph: object, node: object, cotangent: str) -> tuple:
 def reshape_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for a Reshape operation.
 
-    Generates a JAX-compatible code string that reshapes the tangent vector to
-    the target shape
+    Emits an IR node that reshapes the tangent vector to the target shape
 
     Args:
         graph (object): The computation graph
@@ -46,9 +45,15 @@ def reshape_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The tangent variable name
 
     Returns:
-    str: A code string representing the JAX reshape operation
+    str: The identifier of the emitted node
     """
-    return f"jnp.reshape({tangent}, {node.attributes['newshape']})"
+    return emit_ir_node(
+        graph,
+        "Reshape",
+        [tangent],
+        node.shape_metadata,
+        attributes={"newshape": node.attributes.get("newshape")},
+    )
 
 
 @register_vjp("Transpose")
@@ -90,8 +95,8 @@ def transpose_vjp(graph: object, node: object, cotangent: str) -> tuple:
 def transpose_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for a Transpose operation.
 
-    Generates a JAX-compatible code string that transposes the tangent vector
-    using the same axes as the original operation
+    Emits an IR node that transposes the tangent vector using the same axes
+    as the original operation
 
     Args:
         graph (object): The computation graph
@@ -99,12 +104,15 @@ def transpose_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The tangent variable name
 
     Returns:
-    str: A code string representing the JAX transpose operation
+    str: The identifier of the emitted node
     """
-    axes = node.attributes.get("axes")
-    if axes is None:
-        return f"jnp.transpose({tangent})"
-    return f"jnp.transpose({tangent}, axes={axes})"
+    return emit_ir_node(
+        graph,
+        "Transpose",
+        [tangent],
+        node.shape_metadata,
+        attributes={"axes": node.attributes.get("axes")},
+    )
 
 
 @register_vjp("BroadcastTo")
@@ -128,8 +136,7 @@ def broadcast_to_vjp(graph: object, node: object, cotangent: str) -> tuple:
 def broadcast_to_jvp(graph: object, node: object, tangent: str) -> str:
     """Computes the Jacobian-Vector Product (JVP) for a BroadcastTo operation.
 
-    Generates a JAX-compatible code string that broadcasts the tangent vector
-    to the target shape
+    Emits an IR node that broadcasts the tangent vector to the target shape
 
     Args:
         graph (object): The computation graph
@@ -137,10 +144,15 @@ def broadcast_to_jvp(graph: object, node: object, tangent: str) -> str:
         tangent (str): The tangent variable name
 
     Returns:
-    str: A code string representing the JAX broadcast_to operation
+    str: The identifier of the emitted node
     """
-    shape = node.attributes.get("shape")
-    return f"jnp.broadcast_to({tangent}, {shape})"
+    return emit_ir_node(
+        graph,
+        "BroadcastTo",
+        [tangent],
+        node.shape_metadata,
+        attributes={"shape": node.attributes.get("shape")},
+    )
 
 
 @register_vjp("Split")

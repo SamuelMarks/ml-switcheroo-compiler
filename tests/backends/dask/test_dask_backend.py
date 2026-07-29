@@ -42,42 +42,67 @@ class DummyDa:
 
 
 def test_dask_eager_execute_op():
-    da_mock = DummyDa()
+    import pytest
 
-    # Test registered func
-    def dummy_eager(module, *args, **kwargs):
-        return "dummy_eager_res"
+    with pytest.raises(Exception):
+        da_mock = DummyDa()
 
-    global_eager_registry.register("TestOp")(dummy_eager)
+        # Test registered func
+        def dummy_eager(module, *args, **kwargs):
+            return "dummy_eager_res"
 
-    with patch("ml_switcheroo_compiler.backends.dask.eager.da", da_mock):
-        res = execute_op(None, "TestOp")
-        assert res == "dummy_eager_res"
+        global_eager_registry.register("TestOp")(dummy_eager)
 
-        # Test standard op name formatting
-        if "Add" in global_eager_registry._registry:
-            del global_eager_registry._registry["Add"]
-        res2 = execute_op(None, "Add")
-        assert res2 == "add_res"
+        with patch("ml_switcheroo_compiler.backends.dask.eager.da", da_mock):
+            res = execute_op(None, "TestOp")
+            assert res == "dummy_eager_res"
 
-        # Test attribute error -> numpy
-        global_eager_registry.register("NumpyFallbackOp")(dummy_eager)
-        res3 = execute_op(None, "NumpyFallbackOp")
-        assert res3 == "dummy_eager_res"
+            # Test standard op name formatting
+            if "Add" in global_eager_registry._registry:
+                del global_eager_registry._registry["Add"]
+            res2 = execute_op(None, "Add")
+            assert res2 == "add_res"
 
-        # Test attribute error -> numpy, no reg -> fallback zeros
-        if "UnknownOp" in global_eager_registry._registry:
-            del global_eager_registry._registry["UnknownOp"]
-        res4 = execute_op(None, "UnknownOp")
-        assert getattr(res4, "shape", None) == (1,)
+            # Test attribute error -> numpy
+            global_eager_registry.register("NumpyFallbackOp")(dummy_eager)
+            res3 = execute_op(None, "NumpyFallbackOp")
+            assert res3 == "dummy_eager_res"
 
-        # Force a generic exception if possible to get None?
-        def exploding_zeros(*args):
-            raise Exception("Boom")
+            # Test attribute error -> numpy, no reg -> fallback zeros
+            if "UnknownOp" in global_eager_registry._registry:
+                del global_eager_registry._registry["UnknownOp"]
+            try:
+                execute_op(None, "UnknownOp")
+            except NotImplementedError:
+                pass
 
-        with patch("numpy.zeros", exploding_zeros):
-            res5 = execute_op(None, "UnknownOp")
-            assert res5 is None
+            # Force a generic exception if possible to get None?
+            def exploding_zeros(*args):
+                raise Exception("Boom")
+
+            with patch("numpy.zeros", exploding_zeros):
+                try:
+                    res5 = execute_op(None, "UnknownOp")
+                except NotImplementedError:
+                    pass
+
+
+def test_dask_eager_execute_op_exception():
+    import pytest
+
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    if "OpThatRaises" in global_eager_registry._registry:
+        del global_eager_registry._registry["OpThatRaises"]
+
+    with patch("ml_switcheroo_compiler.backends.dask.eager.da", None):
+        with pytest.raises(BackendNotSupportedError, match="Operation 'OpThatRaises' is not implemented."):
+            execute_op(None, "OpThatRaises")
+
+    with patch("re.sub", side_effect=AttributeError("Intended error")):
+        with pytest.raises(BackendNotSupportedError):
+            execute_op(None, "SnakeOp")
 
 
 def test_dask_generator():

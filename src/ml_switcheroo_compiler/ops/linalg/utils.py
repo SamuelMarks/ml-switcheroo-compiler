@@ -65,7 +65,6 @@ def _emit_linalg_node(
         raise RuntimeError(msg)
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
     shape_meta = tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes)
-    pass
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
     node = LogicalNode(
         id=out_ids[0],

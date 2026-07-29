@@ -33,7 +33,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_trig  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_unary  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.nn  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.nn_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.nn_stubs  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.optimizers_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.random_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.reductions  # noqa: F401

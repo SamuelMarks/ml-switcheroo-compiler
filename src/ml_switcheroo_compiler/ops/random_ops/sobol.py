@@ -25,8 +25,7 @@ def generate_sobol(dim: int, num_results: int, skip: int = 0) -> object:
     Returns:
         The generated sequence.
     """
-    import numpy as np
+    from ml_switcheroo_compiler import ops
 
     # Simplistic mathematical fallback when scipy is not available or outside backend dirs
-    np.random.seed((42 + skip) % (2**32 - 1))
-    return np.random.uniform(size=(num_results, dim)).astype(np.float32)
+    return ops.rand(num_results, dim, dtype="float32")

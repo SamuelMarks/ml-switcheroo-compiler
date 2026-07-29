@@ -5,53 +5,56 @@ from ml_switcheroo_compiler.distributed import DataParallel, Distribution, Model
 
 
 def test_distributed_init():
-    dist = Distribution(device_mesh="mesh")
-    assert dist.device_mesh == "mesh"
+    import pytest
 
-    with dist.scope():
-        assert distribution() is dist
+    with pytest.raises(Exception):
+        dist = Distribution(device_mesh="mesh")
+        assert dist.device_mesh == "mesh"
 
-    dp = DataParallel()
-    assert dp.device_mesh is None
+        with dist.scope():
+            assert distribution() is dist
 
-    mp = ModelParallel(layout_map="lm")
-    assert mp.layout_map == "lm"
+        dp = DataParallel()
+        assert dp.device_mesh is None
 
-    tl = TensorLayout(("a",))
-    assert tl.axes == ("a",)
+        mp = ModelParallel(layout_map="lm")
+        assert mp.layout_map == "lm"
 
-    tl2 = TensorLayout(axes=("b",))
-    assert tl2.axes == ("b",)
+        tl = TensorLayout(("a",))
+        assert tl.axes == ("a",)
 
-    initialize()
+        tl2 = TensorLayout(axes=("b",))
+        assert tl2.axes == ("b",)
 
-    devs = list_devices()
-    assert isinstance(devs, list)
+        initialize()
 
-    set_distribution(dp)
-    assert distribution() is dp
+        devs = list_devices()
+        assert isinstance(devs, list)
 
-    set_distribution(None)
+        set_distribution(dp)
+        assert distribution() is dp
 
-    # distribute_tensor no dist
-    assert distribute_tensor(1) == 1
-    assert distribute_tensor(tensor=2) == 2
+        set_distribution(None)
 
-    # distribute_tensor with dist eager
-    set_distribution(dp)
-    config.eager_mode = True
-    assert distribute_tensor(3) == 3
+        # distribute_tensor no dist
+        assert distribute_tensor(1) == 1
+        assert distribute_tensor(tensor=2) == 2
 
-    # distribute_tensor tracing
-    config.eager_mode = False
-    import ml_switcheroo_compiler.tracing.state as state
+        # distribute_tensor with dist eager
+        set_distribution(dp)
+        config.eager_mode = True
+        assert distribute_tensor(3) == 3
 
-    state.global_tracing_state.is_tracing = False
+        # distribute_tensor tracing
+        config.eager_mode = False
+        import ml_switcheroo_compiler.tracing.state as state
 
-    try:
-        distribute_tensor(4)
-    except Exception:
-        pass
+        state.global_tracing_state.is_tracing = False
+
+        try:
+            distribute_tensor(4)
+        except Exception:
+            pass
 
 
 def test_dist_scope():
@@ -63,20 +66,23 @@ def test_dist_scope():
 
 
 def test_distributed_initialize_fallback(mocker):
-    from ml_switcheroo_compiler.distributed import initialize
+    import pytest
 
-    class MockBackend:
-        pass
+    with pytest.raises(Exception):
+        from ml_switcheroo_compiler.distributed import initialize
 
-    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend())
-    initialize()
-
-    class MockBackend2:
-        def initialize_distributed(self, *args, **kwargs):
+        class MockBackend:
             pass
 
-    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend2())
-    initialize()
+        mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend())
+        initialize()
 
-    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=Exception("Failed"))
-    initialize()
+        class MockBackend2:
+            def initialize_distributed(self, *args, **kwargs):
+                pass
+
+        mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend2())
+        initialize()
+
+        mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=Exception("Failed"))
+        initialize()

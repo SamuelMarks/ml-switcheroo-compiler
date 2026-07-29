@@ -131,7 +131,7 @@ def set_default_stream(stream: object) -> None:
             if hasattr(backend_cls, "set_default_stream"):
                 backend_cls.set_default_stream(stream)
         except ImportError:
-            pass
+            return
 
 
 def set_memory_limit(limit: int) -> None:
@@ -144,7 +144,7 @@ def set_memory_limit(limit: int) -> None:
             if hasattr(backend_cls, "set_memory_limit"):
                 backend_cls.set_memory_limit(limit)
         except ImportError:
-            pass
+            return
 
 
 def set_wired_limit(limit: int) -> None:
@@ -157,7 +157,7 @@ def set_wired_limit(limit: int) -> None:
             if hasattr(backend_cls, "set_wired_limit"):
                 backend_cls.set_wired_limit(limit)
         except ImportError:
-            pass
+            return
 
 
 __all__ = [
@@ -576,7 +576,15 @@ class Load(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("Save")
@@ -587,7 +595,15 @@ class Save(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("SaveGguf")
@@ -598,7 +614,15 @@ class SaveGguf(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("Savez")
@@ -609,7 +633,15 @@ class Savez(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("SavezCompressed")
@@ -620,7 +652,15 @@ class SavezCompressed(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("ReadFile")
@@ -631,7 +671,15 @@ class ReadFile(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("WriteFile")
@@ -642,7 +690,15 @@ class WriteFile(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("DecodeImage")
@@ -653,7 +709,15 @@ class DecodeImage(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("DecodeCsv")
@@ -664,7 +728,15 @@ class DecodeCsv(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("ParseExample")
@@ -675,7 +747,15 @@ class ParseExample(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("SerializeTensor")
@@ -686,7 +766,15 @@ class SerializeTensor(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("ParseTensor")
@@ -697,7 +785,15 @@ class ParseTensor(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("EncodeBase64")
@@ -708,7 +804,15 @@ class EncodeBase64(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("DecodeBase64")
@@ -719,7 +823,15 @@ class DecodeBase64(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("ParseSequenceExample")
@@ -730,7 +842,15 @@ class ParseSequenceExample(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("SparsePlus")
@@ -741,7 +861,15 @@ class SparsePlus(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("SparseSigmoid")
@@ -752,7 +880,15 @@ class SparseSigmoid(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def sparse_plus(*args: object, **kwargs: object) -> object:
@@ -788,8 +924,9 @@ class Fromfile(OpDef):
     op_name = "Fromfile"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        count = kwargs.get("count", -1)
         """Infer shape."""
-        return ()
+        return (count if count != -1 else None,)
 
 
 @register_op("Fromstring")
@@ -799,8 +936,9 @@ class Fromstring(OpDef):
     op_name = "Fromstring"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        count = kwargs.get("count", -1)
         """Infer shape."""
-        return ()
+        return (count if count != -1 else None,)
 
 
 @register_op("Fromiter")
@@ -810,8 +948,9 @@ class Fromiter(OpDef):
     op_name = "Fromiter"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        count = kwargs.get("count", -1)
         """Infer shape."""
-        return ()
+        return (count if count != -1 else None,)
 
 
 @register_op("Fromfunction")
@@ -821,5 +960,34 @@ class Fromfunction(OpDef):
     op_name = "Fromfunction"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
         """Infer shape."""
-        return args[1] if len(args) > 1 else kwargs.get("shape", ())
+        return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
+
+
+def fromfile(file: object, dtype: object = float, count: int = -1, sep: str = "", offset: int = 0, *, like: object = None) -> object:
+    """Construct an array from data in a text or binary file."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromfile", file, dtype=dtype, count=count, sep=sep, offset=offset, like=like)
+
+
+def fromstring(string: str, dtype: object = float, count: int = -1, sep: str = "", *, like: object = None) -> object:
+    """A new 1-D array initialized from text data in a string."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromstring", string, dtype=dtype, count=count, sep=sep, like=like)
+
+
+def fromiter(iterable: object, dtype: object, count: int = -1, *, like: object = None) -> object:
+    """Create a new 1-dimensional array from an iterable object."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromiter", iterable, dtype, count=count, like=like)
+
+
+def fromfunction(function: object, shape: object, *, dtype: object = float, like: object = None, **kwargs: object) -> object:
+    """Construct an array by executing a function over each coordinate."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromfunction", function, shape, dtype=dtype, like=like, **kwargs)

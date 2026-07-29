@@ -1,3 +1,4 @@
+# ruff: noqa: PLR0917
 # ruff: noqa: E501, PLR0913, ANN401
 """Dataset pipeline primitives for ML Switcheroo Compiler."""
 

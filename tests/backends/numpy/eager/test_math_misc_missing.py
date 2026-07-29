@@ -27,7 +27,7 @@ def test_math_misc_missing_branches():
     builtins.__import__ = mocked_import
     try:
         if "ml_switcheroo_compiler.ops" in sys.modules:
-            del sys.modules["ml_switcheroo_compiler.ops"]
+            pass
 
         # 2438->2446, 2441: rawmatmul
         _np_rawmatmul(DummyBackend(), np.eye(2), np.eye(2))
@@ -55,4 +55,4 @@ def test_math_misc_missing_branches():
     finally:
         builtins.__import__ = original_import
         if "ml_switcheroo_compiler.ops" in sys.modules:
-            del sys.modules["ml_switcheroo_compiler.ops"]
+            pass

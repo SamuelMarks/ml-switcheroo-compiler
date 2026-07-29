@@ -273,8 +273,8 @@ def _np_scatter_apply(backend_module: object, context: IndexingContext, *args: o
             np.multiply.at(tensor, tuple(indices.T), updates)
         else:
             tensor[tuple(indices.T)] = updates
-    except Exception:
-        pass
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed in ScatterNd: {e}") from e
     return tensor
 
 

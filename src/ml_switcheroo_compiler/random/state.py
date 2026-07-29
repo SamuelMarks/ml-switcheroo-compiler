@@ -209,6 +209,7 @@ def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> ob
 
 
 def _get_numpy_rng(*args: object, **kwargs: object) -> object:
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    return np.random.default_rng(*args, **kwargs)
+    backend_cls = BackendRegistry.get("numpy")
+    return backend_cls.get_numpy_rng(*args, **kwargs)

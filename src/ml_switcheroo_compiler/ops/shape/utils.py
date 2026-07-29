@@ -5,7 +5,6 @@ from __future__ import annotations
 # pylint: disable=duplicate-code
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -15,9 +14,6 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
-
-if TYPE_CHECKING:
-    pass
 
 
 @register_util("_emit_shape_node")
@@ -42,7 +38,6 @@ def _emit_shape_node(
     """
     out_id = str(uuid.uuid4())
 
-    pass
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
 
     node = LogicalNode(

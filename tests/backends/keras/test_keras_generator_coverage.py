@@ -3,17 +3,46 @@
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 
 
-def test_keras_generator_save_load(monkeypatch):
+def test_keras_generator_save_load(tmp_path):
     """Test save and load methods of Keras generator."""
-    import numpy as np
+    arr = [1, 2, 3]
+    filepath = str(tmp_path / "dummy.pkl")
 
-    # We mock numpy methods to verify they get called
-    monkeypatch.setattr(np, "load", lambda *args, **kwargs: "mock_load")
-    monkeypatch.setattr(np, "save", lambda *args, **kwargs: "mock_save")
-    monkeypatch.setattr(np, "savez", lambda *args, **kwargs: "mock_savez")
-    monkeypatch.setattr(np, "savez_compressed", lambda *args, **kwargs: "mock_savez_compressed")
+    # save
+    KerasCodeGenerator.save(filepath, arr)
 
-    assert KerasCodeGenerator.load("dummy.npy") == "mock_load"
-    assert KerasCodeGenerator.save("dummy.npy", None) is None
-    assert KerasCodeGenerator.savez("dummy.npz", None) is None
-    assert KerasCodeGenerator.savez_compressed("dummy.npz", None) is None
+    # load
+    res = KerasCodeGenerator.load(filepath)
+    assert res == arr
+
+    # savez
+    filez = str(tmp_path / "dummy.npz")
+    KerasCodeGenerator.savez(filez, arr, arg2=[4, 5])
+
+    resz = KerasCodeGenerator.load(filez)
+    assert resz["arr_0"] == arr
+    assert resz["arg2"] == [4, 5]
+
+    # savez_compressed
+    filezc = str(tmp_path / "dummy_comp.npz")
+    KerasCodeGenerator.savez_compressed(filezc, arr, arg2=[4, 5])
+
+    import gzip
+    import pickle
+
+    with gzip.open(filezc, "rb") as f:
+        reszc = pickle.load(f)
+    assert reszc["arr_0"] == arr
+    assert reszc["arg2"] == [4, 5]
+
+
+def test_keras_generator_conv_transpose():
+    from ml_switcheroo_ir import LogicalGraph
+
+    gen = KerasCodeGenerator(LogicalGraph())
+
+    class DummyNode:
+        pass
+
+    assert gen.visit_ConvTranspose(DummyNode(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
+    assert gen.visit_RaggedDot(DummyNode(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"

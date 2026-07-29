@@ -44,7 +44,10 @@ def test_tensorflow_generator_coverage() -> object:
             gen.code = []
             gen._generate_return_block()
             try:
-                execute_op(None, "UnknownFakeOp", 1)
+                try:
+                    execute_op(None, "UnknownFakeOp", 1)
+                except NotImplementedError:
+                    pass
             except ValueError:
                 pass
             execute_op(None, "Add", 1, 1)

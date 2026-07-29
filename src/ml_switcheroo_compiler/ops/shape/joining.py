@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -16,9 +15,6 @@ from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.frontend import asarray
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-if TYPE_CHECKING:
-    pass
 
 
 def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:

@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 
@@ -34,84 +35,19 @@ def test_signal_classes_infer_shape():
     assert sig.Ihfft().infer_shape(DummyData()) == (1, 1)
 
 
-def test_signal_tracing_missing():
-    from unittest.mock import patch
+def test_signal_real_dsp_validation():
+    import unittest.mock as mock
 
-    import numpy as np
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.ops.signal import fftn, ifft2, ifftn, irfft2, irfftn
 
-    import ml_switcheroo_compiler.ops.signal as sig
+    t_1d = Tensor(np.array([1.0, 2.0, 3.0, 4.0]), TensorConfig((4,), "float32", "cpu"))
+    t_2d = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
 
-    class DummyData:
-        shape = (2, 2)
-        dtype = "float32"
-        data = np.array([[1.0, 2.0], [3.0, 4.0]])
-
-        def __init__(self, data=None):
-            self.data = data if data is not None else np.array([[1.0, 2.0], [3.0, 4.0]])
-
-    from ml_switcheroo_compiler.core.config import config
-
-    config.eager_mode = False
-
-    with patch.object(sig, "_emit_signal_node", return_value="emitted"):
-        assert sig.fftn(DummyData()) == "emitted"
-        assert sig.ifftn(DummyData()) == "emitted"
-        assert sig.irfftn(DummyData()) == "emitted"
-        assert sig.ifft2(DummyData()) == "emitted"
-        assert sig.irfft2(DummyData()) == "emitted"
-
-    config.eager_mode = True
-
-
-def test_signal_eager_missing():
-    import numpy as np
-
-    import ml_switcheroo_compiler.ops.signal as sig
-
-    class DummyData:
-        shape = (2, 2)
-        dtype = "float32"
-        device = "cpu"
-        data = np.array([[1.0, 2.0], [3.0, 4.0]])
-
-        def __init__(self, data=None):
-            self.data = data if data is not None else np.array([[1.0, 2.0], [3.0, 4.0]])
-
-    from ml_switcheroo_compiler.core.config import config
-
-    config.eager_mode = True
-
-    import ml_switcheroo_compiler.backends.registry as reg
-
-    class DummyBackend:
-        def execute_op(self, name, *a, **k):
-            class R:
-                shape = (1,)
-                dtype = "float32"
-                device = "cpu"
-
-                def tolist(self):
-                    return [1]
-
-            return R()
-
-    old = reg.get_active_backend
-    reg.get_active_backend = lambda: DummyBackend()
-
-    sig.fftn(DummyData())
-    sig.ifftn(DummyData())
-    sig.irfftn(DummyData())
-    sig.ifft2(DummyData())
-    sig.irfft2(DummyData())
-
-    reg.get_active_backend = old
-
-
-def test_signal_missing_lines_in_eager():
-    from unittest.mock import patch
-
-    import ml_switcheroo_compiler.ops.signal as s
-    from ml_switcheroo_compiler.ops.signal import _emit_signal_node
-
-    with patch.object(s, "_emit_linalg_node", return_value="ok"):
-        assert _emit_signal_node("test", [], {}, (1,), "float32") == "ok"
+    with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
+        with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
+            assert isinstance(fftn(t_2d), Tensor)
+            assert isinstance(ifftn(t_2d), Tensor)
+            assert isinstance(irfftn(t_2d), Tensor)
+            assert isinstance(ifft2(t_2d), Tensor)
+            assert isinstance(irfft2(t_2d), Tensor)

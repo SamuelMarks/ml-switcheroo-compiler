@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.nn_stubs import (
+from ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills import (
     _np_all_candidate_sampler,
     _np_collapse_repeated,
     _np_ctc_beam_search_decoder,

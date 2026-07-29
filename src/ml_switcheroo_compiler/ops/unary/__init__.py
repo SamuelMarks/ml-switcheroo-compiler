@@ -102,28 +102,16 @@ is_non_decreasing = get_op("IsNonDecreasing")()
 is_strictly_increasing = get_op("IsStrictlyIncreasing")()
 
 
-try:
-    modified_bessel_i0 = get_op("ModifiedBesselI0")()
-except KeyError:
-    modified_bessel_i0 = None
+modified_bessel_i0 = get_op("ModifiedBesselI0")()
 
 
-try:
-    modified_bessel_i1 = get_op("ModifiedBesselI1")()
-except KeyError:
-    modified_bessel_i1 = None
+modified_bessel_i1 = get_op("ModifiedBesselI1")()
 
 
-try:
-    modified_bessel_k0 = get_op("ModifiedBesselK0")()
-except KeyError:
-    modified_bessel_k0 = None
+modified_bessel_k0 = get_op("ModifiedBesselK0")()
 
 
-try:
-    modified_bessel_k1 = get_op("ModifiedBesselK1")()
-except KeyError:
-    modified_bessel_k1 = None
+modified_bessel_k1 = get_op("ModifiedBesselK1")()
 iscomplex = get_op("Iscomplex")()
 isreal = get_op("Isreal")()
 iscomplexobj = get_op("Iscomplexobj")()

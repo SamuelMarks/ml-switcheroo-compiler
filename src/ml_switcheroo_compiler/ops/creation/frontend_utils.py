@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -14,9 +13,6 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
-
-if TYPE_CHECKING:
-    pass
 
 
 def _emit_creation_node(
@@ -104,7 +100,8 @@ class FromDlpack(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        obj = args[0] if len(args) > 0 else None
+        return getattr(obj, "shape", ())
 
 
 @register_op("Frompyfunc")
@@ -126,11 +123,20 @@ class Geomspace(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if "num" in kwargs:
-            return (kwargs["num"],)
-        if len(args) > 2:
-            return (args[2],)
-        return (50,)  # Default
+        start = args[0] if len(args) > 0 else None
+        stop = args[1] if len(args) > 1 else None
+        num = kwargs.get("num", args[2] if len(args) > 2 else 50)
+        axis = kwargs.get("axis", 0)
+        shape1 = getattr(start, "shape", ())
+        shape2 = getattr(stop, "shape", ())
+        b_shape = shape1 if len(shape1) > len(shape2) else shape2
+        if not b_shape:
+            return (num,)
+
+        out_shape = list(b_shape)
+        insert_axis = axis + len(b_shape) + 1 if axis < 0 else axis
+        out_shape.insert(insert_axis, num)
+        return tuple(out_shape)
 
 
 @register_op("Geometric")
@@ -141,6 +147,38 @@ class Geometric(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if "size" in kwargs and kwargs["size"] is not None:
-            return tuple(kwargs["size"]) if isinstance(kwargs["size"], (list, tuple)) else (kwargs["size"],)
-        return ()
+        p = args[0] if len(args) > 0 else None
+        size = kwargs.get("size", args[1] if len(args) > 1 else None)
+        if size is None:
+            return getattr(p, "shape", ())
+        if isinstance(size, int):
+            return (size,)
+        return tuple(size)
+
+
+def from_dlpack(obj: object) -> object:
+    """Create a switcheroo array from a DLPack capsule."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("FromDlpack", obj)
+
+
+def frompyfunc(func: object, nin: int, nout: int) -> object:
+    """Takes an arbitrary Python function and returns a NumPy ufunc."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Frompyfunc", func, nin, nout)
+
+
+def geomspace(start: object, stop: object, num: int = 50, endpoint: bool = True, dtype: object = None, axis: int = 0) -> object:
+    """Return numbers spaced evenly on a log scale (a geometric progression)."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Geomspace", start, stop, num=num, endpoint=endpoint, dtype=dtype, axis=axis)
+
+
+def geometric(p: object, size: object = None) -> object:
+    """Draw samples from the geometric distribution."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Geometric", p, size=size)

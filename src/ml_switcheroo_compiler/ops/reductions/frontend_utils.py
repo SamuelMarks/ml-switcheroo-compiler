@@ -26,9 +26,6 @@ class ReduceWindow:
 
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state
 
-if TYPE_CHECKING:
-    pass
-
 
 def _emit_reduction_node(
     op_type: str,

@@ -36,9 +36,10 @@ def test_dropout_coverage():
         assert do.activity_regularization(t) == "dropped"
         config.eager_mode = True
 
-    with patch("ml_switcheroo_compiler.ops.nn.dropout.get_active_backend") as mock_backend:
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
-        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", mock_backend):
+        with patch("ml_switcheroo_compiler.ops.nn.dropout.get_active_backend") as mock_backend_2:
+            mock_backend_2.return_value.execute_op.return_value = np.zeros((2, 2))
             assert do.dropout1d(t) is not None
             assert do.dropout2d(t) is not None
             assert do.dropout3d(t) is not None

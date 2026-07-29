@@ -83,7 +83,7 @@ def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
     return a.shape
 
 
-def _create_vmap_dummy_args(args: tuple[object, ...], in_axes: int | tuple[int, ...]) -> list[object]:
+def _create_vmap_symbolic_args(args: tuple[object, ...], in_axes: int | tuple[int, ...]) -> list[object]:
     """Evaluate and process the create vmap dummy args operation.
 
     Args:
@@ -93,16 +93,16 @@ def _create_vmap_dummy_args(args: tuple[object, ...], in_axes: int | tuple[int, 
     Returns:
         list: The evaluated or processed output.
     """
-    dummy_args = []
+    symbolic_args = []
     for i, a in enumerate(args):
         if isinstance(a, Tensor):
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
             proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
-            dummy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
+            symbolic_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
-            dummy_args.append(a)
-    return dummy_args
+            symbolic_args.append(a)
+    return symbolic_args
 
 
 def _trace_vmap(
@@ -122,8 +122,8 @@ def _trace_vmap(
     Returns:
         object: The evaluated or processed output.
     """
-    dummy_args = _create_vmap_dummy_args(args, in_axes)
-    body_graph = _trace_function(func, tuple(dummy_args), "vmap_body")
+    symbolic_args = _create_vmap_symbolic_args(args, in_axes)
+    body_graph = _trace_function(func, tuple(symbolic_args), "vmap_body")
 
     out_id = str(uuid.uuid4())
     node = LogicalNode(

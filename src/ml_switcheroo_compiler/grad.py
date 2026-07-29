@@ -1,14 +1,15 @@
 """Gradient computation and autodiff utilities."""
 
 import contextlib
+import math
 import typing
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 
-import numpy as np
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -270,10 +271,8 @@ def _get_concrete_val(t: object) -> object:
     return val
 
 
-def _generate_dummy_input(graph: object, inp_id: str) -> object:
+def _generate_fallback_input(graph: object, inp_id: str) -> object:
     """Generate dummy concrete arrays for any missing inputs."""
-    import numpy as np
-
     node = getattr(graph, "nodes", {}).get(inp_id)
     node_shape = getattr(node, "shape_metadata", ()) or ()
     numeric_shape = []
@@ -286,7 +285,7 @@ def _generate_dummy_input(graph: object, inp_id: str) -> object:
     dtype_str = "float32"
     if node and hasattr(node, "attributes") and "dtype" in node.attributes:
         dtype_str = node.attributes["dtype"]
-    return np.ones(tuple(numeric_shape), dtype=dtype_str)
+    return get_active_backend().execute_op("Ones", tuple(numeric_shape), dtype=dtype_str)
 
 
 def _get_inputs_dict(graph: object) -> dict[str, object]:
@@ -300,8 +299,6 @@ def _get_inputs_dict(graph: object) -> dict[str, object]:
     """
     import gc
 
-    import numpy as np
-
     from ml_switcheroo_compiler.core.tensor import Tensor
 
     all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
@@ -312,12 +309,12 @@ def _get_inputs_dict(graph: object) -> dict[str, object]:
             if node_id in getattr(graph, "nodes", {}):
                 val = _get_concrete_val(t)
                 if val is not None:
-                    inputs_dict[node_id] = np.asarray(val)
+                    inputs_dict[node_id] = get_active_backend().asarray(val)
 
     # Generate dummy concrete arrays for any missing inputs to prevent errors
     for inp_id in getattr(graph, "inputs", []):
         if inp_id not in inputs_dict:
-            inputs_dict[inp_id] = _generate_dummy_input(graph, inp_id)
+            inputs_dict[inp_id] = _generate_fallback_input(graph, inp_id)
 
     return inputs_dict
 
@@ -426,8 +423,8 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
     with ConfigContext(eager_mode=True):
         # Compute analytical gradients using VJP
         out, vjp_fn = vjp(f, *args)
-        out_arr = np.asarray(getattr(out, "data", out))
-        cotangent = np.ones_like(out_arr)
+        out_arr = get_active_backend().asarray(getattr(out, "data", out))
+        cotangent = get_active_backend().execute_op("Ones_like", out_arr)
         analytical_grads = vjp_fn(cotangent)
 
         step = options.step
@@ -435,8 +432,8 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
         rtol = options.rtol
 
         for arg_idx, arg in enumerate(args):
-            arg_arr = np.array(getattr(arg, "data", arg), dtype=np.float64, copy=True)
-            numerical_grad = np.zeros_like(arg_arr)
+            arg_arr = get_active_backend().array(getattr(arg, "data", arg), dtype="float64")
+            numerical_grad = get_active_backend().execute_op("Zeros_like", arg_arr)
 
             flat_arg = arg_arr.ravel()
             flat_num_grad = numerical_grad.ravel()
@@ -457,7 +454,7 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
                 else:
                     args_pos[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
                 out_pos = f(*args_pos)
-                out_pos_arr = np.asarray(getattr(out_pos, "data", out_pos))
+                out_pos_arr = get_active_backend().asarray(getattr(out_pos, "data", out_pos))
 
                 # Perturb negative
                 flat_arg[i] = orig_val - step
@@ -470,16 +467,16 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
                 else:
                     args_neg[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
                 out_neg = f(*args_neg)
-                out_neg_arr = np.asarray(getattr(out_neg, "data", out_neg))
+                out_neg_arr = get_active_backend().asarray(getattr(out_neg, "data", out_neg))
 
                 flat_arg[i] = orig_val
 
                 diff = (out_pos_arr - out_neg_arr) / (2.0 * step)
-                flat_num_grad[i] = float(np.sum(diff))
+                flat_num_grad[i] = float(get_active_backend().execute_op("Sum", diff))
 
-            anal_grad = np.asarray(getattr(analytical_grads[arg_idx], "data", analytical_grads[arg_idx]))
+            anal_grad = get_active_backend().asarray(getattr(analytical_grads[arg_idx], "data", analytical_grads[arg_idx]))
 
-            if not np.allclose(anal_grad, numerical_grad, atol=atol, rtol=rtol):
+            if not get_active_backend().execute_op("Allclose", anal_grad, numerical_grad, atol=atol, rtol=rtol):
                 msg = f"Gradient check failed for argument {arg_idx}.\nAnalytical gradient:\n{anal_grad}\nNumerical gradient:\n{numerical_grad}"
                 raise SwitcherooError(msg)
 
@@ -521,18 +518,70 @@ def overwrite_with_gradient(tensor: object, gradient: object) -> object:
 
 
 def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
-    """Gradient checkpointing / rematerialization alias."""
-    return fun
+    """Gradient checkpointing / rematerialization."""
+
+    def wrapper(*args: object, **kwargs: object) -> object:
+        """Evaluate the checkpointed function."""
+        from ml_switcheroo_compiler.core.config import config
+        from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+        if config.eager_mode or not global_tracing_state.is_tracing:
+            return fun(*args, **kwargs)
+
+        import uuid
+
+        from ml_switcheroo_ir import LogicalNode
+
+        from ml_switcheroo_compiler.core.dtype import DType
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+        from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+        tensor_args = [a for a in args if isinstance(a, Tensor)]
+        fwd_block = _trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
+
+        # Infer output metadata from the traced block
+        out_node_id = fwd_block.outputs[0]
+        nodes_dict = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
+        out_node = nodes_dict[out_node_id]
+        real_out_node = nodes_dict[out_node.inputs[0]]
+
+        shape = real_out_node.shape_metadata
+        # Try to infer dtype. Proxy tensors typically just use float32 as default if not specified
+        dtype = "float32"
+        if hasattr(real_out_node, "attributes") and "dtype" in real_out_node.attributes:
+            dtype = real_out_node.attributes["dtype"]
+        elif tensor_args:
+            dtype = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
+
+        device = "cpu"
+        if tensor_args:
+            device = getattr(tensor_args[0], "device", "cpu")
+
+        out_id = str(uuid.uuid4())
+        node = LogicalNode(
+            id=out_id,
+            op_type="Checkpoint",
+            inputs=[a.data.id for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
+            attributes={"subgraph": fwd_block},
+            shape_metadata=shape,
+        )
+        global_tracing_state.add_node(node)
+
+        proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)
+        return Tensor(proxy, TensorConfig(shape, DType(dtype), device))
+
+    return wrapper
 
 
 def remat(fun: Callable[..., object]) -> Callable[..., object]:
     """Gradient checkpointing / rematerialization alias."""
-    return fun
+    return checkpoint(fun)
 
 
 def recompute_grad(fun: Callable[..., object]) -> Callable[..., object]:
     """Gradient checkpointing / rematerialization."""
-    return fun
+    return checkpoint(fun)
 
 
 @dataclass
@@ -576,18 +625,18 @@ def _to_original_type(val: object, orig: object) -> object:
     if isinstance(orig, Tensor):
         from ml_switcheroo_compiler.core.device import Device
 
-        arr = np.asarray(val)
+        arr = get_active_backend().asarray(val)
         dt = DType.Float32
-        if arr.dtype == np.float64:
+        if str(arr.dtype) == "float64":
             dt = DType.Float64
-        elif np.issubdtype(arr.dtype, np.integer):
+        elif "int" in str(arr.dtype):
             dt = DType.Int32
-        elif arr.dtype == bool:
+        elif str(arr.dtype) == "bool":
             dt = DType.Bool
         return Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu")))
     elif isinstance(orig, (int, float, bool)):
         try:
-            arr = np.asarray(val)
+            arr = get_active_backend().asarray(val)
             if isinstance(orig, bool):
                 return bool(arr.item())
             if isinstance(orig, int):
@@ -620,8 +669,8 @@ def _compute_grad_and_value(
     else:
         primal_val = val
 
-    primal_arr = np.asarray(getattr(primal_val, "data", primal_val))
-    cotangent = np.ones_like(primal_arr)
+    primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
+    cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
 
     grads = vjp_fn(cotangent)
 
@@ -743,13 +792,13 @@ def _convert_to_tensors(primals: Sequence[object]) -> list[Tensor]:
         if isinstance(p, Tensor):
             tensor_primals.append(p)
         else:
-            arr = np.asarray(p)
+            arr = get_active_backend().asarray(p)
             dt = DType.Float32
-            if arr.dtype == np.float64:
+            if str(arr.dtype) == "float64":
                 dt = DType.Float64
-            elif np.issubdtype(arr.dtype, np.integer):
+            elif "int" in str(arr.dtype):
                 dt = DType.Int32
-            elif arr.dtype == bool:
+            elif str(arr.dtype) == "bool":
                 dt = DType.Bool
             tensor_primals.append(Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu"))))
     return tensor_primals
@@ -834,7 +883,7 @@ def jvp(
     jvp_graph = graph_jvp(forward_graph, forward_graph.inputs, tangent_ids, forward_graph.outputs)
 
     # Evaluate JVP graph
-    inputs_dict = {inp_id: np.asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
+    inputs_dict = {inp_id: get_active_backend().asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
     outputs_dict = evaluate_graph(jvp_graph, inputs_dict)
 
     out_tangent_values = [outputs_dict[out_id] for out_id in jvp_graph.outputs]
@@ -928,12 +977,12 @@ def vjp(
             tuple[object, ...]: Gradients with respect to each input parameter.
         """
         # Run the evaluator on grad_graph
-        inputs_dict = {inp_id: np.asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals)}
+        inputs_dict = {inp_id: get_active_backend().asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals)}
 
         # Flatten the cotangent Pytree if it is nested
         flat_cot, _ = tree_flatten(cotangent)
         for cot_id, cot_val in zip(cotangent_ids_list, flat_cot):
-            inputs_dict[cot_id] = np.asarray(getattr(cot_val, "data", cot_val))
+            inputs_dict[cot_id] = get_active_backend().asarray(getattr(cot_val, "data", cot_val))
 
         outputs_dict = evaluate_graph(grad_graph, inputs_dict)
 
@@ -1007,7 +1056,7 @@ def hvp(
     hvp_graph = graph_hvp(forward_graph, forward_graph.inputs, tangent_ids, forward_graph.outputs)
 
     # Evaluate HVP graph
-    inputs_dict = {inputs_id: np.asarray(getattr(p, "data", p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
+    inputs_dict = {inputs_id: get_active_backend().asarray(getattr(p, "data", p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
     outputs_dict = evaluate_graph(hvp_graph, inputs_dict)
 
     out_tangent_values = [outputs_dict[out_id] for out_id in hvp_graph.outputs]
@@ -1034,25 +1083,32 @@ def jacfwd(fun: typing.Callable[..., object], options: GradOptions = None) -> ty
         """Evaluate wrapped."""
         # Evaluate fun to see input and output dimensions
         out = fun(*args, **kwargs)
-        out_arr = np.asarray(getattr(out, "data", out))
+        out_arr = get_active_backend().asarray(getattr(out, "data", out))
 
         # Build basis tangents for each input coordinate
-        arg0 = np.asarray(getattr(args[0], "data", args[0]))
+        arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
         flat_arg0 = arg0.flatten()
 
         jacobian_rows = []
         for i in range(len(flat_arg0)):
             # Standard basis vector for coordinate i
-            tangent_flat = np.zeros_like(flat_arg0)
-            tangent_flat[i] = 1.0
+            tangent_flat = get_active_backend().execute_op(
+                "OneHot",
+                get_active_backend().asarray(i),
+                len(flat_arg0),
+                on_value=1.0,
+                off_value=0.0,
+                axis=-1,
+                dtype="float32",
+            )
             tangent = tangent_flat.reshape(arg0.shape)
 
             # Run jvp
             _, out_tangent = jvp(fun, args, (tangent,), has_aux=options.has_aux)
-            jacobian_rows.append(np.asarray(out_tangent).flatten())
+            jacobian_rows.append(get_active_backend().asarray(out_tangent).flatten())
 
         # Standard format of Jacobian: (output_size, input_size)
-        res = np.stack(jacobian_rows, axis=-1)
+        res = get_active_backend().execute_op("Stack", jacobian_rows, axis=-1)
         if out_arr.ndim > 0:
             return res.reshape(out_arr.shape + arg0.shape)
         return res
@@ -1083,16 +1139,23 @@ def jacrev(fun: typing.Callable[..., object], options: GradOptions = None) -> ty
             out_val = out
 
         flat_out, out_tree_def = tree_flatten(out_val)
-        flat_shapes = [np.asarray(getattr(o, "data", o)).shape for o in flat_out]
-        flat_sizes = [np.asarray(getattr(o, "data", o)).size for o in flat_out]
+        flat_shapes = [get_active_backend().asarray(getattr(o, "data", o)).shape for o in flat_out]
+        flat_sizes = [int(math.prod(get_active_backend().asarray(getattr(o, "data", o)).shape)) for o in flat_out]
         total_size = sum(flat_sizes)
 
-        arg0 = np.asarray(getattr(args[0], "data", args[0]))
+        arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
 
         jacobian_rows = []
         for i in range(total_size):
-            cotangent_flat = np.zeros(total_size)
-            cotangent_flat[i] = 1.0
+            cotangent_flat = get_active_backend().execute_op(
+                "OneHot",
+                get_active_backend().asarray(i),
+                total_size,
+                on_value=1.0,
+                off_value=0.0,
+                axis=-1,
+                dtype="float32",
+            )
 
             flat_cots = []
             curr_idx = 0
@@ -1103,15 +1166,15 @@ def jacrev(fun: typing.Callable[..., object], options: GradOptions = None) -> ty
             cotangent = tree_unflatten(out_tree_def, flat_cots)
             grads = vjp_fn(cotangent)
             # Differentiate with respect to first argument
-            jacobian_rows.append(np.asarray(grads[0]).flatten())
+            jacobian_rows.append(get_active_backend().asarray(grads[0]).flatten())
 
-        res = np.stack(jacobian_rows, axis=0)
+        res = get_active_backend().execute_op("Stack", jacobian_rows, axis=0)
         # Reshape output to out_shape + arg_shape
         if len(flat_sizes) > 1:
             # Multi-output: standard output shape is (total_size,) + arg_shape
             return res.reshape((total_size,) + arg0.shape)
         else:
-            out_arr = np.asarray(getattr(out_val, "data", out_val))
+            out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
             if out_arr.ndim > 0:
                 return res.reshape(out_arr.shape + arg0.shape)
             return res.reshape(arg0.shape)
@@ -1133,19 +1196,26 @@ def hessian(fun: typing.Callable[..., object], options: GradOptions = None) -> t
 
     def wrapped(*args: object, **kwargs: object) -> object:
         """Evaluate wrapped."""
-        arg0 = np.asarray(getattr(args[0], "data", args[0]))
+        arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
         flat_arg0 = arg0.flatten()
 
         hessian_rows = []
         for i in range(len(flat_arg0)):
-            tangent_flat = np.zeros_like(flat_arg0)
-            tangent_flat[i] = 1.0
+            tangent_flat = get_active_backend().execute_op(
+                "OneHot",
+                get_active_backend().asarray(i),
+                len(flat_arg0),
+                on_value=1.0,
+                off_value=0.0,
+                axis=-1,
+                dtype="float32",
+            )
             tangent = tangent_flat.reshape(arg0.shape)
 
             _, out_tangent = hvp(fun, args, (tangent,), has_aux=options.has_aux)
-            hessian_rows.append(np.asarray(out_tangent).flatten())
+            hessian_rows.append(get_active_backend().asarray(out_tangent).flatten())
 
-        res = np.stack(hessian_rows, axis=0)
+        res = get_active_backend().execute_op("Stack", hessian_rows, axis=0)
         return res.reshape(arg0.shape + arg0.shape)
 
     return wrapped

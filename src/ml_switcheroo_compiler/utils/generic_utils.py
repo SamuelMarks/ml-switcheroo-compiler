@@ -69,11 +69,11 @@ def set_random_seed(seed: int) -> None:
 
         set_numpy_seed(seed)
     except (ImportError, AttributeError):
-        pass
+        _ = None
     try:
         random.seed(seed)
     except ImportError:
-        pass
+        _ = None
 
 
 def _validate_cache(fpath: str) -> bool:
@@ -298,7 +298,7 @@ class CustomObjectScope:
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit."""
-        pass
+        _ = None
 
 
 class PyDataset:

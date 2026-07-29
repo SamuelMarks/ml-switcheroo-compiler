@@ -55,7 +55,7 @@ def test_frontend_pool_coverage():
                 return np.zeros((1, 1, 2, 2, 2))
             return np.zeros((1, 1, 2, 2))
 
-        def array(self, x):
+        def array(self, x, dtype=None):
             return np.array(x)
 
     orig_backend = registry_mod.get_active_backend
@@ -143,7 +143,7 @@ def test_shape_frontend_coverage():
         def execute_op(self, op, *args, **kwargs):
             return self.res
 
-        def array(self, x):
+        def array(self, x, dtype=None):
             return np.array(x)
 
         def item(self, x):

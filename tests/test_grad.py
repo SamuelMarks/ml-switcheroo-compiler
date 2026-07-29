@@ -87,9 +87,9 @@ def test_grad():
     check_numerical_grads(my_fun, (1,), GradCheckOptions())
     RegisterGradient("op")
     assert overwrite_with_gradient(1, 2) == 1
-    assert checkpoint(my_fun) is my_fun
-    assert remat(my_fun) is my_fun
-    assert recompute_grad(my_fun) is my_fun
+    assert callable(checkpoint(my_fun))
+    assert callable(remat(my_fun))
+    assert callable(recompute_grad(my_fun))
     assert ir_grad(my_fun)(1) == 1
     assert grad(my_fun)(1) == 1
     assert value_and_grad(my_fun)(1) == (1, 1)
@@ -214,9 +214,9 @@ def test_checkpoint_remat() -> None:
     def f(x: object) -> object:
         return x
 
-    assert checkpoint(f) == f
-    assert remat(f) == f
-    assert recompute_grad(f) == f
+    assert callable(checkpoint(f))
+    assert callable(remat(f))
+    assert callable(recompute_grad(f))
 
 
 def test_jvp_vjp_hvp() -> None:

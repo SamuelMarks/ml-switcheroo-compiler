@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # pylint: disable=duplicate-code
-from typing import TYPE_CHECKING
-
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -30,10 +28,6 @@ class IndexSpec:
     limit_index: int
     stride: int = 1
     axis: int = 0
-
-
-if TYPE_CHECKING:
-    pass
 
 
 def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:

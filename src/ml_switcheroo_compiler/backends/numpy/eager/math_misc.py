@@ -2438,9 +2438,10 @@ def _np_rawmatmul(backend_module: object, *args: object, **kwargs: object) -> ob
         if hasattr(_ops, "RawMatMul"):
             cls_or_func = _ops.RawMatMul
             if isinstance(cls_or_func, type) and not issubclass(cls_or_func, _ops.OpDef):
-                return cls_or_func(*args, **kwargs)  # pragma: no cover
-    except Exception:  # pragma: no cover
-        pass
+                return cls_or_func(*args, **kwargs)
+    except Exception as e:
+        if not isinstance(e, (ImportError, AttributeError)):
+            raise RuntimeError(f"Eager execution failed: {e}") from e
 
     # Fallback default
     if hasattr(backend_module, "rawmatmul"):
@@ -2524,9 +2525,10 @@ def _np_sparsedensematmul(backend_module: object, *args: object, **kwargs: objec
         if hasattr(_ops, "SparseDenseMatMul"):
             cls_or_func = _ops.SparseDenseMatMul
             if isinstance(cls_or_func, type) and not issubclass(cls_or_func, _ops.OpDef):
-                return cls_or_func(*args, **kwargs)  # pragma: no cover
-    except Exception:  # pragma: no cover
-        pass
+                return cls_or_func(*args, **kwargs)
+    except Exception as e:
+        if not isinstance(e, (ImportError, AttributeError)):
+            raise RuntimeError(f"Eager execution failed: {e}") from e
 
     # Fallback default
     if hasattr(backend_module, "sparsedensematmul"):
@@ -2756,9 +2758,10 @@ def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
         if hasattr(_ops, "rem"):
             cls_or_func = _ops.rem
             if isinstance(cls_or_func, type) and not issubclass(cls_or_func, _ops.OpDef):
-                return cls_or_func(*args, **kwargs)  # pragma: no cover
-    except Exception:  # pragma: no cover
-        pass
+                return cls_or_func(*args, **kwargs)
+    except Exception as e:
+        if not isinstance(e, (ImportError, AttributeError)):
+            raise RuntimeError(f"Eager execution failed: {e}") from e
 
     # Fallback default
     if hasattr(backend_module, "rem"):
@@ -2813,9 +2816,10 @@ def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object
         if hasattr(_ops, "confusion_matrix"):
             cls_or_func = _ops.confusion_matrix
             if isinstance(cls_or_func, type) and not issubclass(cls_or_func, _ops.OpDef):
-                return cls_or_func(*args, **kwargs)  # pragma: no cover
-    except Exception:  # pragma: no cover
-        pass
+                return cls_or_func(*args, **kwargs)
+    except Exception as e:
+        if not isinstance(e, (ImportError, AttributeError)):
+            raise RuntimeError(f"Eager execution failed: {e}") from e
 
     # Fallback default
     if hasattr(backend_module, "confusion_matrix"):
@@ -2851,9 +2855,10 @@ def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> 
         if hasattr(_ops, "descriptive"):
             cls_or_func = _ops.descriptive
             if isinstance(cls_or_func, type) and not issubclass(cls_or_func, _ops.OpDef):
-                return cls_or_func(*args, **kwargs)  # pragma: no cover
-    except Exception:  # pragma: no cover
-        pass
+                return cls_or_func(*args, **kwargs)
+    except Exception as e:
+        if not isinstance(e, (ImportError, AttributeError)):
+            raise RuntimeError(f"Eager execution failed: {e}") from e
     if hasattr(backend_module, "descriptive"):
         return backend_module.descriptive(*args, **kwargs)
     arr = np.asarray(args[0]) if args else np.zeros((1,))
@@ -2882,9 +2887,10 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
         if hasattr(_ops, "distributions"):
             cls_or_func = _ops.distributions
             if isinstance(cls_or_func, type) and not issubclass(cls_or_func, _ops.OpDef):
-                return cls_or_func(*args, **kwargs)  # pragma: no cover
-    except Exception:  # pragma: no cover
-        pass
+                return cls_or_func(*args, **kwargs)
+    except Exception as e:
+        if not isinstance(e, (ImportError, AttributeError)):
+            raise RuntimeError(f"Eager execution failed: {e}") from e
     if hasattr(backend_module, "distributions"):
         return backend_module.distributions(*args, **kwargs)
     arr = np.asarray(args[0]) if args else np.zeros((1,))
@@ -3869,8 +3875,8 @@ def _parse_csv_row(row: list[str], record_defaults: list[object], np: object) ->
         dt = np.asarray(default).dtype
         try:
             row_out.append(np.array(val, dtype=dt))
-        except Exception:  # pragma: no cover
-            row_out.append(np.array(default, dtype=dt))
+        except Exception as e:
+            raise RuntimeError(f"Eager execution failed: {e}") from e
     for i in range(len(row), len(record_defaults)):
         row_out.append(np.array(record_defaults[i]))
     return row_out
@@ -3943,8 +3949,8 @@ def _np_decode_csv_camel(backend_module: object, *args: object, **kwargs: object
         reader = csv.reader(io.StringIO(data_str))
         for row in reader:
             out.append(_parse_csv_row(row, record_defaults, np))
-    except Exception:  # pragma: no cover
-        pass
+    except Exception as e:
+        raise ValueError(f"Failed to parse CSV: {e}") from e
 
     if not out:
         return tuple([np.array(d) for d in record_defaults])
@@ -3981,8 +3987,8 @@ def _np_decode_image_camel(backend_module: object, *args: object, **kwargs: obje
             data = data.encode("utf-8")
         img = Image.open(io.BytesIO(data))
         return np.array(img)
-    except Exception:  # pragma: no cover
-        return np.zeros(kwargs.get("shape", (256, 256, 3)), dtype=np.uint8)
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("ParseExample")
@@ -4019,9 +4025,8 @@ def _np_parse_example_camel(backend_module: object, *args: object, **kwargs: obj
                 out[k] = np.array(parsed[k], dtype=getattr(v, "dtype", np.float32))
             else:
                 out[k] = np.zeros(getattr(v, "shape", (1,)), dtype=getattr(v, "dtype", np.float32))
-    except Exception:  # pragma: no cover
-        for k, v in features.items():
-            out[k] = np.zeros(getattr(v, "shape", (1,)), dtype=getattr(v, "dtype", np.float32))
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed: {e}") from e
     return out
 
 
@@ -4051,8 +4056,8 @@ def _np_parse_tensor_camel(backend_module: object, *args: object, **kwargs: obje
     dtype = kwargs.get("out_type", np.float32)
     try:
         return np.array(pickle.loads(data), dtype=dtype)
-    except Exception:  # pragma: no cover
-        return np.zeros((1,), dtype=dtype)
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("ReadFile")
@@ -4079,8 +4084,8 @@ def _np_read_file_camel(backend_module: object, *args: object, **kwargs: object)
     try:
         with open(filename, "rb") as f:
             return np.array(f.read())
-    except Exception:  # pragma: no cover
-        return np.array(b"")
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("Rem")
@@ -4131,8 +4136,8 @@ def _np_serialize_tensor_camel(backend_module: object, *args: object, **kwargs: 
         return np.array(b"")
     try:
         return np.array(pickle.dumps(np.asarray(args[0])))
-    except Exception:  # pragma: no cover
-        return np.array(b"")
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("WriteFile")
@@ -4163,8 +4168,8 @@ def _np_write_file_camel(backend_module: object, *args: object, **kwargs: object
                 f.write(contents.item())
             else:
                 f.write(contents.tobytes())
-    except Exception:  # pragma: no cover
-        pass
+    except Exception as e:
+        raise OSError(f"Failed to write file: {e}") from e
     return None
 
 

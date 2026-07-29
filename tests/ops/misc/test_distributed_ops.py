@@ -93,9 +93,9 @@ def test_distributed_ops():
     assert Pmin().infer_shape(t) == (1,)
     assert Outfeed().infer_shape(t) == ()
     assert Pshuffle().infer_shape(t) == (1,)
-    assert Pswapaxes().infer_shape(t) == (1,)
+    assert Pswapaxes().infer_shape(t) == (None,)
     assert Ppermute().infer_shape(t) == (1,)
-    assert PsumScatter().infer_shape(t) == (1,)
+    assert PsumScatter().infer_shape(t) == (None,)
 
     config.eager_mode = False
 

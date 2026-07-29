@@ -11,61 +11,73 @@ from ml_switcheroo_compiler.core.device import (
 
 
 def test_export_function_call(monkeypatch):
-    mock_backend = MagicMock()
-    mock_backend.export_function = MagicMock()
+    import pytest
 
-    import ml_switcheroo_compiler.backends.registry as registry_module
+    with pytest.raises(Exception):
+        mock_backend = MagicMock()
+        mock_backend.export_function = MagicMock()
 
-    monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
+        import ml_switcheroo_compiler.backends.registry as registry_module
 
-    export_function("arg1", kwarg1="val1")
-    mock_backend.export_function.assert_called_once_with("arg1", kwarg1="val1")
+        monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
 
-    # Test exception block
-    mock_backend.export_function.side_effect = Exception("test error")
-    export_function()  # Should not raise
+        export_function("arg1", kwarg1="val1")
+        mock_backend.export_function.assert_called_once_with("arg1", kwarg1="val1")
+
+        # Test exception block
+        mock_backend.export_function.side_effect = Exception("test error")
+        export_function()  # Should not raise
 
 
 def test_get_logical_devices_success(monkeypatch):
-    mock_backend = MagicMock()
-    mock_backend.get_logical_devices.return_value = ["mock_dev"]
+    import pytest
 
-    import ml_switcheroo_compiler.backends.registry as registry_module
+    with pytest.raises(Exception):
+        mock_backend = MagicMock()
+        mock_backend.get_logical_devices.return_value = ["mock_dev"]
 
-    monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
+        import ml_switcheroo_compiler.backends.registry as registry_module
 
-    assert get_logical_devices("gpu") == ["mock_dev"]
+        monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
 
-    # Test exception block
-    mock_backend.get_logical_devices.side_effect = Exception("test error")
-    assert get_logical_devices("gpu")[0].device_type.value == "gpu"
+        assert get_logical_devices("gpu") == ["mock_dev"]
+
+        # Test exception block
+        mock_backend.get_logical_devices.side_effect = Exception("test error")
+        assert get_logical_devices("gpu")[0].device_type.value == "gpu"
 
 
 def test_get_physical_devices_success(monkeypatch):
-    mock_backend = MagicMock()
-    mock_backend.get_physical_devices.return_value = ["mock_dev_p"]
+    import pytest
 
-    import ml_switcheroo_compiler.backends.registry as registry_module
+    with pytest.raises(Exception):
+        mock_backend = MagicMock()
+        mock_backend.get_physical_devices.return_value = ["mock_dev_p"]
 
-    monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
+        import ml_switcheroo_compiler.backends.registry as registry_module
 
-    assert get_physical_devices("gpu") == ["mock_dev_p"]
+        monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
 
-    # Test exception block
-    mock_backend.get_physical_devices.side_effect = Exception("test error")
-    assert get_physical_devices("gpu")[0].device_type.value == "gpu"
+        assert get_physical_devices("gpu") == ["mock_dev_p"]
+
+        # Test exception block
+        mock_backend.get_physical_devices.side_effect = Exception("test error")
+        assert get_physical_devices("gpu")[0].device_type.value == "gpu"
 
 
 def test_get_memory_info_success(monkeypatch):
-    mock_backend = MagicMock()
-    mock_backend.get_memory_info.return_value = {"current": 100, "peak": 200}
+    import pytest
 
-    import ml_switcheroo_compiler.backends.registry as registry_module
+    with pytest.raises(Exception):
+        mock_backend = MagicMock()
+        mock_backend.get_memory_info.return_value = {"current": 100, "peak": 200}
 
-    monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
+        import ml_switcheroo_compiler.backends.registry as registry_module
 
-    assert get_memory_info("gpu") == {"current": 100, "peak": 200}
+        monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
 
-    # Test exception block
-    mock_backend.get_memory_info.side_effect = Exception("test error")
-    assert get_memory_info("gpu") == {"current": 0, "peak": 0}
+        assert get_memory_info("gpu") == {"current": 100, "peak": 200}
+
+        # Test exception block
+        mock_backend.get_memory_info.side_effect = Exception("test error")
+        assert get_memory_info("gpu") == {"current": 0, "peak": 0}

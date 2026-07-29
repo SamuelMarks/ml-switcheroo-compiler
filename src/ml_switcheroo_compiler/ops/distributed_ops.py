@@ -188,7 +188,15 @@ class AllToAll(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("BroadcastArrays")
@@ -199,7 +207,15 @@ class BroadcastArrays(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("BroadcastTo")
@@ -210,7 +226,15 @@ class BroadcastTo(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("BroadcastToRank")
@@ -221,7 +245,15 @@ class BroadcastToRank(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("BroadcastedIota")
@@ -232,7 +264,15 @@ class BroadcastedIota(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 @register_op("Pbroadcast")
@@ -243,7 +283,15 @@ class Pbroadcast(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0] if args else ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def all_to_all(*args: object, **kwargs: object) -> object:
@@ -295,8 +343,9 @@ class Pmax(OpDef):
     op_name = "Pmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
 
 
 @register_op("Pmin")
@@ -306,8 +355,9 @@ class Pmin(OpDef):
     op_name = "Pmin"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
 
 
 @register_op("Outfeed")
@@ -328,8 +378,9 @@ class Pshuffle(OpDef):
     op_name = "Pshuffle"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
 
 
 @register_op("Pswapaxes")
@@ -339,8 +390,13 @@ class Pswapaxes(OpDef):
     op_name = "Pswapaxes"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
+        axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        shape = list(getattr(x, "shape", ()))
+        if shape and axis < len(shape):
+            shape[axis] = None  # type: ignore[index]
+        return tuple(shape)
 
 
 @register_op("Ppermute")
@@ -350,8 +406,9 @@ class Ppermute(OpDef):
     op_name = "Ppermute"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
 
 
 @register_op("PsumScatter")
@@ -361,5 +418,59 @@ class PsumScatter(OpDef):
     op_name = "PsumScatter"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
+        scatter_dimension = kwargs.get("scatter_dimension", 0)
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        shape = list(getattr(x, "shape", ()))
+        if shape and scatter_dimension < len(shape):
+            shape[scatter_dimension] = None  # type: ignore[index]
+        return tuple(shape)
+
+
+def outfeed(*args: object, **kwargs: object) -> object:
+    """Write to the outfeed queue."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Outfeed", *args, **kwargs)
+
+
+def pmax(*args: object, **kwargs: object) -> object:
+    """Compute the maximum over a mapped axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Pmax", *args, **kwargs)
+
+
+def pmin(*args: object, **kwargs: object) -> object:
+    """Compute the minimum over a mapped axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Pmin", *args, **kwargs)
+
+
+def ppermute(*args: object, **kwargs: object) -> object:
+    """Permute data across the mapped axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Ppermute", *args, **kwargs)
+
+
+def pshuffle(*args: object, **kwargs: object) -> object:
+    """Shuffle data across the mapped axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Pshuffle", *args, **kwargs)
+
+
+def psum_scatter(*args: object, **kwargs: object) -> object:
+    """Scatter sum across a mapped axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("PsumScatter", *args, **kwargs)
+
+
+def pswapaxes(*args: object, **kwargs: object) -> object:
+    """Swap axes of the data."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Pswapaxes", *args, **kwargs)

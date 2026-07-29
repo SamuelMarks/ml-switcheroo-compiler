@@ -179,7 +179,9 @@ class Precision:
 class PrecisionLike:
     """PrecisionLike class."""
 
-    pass
+    def __init__(self) -> None:
+        """Initialize."""
+        self.value = None
 
 
 class RandomAlgorithm:

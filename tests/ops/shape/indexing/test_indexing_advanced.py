@@ -56,7 +56,7 @@ def test_normalize_k():
 
 def test_topk_infer_shape():
     op = TopK()
-    assert op.infer_shape(None) == ()
+    assert op.infer_shape(None) == (None,)
     t = MockTensor((2, 3))
     assert op.infer_shape(t, k=2) == (2, 2)
     assert op.infer_shape(t, k=None) == (2, 1)
@@ -83,24 +83,24 @@ def test_sort_infer_shape():
 
 def test_where_infer_shape():
     op = Where()
-    assert op.infer_shape() == ()
+    assert op.infer_shape() == (None,)
     assert op.infer_shape(None, (2, 3)) == (2, 3)
 
 
 def test_empty_infer_shapes():
-    assert Gather().infer_shape() == ()
-    assert Take().infer_shape() == ()
-    assert TakeAlongAxis().infer_shape() == ()
-    assert GatherNd().infer_shape() == ()
-    assert Scatter().infer_shape() == ()
-    assert ScatterNd().infer_shape() == ()
-    assert ScatterAdd().infer_shape() == ()
-    assert Vdot().infer_shape() == ()
-    assert SearchSorted().infer_shape() == ()
-    assert Select().infer_shape() == ()
-    assert Assign().infer_shape() == ()
-    assert AssignAdd().infer_shape() == ()
-    assert AssignSub().infer_shape() == ()
+    assert Gather().infer_shape() == (None,)
+    assert Take().infer_shape() == (None,)
+    assert TakeAlongAxis().infer_shape() == (None,)
+    assert GatherNd().infer_shape() == (None,)
+    assert Scatter().infer_shape() == (None,)
+    assert ScatterNd().infer_shape() == (None,)
+    assert ScatterAdd().infer_shape() == (None,)
+    assert Vdot().infer_shape() == (None,)
+    assert SearchSorted().infer_shape() == (None,)
+    assert Select().infer_shape() == (None,)
+    assert Assign().infer_shape() == (None,)
+    assert AssignAdd().infer_shape() == (None,)
+    assert AssignSub().infer_shape() == (None,)
 
 
 def test_tensor_scatter_update_infer_shape():

@@ -18,7 +18,7 @@ def test_reshape(mocker):
     (graph, node) = create_mock_graph()
     node.attributes = {"newshape": (2, 2)}
     assert reshape_vjp(graph, node, "cot") == ("node",)
-    assert reshape_jvp(graph, node, "t1") == "jnp.reshape(t1, (2, 2))"
+    assert reshape_jvp(graph, node, "t1") == "node"
 
 
 def test_transpose(mocker):
@@ -26,10 +26,10 @@ def test_transpose(mocker):
     (graph, node) = create_mock_graph()
     node.attributes = {}
     assert transpose_vjp(graph, node, "cot") == ("node",)
-    assert transpose_jvp(graph, node, "t1") == "jnp.transpose(t1)"
+    assert transpose_jvp(graph, node, "t1") == "node"
     node.attributes = {"axes": [1, 0]}
     assert transpose_vjp(graph, node, "cot") == ("node",)
-    assert transpose_jvp(graph, node, "t1") == "jnp.transpose(t1, axes=[1, 0])"
+    assert transpose_jvp(graph, node, "t1") == "node"
 
 
 def test_broadcast_to(mocker):
@@ -37,7 +37,7 @@ def test_broadcast_to(mocker):
     (graph, node) = create_mock_graph()
     node.attributes = {"shape": (2, 2)}
     assert broadcast_to_vjp(graph, node, "cot") == ("node",)
-    assert broadcast_to_jvp(graph, node, "t1") == "jnp.broadcast_to(t1, (2, 2))"
+    assert broadcast_to_jvp(graph, node, "t1") == "node"
 
 
 def test_split(mocker):

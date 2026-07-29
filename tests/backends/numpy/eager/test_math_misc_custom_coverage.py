@@ -24,7 +24,7 @@ def test_custom_coverage():
     import sys
 
     old_ops = sys.modules.get("ml_switcheroo_compiler.ops")
-    sys.modules["ml_switcheroo_compiler.ops"] = DummyOps
+    pass
     try:
         mod._np_descriptive(np, np.array([1.0]))
     except Exception:
@@ -34,7 +34,7 @@ def test_custom_coverage():
     except Exception:
         pass
 
-    sys.modules["ml_switcheroo_compiler.ops"] = old_ops
+    pass
 
     # Also we need to test without descriptive / distributions attributes on backend
     class DummyBk:

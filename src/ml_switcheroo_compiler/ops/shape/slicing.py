@@ -6,16 +6,11 @@ import builtins
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
-from typing import TYPE_CHECKING
-
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-if TYPE_CHECKING:
-    pass
 
 
 def slice(
@@ -126,7 +121,25 @@ class IndexInDim(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        operand = args[0] if len(args) > 0 else None
+        index = args[1] if len(args) > 1 else None
+        axis = kwargs.get("axis", 0)
+        keepdims = kwargs.get("keepdims", True)
+        shape = list(getattr(operand, "shape", ()))
+        if not shape:
+            return ()
+
+        index_shape = getattr(index, "shape", ())
+        if keepdims:
+            shape[axis] = index_shape[0] if index_shape else 1  # type: ignore[index]
+        else:
+            if index_shape:
+                shape.pop(axis)
+                shape = shape[:axis] + list(index_shape) + shape[axis:]
+            else:
+                shape.pop(axis)
+
+        return tuple(shape)
 
 
 @register_op("UpdateSlice")
@@ -137,4 +150,19 @@ class UpdateSlice(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        operand = args[0] if len(args) > 0 else None
+        return getattr(operand, "shape", ())
+
+
+def index_in_dim(*args: object, **kwargs: object) -> object:
+    """Returns the index in a dimension."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("IndexInDim", *args, **kwargs)
+
+
+def update_slice(*args: object, **kwargs: object) -> object:
+    """Update a slice."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("UpdateSlice", *args, **kwargs)

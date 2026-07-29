@@ -1,31 +1,20 @@
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_stats import _np_confusion_matrix, _np_randomcategorical, _np_randompermutation, _np_randomshuffle
+from ml_switcheroo_compiler.backends.numpy.eager.math_stats import _np_randomcategorical, _np_randomshuffle
 
 
-class DummyBackend:
-    pass
+def test_np_random_shuffle_list():
+    x = [1, 2, 3]
+    res = _np_randomshuffle(None, x)
+    assert isinstance(res, np.ndarray)
+    assert set(res) == {1, 2, 3}
 
 
-def test_math_stats_missing_branches():
-    _np_randomcategorical(DummyBackend(), logits=np.ones(2))
-    _np_randomcategorical(DummyBackend(), logits=np.ones(2), shape=(1,))
+def test_randomcategorical_shape():
+    # provide logits as kwargs and shape
+    res = _np_randomcategorical(None, None, logits=np.array([1.0, 2.0]), shape=(1, 2))
+    assert res.shape == (1, 2)
 
-    class MockData:
-        def __init__(self, data):
-            self.data = data
-
-    _np_randompermutation(DummyBackend(), "ignored", np.array([1, 2]))
-    _np_randompermutation(DummyBackend(), "ignored", MockData(np.array([1, 2])))
-
-    _np_confusion_matrix(DummyBackend(), MockData(np.array([0, 1])), MockData(np.array([0, 1])))
-    _np_confusion_matrix(DummyBackend(), np.array([0, 1]), np.array([0, 1]))
-    _np_confusion_matrix(DummyBackend(), np.array([0, 1]), np.array([0, 1]), num_classes=2)
-
-    try:
-        _np_confusion_matrix(DummyBackend())
-    except ValueError:
-        pass
-
-    _np_randomshuffle(DummyBackend(), [0, 1])
-    _np_randomshuffle(DummyBackend(), MockData(np.array([0, 1])))
+    # test missing shape
+    res = _np_randomcategorical(None, None, logits=np.array([[1.0, 2.0]]))
+    assert res.shape == (1,)

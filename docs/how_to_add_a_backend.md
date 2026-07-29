@@ -12,6 +12,7 @@ The compiler uses a pluggable registry for backends. To add a new backend (e.g.,
    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
    from ml_switcheroo_compiler.backends.registry import register_backend
 
+
    @register_backend("my_backend")
    class MyBackendCodeGenerator(BaseGenerator):
        def _dispatch_op_template(self, op_instance, *args, **kwargs) -> str:

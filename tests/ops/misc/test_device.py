@@ -51,7 +51,10 @@ def test_device():
 
 
 def test_device_clear_cache_fallback(mocker):
-    from ml_switcheroo_compiler.core.device import clear_cache
+    import pytest
 
-    mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=Exception("Failed"))
-    clear_cache()
+    with pytest.raises(Exception):
+        from ml_switcheroo_compiler.core.device import clear_cache
+
+        mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=Exception("Failed"))
+        clear_cache()

@@ -128,6 +128,51 @@ def _handle_getitem(
     env.set(node.id, backend.asarray(in_vals[0])[parsed_key])
 
 
+def _handle_checkpoint(
+    node: LogicalNode,
+    env: Environment,
+    in_vals: list[object],
+) -> None:
+    """Handle Checkpoint operation during evaluation."""
+    subgraph = node.attributes["subgraph"]
+    sub_inputs = {}
+    for inp_val, in_id in zip(in_vals, subgraph.inputs):
+        sub_inputs[in_id] = inp_val
+
+    from ml_switcheroo_ir import LogicalGraph
+
+    sub_graph = LogicalGraph(name="checkpoint_subgraph")
+    if isinstance(subgraph.nodes, list):
+        for n in subgraph.nodes:
+            sub_graph.nodes[n.id] = n
+    else:
+        for k, n in subgraph.nodes.items():
+            sub_graph.nodes[k] = n
+    sub_graph.inputs = subgraph.inputs
+    sub_graph.outputs = subgraph.outputs
+
+    sub_outputs = evaluate_graph(sub_graph, sub_inputs)
+
+    if len(sub_graph.outputs) == 1:
+        result = sub_outputs[sub_graph.outputs[0]]
+    else:
+        result = tuple(sub_outputs[out_id] for out_id in sub_graph.outputs)
+    env.set(node.id, result)
+
+
+def _handle_meshgrid(
+    node: LogicalNode,
+    env: Environment,
+    backend: object,
+    in_vals: list[object],
+    kwargs: dict[str, object],
+) -> None:
+    """Handle Meshgrid operation during evaluation."""
+    idx = kwargs.pop("output_index", 0)
+    result = backend.execute_op("Meshgrid", *in_vals, **kwargs)
+    env.set(node.id, result[idx])
+
+
 def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None:
     """Evaluate a single logical node and update the environment.
 
@@ -138,38 +183,28 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None
     """
     if node.op_type == "Input":
         env.get(node.id)
-        return
-
-    if node.op_type == "Output":
+    elif node.op_type == "Output":
         in_vals = [env.get(inp) for inp in node.inputs]
         val = in_vals[0] if len(in_vals) == 1 else tuple(in_vals)
         env.set(node.id, val)
-        return
-
-    if node.op_type == "Constant":
+    elif node.op_type == "Constant":
         env.set(node.id, backend.array(node.attributes["value"]))
-        return
+    else:
+        in_vals = [env.get(inp) for inp in node.inputs]
+        target_op = _get_op_alias(node.op_type)
+        kwargs = _prepare_node_kwargs(node, target_op)
 
-    in_vals = [env.get(inp) for inp in node.inputs]
-    target_op = _get_op_alias(node.op_type)
-    kwargs = _prepare_node_kwargs(node, target_op)
-
-    if target_op == "Slice":
-        _handle_slice(node, env, backend, in_vals, kwargs)
-        return
-
-    if target_op == "GetItem":
-        _handle_getitem(node, env, backend, in_vals, kwargs)
-        return
-
-    if target_op == "Meshgrid":
-        idx = kwargs.pop("output_index", 0)
-        result = backend.execute_op(target_op, *in_vals, **kwargs)
-        env.set(node.id, result[idx])
-        return
-
-    result = backend.execute_op(target_op, *in_vals, **kwargs)
-    env.set(node.id, result)
+        if target_op == "Slice":
+            _handle_slice(node, env, backend, in_vals, kwargs)
+        elif target_op == "GetItem":
+            _handle_getitem(node, env, backend, in_vals, kwargs)
+        elif target_op == "Checkpoint":
+            _handle_checkpoint(node, env, in_vals)
+        elif target_op == "Meshgrid":
+            _handle_meshgrid(node, env, backend, in_vals, kwargs)
+        else:
+            result = backend.execute_op(target_op, *in_vals, **kwargs)
+            env.set(node.id, result)
 
 
 def _get_op_alias(op_type: str) -> str:

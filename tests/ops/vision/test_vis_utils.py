@@ -48,5 +48,6 @@ def test_save_img(mocker):
         save_img(f.name, arr2)
         mock_img.save.assert_called_with(f.name)
         mock_img2 = mocker.MagicMock()
+        del mock_img2.numpy
         save_img(f.name, mock_img2)
         mock_img2.save.assert_called_with(f.name)

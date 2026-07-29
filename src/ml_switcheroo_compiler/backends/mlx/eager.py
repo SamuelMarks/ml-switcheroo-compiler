@@ -5,49 +5,10 @@ import builtins
 
 import mlx.core as mx
 
-from ml_switcheroo_compiler.backends.eager_registry import mlx_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager import execute_op as np_execute_op
+from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, mlx_eager_registry
 
 
-def _to_numpy(val: object) -> object:
-    """Evaluate and process the to numpy operation.
-
-    Args:
-        val (object): Required parameter for val.
-
-    Returns:
-        object: The evaluated or processed output.
-    """
-    import numpy as np
-
-    return np.array(val)
-
-
-def _from_numpy(val: object) -> object:
-    """From numpy."""
-    import mlx.core as mx
-
-    return mx.array(val)
-
-
-def _execute_numpy_fallback(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute numpy fallback operation.
-
-    Args:
-        cls (type): Required parameter for cls.
-        op_type (str): Required parameter for op_type.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
-
-    Returns:
-        object: The evaluated or processed output.
-    """
-    np_args = [_to_numpy(a) for a in args]
-    np_kwargs = {k: _to_numpy(v) for (k, v) in kwargs.items()}
-    res = np_execute_op(cls, op_type, *np_args, **np_kwargs)
-    return _from_numpy(res)
-
-
+# ruff: noqa: C901
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
     """Execute execute_op.
 
@@ -63,12 +24,44 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     try:
         if "dim" in kwargs and op_type not in ("TakeAlongAxis", "Take"):
             kwargs["axis"] = kwargs.pop("dim")
+
         func_registry = mlx_eager_registry.get(op_type)
         if func_registry is not None:
             return func_registry(mx, *args, **kwargs)
-        return _execute_numpy_fallback(cls, op_type, *args, **kwargs)
+
+        func_registry = global_eager_registry.get(op_type)
+        if func_registry is not None:
+            return func_registry(mx, *args, **kwargs)
+
+        import re
+
+        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+        snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+        # specific MLX name mappings
+        if snake == "mul":
+            snake = "multiply"
+        elif snake == "sub":
+            snake = "subtract"
+        elif snake == "div":
+            snake = "divide"
+
+        # Try finding the function in mx, mx.linalg, or mx.fft
+        func = None
+        for mod in [mx, getattr(mx, "linalg", None), getattr(mx, "fft", None)]:
+            if mod is not None and hasattr(mod, snake):
+                func = getattr(mod, snake)
+                break
+
+        if func is None:
+            raise AttributeError(f"No attribute {snake} found")
+
+        return func(*args, **kwargs)
+
     except AttributeError:
-        return _execute_numpy_fallback(cls, op_type, *args, **kwargs)
+        from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+        raise BackendNotSupportedError("Operation " + op_type + " is not implemented for the MLX backend.") from None
 
 
 @mlx_eager_registry.register("Cast")
@@ -181,8 +174,8 @@ def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> 
     Returns:
         object: The evaluated or processed output.
     """
-    # indices = args[0]
-    # updates = args[1]
+    indices = args[0]
+    updates = args[1]
     shape = args[2] if len(args) > 2 else kwargs.get("shape")
     if hasattr(shape, "data"):
         shape = shape.data
@@ -191,8 +184,11 @@ def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> 
     if isinstance(shape, tuple):
         shape = list(shape)
 
-    # Simple fallback using NumPy since MLX scatter_nd can be tricky with exact API.
-    return _execute_numpy_fallback(None, "ScatterNd", *args, **kwargs)
+    # Implement native MLX ScatterNd logic using array indexing
+    res = backend_module.zeros(shape, dtype=updates.dtype)
+    idx = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
+    res[idx] = updates
+    return res
 
 
 @mlx_eager_registry.register("Reshape")

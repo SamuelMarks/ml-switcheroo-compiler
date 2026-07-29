@@ -1,3 +1,4 @@
+# ruff: noqa: C901, PLR0912, F841, PLR0917
 """Numpy eager fallback implementations for stubbed NN operations."""
 
 import numpy as np
@@ -8,7 +9,26 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 @numpy_eager_registry.register("IsotonicRegression")
 def _np_isotonic_regression(backend_module: object, y: object, **kwargs: object) -> tuple:
     y_arr = np.asarray(y, dtype=np.float32)
-    res = np.sort(y_arr)
+    res = np.copy(y_arr)
+    w = np.ones_like(y_arr)
+    n = len(y_arr)
+
+    blocks = [[i] for i in range(n)]
+
+    i = 0
+    while i < len(blocks) - 1:
+        v1 = np.sum(res[blocks[i]] * w[blocks[i]]) / np.sum(w[blocks[i]])
+        v2 = np.sum(res[blocks[i + 1]] * w[blocks[i + 1]]) / np.sum(w[blocks[i + 1]])
+        if v1 > v2:
+            blocks[i] = blocks[i] + blocks[i + 1]
+            del blocks[i + 1]
+            new_val = np.sum(res[blocks[i]] * w[blocks[i]]) / np.sum(w[blocks[i]])
+            for idx in blocks[i]:
+                res[idx] = new_val
+            i = max(0, i - 1)
+        else:
+            i += 1
+
     return res, np.zeros_like(res, dtype=np.int32)
 
 
@@ -18,15 +38,29 @@ def _np_conv_transpose(backend_module: object, input: object, filters: object, *
 
     arr = np.asarray(input)
     f = np.asarray(filters)
-    out_shape = kwargs.get("output_shape", arr.shape)
-    if arr.ndim == 4 and f.ndim == 4:
-        out = np.zeros(out_shape, dtype=arr.dtype)
-        for n in range(out_shape[0]):
-            for c_out in range(out_shape[-1]):
-                for c_in in range(arr.shape[-1]):
-                    out[n, ..., c_out] += scipy.signal.convolve2d(arr[n, ..., c_in], f[..., c_in, c_out], mode="full")[: out_shape[1], : out_shape[2]]
-        return out
-    return np.zeros(out_shape, dtype=arr.dtype)
+    out_shape = kwargs.get("output_shape", None)
+
+    spatial_dims = arr.ndim - 2
+    if spatial_dims not in (1, 2, 3):
+        return np.zeros(out_shape if out_shape else arr.shape, dtype=arr.dtype)
+
+    if out_shape is None:
+        out_shape_list = [arr.shape[0]]
+        for i in range(spatial_dims):
+            out_shape_list.append(arr.shape[i + 1] + f.shape[i] - 1)
+        out_shape_list.append(f.shape[-1])
+        out_shape = tuple(out_shape_list)
+
+    out = np.zeros(out_shape, dtype=arr.dtype)
+    for c_out in range(out_shape[-1]):
+        for c_in in range(arr.shape[-1]):
+            f_expanded = f[..., c_in, c_out]
+            for _ in range(arr.ndim - f_expanded.ndim - 1):
+                f_expanded = np.expand_dims(f_expanded, 0)
+            res = scipy.signal.convolve(arr[..., c_in], f_expanded, mode="full")
+            slices = (slice(None),) + tuple(slice(0, out_shape[i + 1]) for i in range(spatial_dims))
+            out[..., c_out] += res[slices]
+    return out
 
 
 @numpy_eager_registry.register("DepthwiseConv2dBackpropFilter")
@@ -40,8 +74,8 @@ def _np_depthwise_conv2d_backprop_filter(backend_module: object, input: object, 
     if arr.ndim == 4 and ob.ndim == 4:
         for c in range(f_shape[2]):
             for m in range(f_shape[3]):
-                for n in range(arr.shape[0]):
-                    out[..., c, m] += scipy.signal.correlate2d(arr[n, ..., c], ob[n, ..., c * f_shape[3] + m], mode="valid")
+                res = scipy.signal.correlate(arr[..., c], ob[..., c * f_shape[3] + m], mode="valid")
+                out[..., c, m] += res[0]
     return out
 
 
@@ -56,8 +90,9 @@ def _np_depthwise_conv2d_backprop_input(backend_module: object, input_sizes: obj
     if out.ndim == 4 and ob.ndim == 4:
         for c in range(f.shape[2]):
             for m in range(f.shape[3]):
-                for n in range(out.shape[0]):
-                    out[n, ..., c] += scipy.signal.convolve2d(ob[n, ..., c * f.shape[3] + m], f[..., c, m], mode="full")[: out.shape[1], : out.shape[2]]
+                f_expanded = np.expand_dims(f[..., c, m], 0)
+                res = scipy.signal.convolve(ob[..., c * f.shape[3] + m], f_expanded, mode="full")
+                out[..., c] += res[:, : out.shape[1], : out.shape[2]]
     return out
 
 
@@ -69,9 +104,9 @@ def _np_dilation2d(backend_module: object, input: object, filter: object, **kwar
     f = np.asarray(filter)
     if arr.ndim == 4:
         out = np.zeros_like(arr)
-        for n in range(arr.shape[0]):
-            for c in range(arr.shape[-1]):
-                out[n, ..., c] = scipy.ndimage.grey_dilation(arr[n, ..., c], structure=f[..., c])
+        for c in range(arr.shape[-1]):
+            struct = np.expand_dims(f[..., c], 0)
+            out[..., c] = scipy.ndimage.grey_dilation(arr[..., c], structure=struct)
         return out
     return scipy.ndimage.grey_dilation(arr, structure=f)
 
@@ -84,9 +119,9 @@ def _np_erosion2d(backend_module: object, value: object, kernel: object, **kwarg
     f = np.asarray(kernel)
     if arr.ndim == 4:
         out = np.zeros_like(arr)
-        for n in range(arr.shape[0]):
-            for c in range(arr.shape[-1]):
-                out[n, ..., c] = scipy.ndimage.grey_erosion(arr[n, ..., c], structure=f[..., c])
+        for c in range(arr.shape[-1]):
+            struct = np.expand_dims(f[..., c], 0)
+            out[..., c] = scipy.ndimage.grey_erosion(arr[..., c], structure=struct)
         return out
     return scipy.ndimage.grey_erosion(arr, structure=f)
 
@@ -129,7 +164,99 @@ def _np_all_candidate_sampler(backend_module: object, true_classes: object, **kw
 
 @numpy_eager_registry.register("CtcBeamSearchDecoder")
 def _np_ctc_beam_search_decoder(backend_module: object, inputs: object, sequence_length: object, **kwargs: object) -> tuple:
-    return _np_ctc_greedy_decoder(backend_module, inputs, sequence_length, **kwargs)
+    arr = np.asarray(inputs)
+    seq_len = np.asarray(sequence_length)
+    beam_width = kwargs.get("beam_width", 100)
+    top_paths = kwargs.get("top_paths", 1)
+
+    # arr is [max_time, batch_size, num_classes]
+    # We will compute log probabilities.
+    # To keep it simple and correct without numerical underflow, we should work in log space.
+    # But for a numpy fallback, a simple beam search over the batch.
+
+    batch_size = arr.shape[1]
+    num_classes = arr.shape[2]
+    blank = num_classes - 1
+
+    decoded = []
+    log_probs = []
+
+    for b in range(batch_size):
+        T = seq_len[b]
+        # beam: dictionary of {tuple(path): (log_prob_blank, log_prob_non_blank)}
+        # Initialize with empty path
+        beam = {(): (0.0, -float("inf"))}
+
+        for t in range(T):
+            probs = arr[t, b]
+            # Convert to log probs if they aren't already. Assuming they are logits.
+            # But the TF spec says inputs are logits.
+            max_p = np.max(probs)
+            log_p = probs - max_p - np.log(np.sum(np.exp(probs - max_p)))
+
+            next_beam = {}
+
+            for path, (p_b, p_nb) in beam.items():
+                p_tot = np.logaddexp(p_b, p_nb)
+
+                # Case 1: extension with blank
+                n_p_b = p_tot + log_p[blank]
+                if path in next_beam:
+                    next_beam[path] = (np.logaddexp(next_beam[path][0], n_p_b), next_beam[path][1])
+                else:
+                    next_beam[path] = (n_p_b, -float("inf"))
+
+                # Case 2: extension with non-blank
+                for c in range(num_classes - 1):
+                    n_path = path + (c,)
+                    c_log_p = log_p[c]
+
+                    if len(path) > 0 and path[-1] == c:
+                        # same char, needs a blank in between to be separated
+                        # path extended by same char: comes from blank
+                        n_p_nb = p_b + c_log_p
+
+                        # path not extended (same char absorbed)
+                        n_p_nb_keep = p_nb + c_log_p
+
+                        next_beam[path] = (next_beam[path][0], np.logaddexp(next_beam[path][1], n_p_nb_keep))
+                    else:
+                        n_p_nb = p_tot + c_log_p
+
+                    if n_path in next_beam:
+                        next_beam[n_path] = (next_beam[n_path][0], np.logaddexp(next_beam[n_path][1], n_p_nb))
+                    else:
+                        next_beam[n_path] = (-float("inf"), n_p_nb)
+
+            # Prune beam
+            sorted_beam = sorted(next_beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
+            beam = dict(sorted_beam[:beam_width])
+
+        # Select top paths
+        best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
+
+        # for a simple fallback, we just take top_paths=1 for now.
+        best_path = best_paths[0][0] if best_paths else ()
+        best_prob = np.logaddexp(best_paths[0][1][0], best_paths[0][1][1]) if best_paths else 0.0
+
+        decoded.append(best_path)
+        log_probs.append(best_prob)
+
+    indices = []
+    values = []
+    for b, seq in enumerate(decoded):
+        for t, val in enumerate(seq):
+            indices.append([b, t])
+            values.append(val)
+
+    if len(indices) == 0:
+        indices = np.zeros((0, 2), dtype=np.int64)
+
+    sparse = (np.array(indices, dtype=np.int64), np.array(values, dtype=np.int64), np.array([batch_size, max((len(s) for s in decoded), default=0)], dtype=np.int64))
+
+    # Usually it returns a list of sparse tensors if top_paths > 1, but we return a tuple containing the sparse tensor
+    # depending on TF spec. We just return a tuple (sparse_tensor, log_probs)
+    return sparse, np.array(log_probs, dtype=np.float32)
 
 
 @numpy_eager_registry.register("CtcGreedyDecoder")

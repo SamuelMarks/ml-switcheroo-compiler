@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
-[![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
+[![Doc Coverage](https://img.shields.io/badge/doc_coverage-99.5%25-green.svg)](#)
 
 The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution.
 

@@ -43,13 +43,20 @@ def softplus(x: object) -> object:
 
 @register_op("Softmax")
 class Softmax(OpDef):
+    op_name = "Softmax"
     """Operator Softmax."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if args and hasattr(args[0], "shape"):
-            return args[0].shape
-        return ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> object:
@@ -67,13 +74,20 @@ def softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> objec
 
 @register_op("LogSoftmax")
 class LogSoftmax(OpDef):
+    op_name = "LogSoftmax"
     """Operator LogSoftmax."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if args and hasattr(args[0], "shape"):
-            return args[0].shape
-        return ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def log_softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> object:
@@ -91,13 +105,20 @@ def log_softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> o
 
 @register_op("Sigmoid")
 class Sigmoid(OpDef):
+    op_name = "Sigmoid"
     """Operator Sigmoid."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if args and hasattr(args[0], "shape"):
-            return args[0].shape
-        return ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def sigmoid(x: object, *args: object, **kwargs: object) -> object:
@@ -115,14 +136,20 @@ def sigmoid(x: object, *args: object, **kwargs: object) -> object:
 
 @register_op("OneHot")
 class OneHot(OpDef):
+    op_name = "OneHot"
     """Operator OneHot."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if args and hasattr(args[0], "shape"):
-            depth = kwargs.get("depth", args[1] if len(args) > 1 else 1)
-            return args[0].shape + (depth,)
-        return ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def one_hot(indices: object, depth: int, *args: object, **kwargs: object) -> object:
@@ -147,13 +174,20 @@ def one_hot(indices: object, depth: int, *args: object, **kwargs: object) -> obj
 
 @register_op("Rrelu")
 class Rrelu(OpDef):
+    op_name = "Rrelu"
     """Operator Rrelu."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        if args and hasattr(args[0], "shape"):
-            return args[0].shape
-        return ()
+        from ml_switcheroo_compiler.core.shape import broadcast_shapes
+
+        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        if not shapes:
+            return ()
+        res = shapes[0]
+        for s in shapes[1:]:
+            res = broadcast_shapes(res, s)
+        return res
 
 
 def rrelu(x: object, *args: object, **kwargs: object) -> object:
@@ -176,8 +210,9 @@ class HardSilu(OpDef):
     op_name = "HardSilu"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
 
 
 @register_op("HardSwish")
@@ -187,8 +222,9 @@ class HardSwish(OpDef):
     op_name = "HardSwish"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
 
 
 @register_op("Squareplus")
@@ -198,5 +234,34 @@ class Squareplus(OpDef):
     op_name = "Squareplus"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        x = args[0] if len(args) > 0 else None
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return getattr(x, "shape", ())
+
+
+def hard_silu(*args: object, **kwargs: object) -> object:
+    """Hard SiLU activation."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("HardSilu", *args, **kwargs)
+
+
+def hard_swish(*args: object, **kwargs: object) -> object:
+    """Hard Swish activation."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("HardSwish", *args, **kwargs)
+
+
+def mish(*args: object, **kwargs: object) -> object:
+    """Mish activation."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Mish", *args, **kwargs)
+
+
+def squareplus(*args: object, **kwargs: object) -> object:
+    """Squareplus activation."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Squareplus", *args, **kwargs)

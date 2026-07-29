@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
 from .frontend_utils import _emit_reduction_node
-
-if TYPE_CHECKING:
-    pass
 
 
 def _emit_segment_op(

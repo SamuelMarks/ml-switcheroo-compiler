@@ -123,8 +123,11 @@ def test_read_file_invalid():
 def test_missing_io_coverage():
     from ml_switcheroo_compiler.backends.numpy.eager.io_ops import _np_decode_base64, _np_encode_base64, _np_parse_sequence_example
 
-    assert _np_encode_base64(np, None) is None
-    assert _np_decode_base64(np, None) is None
+    encoded = _np_encode_base64(np, np.array([b"hello world"]))
+
+    decoded = _np_decode_base64(np, np.array([b"aGVsbG8gd29ybGQ="]))
+    assert "hello world" in str(decoded.numpy() if hasattr(decoded, "numpy") else decoded)
+
     res = _np_parse_sequence_example(np, "serialized")
     assert "dummy" in res[0]
 

@@ -1,13 +1,13 @@
-"""Test Numpy distributed dummy coverage."""
+"""Test Numpy distributed ipc coverage."""
 
 from unittest.mock import MagicMock
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _dummy_all_gather, _dummy_all_reduce, _dummy_reduce_scatter, _exchange_ipc_data, _exchange_ipc_data_coordinator, _exchange_ipc_data_worker
+from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data, _exchange_ipc_data_coordinator, _exchange_ipc_data_worker, _ipc_all_gather, _ipc_all_reduce, _ipc_reduce_scatter
 
 
-def test_dummy_coordinator(monkeypatch):
+def test_ipc_coordinator(monkeypatch):
     """Test IPC coordinator."""
 
     class MockConnection:
@@ -45,8 +45,8 @@ def test_dummy_coordinator(monkeypatch):
     def mock_client(*args, **kwargs):
         return MockConnection()
 
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Listener", MockListener)
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Client", mock_client)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client)
 
     res = _exchange_ipc_data_coordinator(2, np.array([1]), 0.1, 0.01)
     assert len(res) == 2
@@ -64,14 +64,14 @@ def test_dummy_coordinator(monkeypatch):
         def __exit__(self, *args):
             pass
 
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Listener", ErrorListener)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", ErrorListener)
     res_err = _exchange_ipc_data_coordinator(2, np.array([1]), 0.1, 0.01)
     assert len(res_err) == 2
     assert np.array_equal(res_err[0], np.array([1]))
     assert np.array_equal(res_err[1], np.array([1]))
 
 
-def test_dummy_worker(monkeypatch):
+def test_ipc_worker(monkeypatch):
     """Test IPC worker."""
 
     class MockConnection:
@@ -109,8 +109,8 @@ def test_dummy_worker(monkeypatch):
     def mock_client(*args, **kwargs):
         return MockConnection()
 
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Listener", MockListener)
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Client", mock_client)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client)
 
     res = _exchange_ipc_data_worker(1, 2, np.array([2]), 0.1, 0.01)
     assert len(res) == 2
@@ -131,24 +131,24 @@ def test_dummy_worker(monkeypatch):
 
     mock_time.count = 0
     monkeypatch.setattr(time, "time", mock_time)
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Client", mock_client_err)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client_err)
 
     res_err = _exchange_ipc_data_worker(1, 2, np.array([2]), 0.1, 0.01)
     assert len(res_err) == 2
     assert np.array_equal(res_err[0], np.array([2]))
 
 
-def test_dummy_exchange_ipc_data(monkeypatch):
+def test_ipc_exchange_ipc_data(monkeypatch):
     """Test standard exchange entrypoint."""
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy._exchange_ipc_data_coordinator", lambda *args: ["mock_coord"])
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy._exchange_ipc_data_worker", lambda *args: ["mock_worker"])
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc._exchange_ipc_data_coordinator", lambda *args: ["mock_coord"])
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc._exchange_ipc_data_worker", lambda *args: ["mock_worker"])
 
     assert _exchange_ipc_data(0, 2, np.array([1])) == ["mock_coord"]
     assert _exchange_ipc_data(1, 2, np.array([2])) == ["mock_worker"]
 
 
-def test_dummy_collectives(monkeypatch):
-    """Test dummy collectives fallback logic."""
+def test_ipc_collectives(monkeypatch):
+    """Test ipc collectives fallback logic."""
     monkeypatch.setenv("RANK", "0")
     monkeypatch.setenv("WORLD_SIZE", "2")
 
@@ -156,70 +156,70 @@ def test_dummy_collectives(monkeypatch):
     mock_mesh.size = 2
 
     # We mock IPC to return two 1D arrays
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy._exchange_ipc_data", lambda *args: [np.array([1, 2]), np.array([3, 4])])
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc._exchange_ipc_data", lambda *args: [np.array([1, 2]), np.array([3, 4])])
 
     # sum op
-    res_reduce_scatter_sum = _dummy_reduce_scatter(np.array([1, 2]), "sum", axis=0, mesh=mock_mesh)
+    res_reduce_scatter_sum = _ipc_reduce_scatter(np.array([1, 2]), "sum", axis=0, mesh=mock_mesh)
     assert np.array_equal(res_reduce_scatter_sum, np.array([4]))
 
     # max op
-    res_reduce_scatter_max = _dummy_reduce_scatter(np.array([1, 2]), "max", axis=0, mesh=mock_mesh)
+    res_reduce_scatter_max = _ipc_reduce_scatter(np.array([1, 2]), "max", axis=0, mesh=mock_mesh)
     assert np.array_equal(res_reduce_scatter_max, np.array([3]))
 
     # min op
-    res_reduce_scatter_min = _dummy_reduce_scatter(np.array([1, 2]), "min", axis=0, mesh=mock_mesh)
+    res_reduce_scatter_min = _ipc_reduce_scatter(np.array([1, 2]), "min", axis=0, mesh=mock_mesh)
     assert np.array_equal(res_reduce_scatter_min, np.array([1]))
 
     # fallback op
-    res_reduce_scatter_fallback = _dummy_reduce_scatter(np.array([1, 2]), "unknown", axis=0, mesh=mock_mesh)
+    res_reduce_scatter_fallback = _ipc_reduce_scatter(np.array([1, 2]), "unknown", axis=0, mesh=mock_mesh)
     assert np.array_equal(res_reduce_scatter_fallback, np.array([4]))
 
     # sum op
-    res_all_reduce_sum = _dummy_all_reduce(np.array([1, 2]), "sum", mesh=mock_mesh)
+    res_all_reduce_sum = _ipc_all_reduce(np.array([1, 2]), "sum", mesh=mock_mesh)
     assert np.array_equal(res_all_reduce_sum, np.array([4, 6]))
 
     # max op
-    res_all_reduce_max = _dummy_all_reduce(np.array([1, 2]), "max", mesh=mock_mesh)
+    res_all_reduce_max = _ipc_all_reduce(np.array([1, 2]), "max", mesh=mock_mesh)
     assert np.array_equal(res_all_reduce_max, np.array([3, 4]))
 
     # min op
-    res_all_reduce_min = _dummy_all_reduce(np.array([1, 2]), "min", mesh=mock_mesh)
+    res_all_reduce_min = _ipc_all_reduce(np.array([1, 2]), "min", mesh=mock_mesh)
     assert np.array_equal(res_all_reduce_min, np.array([1, 2]))
 
     # fallback op
-    res_all_reduce_fallback = _dummy_all_reduce(np.array([1, 2]), "unknown", mesh=mock_mesh)
+    res_all_reduce_fallback = _ipc_all_reduce(np.array([1, 2]), "unknown", mesh=mock_mesh)
     assert np.array_equal(res_all_reduce_fallback, np.array([4, 6]))
 
     monkeypatch.delenv("RANK", raising=False)
     monkeypatch.delenv("WORLD_SIZE", raising=False)
 
 
-def test_dummy_collectives_no_mesh():
-    """Test dummy collectives when mesh is None (line 127)."""
+def test_ipc_collectives_no_mesh():
+    """Test ipc collectives when mesh is None (line 127)."""
     import numpy as np
 
-    from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _dummy_all_reduce, _dummy_reduce_scatter
+    from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _ipc_all_reduce, _ipc_reduce_scatter
 
     t = np.array([1, 2])
 
-    res_gather = _dummy_all_gather(t, axis=0, mesh=None)
+    res_gather = _ipc_all_gather(t, axis=0, mesh=None)
     assert np.array_equal(res_gather, np.expand_dims(t, axis=0))
 
-    res_gather_no_axis = _dummy_all_gather(t, axis=None, mesh=None)
+    res_gather_no_axis = _ipc_all_gather(t, axis=None, mesh=None)
     assert np.array_equal(res_gather_no_axis, t)
 
-    res_reduce_scatter = _dummy_reduce_scatter(t, "sum", axis=0, mesh=None)
+    res_reduce_scatter = _ipc_reduce_scatter(t, "sum", axis=0, mesh=None)
     assert np.array_equal(res_reduce_scatter, t)
 
-    res_all_reduce = _dummy_all_reduce(t, "sum", mesh=None)
+    res_all_reduce = _ipc_all_reduce(t, "sum", mesh=None)
     assert np.array_equal(res_all_reduce, t)
 
 
-def test_dummy_exchange_ipc_data_coordinator_timeout_fallback(monkeypatch):
+def test_ipc_exchange_ipc_data_coordinator_timeout_fallback(monkeypatch):
     """Test coordinator timeout fallback loop."""
     import time
 
-    from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _exchange_ipc_data_coordinator
+    from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data_coordinator
 
     class MockConnection:
         def recv(self):
@@ -257,8 +257,8 @@ def test_dummy_exchange_ipc_data_coordinator_timeout_fallback(monkeypatch):
     def mock_client_err(*args, **kwargs):
         raise Exception("test connection error")
 
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Listener", MockListener)
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Client", mock_client_err)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client_err)
 
     orig_time = time.time
 
@@ -277,11 +277,11 @@ def test_dummy_exchange_ipc_data_coordinator_timeout_fallback(monkeypatch):
     assert np.array_equal(res[1], np.array([2]))
 
 
-def test_dummy_coordinator_sleep(monkeypatch):
+def test_ipc_coordinator_sleep(monkeypatch):
     """Test coordinator sleep branch before timeout."""
     import time
 
-    from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _exchange_ipc_data_coordinator
+    from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data_coordinator
 
     class MockConnection:
         def recv(self):
@@ -319,8 +319,8 @@ def test_dummy_coordinator_sleep(monkeypatch):
     def mock_client_err(*args, **kwargs):
         raise Exception("test connection error")
 
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Listener", MockListener)
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy.Client", mock_client_err)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client_err)
 
     orig_time = time.time
 
@@ -340,7 +340,7 @@ def test_dummy_coordinator_sleep(monkeypatch):
     assert mock_sleep.call_count > 0
 
 
-def test_dummy_all_gather_no_axis(monkeypatch):
+def test_ipc_all_gather_no_axis(monkeypatch):
     """Test all gather without axis."""
 
     monkeypatch.setenv("RANK", "0")
@@ -349,8 +349,8 @@ def test_dummy_all_gather_no_axis(monkeypatch):
     mock_mesh = MagicMock()
     mock_mesh.size = 2
 
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.dummy._exchange_ipc_data", lambda *args: [np.array([1]), np.array([2])])
+    monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc._exchange_ipc_data", lambda *args: [np.array([1]), np.array([2])])
 
     # Mesh>1 triggers IPC, axis=None -> concatenates along axis=0
-    res_gather = _dummy_all_gather(np.array([1]), axis=None, mesh=mock_mesh)
+    res_gather = _ipc_all_gather(np.array([1]), axis=None, mesh=mock_mesh)
     assert np.array_equal(res_gather, np.array([1, 2]))

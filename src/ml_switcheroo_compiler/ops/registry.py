@@ -1,11 +1,8 @@
 """Central registry for all operations to break dependency cycles."""
 
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import Callable, TypeVar
 
 from ml_switcheroo_compiler.ops.base import OpDef
-
-if TYPE_CHECKING:
-    pass
 
 T = TypeVar("T")
 

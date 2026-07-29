@@ -1,1 +1,33 @@
-mock
+def pt_power_iteration(x, num_iters, u):
+    if u is None:
+        u = torch.randn(x.shape[-1], 1, device=x.device, dtype=x.dtype)
+    for _ in range(num_iters):
+        v = torch.nn.functional.normalize(torch.matmul(x.transpose(-1, -2), u), dim=0)
+        u = torch.nn.functional.normalize(torch.matmul(x, v), dim=0)
+    return u, v
+
+def pt_ragged_dot(x, y):
+    if getattr(x, "is_nested", False) or getattr(y, "is_nested", False):
+        return torch.bmm(x, y) if x.dim() == 3 else torch.matmul(x, y)
+    return torch.matmul(x, y)
+
+
+def pt_polydiv(u, v):
+    nz_u = torch.nonzero(u, as_tuple=True)[0]
+    u = u[nz_u[0]:] if len(nz_u) > 0 else torch.zeros(1, dtype=u.dtype, device=u.device)
+    nz_v = torch.nonzero(v, as_tuple=True)[0]
+    v = v[nz_v[0]:] if len(nz_v) > 0 else torch.zeros(1, dtype=v.dtype, device=v.device)
+    n = u.size(0)
+    m = v.size(0)
+    if n < m:
+        return torch.zeros(1, dtype=u.dtype, device=u.device), u.clone()
+    q_len = n - m + 1
+    q = torch.zeros(q_len, dtype=u.dtype, device=u.device)
+    r = u.clone()
+    for i in range(q_len):
+        coef = r[i] / v[0]
+        q[i] = coef
+        r[i:i+m] -= coef * v
+    nz_r = torch.nonzero(r[q_len:], as_tuple=True)[0]
+    rem = r[q_len:][nz_r[0]:] if len(nz_r) > 0 else torch.zeros(1, dtype=r.dtype, device=r.device)
+    return tuple([q, rem])

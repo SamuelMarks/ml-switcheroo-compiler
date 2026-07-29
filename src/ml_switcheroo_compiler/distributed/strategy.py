@@ -55,25 +55,25 @@ class Server:
 
     def start(self) -> None:
         """Start the server."""
-        try:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend
+        import ml_switcheroo_compiler.backends.registry as registry
+        from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-            backend = get_active_backend()
-            if hasattr(backend, "start_server"):
-                backend.start_server(self)
-        except Exception:
-            pass
+        backend = registry.get_active_backend()
+        if hasattr(backend, "start_server"):
+            backend.start_server(self)
+        else:
+            raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support start_server()")
 
     def join(self) -> None:
         """Block until the server terminates."""
-        try:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend
+        import ml_switcheroo_compiler.backends.registry as registry
+        from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-            backend = get_active_backend()
-            if hasattr(backend, "join_server"):
-                backend.join_server(self)
-        except Exception:
-            pass
+        backend = registry.get_active_backend()
+        if hasattr(backend, "join_server"):
+            backend.join_server(self)
+        else:
+            raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support join_server()")
 
 
 class Coordinator:
@@ -101,8 +101,10 @@ class TFConfigClusterResolver:
         if tf_config:
             try:
                 self.cluster = json.loads(tf_config).get("cluster", {})
-            except Exception:
-                pass
+            except json.JSONDecodeError as e:
+                import warnings
+
+                warnings.warn(f"Failed to parse TF_CONFIG env var as JSON: {e}", stacklevel=2)
 
 
 class KubernetesClusterResolver:

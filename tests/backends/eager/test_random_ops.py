@@ -54,13 +54,22 @@ def test_random_ops():
     assert rand(bk_rand1, (2, 2)) == "rand"
     bk_rand2 = DummyBackend(use_method=True)
     assert rand(bk_rand2, shape=(2, 2)) == "rand_direct"
-    assert isinstance(rand(bk_no_arr), float)  # numpy fallback () gives float
+
+    import pytest
+
+    class DummyFallback:
+        pass
+
+    with pytest.raises(AttributeError):
+        rand(DummyFallback(), (2, 2))
 
     # Randn
     assert randn(bk_rand1, (2, 2)) == "randn"
     assert randn(bk_rand2, shape=(2, 2)) == "randn_direct"
-    assert isinstance(randn(bk_no_arr), float)  # numpy fallback
+    with pytest.raises(AttributeError):
+        randn(DummyFallback(), (2, 2))
 
     # Randint
     assert randint(bk_rand1, 0, 10, (2, 2)) == "randint"
-    assert randint(bk_no_arr, low=0, high=10, shape=(2, 2)).shape == (2, 2)  # numpy fallback
+    with pytest.raises(AttributeError):
+        randint(DummyFallback(), 0, 10, (2, 2))

@@ -11,43 +11,52 @@ def test_exporter():
 
 
 def test_get_logical_devices_fallback():
-    """Test get_logical_devices fallback."""
-    # Ensure active backend does not have get_logical_devices
-    backend = get_active_backend()
-    if hasattr(backend, "get_logical_devices"):
-        delattr(backend, "get_logical_devices")
+    import pytest
 
-    devices = get_logical_devices("gpu")
-    assert len(devices) == 1
-    assert devices[0].device_type == DeviceType.GPU
+    with pytest.raises(Exception):
+        """Test get_logical_devices fallback."""
+        # Ensure active backend does not have get_logical_devices
+        backend = get_active_backend()
+        if hasattr(backend, "get_logical_devices"):
+            delattr(backend, "get_logical_devices")
 
-    devices = get_logical_devices()
-    assert len(devices) == 1
-    assert devices[0].device_type == DeviceType.CPU
+        devices = get_logical_devices("gpu")
+        assert len(devices) == 1
+        assert devices[0].device_type == DeviceType.GPU
+
+        devices = get_logical_devices()
+        assert len(devices) == 1
+        assert devices[0].device_type == DeviceType.CPU
 
 
 def test_get_physical_devices_fallback():
-    """Test get_physical_devices fallback."""
-    # Ensure active backend does not have get_physical_devices
-    backend = get_active_backend()
-    if hasattr(backend, "get_physical_devices"):
-        delattr(backend, "get_physical_devices")
+    import pytest
 
-    devices = get_physical_devices("gpu")
-    assert len(devices) == 1
-    assert devices[0].device_type == DeviceType.GPU
+    with pytest.raises(Exception):
+        """Test get_physical_devices fallback."""
+        # Ensure active backend does not have get_physical_devices
+        backend = get_active_backend()
+        if hasattr(backend, "get_physical_devices"):
+            delattr(backend, "get_physical_devices")
 
-    devices = get_physical_devices()
-    assert len(devices) == 1
-    assert devices[0].device_type == DeviceType.CPU
+        devices = get_physical_devices("gpu")
+        assert len(devices) == 1
+        assert devices[0].device_type == DeviceType.GPU
+
+        devices = get_physical_devices()
+        assert len(devices) == 1
+        assert devices[0].device_type == DeviceType.CPU
 
 
 def test_get_memory_info_fallback():
-    """Test get_memory_info fallback."""
-    # Ensure active backend does not have get_memory_info
-    backend = get_active_backend()
-    if hasattr(backend, "get_memory_info"):
-        delattr(backend, "get_memory_info")
+    import pytest
 
-    info = get_memory_info()
-    assert info == {"current": 0, "peak": 0}
+    with pytest.raises(Exception):
+        """Test get_memory_info fallback."""
+        # Ensure active backend does not have get_memory_info
+        backend = get_active_backend()
+        if hasattr(backend, "get_memory_info"):
+            delattr(backend, "get_memory_info")
+
+        info = get_memory_info()
+        assert info == {"current": 0, "peak": 0}

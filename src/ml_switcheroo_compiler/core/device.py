@@ -72,14 +72,15 @@ class StreamContext:
 
 def clear_cache() -> None:
     """Clear the memory cache."""
-    try:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    import warnings
 
-        backend = get_active_backend()
-        if hasattr(backend, "clear_cache"):
-            backend.clear_cache()
-    except Exception:
-        pass
+    import ml_switcheroo_compiler.backends.registry as registry
+
+    backend = registry.get_active_backend()
+    if hasattr(backend, "clear_cache"):
+        backend.clear_cache()
+    else:
+        warnings.warn(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support clear_cache()", stacklevel=2)
 
 
 class FunctionExporter:
@@ -122,14 +123,14 @@ def export_function(*args: object, **kwargs: object) -> None:
         args (object): args
         kwargs (object): kwargs
     """
-    try:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    import ml_switcheroo_compiler.backends.registry as registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        backend = get_active_backend()
-        if hasattr(backend, "export_function"):
-            backend.export_function(*args, **kwargs)
-    except Exception:
-        pass
+    backend = registry.get_active_backend()
+    if hasattr(backend, "export_function"):
+        backend.export_function(*args, **kwargs)
+    else:
+        raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
 
 
 def exporter(*args: object, **kwargs: object) -> FunctionExporter:
@@ -147,44 +148,32 @@ def exporter(*args: object, **kwargs: object) -> FunctionExporter:
 
 def get_logical_devices(device_type: str = None) -> list[Device]:
     """Get logical devices."""
-    try:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    import ml_switcheroo_compiler.backends.registry as registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        backend = get_active_backend()
-        if hasattr(backend, "get_logical_devices"):
-            return backend.get_logical_devices(device_type)
-    except Exception:
-        pass
-    if device_type:
-        dt = DeviceType(device_type.lower())
-        return [Device(dt, 0)]
-    return [Device(DeviceType.CPU, 0)]
+    backend = registry.get_active_backend()
+    if hasattr(backend, "get_logical_devices"):
+        return backend.get_logical_devices(device_type)
+    raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_logical_devices()")
 
 
 def get_physical_devices(device_type: str = None) -> list[Device]:
     """Get physical devices."""
-    try:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    import ml_switcheroo_compiler.backends.registry as registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        backend = get_active_backend()
-        if hasattr(backend, "get_physical_devices"):
-            return backend.get_physical_devices(device_type)
-    except Exception:
-        pass
-    if device_type:
-        dt = DeviceType(device_type.lower())
-        return [Device(dt, 0)]
-    return [Device(DeviceType.CPU, 0)]
+    backend = registry.get_active_backend()
+    if hasattr(backend, "get_physical_devices"):
+        return backend.get_physical_devices(device_type)
+    raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_physical_devices()")
 
 
 def get_memory_info(device: str = None) -> dict[str, int]:
     """Get memory statistics tracking (allocation bytes, peak usage)."""
-    try:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
+    import ml_switcheroo_compiler.backends.registry as registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        backend = get_active_backend()
-        if hasattr(backend, "get_memory_info"):
-            return backend.get_memory_info(device)
-    except Exception:
-        pass
-    return {"current": 0, "peak": 0}
+    backend = registry.get_active_backend()
+    if hasattr(backend, "get_memory_info"):
+        return backend.get_memory_info(device)
+    raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_memory_info()")

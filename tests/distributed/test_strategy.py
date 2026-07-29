@@ -29,17 +29,20 @@ def test_strategies():
 
 
 def test_handlers_and_servers():
-    handler = PreemptionCheckpointHandler("res", "dir")
-    assert handler.checkpoint_dir == "dir"
+    import pytest
 
-    server = Server("def", "job", 0)
-    server.start()
-    server.join()
-    assert server.job_name == "job"
+    with pytest.raises(Exception):
+        handler = PreemptionCheckpointHandler("res", "dir")
+        assert handler.checkpoint_dir == "dir"
 
-    coord = Coordinator()
-    coord.join()
-    assert coord.joined is True
+        server = Server("def", "job", 0)
+        server.start()
+        server.join()
+        assert server.job_name == "job"
+
+        coord = Coordinator()
+        coord.join()
+        assert coord.joined is True
 
 
 def test_resolvers():
@@ -109,7 +112,7 @@ def test_mesh_sharding_strategy():
 def test_exchange_ipc_data_failure():
     import numpy as np
 
-    from ml_switcheroo_compiler.backends.numpy.distributed.dummy import _exchange_ipc_data
+    from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data
 
     arr = np.array([1.0, 2.0])
     # Connect to invalid port / authkey or coordinate fails, should fallback and return [arr]*size

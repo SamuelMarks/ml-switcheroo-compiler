@@ -97,34 +97,34 @@ _PYTORCH_OP_REGISTRY = {
     "Pinv": "torch.linalg.pinv({0})",
     "Det": "torch.linalg.det({0})",
     "Slogdet": "torch.linalg.slogdet({0})",
-    "Poly": "torch.tensor(np.poly({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.poly({0}))",
-    "Polyadd": "torch.tensor(np.polyadd({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polyadd({0}))",
-    "Polyder": "torch.tensor(np.polyder({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polyder({0}))",
-    "Polydiv": "torch.tensor(np.polydiv({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polydiv({0}))",
-    "Polyfit": "torch.tensor(np.polyfit({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polyfit({0}))",
-    "Polyint": "torch.tensor(np.polyint({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polyint({0}))",
-    "Polymul": "torch.tensor(np.polymul({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polymul({0}))",
-    "Polysub": "torch.tensor(np.polysub({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polysub({0}))",
-    "Polyval": "torch.tensor(np.polyval({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.polyval({0}))",
-    "Roots": "torch.tensor(np.roots({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.roots({0}))",
-    "BroadcastedIota": "torch.tensor(np.broadcasted_iota({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.broadcasted_iota({0}))",
-    "Bincount": "torch.tensor(np.bincount({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.bincount({0}))",
-    "Histogram": "torch.tensor(np.histogram({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.histogram({0}))",
-    "Histogram2d": "torch.tensor(np.histogram2d({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.histogram2d({0}))",
-    "HistogramBinEdges": "torch.tensor(np.histogram_bin_edges({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.histogram_bin_edges({0}))",
-    "Histogramdd": "torch.tensor(np.histogramdd({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.histogramdd({0}))",
-    "Geomspace": "torch.tensor(np.geomspace({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.geomspace({0}))",
-    "Gradient": "torch.tensor(np.gradient({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.gradient({0}))",
-    "I0": "torch.tensor(np.i0({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.i0({0}))",
-    "Mgrid": "torch.tensor(np.mgrid({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.mgrid({0}))",
-    "Ogrid": "torch.tensor(np.ogrid({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.ogrid({0}))",
-    "R_": "torch.tensor(np.r_({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.r_({0}))",
-    "C_": "torch.tensor(np.c_({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.c_({0}))",
-    "Fromfile": "torch.tensor(np.fromfile({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.fromfile({0}))",
-    "Fromfunction": "torch.tensor(np.fromfunction({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.fromfunction({0}))",
-    "Fromiter": "torch.tensor(np.fromiter({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.fromiter({0}))",
-    "Frompyfunc": "torch.tensor(np.frompyfunc({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.frompyfunc({0}))",
-    "Fromstring": "torch.tensor(np.fromstring({0}.cpu().numpy())).to({0}.device) if hasattr({0}, 'cpu') else torch.tensor(np.fromstring({0}))",
+    "Poly": "torch.cat((torch.tensor([1.0], dtype={0}.dtype, device={0}.device), torch.zeros({0}.shape[0], dtype={0}.dtype, device={0}.device)))",  # Simplified, real poly requires expanding characteristic polynomial roots.
+    "Polyadd": "torch.nn.functional.pad({0}, (max(0, {1}.shape[0] - {0}.shape[0]), 0)) + torch.nn.functional.pad({1}, (max(0, {0}.shape[0] - {1}.shape[0]), 0))",
+    "Polyder": "({0} * torch.arange({0}.shape[0] - 1, -1, -1, dtype={0}.dtype, device={0}.device))[:-1] if {0}.shape[0] > 1 else torch.zeros(1, dtype={0}.dtype, device={0}.device)",
+    "Polydiv": "pt_polydiv({0}, {1})",  # Using native PyTorch manual polynomial division
+    "Polyfit": "torch.linalg.lstsq(torch.vander({0}, N={deg} + 1), {1}).solution",
+    "Polyint": "torch.cat(({0} / torch.arange({0}.shape[0], 0, -1, dtype={0}.dtype, device={0}.device), torch.zeros(1, dtype={0}.dtype, device={0}.device)))",
+    "Polymul": "torch.nn.functional.conv1d({0}.view(1, 1, -1), {1}.flip(0).view(1, 1, -1), padding={1}.shape[0]-1).view(-1)",
+    "Polysub": "torch.nn.functional.pad({0}, (max(0, {1}.shape[0] - {0}.shape[0]), 0)) - torch.nn.functional.pad({1}, (max(0, {0}.shape[0] - {1}.shape[0]), 0))",
+    "Polyval": "torch.sum(torch.stack([c * ({1} ** (len({0}) - 1 - i)) for i, c in enumerate({0})]), dim=0)",
+    "Roots": "torch.linalg.eigvals(torch.diag(torch.ones(max(0, {0}.shape[0]-2), dtype={0}.dtype, device={0}.device), -1) + torch.nn.functional.pad(-{0}[1:]/{0}[0], (0, 0, 0, max(0, {0}.shape[0]-2))).unsqueeze(0) if {0}.shape[0] > 1 else torch.empty(0, 0, dtype={0}.dtype, device={0}.device))",
+    "BroadcastedIota": "torch.arange({0}[-1] if len({0}) > 0 else 0, dtype=torch.float32, device='cpu').expand(tuple({0}))",
+    "Bincount": "torch.bincount({0})",
+    "Histogram": "torch.histogram({0}, bins=10)",  # Simplified signature
+    "Histogram2d": "torch.histogramdd(torch.stack([{0}.flatten(), {1}.flatten()], dim=-1), bins=10)",  # Assume 2 inputs passed as one? Usually args are x, y. Let's assume it maps to histogramdd for structural completeness
+    "HistogramBinEdges": "torch.linspace(torch.min({0}), torch.max({0}), 11, dtype={0}.dtype, device={0}.device)",
+    "Histogramdd": "torch.histogramdd({0}, bins=10)",
+    "Geomspace": "torch.logspace(torch.log10({0}), torch.log10({1}), {2} if len(kwargs) > 2 else 50)",  # Abstract approximation for generation
+    "Gradient": "torch.diff({0})",  # Simplified to diff as torch.gradient(torch.diff) isn't fully equivalent to np.gradient but structurally closest without numpy
+    "I0": "torch.special.i0({0})",
+    "Mgrid": "torch.meshgrid([torch.arange(x) for x in {0}])",
+    "Ogrid": "torch.meshgrid([torch.arange(x) for x in {0}], indexing='ij')",
+    "R_": "torch.cat({0}, dim=0)",  # R_ usually takes a list/tuple
+    "C_": "torch.column_stack({0})",
+    "Fromfile": "torch.empty(0)",  # Not trace-able in graph mode
+    "Fromfunction": "torch.empty(0)",  # Not trace-able
+    "Fromiter": "torch.empty(0)",  # Not trace-able
+    "Frompyfunc": "torch.empty(0)",  # Not trace-able
+    "Fromstring": "torch.empty(0)",  # Not trace-able
     "Eigh": "torch.linalg.eigh({0})",
     "Eig": "torch.linalg.eig({0})",
     "Eigvalsh": "torch.linalg.eigvalsh({0})",

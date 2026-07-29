@@ -115,9 +115,9 @@ def scan_tracing(f: Callable, init: object, xs: object, length: int | None = Non
 
         raise TracingError("Cannot emit Scan node outside of a tracing context.")
     x_shape = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
-    proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=xs.dtype.value)
-    dummy_x = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
-    body_graph = _trace_function(f, (init, dummy_x), "scan_body")
+    proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=xs.dtype.value)
+    proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
+    body_graph = _trace_function(f, (init, proxy_x_tensor), "scan_body")
     init_ids = _flatten_inputs(init)
     out_id = str(uuid.uuid4())
     node = LogicalNode(
@@ -149,9 +149,9 @@ def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> T
 
         raise TracingError("Cannot emit Map node outside of a tracing context.")
     x_shape = elems.shape[1:] if elems is not None and len(elems.shape) > 0 else ()
-    proxy_x = ProxyTensor(id="dummy_x", shape=x_shape, dtype=elems.dtype.value)
-    dummy_x = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
-    body_graph = _trace_function(fn, (dummy_x,), "map_body")
+    proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=elems.dtype.value)
+    proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
+    body_graph = _trace_function(fn, (proxy_x_tensor,), "map_body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
@@ -191,15 +191,15 @@ def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
             from ml_switcheroo_compiler.core.errors import TracingError
 
             raise TracingError("Cannot emit Pmap outside of a tracing context.")
-        dummy_args = []
+        proxy_args = []
         for a in args:
             if isinstance(a, Tensor):
                 new_shape = a.shape[1:] if len(a.shape) > 0 else ()
                 proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
-                dummy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
+                proxy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
             else:
-                dummy_args.append(a)
-        body_graph = _trace_function(func, tuple(dummy_args), "pmap_body")
+                proxy_args.append(a)
+        body_graph = _trace_function(func, tuple(proxy_args), "pmap_body")
         out_id = str(uuid.uuid4())
         node = LogicalNode(
             id=out_id,

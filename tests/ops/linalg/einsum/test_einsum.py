@@ -23,6 +23,15 @@ def test_einsum_validator():
         EinsumValidator.validate_inputs("ij,jk", [(2, 3)])
 
 
+def test_einsum_planner_calculate_output_shape_missing_char():
+    from ml_switcheroo_compiler.ops.linalg.einsum import EinsumPlanner
+
+    axis_map = {"a": 2, "b": 3}
+    out_sub = ["a", "c", "b"]  # 'c' is not in axis_map
+
+    assert EinsumPlanner._resolve_chars(out_sub, axis_map) == [2, 3]
+
+
 def test_parsed_equation_part():
     part = ParsedEquationPart("ij", (2, 3))
     part.validate_length()

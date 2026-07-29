@@ -365,7 +365,9 @@ class ClassBasedGenerator(BaseGenerator):
         self.add_line("super().__init__()")
         has_params = self._emit_init_body()
         if not has_params:
-            self.add_line("pass")
+            # We emit 'pass' in Python. For C++ or others it might be different, but base generator assumes python.
+            # However, we can use a target language property.
+            self.add_line("pass" if self.get_language() == "python" else "")
         self.add_line("")
         self.indent_level -= 1
         self.add_line(f"def {self._forward_method_name}(self, *args, **kwargs):")

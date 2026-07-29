@@ -7,6 +7,17 @@ except ImportError:
     cp = None
 
 
+_OP_MAPPING = None
+
+
+def _get_op_mapping() -> dict:
+    global _OP_MAPPING
+    if _OP_MAPPING is not None:
+        return _OP_MAPPING
+    _OP_MAPPING = {}
+    return _OP_MAPPING
+
+
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
     """Execute execute_op.
 
@@ -17,27 +28,19 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         **kwargs (Any): Argument **kwargs.
 
     Returns:
-    Any: The result.
+        Any: The result.
     """
     import ml_switcheroo_compiler.backends.eager  # noqa: F401
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    func_registry = global_eager_registry.get(op_type)
-    if func_registry is not None:
-        return func_registry(cp, *args, **kwargs)
+    func = global_eager_registry.get(op_type)
+    if func is not None:
+        return func(cls, *args, **kwargs)
 
-    try:
-        import re
+    op_mapping = _get_op_mapping()
+    func = op_mapping.get(op_type)
+    if func is not None:
+        return func(*args, **kwargs)
 
-        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
-        snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-        func = getattr(cp, snake)
-    except AttributeError:
-        import numpy as np
-
-        try:
-            return np.zeros((1,))
-        except Exception:
-            return None
-
-    return func(*args, **kwargs)
+    raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

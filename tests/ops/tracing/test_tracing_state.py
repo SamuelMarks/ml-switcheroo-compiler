@@ -57,7 +57,7 @@ def test_enrich_ast_and_domain_extra():
 
 
 def test_enrich_stream_no_config(mocker):
-    sys.modules.pop("ml_switcheroo_compiler.core.config", None)
+    old_config = sys.modules.pop("ml_switcheroo_compiler.core.config", None)
     state = TracingState()
 
     class MockNode:
@@ -66,3 +66,6 @@ def test_enrich_stream_no_config(mocker):
     node = MockNode()
     state._enrich_stream(node)
     assert node.stream == "existing"
+
+    if old_config is not None:
+        sys.modules["ml_switcheroo_compiler.core.config"] = old_config

@@ -60,7 +60,7 @@ def test_conv_transpose_extra() -> object:
             t1 = Tensor(np.ones((1, 2, 5)), TensorConfig((1, 2, 5), "float32", device))
             t2 = Tensor(np.ones((3, 2, 3)), TensorConfig((3, 2, 3), "float32", device))
             with ConfigContext(eager_mode=True):
-                with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
+                with patch("ml_switcheroo_compiler.ops.nn.conv_nd.get_active_backend") as mock_backend:
                     mock_backend.return_value.execute_op.return_value = np.ones((1, 3, 7))
                     res = conv_transpose(t1, t2, strides=1, padding="VALID")
                     assert res is not None

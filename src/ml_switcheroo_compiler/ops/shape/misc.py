@@ -5,8 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
-from typing import TYPE_CHECKING
-
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -14,9 +12,6 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.reshape import Resize
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-if TYPE_CHECKING:
-    pass
 
 
 def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
@@ -367,8 +362,9 @@ class Rank(OpDef):
 
     op_name = "Rank"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
+        args[0] if len(args) > 0 else None
         return ()
 
 
@@ -448,18 +444,8 @@ class Flatnonzero(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
-
-
-@register_op("IndexInDim")
-class IndexInDim(OpDef):
-    """Return elements of an array at specific indices along a given dimension."""
-
-    op_name = "IndexInDim"
-
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
-        return ()
+        args[0] if len(args) > 0 else None
+        return (None,)
 
 
 @register_op("Lexsort")
@@ -470,6 +456,13 @@ class Lexsort(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
+        keys = args[0] if len(args) > 0 else None
+        kwargs.get("axis", -1)
+        if isinstance(keys, (list, tuple)):
+            return getattr(keys[0], "shape", ()) if keys else ()
+        in_shape = getattr(keys, "shape", ())
+        if len(in_shape) > 0:
+            return in_shape[1:] if len(in_shape) > 1 else ()
         return ()
 
 
@@ -481,7 +474,34 @@ class Nonzero(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        a = args[0] if len(args) > 0 else None
+        in_shape = getattr(a, "shape", ())
+        return tuple((None,) for _ in in_shape)
+
+
+def _infer_shape_percentile_quantile(a: object, q: object, axis: object = None, keepdims: bool = False) -> tuple[int, ...]:
+    in_shape = getattr(a, "shape", ())
+    q_shape = getattr(q, "shape", ())
+    if isinstance(q, (int, float)):
+        q_shape = ()
+    elif isinstance(q, (list, tuple)):
+        q_shape = (len(q),)
+
+    if axis is None:
+        if keepdims:
+            return q_shape + (1,) * len(in_shape)
+        return q_shape
+
+    axis_tup = (axis,) if isinstance(axis, int) else tuple(axis)  # type: ignore[arg-type]
+
+    out_shape = list(in_shape)
+    for ax in sorted(axis_tup, reverse=True):
+        if keepdims:
+            out_shape[ax] = 1
+        else:
+            out_shape.pop(ax)
+
+    return q_shape + tuple(out_shape)
 
 
 @register_op("Percentile")
@@ -492,29 +512,11 @@ class Percentile(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
-
-
-@register_op("Ppermute")
-class Ppermute(OpDef):
-    """Parallel permute operator."""
-
-    op_name = "Ppermute"
-
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
-
-
-@register_op("PsumScatter")
-class PsumScatter(OpDef):
-    """Parallel sum scatter operator."""
-
-    op_name = "PsumScatter"
-
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        a = args[0] if len(args) > 0 else None
+        q = args[1] if len(args) > 1 else None
+        axis = kwargs.get("axis", None)
+        keepdims = kwargs.get("keepdims", False)
+        return _infer_shape_percentile_quantile(a, q, axis, keepdims)
 
 
 @register_op("Quantile")
@@ -525,7 +527,11 @@ class Quantile(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        a = args[0] if len(args) > 0 else None
+        q = args[1] if len(args) > 1 else None
+        axis = kwargs.get("axis", None)
+        keepdims = kwargs.get("keepdims", False)
+        return _infer_shape_percentile_quantile(a, q, axis, keepdims)
 
 
 @register_op("RavelMultiIndex")
@@ -536,7 +542,11 @@ class RavelMultiIndex(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        multi_index = args[0] if len(args) > 0 else None
+        args[1] if len(args) > 1 else None
+        if isinstance(multi_index, (list, tuple)) and multi_index:
+            return getattr(multi_index[0], "shape", ())
+        return getattr(multi_index, "shape", ())
 
 
 @register_op("Repeat")
@@ -547,7 +557,31 @@ class Repeat(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        a = args[0] if len(args) > 0 else None
+        repeats = args[1] if len(args) > 1 else None
+        axis = kwargs.get("axis", None)
+        in_shape = getattr(a, "shape", ())
+        if axis is None:
+            size: int | None = 1
+            for s in in_shape:
+                if s is None:
+                    size = None
+                    break
+                size *= s  # type: ignore[operator]
+            if isinstance(repeats, int) and size is not None:
+                return (size * repeats,)
+            if isinstance(repeats, (list, tuple)):
+                return (sum(repeats),)
+            return (None,)
+
+        out_shape = list(in_shape)
+        if isinstance(repeats, int):
+            out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None  # type: ignore[index]
+        elif isinstance(repeats, (list, tuple)):
+            out_shape[axis] = sum(repeats)  # type: ignore[index]
+        else:
+            out_shape[axis] = None  # type: ignore[index]
+        return tuple(out_shape)
 
 
 @register_op("Searchsorted")
@@ -558,7 +592,9 @@ class Searchsorted(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[1].shape if len(args) > 1 and hasattr(args[1], "shape") else ()
+        args[0] if len(args) > 0 else None
+        v = args[1] if len(args) > 1 else None
+        return getattr(v, "shape", ())
 
 
 @register_op("SortComplex")
@@ -569,7 +605,8 @@ class SortComplex(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        a = args[0] if len(args) > 0 else None
+        return getattr(a, "shape", ())
 
 
 @register_op("Tile")
@@ -580,7 +617,25 @@ class Tile(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        A = args[0] if len(args) > 0 else None
+        reps = args[1] if len(args) > 1 else None
+        if reps is None:
+            return ()
+        in_shape = getattr(A, "shape", ())
+        if isinstance(reps, int):
+            reps = (reps,)
+        else:
+            reps = tuple(reps)  # type: ignore[arg-type]
+
+        d = len(reps)
+        c = len(in_shape)
+
+        if c < d:
+            in_shape = (1,) * (d - c) + in_shape
+        elif c > d:
+            reps = (1,) * (c - d) + reps
+
+        return tuple(s * r if s is not None and r is not None else None for s, r in zip(in_shape, reps))
 
 
 @register_op("Unique")
@@ -591,15 +646,99 @@ class Unique(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        ar = args[0] if len(args) > 0 else None
+        return_index = kwargs.get("return_index", False)
+        return_inverse = kwargs.get("return_inverse", False)
+        return_counts = kwargs.get("return_counts", False)
+        axis = kwargs.get("axis", None)
+        in_shape = getattr(ar, "shape", ())
+        if axis is None:
+            ret_shape = (None,)
+        else:
+            ret_shape_list = list(in_shape)
+            ret_shape_list[axis] = None  # type: ignore[index]
+            ret_shape = tuple(ret_shape_list)  # type: ignore[assignment]
+
+        ret = [ret_shape]
+        if return_index:
+            ret.append((None,) if axis is None else (in_shape[axis],))  # type: ignore[index]
+        if return_inverse:
+            if axis is None:
+                size = 1
+                for s in in_shape:
+                    if s is None:
+                        size = None
+                        break
+                    size *= s
+                ret.append((size,))
+            else:
+                ret.append((in_shape[axis],))  # type: ignore[index]
+        if return_counts:
+            ret.append((None,))
+
+        if len(ret) == 1:
+            return ret[0]
+        return tuple(ret)
 
 
-@register_op("UpdateSlice")
-class UpdateSlice(OpDef):
-    """Update a slice of an array."""
+def percentile(*args: object, **kwargs: object) -> object:
+    """Compute the q-th percentile of the data along the specified axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-    op_name = "UpdateSlice"
+    return dispatch_op("Percentile", *args, **kwargs)
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+
+def quantile(*args: object, **kwargs: object) -> object:
+    """Compute the q-th quantile of the data along the specified axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Quantile", *args, **kwargs)
+
+
+def flatnonzero(*args: object, **kwargs: object) -> object:
+    """Return indices that are non-zero in the flattened version of a."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Flatnonzero", *args, **kwargs)
+
+
+def nonzero(*args: object, **kwargs: object) -> object:
+    """Return the indices of the elements that are non-zero."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Nonzero", *args, **kwargs)
+
+
+def ravel_multi_index(*args: object, **kwargs: object) -> object:
+    """Converts a tuple of index arrays into an array of flat indices."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("RavelMultiIndex", *args, **kwargs)
+
+
+def lexsort(*args: object, **kwargs: object) -> object:
+    """Perform an indirect stable sort using a sequence of keys."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Lexsort", *args, **kwargs)
+
+
+def searchsorted(*args: object, **kwargs: object) -> object:
+    """Find indices where elements should be inserted to maintain order."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Searchsorted", *args, **kwargs)
+
+
+def sort_complex(*args: object, **kwargs: object) -> object:
+    """Sort a complex array using the real part first, then the imaginary part."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("SortComplex", *args, **kwargs)
+
+
+def unique(*args: object, **kwargs: object) -> object:
+    """Find the unique elements of an array."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Unique", *args, **kwargs)

@@ -5,8 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 # pylint: disable=duplicate-code
-from typing import TYPE_CHECKING
-
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -14,9 +12,6 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.tracing import builder
-
-if TYPE_CHECKING:
-    pass
 
 
 def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[int], dim: int) -> int:

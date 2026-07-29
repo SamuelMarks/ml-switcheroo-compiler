@@ -25,6 +25,7 @@ def test_polyder_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polyint_infer_shape():
@@ -35,6 +36,7 @@ def test_polyint_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polysub_infer_shape():
@@ -45,6 +47,7 @@ def test_polysub_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy(), Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polyadd_infer_shape():
@@ -55,6 +58,7 @@ def test_polyadd_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy(), Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polymul_infer_shape():
@@ -65,6 +69,7 @@ def test_polymul_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy(), Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_polydiv_infer_shape():
@@ -75,6 +80,46 @@ def test_polydiv_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy(), Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
+
+
+def test_poly_infer_shape():
+    from ml_switcheroo_compiler.ops.binary.math import Poly
+
+    op = Poly()
+    assert op.infer_shape() == ()
+
+    class Dummy:
+        shape = (2, 2)
+
+    assert op.infer_shape(Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
+
+
+def test_polyval_infer_shape():
+    from ml_switcheroo_compiler.ops.binary.math import Polyval
+
+    op = Polyval()
+    assert op.infer_shape() == ()
+
+    class Dummy:
+        shape = (2, 2)
+
+    assert op.infer_shape(Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
+
+
+def test_polyfit_infer_shape():
+    from ml_switcheroo_compiler.ops.binary.math import Polyfit
+
+    op = Polyfit()
+    assert op.infer_shape() == ()
+
+    class Dummy:
+        shape = (2, 2)
+
+    assert op.infer_shape(Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_roots_infer_shape():
@@ -85,6 +130,7 @@ def test_roots_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_lcm_infer_shape():
@@ -95,6 +141,7 @@ def test_lcm_infer_shape():
         shape = (2, 2)
 
     assert op.infer_shape(Dummy(), Dummy()).shape == (2, 2)
+    assert op.infer_shape(1) == 1
 
 
 def test_array_equiv_infer_shape():

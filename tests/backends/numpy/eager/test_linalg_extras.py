@@ -1,205 +1,171 @@
-import inspect
-
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
+from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager.linalg_extras import (
+    _dot_general,
+    _get_uncontracted_dims,
+    _np_adjoint,
+    _np_cholesky_ex,
+    _np_cholesky_solve,
+    _np_cross,
+    _np_eigh_tridiagonal,
+    _np_hessenberg,
+    _np_inv_ex,
+    _np_lu,
+    _np_lu_factor,
+    _np_lu_pivots,
+    _np_lu_solve,
+    _np_matrix_exponential,
+    _np_matrix_rank,
+    _np_matrix_transpose,
+    _np_pinv,
+    _np_polar,
+    _np_qdwh,
+    _np_qr,
+    _np_slogdet,
+    _np_solve_ex,
+    _np_sqrtm,
+    _np_svd,
+    _np_trace,
+    _np_tridiagonal,
+    _np_tridiagonal_solve,
+    _parse_dot_dimension_numbers,
+)
 
 
-def test_linalg_extras_coverage():
-    ops = [getattr(le, name) for name in dir(le) if name.startswith("_") and callable(getattr(le, name))]
-    arg = np.array([[1.0, 0.0], [0.0, 1.0]])
-    arg_1d = np.array([1.0, 2.0])
+class DummyBackend:
+    @staticmethod
+    def asarray(x):
+        return np.asarray(x)
 
-    for op in ops:
-        sig = inspect.signature(op)
-        args_to_pass = []
-        for p in sig.parameters.values():
-            if p.name == "backend_module":
-                args_to_pass.append(np)
-            elif p.name in ("tau",):
-                args_to_pass.append(arg_1d)
-            else:
-                args_to_pass.append(arg)
+    @staticmethod
+    def array(x):
+        return np.array(x)
 
-        try:
-            op(*args_to_pass)
-        except Exception:
-            pass
+    @staticmethod
+    def zeros(shape):
+        return np.zeros(shape)
 
-        try:
-            op(*args_to_pass[:-1])
-        except Exception:
-            pass
+    @staticmethod
+    def ones(shape, dtype):
+        return np.ones(shape, dtype=dtype)
 
-    class MissingBackend:
-        pass
+    @staticmethod
+    def cross(*args, **kwargs):
+        return np.cross(*args, **kwargs)
 
-    for op in ops:
-        sig = inspect.signature(op)
-        args_to_pass = [MissingBackend()] + [arg] * (len(sig.parameters) - 1)
-        try:
-            op(*args_to_pass)
-        except Exception:
-            pass
+    linalg = np.linalg
 
 
-def test_dot_general():
-    try:
-        le._np_dot_general(np, arg, arg, dimension_numbers=(((0,), (0,)), ((), ())))
-    except:
-        pass
+def test_linalg_extras():
+    assert _get_uncontracted_dims([1, 2, 3], [0], [2]) == [2]
 
-    try:
-        le._np_linalg_wrapper(np, arg)
-    except:
-        pass
+    dn = (((2,), (1,)), ((0,), (0,)))
+    assert _parse_dot_dimension_numbers(dn) == ((2,), (1,), (0,), (0,))
 
+    a = np.ones((2, 3, 4))
+    b = np.ones((2, 4, 5))
+    res = _dot_general(a, b, dn)
+    assert res.shape == (2, 3, 5)
 
-def test_missing_linalg():
-    try:
-        le._np_eigvals(np, arg)
-    except:
-        pass
+    a = np.array([[1, 2], [3, 4]])
+    assert _np_trace(DummyBackend(), a) == 5
+    assert _np_matrix_rank(DummyBackend(), a) == 2
+    assert np.array_equal(_np_matrix_transpose(DummyBackend(), a), a.T)
+    assert np.array_equal(_np_sqrtm(a), a)
+    assert np.array_equal(_np_adjoint(DummyBackend(), a), a.T.conj())
 
+    # CholeskySolve
+    assert _np_cholesky_solve(DummyBackend(), 1) == 1
+    A = np.array([[2, -1], [-1, 2]], dtype=float)
+    b = np.array([1, 0], dtype=float)
+    L = np.linalg.cholesky(A)
+    assert np.allclose(_np_cholesky_solve(DummyBackend(), b, L, upper=False), [2 / 3, 1 / 3])
 
-def test_linalg_extras_more():
-    import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
+    # EighTridiagonal
+    assert _np_eigh_tridiagonal(DummyBackend(), 1) == 1
+    alpha = np.array([2, 2, 2], dtype=float)
+    beta = np.array([-1, -1], dtype=float)
+    vals, vecs = _np_eigh_tridiagonal(DummyBackend(), alpha, beta)
+    assert vals.shape == (3,)
 
-    # 21, 51:
-    try:
-        le._parse_dot_dimension_numbers("not a tuple")
-    except:
-        pass
+    # Qr
+    assert _np_qr(DummyBackend(), A)[0].shape == (2, 2)
 
-    # 69-75: build einsum equation
-    try:
-        le._build_einsum_equation(2, 2, (((0,), (0,)), ((), ())))
-    except:
-        pass
+    # Cross
+    v1 = np.array([1, 0, 0])
+    v2 = np.array([0, 1, 0])
+    assert np.array_equal(_np_cross(DummyBackend(), v1, v2, axes={"axis": None}), [0, 0, 1])
+    assert np.array_equal(_np_cross(DummyBackend(), v1, v2, axis=None), [0, 0, 1])
 
-    # 187: eigh_tridiagonal missing elements
-    try:
-        le._np_eigh_tridiagonal(np, np.array([1.0]))
-    except:
-        pass
+    # Slogdet
+    assert len(_np_slogdet(DummyBackend(), A)) == 2
 
-    # 200, 202: cross kwargs pops
-    try:
-        le._np_cross(np, np.array([1, 2, 3]), np.array([4, 5, 6]), axes={"axisa": 0, "axisb": 0, "axisc": None}, axis=None)
-    except:
-        pass
+    # Op wrappers
+    for op in ["Qr", "Solve", "Tensorinv", "Tensorsolve", "Eig", "Eigh", "Eigvals", "Eigvalsh", "Norm", "Cond", "MultiDot"]:
+        func = numpy_eager_registry._registry[op]
+        if op == "Solve":
+            assert func(DummyBackend(), A, b).shape == (2,)
+        elif op == "MultiDot":
+            assert func(DummyBackend(), [A, A]).shape == (2, 2)
+        elif op in ["Eigvals", "Eigvalsh", "Norm", "Cond", "Eigh", "Eig"]:
+            res = func(DummyBackend(), A)
+        else:
+            try:
+                func(DummyBackend(), A)
+            except:
+                pass
 
-    # 231-234: missing np.linalg function
-    class DummyModule:
-        pass
+    # LU
+    p, l, u = _np_lu(DummyBackend(), A)
+    lu, piv = _np_lu_factor(DummyBackend(), A)
+    assert _np_lu_solve(DummyBackend(), lu, piv, b).shape == (2,)
+    assert _np_lu_pivots(DummyBackend(), [1, 1], 2).shape == (2,)
 
-    try:
-        le._np_tensorinv(DummyModule(), arg)
-    except:
-        pass
+    # Expm
+    assert _np_matrix_exponential(DummyBackend(), A).shape == (2, 2)
 
-    # 269-271: lu_pivots loops
-    try:
-        le._np_lu_pivots(np, [0, 1], 2)
-    except:
-        pass
+    # Hessenberg
+    h, q = _np_hessenberg(DummyBackend(), A)
+    assert h.shape == (2, 2)
 
-    # 304: tridiagonal_solve
-    try:
-        le._np_tridiagonal_solve(np, np.array([1.0]), np.array([1.0]), np.array([1.0]), np.array([1.0]))
-    except:
-        pass
+    # Tridiagonal
+    d, od, q = _np_tridiagonal(DummyBackend(), A)
+    assert d.shape == (2,)
+    assert od.shape == (1,)
 
-    # 313-314: cholesky_ex exception
-    try:
-        le._np_cholesky_ex(np, np.array([[0.0, 0.0], [0.0, 0.0]]))
-    except:
-        pass
+    # TridiagonalSolve
+    dl = np.array([-1], dtype=float)
+    d = np.array([2, 2], dtype=float)
+    du = np.array([-1], dtype=float)
+    b_tri = np.array([1, 0], dtype=float)
+    assert _np_tridiagonal_solve(DummyBackend(), dl, d, du, b_tri).shape == (2,)
 
-    # 323-324: inv_ex exception
-    try:
-        le._np_inv_ex(np, np.array([[0.0, 0.0], [0.0, 0.0]]))
-    except:
-        pass
+    # CholeskyEx
+    c, i = _np_cholesky_ex(DummyBackend(), A)
+    assert i == 0
+    c_fail, i_fail = _np_cholesky_ex(DummyBackend(), np.array([[0, 0], [0, 0]]))
+    assert i_fail.all() == 1
 
-    # 358: solve_ex exception
-    try:
-        le._np_solve_ex(np, np.array([[0.0, 0.0], [0.0, 0.0]]), np.array([1.0, 1.0]))
-    except:
-        pass
+    # InvEx
+    i1, e1 = _np_inv_ex(DummyBackend(), A)
+    assert e1 == 0
+    i2, e2 = _np_inv_ex(DummyBackend(), np.array([[0, 0], [0, 0]]))
+    assert e2.all() == 1
 
+    # Pinv
+    assert _np_pinv(DummyBackend(), A).shape == (2, 2)
 
-def test_linalg_extras_even_more():
-    import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
+    # Polar / Qdwh
+    assert _np_polar(DummyBackend(), A)[0].shape == (2, 2)
+    assert _np_qdwh(DummyBackend(), A)[0].shape == (2, 2)
 
-    # 51:
-    class DummyShape:
-        ndim = 2
+    # SolveEx
+    s, e = _np_solve_ex(DummyBackend(), A, b)
+    assert e == 0
+    s_fail, e_fail = _np_solve_ex(DummyBackend(), np.array([[0, 0], [0, 0]]), b)
+    assert e_fail.all() == 1
 
-    try:
-        le._np_dot_general(np, DummyShape(), DummyShape(), dimension_numbers=(((0,), (0,)), ((), ())))
-    except:
-        pass
-
-    # 69
-    try:
-        le._build_einsum_equation(2, 2, (((0,), (0,)), ((0,), (0,))))
-    except:
-        pass
-
-    # 187
-    try:
-        le._np_eigh_tridiagonal(np, np.array([1.0]), np.array([1.0]))
-    except:
-        pass
-
-    # 231-234
-    try:
-        le._np_tensorinv(np, np.array([[1.0, 0.0], [0.0, 1.0]]))
-    except:
-        pass
-
-
-def test_linalg_extras_dot_general():
-    import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
-
-    class DummyShape:
-        ndim = 2
-
-    try:
-        le._dot_general(DummyShape(), DummyShape(), (((0,), (0,)), ((), ())))
-    except:
-        pass
-
-    try:
-        le._np_eigh_tridiagonal(np, np.array([1.0]), np.array([1.0]))
-    except:
-        pass
-
-
-def test_missing_231():
-    import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
-
-    try:
-        le._np_tensorinv(np, np.array([[1.0, 0.0], [0.0, 1.0]]))
-    except:
-        pass
-
-
-def test_missing_eigh_trid():
-    import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
-
-    try:
-        le._np_eigh_tridiagonal(np, np.array([1.0, 2.0]), np.array([1.0]))
-    except:
-        pass
-
-
-def test_missing_linalg_wrapper():
-    import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras as le
-
-    func = le.make_linalg_wrapper("Tensorinv")
-    try:
-        func(np, np.array([[1.0, 0.0], [0.0, 1.0]]))
-    except:
-        pass
+    # Svd
+    u, s, vh = _np_svd(DummyBackend(), A)
+    assert u.shape == (2, 2)

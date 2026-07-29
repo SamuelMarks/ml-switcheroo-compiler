@@ -359,6 +359,8 @@ def test_missing_init_lines():
 
 
 def test_missing_init_unmocked():
+    import pytest
+
     from ml_switcheroo_compiler.serialization import (
         _load_h5_weights,
         _load_npz_weights,
@@ -368,31 +370,17 @@ def test_missing_init_unmocked():
         _save_as_safetensors,
     )
 
-    # We call them with wrong arguments so they throw exceptions inside
-    try:
+    with pytest.raises(Exception):
         _save_as_h5(None, None)
-    except Exception:
-        pass
-    try:
+    with pytest.raises(Exception):
         _save_as_safetensors(None, None)
-    except Exception:
-        pass
-    try:
+    with pytest.raises(Exception):
         _load_h5_weights(None)
-    except Exception:
-        pass
-    try:
+    with pytest.raises(Exception):
         _load_safetensors_weights(None)
-    except Exception:
-        pass
-    try:
-        _load_npz_weights(None)
-    except Exception:
-        pass
-    try:
+    assert _load_npz_weights(None) == {}
+    with pytest.raises(Exception):
         _load_pickle_weights(None)
-    except Exception:
-        pass
 
 
 def test_missing_init_real():
@@ -420,34 +408,35 @@ def test_missing_init_real_unmocked():
 
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    tf = "test_real_init_unmocked.xyz"
+    tf = "test_real_init_unmocked.h5"
+    tf_st = "test_real_init_unmocked.st"
+    tf_npz = "test_real_init_unmocked.npz"
+    tf_pk = "test_real_init_unmocked.pk"
+
+    # h5
     try:
         _save_as_h5({"a": 1}, tf)
-    except Exception:
-        pass
-    try:
-        _save_as_safetensors({"a": 1}, tf)
-    except Exception:
-        pass
-    try:
-        _load_h5_weights(tf)
-    except Exception:
-        pass
-    try:
-        _load_safetensors_weights(tf)
-    except Exception:
-        pass
-    try:
-        _load_npz_weights(tf)
-    except Exception:
-        pass
-    try:
-        _load_pickle_weights(tf)
+        assert "a" in _load_h5_weights(tf)
     except Exception:
         pass
 
-    if os.path.exists(tf):
-        os.remove(tf)
+    # safetensors
+    try:
+        _save_as_safetensors({"a": 1}, tf_st)
+        assert "a" in _load_safetensors_weights(tf_st)
+    except Exception:
+        pass
+
+    assert _load_npz_weights(tf_npz) == {}
+
+    try:
+        _load_pickle_weights(tf_pk)
+    except Exception:
+        pass
+
+    for f in [tf, tf_st, tf_npz, tf_pk]:
+        if os.path.exists(f):
+            os.remove(f)
 
 
 def test_mock_serialization_methods():

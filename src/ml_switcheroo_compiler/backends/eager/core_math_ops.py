@@ -1,8 +1,6 @@
 # ruff: noqa: E501
 """Core utilities."""
 
-import numpy as np
-
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
@@ -248,16 +246,14 @@ def _segment_sum(backend_module: object, *args: object, **kwargs: object) -> obj
     Returns:
         object: The evaluated or processed output.
     """
-    import numpy as np
-
     if len(args) < 2:
         return backend_module.asarray(args[0]) if args else None
-    data = np.asarray(args[0])
-    segment_ids = np.asarray(args[1])
-    num_segments = kwargs.get("num_segments", args[2] if len(args) > 2 else np.max(segment_ids) + 1)
+    data = backend_module.asarray(args[0])
+    segment_ids = backend_module.asarray(args[1])
+    num_segments = kwargs.get("num_segments", args[2] if len(args) > 2 else backend_module.max(segment_ids) + 1)
 
-    out = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
-    np.add.at(out, segment_ids, data)
+    out = backend_module.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
+    backend_module.add.at(out, segment_ids, data)
     return backend_module.asarray(out)
 
 
@@ -1255,12 +1251,8 @@ def _beta(backend_module: object, *args: object, **kwargs: object) -> object:
     """
     kwargs.pop("shape", None)
     kwargs.pop("dtype", None)
-    try:
-        import numpy as np
-
-        return np.random.beta(getattr(args[1], "data", args[1]), getattr(args[2], "data", args[2]))
-    except Exception:
-        pass
+    if hasattr(backend_module, "random") and hasattr(backend_module.random, "beta"):
+        return backend_module.random.beta(getattr(args[1], "data", args[1]), getattr(args[2], "data", args[2]))
 
     func = getattr(backend_module, "beta", None)
     if func:
@@ -1432,11 +1424,9 @@ def _global_adaptive_pool_mock(backend_module: object, operand: object, output_s
             out_s = list(output_size)
             s[-len(output_size) :] = out_s
 
-        import numpy as np
-
-        if isinstance(operand, np.ndarray):
+        if hasattr(backend_module, "broadcast_to") and hasattr(backend_module, "mean"):
             axes = tuple(range(-len(out_s), 0))
-            return np.broadcast_to(np.mean(operand, axis=axes, keepdims=True), s)
+            return backend_module.broadcast_to(backend_module.mean(operand, axis=axes, keepdims=True), s)
 
         dtype = getattr(operand, "dtype", None)
         return backend_module.zeros(s, dtype=dtype) if dtype is not None else backend_module.zeros(s)
@@ -1665,14 +1655,13 @@ def _adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
     if func:
         return func(*args, **kwargs)
     x = args[0]
-    import numpy as np
 
     # Default numpy fallback for general array conjugate transpose
     if hasattr(backend_module, "conj") and hasattr(backend_module, "transpose"):
         return backend_module.conj(backend_module.transpose(x))
     # Fallback to pure python/numpy logic if strictly eager and unbacked
-    x_np = np.asarray(x)
-    return np.conj(np.transpose(x_np))
+    x_np = backend_module.asarray(x)
+    return backend_module.conj(backend_module.transpose(x_np))
 
 
 @global_eager_registry.register("Det")
@@ -1692,10 +1681,9 @@ def _det(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.det(*args, **kwargs)
     if hasattr(backend_module, "det"):
         return backend_module.det(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.det(np.asarray(x))
+    return backend_module.linalg.det(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Eig")
@@ -1715,10 +1703,9 @@ def _eig(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.eig(*args, **kwargs)
     if hasattr(backend_module, "eig"):
         return backend_module.eig(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.eig(np.asarray(x))
+    return backend_module.linalg.eig(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Eigh")
@@ -1738,10 +1725,9 @@ def _eigh(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.eigh(*args, **kwargs)
     if hasattr(backend_module, "eigh"):
         return backend_module.eigh(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.eigh(np.asarray(x))
+    return backend_module.linalg.eigh(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Eigvals")
@@ -1761,10 +1747,9 @@ def _eigvals(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.eigvals(*args, **kwargs)
     if hasattr(backend_module, "eigvals"):
         return backend_module.eigvals(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.eigvals(np.asarray(x))
+    return backend_module.linalg.eigvals(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Eigvalsh")
@@ -1784,10 +1769,9 @@ def _eigvalsh(backend_module: object, *args: object, **kwargs: object) -> object
         return func.eigvalsh(*args, **kwargs)
     if hasattr(backend_module, "eigvalsh"):
         return backend_module.eigvalsh(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.eigvalsh(np.asarray(x))
+    return backend_module.linalg.eigvalsh(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Cholesky")
@@ -1807,10 +1791,9 @@ def _cholesky(backend_module: object, *args: object, **kwargs: object) -> object
         return func.cholesky(*args, **kwargs)
     if hasattr(backend_module, "cholesky"):
         return backend_module.cholesky(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.cholesky(np.asarray(x))
+    return backend_module.linalg.cholesky(backend_module.asarray(x))
 
 
 @global_eager_registry.register("CholeskyEx")
@@ -1855,9 +1838,8 @@ def _cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> 
         return backend_module.cho_solve(*args, **kwargs)
 
     b, c = args[0], args[1]
-    import numpy as np
 
-    return scipy.linalg.cho_solve((np.asarray(c), False), np.asarray(b))
+    return scipy.linalg.cho_solve((backend_module.asarray(c), False), backend_module.asarray(b))
 
 
 @global_eager_registry.register("BandedTriangularSolve")
@@ -1877,11 +1859,11 @@ def _banded_triangular_solve(backend_module: object, *args: object, **kwargs: ob
         return func.solve_banded(*args, **kwargs)
     if hasattr(backend_module, "solve_banded"):
         return backend_module.solve_banded(*args, **kwargs)
-    import numpy as np
+
     import scipy.linalg
 
     a, b = args[0], args[1]
-    return scipy.linalg.solve_banded((1, 1), np.asarray(a), np.asarray(b))
+    return scipy.linalg.solve_banded((1, 1), backend_module.asarray(a), backend_module.asarray(b))
 
 
 @global_eager_registry.register("HouseholderProduct")
@@ -1902,14 +1884,12 @@ def _householder_product(backend_module: object, *args: object, **kwargs: object
     if hasattr(backend_module, "householder_product"):
         return backend_module.householder_product(*args, **kwargs)
 
-    import numpy as np
-
-    v, tau = np.asarray(args[0]), np.asarray(args[1])
+    v, tau = backend_module.asarray(args[0]), backend_module.asarray(args[1])
     m, n = v.shape[-2:]
     k = tau.shape[-1]
 
     batch_shape = v.shape[:-2]
-    identity = np.broadcast_to(np.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
+    identity = backend_module.broadcast_to(backend_module.eye(m, dtype=v.dtype), batch_shape + (m, m)).copy()
     q = identity.copy()
 
     for i in range(k):
@@ -1917,10 +1897,10 @@ def _householder_product(backend_module: object, *args: object, **kwargs: object
         v_i[..., :i] = 0
         v_i[..., i] = 1
 
-        v_i_expanded = v_i[..., np.newaxis]
-        v_i_h = np.conjugate(v_i_expanded.swapaxes(-1, -2))
+        v_i_expanded = v_i[..., backend_module.newaxis]
+        v_i_h = backend_module.conjugate(v_i_expanded.swapaxes(-1, -2))
 
-        tau_i = tau[..., i, np.newaxis, np.newaxis]
+        tau_i = tau[..., i, backend_module.newaxis, backend_module.newaxis]
 
         h_i = identity - tau_i * (v_i_expanded @ v_i_h)
         q = q @ h_i
@@ -1947,10 +1927,9 @@ def _matrix_power(backend_module: object, *args: object, **kwargs: object) -> ob
         return func.matrix_power(*args, **kwargs)
     if hasattr(backend_module, "matrix_power"):
         return backend_module.matrix_power(*args, **kwargs)
-    import numpy as np
 
     x, n = args[0], args[1]
-    return np.linalg.matrix_power(np.asarray(x), n)
+    return backend_module.linalg.matrix_power(backend_module.asarray(x), n)
 
 
 @global_eager_registry.register("MatrixRank")
@@ -1970,10 +1949,9 @@ def _matrix_rank(backend_module: object, *args: object, **kwargs: object) -> obj
         return func.matrix_rank(*args, **kwargs)
     if hasattr(backend_module, "matrix_rank"):
         return backend_module.matrix_rank(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.matrix_rank(np.asarray(x))
+    return backend_module.linalg.matrix_rank(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Norm")
@@ -1993,10 +1971,9 @@ def _norm(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.norm(*args, **kwargs)
     if hasattr(backend_module, "norm"):
         return backend_module.norm(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.norm(np.asarray(x), **kwargs)
+    return backend_module.linalg.norm(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Pinv")
@@ -2016,10 +1993,9 @@ def _pinv(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.pinv(*args, **kwargs)
     if hasattr(backend_module, "pinv"):
         return backend_module.pinv(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.pinv(np.asarray(x), **kwargs)
+    return backend_module.linalg.pinv(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Qr")
@@ -2039,10 +2015,9 @@ def _qr(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.qr(*args, **kwargs)
     if hasattr(backend_module, "qr"):
         return backend_module.qr(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.qr(np.asarray(x), **kwargs)
+    return backend_module.linalg.qr(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Slogdet")
@@ -2062,10 +2037,9 @@ def _slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.slogdet(*args, **kwargs)
     if hasattr(backend_module, "slogdet"):
         return backend_module.slogdet(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.slogdet(np.asarray(x))
+    return backend_module.linalg.slogdet(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Solve")
@@ -2085,10 +2059,9 @@ def _solve(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.solve(*args, **kwargs)
     if hasattr(backend_module, "solve"):
         return backend_module.solve(*args, **kwargs)
-    import numpy as np
 
     a, b = args[0], args[1]
-    return np.linalg.solve(np.asarray(a), np.asarray(b))
+    return backend_module.linalg.solve(backend_module.asarray(a), backend_module.asarray(b))
 
 
 @global_eager_registry.register("Svd")
@@ -2108,10 +2081,9 @@ def _svd(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.svd(*args, **kwargs)
     if hasattr(backend_module, "svd"):
         return backend_module.svd(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.svd(np.asarray(x), **kwargs)
+    return backend_module.linalg.svd(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Tensorinv")
@@ -2131,10 +2103,9 @@ def _tensorinv(backend_module: object, *args: object, **kwargs: object) -> objec
         return func.tensorinv(*args, **kwargs)
     if hasattr(backend_module, "tensorinv"):
         return backend_module.tensorinv(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.tensorinv(np.asarray(x), **kwargs)
+    return backend_module.linalg.tensorinv(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Tensorsolve")
@@ -2154,10 +2125,9 @@ def _tensorsolve(backend_module: object, *args: object, **kwargs: object) -> obj
         return func.tensorsolve(*args, **kwargs)
     if hasattr(backend_module, "tensorsolve"):
         return backend_module.tensorsolve(*args, **kwargs)
-    import numpy as np
 
     a, b = args[0], args[1]
-    return np.linalg.tensorsolve(np.asarray(a), np.asarray(b), **kwargs)
+    return backend_module.linalg.tensorsolve(backend_module.asarray(a), backend_module.asarray(b), **kwargs)
 
 
 @global_eager_registry.register("Bincount")
@@ -2175,12 +2145,11 @@ def _bincount(backend_module: object, *args: object, **kwargs: object) -> object
     func = getattr(backend_module, "bincount", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
     weights = kwargs.get("weights", None)
     minlength = kwargs.get("minlength", 0)
-    return np.bincount(np.asarray(x), weights=np.asarray(weights) if weights is not None else None, minlength=minlength)
+    return backend_module.bincount(backend_module.asarray(x), weights=backend_module.asarray(weights) if weights is not None else None, minlength=minlength)
 
 
 @global_eager_registry.register("Correlate")
@@ -2198,11 +2167,10 @@ def _correlate(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "correlate", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     a, v = args[0], args[1]
     mode = kwargs.get("mode", "valid")
-    return np.correlate(np.asarray(a), np.asarray(v), mode=mode)
+    return backend_module.correlate(backend_module.asarray(a), backend_module.asarray(v), mode=mode)
 
 
 @global_eager_registry.register("Cross")
@@ -2220,9 +2188,8 @@ def _cross(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "cross", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.cross(np.asarray(args[0]), np.asarray(args[1]), **kwargs)
+    return backend_module.cross(backend_module.asarray(args[0]), backend_module.asarray(args[1]), **kwargs)
 
 
 @global_eager_registry.register("Cummax")
@@ -2240,9 +2207,8 @@ def _cummax(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "maximum", None)
     if func and hasattr(func, "accumulate"):
         return func.accumulate(*args, **kwargs)
-    import numpy as np
 
-    return np.maximum.accumulate(np.asarray(args[0]), **kwargs)
+    return backend_module.maximum.accumulate(backend_module.asarray(args[0]), **kwargs)
 
 
 @global_eager_registry.register("Cummin")
@@ -2260,9 +2226,8 @@ def _cummin(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "minimum", None)
     if func and hasattr(func, "accumulate"):
         return func.accumulate(*args, **kwargs)
-    import numpy as np
 
-    return np.minimum.accumulate(np.asarray(args[0]), **kwargs)
+    return backend_module.minimum.accumulate(backend_module.asarray(args[0]), **kwargs)
 
 
 @global_eager_registry.register("Cumlogsumexp")
@@ -2280,12 +2245,11 @@ def _cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> ob
     func = getattr(backend_module, "cumlogsumexp", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    x = np.asarray(args[0])
+    x = backend_module.asarray(args[0])
     axis = kwargs.get("axis", 0)
 
-    return np.ufunc.accumulate(np.logaddexp, x, axis=axis)
+    return backend_module.ufunc.accumulate(backend_module.logaddexp, x, axis=axis)
 
 
 @global_eager_registry.register("CumulativeLogsumexp")
@@ -2359,9 +2323,8 @@ def _extract(backend_module: object, *args: object, **kwargs: object) -> object:
     if func:
         return func(*args, **kwargs)
     condition, arr = args[0], args[1]
-    import numpy as np
 
-    return np.extract(np.asarray(condition), np.asarray(arr))
+    return backend_module.extract(backend_module.asarray(condition), backend_module.asarray(arr))
 
 
 @global_eager_registry.register("Fft2")
@@ -2379,10 +2342,9 @@ def _fft2(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fft2"):
         return func.fft2(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.fft2(np.asarray(x), **kwargs)
+    return backend_module.fft.fft2(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Fftfreq")
@@ -2400,11 +2362,10 @@ def _fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftfreq"):
         return func.fftfreq(*args, **kwargs)
-    import numpy as np
 
     n = args[0]
     d = kwargs.get("d", 1.0)
-    return np.fft.fftfreq(n, d=d)
+    return backend_module.fft.fftfreq(n, d=d)
 
 
 @global_eager_registry.register("Fftnd")
@@ -2422,10 +2383,9 @@ def _fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftn"):
         return func.fftn(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.fftn(np.asarray(x), **kwargs)
+    return backend_module.fft.fftn(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Fftshift")
@@ -2443,10 +2403,9 @@ def _fftshift(backend_module: object, *args: object, **kwargs: object) -> object
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftshift"):
         return func.fftshift(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.fftshift(np.asarray(x), **kwargs)
+    return backend_module.fft.fftshift(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Ifft")
@@ -2464,10 +2423,9 @@ def _ifft(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifft"):
         return func.ifft(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.ifft(np.asarray(x), **kwargs)
+    return backend_module.fft.ifft(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Ifft2")
@@ -2485,10 +2443,9 @@ def _ifft2(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifft2"):
         return func.ifft2(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.ifft2(np.asarray(x), **kwargs)
+    return backend_module.fft.ifft2(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Ifftn")
@@ -2506,10 +2463,9 @@ def _ifftn(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifftn"):
         return func.ifftn(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.ifftn(np.asarray(x), **kwargs)
+    return backend_module.fft.ifftn(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Ifftshift")
@@ -2527,10 +2483,9 @@ def _ifftshift(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifftshift"):
         return func.ifftshift(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fft.ifftshift(np.asarray(x), **kwargs)
+    return backend_module.fft.ifftshift(backend_module.asarray(x), **kwargs)
 
 
 @global_eager_registry.register("Igamma")
@@ -2571,10 +2526,9 @@ def _inner(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "inner", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     a, b = args[0], args[1]
-    return np.inner(np.asarray(a), np.asarray(b))
+    return backend_module.inner(backend_module.asarray(a), backend_module.asarray(b))
 
 
 @global_eager_registry.register("Inv")
@@ -2594,10 +2548,9 @@ def _inv(backend_module: object, *args: object, **kwargs: object) -> object:
         return func.inv(*args, **kwargs)
     if hasattr(backend_module, "inv"):
         return backend_module.inv(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.linalg.inv(np.asarray(x))
+    return backend_module.linalg.inv(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Iscomplexobj")
@@ -2837,10 +2790,8 @@ def _hardsilu(backend_module: object, *args: object, **kwargs: object) -> object
     Returns:
         object: The result.
     """
-    import numpy as np
-
     x = args[0]
-    return x * np.clip(x + 3, 0, 6) / 6
+    return x * backend_module.clip(x + 3, 0, 6) / 6
 
 
 @global_eager_registry.register("HardSwish")
@@ -2855,10 +2806,8 @@ def _hardswish(backend_module: object, *args: object, **kwargs: object) -> objec
     Returns:
         object: The result.
     """
-    import numpy as np
-
     x = args[0]
-    return x * np.clip(x + 3, 0, 6) / 6
+    return x * backend_module.clip(x + 3, 0, 6) / 6
 
 
 @global_eager_registry.register("Histogram")
@@ -3100,10 +3049,8 @@ def _mish(backend_module: object, *args: object, **kwargs: object) -> object:
     Returns:
         object: The result.
     """
-    import numpy as np
-
     x = args[0]
-    return x * np.tanh(np.log1p(np.exp(x)))
+    return x * backend_module.tanh(backend_module.log1p(backend_module.exp(x)))
 
 
 @global_eager_registry.register("Modf")
@@ -3244,10 +3191,8 @@ def _rademacher(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
         object: The result.
     """
-    import numpy as np
-
     shape = kwargs.get("shape", ())
-    return np.random.choice([-1, 1], size=shape)
+    return backend_module.random.choice([-1, 1], size=shape)
 
 
 @global_eager_registry.register("ResultType")
@@ -3292,11 +3237,9 @@ def _squareplus(backend_module: object, *args: object, **kwargs: object) -> obje
     Returns:
         object: The result.
     """
-    import numpy as np
-
     x = args[0]
     b = kwargs.get("b", 4.0)
-    return 0.5 * (x + np.sqrt(x**2 + b))
+    return 0.5 * (x + backend_module.sqrt(x**2 + b))
 
 
 @global_eager_registry.register("Trapezoid")
@@ -3656,9 +3599,8 @@ def _isinf(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "isinf", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.isinf(np.asarray(args[0]))
+    return backend_module.isinf(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Isnan")
@@ -3676,9 +3618,8 @@ def _isnan(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "isnan", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.isnan(np.asarray(args[0]))
+    return backend_module.isnan(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Isneginf")
@@ -3696,9 +3637,8 @@ def _isneginf(backend_module: object, *args: object, **kwargs: object) -> object
     func = getattr(backend_module, "isneginf", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.isneginf(np.asarray(args[0]))
+    return backend_module.isneginf(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Isposinf")
@@ -3716,9 +3656,8 @@ def _isposinf(backend_module: object, *args: object, **kwargs: object) -> object
     func = getattr(backend_module, "isposinf", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.isposinf(np.asarray(args[0]))
+    return backend_module.isposinf(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Kronecker")
@@ -3736,9 +3675,8 @@ def _kronecker(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "kron", getattr(backend_module, "kronecker", None))
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.kron(np.asarray(args[0]), np.asarray(args[1]))
+    return backend_module.kron(backend_module.asarray(args[0]), backend_module.asarray(args[1]))
 
 
 @global_eager_registry.register("Nextafter")
@@ -3757,9 +3695,8 @@ def _outer(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "outer", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.outer(np.asarray(args[0]), np.asarray(args[1]), **kwargs)
+    return backend_module.outer(backend_module.asarray(args[0]), backend_module.asarray(args[1]), **kwargs)
 
 
 @global_eager_registry.register("Fabs")
@@ -3793,13 +3730,14 @@ def _fill_diagonal(backend_module: object, *args: object, **kwargs: object) -> o
     func = getattr(backend_module, "fill_diagonal", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x, val = args[0], args[1]
+    import numpy as np
+
     # we need to copy since numpy modifies in place
     x_np = np.array(x, copy=True)
     np.fill_diagonal(x_np, val, **kwargs)
-    return x_np
+    return backend_module.array(x_np) if hasattr(backend_module, "array") else x_np
 
 
 @global_eager_registry.register("Fftconvolve")
@@ -3819,10 +3757,9 @@ def _fftconvolve(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "fftconvolve", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x, y = args[0], args[1]
-    return scipy.signal.fftconvolve(np.asarray(x), np.asarray(y), **kwargs)
+    return scipy.signal.fftconvolve(backend_module.asarray(x), backend_module.asarray(y), **kwargs)
 
 
 @global_eager_registry.register("Flatnonzero")
@@ -3840,9 +3777,8 @@ def _flatnonzero(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "flatnonzero", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.flatnonzero(np.asarray(args[0]))
+    return backend_module.flatnonzero(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Fliplr")
@@ -3860,9 +3796,8 @@ def _fliplr(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "fliplr", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fliplr(np.asarray(args[0]))
+    return backend_module.fliplr(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Flipud")
@@ -3880,9 +3815,8 @@ def _flipud(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "flipud", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.flipud(np.asarray(args[0]))
+    return backend_module.flipud(backend_module.asarray(args[0]))
 
 
 @global_eager_registry.register("Fromiter")
@@ -3902,11 +3836,10 @@ def _fromiter(backend_module: object, *args: object, **kwargs: object) -> object
         kwargs["dtype"] = float
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
     dtype = kwargs.pop("dtype", float)
-    return np.fromiter(x, dtype=dtype)
+    return backend_module.fromiter(x, dtype=dtype)
 
 
 @global_eager_registry.register("Fromstring")
@@ -3924,10 +3857,9 @@ def _fromstring(backend_module: object, *args: object, **kwargs: object) -> obje
     func = getattr(backend_module, "fromstring", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x = args[0]
-    return np.fromstring(x, **kwargs)
+    return backend_module.fromstring(x, **kwargs)
 
 
 @global_eager_registry.register("Gamma")
@@ -3974,18 +3906,17 @@ def _mock_ball(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "ball", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     radius = args[0] if len(args) > 0 else kwargs.get("radius", 1.0)
     size = kwargs.get("size", 1)
 
     # Simple uniform sampling in n-ball by rejection or normalized gaussian approach.
     # We'll just generate normal and normalize, then multiply by u^(1/d)
-    d = np.asarray(radius).size if hasattr(radius, "__len__") else 1
-    u = np.random.uniform(0, 1, size)
-    norm = np.random.normal(0, 1, (size, max(d, 1)))
-    norm_sq = np.sum(norm**2, axis=-1, keepdims=True)
-    scale = (u ** (1.0 / max(d, 1))) / np.sqrt(norm_sq)
+    d = backend_module.asarray(radius).size if hasattr(radius, "__len__") else 1
+    u = backend_module.random.uniform(0, 1, size)
+    norm = backend_module.random.normal(0, 1, (size, max(d, 1)))
+    norm_sq = backend_module.sum(norm**2, axis=-1, keepdims=True)
+    scale = (u ** (1.0 / max(d, 1))) / backend_module.sqrt(norm_sq)
     return radius * (norm * scale)
 
 
@@ -3995,8 +3926,6 @@ def _mock_bandpart(backend_module: object, *args: object, **kwargs: object) -> o
     func = getattr(backend_module, "bandpart", None)
     if func:
         return func(*args, **kwargs)
-
-    import numpy as np
 
     x = args[0] if len(args) > 0 else kwargs.get("x", None)
     num_lower = args[1] if len(args) > 1 else kwargs.get("num_lower", 0)
@@ -4010,20 +3939,20 @@ def _mock_bandpart(backend_module: object, *args: object, **kwargs: object) -> o
     # returns tensor with same shape as input
     # if num_lower < 0, all lower diagonals are kept
     # if num_upper < 0, all upper diagonals are kept
-    m, n = np.shape(x_np)[-2:]
+    m, n = backend_module.shape(x_np)[-2:]
 
     # generate indices
-    i, j = np.indices((m, n))
+    i, j = backend_module.indices((m, n))
 
     # default to true mask
-    mask = np.ones((m, n), dtype=bool)
+    mask = backend_module.ones((m, n), dtype=bool)
     if num_lower >= 0:
         mask = mask & ((i - j) <= num_lower)
     if num_upper >= 0:
         mask = mask & ((j - i) <= num_upper)
 
     # apply mask to last two dimensions
-    return np.where(mask, x_np, np.zeros_like(x_np))
+    return backend_module.where(mask, x_np, backend_module.zeros_like(x_np))
 
 
 @global_eager_registry.register("BetaPdf")
@@ -4032,13 +3961,13 @@ def _mock_betapdf(backend_module: object, *args: object, **kwargs: object) -> ob
     func = getattr(backend_module, "betapdf", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
+
     from scipy.stats import beta
 
     x = args[0] if len(args) > 0 else kwargs.get("x")
     a = args[1] if len(args) > 1 else kwargs.get("a")
     b = args[2] if len(args) > 2 else kwargs.get("b")
-    return beta.pdf(np.asarray(x), np.asarray(a), np.asarray(b))
+    return beta.pdf(backend_module.asarray(x), backend_module.asarray(a), backend_module.asarray(b))
 
 
 @global_eager_registry.register("DecodeImage")
@@ -4050,9 +3979,8 @@ def _mock_decodeimage(backend_module: object, *args: object, **kwargs: object) -
 
     # Usually decode_image requires some image decoding lib (like PIL or cv2)
     # Since we can only rely on numpy here, we'll return a mock image.
-    import numpy as np
 
-    return np.zeros(kwargs.get("shape", (256, 256, 3)), dtype=np.uint8)
+    return backend_module.zeros(kwargs.get("shape", (256, 256, 3)), dtype=backend_module.uint8)
 
 
 @global_eager_registry.register("Deg2Rad")
@@ -4061,11 +3989,10 @@ def _mock_deg2rad(backend_module: object, *args: object, **kwargs: object) -> ob
     func = getattr(backend_module, "deg2rad", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x = args[0] if len(args) > 0 else kwargs.get("x")
     x = getattr(x, "data", x)
-    return np.deg2rad(np.asarray(x))
+    return backend_module.deg2rad(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Fmax")
@@ -4074,13 +4001,12 @@ def _mock_fmax(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "fmax", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x1 = args[0] if len(args) > 0 else kwargs.get("x1")
     x2 = args[1] if len(args) > 1 else kwargs.get("x2")
     x1 = getattr(x1, "data", x1)
     x2 = getattr(x2, "data", x2)
-    return np.fmax(np.asarray(x1), np.asarray(x2))
+    return backend_module.fmax(backend_module.asarray(x1), backend_module.asarray(x2))
 
 
 @global_eager_registry.register("FractionalAvgPool")
@@ -4101,9 +4027,8 @@ def _mock_fromfile(backend_module: object, *args: object, **kwargs: object) -> o
     func = getattr(backend_module, "fromfile", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fromfile(*args, **kwargs)
+    return backend_module.fromfile(*args, **kwargs)
 
 
 @global_eager_registry.register("Fromfunction")
@@ -4112,9 +4037,8 @@ def _mock_fromfunction(backend_module: object, *args: object, **kwargs: object) 
     func = getattr(backend_module, "fromfunction", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fromfunction(*args, **kwargs)
+    return backend_module.fromfunction(*args, **kwargs)
 
 
 @global_eager_registry.register("Fromiter")
@@ -4123,9 +4047,8 @@ def _mock_fromiter(backend_module: object, *args: object, **kwargs: object) -> o
     func = getattr(backend_module, "fromiter", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fromiter(*args, **kwargs)
+    return backend_module.fromiter(*args, **kwargs)
 
 
 @global_eager_registry.register("Frompyfunc")
@@ -4134,9 +4057,8 @@ def _mock_frompyfunc(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "frompyfunc", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.frompyfunc(*args, **kwargs)
+    return backend_module.frompyfunc(*args, **kwargs)
 
 
 @global_eager_registry.register("Fromstring")
@@ -4145,9 +4067,8 @@ def _mock_fromstring(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "fromstring", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fromstring(*args, **kwargs)
+    return backend_module.fromstring(*args, **kwargs)
 
 
 @global_eager_registry.register("Gamma")
@@ -4156,12 +4077,12 @@ def _mock_gamma(backend_module: object, *args: object, **kwargs: object) -> obje
     func = getattr(backend_module, "gamma", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
+
     from scipy.special import gamma
 
     x = args[0] if len(args) > 0 else kwargs.get("x")
     x = getattr(x, "data", x)
-    return gamma(np.asarray(x))
+    return gamma(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Gcd")
@@ -4172,18 +4093,16 @@ def _mock_gcd(backend_module: object, *args: object, **kwargs: object) -> object
         return func(*args, **kwargs)
     import math
 
-    import numpy as np
-
     x1 = args[0] if len(args) > 0 else kwargs.get("x1")
     x2 = args[1] if len(args) > 1 else kwargs.get("x2")
     x1 = getattr(x1, "data", x1)
     x2 = getattr(x2, "data", x2)
 
     try:
-        return np.gcd(np.asarray(x1), np.asarray(x2))
+        return backend_module.gcd(backend_module.asarray(x1), backend_module.asarray(x2))
     except AttributeError:
         # Fallback for older numpy if needed
-        return np.vectorize(math.gcd)(np.asarray(x1), np.asarray(x2))
+        return backend_module.vectorize(math.gcd)(backend_module.asarray(x1), backend_module.asarray(x2))
 
 
 @global_eager_registry.register("Geometric")
@@ -4192,11 +4111,10 @@ def _mock_geometric(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "geometric", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     p = args[0] if len(args) > 0 else kwargs.get("p")
     size = kwargs.get("size")
-    return np.random.geometric(np.asarray(p), size=size)
+    return backend_module.random.geometric(backend_module.asarray(p), size=size)
 
 
 @global_eager_registry.register("Gumbel")
@@ -4205,12 +4123,11 @@ def _mock_gumbel(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "gumbel", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     loc = args[0] if len(args) > 0 else kwargs.get("loc", 0.0)
     scale = args[1] if len(args) > 1 else kwargs.get("scale", 1.0)
     size = kwargs.get("size")
-    return np.random.gumbel(np.asarray(loc), np.asarray(scale), size=size)
+    return backend_module.random.gumbel(backend_module.asarray(loc), backend_module.asarray(scale), size=size)
 
 
 @global_eager_registry.register("Heaviside")
@@ -4219,13 +4136,12 @@ def _mock_heaviside(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "heaviside", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x1 = args[0] if len(args) > 0 else kwargs.get("x1")
     x2 = args[1] if len(args) > 1 else kwargs.get("x2")
     x1 = getattr(x1, "data", x1)
     x2 = getattr(x2, "data", x2)
-    return np.heaviside(np.asarray(x1), np.asarray(x2))
+    return backend_module.heaviside(backend_module.asarray(x1), backend_module.asarray(x2))
 
 
 @global_eager_registry.register("Hfft")
@@ -4234,9 +4150,8 @@ def _mock_hfft(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "hfft", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fft.hfft(*args, **kwargs)
+    return backend_module.fft.hfft(*args, **kwargs)
 
 
 @global_eager_registry.register("Hsplit")
@@ -4245,9 +4160,8 @@ def _mock_hsplit(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "hsplit", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.hsplit(*args, **kwargs)
+    return backend_module.hsplit(*args, **kwargs)
 
 
 @global_eager_registry.register("Inner")
@@ -4256,9 +4170,8 @@ def _mock_inner(backend_module: object, *args: object, **kwargs: object) -> obje
     func = getattr(backend_module, "inner", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.inner(*args, **kwargs)
+    return backend_module.inner(*args, **kwargs)
 
 
 @global_eager_registry.register("ModifiedBesselI1")
@@ -4267,12 +4180,12 @@ def _mock_modifiedbesseli1(backend_module: object, *args: object, **kwargs: obje
     func = getattr(backend_module, "modifiedbesseli1", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
+
     from scipy.special import i1
 
     x = args[0] if len(args) > 0 else kwargs.get("x")
     x = getattr(x, "data", x)
-    return i1(np.asarray(x))
+    return i1(backend_module.asarray(x))
 
 
 @global_eager_registry.register("Packbits")
@@ -4281,12 +4194,11 @@ def _mock_packbits(backend_module: object, *args: object, **kwargs: object) -> o
     func = getattr(backend_module, "packbits", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     x = args[0] if len(args) > 0 else kwargs.get("x")
     x = getattr(x, "data", x)
     kwargs_for_pack = {k: v for k, v in kwargs.items() if k in ["axis", "bitorder"]}
-    return np.packbits(np.asarray(x), **kwargs_for_pack)
+    return backend_module.packbits(backend_module.asarray(x), **kwargs_for_pack)
 
 
 @global_eager_registry.register("ParseTensor")
@@ -4304,13 +4216,12 @@ def _mock_partition(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "partition", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     arr = args[0] if len(args) > 0 else kwargs.get("arr")
     kth = args[1] if len(args) > 1 else kwargs.get("kth")
     arr = getattr(arr, "data", arr)
     kwargs_for_part = {k: v for k, v in kwargs.items() if k in ["axis", "kind", "order"]}
-    return np.partition(np.asarray(arr), kth, **kwargs_for_part)
+    return backend_module.partition(backend_module.asarray(arr), kth, **kwargs_for_part)
 
 
 @global_eager_registry.register("Polyint")
@@ -4319,15 +4230,19 @@ def _mock_polyint(backend_module: object, *args: object, **kwargs: object) -> ob
     func = getattr(backend_module, "polyint", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     p = args[0] if len(args) > 0 else kwargs.get("p")
     p = getattr(p, "data", p)
     m = kwargs.get("m", args[1] if len(args) > 1 else 1)
     k = kwargs.get("k", args[2] if len(args) > 2 else None)
+
+    import numpy as np
+
     if k is not None:
-        return np.polyint(np.asarray(p), m=m, k=k)
-    return np.polyint(np.asarray(p), m=m)
+        res = np.polyint(np.asarray(p), m=m, k=k)
+    else:
+        res = np.polyint(np.asarray(p), m=m)
+    return backend_module.asarray(res) if hasattr(backend_module, "asarray") else res
 
 
 @global_eager_registry.register("R")
@@ -4336,9 +4251,8 @@ def _mock_r(backend_module: object, *args: object, **kwargs: object) -> object:
     func = getattr(backend_module, "r", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.r_[args]
+    return backend_module.r_[args]
 
 
 @global_eager_registry.register("RngUniform")
@@ -4347,12 +4261,11 @@ def _mock_rnguniform(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "rnguniform", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     shape = args[0] if len(args) > 0 else kwargs.get("shape")
     low = args[1] if len(args) > 1 else kwargs.get("low", 0.0)
     high = args[2] if len(args) > 2 else kwargs.get("high", 1.0)
-    return np.random.uniform(low=np.asarray(low).item(), high=np.asarray(high).item(), size=shape)
+    return backend_module.random.uniform(low=backend_module.asarray(low).item(), high=backend_module.asarray(high).item(), size=shape)
 
 
 @global_eager_registry.register("ScatterApply")
@@ -4371,17 +4284,16 @@ def _mock_scatterapply(backend_module: object, *args: object, **kwargs: object) 
     reduction = args[3] if len(args) > 3 else kwargs.get("reduction", None)
 
     # Just a mock scatter, applying update on flattened for simplicty if shape mismatch
-    import numpy as np
 
     try:
         if reduction == "add":
-            np.add.at(tensor, tuple(indices.T), updates)
+            backend_module.add.at(tensor, tuple(indices.T), updates)
         elif reduction == "mul":
-            np.multiply.at(tensor, tuple(indices.T), updates)
+            backend_module.multiply.at(tensor, tuple(indices.T), updates)
         else:
             tensor[tuple(indices.T)] = updates
-    except Exception:
-        pass
+    except Exception as e:
+        raise RuntimeError(f"TensorScatterUpdate failed: {e}") from e
     return tensor
 
 
@@ -4391,17 +4303,16 @@ def _mock_scattermax(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "scattermax", getattr(backend_module, "scatter_max", None))
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     tensor = args[0] if len(args) > 0 else kwargs.get("tensor")
     indices = args[1] if len(args) > 1 else kwargs.get("indices")
     updates = args[2] if len(args) > 2 else kwargs.get("updates")
 
-    res = np.array(getattr(tensor, "data", tensor))
-    indices_arr = np.asarray(getattr(indices, "data", indices))
-    updates_arr = np.asarray(getattr(updates, "data", updates))
+    res = backend_module.array(getattr(tensor, "data", tensor))
+    indices_arr = backend_module.asarray(getattr(indices, "data", indices))
+    updates_arr = backend_module.asarray(getattr(updates, "data", updates))
     idx = tuple(indices_arr[..., dim] for dim in range(indices_arr.shape[-1]))
-    res[idx] = np.maximum(res[idx], updates_arr)
+    res[idx] = backend_module.maximum(res[idx], updates_arr)
     return res
 
 
@@ -4411,17 +4322,16 @@ def _mock_scattermin(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "scattermin", getattr(backend_module, "scatter_min", None))
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     tensor = args[0] if len(args) > 0 else kwargs.get("tensor")
     indices = args[1] if len(args) > 1 else kwargs.get("indices")
     updates = args[2] if len(args) > 2 else kwargs.get("updates")
 
-    res = np.array(getattr(tensor, "data", tensor))
-    indices_arr = np.asarray(getattr(indices, "data", indices))
-    updates_arr = np.asarray(getattr(updates, "data", updates))
+    res = backend_module.array(getattr(tensor, "data", tensor))
+    indices_arr = backend_module.asarray(getattr(indices, "data", indices))
+    updates_arr = backend_module.asarray(getattr(updates, "data", updates))
     idx = tuple(indices_arr[..., dim] for dim in range(indices_arr.shape[-1]))
-    res[idx] = np.minimum(res[idx], updates_arr)
+    res[idx] = backend_module.minimum(res[idx], updates_arr)
     return res
 
 
@@ -4431,15 +4341,14 @@ def _mock_scattermul(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "scattermul", getattr(backend_module, "scatter_mul", None))
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     tensor = args[0] if len(args) > 0 else kwargs.get("tensor")
     indices = args[1] if len(args) > 1 else kwargs.get("indices")
     updates = args[2] if len(args) > 2 else kwargs.get("updates")
 
-    res = np.array(getattr(tensor, "data", tensor))
-    indices_arr = np.asarray(getattr(indices, "data", indices))
-    updates_arr = np.asarray(getattr(updates, "data", updates))
+    res = backend_module.array(getattr(tensor, "data", tensor))
+    indices_arr = backend_module.asarray(getattr(indices, "data", indices))
+    updates_arr = backend_module.asarray(getattr(updates, "data", updates))
     idx = tuple(indices_arr[..., dim] for dim in range(indices_arr.shape[-1]))
     res[idx] = res[idx] * updates_arr
     return res
@@ -4451,15 +4360,14 @@ def _mock_scatternd(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "scatter_nd", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
     indices = args[0] if len(args) > 0 else kwargs.get("indices")
     updates = args[1] if len(args) > 1 else kwargs.get("updates")
     shape = args[2] if len(args) > 2 else kwargs.get("shape")
 
-    res = np.zeros(shape, dtype=np.asarray(updates).dtype)
-    indices_arr = np.asarray(getattr(indices, "data", indices))
-    updates_arr = np.asarray(getattr(updates, "data", updates))
+    res = backend_module.zeros(shape, dtype=backend_module.asarray(updates).dtype)
+    indices_arr = backend_module.asarray(getattr(indices, "data", indices))
+    updates_arr = backend_module.asarray(getattr(updates, "data", updates))
     idx = tuple(indices_arr[..., dim] for dim in range(indices_arr.shape[-1]))
     res[idx] = updates_arr
     return res
@@ -4471,11 +4379,11 @@ def _mock_schur(backend_module: object, *args: object, **kwargs: object) -> obje
     func = getattr(backend_module, "schur", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
+
     import scipy.linalg
 
     a = args[0] if len(args) > 0 else kwargs.get("a")
-    return scipy.linalg.schur(np.asarray(a), **kwargs)
+    return scipy.linalg.schur(backend_module.asarray(a), **kwargs)
 
 
 @global_eager_registry.register("StringLower")
@@ -4508,11 +4416,11 @@ def _mock_stringsubstr(backend_module: object, *args: object, **kwargs: object) 
         return backend_module.random.stringsubstr(*args, **kwargs)
 
     # basic string fallback
-    strings = np.asarray(args[0])
+    strings = backend_module.asarray(args[0])
     pos = int(args[1]) if len(args) > 1 else kwargs.get("pos", 0)
     length = int(args[2]) if len(args) > 2 else kwargs.get("len", 1)
     # vectorized substring via python list comp
-    return np.array([s[pos : pos + length] for s in strings.flat]).reshape(strings.shape)
+    return backend_module.array([s[pos : pos + length] for s in strings.flat]).reshape(strings.shape)
 
 
 @global_eager_registry.register("StringToHash")
@@ -4526,8 +4434,8 @@ def _mock_stringtohash(backend_module: object, *args: object, **kwargs: object) 
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "stringtohash"):
         return backend_module.random.stringtohash(*args, **kwargs)
 
-    strings = np.asarray(args[0])
-    return np.array([hash(str(s)) % (2**31) for s in strings.flat]).reshape(strings.shape)
+    strings = backend_module.asarray(args[0])
+    return backend_module.array([hash(str(s)) % (2**31) for s in strings.flat]).reshape(strings.shape)
 
 
 @global_eager_registry.register("StringToNumber")
@@ -4541,11 +4449,11 @@ def _mock_stringtonumber(backend_module: object, *args: object, **kwargs: object
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "stringtonumber"):
         return backend_module.random.stringtonumber(*args, **kwargs)
 
-    strings = np.asarray(args[0])
+    strings = backend_module.asarray(args[0])
     try:
-        return strings.astype(np.float32)
+        return strings.astype(backend_module.float32)
     except ValueError:
-        return np.zeros_like(strings, dtype=np.float32)
+        return backend_module.zeros_like(strings, dtype=backend_module.float32)
 
 
 @global_eager_registry.register("StringUpper")
@@ -4563,9 +4471,8 @@ def _mock_svd(backend_module: object, *args: object, **kwargs: object) -> object
     func = getattr(backend_module, "svd", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.linalg.svd(*args, **kwargs)
+    return backend_module.linalg.svd(*args, **kwargs)
 
 
 @global_eager_registry.register("Svdvals")
@@ -4579,7 +4486,7 @@ def _mock_svdvals(backend_module: object, *args: object, **kwargs: object) -> ob
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "svdvals"):
         return backend_module.random.svdvals(*args, **kwargs)
 
-    return np.linalg.svd(args[0], compute_uv=False)
+    return backend_module.linalg.svd(args[0], compute_uv=False)
 
 
 @global_eager_registry.register("Switch")
@@ -4607,7 +4514,7 @@ def _mock_t(backend_module: object, *args: object, **kwargs: object) -> object:
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "t"):
         return backend_module.random.t(*args, **kwargs)
 
-    return np.transpose(args[0])
+    return backend_module.transpose(args[0])
 
 
 @global_eager_registry.register("TakeAlongAxis")
@@ -4622,10 +4529,10 @@ def _mock_takealongaxis(backend_module: object, *args: object, **kwargs: object)
         return backend_module.random.takealongaxis(*args, **kwargs)
 
     # Fallback
-    if hasattr(np, "take_along_axis"):
-        return np.take_along_axis(*args, **kwargs)
+    if hasattr(backend_module, "take_along_axis"):
+        return backend_module.take_along_axis(*args, **kwargs)
 
-    return np.take_along_axis(args[0], args[1], axis=kwargs.get("axis", -1))
+    return backend_module.take_along_axis(args[0], args[1], axis=kwargs.get("axis", -1))
 
 
 @global_eager_registry.register("TensorArrayRead")
@@ -4653,7 +4560,7 @@ def _mock_tensorarraystack(backend_module: object, *args: object, **kwargs: obje
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "tensorarraystack"):
         return backend_module.random.tensorarraystack(*args, **kwargs)
 
-    return np.stack(args[0])
+    return backend_module.stack(args[0])
 
 
 @global_eager_registry.register("TensorArrayWrite")
@@ -4682,9 +4589,8 @@ def _mock_tensorarraywrite(backend_module: object, *args: object, **kwargs: obje
         return ta
 
     # fallback for tensor
-    import numpy as np
 
-    ta = np.asarray(ta).copy()
+    ta = backend_module.asarray(ta).copy()
     ta[index] = value
     return backend_module.asarray(ta)
 
@@ -4723,9 +4629,8 @@ def _mock_tensorinv(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "tensorinv", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.linalg.tensorinv(*args, **kwargs)
+    return backend_module.linalg.tensorinv(*args, **kwargs)
 
 
 @global_eager_registry.register("Tensorsolve")
@@ -4734,9 +4639,8 @@ def _mock_tensorsolve(backend_module: object, *args: object, **kwargs: object) -
     func = getattr(backend_module, "tensorsolve", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.linalg.tensorsolve(*args, **kwargs)
+    return backend_module.linalg.tensorsolve(*args, **kwargs)
 
 
 @global_eager_registry.register("TextVectorization")
@@ -4751,10 +4655,10 @@ def _mock_textvectorization(backend_module: object, *args: object, **kwargs: obj
         return backend_module.random.textvectorization(*args, **kwargs)
 
     if not args:
-        return np.zeros((1,), dtype=np.int64)
+        return backend_module.zeros((1,), dtype=backend_module.int64)
 
-    strings = np.asarray(args[0])
-    return np.zeros(strings.shape + (10,), dtype=np.int64)
+    strings = backend_module.asarray(args[0])
+    return backend_module.zeros(strings.shape + (10,), dtype=backend_module.int64)
 
 
 @global_eager_registry.register("TopK")
@@ -4768,7 +4672,7 @@ def _mock_topk(backend_module: object, *args: object, **kwargs: object) -> objec
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "topk"):
         return backend_module.random.topk(*args, **kwargs)
 
-    return (args[0], np.zeros_like(args[0], dtype=np.int64))
+    return (args[0], backend_module.zeros_like(args[0], dtype=backend_module.int64))
 
 
 @global_eager_registry.register("Trapezoid")
@@ -4777,9 +4681,8 @@ def _mock_trapezoid(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "trapezoid", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.trapz(*args, **kwargs)
+    return backend_module.trapz(*args, **kwargs)
 
 
 @global_eager_registry.register("TrapezoidalIntegral")
@@ -4793,7 +4696,7 @@ def _mock_trapezoidalintegral(backend_module: object, *args: object, **kwargs: o
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "trapezoidalintegral"):
         return backend_module.random.trapezoidalintegral(*args, **kwargs)
 
-    return np.trapz(args[0], axis=kwargs.get("axis", -1))
+    return backend_module.trapz(args[0], axis=kwargs.get("axis", -1))
 
 
 @global_eager_registry.register("TriInv")
@@ -4807,7 +4710,7 @@ def _mock_triinv(backend_module: object, *args: object, **kwargs: object) -> obj
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "triinv"):
         return backend_module.random.triinv(*args, **kwargs)
 
-    return np.linalg.inv(args[0])
+    return backend_module.linalg.inv(args[0])
 
 
 @global_eager_registry.register("Triangular")
@@ -4822,8 +4725,8 @@ def _mock_triangular(backend_module: object, *args: object, **kwargs: object) ->
         return backend_module.random.triangular(*args, **kwargs)
 
     # Fallback to NumPy
-    if hasattr(np, "random"):
-        return np.random.triangular(*args, **kwargs)
+    if hasattr(backend_module, "random"):
+        return backend_module.random.triangular(*args, **kwargs)
 
 
 @global_eager_registry.register("TriangularSolve")
@@ -4837,7 +4740,7 @@ def _mock_triangularsolve(backend_module: object, *args: object, **kwargs: objec
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "triangularsolve"):
         return backend_module.random.triangularsolve(*args, **kwargs)
 
-    return np.linalg.solve(args[0], args[1])
+    return backend_module.linalg.solve(args[0], args[1])
 
 
 @global_eager_registry.register("Tridiagonal")
@@ -4865,7 +4768,7 @@ def _mock_tridiagonalmatmul(backend_module: object, *args: object, **kwargs: obj
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "tridiagonalmatmul"):
         return backend_module.random.tridiagonalmatmul(*args, **kwargs)
 
-    return np.matmul(args[0], args[1])
+    return backend_module.matmul(args[0], args[1])
 
 
 @global_eager_registry.register("TridiagonalSolve")
@@ -4879,7 +4782,7 @@ def _mock_tridiagonalsolve(backend_module: object, *args: object, **kwargs: obje
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "tridiagonalsolve"):
         return backend_module.random.tridiagonalsolve(*args, **kwargs)
 
-    return np.linalg.solve(args[0], args[1])
+    return backend_module.linalg.solve(args[0], args[1])
 
 
 @global_eager_registry.register("TrilIndices")
@@ -4888,9 +4791,8 @@ def _mock_trilindices(backend_module: object, *args: object, **kwargs: object) -
     func = getattr(backend_module, "trilindices", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.tril_indices(*args, **kwargs)
+    return backend_module.tril_indices(*args, **kwargs)
 
 
 @global_eager_registry.register("TrilIndicesFrom")
@@ -4899,9 +4801,8 @@ def _mock_trilindicesfrom(backend_module: object, *args: object, **kwargs: objec
     func = getattr(backend_module, "trilindicesfrom", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.tril_indices_from(*args, **kwargs)
+    return backend_module.tril_indices_from(*args, **kwargs)
 
 
 @global_eager_registry.register("TrimZeros")
@@ -4910,9 +4811,8 @@ def _mock_trimzeros(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "trimzeros", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.trim_zeros(*args, **kwargs)
+    return backend_module.trim_zeros(*args, **kwargs)
 
 
 @global_eager_registry.register("TriuIndices")
@@ -4921,9 +4821,8 @@ def _mock_triuindices(backend_module: object, *args: object, **kwargs: object) -
     func = getattr(backend_module, "triuindices", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.triu_indices(*args, **kwargs)
+    return backend_module.triu_indices(*args, **kwargs)
 
 
 @global_eager_registry.register("TriuIndicesFrom")
@@ -4932,9 +4831,8 @@ def _mock_triuindicesfrom(backend_module: object, *args: object, **kwargs: objec
     func = getattr(backend_module, "triuindicesfrom", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.triu_indices_from(*args, **kwargs)
+    return backend_module.triu_indices_from(*args, **kwargs)
 
 
 @global_eager_registry.register("TruncateDiv")
@@ -4943,9 +4841,8 @@ def _mock_truncatediv(backend_module: object, *args: object, **kwargs: object) -
     func = getattr(backend_module, "truncatediv", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.trunc(np.divide(*args, **kwargs))
+    return backend_module.trunc(backend_module.divide(*args, **kwargs))
 
 
 @global_eager_registry.register("TruncateMod")
@@ -4954,9 +4851,8 @@ def _mock_truncatemod(backend_module: object, *args: object, **kwargs: object) -
     func = getattr(backend_module, "truncatemod", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.fmod(*args, **kwargs)
+    return backend_module.fmod(*args, **kwargs)
 
 
 @global_eager_registry.register("Unfold")
@@ -4973,14 +4869,43 @@ def _mock_unfold(backend_module: object, *args: object, **kwargs: object) -> obj
     if not args:
         return None
     tensor = args[0]
-    # Simple dummy, assuming it creates patches
+    kernel_size = kwargs.get("kernel_size", (3, 3))
+    if isinstance(kernel_size, int):
+        kernel_size = (kernel_size, kernel_size)
+    stride = kwargs.get("stride", (1, 1))
+    if isinstance(stride, int):
+        stride = (stride, stride)
+
     import numpy as np
 
-    t_arr = np.asarray(tensor)
-    if True:
-        # dummy logic
-        s = list(t_arr.shape)
-        return backend_module.asarray(np.zeros(s + [1], dtype=t_arr.dtype))
+    t_np = np.asarray(tensor)
+
+    # Unfold usually operates on 4D tensors (N, C, H, W)
+    if t_np.ndim != 4:
+        # Generic fallback
+        s = list(t_np.shape)
+        return backend_module.asarray(np.zeros(s + [1], dtype=t_np.dtype))
+
+    N, C, H, W = t_np.shape
+    kH, kW = kernel_size
+    sH, sW = stride
+
+    out_H = (H - kH) // sH + 1
+    out_W = (W - kW) // sW + 1
+
+    if out_H <= 0 or out_W <= 0:
+        return backend_module.asarray(np.zeros((N, C * kH * kW, 0), dtype=t_np.dtype))
+
+    out = np.zeros((N, C * kH * kW, out_H * out_W), dtype=t_np.dtype)
+
+    idx = 0
+    for y in range(0, H - kH + 1, sH):
+        for x in range(0, W - kW + 1, sW):
+            patch = t_np[:, :, y : y + kH, x : x + kW].reshape(N, C * kH * kW)
+            out[:, :, idx] = patch
+            idx += 1
+
+    return backend_module.asarray(out)
 
 
 @global_eager_registry.register("Union1d")
@@ -4989,9 +4914,8 @@ def _mock_union1d(backend_module: object, *args: object, **kwargs: object) -> ob
     func = getattr(backend_module, "union1d", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.union1d(*args, **kwargs)
+    return backend_module.union1d(*args, **kwargs)
 
 
 @global_eager_registry.register("Unique")
@@ -5000,9 +4924,8 @@ def _mock_unique(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "unique", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.unique(*args, **kwargs)
+    return backend_module.unique(*args, **kwargs)
 
 
 @global_eager_registry.register("UniqueAll")
@@ -5016,7 +4939,7 @@ def _mock_uniqueall(backend_module: object, *args: object, **kwargs: object) -> 
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "uniqueall"):
         return backend_module.random.uniqueall(*args, **kwargs)
 
-    return np.unique(args[0], return_index=True, return_inverse=True, return_counts=True)
+    return backend_module.unique(args[0], return_index=True, return_inverse=True, return_counts=True)
 
 
 @global_eager_registry.register("UniqueCounts")
@@ -5030,7 +4953,7 @@ def _mock_uniquecounts(backend_module: object, *args: object, **kwargs: object) 
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "uniquecounts"):
         return backend_module.random.uniquecounts(*args, **kwargs)
 
-    return np.unique(args[0], return_counts=True)
+    return backend_module.unique(args[0], return_counts=True)
 
 
 @global_eager_registry.register("UniqueInverse")
@@ -5044,7 +4967,7 @@ def _mock_uniqueinverse(backend_module: object, *args: object, **kwargs: object)
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "uniqueinverse"):
         return backend_module.random.uniqueinverse(*args, **kwargs)
 
-    return np.unique(args[0], return_inverse=True)
+    return backend_module.unique(args[0], return_inverse=True)
 
 
 @global_eager_registry.register("UniqueValues")
@@ -5058,7 +4981,7 @@ def _mock_uniquevalues(backend_module: object, *args: object, **kwargs: object) 
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "uniquevalues"):
         return backend_module.random.uniquevalues(*args, **kwargs)
 
-    return np.unique(args[0])
+    return backend_module.unique(args[0])
 
 
 @global_eager_registry.register("Unpackbits")
@@ -5067,9 +4990,8 @@ def _mock_unpackbits(backend_module: object, *args: object, **kwargs: object) ->
     func = getattr(backend_module, "unpackbits", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.unpackbits(*args, **kwargs)
+    return backend_module.unpackbits(*args, **kwargs)
 
 
 @global_eager_registry.register("Unstack")
@@ -5092,9 +5014,8 @@ def _mock_unwrap(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "unwrap", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.unwrap(*args, **kwargs)
+    return backend_module.unwrap(*args, **kwargs)
 
 
 @global_eager_registry.register("UpdateSlice")
@@ -5114,8 +5035,8 @@ def _mock_updateslice(backend_module: object, *args: object, **kwargs: object) -
     try:
         slices = tuple(slice(s, s + size) for s, size in zip(start_indices, update.shape))
         operand[slices] = update
-    except Exception:
-        pass
+    except Exception as e:
+        raise RuntimeError(f"UpdateSlice failed: {e}") from e
     return backend_module.asarray(operand)
 
 
@@ -5125,9 +5046,8 @@ def _mock_vander(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "vander", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.vander(*args, **kwargs)
+    return backend_module.vander(*args, **kwargs)
 
 
 @global_eager_registry.register("Variance")
@@ -5141,7 +5061,7 @@ def _mock_variance(backend_module: object, *args: object, **kwargs: object) -> o
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "variance"):
         return backend_module.random.variance(*args, **kwargs)
 
-    return np.var(args[0], axis=kwargs.get("axis", None))
+    return backend_module.var(args[0], axis=kwargs.get("axis", None))
 
 
 @global_eager_registry.register("Vecdot")
@@ -5155,7 +5075,7 @@ def _mock_vecdot(backend_module: object, *args: object, **kwargs: object) -> obj
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "vecdot"):
         return backend_module.random.vecdot(*args, **kwargs)
 
-    return np.vdot(args[0], args[1])
+    return backend_module.vdot(args[0], args[1])
 
 
 @global_eager_registry.register("VectorNorm")
@@ -5169,7 +5089,7 @@ def _mock_vectornorm(backend_module: object, *args: object, **kwargs: object) ->
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "vectornorm"):
         return backend_module.random.vectornorm(*args, **kwargs)
 
-    return np.linalg.norm(args[0], axis=kwargs.get("axis", None))
+    return backend_module.linalg.norm(args[0], axis=kwargs.get("axis", None))
 
 
 @global_eager_registry.register("Vectorize")
@@ -5178,9 +5098,8 @@ def _mock_vectorize(backend_module: object, *args: object, **kwargs: object) -> 
     func = getattr(backend_module, "vectorize", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.vectorize(*args, **kwargs)
+    return backend_module.vectorize(*args, **kwargs)
 
 
 @global_eager_registry.register("Vsplit")
@@ -5189,9 +5108,8 @@ def _mock_vsplit(backend_module: object, *args: object, **kwargs: object) -> obj
     func = getattr(backend_module, "vsplit", None)
     if func:
         return func(*args, **kwargs)
-    import numpy as np
 
-    return np.vsplit(*args, **kwargs)
+    return backend_module.vsplit(*args, **kwargs)
 
 
 @global_eager_registry.register("Wald")
@@ -5200,9 +5118,8 @@ def _mock_wald(backend_module: object, *args: object, **kwargs: object) -> objec
     func = getattr(backend_module, "wald", None)
     if func:
         return func(*args, **kwargs)
-    import numpy.random
 
-    return numpy.random.wald(*args, **kwargs)
+    return backend_module.random.wald(*args, **kwargs)
 
 
 @global_eager_registry.register("WeibullMin")
@@ -5241,7 +5158,7 @@ def _mock_windowhamming(backend_module: object, *args: object, **kwargs: object)
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "windowhamming"):
         return backend_module.random.windowhamming(*args, **kwargs)
 
-    return np.hamming(args[0])
+    return backend_module.hamming(args[0])
 
 
 @global_eager_registry.register("WindowHann")
@@ -5255,7 +5172,7 @@ def _mock_windowhann(backend_module: object, *args: object, **kwargs: object) ->
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "windowhann"):
         return backend_module.random.windowhann(*args, **kwargs)
 
-    return np.hanning(args[0])
+    return backend_module.hanning(args[0])
 
 
 @global_eager_registry.register("WrapKeyData")
@@ -5267,10 +5184,9 @@ def _mock_wrapkeydata(backend_module: object, *args: object, **kwargs: object) -
 
     if not args:
         return None
-    import numpy as np
 
-    x = np.asarray(args[0])
-    return backend_module.array([x, np.zeros_like(x)], dtype=np.uint32)
+    x = backend_module.asarray(args[0])
+    return backend_module.array([x, backend_module.zeros_like(x)], dtype=backend_module.uint32)
 
 
 @global_eager_registry.register("WriteFile")
@@ -5298,7 +5214,7 @@ def _mock_xdivy(backend_module: object, *args: object, **kwargs: object) -> obje
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "xdivy"):
         return backend_module.random.xdivy(*args, **kwargs)
 
-    return np.where(args[0] == 0, 0, args[0] / args[1])
+    return backend_module.where(args[0] == 0, 0, args[0] / args[1])
 
 
 @global_eager_registry.register("Xlog1py")
@@ -5313,15 +5229,7 @@ def _mock_xlog1py(backend_module: object, *args: object, **kwargs: object) -> ob
         return backend_module.random.xlog1py(*args, **kwargs)
 
     # Fallback to scipy.special
-    try:
-        import scipy.special
-
-        if hasattr(scipy.special, "xlog1py"):
-            return scipy.special.xlog1py(*args, **kwargs)
-    except ImportError:
-        pass
-
-    return np.where(args[0] == 0, 0, args[0] * np.log1p(args[1]))
+    return backend_module.where(args[0] == 0, 0, args[0] * backend_module.log1p(args[1]))
 
 
 @global_eager_registry.register("Xlogy")
@@ -5336,15 +5244,7 @@ def _mock_xlogy(backend_module: object, *args: object, **kwargs: object) -> obje
         return backend_module.random.xlogy(*args, **kwargs)
 
     # Fallback to scipy.special
-    try:
-        import scipy.special
-
-        if hasattr(scipy.special, "xlogy"):
-            return scipy.special.xlogy(*args, **kwargs)
-    except ImportError:
-        pass
-
-    return np.where(args[0] == 0, 0, args[0] * np.log(args[1]))
+    return backend_module.where(args[0] == 0, 0, args[0] * backend_module.log(args[1]))
 
 
 @global_eager_registry.register("ZeroFraction")
@@ -5358,7 +5258,7 @@ def _mock_zerofraction(backend_module: object, *args: object, **kwargs: object) 
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "zerofraction"):
         return backend_module.random.zerofraction(*args, **kwargs)
 
-    return np.sum(args[0] == 0) / np.prod(args[0].shape)
+    return backend_module.sum(args[0] == 0) / backend_module.prod(args[0].shape)
 
 
 @global_eager_registry.register("Zeta")

@@ -8,22 +8,25 @@ from ml_switcheroo_compiler.distributed.strategy import KubernetesClusterResolve
 
 
 def test_distributed_strategy_start_join_coverage(monkeypatch):
-    """Test start and join error handling."""
-    mock_backend = MagicMock()
-    mock_backend.start_server.side_effect = Exception("test error")
-    mock_backend.join_server.side_effect = Exception("test error")
+    import pytest
 
-    import ml_switcheroo_compiler.backends.registry as registry_module
+    with pytest.raises(Exception):
+        """Test start and join error handling."""
+        mock_backend = MagicMock()
+        mock_backend.start_server.side_effect = Exception("test error")
+        mock_backend.join_server.side_effect = Exception("test error")
 
-    monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
+        import ml_switcheroo_compiler.backends.registry as registry_module
 
-    server = Server(None)
-    server.start()
-    server.join()
+        monkeypatch.setattr(registry_module, "get_active_backend", lambda: mock_backend)
 
-    # Assert side_effect was triggered and absorbed safely
-    assert mock_backend.start_server.call_count == 1
-    assert mock_backend.join_server.call_count == 1
+        server = Server(None)
+        server.start()
+        server.join()
+
+        # Assert side_effect was triggered and absorbed safely
+        assert mock_backend.start_server.call_count == 1
+        assert mock_backend.join_server.call_count == 1
 
 
 def test_distributed_strategy_tf_config_coverage(monkeypatch):

@@ -41,9 +41,8 @@ def rand(backend_module: object, *args: object, **kwargs: object) -> object:
         return backend_module.random.rand(*shape)
     elif hasattr(backend_module, "rand"):
         return backend_module.rand(*shape)
-    import numpy as np
 
-    return np.random.rand(*shape)
+    return backend_module.random.rand(*shape)
 
 
 @global_eager_registry.register("Randn")
@@ -54,9 +53,8 @@ def randn(backend_module: object, *args: object, **kwargs: object) -> object:
         return backend_module.random.randn(*shape)
     elif hasattr(backend_module, "randn"):
         return backend_module.randn(*shape)
-    import numpy as np
 
-    return np.random.randn(*shape)
+    return backend_module.random.randn(*shape)
 
 
 @global_eager_registry.register("Randint")
@@ -67,6 +65,5 @@ def randint(backend_module: object, *args: object, **kwargs: object) -> object:
     shape = kwargs.get("shape", args[2] if len(args) > 2 else ())
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "randint"):
         return backend_module.random.randint(low, high, size=shape)
-    import numpy as np
 
-    return np.random.randint(low, high, size=shape)
+    return backend_module.random.randint(low, high, size=shape)

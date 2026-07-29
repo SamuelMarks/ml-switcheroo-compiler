@@ -4,27 +4,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.mlx.eager import _mlx_partition, _mlx_zeros, execute_op
-
-
-def test_mlx_eager_execute_op(monkeypatch):
-    """Test execute_op edge cases in mlx/eager.py."""
-
-    # Test fallback path when op is not in mlx_eager_registry
-    class DummyMlxBackend:
-        @classmethod
-        def execute_numpy_fallback(cls, op_type, *args, **kwargs):
-            return "mock_numpy_fallback"
-
-    # Need to monkeypatch _execute_numpy_fallback
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.mlx.eager._execute_numpy_fallback", lambda cls, op_type, *args, **kwargs: "mock_numpy_fallback")
-
-    # Simulate AttributeError in mlx
-    mock_registry = MagicMock()
-    mock_registry.get.side_effect = AttributeError("test error")
-    monkeypatch.setattr("ml_switcheroo_compiler.backends.mlx.eager.mlx_eager_registry", mock_registry)
-
-    assert execute_op(DummyMlxBackend, "UnknownOp", np.array([1])) == "mock_numpy_fallback"
+from ml_switcheroo_compiler.backends.mlx.eager import _mlx_partition, _mlx_zeros
 
 
 def test_mlx_eager_dtype_resolution(monkeypatch):

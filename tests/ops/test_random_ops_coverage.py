@@ -2,6 +2,7 @@
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_ops import binomial, categorical, choice, dirichlet, permutation, truncated_normal
+from ml_switcheroo_compiler.ops.random_ops.core import Rademacher
 
 
 def test_random_ops_infer_shape():
@@ -13,3 +14,9 @@ def test_random_ops_infer_shape():
     assert truncated_normal().infer_shape(t) == (2, 2)
     assert permutation().infer_shape(t) == (2, 2)
     assert choice().infer_shape(t) == (2, 2)
+
+    class DummyShape:
+        shape = (2, 2)
+
+    assert Rademacher().infer_shape(DummyShape().shape) == (2, 2)
+    assert Rademacher().infer_shape() == ()

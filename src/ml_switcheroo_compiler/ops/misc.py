@@ -1,3 +1,4 @@
+# ruff: noqa: C901, PLR0912
 """Misc operations."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -44,7 +45,9 @@ class Gradient(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Histogram")
@@ -55,7 +58,12 @@ class Histogram(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        bins = kwargs.get("bins", 10)
+        if hasattr(bins, "shape") and len(bins.shape) > 0:
+            return (bins.shape[0] - 1,)
+        if isinstance(bins, int):
+            return (bins,)
+        return (10,)
 
 
 @register_op("Histogram2d")
@@ -66,7 +74,14 @@ class Histogram2d(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        bins = kwargs.get("bins", 10)
+        if isinstance(bins, (list, tuple)):
+            if len(bins) == 2:
+                b1, b2 = bins
+                b1_len = b1 if isinstance(b1, int) else (b1.shape[0] - 1 if hasattr(b1, "shape") else 10)
+                b2_len = b2 if isinstance(b2, int) else (b2.shape[0] - 1 if hasattr(b2, "shape") else 10)
+                return (b1_len, b2_len)
+        return (10, 10)
 
 
 @register_op("HistogramBinEdges")
@@ -77,7 +92,12 @@ class HistogramBinEdges(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        bins = kwargs.get("bins", 10)
+        if hasattr(bins, "shape") and len(bins.shape) > 0:
+            return bins.shape
+        if isinstance(bins, int):
+            return (bins + 1,)
+        return (11,)
 
 
 @register_op("Histogramdd")
@@ -88,7 +108,11 @@ class Histogramdd(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        if not args:
+            return ()
+        sample = args[0]
+        n_dim = sample.shape[1] if (hasattr(sample, "shape") and len(sample.shape) == 2) else 1
+        return tuple(10 for _ in range(n_dim))
 
 
 @register_op("I0")
@@ -99,7 +123,9 @@ class I0(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Indices")
@@ -110,7 +136,11 @@ class Indices(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        if not args:
+            return ()
+        dimensions = args[0]
+        dim_len = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
+        return (dim_len, *dimensions) if dim_len > 0 else ()
 
 
 @register_op("Infeed")
@@ -121,7 +151,7 @@ class Infeed(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return kwargs.get("shape", ())
 
 
 @register_op("Interp")
@@ -132,7 +162,9 @@ class Interp(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Intersect1d")
@@ -143,7 +175,7 @@ class Intersect1d(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return (None,)
 
 
 @register_op("Isscalar")
@@ -176,7 +208,16 @@ class Ix(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        nd = len(args)
+        if nd == 0:
+            return ()
+        # ix_ returns a tuple of ndarrays, each having ndim == nd. We return shape of the first output.
+        # Actually it returns a tuple of arrays, the Op should maybe return a tuple of shapes,
+        # but since we can only return one shape, let's return the shape of the first one.
+        shape = [1] * nd
+        if hasattr(args[0], "shape") and len(args[0].shape) > 0:
+            shape[0] = args[0].shape[0]
+        return tuple(shape)
 
 
 @register_op("Kron")
@@ -187,7 +228,15 @@ class Kron(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        if len(args) < 2:
+            return ()
+        a, b = args[0], args[1]
+        shape_a = getattr(a, "shape", ())
+        shape_b = getattr(b, "shape", ())
+        ndims = max(len(shape_a), len(shape_b))
+        shape_a = (1,) * (ndims - len(shape_a)) + shape_a
+        shape_b = (1,) * (ndims - len(shape_b)) + shape_b
+        return tuple(a_dim * b_dim for a_dim, b_dim in zip(shape_a, shape_b))
 
 
 @register_op("MaskIndices")
@@ -198,7 +247,7 @@ class MaskIndices(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return (None,)
 
 
 @register_op("Median")
@@ -209,7 +258,22 @@ class Median(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        if not args:
+            return ()
+        shape = list(getattr(args[0], "shape", ()))
+        axis = kwargs.get("axis", None)
+        keepdims = kwargs.get("keepdims", False)
+        if axis is None:
+            return (1,) if keepdims else ()
+        if isinstance(axis, int):
+            axis = [axis]
+        for ax in sorted(axis, reverse=True):
+            if ax < len(shape):
+                if keepdims:
+                    shape[ax] = 1
+                else:
+                    shape.pop(ax)
+        return tuple(shape)
 
 
 @register_op("Mgrid")
@@ -220,7 +284,7 @@ class Mgrid(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return kwargs.get("shape", ())
 
 
 @register_op("Mish")
@@ -231,7 +295,9 @@ class Mish(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Modf")
@@ -242,7 +308,9 @@ class Modf(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Ogrid")
@@ -253,7 +321,7 @@ class Ogrid(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return kwargs.get("shape", ())
 
 
 @register_op("Piecewise")
@@ -264,7 +332,9 @@ class Piecewise(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("PromoteTypes")
@@ -286,7 +356,7 @@ class R(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return (None,)
 
 
 @register_op("ResultType")
@@ -308,7 +378,13 @@ class Rot90(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        shape = list(getattr(args[0], "shape", ()))
+        axes = kwargs.get("axes", (0, 1))
+        if len(axes) == 2 and axes[0] < len(shape) and axes[1] < len(shape):
+            shape[axes[0]], shape[axes[1]] = shape[axes[1]], shape[axes[0]]
+        return tuple(shape)
 
 
 @register_op("Trapezoid")
@@ -319,7 +395,13 @@ class Trapezoid(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        if not args:
+            return ()
+        shape = list(getattr(args[0], "shape", ()))
+        axis = kwargs.get("axis", -1)
+        if axis < len(shape):
+            shape.pop(axis)
+        return tuple(shape)
 
 
 @register_op("Tri")
@@ -330,7 +412,9 @@ class Tri(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        N = args[0] if args else 0
+        M = kwargs.get("M", N)
+        return (N, M)
 
 
 @register_op("Tril")
@@ -341,7 +425,9 @@ class Tril(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("TrimZeros")
@@ -352,7 +438,7 @@ class TrimZeros(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        return (None,)
 
 
 @register_op("Triu")
@@ -363,7 +449,9 @@ class Triu(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Unwrap")
@@ -374,7 +462,9 @@ class Unwrap(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
 
 
 @register_op("Vander")
@@ -385,7 +475,11 @@ class Vander(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return ()
+        if not args:
+            return ()
+        x = getattr(args[0], "shape", ())
+        N = kwargs.get("N", x[0] if x else 0)
+        return (*x, N)
 
 
 @register_op("Vectorize")
@@ -407,4 +501,244 @@ class AxisIndex(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        if not args:
+            return ()
+        return getattr(args[0], "shape", ())
+
+
+def mgrid(*args: object, **kwargs: object) -> object:
+    """nd_grid instance which returns a dense multi-dimensional 'meshgrid'."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Mgrid", *args, **kwargs)
+
+
+def ogrid(*args: object, **kwargs: object) -> object:
+    """nd_grid instance which returns an open multi-dimensional 'meshgrid'."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Ogrid", *args, **kwargs)
+
+
+def r_(*args: object, **kwargs: object) -> object:
+    """Translates slice objects to concatenation along the first axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("R", *args, **kwargs)
+
+
+def gradient(*args: object, **kwargs: object) -> object:
+    """Return the gradient of an N-dimensional array."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Gradient", *args, **kwargs)
+
+
+def histogram(*args: object, **kwargs: object) -> object:
+    """Compute the histogram of a set of data."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Histogram", *args, **kwargs)
+
+
+def histogram2d(*args: object, **kwargs: object) -> object:
+    """Compute the bi-dimensional histogram of two data samples."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Histogram2d", *args, **kwargs)
+
+
+def histogram_bin_edges(*args: object, **kwargs: object) -> object:
+    """Function to calculate only the edges of the bins used by the histogram function."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("HistogramBinEdges", *args, **kwargs)
+
+
+def histogramdd(*args: object, **kwargs: object) -> object:
+    """Compute the multidimensional histogram of some data."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Histogramdd", *args, **kwargs)
+
+
+def i0(*args: object, **kwargs: object) -> object:
+    """Modified Bessel function of the first kind, order 0."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("I0", *args, **kwargs)
+
+
+def interp(*args: object, **kwargs: object) -> object:
+    """One-dimensional linear interpolation."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Interp", *args, **kwargs)
+
+
+def median(*args: object, **kwargs: object) -> object:
+    """Compute the median along the specified axis."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Median", *args, **kwargs)
+
+
+def modf(*args: object, **kwargs: object) -> object:
+    """Return the fractional and integral parts of an array, element-wise."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Modf", *args, **kwargs)
+
+
+def piecewise(*args: object, **kwargs: object) -> object:
+    """Evaluate a piecewise-defined function."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Piecewise", *args, **kwargs)
+
+
+def trapezoid(*args: object, **kwargs: object) -> object:
+    """Integrate along the given axis using the composite trapezoidal rule."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Trapezoid", *args, **kwargs)
+
+
+def indices(*args: object, **kwargs: object) -> object:
+    """Return an array representing the indices of a grid."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Indices", *args, **kwargs)
+
+
+def ix_(*args: object, **kwargs: object) -> object:
+    """Construct an open mesh from multiple sequences."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Ix", *args, **kwargs)
+
+
+def kron(*args: object, **kwargs: object) -> object:
+    """Kronecker product of two arrays."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Kron", *args, **kwargs)
+
+
+def mask_indices(*args: object, **kwargs: object) -> object:
+    """Return the indices to access (n, n) arrays."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("MaskIndices", *args, **kwargs)
+
+
+def rot90(*args: object, **kwargs: object) -> object:
+    """Rotate an array by 90 degrees in the plane specified by axes."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Rot90", *args, **kwargs)
+
+
+def tri(*args: object, **kwargs: object) -> object:
+    """An array with ones at and below the given diagonal and zeros elsewhere."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Tri", *args, **kwargs)
+
+
+def tril(*args: object, **kwargs: object) -> object:
+    """Lower triangle of an array."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Tril", *args, **kwargs)
+
+
+def trim_zeros(*args: object, **kwargs: object) -> object:
+    """Trim the leading and/or trailing zeros from a 1-D array or sequence."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("TrimZeros", *args, **kwargs)
+
+
+def triu(*args: object, **kwargs: object) -> object:
+    """Upper triangle of an array."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Triu", *args, **kwargs)
+
+
+def vander(*args: object, **kwargs: object) -> object:
+    """Generate a Vandermonde matrix."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Vander", *args, **kwargs)
+
+
+def intersect1d(*args: object, **kwargs: object) -> object:
+    """Find the intersection of two arrays."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Intersect1d", *args, **kwargs)
+
+
+def iinfo(*args: object, **kwargs: object) -> object:
+    """Iinfo operation."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Iinfo", *args, **kwargs)
+
+
+def isscalar(*args: object, **kwargs: object) -> object:
+    """Returns True if the type of num is a scalar type."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Isscalar", *args, **kwargs)
+
+
+def iterable(*args: object, **kwargs: object) -> object:
+    """Check whether or not an object can be iterated over."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Iterable", *args, **kwargs)
+
+
+def promote_types(*args: object, **kwargs: object) -> object:
+    """Returns the data type with the smallest size and smallest scalar kind."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("PromoteTypes", *args, **kwargs)
+
+
+def result_type(*args: object, **kwargs: object) -> object:
+    """Returns the type that results from applying the NumPy type promotion rules."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("ResultType", *args, **kwargs)
+
+
+def infeed(*args: object, **kwargs: object) -> object:
+    """Read from the infeed queue."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Infeed", *args, **kwargs)
+
+
+def get_printoptions(*args: object, **kwargs: object) -> object:
+    """Get the current print options."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("GetPrintoptions", *args, **kwargs)
+
+
+def unwrap(*args: object, **kwargs: object) -> object:
+    """Unwrap an array."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Unwrap", *args, **kwargs)
+
+
+def vectorize(*args: object, **kwargs: object) -> object:
+    """Vectorize a python function."""
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Vectorize", *args, **kwargs)

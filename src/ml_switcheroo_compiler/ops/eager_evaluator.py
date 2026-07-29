@@ -25,7 +25,7 @@ class EvaluationStrategy(abc.ABC):
     @abc.abstractmethod
     def evaluate(self, ctx: EvaluationContext) -> object:
         """Evaluate."""
-        pass
+        return None
 
 
 class CustomEagerEvalStrategy(EvaluationStrategy):

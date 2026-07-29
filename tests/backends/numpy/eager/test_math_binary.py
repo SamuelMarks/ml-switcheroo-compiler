@@ -52,41 +52,20 @@ def test_missing_math_binary():
         def zeros_like(self, x):
             return np.zeros_like(x)
 
-    mb._np_polygamma(DummyBk(), np.array([1.0]))
-    mb._np_zeta(DummyBk(), np.array([1.0]))
+        def array(self, x):
+            return np.asarray(x)
 
+    res = mb._np_polygamma(DummyBk(), np.array([1.0]), np.array([2.0]))
+    np.testing.assert_array_almost_equal(res, np.array([0.64493407]))
 
-def test_missing_math_binary2():
-    import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
+    res2 = mb._np_zeta(DummyBk(), np.array([1.0]), np.array([2.0]))
+    np.testing.assert_array_almost_equal(res2, np.array([float("inf")]))
 
-    class DummyBk:
-        def zeros_like(self, x):
-            return np.zeros_like(x)
-
-    try:
-        mb._np_polygamma(DummyBk(), np.array([1.0]))
-    except:
-        pass
     try:
         mb._np_zeta(DummyBk(), np.array([1.0]))
     except:
         pass
 
-
-def test_polygamma_zeta_missing_args2():
-    import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
-
-    class DummyBk2:
-        def zeros_like(self, x):
-            return np.zeros_like(x)
-
-        def array(self, x):
-            return x
-
-    try:
-        mb._np_polygamma(DummyBk2(), np.array([1.0]), x=np.array([1.0]))
-    except:
-        pass
     try:
         mb._np_zeta(DummyBk2(), np.array([1.0]), q=np.array([1.0]))
     except:

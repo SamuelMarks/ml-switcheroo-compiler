@@ -53,19 +53,6 @@ def multivariate_normal(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("MultivariateNormal", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def pdot(*args: object, **kwargs: object) -> object:
-    """Pdot frontend."""
-    from ml_switcheroo_compiler.core.config import config
-
-    if config.eager_mode:
-        from ml_switcheroo_compiler.backends.registry import get_active_backend
-
-        return get_active_backend().execute_op("Pdot", *args, **kwargs)
-    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-
-    return _emit_shape_node("Pdot", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
-
-
 def pinv(*args: object, **kwargs: object) -> object:
     """Pinv frontend."""
     from ml_switcheroo_compiler.core.config import config
@@ -110,7 +97,6 @@ __all__ = [
     "generalized_normal",
     "lognormal",
     "multivariate_normal",
-    "pdot",
     "pinv",
     "ragged_dot",
     "rayleigh",

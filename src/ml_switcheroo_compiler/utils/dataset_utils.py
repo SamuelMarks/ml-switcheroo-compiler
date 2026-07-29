@@ -73,9 +73,9 @@ class DatasetConfig:
 
 
 if TYPE_CHECKING:
-    pass
+    _ = None
 else:
-    pass
+    _ = None
 
 
 class NumpyDataset:

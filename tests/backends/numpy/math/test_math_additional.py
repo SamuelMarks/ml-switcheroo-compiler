@@ -10,8 +10,6 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_extras import (
     _logspace,
     _np_constant_of_shape,
     _np_dtype_op,
-    _np_dummy_binary,
-    _np_dummy_unary,
     _np_frombuffer,
     _np_is_non_decreasing,
     _np_is_strictly_increasing,
@@ -43,16 +41,6 @@ def test_reduce_window() -> None:
 def test_test_eager_op() -> None:
     res = _np_test_eager_op(np)
     assert np.array_equal(res, [1.0, 2.0, 3.0])
-
-
-def test_dummy_binary() -> None:
-    res = _np_dummy_binary(np)
-    assert res == "dummy"
-
-
-def test_dummy_unary() -> None:
-    res = _np_dummy_unary(np)
-    assert res == 0.0
 
 
 def test_unknown() -> None:

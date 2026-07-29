@@ -38,6 +38,28 @@ def test_extract_from_tensor(mocker):
     res = TracingNodeBuilder.extract_from_tensor(MockTensor2())
     assert res[1] == ()
 
+    # Test the branch where hasattr(global_tracing_state, "constant_cache") is False
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    original_hasattr = hasattr
+
+    def custom_hasattr(obj, name):
+        if obj is global_tracing_state and name == "constant_cache":
+            return False
+        return original_hasattr(obj, name)
+
+    with patch("builtins.hasattr", side_effect=custom_hasattr):
+        res2 = TracingNodeBuilder.extract_from_tensor(MockTensor2())
+        assert res2[1] == ()
+
+    # Hit the cache condition
+    m2 = MockTensor2()
+    with patch.object(global_tracing_state, "constant_cache", {id(m2.data): "cached_id"}, create=True):
+        res3 = TracingNodeBuilder.extract_from_tensor(m2)
+        assert res3 == ("cached_id", ())
+
 
 def test_extract_proxy_inputs(mocker):
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig

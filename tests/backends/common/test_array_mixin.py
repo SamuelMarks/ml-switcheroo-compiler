@@ -56,7 +56,7 @@ def test_array_mixin():
     vis._generator._get_backend_prefix = lambda: "bk"
 
     node_mesh = DummyNode({"output_index": 1, "indexing": "xy"})
-    assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "np.meshgrid(a, b, indexing='xy')[1]"
+    assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "numpy.meshgrid(a, b, indexing='xy')[1]"
     vis._generator._get_backend_prefix = lambda: "mlx"
     assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "mx.meshgrid(a, b, indexing='xy')[1]"
     vis._generator._get_backend_prefix = lambda: "jax"

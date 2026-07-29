@@ -84,11 +84,17 @@ def constant_folding_pass(graph: IRGraph) -> bool:
                 id_map[node.id] = node.id
                 modified = True
                 continue
-            except (ValueError, TypeError, RuntimeError):
-                pass
+            except (ValueError, TypeError, RuntimeError) as e:
+                import logging
+
+                logging.getLogger(__name__).debug(f"Failed to constant fold {node.op_type}: {e}")
+                continue
             except Exception as e:
                 if type(e).__name__ == "UnimplementedMathError":
-                    pass
+                    import logging
+
+                    logging.getLogger(__name__).debug(f"Unimplemented math for constant folding {node.op_type}: {e}")
+                    continue
                 else:
                     raise
 

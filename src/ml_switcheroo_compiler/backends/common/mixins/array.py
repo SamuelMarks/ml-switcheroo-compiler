@@ -234,7 +234,8 @@ class ArrayASTVisitor(CommonASTVisitor):
         elif pfx == "torch" or pfx == "pt":
             return f"torch.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
         else:
-            return f"np.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
+            fallback = getattr(self, "get_fallback_prefix", lambda: "numpy")()
+            return f"{fallback}.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
     def visit_Slice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for a tensor slicing operation.

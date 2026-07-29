@@ -347,6 +347,21 @@ class NumpyGenerator(
         )
 
     @classmethod
+    def get_numpy_rng(cls, *args: object, **kwargs: object) -> object:
+        """Get a numpy random generator.
+
+        Args:
+            *args (object): Positional arguments.
+            **kwargs (object): Keyword arguments.
+
+        Returns:
+            object: The rng.
+        """
+        import numpy as np
+
+        return np.random.default_rng(*args, **kwargs)
+
+    @classmethod
     def load(cls, *args: object, **kwargs: object) -> object:
         """Load data using NumPy's load function.
 

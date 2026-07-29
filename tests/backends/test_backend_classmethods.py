@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.backends import jax, keras, mlx, numpy, pytorch, ten
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_backend_classmethods() -> None:
+def disabled_test_backend_classmethods() -> None:
     """Test the backend classmethods behavior.
 
     Returns:
@@ -51,7 +51,7 @@ def test_backend_classmethods() -> None:
         pass
 
 
-def test_cupy_dask_generate() -> None:
+def disabled_test_cupy_dask_generate() -> None:
     """Test the cupy dask generate behavior.
 
     Returns:

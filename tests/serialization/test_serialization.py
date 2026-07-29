@@ -12,10 +12,11 @@ from ml_switcheroo_compiler.serialization import (
 
 def test_serialization_stubs() -> None:
     """Test serialization stubs."""
-    try:
-        run_restore_ops("path")
-    except FileNotFoundError:
-        pass
+    import pytest
+
+    with pytest.raises(FileNotFoundError):
+        run_restore_ops("non_existent_path")
+    run_restore_ops("path")
     assert get_registered_object() is None
     assert deserialize_keras_object() == {}
     assert serialize_keras_object() == {}

@@ -3,12 +3,7 @@
 from __future__ import annotations
 
 # pylint: disable=duplicate-code
-from typing import TYPE_CHECKING
-
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
-
-if TYPE_CHECKING:
-    pass
 
 
 def _normalize_k(k: object) -> int | object:
@@ -28,7 +23,7 @@ def _normalize_k(k: object) -> int | object:
         try:
             k = int(k)
         except (ValueError, TypeError):
-            pass
+            return k
     return k
 
 
@@ -54,7 +49,7 @@ class TopK(OpDef):
         k = _normalize_k(k)
 
         if not hasattr(x, "shape") or not x.shape:
-            return ()
+            return (None,)
         out_shape = list(x.shape)
         out_shape[-1] = k
         return tuple(out_shape)
@@ -132,7 +127,7 @@ class Where(OpDef):
         """
         if len(args) > 1:
             return args[1]
-        return ()
+        return (None,)
 
 
 @register_op("Gather")
@@ -147,9 +142,9 @@ class Gather(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("Take")
@@ -164,9 +159,9 @@ class Take(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("TakeAlongAxis")
@@ -181,9 +176,9 @@ class TakeAlongAxis(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("GatherNd")
@@ -198,9 +193,9 @@ class GatherNd(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("Scatter")
@@ -215,9 +210,9 @@ class Scatter(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("ScatterNd")
@@ -232,9 +227,9 @@ class ScatterNd(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("ScatterAdd")
@@ -249,9 +244,9 @@ class ScatterAdd(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("Vdot")
@@ -266,9 +261,9 @@ class Vdot(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("SearchSorted")
@@ -283,9 +278,9 @@ class SearchSorted(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("Select")
@@ -300,9 +295,9 @@ class Select(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("Assign")
@@ -317,9 +312,9 @@ class Assign(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("AssignAdd")
@@ -334,9 +329,9 @@ class AssignAdd(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("AssignSub")
@@ -351,9 +346,9 @@ class AssignSub(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            tuple[int, ...]: The inferred shape tuple, currently returning an empty tuple.
+            tuple[int, ...]: The inferred shape tuple, currently returning an unknown dimension `(None,)`.
         """
-        return ()
+        return (None,)
 
 
 @register_op("TensorScatterUpdate")

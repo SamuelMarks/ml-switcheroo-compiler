@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -15,9 +14,6 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 from .frontend_utils import _emit_creation_node
-
-if TYPE_CHECKING:
-    pass
 
 
 def _unpack_shape(shape: tuple) -> tuple:
@@ -399,9 +395,9 @@ def convert_to_numpy(x: Tensor) -> object:
     """
     if hasattr(x, "numpy"):
         return x.numpy()
-    import numpy as np
+    from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return np.array(getattr(x, "data", x))
+    return get_active_backend().asarray(getattr(x, "data", x))
 
 
 def frombuffer(

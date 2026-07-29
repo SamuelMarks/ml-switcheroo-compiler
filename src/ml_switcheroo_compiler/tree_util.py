@@ -164,7 +164,7 @@ def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
         msg = "Too many leaves for treedef"
         raise ValueError(msg)
     except StopIteration:
-        pass
+        _ = None
 
     return res
 

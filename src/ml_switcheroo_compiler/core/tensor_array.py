@@ -23,12 +23,12 @@ class TensorArray:
     def read(self, index: Tensor) -> Tensor:
         """Reads from the TensorArray."""
         if not global_tracing_state.is_tracing:
-            import numpy as np
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = int(np.asarray(index.data))
+            idx = int(get_active_backend().asarray(index.data))
             val = self._data[idx]
             if val is None:
-                val = np.zeros(self.element_shape)
+                val = get_active_backend().execute_op("Zeros", self.element_shape)
             return Tensor(val, TensorConfig(self.element_shape, self.dtype, None))
 
         out_id = str(uuid.uuid4())
@@ -46,9 +46,9 @@ class TensorArray:
     def write(self, index: Tensor, value: Tensor) -> "TensorArray":
         """Writes to the TensorArray."""
         if not global_tracing_state.is_tracing:
-            import numpy as np
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = int(np.asarray(index.data))
+            idx = int(get_active_backend().asarray(index.data))
             self._data[idx] = value.data
             return self
 
@@ -67,10 +67,10 @@ class TensorArray:
         """Stacks the TensorArray."""
         out_shape = (self.size,) + self.element_shape
         if not global_tracing_state.is_tracing:
-            import numpy as np
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            arrs = [d if d is not None else np.zeros(self.element_shape) for d in self._data]
-            res = np.stack(arrs)
+            arrs = [d if d is not None else get_active_backend().execute_op("Zeros", self.element_shape) for d in self._data]
+            res = get_active_backend().execute_op("Stack", arrs)
             return Tensor(res, TensorConfig(out_shape, self.dtype, None))
 
         out_id = str(uuid.uuid4())

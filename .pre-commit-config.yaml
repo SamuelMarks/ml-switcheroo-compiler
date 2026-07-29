@@ -36,6 +36,12 @@ repos:
     language: system
     files: ^src/ml_switcheroo_compiler/.*\.py$
     pass_filenames: false
+  - id: numpy-leak-check
+    name: Check for NumPy Leaks
+    entry: python3 scripts/lint_numpy_leak.py
+    language: system
+    files: ^src/ml_switcheroo_compiler/.*\.py$
+    pass_filenames: false
 - repo: local
   hooks:
   - id: pylint

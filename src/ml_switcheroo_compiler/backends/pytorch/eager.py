@@ -270,17 +270,31 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         func = getattr(torch, op_type.lower())
         return func(*args, **kwargs)
     except AttributeError:
-        import numpy as np
-
         from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
-        func = global_eager_registry.get(op_type)
-        if func:
-            return func(np, *args, **kwargs)
-        try:
-            return np.zeros((1,))
-        except Exception:
-            return None
+        global_func = global_eager_registry.get(op_type)
+        if global_func is not None:
+            return global_func(torch, *args, **kwargs)
+
+        import re
+
+        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+        snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+        import torch.nn.functional as F
+
+        func = None
+        for mod in [torch, F, getattr(torch, "linalg", None), getattr(torch, "fft", None)]:
+            if mod is not None and hasattr(mod, snake):
+                func = getattr(mod, snake)
+                break
+
+        if func is not None:
+            return func(*args, **kwargs)
+
+        from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+        raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None
 
 
 _TORCH_EAGER_OP_MAP = {

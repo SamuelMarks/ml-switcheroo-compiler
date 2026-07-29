@@ -246,30 +246,30 @@ class JAXCodeGenerator(BaseGenerator):
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
         """Load."""
-        import numpy as np
+        import jax.numpy as jnp
 
-        return np.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
+        return jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save."""
-        import numpy as np
+        import jax.numpy as jnp
 
-        np.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        jnp.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez."""
-        import numpy as np
+        import jax.numpy as jnp
 
-        np.savez(file, *args, **kwds)
+        jnp.savez(file, *args, **kwds)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
         """Savez compressed."""
-        import numpy as np
+        import jax.numpy as jnp
 
-        np.savez_compressed(file, *args, **kwds)
+        jnp.savez_compressed(file, *args, **kwds)
 
     def __init__(self, graph: object) -> None:
         """Init."""

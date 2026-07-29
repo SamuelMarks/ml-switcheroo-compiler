@@ -218,7 +218,7 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
     "Adjoint": lambda x, **kwargs: __import__("jax").numpy.conj(__import__("jax").numpy.transpose(x)),
     "AllGather": lambda tensor, *args, **kwargs: __import__("jax").numpy.stack([tensor]),
     "AllToAll": lambda tensor, *args, **kwargs: tensor,
-    "AlphaDropout": lambda x, **kwargs: x,
+    "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(__import__("jax").random.bernoulli(__import__("jax").random.PRNGKey(0), 1.0 - kwargs.get("p", 0.5), x.shape), x, 0.0),
     "AsString": lambda arr, **kwargs: str(arr),
     "Assert": lambda condition, data, summarize=3, **kwargs: None,
     "Assign": lambda ref, value, **kwargs: value,
@@ -281,14 +281,39 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     """
     if op_type in _OP_DISPATCH:
         return _OP_DISPATCH[op_type](*args, **kwargs)
-    import numpy as np
+
+    import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
-    func = global_eager_registry.get(op_type)
-    if func:
-        return func(np, *args, **kwargs)
-    try:
-        return np.zeros((1,))
-    except Exception:
-        return None
+    global_func = global_eager_registry.get(op_type)
+    if global_func is not None:
+        return global_func(jnp, *args, **kwargs)
+
+    import re
+
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+    snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+    import jax.lax as lax
+
+    # specific name mappings
+    if snake == "mul":
+        snake = "multiply"
+    elif snake == "sub":
+        snake = "subtract"
+    elif snake == "div":
+        snake = "divide"
+
+    func = None
+    for mod in [jnp, lax, getattr(jnp, "linalg", None), getattr(jnp, "fft", None)]:
+        if mod is not None and hasattr(mod, snake):
+            func = getattr(mod, snake)
+            break
+
+    if func is not None:
+        return func(*args, **kwargs)
+
+    from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+
+    raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None
