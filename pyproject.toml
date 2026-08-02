@@ -29,6 +29,7 @@ cupy = ["requirements-backend-cupy.txt"]
 packages = ["src/ml_switcheroo_compiler"]
 
 [tool.ruff]
+exclude = ["ml-switcheroo-ir"]
 line-length = 300
 lint.select = ["E", "F", "D", "ANN", "UP", "B", "I", "C901", "PLR09"]
 
@@ -60,6 +61,7 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 omit = [
+    "ml-switcheroo-ir/*",
     "tests/*",
     "tests_js/*",
     "docs/*",
@@ -68,6 +70,7 @@ omit = [
 
 [tool.coverage.report]
 omit = [
+    "ml-switcheroo-ir/*",
     "tests/*",
     "tests_js/*",
     "docs/*",
