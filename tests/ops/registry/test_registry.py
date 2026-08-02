@@ -52,3 +52,7 @@ def test_registry_frontend():
 def test_get_op_not_found():
     with pytest.raises(KeyError, match="not found"):
         get_op("NonExistentOp")
+
+
+def test_registry_files_load():
+    pass

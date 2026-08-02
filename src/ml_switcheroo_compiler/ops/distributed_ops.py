@@ -341,8 +341,8 @@ class Pmax(OpDef):
     op_name = "Pmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -353,8 +353,8 @@ class Pmin(OpDef):
     op_name = "Pmin"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -376,8 +376,8 @@ class Pshuffle(OpDef):
     op_name = "Pshuffle"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -388,9 +388,9 @@ class Pswapaxes(OpDef):
     op_name = "Pswapaxes"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         x = args[0] if len(args) > 0 else None
         axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
-        """Infer shape."""
         shape = list(getattr(x, "shape", ()))
         if shape and axis < len(shape):
             shape[axis] = None  # type: ignore[index]
@@ -404,8 +404,8 @@ class Ppermute(OpDef):
     op_name = "Ppermute"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -416,9 +416,9 @@ class PsumScatter(OpDef):
     op_name = "PsumScatter"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
+        """Infer shape."""
         x = args[0] if len(args) > 0 else None
         scatter_dimension = kwargs.get("scatter_dimension", 0)
-        """Infer shape."""
         shape = list(getattr(x, "shape", ()))
         if shape and scatter_dimension < len(shape):
             shape[scatter_dimension] = None  # type: ignore[index]

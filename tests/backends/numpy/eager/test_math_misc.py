@@ -8895,3 +8895,135 @@ def test_math_misc_coverage():
     import ml_switcheroo_compiler.ops as _ops
 
     pass
+
+
+from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_confusion_matrix, _np_descriptive, _np_distributions, _np_rawmatmul, _np_rem, _np_sparsedensematmul
+
+
+class DummyBackend:
+    pass
+
+
+def test_math_misc_missing_branches():
+    import builtins
+    import sys
+
+    # 1. Provide an empty DummyBackend
+    # These operations check if there's an ops version, else default fallback
+    original_import = builtins.__import__
+
+    def mocked_import(name, *args, **kwargs):
+        if name == "ml_switcheroo_compiler.ops":
+
+            class MockOps:
+                pass
+
+            return MockOps()
+        return original_import(name, *args, **kwargs)
+
+    builtins.__import__ = mocked_import
+    try:
+        if "ml_switcheroo_compiler.ops" in sys.modules:
+            pass
+
+        # 2438->2446, 2441: rawmatmul
+        _np_rawmatmul(DummyBackend(), np.eye(2), np.eye(2))
+
+        # 2524->2532: sparsedensematmul
+        _np_sparsedensematmul(DummyBackend(), np.eye(2), np.eye(2))
+
+        # 2756->2764: rem
+        _np_rem(DummyBackend(), np.ones(2), np.ones(2))
+
+        # 2813->2821: confusion_matrix
+        _np_confusion_matrix(DummyBackend(), np.array([1, 1], dtype=np.int32), np.array([1, 1], dtype=np.int32))
+
+        # 2827->2829: confusion matrix missing num_classes
+        _np_confusion_matrix(DummyBackend(), np.array([1, 1], dtype=np.int32), np.array([1, 1], dtype=np.int32), num_classes=None)
+
+        # 2851->2857, 2854-2856: descriptive
+        _np_descriptive(DummyBackend(), np.ones(2))
+        _np_descriptive(DummyBackend())
+
+        # 2882->2888, 2885-2887, 2890-2891: distributions
+        _np_distributions(DummyBackend(), np.ones(2))
+        _np_distributions(DummyBackend())
+
+    finally:
+        builtins.__import__ = original_import
+        if "ml_switcheroo_compiler.ops" in sys.modules:
+            pass
+
+
+from unittest.mock import patch
+
+from ml_switcheroo_compiler.backends.numpy.eager.math_misc import numpy_eager_registry
+
+
+class MockCallableClass:
+    def __init__(self, *args, **kwargs):
+        self.called = True
+
+
+def test_math_misc_missing_branches_mocked():
+    import ml_switcheroo_compiler.ops as ops
+
+    attrs = ["RawMatMul", "SparseDenseMatMul", "rem", "confusion_matrix", "descriptive", "distributions"]
+    originals = {}
+    for attr in attrs:
+        if hasattr(ops, attr):
+            originals[attr] = getattr(ops, attr)
+            delattr(ops, attr)
+
+    try:
+        res = numpy_eager_registry._registry["RawMatMul"](None, np.array([[1]]), np.array([[2]]))
+        assert res.shape == (1, 1)
+
+        res = numpy_eager_registry._registry["SparseDenseMatMul"](None, np.array([[1]]), np.array([[2]]))
+        assert res.shape == (1, 1)
+
+        res = numpy_eager_registry._registry["rem"](None, np.array([5]), np.array([2]))
+        assert res[0] == 1
+
+        res = numpy_eager_registry._registry["confusion_matrix"](None, np.array([0]), np.array([0]), num_classes=2)
+        assert res.shape == (2, 2)
+
+        res = numpy_eager_registry._registry["descriptive"](None, np.array([1, 2]))
+        assert len(res) == 3
+
+        res = numpy_eager_registry._registry["distributions"](None, np.array([1, 2]))
+        assert len(res) == 2
+    finally:
+        # Restore
+        for attr, val in originals.items():
+            setattr(ops, attr, val)
+
+    # Provide num_classes to Descriptive
+    res = numpy_eager_registry._registry["Descriptive"](None, np.array([0]), num_classes=2)
+    assert "mean" in res
+
+
+def test_math_misc_callable_classes():
+    import ml_switcheroo_compiler
+
+    class DummyOps:
+        descriptive = MockCallableClass
+        distributions = MockCallableClass
+        OpDef = type("DummyOpDef", (), {})
+
+    with patch.object(ml_switcheroo_compiler, "ops", DummyOps()):
+        res = numpy_eager_registry._registry["descriptive"](None, np.array([1]))
+        assert getattr(res, "called", False) == True
+
+        res = numpy_eager_registry._registry["distributions"](None, np.array([1]))
+        assert getattr(res, "called", False) == True
+
+
+def test_math_misc_confusion_matrix_none_classes():
+    # test with num_classes=None to cover True branch
+    res = numpy_eager_registry._registry["confusion_matrix"](None, np.array([0]), np.array([0]))
+    assert res.shape == (1, 1)
+
+    # test Descriptive with num_classes=None (Descriptive doesn't return shape, it returns a dict)
+    res = numpy_eager_registry._registry["Descriptive"](None, np.array([0]))
+    assert "mean" in res

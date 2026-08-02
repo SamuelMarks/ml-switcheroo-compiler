@@ -34,3 +34,11 @@ def test_np_sharpen() -> None:
         _np_sharpen(np, np.ones((2, 2)))
     except Exception:
         pass
+
+
+from ml_switcheroo_compiler.ops.vision.filtering import BlurConfig
+
+
+def test_gaussian_blur_cov():
+    config = BlurConfig(kernel_size=(3, 3), sigma=(1.0, 1.0))
+    _np_gaussian_blur(np, np.ones((1, 3, 3, 1)), config=config)

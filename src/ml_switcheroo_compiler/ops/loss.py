@@ -217,6 +217,7 @@ class CircleLoss(OpDef):
     op_name = "CircleLoss"
 
     def infer_shape(self, *args, **kwargs):
+        """Infer shape."""
         return ()
 
 
@@ -227,6 +228,7 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
     op_name = "CategoricalGeneralizedCrossEntropy"
 
     def infer_shape(self, *args, **kwargs):
+        """Infer shape."""
         return ()
 
 

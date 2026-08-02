@@ -924,8 +924,8 @@ class Fromfile(OpDef):
     op_name = "Fromfile"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        count = kwargs.get("count", -1)
         """Infer shape."""
+        count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
 
 
@@ -936,8 +936,8 @@ class Fromstring(OpDef):
     op_name = "Fromstring"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        count = kwargs.get("count", -1)
         """Infer shape."""
+        count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
 
 
@@ -948,8 +948,8 @@ class Fromiter(OpDef):
     op_name = "Fromiter"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        count = kwargs.get("count", -1)
         """Infer shape."""
+        count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
 
 
@@ -960,8 +960,8 @@ class Fromfunction(OpDef):
     op_name = "Fromfunction"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
         """Infer shape."""
+        shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
         return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
 
 

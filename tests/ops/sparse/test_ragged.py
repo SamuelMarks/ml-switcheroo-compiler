@@ -192,3 +192,15 @@ def test_ragged_dot() -> None:
         assert e is not None
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
+
+
+from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
+
+
+def test_ragged_missing():
+    assert RaggedDot().infer_shape() == ()
+
+    class DummyShape:
+        shape = (1, 2)
+
+    assert RaggedDot().infer_shape(DummyShape()) == ()

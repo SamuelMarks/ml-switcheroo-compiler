@@ -43,8 +43,9 @@ def softplus(x: object) -> object:
 
 @register_op("Softmax")
 class Softmax(OpDef):
-    op_name = "Softmax"
     """Operator Softmax."""
+
+    op_name = "Softmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
@@ -74,8 +75,9 @@ def softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> objec
 
 @register_op("LogSoftmax")
 class LogSoftmax(OpDef):
-    op_name = "LogSoftmax"
     """Operator LogSoftmax."""
+
+    op_name = "LogSoftmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
@@ -105,8 +107,9 @@ def log_softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> o
 
 @register_op("Sigmoid")
 class Sigmoid(OpDef):
-    op_name = "Sigmoid"
     """Operator Sigmoid."""
+
+    op_name = "Sigmoid"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
@@ -136,8 +139,9 @@ def sigmoid(x: object, *args: object, **kwargs: object) -> object:
 
 @register_op("OneHot")
 class OneHot(OpDef):
-    op_name = "OneHot"
     """Operator OneHot."""
+
+    op_name = "OneHot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
@@ -174,8 +178,9 @@ def one_hot(indices: object, depth: int, *args: object, **kwargs: object) -> obj
 
 @register_op("Rrelu")
 class Rrelu(OpDef):
-    op_name = "Rrelu"
     """Operator Rrelu."""
+
+    op_name = "Rrelu"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
@@ -210,8 +215,8 @@ class HardSilu(OpDef):
     op_name = "HardSilu"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -222,8 +227,8 @@ class HardSwish(OpDef):
     op_name = "HardSwish"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
@@ -234,8 +239,8 @@ class Squareplus(OpDef):
     op_name = "Squareplus"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        x = args[0] if len(args) > 0 else None
         """Infer shape."""
+        x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
