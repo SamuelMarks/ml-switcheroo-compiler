@@ -4,7 +4,9 @@ import ast
 import importlib
 import os
 import re
+import subprocess
 import sys
+import tempfile
 import types
 from typing import Optional
 
@@ -120,13 +122,22 @@ def generate_init(
         new_source += f'    "{e}",\n'
     new_source += "]\n"
 
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
+        tmp.write(new_source)
+        tmp_name = tmp.name
+
     try:
-        if ast.dump(ast.parse(old_source)) != ast.dump(ast.parse(new_source)):
-            with open(filepath, "w") as f:
-                f.write(new_source)
-            print(f"Updated {filepath}")
-    except Exception as e:
-        print(f"Failed to parse AST for {filepath}: {e}")
+        subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        with open(tmp_name) as f:
+            new_source_formatted = f.read()
+    finally:
+        os.remove(tmp_name)
+
+    if old_source != new_source_formatted:
+        with open(filepath, "w") as f:
+            f.write(new_source_formatted)
+        print(f"Updated {filepath}")
 
 
 def process_file(filepath: str) -> None:
@@ -245,16 +256,21 @@ def process_file(filepath: str) -> None:
         new_source += f'    "{e_exp}",\n'
     new_source += "]\n"
 
-    try:
-        old_dump = ast.dump(ast.parse(source))
-        new_dump = ast.dump(ast.parse(new_source))
-    except Exception as e:
-        print(f"Error parsing new source for {filepath}: {e}")
-        return
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as tmp:
+        tmp.write(new_source)
+        tmp_name = tmp.name
 
-    if old_dump != new_dump:
+    try:
+        subprocess.run(["ruff", "check", "--fix", "--unsafe-fixes", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        subprocess.run(["ruff", "format", "--config", "pyproject.toml", tmp_name], capture_output=True, check=False)
+        with open(tmp_name) as f:
+            new_source_formatted = f.read()
+    finally:
+        os.remove(tmp_name)
+
+    if source != new_source_formatted:
         with open(filepath, "w") as f:
-            f.write(new_source)
+            f.write(new_source_formatted)
         print(f"Updated {filepath}")
 
 

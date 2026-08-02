@@ -1,8 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E501, C901
 """ONNX Target Emission and Real Binary Protobuf Serialization."""
 
 import uuid
-from typing import Any, Optional
+from typing import Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -16,7 +16,7 @@ class ONNXCodeGenerator(BaseGenerator):
         var_map (dict[str, str]): Mapping of IR node IDs to generated variable names.
     """
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[list[object]] = None) -> None:
         """Initialize ONNXCodeGenerator.
 
         Args:
@@ -92,127 +92,48 @@ class ONNXCodeGenerator(BaseGenerator):
         lines.append("}")
         return "\n".join(lines)
 
-    def generate(self) -> str:
-        """Generate a readable string/text-proto representation of the ONNX Graph.
+    def _build_onnx_value_infos(self, nodes_or_ids: list, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool = False) -> list:
+        from onnx import helper
 
-        Returns:
-            str: Serialized ONNX printable text representation.
-        """
-        try:
-            import math
-
-            from onnx import TensorProto, helper
-
-            input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-            onnx_inputs = []
-            for node in input_nodes:
+        infos = []
+        for item in nodes_or_ids:
+            if is_output:
+                out_id = item
+                node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+                name = out_id
+            else:
+                node = item
                 name = getattr(node, "id", "")
-                shape = getattr(node, "shape_metadata", ()) or ()
-                dt = getattr(node, "dtype", "float32")
-                proto_type = self._get_proto_type(dt, TensorProto)
-                onnx_inputs.append(helper.make_tensor_value_info(name, proto_type, list(shape)))
 
-            output_ids = getattr(self.graph, "outputs", []) or []
-            onnx_outputs = []
-            for out_id in output_ids:
-                out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-                shape = getattr(out_node, "shape_metadata", ()) or () if out_node else ()
-                dt = getattr(out_node, "dtype", "float32") if out_node else "float32"
-                proto_type = self._get_proto_type(dt, TensorProto)
-                onnx_outputs.append(helper.make_tensor_value_info(out_id, proto_type, list(shape)))
+            shape = getattr(node, "shape_metadata", ()) or () if node else ()
+            dt = getattr(node, "dtype", "float32") if node else "float32"
+            proto_type = self._get_proto_type(dt, TensorProto)
+            shape_list = list(shape)
 
-            onnx_nodes = []
-            for node in self.sorted_nodes:
-                op_type = getattr(node, "op_type", "")
-                if op_type == "Input":
-                    continue
+            if dynamic_axes and name in dynamic_axes:
+                for axis_idx, axis_name in dynamic_axes[name].items():
+                    shape_list[axis_idx] = axis_name
+            infos.append(helper.make_tensor_value_info(name, proto_type, shape_list))
+        return infos
 
-                nid = getattr(node, "id", "")
-                inputs = getattr(node, "inputs", [])
-
-                if op_type == "Constant":
-                    val = node.attributes.get("value", 0.0)
-                    dt = getattr(node, "dtype", "float32")
-                    shape = getattr(node, "shape_metadata", ()) or ()
-                    proto_type = self._get_proto_type(dt, TensorProto)
-                    num_elements = math.prod(shape) if shape else 1
-                    tensor_proto = helper.make_tensor(
-                        name=nid,
-                        data_type=proto_type,
-                        dims=list(shape),
-                        vals=[val] * num_elements,
-                    )
-                    onnx_nodes.append(
-                        helper.make_node(
-                            "Constant",
-                            inputs=[],
-                            outputs=[nid],
-                            name=nid,
-                            value=tensor_proto,
-                        )
-                    )
-                    continue
-
-                op_map = {
-                    "Add": "Add",
-                    "Subtract": "Sub",
-                    "Multiply": "Mul",
-                    "TrueDivide": "Div",
-                    "Div": "Div",
-                    "Exp": "Exp",
-                    "Log": "Log",
-                    "Negative": "Neg",
-                    "Neg": "Neg",
-                }
-                onnx_op = op_map.get(op_type, op_type)
-
-                onnx_nodes.append(
-                    helper.make_node(
-                        onnx_op,
-                        inputs=inputs,
-                        outputs=[nid],
-                        name=nid,
-                    )
-                )
-
-            graph_def = helper.make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
-            return str(helper.printable_graph(graph_def))
-
-        except ImportError:
-            return self._generate_text_fallback()
-
-    def export_onnx(self, file_path: str) -> None:
-        """Export the IR Graph as a real, compliant binary .onnx file to disk.
-
-        Args:
-            file_path (str): Path to write the .onnx binary file.
-
-        Raises:
-            ImportError: If the 'onnx' library is not installed.
-        """
+    def _build_onnx_nodes(self, TensorProto: object) -> list:
         import math
 
-        from onnx import TensorProto, helper
-
-        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        onnx_inputs = []
-        for node in input_nodes:
-            name = getattr(node, "id", "")
-            shape = getattr(node, "shape_metadata", ()) or ()
-            dt = getattr(node, "dtype", "float32")
-            proto_type = self._get_proto_type(dt, TensorProto)
-            onnx_inputs.append(helper.make_tensor_value_info(name, proto_type, list(shape)))
-
-        output_ids = getattr(self.graph, "outputs", []) or []
-        onnx_outputs = []
-        for out_id in output_ids:
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-            shape = getattr(out_node, "shape_metadata", ()) or () if out_node else ()
-            dt = getattr(out_node, "dtype", "float32") if out_node else "float32"
-            proto_type = self._get_proto_type(dt, TensorProto)
-            onnx_outputs.append(helper.make_tensor_value_info(out_id, proto_type, list(shape)))
+        from onnx import helper
 
         onnx_nodes = []
+        op_map = {
+            "Add": "Add",
+            "Subtract": "Sub",
+            "Multiply": "Mul",
+            "TrueDivide": "Div",
+            "Div": "Div",
+            "Exp": "Exp",
+            "Log": "Log",
+            "Negative": "Neg",
+            "Neg": "Neg",
+        }
+
         for node in self.sorted_nodes:
             op_type = getattr(node, "op_type", "")
             if op_type == "Input":
@@ -233,40 +154,51 @@ class ONNXCodeGenerator(BaseGenerator):
                     dims=list(shape),
                     vals=[val] * num_elements,
                 )
-                onnx_nodes.append(
-                    helper.make_node(
-                        "Constant",
-                        inputs=[],
-                        outputs=[nid],
-                        name=nid,
-                        value=tensor_proto,
-                    )
-                )
-                continue
+                onnx_nodes.append(helper.make_node("Constant", inputs=[], outputs=[nid], name=nid, value=tensor_proto))
+            else:
+                onnx_op = op_map.get(op_type, op_type)
+                onnx_nodes.append(helper.make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid))
+        return onnx_nodes
 
-            op_map = {
-                "Add": "Add",
-                "Subtract": "Sub",
-                "Multiply": "Mul",
-                "TrueDivide": "Div",
-                "Div": "Div",
-                "Exp": "Exp",
-                "Log": "Log",
-                "Negative": "Neg",
-                "Neg": "Neg",
-            }
-            onnx_op = op_map.get(op_type, op_type)
+    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> object:
+        from onnx import TensorProto, helper
 
-            onnx_nodes.append(
-                helper.make_node(
-                    onnx_op,
-                    inputs=inputs,
-                    outputs=[nid],
-                    name=nid,
-                )
-            )
+        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        onnx_inputs = self._build_onnx_value_infos(input_nodes, dynamic_axes, TensorProto, is_output=False)
 
-        graph_def = helper.make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
+        output_ids = getattr(self.graph, "outputs", []) or []
+        onnx_outputs = self._build_onnx_value_infos(output_ids, dynamic_axes, TensorProto, is_output=True)
+
+        onnx_nodes = self._build_onnx_nodes(TensorProto)
+        return helper.make_graph(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs)
+
+    def generate(self, dynamic_axes: Optional[dict[str, dict[int, str]]] = None) -> str:
+        """Generate a readable string/text-proto representation of the ONNX Graph.
+
+        Returns:
+            str: Serialized ONNX printable text representation.
+        """
+        try:
+            from onnx import helper
+
+            graph_def = self._build_onnx_graph(dynamic_axes)
+            return str(helper.printable_graph(graph_def))
+        except ImportError:
+            return self._generate_text_fallback()
+
+    def export_onnx(self, file_path: str, dynamic_axes: Optional[dict[str, dict[int, str]]] = None) -> None:
+        """Export the IR Graph as a real, compliant binary .onnx file to disk.
+
+        Args:
+            file_path (str): Path to write the .onnx binary file.
+            dynamic_axes (Optional[dict]): Map of node names to dynamic axes.
+
+        Raises:
+            ImportError: If the 'onnx' library is not installed.
+        """
+        from onnx import helper
+
+        graph_def = self._build_onnx_graph(dynamic_axes)
         model_def = helper.make_model(graph_def, producer_name="ml-switcheroo-compiler")
 
         with open(file_path, "wb") as f:

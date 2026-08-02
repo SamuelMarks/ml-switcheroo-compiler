@@ -5,6 +5,20 @@ import typing
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
+def _get_sharding_axes(sharding: object) -> list[str]:
+    """Extract non-None mesh mapping axes.
+
+    Args:
+        sharding (object): Required parameter for sharding.
+
+    Returns:
+        list[str]: The evaluated or processed output.
+    """
+    if not sharding or not hasattr(sharding, "mesh_mapping"):
+        return []
+    return [m for m in sharding.mesh_mapping if m is not None]
+
+
 def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tuple[bool, bool]:
     """Evaluate and process the is boundary transition operation.
 
@@ -15,8 +29,8 @@ def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tupl
     Returns:
         tuple: The evaluated or processed output.
     """
-    inp_sharded = any(m is not None for m in inp_sharding.mesh_mapping)
-    node_sharded = any(m is not None for m in node_sharding.mesh_mapping)
+    inp_sharded = bool(_get_sharding_axes(inp_sharding))
+    node_sharded = bool(_get_sharding_axes(node_sharding))
     return inp_sharded, node_sharded
 
 
@@ -30,12 +44,7 @@ def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
     Returns:
         IRNode: The evaluated or processed output.
     """
-    return IRNode(
-        id=f"{inp_id}_all_gather",
-        op_type="all_gather",
-        inputs=[inp_id],
-        sharding=node_sharding,
-    )
+    return IRNode(id=f"{inp_id}_all_gather", op_type="all_gather", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
 def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
@@ -48,12 +57,33 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
     Returns:
         IRNode: The evaluated or processed output.
     """
-    return IRNode(
-        id=f"{inp_id}_reduce_scatter",
-        op_type="reduce_scatter",
-        inputs=[inp_id],
-        sharding=node_sharding,
-    )
+    return IRNode(id=f"{inp_id}_reduce_scatter", op_type="reduce_scatter", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+
+
+def _create_all_reduce_node(inp_id: str, node_sharding: object) -> IRNode:
+    """Evaluate and process the create all reduce node operation.
+
+    Args:
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
+    """
+    return IRNode(id=f"{inp_id}_all_reduce", op_type="all_reduce", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+
+
+def _create_all_to_all_node(inp_id: str, node_sharding: object) -> IRNode:
+    """Evaluate and process the create all to all node operation.
+
+    Args:
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
+    """
+    return IRNode(id=f"{inp_id}_all_to_all", op_type="all_to_all", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
 def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
@@ -90,6 +120,40 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: o
     return scatter_node
 
 
+def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+    """Evaluate and process the inject all reduce operation.
+
+    Args:
+        node (IRNode): Required parameter for node.
+        idx (int): Required parameter for idx.
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
+    """
+    reduce_node = _create_all_reduce_node(inp_id, node_sharding)
+    node.inputs[idx] = reduce_node.id
+    return reduce_node
+
+
+def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+    """Evaluate and process the inject all to all operation.
+
+    Args:
+        node (IRNode): Required parameter for node.
+        idx (int): Required parameter for idx.
+        inp_id (str): Required parameter for inp_id.
+        node_sharding (object): Required parameter for node_sharding.
+
+    Returns:
+        IRNode: The evaluated or processed output.
+    """
+    atoa_node = _create_all_to_all_node(inp_id, node_sharding)
+    node.inputs[idx] = atoa_node.id
+    return atoa_node
+
+
 def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: object) -> typing.Optional[IRNode]:
     """Evaluate and process the process spmd input operation.
 
@@ -112,20 +176,30 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
     if not inp_sharding:
         return None
 
-    inp_sharded, node_sharded = _is_boundary_transition(inp_sharding, node_sharding)
+    inp_axes = _get_sharding_axes(inp_sharding)
+    node_axes = _get_sharding_axes(node_sharding)
 
-    dispatch = {
-        (True, False, False): _inject_all_gather,
-        (False, True, True): _inject_reduce_scatter,
-    }
+    inp_sharded = bool(inp_axes)
+    node_sharded = bool(node_axes)
 
-    is_grad = node.op_type == "Grad"
-    handler = dispatch.get((inp_sharded, node_sharded, is_grad))
+    is_grad = node.op_type == "Grad" or node.attributes.get("sync_gradients", False)
+    is_reduction = node.op_type in ["Sum", "Mean", "Max", "Min"]
 
-    if handler:
-        return handler(node, idx, inp_id, node_sharding)
+    result = None
 
-    return None
+    if inp_sharded and not node_sharded:
+        if is_reduction or is_grad:
+            result = _inject_all_reduce(node, idx, inp_id, node_sharding)
+        else:
+            result = _inject_all_gather(node, idx, inp_id, node_sharding)
+    elif not inp_sharded and node_sharded:
+        if is_grad:
+            result = _inject_reduce_scatter(node, idx, inp_id, node_sharding)
+    elif inp_sharded and node_sharded and inp_axes != node_axes:
+        if len(inp_axes) == len(node_axes):
+            result = _inject_all_to_all(node, idx, inp_id, node_sharding)
+
+    return result
 
 
 def _process_spmd_node(node: IRNode, graph: IRGraph) -> tuple[bool, list[IRNode]]:

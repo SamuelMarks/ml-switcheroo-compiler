@@ -457,7 +457,7 @@ def test_grad_missing_coverage() -> None:
 
     grad_aux = grad(f_aux, GradOptions(has_aux=True))
     res_aux = grad_aux(3.0)
-    assert res_aux == 2.0
+    assert res_aux[0] == 2.0
 
     # 5. grad with argnums as list/tuple (line 631-634)
     def f_multi(x, y):

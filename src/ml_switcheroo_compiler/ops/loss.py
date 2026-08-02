@@ -216,12 +216,18 @@ class CircleLoss(OpDef):
 
     op_name = "CircleLoss"
 
+    def infer_shape(self, *args, **kwargs):
+        return ()
+
 
 @register_op("CategoricalGeneralizedCrossEntropy")
 class CategoricalGeneralizedCrossEntropy(OpDef):
     """CategoricalGeneralizedCrossEntropy operation."""
 
     op_name = "CategoricalGeneralizedCrossEntropy"
+
+    def infer_shape(self, *args, **kwargs):
+        return ()
 
 
 def ctc_loss(*args: object, **kwargs: object) -> object:

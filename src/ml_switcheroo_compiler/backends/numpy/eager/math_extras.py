@@ -88,7 +88,7 @@ def _np_rand(backend_module: object, *args: object, **kwargs: object) -> object:
             dt = "float32"
         elif "int4" in dt:
             dt = "int8"
-    return backend_module.random.rand(*args).astype(dt)
+    return backend_module.array(backend_module.random.rand(*args)).astype(dt)
 
 
 @numpy_eager_registry.register("IsNonDecreasing")

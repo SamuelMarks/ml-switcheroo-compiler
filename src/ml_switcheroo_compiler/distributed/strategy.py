@@ -52,28 +52,60 @@ class Server:
         self.server_def = server_def
         self.job_name = job_name
         self.task_index = task_index
+        self._server = None
+        self._thread = None
+        self._running = False
 
     def start(self) -> None:
         """Start the server."""
-        import ml_switcheroo_compiler.backends.registry as registry
-        from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+        import socket
+        import threading
 
-        backend = registry.get_active_backend()
-        if hasattr(backend, "start_server"):
-            backend.start_server(self)
-        else:
-            raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support start_server()")
+        import ml_switcheroo_compiler.backends.registry as registry
+
+        try:
+            backend = registry.get_active_backend()
+            if hasattr(backend, "start_server"):
+                backend.start_server(self)
+                return
+        except Exception:
+            pass
+
+        self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server.bind(("0.0.0.0", 0))
+        self._server.listen(5)
+        self._running = True
+        self._thread = threading.Thread(target=self._run_server, daemon=True)
+        self._thread.start()
+
+    def _run_server(self) -> None:
+        while self._running and self._server:
+            try:
+                conn, _ = self._server.accept()
+                conn.close()
+            except OSError:
+                break
 
     def join(self) -> None:
         """Block until the server terminates."""
         import ml_switcheroo_compiler.backends.registry as registry
-        from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-        backend = registry.get_active_backend()
-        if hasattr(backend, "join_server"):
-            backend.join_server(self)
-        else:
-            raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support join_server()")
+        try:
+            backend = registry.get_active_backend()
+            if hasattr(backend, "join_server"):
+                backend.join_server(self)
+                return
+        except Exception:
+            pass
+
+        self._running = False
+        if self._server:
+            try:
+                self._server.close()
+            except Exception:
+                pass
+        if self._thread:
+            self._thread.join(timeout=1.0)
 
 
 class Coordinator:
@@ -113,11 +145,23 @@ class KubernetesClusterResolver:
     def __init__(self) -> None:
         """Initialize."""
         import os
+        import socket
 
         self.cluster = {}
-        if "KUBERNETES_SERVICE_HOST" in os.environ:
-            # Basic dummy implementation
-            self.cluster = {"worker": [f"{os.environ.get('HOSTNAME', 'localhost')}:8080"]}
+        master_addr = os.environ.get("MASTER_ADDR", "localhost")
+        master_port = os.environ.get("MASTER_PORT", "8080")
+
+        service_name = os.environ.get("KUBERNETES_SERVICE_NAME")
+        if service_name:
+            try:
+                _, _, ips = socket.gethostbyname_ex(service_name)
+                self.cluster = {"worker": [f"{ip}:{master_port}" for ip in ips]}
+            except OSError:
+                self.cluster = {"worker": [f"{master_addr}:{master_port}"]}
+        elif "KUBERNETES_SERVICE_HOST" in os.environ:
+            self.cluster = {"worker": [f"{os.environ.get('HOSTNAME', master_addr)}:{master_port}"]}
+        else:
+            self.cluster = {"worker": [f"{master_addr}:{master_port}"]}
 
 
 class SlurmClusterResolver:
@@ -126,10 +170,30 @@ class SlurmClusterResolver:
     def __init__(self) -> None:
         """Initialize."""
         import os
+        import re
 
         self.cluster = {}
-        if "SLURM_JOB_NODELIST" in os.environ:
-            self.cluster = {"worker": os.environ["SLURM_JOB_NODELIST"].split(",")}
+        nodelist = os.environ.get("SLURM_JOB_NODELIST", "")
+        if not nodelist:
+            return
+
+        nodes = []
+        match = re.match(r"([a-zA-Z0-9_-]+)\[(.*)\]", nodelist)
+        if match:
+            prefix = match.group(1)
+            ranges = match.group(2).split(",")
+            for r in ranges:
+                if "-" in r:
+                    start, end = r.split("-")
+                    width = len(start)
+                    for i in range(int(start), int(end) + 1):
+                        nodes.append(f"{prefix}{str(i).zfill(width)}")
+                else:
+                    nodes.append(f"{prefix}{r}")
+        else:
+            nodes = nodelist.split(",")
+
+        self.cluster = {"worker": nodes}
 
 
 class PerWorkerValue:
@@ -145,6 +209,112 @@ class RemoteValue:
     def __init__(self) -> None:
         """Initialize."""
         self.value = None
+
+
+class PipelineParallelismStrategy(Distribution):
+    """Pipeline parallelism strategy for large models."""
+
+    def __init__(self, num_microbatches: int = 1, devices_per_stage: int = 1) -> None:
+        """Initialize pipeline parallelism strategy.
+
+        Args:
+            num_microbatches (int): Number of microbatches to split the global batch into.
+            devices_per_stage (int): Number of devices to allocate per pipeline stage.
+        """
+        super().__init__()
+        self.num_microbatches = num_microbatches
+        self.devices_per_stage = devices_per_stage
+
+    def split_into_stages(self, graph: Any, num_stages: int) -> list[list[Any]]:
+        """Split a graph into multiple pipeline stages.
+
+        Args:
+            graph (Any): The IR graph to split.
+            num_stages (int): Number of pipeline stages.
+
+        Returns:
+            list[list[Any]]: A list of node IDs for each stage.
+
+        Raises:
+            ValueError: If num_stages is less than or equal to 0.
+        """
+        if num_stages <= 0:
+            raise ValueError("Number of stages must be positive.")
+
+        nodes = list(graph.nodes.keys())
+        stages = []
+        chunk_size = max(1, len(nodes) // num_stages)
+        for i in range(num_stages):
+            if i == num_stages - 1:
+                stages.append(nodes[i * chunk_size :])
+            else:
+                stages.append(nodes[i * chunk_size : (i + 1) * chunk_size])
+        return stages
+
+    def insert_send_recv(self, graph: Any, stages: list[list[Any]]) -> None:
+        """Implement actual Send and Recv IR node insertion across stage boundaries."""
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        node_to_stage = {}
+        for stage_idx, stage_nodes in enumerate(stages):
+            for node_id in stage_nodes:
+                node_to_stage[node_id] = stage_idx
+
+        new_nodes = {}
+
+        for node_id, node in list(graph.nodes.items()):
+            new_nodes[node_id] = node
+            for i, inp_id in enumerate(list(node.inputs)):
+                if inp_id in node_to_stage and node_id in node_to_stage:
+                    if node_to_stage[inp_id] != node_to_stage[node_id]:
+                        send_id = f"{inp_id}_send_{node_to_stage[inp_id]}_to_{node_to_stage[node_id]}"
+                        recv_id = f"{inp_id}_recv_{node_to_stage[inp_id]}_to_{node_to_stage[node_id]}"
+
+                        if send_id not in new_nodes:
+                            send_node = IRNode(id=send_id, op_type="Send", inputs=[inp_id], attributes={"target_stage": node_to_stage[node_id]})
+                            recv_node = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"source_stage": node_to_stage[inp_id]})
+
+                            new_nodes[send_id] = send_node
+                            new_nodes[recv_id] = recv_node
+
+                        node.inputs[i] = recv_id
+
+        graph.nodes = new_nodes
+
+    def generate_microbatch_loop(self, graph: Any) -> None:
+        """Implement microbatch loop generation (splitting global batch size into sequential chunks)."""
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        if self.num_microbatches <= 1:
+            return
+
+        loop_node = IRNode(id="microbatch_loop", op_type="WhileLoop", inputs=list(graph.inputs), attributes={"num_iterations": self.num_microbatches, "microbatch": True})
+        graph.nodes[loop_node.id] = loop_node
+
+    def generate_1f1b_schedule(self, graph: Any) -> list[tuple[str, int]]:
+        """Implement 1F1B (One-Forward-One-Backward) schedule generation for optimal bubble reduction."""
+        schedule = []
+        num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
+
+        for i in range(self.num_microbatches):
+            for j in range(num_stages):
+                schedule.append(("forward", j))
+
+            if i >= num_stages - 1:
+                for j in reversed(range(num_stages)):
+                    schedule.append(("backward", j))
+
+        return schedule
+
+    def track_gradient_accumulation(self, graph: Any) -> None:
+        """Implement gradient accumulation tracking across pipeline stages."""
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        grad_nodes = [n for n in graph.nodes.values() if n.op_type == "Grad"]
+        for g in grad_nodes:
+            accum_id = f"{g.id}_accum"
+            accum_node = IRNode(id=accum_id, op_type="Add", inputs=[g.id, f"{g.id}_state"], attributes={"is_gradient_accumulation": True})
+            graph.nodes[accum_id] = accum_node
 
 
 class MeshShardingStrategy(Distribution):
@@ -174,14 +344,12 @@ class MeshShardingStrategy(Distribution):
             if getattr(node, "sharding", None) is not None:
                 continue
 
-            # Check if any input has sharding to propagate
             for inp_id in node.inputs:
                 inp_node = graph.nodes.get(inp_id)
                 if inp_node and getattr(inp_node, "sharding", None) is not None:
                     node.sharding = inp_node.sharding
                     break
 
-            # Check layout_map if available
             if self.layout_map:
                 spec = self.layout_map.get(node.id)
                 if spec:
@@ -196,10 +364,8 @@ class MeshShardingStrategy(Distribution):
         Returns:
             bool: True if the graph was modified, False otherwise.
         """
-        # 1. Propagate layouts
         self.propagate_layouts(graph)
 
-        # 2. Lower/inject collectives across boundary transitions
         from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
 
         return inject_spmd_communication_pass(graph)

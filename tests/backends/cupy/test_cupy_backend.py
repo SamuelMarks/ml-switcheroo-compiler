@@ -180,3 +180,15 @@ def test_cupy_generator_register():
     with patch.dict(sys.modules, {"cupy": MagicMock()}):
         importlib.reload(cupy_gen)
         assert cupy_gen.cp is not None
+
+
+def test_cupy_eager_op_mapping():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.backends.cupy.eager import execute_op
+
+    with patch("ml_switcheroo_compiler.backends.cupy.eager._get_op_mapping") as mock_get_mapping:
+        mock_get_mapping.return_value = {"TestOp2": lambda *args, **kwargs: "mapped_res"}
+        with patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
+            res = execute_op(None, "TestOp2")
+            assert res == "mapped_res"

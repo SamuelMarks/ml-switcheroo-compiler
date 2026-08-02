@@ -101,8 +101,17 @@ def einsum(equation: str, *operands: Tensor) -> Tensor:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("Einsum", equation, *[op.data for op in operands])
-        return Tensor(data, TensorConfig(data.shape, operands[0].dtype, operands[0].device))
+
+        # Extract raw data from operands if they are Tensors
+        raw_operands = [getattr(op, "data", op) for op in operands]
+        data = backend.execute_op("Einsum", equation, *raw_operands)
+
+        # Infer dtype and device safely
+        first_op = operands[0]
+        dtype = getattr(first_op, "dtype", getattr(raw_operands[0], "dtype", "float32"))
+        device = getattr(first_op, "device", "cpu")
+
+        return Tensor(data, TensorConfig(data.shape, dtype, device))
     return _emit_linalg_node("Einsum", operands, {"equation": equation}, [()], [operands[0].dtype])
 
 

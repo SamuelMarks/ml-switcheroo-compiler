@@ -36,25 +36,41 @@ def random_fold_in(backend_module: object, key: object, data: int) -> object:
 @global_eager_registry.register("Rand")
 def rand(backend_module: object, *args: object, **kwargs: object) -> object:
     """Generate uniform random values."""
-    shape = kwargs.get("shape", args[0] if args else ())
-    if hasattr(backend_module, "random") and hasattr(backend_module.random, "rand"):
-        return backend_module.random.rand(*shape)
-    elif hasattr(backend_module, "rand"):
+    shape = kwargs.get("shape", args if args else ())
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        shape = tuple(shape[0])
+    if hasattr(backend_module, "random"):
+        rand_mod = backend_module.random
+        if hasattr(rand_mod, "uniform"):
+            return rand_mod.uniform(size=shape)
+        if hasattr(rand_mod, "rand"):
+            return rand_mod.rand(*shape)
+    if hasattr(backend_module, "rand"):
         return backend_module.rand(*shape)
+    if hasattr(backend_module, "uniform"):
+        return backend_module.uniform(size=shape)
 
-    return backend_module.random.rand(*shape)
+    return backend_module.random.uniform(size=shape)
 
 
 @global_eager_registry.register("Randn")
 def randn(backend_module: object, *args: object, **kwargs: object) -> object:
     """Generate normal random values."""
-    shape = kwargs.get("shape", args[0] if args else ())
-    if hasattr(backend_module, "random") and hasattr(backend_module.random, "randn"):
-        return backend_module.random.randn(*shape)
-    elif hasattr(backend_module, "randn"):
+    shape = kwargs.get("shape", args if args else ())
+    if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        shape = tuple(shape[0])
+    if hasattr(backend_module, "random"):
+        rand_mod = backend_module.random
+        if hasattr(rand_mod, "normal"):
+            return rand_mod.normal(size=shape)
+        if hasattr(rand_mod, "randn"):
+            return rand_mod.randn(*shape)
+    if hasattr(backend_module, "randn"):
         return backend_module.randn(*shape)
+    if hasattr(backend_module, "normal"):
+        return backend_module.normal(size=shape)
 
-    return backend_module.random.randn(*shape)
+    return backend_module.random.normal(size=shape)
 
 
 @global_eager_registry.register("Randint")

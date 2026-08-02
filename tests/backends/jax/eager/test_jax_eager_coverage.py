@@ -199,3 +199,16 @@ def test_jax_eager_execute_op_fallback():
 
     res = execute_op(None, "Eig", jnp.eye(2))
     assert res is not None
+
+
+def test_jax_eager_extra():
+    import pytest
+
+    from ml_switcheroo_compiler.backends.jax.eager import _execute_accumulate_n, _execute_adaptive_pool_mock
+
+    # AdaptivePool without shape
+    assert _execute_adaptive_pool_mock("string_without_shape", 1) == "string_without_shape"
+
+    # AccumulateN empty
+    with pytest.raises(ValueError):
+        _execute_accumulate_n([])

@@ -9,6 +9,8 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 def _get_shape_list(x: object) -> list:
     """Helper to convert shape to list."""
+    if isinstance(x, (tuple, list)):
+        return list(x)
     if not hasattr(x, "shape") or x.shape is None:
         return []
     s = x.shape
@@ -257,7 +259,7 @@ class ExpandDims(OpDef):
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         if not hasattr(x, "shape") or x.shape is None:
             return (None,)
-        shape = list(x.shape) if isinstance(x.shape, tuple) else [x.shape] if isinstance(x.shape, int) else []
+        shape = _get_shape_list(x)
         if axis is None:
             return tuple(shape)
         if axis < 0:
@@ -425,9 +427,9 @@ class Permute(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = list(x.shape)
+        shape = _get_shape_list(x)
         dims = args[1] if len(args) > 1 else kwargs.get("dims")
         if dims is None:
             return tuple(shape[::-1])
@@ -443,9 +445,9 @@ class Roll(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(x.shape)
+        return tuple(_get_shape_list(x))
 
 
 @register_op("Squeeze")
@@ -457,10 +459,11 @@ class Squeeze(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
+        shape = _get_shape_list(x)
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
-        return self._calc_shape(list(x.shape), axis)
+        return self._calc_shape(shape, axis)
 
     def _calc_shape(self, shape: list[int], axis: object) -> tuple:
         if axis is None:
@@ -479,9 +482,9 @@ class Swapaxes(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = list(x.shape)
+        shape = _get_shape_list(x)
         axis1 = args[1] if len(args) > 1 else kwargs.get("axis1")
         axis2 = args[2] if len(args) > 2 else kwargs.get("axis2")
         a1 = axis1 + len(shape) if axis1 < 0 else axis1
@@ -499,9 +502,9 @@ class Flip(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(x.shape)
+        return tuple(_get_shape_list(x))
 
 
 @register_op("Fliplr")
@@ -513,9 +516,9 @@ class Fliplr(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(x.shape)
+        return tuple(_get_shape_list(x))
 
 
 @register_op("Flipud")
@@ -527,6 +530,6 @@ class Flipud(OpDef):
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
-        if not hasattr(x, "shape"):
+        if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(x.shape)
+        return tuple(_get_shape_list(x))

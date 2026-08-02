@@ -3679,7 +3679,6 @@ def _kronecker(backend_module: object, *args: object, **kwargs: object) -> objec
     return backend_module.kron(backend_module.asarray(args[0]), backend_module.asarray(args[1]))
 
 
-@global_eager_registry.register("Nextafter")
 @global_eager_registry.register("Outer")
 def _outer(backend_module: object, *args: object, **kwargs: object) -> object:
     """Evaluate the outer operation.
@@ -4889,22 +4888,17 @@ def _mock_unfold(backend_module: object, *args: object, **kwargs: object) -> obj
     N, C, H, W = t_np.shape
     kH, kW = kernel_size
     sH, sW = stride
-
     out_H = (H - kH) // sH + 1
     out_W = (W - kW) // sW + 1
-
     if out_H <= 0 or out_W <= 0:
         return backend_module.asarray(np.zeros((N, C * kH * kW, 0), dtype=t_np.dtype))
-
     out = np.zeros((N, C * kH * kW, out_H * out_W), dtype=t_np.dtype)
-
     idx = 0
     for y in range(0, H - kH + 1, sH):
         for x in range(0, W - kW + 1, sW):
             patch = t_np[:, :, y : y + kH, x : x + kW].reshape(N, C * kH * kW)
             out[:, :, idx] = patch
             idx += 1
-
     return backend_module.asarray(out)
 
 

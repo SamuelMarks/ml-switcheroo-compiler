@@ -576,11 +576,11 @@ class Repeat(OpDef):
 
         out_shape = list(in_shape)
         if isinstance(repeats, int):
-            out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None  # type: ignore[index]
+            out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None
         elif isinstance(repeats, (list, tuple)):
-            out_shape[axis] = sum(repeats)  # type: ignore[index]
+            out_shape[axis] = sum(repeats)
         else:
-            out_shape[axis] = None  # type: ignore[index]
+            out_shape[axis] = None
         return tuple(out_shape)
 
 
@@ -656,12 +656,12 @@ class Unique(OpDef):
             ret_shape = (None,)
         else:
             ret_shape_list = list(in_shape)
-            ret_shape_list[axis] = None  # type: ignore[index]
-            ret_shape = tuple(ret_shape_list)  # type: ignore[assignment]
+            ret_shape_list[axis] = None
+            ret_shape = tuple(ret_shape_list)
 
         ret = [ret_shape]
         if return_index:
-            ret.append((None,) if axis is None else (in_shape[axis],))  # type: ignore[index]
+            ret.append((None,) if axis is None else (in_shape[axis],))
         if return_inverse:
             if axis is None:
                 size = 1
@@ -672,7 +672,7 @@ class Unique(OpDef):
                     size *= s
                 ret.append((size,))
             else:
-                ret.append((in_shape[axis],))  # type: ignore[index]
+                ret.append((in_shape[axis],))
         if return_counts:
             ret.append((None,))
 

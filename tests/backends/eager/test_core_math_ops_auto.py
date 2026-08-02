@@ -398,3 +398,21 @@ def test_remaining_coverage():
 
     # 1591 (AssociativeScan)
     mod._associative_scan(np, lambda a, b: a + b, np.array([1.0, 2.0]))
+
+
+def test_unfold_coverage_manual():
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.eager.core_math_ops import _mock_unfold
+
+    class DummyBackend:
+        def asarray(self, x):
+            return x
+
+    # Case 1: kernel_size int, stride int, 4D valid
+    res = _mock_unfold(DummyBackend(), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
+    assert res.shape == (1, 9, 4)
+
+    # Case 2: 4D out_H <= 0
+    res = _mock_unfold(DummyBackend(), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
+    assert res.shape == (1, 9, 0)

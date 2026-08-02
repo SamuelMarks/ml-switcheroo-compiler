@@ -323,7 +323,13 @@ class WebGLCodeGenerator(BaseGenerator):
             js_code.append("  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);")
             js_code.append("  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);")
             js_code.append("  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);")
-            js_code.append(f"  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, {w}, {h}, 0, gl.RED, gl.FLOAT, inputs.{nid});")
+            js_code.append(f"  let input_data_{idx} = inputs.{nid};")
+            js_code.append(f"  if (input_data_{idx}.length < {w} * {h}) {{")
+            js_code.append(f"    const padded = new Float32Array({w} * {h});")
+            js_code.append(f"    padded.set(input_data_{idx});")
+            js_code.append(f"    input_data_{idx} = padded;")
+            js_code.append("  }")
+            js_code.append(f"  gl.texImage2D(gl.TEXTURE_2D, 0, gl.R32F, {w}, {h}, 0, gl.RED, gl.FLOAT, input_data_{idx});")
             js_code.append(f"  gl.uniform1i(gl.getUniformLocation(program, 'in_{idx}'), {idx});")
             js_code.append("")
 
@@ -348,8 +354,8 @@ class WebGLCodeGenerator(BaseGenerator):
         js_code.append("")
 
         # Extract output channels
-        js_code.append("  const outData = new Float32Array(pixels.length / 4);")
-        js_code.append("  for (let i = 0; i < outData.length; i++) {")
+        js_code.append(f"  const outData = new Float32Array({total_size});")
+        js_code.append(f"  for (let i = 0; i < {total_size}; i++) {{")
         js_code.append("    outData[i] = pixels[i * 4];")
         js_code.append("  }")
         js_code.append("")

@@ -1,13 +1,20 @@
 """Passes package."""
 
+from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
+from ml_switcheroo_compiler.transforms.passes.batch_norm_folding import batch_norm_folding_pass
 from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import broadcast_explicitizer_pass
+from ml_switcheroo_compiler.transforms.passes.buffer_allocation import buffer_allocation_pass
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 from ml_switcheroo_compiler.transforms.passes.cse import cse_pass as common_subexpression_elimination_pass
 from ml_switcheroo_compiler.transforms.passes.dce import dce_pass as dead_code_elimination_pass
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
+from ml_switcheroo_compiler.transforms.passes.graph_scheduling import graph_scheduling_pass
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
+from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
+from ml_switcheroo_compiler.transforms.passes.mixed_precision import mixed_precision_pass
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
+from ml_switcheroo_compiler.transforms.passes.state_lowering import state_lowering_pass
 from ml_switcheroo_compiler.transforms.passes.type_promotion_explicitizer import type_promotion_explicitizer_pass
 
 __all__ = [
@@ -20,4 +27,11 @@ __all__ = [
     "lift_state_pass",
     "shape_inference_pass",
     "type_promotion_explicitizer_pass",
+    "axis_translation_pass",
+    "batch_norm_folding_pass",
+    "buffer_allocation_pass",
+    "graph_scheduling_pass",
+    "loop_unrolling_pass",
+    "mixed_precision_pass",
+    "state_lowering_pass",
 ]

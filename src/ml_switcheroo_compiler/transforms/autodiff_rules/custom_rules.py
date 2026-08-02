@@ -84,3 +84,51 @@ def checkpoint_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
     adjoints = _inline_grad_subgraph(graph, sg_grad, sg, node, cotangent_mapping)
     return tuple(adjoints)
+
+
+@register_vjp("If")
+def _if_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
+    return (UnconnectedGradients.ZERO,)
+
+
+@register_vjp("Loop")
+def _loop_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
+    return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
+
+
+@register_vjp("Scan")
+def _scan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
+    return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
+
+
+@register_vjp("AssociativeScan")
+def _assoc_scan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
+    return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
+
+
+@register_jvp("If")
+def _if_jvp(graph: object, node: object, tangents: list) -> str:
+    return None
+
+
+@register_jvp("Loop")
+def _loop_jvp(graph: object, node: object, tangents: list) -> str:
+    return None
+
+
+@register_jvp("Scan")
+def _scan_jvp(graph: object, node: object, tangents: list) -> str:
+    return None
+
+
+@register_jvp("AssociativeScan")
+def _assoc_scan_jvp(graph: object, node: object, tangents: list) -> str:
+    return None

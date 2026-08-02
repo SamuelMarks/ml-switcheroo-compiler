@@ -106,3 +106,31 @@ def test_frontend_utils_constant_scalar():
 
     config.eager_mode = False
     _emit_constant_node(0, DType.Float32)
+
+
+def test_frontend_utils_missing_3():
+    from ml_switcheroo_compiler.ops.creation.frontend_utils import Geometric, frompyfunc
+
+    _multinomial_shape = Geometric().infer_shape
+
+    # 1. _multinomial_shape where size is int
+    class MockTensor:
+        shape = (10,)
+
+    assert _multinomial_shape(MockTensor(), size=5) == (5,)
+
+    # 2. frompyfunc
+    try:
+        frompyfunc(lambda x: x, 1, 1)
+    except Exception:
+        pass
+
+
+def test_frontend_utils_frompyfunc():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.ops.creation.frontend_utils import frompyfunc
+
+    with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op") as mock_dispatch:
+        mock_dispatch.return_value = "dummy_frompyfunc"
+        assert frompyfunc(lambda x: x, 1, 1) == "dummy_frompyfunc"

@@ -141,3 +141,42 @@ def test_evaluator_coverage():
     env.set("i1", 100)
     _evaluate_node(n_input, env, BackendMock())
     assert env.data["i1"] == 100
+
+
+def test_evaluator_checkpoint_subgraph_nodes_dict_multiple_outputs():
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    from ml_switcheroo_compiler.interpreter.environment import Environment
+    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+
+    g = LogicalGraph()
+    n_in = LogicalNode(id="n1", op_type="Input")
+
+    # Create subgraph with dict nodes and multiple outputs
+    sub = LogicalGraph()
+    n_sub1 = LogicalNode(id="sub1", op_type="Input")
+    n_sub2 = LogicalNode(id="sub2", op_type="Add", inputs=["sub1", "sub1"])
+    n_sub3 = LogicalNode(id="sub3", op_type="Subtract", inputs=["sub1", "sub1"])
+    sub.nodes = {"sub1": n_sub1, "sub2": n_sub2, "sub3": n_sub3}
+    sub.inputs = ["sub1"]
+    sub.outputs = ["sub2", "sub3"]
+
+    n_cp = LogicalNode(id="cp", op_type="Checkpoint", inputs=["n1"])
+    n_cp.attributes["subgraph"] = sub
+
+    g.nodes = {"n1": n_in, "cp": n_cp}
+    g.inputs = ["n1"]
+    g.outputs = ["cp"]
+
+    env = Environment()
+    env.set("n1", 2.0)
+
+    # We also need Add and Subtract in evaluator ops
+    # The default evaluator has global_eager_registry. Let's patch _get_eager_op
+
+    from unittest.mock import patch
+
+    with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", side_effect=lambda backend, op, *args, **kwargs: sum(args) if op == "Add" else args[0] - args[1]):
+        res = evaluate_graph(g, {"n1": 2.0})
+
+    assert res["cp"] == (4.0, 0.0)

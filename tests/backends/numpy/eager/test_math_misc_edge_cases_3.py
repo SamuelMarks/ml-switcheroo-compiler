@@ -150,3 +150,23 @@ def test_fallback_snippets_importerror(monkeypatch):
 
     with pytest.raises(RuntimeError, match="Eager execution failed: Evil AttributeError"):
         numpy_eager_registry.get("distributions")(np, np.ones((2, 2)))
+
+
+def test_custom_root_coverage():
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_customroot
+
+    # solve is None
+    res = _np_customroot(np, lambda x: x, 42.0)
+    assert res == 42.0
+
+
+def test_custom_root_coverage_solve():
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_customroot
+
+    # solve is provided
+    res = _np_customroot(np, lambda x: x, 42.0, solve=lambda f, x: f(x) + 1.0)
+    assert res == 43.0

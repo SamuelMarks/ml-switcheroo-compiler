@@ -58,7 +58,7 @@ flowchart LR
 The engine supports a comprehensive suite of advanced optimizations and parity features across all backends:
 - **Compiler Optimizations:** Built-in Dead Code Elimination (DCE), Common Subexpression Elimination (CSE), Constant Folding, Operator Fusion, Loop Unrolling, Memory Planning, and Scheduling logic via the `PassManager`.
 - **Automatic Differentiation:** Full support for `jvp` (Forward-Mode), `vjp` / `grad` (Reverse-Mode), and `hvp` (Higher-Order Derivatives), accompanied by memory-efficient checkpointing/rematerialization and custom gradient hooks.
-- **Hardware Targets:** Support for LLVM/C++ fallbacks, WebAssembly (WASM), WebGPU WGSL, CUDA, ROCm, Metal Shading Language, ONNX, and StableHLO native exports.
+- **Hardware Targets:** Support for LLVM/C++ fallbacks, WebAssembly (WASM), WebGPU WGSL, ONNX, and StableHLO native exports.
 - **Distributed Parity:** Collectives (`AllReduce`, `AllGather`, `AllToAll`, `ReduceScatter`), SPMD annotations, and pipeline parallelism primitives.
 
 ## Core Execution Modes

@@ -228,6 +228,8 @@ class BroadcastTo(OpDef):
         """Infer shape."""
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
+        if "shape" in kwargs:
+            return kwargs["shape"]
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
         if not shapes:
             return ()
@@ -245,15 +247,11 @@ class BroadcastToRank(OpDef):
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer shape."""
-        from ml_switcheroo_compiler.core.shape import broadcast_shapes
-
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
-        if not shapes:
-            return ()
-        res = shapes[0]
-        for s in shapes[1:]:
-            res = broadcast_shapes(res, s)
-        return res
+        rank = kwargs.get("rank", 1)
+        if args and hasattr(args[0], "shape"):
+            shape = args[0].shape
+            return (1,) * (rank - len(shape)) + shape if len(shape) < rank else shape
+        return ()
 
 
 @register_op("BroadcastedIota")

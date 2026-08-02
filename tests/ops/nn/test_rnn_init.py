@@ -1,8 +1,10 @@
+"""Tests for RNN initialization and registration."""
+
 import ml_switcheroo_compiler.ops.nn.rnn as rnn
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY
 
 
-def test_rnn_operations_exist_and_registered():
+def test_rnn_operations_exist_and_registered() -> None:
     """Verify that RNN operations are properly initialized and registered."""
     assert rnn.rnn_step is not None
 

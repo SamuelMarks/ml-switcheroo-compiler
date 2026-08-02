@@ -73,3 +73,41 @@ def test_random_ops():
     assert randint(bk_rand1, 0, 10, (2, 2)) == "randint"
     with pytest.raises(AttributeError):
         randint(DummyFallback(), 0, 10, (2, 2))
+
+
+def test_rand_coverage_auto():
+    class ModUniform:
+        def uniform(self, size):
+            return "uniform_" + str(size)
+
+    assert rand(ModUniform(), shape=(2,)) == "uniform_(2,)"
+
+    class ModRand:
+        class rand_mod:
+            pass
+
+        random = rand_mod()
+
+        def rand(self, *args):
+            return "rand_" + str(args)
+
+    assert rand(ModRand(), shape=(2, 3)) == "rand_(2, 3)"
+
+
+def test_randn_coverage_auto():
+    class ModNormal:
+        def normal(self, size):
+            return "normal_" + str(size)
+
+    assert randn(ModNormal(), shape=(2,)) == "normal_(2,)"
+
+    class ModRandn:
+        class rand_mod:
+            pass
+
+        random = rand_mod()
+
+        def randn(self, *args):
+            return "randn_" + str(args)
+
+    assert randn(ModRandn(), shape=(2, 3)) == "randn_(2, 3)"

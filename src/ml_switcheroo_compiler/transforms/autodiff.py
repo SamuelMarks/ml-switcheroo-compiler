@@ -91,8 +91,10 @@ def _accumulate_gradients(
         msg = f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
         raise ValueError(msg)
 
+    from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+
     for inp_id, inp_adj_id in zip(node.inputs, input_adjs):
-        if inp_adj_id is None:
+        if inp_adj_id is None or inp_adj_id == UnconnectedGradients.NONE or inp_adj_id == UnconnectedGradients.ZERO:
             continue
 
         if inp_id in adjoints:

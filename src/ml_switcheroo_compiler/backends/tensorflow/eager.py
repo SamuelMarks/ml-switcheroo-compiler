@@ -221,5 +221,4 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     func = op_mapping.get(op_type)
     if func is not None:
         return func(*args, **kwargs)
-
     raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

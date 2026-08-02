@@ -69,8 +69,6 @@ class StableHLOCodeGenerator(BaseGenerator):
             t_type = self._map_type(meta_shape, meta_dtype)
             res_var = f"%v_{nid.replace('-', '_')}"
             self.var_map[nid] = res_var
-
-            # Format constant dense representation
             dense_val = f"dense<{val}>" if meta_shape else str(val)
             self.add_line(f'  {res_var} = "stablehlo.constant"() {{value = {dense_val} : {t_type}}} : () -> {t_type}')
             return res_var

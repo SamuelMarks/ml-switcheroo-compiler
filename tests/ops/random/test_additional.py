@@ -8,5 +8,3 @@ def test_random_extras() -> None:
     # Just exercise them
     assert get_global_generator() is not None
     assert create_rng_state(0) is not None
-
-    # Pragma no cover handles the rest.

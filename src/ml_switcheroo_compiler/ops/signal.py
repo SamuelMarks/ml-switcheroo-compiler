@@ -631,10 +631,10 @@ class Rfftfreq(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftfreq(input: Tensor, *args: object, **kwargs: object) -> Tensor:
+def rfftfreq(input: int, *args: object, **kwargs: object) -> Tensor:
     """Compute the Rfftfreq operation."""
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Rfftfreq", input.data, *args, **kwargs)
+        data = backend.execute_op("Rfftfreq", getattr(input, "data", input), *args, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape", getattr(input, "shape", ())), getattr(input, "dtype", "float32"), getattr(input, "device", None)))
     return _emit_signal_node("Rfftfreq", [input], kwargs, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))

@@ -32,5 +32,4 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         if hasattr(backend, "save_npz"):
             backend.save_npz(weights_np, filepath)
             return
-
         np.savez(filepath, **weights_np)

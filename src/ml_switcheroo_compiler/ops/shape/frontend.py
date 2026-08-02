@@ -208,7 +208,7 @@ def _get_squeeze_shape(a: object, axis: object) -> tuple:
 def squeeze(a: object, axis: object = None) -> Tensor:
     """Squeeze dimensions of a tensor."""
     if config.eager_mode:
-        data = get_active_backend().execute_op("Squeeze", getattr(a, "data", a), axis=axis)
+        data = get_active_backend().execute_op("Squeeze", getattr(a, "data", a), dim=axis)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
