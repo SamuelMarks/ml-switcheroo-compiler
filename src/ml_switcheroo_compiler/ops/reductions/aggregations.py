@@ -121,10 +121,18 @@ class Cumsum(ReductionOp):
 
 
 class NaryMathOp(OpDef):
-    """Base class for N-ary mathematical operations (operations taking a list of tensors)."""
+    """Define base class for N-ary mathematical operations (operations taking a list of tensors)."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the infer_shape operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         inputs = args[0] if len(args) > 0 else kwargs.get("inputs")
         # Assume all inputs have the same shape
         if isinstance(inputs, (list, tuple)) and len(inputs) > 0:

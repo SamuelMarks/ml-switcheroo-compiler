@@ -11,7 +11,17 @@ class SpaceToBatchND(OpDef):
     op_name = "SpaceToBatchND"
 
     def infer_shape(self, input: object, block_shape: object, paddings: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            input (object): The input parameter.
+            block_shape (object): The block_shape parameter.
+            paddings (object): The paddings parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -22,12 +32,32 @@ class SpaceToBatch(OpDef):
     op_name = "SpaceToBatch"
 
     def infer_shape(self, input: object, block_size: object, paddings: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            input (object): The input parameter.
+            block_size (object): The block_size parameter.
+            paddings (object): The paddings parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
 def space_to_batch(input: object, block_size: object, paddings: object, **kwargs: object) -> object:
-    """Space to batch operation."""
+    """Space to batch operation.
+
+    Args:
+        input (object): The input parameter.
+        block_size (object): The block_size parameter.
+        paddings (object): The paddings parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -43,7 +73,17 @@ def space_to_batch(input: object, block_size: object, paddings: object, **kwargs
 
 
 def space_to_batch_nd(input: object, block_shape: object, paddings: object, **kwargs: object) -> object:
-    """Space to batch ND operation."""
+    """Space to batch ND operation.
+
+    Args:
+        input (object): The input parameter.
+        block_shape (object): The block_shape parameter.
+        paddings (object): The paddings parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig

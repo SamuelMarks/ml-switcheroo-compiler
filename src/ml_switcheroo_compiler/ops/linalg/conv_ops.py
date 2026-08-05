@@ -13,7 +13,15 @@ class ConvGeneralDilated(OpDef):
     op_name = "ConvGeneralDilated"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         """Infer shape.
 
         Args:
@@ -40,13 +48,23 @@ class ConvGeneralDilated(OpDef):
 
 @register_op("Convolve")
 class Convolve(OpDef):
-    """Returns the discrete, linear convolution of two one-dimensional sequences."""
+    """Return the discrete, linear convolution of two one-dimensional sequences."""
 
     op_name = "Convolve"
     np_op_name = "convolve"
 
     def infer_shape(self, a: object, v: object, mode: str = "full", **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            a (object): The a parameter.
+            v (object): The v parameter.
+            mode (str): The mode parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (None,)
 
 
@@ -57,7 +75,15 @@ class ConvGeneralDilatedLocal(OpDef):
     op_name = "ConvGeneralDilatedLocal"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args else ()
 
 
@@ -68,7 +94,15 @@ class ConvGeneralDilatedPatches(OpDef):
     op_name = "ConvGeneralDilatedPatches"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args else ()
 
 
@@ -79,7 +113,15 @@ class ConvWithGeneralPadding(OpDef):
     op_name = "ConvWithGeneralPadding"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args else ()
 
 
@@ -90,7 +132,15 @@ class ConvTransposeShapeTuple(OpDef):
     op_name = "ConvTransposeShapeTuple"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -101,7 +151,16 @@ class ConvTranspose(OpDef):
     op_name = "ConvTranspose"
 
     def infer_shape(self, lhs: object, rhs: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            lhs (object): The lhs parameter.
+            rhs (object): The rhs parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Assuming NHWC and HWIO or NWC and WIO
         strides = kwargs.get("strides", 1)
         padding = kwargs.get("padding", "VALID")

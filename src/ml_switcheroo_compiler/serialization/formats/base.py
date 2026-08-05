@@ -1,4 +1,4 @@
-"""Base interfaces for weight formats."""
+"""Define base interfaces for weight formats."""
 
 from abc import ABC, abstractmethod
 

@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
 class TracingNodeBuilder:
-    """Builds tracing nodes."""
+    """Build tracing nodes."""
 
     @staticmethod
     def create_constant_node(val: object, shape: tuple) -> str:
@@ -58,13 +58,13 @@ class TracingNodeBuilder:
 
     @staticmethod
     def extract_from_constant(a: object) -> tuple[str, tuple]:
-        """Evaluate and process the extract from constant operation.
+        """Extract the node identifier and shape metadata from a constant value.
 
         Args:
-            a (object): Required parameter for a.
+            a (object): The constant scalar, list, or array value.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: A tuple containing the node ID and its shape.
         """
         if isinstance(a, (list, tuple)) and any(type(x).__name__ in ("ProxyTensor", "Tensor") for x in a):
             ids, shapes = [], []
@@ -89,13 +89,13 @@ class TracingNodeBuilder:
 
     @staticmethod
     def extract_proxy_inputs(args: tuple[object, ...]) -> tuple[list[str], list[tuple], object]:
-        """Evaluate and process the extract proxy inputs operation.
+        """Extract proxy node IDs and shapes from a list of arguments.
 
         Args:
-            args (tuple): Required parameter for args.
+            args (tuple[object, ...]): The positional arguments.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: A tuple containing lists of node IDs, shapes, and the first tensor found.
         """
         input_ids = []
         shapes = []
@@ -117,16 +117,16 @@ class TracingNodeBuilder:
 
     @staticmethod
     def create_tracing_logical_node(op_type: str, input_ids: list[str], kwargs: dict, out_shape: tuple) -> str:
-        """Evaluate and process the create tracing logical node operation.
+        """Create and add a new logical node to the active tracing graph.
 
         Args:
-            op_type (str): Required parameter for op_type.
-            input_ids (list): Required parameter for input_ids.
-            kwargs (dict): Required parameter for kwargs.
-            out_shape (tuple): Required parameter for out_shape.
+            op_type (str): The type of the operation.
+            input_ids (list[str]): The input node IDs.
+            kwargs (dict): The attributes for the node.
+            out_shape (tuple): The output shape metadata.
 
         Returns:
-            str: The evaluated or processed output.
+            str: The unique identifier of the created node.
         """
         out_id = str(uuid.uuid4())
         node = LogicalNode(
@@ -141,15 +141,15 @@ class TracingNodeBuilder:
 
     @staticmethod
     def emit_tracing_node(op_type: str, *args: object, **kwargs: object) -> object:
-        """Evaluate and process the emit tracing node operation.
+        """Emit a new tracing node and return its corresponding tensor.
 
         Args:
-            op_type (str): Required parameter for op_type.
-            *args (Any): Variable positional arguments.
-            **kwargs (Any): Arbitrary keyword arguments.
+            op_type (str): The operation type.
+            *args (object): Positional arguments.
+            **kwargs (object): Keyword arguments.
 
         Returns:
-            object: The evaluated or processed output.
+            object: The newly created proxy tensor.
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 

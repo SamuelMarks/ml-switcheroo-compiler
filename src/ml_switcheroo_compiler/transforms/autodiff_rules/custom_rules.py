@@ -10,6 +10,14 @@ for op_name in ["CudaKernel", "MetalKernel", "PrecompiledCudaKernel"]:
 
 
 def _inline_subgraph(graph: object, subgraph: object, node: object, id_map: dict[str, str]) -> None:
+    """Inline a subgraph into the main graph.
+
+    Args:
+        graph (object): The graph parameter.
+        subgraph (object): The subgraph parameter.
+        node (object): The node parameter.
+        id_map (dict): The id_map parameter.
+    """
     from ml_switcheroo_ir import LogicalGraph
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
@@ -28,6 +36,18 @@ def _inline_subgraph(graph: object, subgraph: object, node: object, id_map: dict
 
 
 def _inline_grad_subgraph(graph: object, sg_grad: object, sg: object, node: object, cotangent_mapping: dict[str, str]) -> list[str]:
+    """Inline the gradient subgraph into the main graph.
+
+    Args:
+        graph (object): The graph parameter.
+        sg_grad (object): The sg_grad parameter.
+        sg (object): The sg parameter.
+        node (object): The node parameter.
+        cotangent_mapping (object): The cotangent_mapping parameter.
+
+    Returns:
+        object: Result.
+    """
     import uuid
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
@@ -55,7 +75,16 @@ def _inline_grad_subgraph(graph: object, sg_grad: object, sg: object, node: obje
 
 @register_vjp("Checkpoint")
 def checkpoint_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Checkpoint operation."""
+    """VJP for Checkpoint operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     import uuid
 
     from ml_switcheroo_ir import LogicalGraph
@@ -88,6 +117,16 @@ def checkpoint_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_vjp("If")
 def _if_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for If operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     return (UnconnectedGradients.ZERO,)
@@ -95,6 +134,16 @@ def _if_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_vjp("Loop")
 def _loop_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Loop operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
@@ -102,6 +151,16 @@ def _loop_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_vjp("Scan")
 def _scan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for Scan operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
@@ -109,6 +168,16 @@ def _scan_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_vjp("AssociativeScan")
 def _assoc_scan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP for AssociativeScan operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     return tuple(UnconnectedGradients.ZERO for _ in node.inputs)
@@ -116,19 +185,59 @@ def _assoc_scan_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("If")
 def _if_jvp(graph: object, node: object, tangents: list) -> str:
+    """JVP for If operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (list): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     return None
 
 
 @register_jvp("Loop")
 def _loop_jvp(graph: object, node: object, tangents: list) -> str:
+    """JVP for Loop operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (list): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     return None
 
 
 @register_jvp("Scan")
 def _scan_jvp(graph: object, node: object, tangents: list) -> str:
+    """JVP for Scan operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (list): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     return None
 
 
 @register_jvp("AssociativeScan")
 def _assoc_scan_jvp(graph: object, node: object, tangents: list) -> str:
+    """JVP for AssociativeScan operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (list): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     return None

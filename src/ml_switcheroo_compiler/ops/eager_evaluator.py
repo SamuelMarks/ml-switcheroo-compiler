@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
 @dataclass
 class EvaluationContext:
-    """Context object for eager evaluation containing operation details."""
+    """Provide context object for eager evaluation containing operation details."""
 
     op_cls: object
     op_type: str
@@ -20,11 +20,18 @@ class EvaluationContext:
 
 
 class EvaluationStrategy(abc.ABC):
-    """Base evaluation strategy."""
+    """Define base evaluation strategy."""
 
     @abc.abstractmethod
     def evaluate(self, ctx: EvaluationContext) -> object:
-        """Evaluate."""
+        """Evaluate evaluate operation.
+
+        Args:
+            ctx (EvaluationContext): The ctx parameter.
+
+        Returns:
+            object: Result.
+        """
         return None
 
 
@@ -32,7 +39,14 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
     """Strategy for custom eager evaluation."""
 
     def evaluate(self, ctx: EvaluationContext) -> object:
-        """Evaluate."""
+        """Evaluate evaluate operation.
+
+        Args:
+            ctx (EvaluationContext): Context.
+
+        Returns:
+            object: Result.
+        """
         return ctx.op_cls().eager_eval(*ctx.raw_args, **ctx.kwargs)
 
 
@@ -40,16 +54,30 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
     """Strategy for backend execution."""
 
     def evaluate(self, ctx: EvaluationContext) -> object:
-        """Evaluate."""
+        """Evaluate evaluate operation.
+
+        Args:
+            ctx (EvaluationContext): Context.
+
+        Returns:
+            object: Result.
+        """
         return ctx.backend.execute_op(ctx.op_type, *ctx.raw_args, **ctx.kwargs)
 
 
 class EagerEvaluator:
-    """Evaluates operations eagerly."""
+    """Evaluate operations eagerly."""
 
     @staticmethod
     def _get_strategy(op_cls: object) -> EvaluationStrategy:
-        """Get the evaluation strategy."""
+        """Get the evaluation strategy for a given operation class.
+
+        Args:
+            op_cls (object): The operation class.
+
+        Returns:
+            EvaluationStrategy: The determined evaluation strategy.
+        """
         from ml_switcheroo_compiler.ops.base import OpDef
 
         has_custom_eval = hasattr(op_cls, "eager_eval") and op_cls.__dict__.get("eager_eval") is not getattr(
@@ -63,6 +91,16 @@ class EagerEvaluator:
 
     @staticmethod
     def _pack_outputs(res_data: object, first_tensor: object, device: object) -> object:
+        """Pack raw output data into Tensor objects.
+
+        Args:
+            res_data (object): The raw data returned by the backend.
+            first_tensor (object): The first input tensor, used for dtype resolution.
+            device (object): The execution device.
+
+        Returns:
+            object: A Tensor or a tuple of Tensors.
+        """
         if isinstance(res_data, (tuple, list)):
             return tuple(
                 Tensor(
@@ -82,15 +120,15 @@ class EagerEvaluator:
 
     @staticmethod
     def evaluate(op_type: str, *args: object, **kwargs: object) -> object:
-        """Evaluate and process the evaluate operation.
+        """Evaluate evaluate operation.
 
         Args:
-            op_type (str): Required parameter for op_type.
-            *args (Any): Variable positional arguments.
-            **kwargs (Any): Arbitrary keyword arguments.
+            op_type (str): The op_type parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated or processed output.
+            object: Result.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
         from ml_switcheroo_compiler.ops.registry import get_op

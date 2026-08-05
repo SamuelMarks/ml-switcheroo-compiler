@@ -56,7 +56,7 @@ class NLPOpsConfig:
 
 
 def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Generates all candidates for sampling operations.
+    """Generate all candidates for sampling operations.
 
     Args:
         true_classes: The true classes for the current batch.
@@ -76,7 +76,7 @@ def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
 
 
 def compute_accidental_hits(true_classes: object, sampled_candidates: object, config: NLPOpsConfig) -> object:
-    """Computes accidental hits for candidate sampling.
+    """Compute accidental hits for candidate sampling.
 
     Identifies cases where a sampled candidate matches a true class and returns
     the indices, ids, and weights to penalize them.
@@ -141,7 +141,7 @@ def fixed_unigram_candidate_sampler(
     config: NLPOpsConfig,
     sampler_config: Optional[SamplerConfig] = None,
 ) -> object:
-    """Samples candidates using a fixed unigram distribution.
+    """Sample candidates using a fixed unigram distribution.
 
     Generates a set of sampled candidates according to a provided unigram
     distribution specified in the sampler configuration.
@@ -158,7 +158,7 @@ def fixed_unigram_candidate_sampler(
 
 
 def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Samples candidates using a learned unigram distribution.
+    """Sample candidates using a learned unigram distribution.
 
     Generates candidates by continuously updating a unigram distribution
     based on the true classes observed during training.
@@ -174,7 +174,7 @@ def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig
 
 
 def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Samples candidates using a log-uniform (Zipfian) distribution.
+    """Sample candidates using a log-uniform (Zipfian) distribution.
 
     Useful when classes are ordered by decreasing frequency.
 
@@ -189,7 +189,7 @@ def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) ->
 
 
 def uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
-    """Samples candidates using a uniform distribution.
+    """Sample candidates using a uniform distribution.
 
     Generates candidates where each candidate ID has an equal probability
     of being sampled.
@@ -227,7 +227,7 @@ def nce_loss(
     inputs: object,
     config: NCELossConfig,
 ) -> object:
-    """Computes the noise-contrastive estimation (NCE) training loss.
+    """Compute the noise-contrastive estimation (NCE) training loss.
 
     This function calculates the NCE loss which is often used for training
     models with a large number of classes.
@@ -269,7 +269,7 @@ def sampled_softmax_loss(
     inputs: object,
     config: SampledSoftmaxConfig,
 ) -> object:
-    """Computes the sampled softmax training loss.
+    """Compute the sampled softmax training loss.
 
     This function approximates the full softmax loss by sampling a subset
     of negative classes, making it efficient for large vocabularies.
@@ -294,7 +294,7 @@ def ctc_beam_search_decoder(
     top_paths: object = 1,
     merge_repeated: object = True,
 ) -> object:
-    """Performs beam search decoding on the given input logits.
+    """Perform beam search decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
     network using the beam search algorithm.
@@ -318,7 +318,7 @@ def ctc_greedy_decoder(
     merge_repeated: object = True,
     blank_index: object = None,
 ) -> object:
-    """Performs greedy decoding on the given input logits.
+    """Perform greedy decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
     network by greedily selecting the most likely class at each timestep.
@@ -356,7 +356,7 @@ def ctc_loss(
     logit_length: Tensor,
     options: Optional[CTCLossOptions] = None,
 ) -> Tensor:
-    """Computes the Connectionist Temporal Classification (CTC) Loss.
+    """Compute the Connectionist Temporal Classification (CTC) Loss.
 
     Calculates the loss between a continuous sequence of logits and a target
     sequence of labels, often used in speech recognition or OCR.
@@ -389,7 +389,7 @@ def ctc_loss(
 
 
 def ctc_unique_labels(labels: object, name: object = None) -> object:
-    """Extracts unique labels and indices for batched data.
+    """Extract unique labels and indices for batched data.
 
     Utility function typically used in conjunction with CTC loss to find
     unique labels across a batch.

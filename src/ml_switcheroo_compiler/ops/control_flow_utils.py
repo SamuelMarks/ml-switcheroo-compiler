@@ -1,4 +1,4 @@
-"""Provides higher-order control flow primitives for tracing and eager execution.
+"""Provide higher-order control flow primitives for tracing and eager execution.
 
 This module implements functional control flow operators such as conditional branching,
 while loops, scanning, vectorizing maps (vmap), and parallel maps (pmap). These
@@ -20,14 +20,14 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_c
 
 
 def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list[str], list[object]]:
-    """Evaluate and process the wrap proxy inputs operation.
+    """Evaluate _wrap_proxy_inputs operation.
 
     Args:
-        args (tuple): Required parameter for args.
-        subgraph (object): Required parameter for subgraph.
+        args (object): The args parameter.
+        subgraph (object): The subgraph parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        object: Result.
     """
     proxy_args = []
     input_ids = []
@@ -56,13 +56,16 @@ def _wrap_proxy_inputs(args: tuple[object, ...], subgraph: object) -> tuple[list
 
 
 def _get_tensor_ids(obj: object) -> list[str]:
-    """Retrieve the tensor ids property or mapping.
+    """Evaluate _get_tensor_ids operation.
 
     Args:
-        obj (object): Required parameter for obj.
+        obj (object): The obj parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        TypeError: An exception.
     """
     if isinstance(obj, Tensor):
         return [obj.data.id]
@@ -77,14 +80,14 @@ def _get_tensor_ids(obj: object) -> list[str]:
 
 
 def _process_trace_outputs(out: object, subgraph: IRBlock) -> str:
-    """Evaluate and process the process trace outputs operation.
+    """Evaluate _process_trace_outputs operation.
 
     Args:
-        out (object): Required parameter for out.
-        subgraph (IRBlock): Required parameter for subgraph.
+        out (object): The out parameter.
+        subgraph (IRBlock): The subgraph parameter.
 
     Returns:
-        str: The evaluated or processed output.
+        str: Result.
     """
     out_ids = _get_tensor_ids(out)
 
@@ -99,27 +102,15 @@ def _process_trace_outputs(out: object, subgraph: IRBlock) -> str:
 
 
 def _trace_function(func: Callable, args: tuple[Tensor, ...], name: str) -> IRBlock:
-    """Traces a Python function's execution into an IRBlock.
-
-    This helper function temporarily redirects the active tracer to capture the
-    operations
-    performed by the given function when applied to proxy tensor arguments. It
-    constructs
-    input and output logical nodes to form a complete subgraph
+    """Trace a Python function's execution into an IRBlock.
 
     Args:
-        func (Callable): The Python function to trace
-        args (tuple[Tensor, ...]): The concrete or proxy tensor arguments to pass to the
-        function
-        name (str): The name to assign to the traced subgraph/IRBlock
+        func (Callable): The func parameter.
+        args (tuple): The args parameter.
+        name (str): The name parameter.
 
     Returns:
-    IRBlock: The traced intermediate representation block containing the logical
-    nodes
-
-    Raises:
-    TypeError: If the traced function does not return a Tensor or a tuple of
-    Tensors
+        IRBlock: Result.
     """
     from ml_switcheroo_compiler.core.config import config as compiler_config
 

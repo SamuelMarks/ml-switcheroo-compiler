@@ -7,20 +7,18 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("Load")
 def _np_load(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the load operation using NumPy.
+    """Evaluate _np_load operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     from ml_switcheroo_compiler.ops.io import _fallback_load
 
@@ -33,18 +31,12 @@ def _np_load(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Save")
 def _np_save(backend_module: object, *args: object, **kwargs: object) -> None:
-    """Evaluate the save operation using NumPy.
+    """Evaluate _np_save operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
     """
     if len(args) >= 2:
         np.save(args[0], args[1])
@@ -56,36 +48,27 @@ def _np_save(backend_module: object, *args: object, **kwargs: object) -> None:
 
 @numpy_eager_registry.register("SaveGguf")
 def _np_save_gguf(backend_module: object, *args: object, **kwargs: object) -> None:
-    """Evaluate the save_gguf operation using NumPy.
+    """Evaluate _np_save_gguf operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+    Raises:
+        RuntimeError: An exception.
     """
     raise RuntimeError("save_gguf requires the MLX backend.")
 
 
 @numpy_eager_registry.register("Savez")
 def _np_savez(backend_module: object, *args: object, **kwargs: object) -> None:
-    """Evaluate the savez operation using NumPy.
+    """Evaluate _np_savez operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
     """
     if len(args) > 0:
         np.savez(args[0], *args[1:], **kwargs)
@@ -96,18 +79,12 @@ def _np_savez(backend_module: object, *args: object, **kwargs: object) -> None:
 
 @numpy_eager_registry.register("SavezCompressed")
 def _np_savez_compressed(backend_module: object, *args: object, **kwargs: object) -> None:
-    """Evaluate the savez_compressed operation using NumPy.
+    """Evaluate _np_savez_compressed operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
     """
     if len(args) > 0:
         np.savez_compressed(args[0], *args[1:], **kwargs)
@@ -118,20 +95,15 @@ def _np_savez_compressed(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("ReadFile")
 def _np_read_file(backend_module: object, filename: object, **kwargs: object) -> object:
-    """Evaluate the read_file operation using NumPy.
+    """Evaluate _np_read_file operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        filename (object): The filename.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        filename (object): The filename parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -144,19 +116,13 @@ def _np_read_file(backend_module: object, filename: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("WriteFile")
 def _np_write_file(backend_module: object, filename: object, contents: object, **kwargs: object) -> None:
-    """Evaluate the write_file operation using NumPy.
+    """Evaluate _np_write_file operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        filename (object): The filename.
-        contents (object): The contents.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        filename (object): The filename parameter.
+        contents (object): The contents parameter.
+        **kwargs (object): Keyword args.
     """
     fname = filename.data if hasattr(filename, "data") else filename
     data = contents.data if hasattr(contents, "data") else contents
@@ -167,20 +133,15 @@ def _np_write_file(backend_module: object, filename: object, contents: object, *
 
 @numpy_eager_registry.register("DecodeImage")
 def _np_decode_image(backend_module: object, contents: object, **kwargs: object) -> object:
-    """Evaluate the decode_image operation using NumPy.
+    """Evaluate _np_decode_image operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        contents (object): The contents.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        contents (object): The contents parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -190,20 +151,15 @@ def _np_decode_image(backend_module: object, contents: object, **kwargs: object)
 
 @numpy_eager_registry.register("DecodeCsv")
 def _np_decode_csv(backend_module: object, records: object, **kwargs: object) -> list:
-    """Evaluate the decode_csv operation using NumPy.
+    """Evaluate _np_decode_csv operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        records (object): The records.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        records (object): The records parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        list: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -213,20 +169,15 @@ def _np_decode_csv(backend_module: object, records: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("ParseExample")
 def _np_parse_example(backend_module: object, serialized: object, **kwargs: object) -> dict:
-    """Evaluate the parse_example operation using NumPy.
+    """Evaluate _np_parse_example operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        serialized (object): The serialized.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        serialized (object): The serialized parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        dict: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -236,20 +187,15 @@ def _np_parse_example(backend_module: object, serialized: object, **kwargs: obje
 
 @numpy_eager_registry.register("SerializeTensor")
 def _np_serialize_tensor(backend_module: object, tensor: object, **kwargs: object) -> object:
-    """Evaluate the serialize_tensor operation using NumPy.
+    """Evaluate _np_serialize_tensor operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        tensor (object): The tensor.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        tensor (object): The tensor parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -258,20 +204,15 @@ def _np_serialize_tensor(backend_module: object, tensor: object, **kwargs: objec
 
 @numpy_eager_registry.register("ParseTensor")
 def _np_parse_tensor(backend_module: object, serialized: object, **kwargs: object) -> object:
-    """Evaluate the parse_tensor operation using NumPy.
+    """Evaluate _np_parse_tensor operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        serialized (object): The serialized.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        serialized (object): The serialized parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -281,20 +222,15 @@ def _np_parse_tensor(backend_module: object, serialized: object, **kwargs: objec
 
 @numpy_eager_registry.register("EncodeBase64")
 def _np_encode_base64(backend_module: object, input: object, **kwargs: object) -> object:
-    """Evaluate the encode_base64 operation using NumPy.
+    """Evaluate _np_encode_base64 operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        input (object): The input.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        input (object): The input parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.io import _eager_base64
@@ -309,20 +245,15 @@ def _np_encode_base64(backend_module: object, input: object, **kwargs: object) -
 
 @numpy_eager_registry.register("DecodeBase64")
 def _np_decode_base64(backend_module: object, input: object, **kwargs: object) -> object:
-    """Evaluate the decode_base64 operation using NumPy.
+    """Evaluate _np_decode_base64 operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        input (object): The input.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        input (object): The input parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.ops.io import _eager_base64
@@ -336,20 +267,15 @@ def _np_decode_base64(backend_module: object, input: object, **kwargs: object) -
 
 @numpy_eager_registry.register("ParseSequenceExample")
 def _np_parse_sequence_example(backend_module: object, serialized: object, **kwargs: object) -> tuple:
-    """Evaluate the parse_sequence_example operation using NumPy.
+    """Evaluate _np_parse_sequence_example operation.
 
     Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        serialized (object): The serialized.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        serialized (object): The serialized parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        tuple: The result.
+        tuple: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 

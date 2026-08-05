@@ -7,24 +7,15 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("Normal")
 def _np_normal(backend_module: object, shape: object, **kwargs: object) -> object:
-    """Evaluate the normal operation using NumPy.
+    """Evaluate _np_normal operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        shape (object): The shape.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        shape (object): The shape parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     dtype = kwargs.get("dtype", "float32")
     config = kwargs.get("config")
@@ -35,24 +26,15 @@ def _np_normal(backend_module: object, shape: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Uniform")
 def _np_uniform(backend_module: object, shape: object, **kwargs: object) -> object:
-    """Evaluate the uniform operation using NumPy.
+    """Evaluate _np_uniform operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        shape (object): The shape.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        shape (object): The shape parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     dtype = kwargs.get("dtype", "float32")
     config = kwargs.get("config")
@@ -67,24 +49,15 @@ def _np_uniform(backend_module: object, shape: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("StatelessSplit")
 def _np_stateless_split(backend_module: object, seed: object, **kwargs: object) -> object:
-    """Evaluate the stateless_split operation using NumPy.
+    """Evaluate _np_stateless_split operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        seed (object): The seed.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        seed (object): The seed parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     num = kwargs.get("num", 2)
     s = np.asarray(seed).flatten()
@@ -105,25 +78,16 @@ def _np_stateless_split(backend_module: object, seed: object, **kwargs: object) 
 
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(backend_module: object, table: object, keys: object, **kwargs: object) -> object:
-    """Evaluate the lookup operation using NumPy.
+    """Evaluate _np_lookup operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        table (object): The table.
-        keys (object): The keys.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        table (object): The table parameter.
+        keys (object): The keys parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     arr = np.asarray(keys)
     default_value = kwargs.get("default_value", 0)

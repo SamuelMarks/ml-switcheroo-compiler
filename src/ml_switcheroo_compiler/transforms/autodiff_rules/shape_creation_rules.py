@@ -19,6 +19,16 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 @register_vjp("HannWindow")
 @register_vjp("KaiserWindow")
 def _creation_vjp(graph: object, node: object, cotangent: str) -> tuple:
+    """VJP rule for creation ops returning zero gradients.
+
+    Args:
+        graph (object): The IR graph.
+        node (object): The IR node.
+        cotangent (str): The cotangent ID.
+
+    Returns:
+        tuple: Tuple of ZERO values.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     return tuple([UnconnectedGradients.ZERO] * len(node.inputs))
@@ -39,14 +49,32 @@ def _creation_vjp(graph: object, node: object, cotangent: str) -> tuple:
 @register_jvp("HannWindow")
 @register_jvp("KaiserWindow")
 def _creation_jvp(graph: object, node: object, tangents: tuple) -> str:
+    """JVP rule for creation ops returning zero tangent.
 
+    Args:
+        graph (object): The IR graph.
+        node (object): The IR node.
+        tangents (tuple): The input tangents.
+
+    Returns:
+        str: Tangent node ID.
+    """
     # output tangent is zero
     return emit_ir_node(graph, "ZerosLike", [node.id], node.shape_metadata)
 
 
 @register_vjp("Full")
 def full_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Full."""
+    """VJP for Full.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     # inputs: shape, fill_value
@@ -64,7 +92,16 @@ def full_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Full")
 def full_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Full."""
+    """JVP for Full.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     if len(tangents) < 2:
         return emit_ir_node(graph, "ZerosLike", [node.id], node.shape_metadata)
 

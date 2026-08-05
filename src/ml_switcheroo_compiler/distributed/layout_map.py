@@ -19,11 +19,22 @@ class ShardingSpec:
         self.mesh_mapping = tuple(mesh_mapping)
 
     def __repr__(self) -> str:
-        """Return representation."""
+        """Return representation.
+
+        Returns:
+        str: Result.
+        """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
     def __eq__(self, other: object) -> bool:
-        """Equality check."""
+        """Equality check.
+
+        Args:
+        other (object): The other parameter.
+
+        Returns:
+        bool: Result.
+        """
         if not isinstance(other, ShardingSpec):
             return False
         return self.mesh == other.mesh and self.mesh_mapping == other.mesh_mapping
@@ -66,7 +77,11 @@ class LayoutMap:
         return None
 
     def __repr__(self) -> str:
-        """Return representation."""
+        """Return representation.
+
+        Returns:
+        str: Result.
+        """
         return f"LayoutMap(size={len(self._map)})"
 
     def __setitem__(self, key: str, value: ShardingSpec) -> None:

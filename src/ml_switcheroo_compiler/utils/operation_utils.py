@@ -7,7 +7,11 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 
 
 def get_source_inputs(tensor: object) -> list[object]:
-    """Returns the list of input tensors that a tensor depends on."""
+    """Return the list of input tensors that a tensor depends on.
+
+    Args:
+        tensor (object): The tensor parameter.
+    """
     # This is a dummy implementation if no node history.
     if hasattr(tensor, "_keras_history"):
         node = tensor._keras_history.node
@@ -21,19 +25,17 @@ def get_source_inputs(tensor: object) -> list[object]:
 
 
 class ShapeInferenceStrategy(abc.ABC):
-    """Base class for shape inference strategies."""
+    """Define base class for shape inference strategies."""
 
     @abc.abstractmethod
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
-        """Compute shape propagation.
+        """Evaluate __call__ operation.
 
         Args:
-            shape: The input shape.
-            args: The positional arguments.
-            kwargs: The keyword arguments.
-
-        Returns:
-            The output shape.
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
+            Union: Result.
         """
         _ = None
 
@@ -42,15 +44,15 @@ class ReshapeInference(ShapeInferenceStrategy):
     """Shape inference for reshape."""
 
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
-        """Compute reshape propagation.
+        """Evaluate __call__ operation.
 
         Args:
-            shape: The input shape.
-            args: The positional arguments.
-            kwargs: The keyword arguments.
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            The output shape.
+            tuple: Result.
         """
         return tuple(args[1])
 
@@ -59,15 +61,15 @@ class TransposeInference(ShapeInferenceStrategy):
     """Shape inference for transpose."""
 
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
-        """Compute transpose propagation.
+        """Evaluate __call__ operation.
 
         Args:
-            shape: The input shape.
-            args: The positional arguments.
-            kwargs: The keyword arguments.
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            The output shape.
+            tuple: Result.
         """
         axes = kwargs.get("axes", args[1] if len(args) > 1 else None)
         if axes is not None:
@@ -79,15 +81,15 @@ class ExpandDimsInference(ShapeInferenceStrategy):
     """Shape inference for expand_dims."""
 
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
-        """Compute expand_dims propagation.
+        """Evaluate __call__ operation.
 
         Args:
-            shape: The input shape.
-            args: The positional arguments.
-            kwargs: The keyword arguments.
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            The output shape.
+            tuple: Result.
         """
         axis = kwargs.get("axis", args[1] if len(args) > 1 else -1)
         if axis < 0:
@@ -96,14 +98,27 @@ class ExpandDimsInference(ShapeInferenceStrategy):
 
 
 def _normalize_axes(axis: object, ndim: int) -> list[int]:
-    """Normalizes axes, handling integers, negatives, and iterables."""
+    """Normalize axes, handling integers, negatives, and iterables.
+
+    Args:
+        axis (object): The axis parameter.
+        ndim (int): The ndim parameter.
+    """
     if isinstance(axis, int):
         axis = [axis]
     return [a + ndim if a < 0 else a for a in axis]
 
 
 def _validate_squeeze_dims(shape: tuple[int, ...], axes: list[int]) -> None:
-    """Validates that squeezed dimensions have size 1."""
+    """Validate that squeezed dimensions have size 1.
+
+    Args:
+        shape (tuple): The shape parameter.
+        axes (list): The axes parameter.
+
+    Raises:
+        ValueError: An exception.
+    """
     for a in axes:
         if a < 0 or a >= len(shape):
             raise ValueError(f"Squeeze axis {a} is out of bounds for shape {shape}")
@@ -112,12 +127,21 @@ def _validate_squeeze_dims(shape: tuple[int, ...], axes: list[int]) -> None:
 
 
 def _squeeze_all_ones(shape: tuple[int, ...]) -> tuple[int, ...]:
-    """Squeezes all dimensions of size 1."""
+    """Squeezes all dimensions of size 1.
+
+    Args:
+        shape (object): The shape parameter.
+    """
     return tuple(filter(lambda s: s != 1, shape))
 
 
 def _squeeze_specific_axes(shape: tuple[int, ...], axes: list[int]) -> tuple[int, ...]:
-    """Squeezes only the specified axes."""
+    """Squeezes only the specified axes.
+
+    Args:
+        shape (object): The shape parameter.
+        axes (object): The axes parameter.
+    """
     normalized = _normalize_axes(axes, len(shape))
     _validate_squeeze_dims(shape, normalized)
     # Using enumerate to keep track of index, filter out specified axes
@@ -128,15 +152,15 @@ class SqueezeInference(ShapeInferenceStrategy):
     """Shape inference for squeeze."""
 
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
-        """Compute squeeze propagation.
+        """Evaluate __call__ operation.
 
         Args:
-            shape: The input shape.
-            args: The positional arguments.
-            kwargs: The keyword arguments.
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            The output shape.
+            tuple: Result.
         """
         axis = kwargs.get("axis", args[1] if len(args) > 1 else None)
         if axis is None:
@@ -148,15 +172,15 @@ class SplitInference(ShapeInferenceStrategy):
     """Shape inference for split."""
 
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
-        """Compute split propagation.
+        """Evaluate __call__ operation.
 
         Args:
-            shape: The input shape.
-            args: The positional arguments.
-            kwargs: The keyword arguments.
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            The output shape(s).
+            Union: Result.
         """
         num_or_size_splits = args[1]
         axis = kwargs.get("axis", args[2] if len(args) > MAGIC_VAL_2 else 0)
@@ -171,51 +195,54 @@ class MeanInference(ShapeInferenceStrategy):
     """Shape inference for mean."""
 
     def _resolve_axis(self, axis: object, shape_len: int) -> set[int]:
-        """Resolve the axis argument into a normalized set of axes."""
+        """Resolve the axis argument into a normalized set of axes.
+
+        Args:
+        axis (object): The axis parameter.
+        shape_len (int): The shape_len parameter.
+        """
         if axis is None:
             return set()
         axis_list = [axis] if isinstance(axis, int) else axis
         return {ax if ax >= 0 else ax + shape_len for ax in axis_list}
 
     def _validate_datatype_promotion(self, kwargs: dict[str, Any]) -> None:
-        """Validate datatype promotion based on kwargs."""
+        """Validate datatype promotion based on kwargs.
+
+        Args:
+        kwargs (object): The kwargs parameter.
+
+        Returns:
+        NoneType: Result.
+        """
         dtype = kwargs.get("dtype")
         if dtype is not None and not isinstance(dtype, str):
             return None
 
     def _compute_keepdims_shape(self, shape: tuple[int, ...], normalized_axis: set[int]) -> tuple[int, ...]:
-        """Evaluate and process the compute keepdims shape operation.
+        """Evaluate _compute_keepdims_shape operation.
 
         Args:
-            shape (tuple): Required parameter for shape.
-            normalized_axis (set): Required parameter for normalized_axis.
-
-        Returns:
-            tuple: The evaluated or processed output.
+        shape (object): The shape parameter.
+        normalized_axis (object): The normalized_axis parameter.
         """
         return tuple(1 if i in normalized_axis else s for i, s in enumerate(shape))
 
     def _compute_reduced_shape(self, shape: tuple[int, ...], normalized_axis: set[int]) -> tuple[int, ...]:
-        """Evaluate and process the compute reduced shape operation.
+        """Evaluate _compute_reduced_shape operation.
 
         Args:
-            shape (tuple): Required parameter for shape.
-            normalized_axis (set): Required parameter for normalized_axis.
-
-        Returns:
-            tuple: The evaluated or processed output.
+        shape (object): The shape parameter.
+        normalized_axis (object): The normalized_axis parameter.
         """
         return tuple(s for i, s in enumerate(shape) if i not in normalized_axis)
 
     def _extract_axis(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> Optional[object]:
-        """Evaluate and process the extract axis operation.
+        """Evaluate _extract_axis operation.
 
         Args:
-            args (tuple): Required parameter for args.
-            kwargs (dict): Required parameter for kwargs.
-
-        Returns:
-            Optional: The evaluated or processed output.
+        args (object): The args parameter.
+        kwargs (object): The kwargs parameter.
         """
         if "axis" in kwargs:
             return kwargs["axis"]
@@ -224,16 +251,22 @@ class MeanInference(ShapeInferenceStrategy):
         return None
 
     def __call__(self, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[int, ...]:
-        """Compute mean propagation."""
-        self._validate_datatype_promotion(kwargs)
+        """Evaluate __call__ operation.
 
+        Args:
+            shape (tuple): The shape parameter.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
+
+        Returns:
+            tuple: Result.
+        """
+        self._validate_datatype_promotion(kwargs)
         axis = self._extract_axis(args, kwargs)
         if axis is None:
             return shape  # (fallback if axis is None)
-
         keepdims = kwargs.get("keepdims", False)
         normalized_axis = self._resolve_axis(axis, len(shape))
-
         if keepdims:
             return self._compute_keepdims_shape(shape, normalized_axis)
         return self._compute_reduced_shape(shape, normalized_axis)
@@ -250,16 +283,13 @@ SHAPE_INFERENCE_REGISTRY: dict[str, ShapeInferenceStrategy] = {
 
 
 def compute_shape_propagation(name: str, shape: tuple[int, ...], args: tuple[Any, ...], kwargs: dict[str, Any]) -> Union[tuple[int, ...], list[tuple[int, ...]]]:
-    """Compute shape propagation.
+    """Evaluate compute_shape_propagation operation.
 
     Args:
-        name: The operation name.
-        shape: The input shape.
-        args: Positional arguments for the operation.
-        kwargs: Keyword arguments for the operation.
-
-    Returns:
-        The resulting shape or shapes.
+        name (str): The name parameter.
+        shape (object): The shape parameter.
+        args (object): The args parameter.
+        kwargs (object): The kwargs parameter.
     """
     strategy = SHAPE_INFERENCE_REGISTRY.get(name)
     if strategy:

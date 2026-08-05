@@ -17,7 +17,7 @@ def _add_nodes(graph: LogicalGraph, n1_id: str, n2_id: str) -> str:
         n2_id (str): The n2_id parameter for the operation.
 
     Returns:
-        str: The evaluated output resulting from this operation.
+        str: The computed result.
     """
     out_id = f"{n1_id}_add_{n2_id}_{uuid.uuid4().hex[:6]}"
     n1 = graph.nodes[n1_id]
@@ -72,13 +72,16 @@ def _accumulate_gradients(
     adj_id: str,
     adjoints: dict[str, str],
 ) -> None:
-    """Execute _accumulate_gradients.
+    """Accumulate gradients for a given node.
 
     Args:
-        new_graph (Any): Argument new_graph.
-        node (Any): Argument node.
-        adj_id (Any): Argument adj_id.
-        adjoints (Any): Argument adjoints.
+        new_graph (LogicalGraph): The new graph.
+        node (LogicalNode): The node to process.
+        adj_id (str): The adjoint ID for the node.
+        adjoints (dict[str, str]): The mapping of adjoints.
+
+    Raises:
+        ValueError: If VJP rule is missing or returns incorrect number of adjoints.
     """
     try:
         vjp_func = get_vjp(node.op_type)
@@ -117,8 +120,6 @@ def _backward_pass(
         reachable_from_output (set[str]): The reachable nodes.
         adjoints (dict[str, str]): The adjoints map.
 
-    Raises:
-        ValueError: If VJP rule is missing or returns incorrect number of adjoints.
     """
     for node in reversed(sorted_nodes):
         nid = node.id
@@ -176,25 +177,19 @@ def _extract_gradients(
 
 
 def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: str = None) -> LogicalGraph:
-    """Compute the gradient of a scalar output with respect to specified inputs.
-
-    graph (LogicalGraph): The forward pass graph
-    wrt (List[str]): List of node IDs to compute gradients for
-    output_id (str): The node ID of the scalar output
-    cotangent_id (str, optional): The node ID of the starting cotangent input.
-
-    Returns:
-    LogicalGraph: A new graph containing both forward pass and
-    gradient computations
-
-    Raises:
-    ValueError: If output node does not exist, or required VJPs are missing
+    """Evaluate grad operation.
 
     Args:
-        graph (LogicalGraph): Argument graph
-        wrt (list[str]): Argument wrt
-        output_id (str): Argument output_id
-        cotangent_id (str, optional): Optional cotangent node ID.
+        graph (LogicalGraph): The graph parameter.
+        wrt (list): The wrt parameter.
+        output_id (str): The output_id parameter.
+        cotangent_id (str): The cotangent_id parameter.
+
+    Returns:
+        LogicalGraph: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if output_id not in graph.nodes:
         msg = f"Output node '{output_id}' not found in graph."
@@ -231,6 +226,16 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str, cotangent_id: str 
 
 
 def _get_input_tangents(new_graph: object, node: object, tangents: dict[str, str]) -> list[str]:
+    """Get or create input tangents for a node.
+
+    Args:
+        new_graph (object): The IR graph being constructed.
+        node (object): The IR node.
+        tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
+
+    Returns:
+        list[str]: A list of input tangent node IDs.
+    """
     import uuid
 
     from ml_switcheroo_ir import LogicalNode
@@ -253,6 +258,17 @@ def _get_input_tangents(new_graph: object, node: object, tangents: dict[str, str
 
 
 def _compile_jvp_expr(expr_str: str, graph: object, shape_metadata: object, inverse_map: dict[str, str]) -> str:
+    """Compile a JVP expression string into IR nodes.
+
+    Args:
+        expr_str (str): The expression string.
+        graph (object): The target IR graph.
+        shape_metadata (object): Expected shape.
+        inverse_map (dict[str, str]): Variable substitution map.
+
+    Returns:
+        str: The ID of the final tangent node.
+    """
     import ast
 
     from ml_switcheroo_compiler.ops.base import emit_ir_node
@@ -260,6 +276,17 @@ def _compile_jvp_expr(expr_str: str, graph: object, shape_metadata: object, inve
     node = ast.parse(expr_str, mode="eval").body
 
     def _convert(ast_node: object) -> str:
+        """Recursively convert an AST node to IR.
+
+        Args:
+            ast_node (object): The AST node.
+
+        Returns:
+            str: Generated IR node ID.
+
+        Raises:
+            ValueError: If an unsupported AST node is encountered.
+        """
         if isinstance(ast_node, ast.Name):
             return inverse_map.get(ast_node.id, ast_node.id)
         if isinstance(ast_node, ast.BinOp):
@@ -300,6 +327,18 @@ def _compile_jvp_expr(expr_str: str, graph: object, shape_metadata: object, inve
 
 
 def _invoke_style2_jvp_rule(jvp_func: object, sig: object, new_graph: object, node: object, input_tangents: list[str]) -> object:
+    """Invoke a JVP rule using the 'style 2' parameter mapping.
+
+    Args:
+        jvp_func (object): The JVP function.
+        sig (object): The signature of the JVP function.
+        new_graph (object): The target IR graph.
+        node (object): The IR node.
+        input_tangents (list[str]): The list of input tangents.
+
+    Returns:
+        object: The result of the JVP rule.
+    """
     import inspect
 
     args = input_tangents + getattr(node, "inputs", [])
@@ -325,6 +364,17 @@ def _invoke_style2_jvp_rule(jvp_func: object, sig: object, new_graph: object, no
 
 
 def _invoke_jvp_rule(jvp_func: object, new_graph: object, node: object, input_tangents: list[str]) -> object:
+    """Invoke a JVP rule function, auto-detecting the style.
+
+    Args:
+        jvp_func (object): The JVP function.
+        new_graph (object): The target IR graph.
+        node (object): The IR node.
+        input_tangents (list[str]): The list of input tangents.
+
+    Returns:
+        object: The result of the JVP rule.
+    """
     import inspect
 
     sig = inspect.signature(jvp_func)
@@ -347,7 +397,16 @@ def _process_jvp_node(
     node: object,
     tangents: dict[str, str],
 ) -> None:
-    """Process a single node for JVP."""
+    """Process a single node for JVP.
+
+    Args:
+        new_graph (object): The target IR graph.
+        node (object): The IR node to process.
+        tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
+
+    Raises:
+        ValueError: If a required JVP rule is missing.
+    """
     from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp
 
     if node.op_type == "Output":
@@ -408,25 +467,31 @@ def _forward_pass_jvp(
     sorted_nodes: list[object],
     tangents: dict[str, str],
 ) -> None:
-    """Perform the forward pass to compute JVP."""
+    """Perform the forward pass to compute JVP.
+
+    Args:
+        new_graph (object): The target IR graph.
+        sorted_nodes (list[object]): Topologically sorted list of IR nodes.
+        tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
+    """
     for node in sorted_nodes:
         _process_jvp_node(new_graph, node, tangents)
 
 
 def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: list[str]) -> LogicalGraph:
-    """Compute the Jacobian-Vector Product (JVP) of the given outputs with respect to inputs.
+    """Evaluate jvp operation.
 
     Args:
-        graph (LogicalGraph): The forward pass graph
-        primals (list[str]): List of node IDs representing the inputs
-        tangents (list[str]): List of node IDs representing the tangents for the inputs
-        outputs (list[str]): List of node IDs for the outputs to evaluate
+        graph (LogicalGraph): The graph parameter.
+        primals (list): The primals parameter.
+        tangents (list): The tangents parameter.
+        outputs (list): The outputs parameter.
 
     Returns:
-        LogicalGraph: A new graph containing both forward pass and JVP computations
+        LogicalGraph: Result.
 
     Raises:
-        ValueError: If output node does not exist, or required JVPs are missing
+        ValueError: An exception.
     """
     if len(primals) != len(tangents):
         raise ValueError("primals and tangents must have the same length")
@@ -463,22 +528,16 @@ def jvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
 
 
 def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: list[str]) -> LogicalGraph:
-    """Compute the Hessian-Vector Product (HVP) using forward-over-reverse.
-
-    This implements higher-order derivatives and multi-level tape tracing by first
-    computing the VJP (reverse mode) and then applying JVP (forward mode) to the result.
+    """Evaluate hvp operation.
 
     Args:
-        graph (LogicalGraph): The forward pass graph
-        primals (list[str]): List of node IDs representing the inputs
-        tangents (list[str]): List of node IDs representing the tangents for the inputs
-        outputs (list[str]): List of node IDs for the outputs to evaluate
+        graph (LogicalGraph): The graph parameter.
+        primals (list): The primals parameter.
+        tangents (list): The tangents parameter.
+        outputs (list): The outputs parameter.
 
     Returns:
-        LogicalGraph: A new graph containing HVP computations
-
-    Raises:
-        ValueError: If output node does not exist
+        LogicalGraph: Result.
     """
     # First get the gradient (VJP) graph
     grad_graph = grad(graph, primals, outputs[0])

@@ -16,11 +16,11 @@ class Solve(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         return ()
 
@@ -30,7 +30,15 @@ class SolveEx(OpDef):
     """SolveEx Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -38,11 +46,11 @@ def solve(a: Tensor, b: Tensor) -> Tensor:
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
-        a (Tensor): Coefficient matrix
-        b (Tensor): Ordinate or 'dependent variable' values
+        a (Tensor): The a parameter.
+        b (Tensor): The b parameter.
 
     Returns:
-    Tensor: Solution to the system of linear equations
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -94,13 +102,13 @@ def solve_triangular(
     """Solves the equation `a x = b` for `x`, assuming `a` is a triangular matrix.
 
     Args:
-        a (Tensor): Triangular coefficient matrix
-        b (Tensor): Right-hand side matrix or vector
-        lower (bool): Use only data contained in the lower triangle of a. Default is to use upper triangle.
-        unit_diagonal (bool): If True, diagonal elements of a are assumed to be 1.
+        a (Tensor): The a parameter.
+        b (Tensor): The b parameter.
+        lower (bool): The lower parameter.
+        unit_diagonal (bool): The unit_diagonal parameter.
 
     Returns:
-    Tensor: The solution matrix `x`
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

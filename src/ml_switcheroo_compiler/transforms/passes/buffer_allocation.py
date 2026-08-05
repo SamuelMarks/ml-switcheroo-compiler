@@ -5,6 +5,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _get_dtype_size(dtype_str: str) -> int:
+    """Get the size in bytes of a given dtype.
+
+    Args:
+        dtype_str (str): The dtype string.
+
+    Returns:
+        int: The size in bytes.
+    """
     sizes = {
         "float64": 8,
         "float32": 4,
@@ -24,6 +32,14 @@ def _get_dtype_size(dtype_str: str) -> int:
 
 
 def _get_node_byte_size(node: IRNode) -> int:
+    """Calculate the byte size of a node's output tensor.
+
+    Args:
+        node (IRNode): The IR node.
+
+    Returns:
+        int: The size in bytes.
+    """
     dtype = node.attributes.get("dtype", "float32")
     dtype_size = _get_dtype_size(dtype)
     if node.shape_metadata is None or node.is_dynamic_shape:
@@ -57,7 +73,7 @@ IN_PLACE_SAFE_OPS: set[str] = {
 
 
 class GreedyOffsetAllocator:
-    """A simple offset allocator using linear scan over active intervals."""
+    """Provide a simple offset allocator using linear scan over active intervals."""
 
     def __init__(self) -> None:
         """Initialize the allocator."""
@@ -99,14 +115,14 @@ class GreedyOffsetAllocator:
 
 
 def _compute_liveness(graph: IRGraph, sorted_nodes: list[IRNode]) -> dict[str, int]:
-    """Compute liveness intervals for nodes.
+    """Evaluate _compute_liveness operation.
 
     Args:
-        graph: The IR graph.
-        sorted_nodes: Nodes in topological order.
+        graph (IRGraph): The graph parameter.
+        sorted_nodes (list): The sorted_nodes parameter.
 
     Returns:
-        dict[str, int]: A map from node ID to its last use timestep.
+        dict: Result.
     """
     last_use: dict[str, int] = {}
     for i, node in enumerate(sorted_nodes):

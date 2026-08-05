@@ -2,7 +2,15 @@
 
 
 def append(*args: object, **kwargs: object) -> object:
-    """Append frontend."""
+    """Append frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -15,7 +23,15 @@ def append(*args: object, **kwargs: object) -> object:
 
 
 def array_equiv(*args: object, **kwargs: object) -> object:
-    """ArrayEquiv frontend."""
+    """ArrayEquiv frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -28,7 +44,15 @@ def array_equiv(*args: object, **kwargs: object) -> object:
 
 
 def array_repr(*args: object, **kwargs: object) -> object:
-    """ArrayRepr frontend."""
+    """ArrayRepr frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -41,7 +65,15 @@ def array_repr(*args: object, **kwargs: object) -> object:
 
 
 def array_str(*args: object, **kwargs: object) -> object:
-    """ArrayStr frontend."""
+    """ArrayStr frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -54,7 +86,15 @@ def array_str(*args: object, **kwargs: object) -> object:
 
 
 def average(*args: object, **kwargs: object) -> object:
-    """Average frontend."""
+    """Average frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -67,7 +107,15 @@ def average(*args: object, **kwargs: object) -> object:
 
 
 def ball(*args: object, **kwargs: object) -> object:
-    """Ball frontend."""
+    """Ball frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -80,7 +128,15 @@ def ball(*args: object, **kwargs: object) -> object:
 
 
 def bartlett(*args: object, **kwargs: object) -> object:
-    """Bartlett frontend."""
+    """Bartlett frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -93,7 +149,15 @@ def bartlett(*args: object, **kwargs: object) -> object:
 
 
 def beta(*args: object, **kwargs: object) -> object:
-    """Beta frontend."""
+    """Beta frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -106,7 +170,15 @@ def beta(*args: object, **kwargs: object) -> object:
 
 
 def binomial(*args: object, **kwargs: object) -> object:
-    """Binomial frontend."""
+    """Binomial frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -119,7 +191,15 @@ def binomial(*args: object, **kwargs: object) -> object:
 
 
 def bits(*args: object, **kwargs: object) -> object:
-    """Bits frontend."""
+    """Bits frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -132,7 +212,15 @@ def bits(*args: object, **kwargs: object) -> object:
 
 
 def blackman(*args: object, **kwargs: object) -> object:
-    """Blackman frontend."""
+    """Blackman frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -145,7 +233,15 @@ def blackman(*args: object, **kwargs: object) -> object:
 
 
 def cauchy(*args: object, **kwargs: object) -> object:
-    """Cauchy frontend."""
+    """Cauchy frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -158,7 +254,15 @@ def cauchy(*args: object, **kwargs: object) -> object:
 
 
 def chisquare(*args: object, **kwargs: object) -> object:
-    """Chisquare frontend."""
+    """Chisquare frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -171,7 +275,15 @@ def chisquare(*args: object, **kwargs: object) -> object:
 
 
 def choose(*args: object, **kwargs: object) -> object:
-    """Choose frontend."""
+    """Choose frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -184,7 +296,15 @@ def choose(*args: object, **kwargs: object) -> object:
 
 
 def clone(*args: object, **kwargs: object) -> object:
-    """Clone frontend."""
+    """Clone frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -197,7 +317,15 @@ def clone(*args: object, **kwargs: object) -> object:
 
 
 def compress(*args: object, **kwargs: object) -> object:
-    """Compress frontend."""
+    """Compress frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -210,7 +338,15 @@ def compress(*args: object, **kwargs: object) -> object:
 
 
 def custom_linear_solve(*args: object, **kwargs: object) -> object:
-    """CustomLinearSolve frontend."""
+    """CustomLinearSolve frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -223,7 +359,15 @@ def custom_linear_solve(*args: object, **kwargs: object) -> object:
 
 
 def custom_root(*args: object, **kwargs: object) -> object:
-    """CustomRoot frontend."""
+    """CustomRoot frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -236,7 +380,15 @@ def custom_root(*args: object, **kwargs: object) -> object:
 
 
 def diag_indices_from(*args: object, **kwargs: object) -> object:
-    """DiagIndicesFrom frontend."""
+    """DiagIndicesFrom frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -249,7 +401,15 @@ def diag_indices_from(*args: object, **kwargs: object) -> object:
 
 
 def dirichlet(*args: object, **kwargs: object) -> object:
-    """Dirichlet frontend."""
+    """Dirichlet frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -262,7 +422,15 @@ def dirichlet(*args: object, **kwargs: object) -> object:
 
 
 def ediff1d(*args: object, **kwargs: object) -> object:
-    """Ediff1d frontend."""
+    """Ediff1d frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -275,7 +443,15 @@ def ediff1d(*args: object, **kwargs: object) -> object:
 
 
 def f(*args: object, **kwargs: object) -> object:
-    """F frontend."""
+    """F frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -288,7 +464,15 @@ def f(*args: object, **kwargs: object) -> object:
 
 
 def fft2(*args: object, **kwargs: object) -> object:
-    """Fft2 frontend."""
+    """Fft2 frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -301,7 +485,15 @@ def fft2(*args: object, **kwargs: object) -> object:
 
 
 def fftfreq(*args: object, **kwargs: object) -> object:
-    """Fftfreq frontend."""
+    """Fftfreq frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -314,7 +506,15 @@ def fftfreq(*args: object, **kwargs: object) -> object:
 
 
 def finfo(*args: object, **kwargs: object) -> object:
-    """Finfo frontend."""
+    """Finfo frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -327,7 +527,15 @@ def finfo(*args: object, **kwargs: object) -> object:
 
 
 def gamma(*args: object, **kwargs: object) -> object:
-    """Gamma frontend."""
+    """Gamma frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -340,7 +548,15 @@ def gamma(*args: object, **kwargs: object) -> object:
 
 
 def gumbel(*args: object, **kwargs: object) -> object:
-    """Gumbel frontend."""
+    """Gumbel frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -353,7 +569,15 @@ def gumbel(*args: object, **kwargs: object) -> object:
 
 
 def hanning(*args: object, **kwargs: object) -> object:
-    """Hanning frontend."""
+    """Hanning frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -366,7 +590,15 @@ def hanning(*args: object, **kwargs: object) -> object:
 
 
 def hessenberg(*args: object, **kwargs: object) -> object:
-    """Hessenberg frontend."""
+    """Hessenberg frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -379,7 +611,15 @@ def hessenberg(*args: object, **kwargs: object) -> object:
 
 
 def ihfft(*args: object, **kwargs: object) -> object:
-    """Ihfft frontend."""
+    """Ihfft frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -392,7 +632,15 @@ def ihfft(*args: object, **kwargs: object) -> object:
 
 
 def irfft(*args: object, **kwargs: object) -> object:
-    """Irfft frontend."""
+    """Irfft frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -405,7 +653,15 @@ def irfft(*args: object, **kwargs: object) -> object:
 
 
 def kaiser(*args: object, **kwargs: object) -> object:
-    """Kaiser frontend."""
+    """Kaiser frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -418,7 +674,15 @@ def kaiser(*args: object, **kwargs: object) -> object:
 
 
 def key(*args: object, **kwargs: object) -> object:
-    """Key frontend."""
+    """Key frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -431,7 +695,15 @@ def key(*args: object, **kwargs: object) -> object:
 
 
 def key_data(*args: object, **kwargs: object) -> object:
-    """KeyData frontend."""
+    """KeyData frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -444,7 +716,15 @@ def key_data(*args: object, **kwargs: object) -> object:
 
 
 def key_impl(*args: object, **kwargs: object) -> object:
-    """KeyImpl frontend."""
+    """KeyImpl frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -457,7 +737,15 @@ def key_impl(*args: object, **kwargs: object) -> object:
 
 
 def laplace(*args: object, **kwargs: object) -> object:
-    """Laplace frontend."""
+    """Laplace frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -470,7 +758,15 @@ def laplace(*args: object, **kwargs: object) -> object:
 
 
 def lu_pivots_to_permutation(*args: object, **kwargs: object) -> object:
-    """LuPivotsToPermutation frontend."""
+    """LuPivotsToPermutation frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -483,7 +779,15 @@ def lu_pivots_to_permutation(*args: object, **kwargs: object) -> object:
 
 
 def orthogonal(*args: object, **kwargs: object) -> object:
-    """Orthogonal frontend."""
+    """Orthogonal frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -496,7 +800,15 @@ def orthogonal(*args: object, **kwargs: object) -> object:
 
 
 def packbits(*args: object, **kwargs: object) -> object:
-    """Packbits frontend."""
+    """Packbits frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -509,7 +821,15 @@ def packbits(*args: object, **kwargs: object) -> object:
 
 
 def pareto(*args: object, **kwargs: object) -> object:
-    """Pareto frontend."""
+    """Pareto frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -522,7 +842,15 @@ def pareto(*args: object, **kwargs: object) -> object:
 
 
 def poisson(*args: object, **kwargs: object) -> object:
-    """Poisson frontend."""
+    """Poisson frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -535,7 +863,15 @@ def poisson(*args: object, **kwargs: object) -> object:
 
 
 def poly(*args: object, **kwargs: object) -> object:
-    """Poly frontend."""
+    """Poly frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -548,7 +884,15 @@ def poly(*args: object, **kwargs: object) -> object:
 
 
 def polyder(*args: object, **kwargs: object) -> object:
-    """Polyder frontend."""
+    """Polyder frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -561,7 +905,15 @@ def polyder(*args: object, **kwargs: object) -> object:
 
 
 def polyfit(*args: object, **kwargs: object) -> object:
-    """Polyfit frontend."""
+    """Polyfit frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -574,7 +926,15 @@ def polyfit(*args: object, **kwargs: object) -> object:
 
 
 def polyint(*args: object, **kwargs: object) -> object:
-    """Polyint frontend."""
+    """Polyint frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -587,7 +947,15 @@ def polyint(*args: object, **kwargs: object) -> object:
 
 
 def polyval(*args: object, **kwargs: object) -> object:
-    """Polyval frontend."""
+    """Polyval frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -600,7 +968,15 @@ def polyval(*args: object, **kwargs: object) -> object:
 
 
 def qdwh(*args: object, **kwargs: object) -> object:
-    """Qdwh frontend."""
+    """Qdwh frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -613,7 +989,15 @@ def qdwh(*args: object, **kwargs: object) -> object:
 
 
 def qr(*args: object, **kwargs: object) -> object:
-    """Qr frontend."""
+    """Qr frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -626,7 +1010,15 @@ def qr(*args: object, **kwargs: object) -> object:
 
 
 def roll(*args: object, **kwargs: object) -> object:
-    """Roll frontend."""
+    """Roll frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -639,7 +1031,15 @@ def roll(*args: object, **kwargs: object) -> object:
 
 
 def roots(*args: object, **kwargs: object) -> object:
-    """Roots frontend."""
+    """Roots frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -652,7 +1052,15 @@ def roots(*args: object, **kwargs: object) -> object:
 
 
 def schur(*args: object, **kwargs: object) -> object:
-    """Schur frontend."""
+    """Schur frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -665,7 +1073,15 @@ def schur(*args: object, **kwargs: object) -> object:
 
 
 def setdiff1d(*args: object, **kwargs: object) -> object:
-    """Setdiff1d frontend."""
+    """Setdiff1d frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -678,7 +1094,15 @@ def setdiff1d(*args: object, **kwargs: object) -> object:
 
 
 def setxor1d(*args: object, **kwargs: object) -> object:
-    """Setxor1d frontend."""
+    """Setxor1d frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -691,7 +1115,15 @@ def setxor1d(*args: object, **kwargs: object) -> object:
 
 
 def solve(*args: object, **kwargs: object) -> object:
-    """Solve frontend."""
+    """Solve frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -704,7 +1136,15 @@ def solve(*args: object, **kwargs: object) -> object:
 
 
 def swapaxes(*args: object, **kwargs: object) -> object:
-    """Swapaxes frontend."""
+    """Swapaxes frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -717,7 +1157,15 @@ def swapaxes(*args: object, **kwargs: object) -> object:
 
 
 def t(*args: object, **kwargs: object) -> object:
-    """T frontend."""
+    """T frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -730,7 +1178,15 @@ def t(*args: object, **kwargs: object) -> object:
 
 
 def take(*args: object, **kwargs: object) -> object:
-    """Take frontend."""
+    """Take frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -743,7 +1199,15 @@ def take(*args: object, **kwargs: object) -> object:
 
 
 def take_along_axis(*args: object, **kwargs: object) -> object:
-    """TakeAlongAxis frontend."""
+    """TakeAlongAxis frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -756,7 +1220,15 @@ def take_along_axis(*args: object, **kwargs: object) -> object:
 
 
 def top_k(*args: object, **kwargs: object) -> object:
-    """TopK frontend."""
+    """TopK frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -769,7 +1241,15 @@ def top_k(*args: object, **kwargs: object) -> object:
 
 
 def triangular(*args: object, **kwargs: object) -> object:
-    """Triangular frontend."""
+    """Triangular frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -782,7 +1262,15 @@ def triangular(*args: object, **kwargs: object) -> object:
 
 
 def tridiagonal(*args: object, **kwargs: object) -> object:
-    """Tridiagonal frontend."""
+    """Tridiagonal frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -795,7 +1283,15 @@ def tridiagonal(*args: object, **kwargs: object) -> object:
 
 
 def tril_indices(*args: object, **kwargs: object) -> object:
-    """TrilIndices frontend."""
+    """TrilIndices frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -808,7 +1304,15 @@ def tril_indices(*args: object, **kwargs: object) -> object:
 
 
 def tril_indices_from(*args: object, **kwargs: object) -> object:
-    """TrilIndicesFrom frontend."""
+    """TrilIndicesFrom frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -821,7 +1325,15 @@ def tril_indices_from(*args: object, **kwargs: object) -> object:
 
 
 def triu_indices(*args: object, **kwargs: object) -> object:
-    """TriuIndices frontend."""
+    """TriuIndices frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -834,7 +1346,15 @@ def triu_indices(*args: object, **kwargs: object) -> object:
 
 
 def triu_indices_from(*args: object, **kwargs: object) -> object:
-    """TriuIndicesFrom frontend."""
+    """TriuIndicesFrom frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -847,7 +1367,15 @@ def triu_indices_from(*args: object, **kwargs: object) -> object:
 
 
 def union1d(*args: object, **kwargs: object) -> object:
-    """Union1d frontend."""
+    """Union1d frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -860,7 +1388,15 @@ def union1d(*args: object, **kwargs: object) -> object:
 
 
 def unpackbits(*args: object, **kwargs: object) -> object:
-    """Unpackbits frontend."""
+    """Unpackbits frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -873,7 +1409,15 @@ def unpackbits(*args: object, **kwargs: object) -> object:
 
 
 def wald(*args: object, **kwargs: object) -> object:
-    """Wald frontend."""
+    """Wald frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -886,7 +1430,15 @@ def wald(*args: object, **kwargs: object) -> object:
 
 
 def wrap_key_data(*args: object, **kwargs: object) -> object:
-    """WrapKeyData frontend."""
+    """WrapKeyData frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:

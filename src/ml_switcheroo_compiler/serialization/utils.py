@@ -2,7 +2,14 @@
 
 
 def _extract_numpy_weights(weights: dict) -> dict:
-    """Extract numpy weights."""
+    """Extract numpy weights.
+
+    Args:
+        weights (dict): The weights parameter.
+
+    Returns:
+        dict: Result.
+    """
     weights_np = {}
     for k, w in weights.items():
         if hasattr(w, "numpy"):
@@ -21,7 +28,14 @@ def _extract_numpy_weights(weights: dict) -> dict:
 
 
 def to_numpy(tensor: object) -> object:
-    """Convert tensor to numpy array."""
+    """Convert tensor to numpy array.
+
+    Args:
+        tensor (object): The tensor parameter.
+
+    Returns:
+        object: Result.
+    """
     if hasattr(tensor, "numpy"):
         return tensor.numpy()
     if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
@@ -34,19 +48,40 @@ def to_numpy(tensor: object) -> object:
 
 
 def concatenate_arrays(arrays: list) -> object:
-    """Concatenate numpy arrays."""
+    """Concatenate numpy arrays.
+
+    Args:
+        arrays (list): The arrays parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler import ops
 
     return ops.concatenate(arrays, dim=0)
 
 
 def is_numpy_array(array: object) -> bool:
-    """Check if array is a numpy array."""
+    """Check if array is a numpy array.
+
+    Args:
+        array (object): The array parameter.
+
+    Returns:
+        bool: Result.
+    """
     return type(array).__module__ == "numpy" or hasattr(array, "numpy") or hasattr(array, "__array__")
 
 
 def _dtype_to_descr(dtype: object) -> str:
-    """Map DType to numpy descr string."""
+    """Map DType to numpy descr string.
+
+    Args:
+        dtype (object): The dtype parameter.
+
+    Returns:
+        str: Result.
+    """
     from ml_switcheroo_compiler.core.dtype import DType
 
     mapping = {
@@ -73,11 +108,27 @@ def _dtype_to_descr(dtype: object) -> str:
 
 
 def _extract_arr_shape_dtype(arr: object) -> tuple:
+    """Extract shape and dtype string from an array object.
+
+    Args:
+        arr (object): The array object.
+
+    Returns:
+        tuple: (shape, dtype_str)
+    """
     dtype = arr.dtype.name if hasattr(getattr(arr, "dtype", None), "name") else str(getattr(arr, "dtype", "<f4"))
     return getattr(arr, "shape", ()), dtype
 
 
 def _get_shape_and_dtype(tensor: object) -> tuple:
+    """Get shape and dtype from a generic tensor object.
+
+    Args:
+        tensor (object): The tensor object.
+
+    Returns:
+        tuple: (shape, dtype)
+    """
     if hasattr(tensor, "eval"):
         return _extract_arr_shape_dtype(tensor.eval())
     if hasattr(tensor, "numpy"):
@@ -88,6 +139,14 @@ def _get_shape_and_dtype(tensor: object) -> tuple:
 
 
 def _extract_arr_bytes(arr: object) -> bytes:
+    """Extract raw bytes from an array object.
+
+    Args:
+        arr (object): The array object.
+
+    Returns:
+        bytes: The raw data bytes.
+    """
     if hasattr(arr, "tobytes"):
         return arr.tobytes()
     if hasattr(arr, "data") and hasattr(arr.data, "tobytes"):
@@ -96,6 +155,14 @@ def _extract_arr_bytes(arr: object) -> bytes:
 
 
 def _get_data_bytes(tensor: object) -> bytes:
+    """Get raw data bytes from a generic tensor object.
+
+    Args:
+        tensor (object): The tensor object.
+
+    Returns:
+        bytes: The raw data bytes.
+    """
     if hasattr(tensor, "eval"):
         return _extract_arr_bytes(tensor.eval())
     if hasattr(tensor, "numpy"):
@@ -106,7 +173,14 @@ def _get_data_bytes(tensor: object) -> bytes:
 
 
 def _tensor_to_npy_bytes(tensor: object) -> bytes:
-    """Convert a tensor to npy bytes."""
+    """Convert a tensor to npy bytes.
+
+    Args:
+        tensor (object): The tensor parameter.
+
+    Returns:
+        bytes: Result.
+    """
     import struct
 
     shape, dtype = _get_shape_and_dtype(tensor)
@@ -125,7 +199,14 @@ def _tensor_to_npy_bytes(tensor: object) -> bytes:
 
 
 def get_npz_bytes(weights: dict) -> bytes:
-    """Get npz bytes."""
+    """Get npz bytes.
+
+    Args:
+        weights (dict): The weights parameter.
+
+    Returns:
+        bytes: Result.
+    """
     import io
     import zipfile
 
@@ -144,7 +225,14 @@ def get_npz_bytes(weights: dict) -> bytes:
 
 
 def parse_npz(file_obj: object) -> dict:
-    """Parse npz file."""
+    """Parse npz file.
+
+    Args:
+        file_obj (object): The file_obj parameter.
+
+    Returns:
+        dict: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
     try:
@@ -156,7 +244,14 @@ def parse_npz(file_obj: object) -> dict:
 
 
 def load_npz(file_obj: object) -> list:
-    """Load weights from a .npz file object."""
+    """Load weights from a .npz file object.
+
+    Args:
+        file_obj (object): The file_obj parameter.
+
+    Returns:
+        list: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -175,7 +270,7 @@ def load_npz(file_obj: object) -> list:
 
 
 def save_ir_graph(graph: object, filepath: str) -> None:
-    """Saves an IR graph configuration to a file reliably.
+    """Save an IR graph configuration to a file reliably.
 
     Args:
         graph: The IRGraph to serialize.
@@ -188,7 +283,7 @@ def save_ir_graph(graph: object, filepath: str) -> None:
 
 
 def load_ir_graph(filepath: str) -> object:
-    """Loads an IR graph configuration from a file reliably.
+    """Load an IR graph configuration from a file reliably.
 
     Args:
         filepath: The path to read the configuration from.

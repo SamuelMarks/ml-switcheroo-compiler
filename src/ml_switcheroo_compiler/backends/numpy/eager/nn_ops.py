@@ -7,19 +7,18 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("Dropout2d")
 def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the np_dropout2d operation using NumPy.
+    """Evaluate _np_dropout2d operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        ValueError: An exception.
     """
     x = args[0]
     p = kwargs.get("p", 0.5)
@@ -39,19 +38,15 @@ def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> ob
 
 @numpy_eager_registry.register("BlockMaskedMm")
 def _np_block_masked_mm(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the np_block_masked_mm operation using NumPy.
+    """Evaluate _np_block_masked_mm operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 

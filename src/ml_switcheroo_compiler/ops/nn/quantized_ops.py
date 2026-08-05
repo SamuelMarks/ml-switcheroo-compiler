@@ -155,7 +155,7 @@ def fake_quant_with_min_max_vars(
     num_bits: int = 8,
     narrow_range: bool = False,
 ) -> Tensor:
-    """Simulates quantization and dequantization of a tensor using min and max variables.
+    """Simulate quantization and dequantization of a tensor using min and max variables.
 
     This function is useful for quantization-aware training, simulating the precision loss
     of integer quantization while maintaining floating-point gradients.
@@ -259,7 +259,7 @@ def compute_float8_amax_history(
     x: Tensor,
     amax_history: Tensor,
 ) -> Tensor:
-    """Computes and updates the absolute maximum history for float8 quantization scaling.
+    """Compute and updates the absolute maximum history for float8 quantization scaling.
 
     Args:
         x: The input tensor to process.
@@ -281,7 +281,7 @@ def compute_float8_scale(
     scale: Tensor,
     margin: float = 0.0,
 ) -> Tensor:
-    """Computes the scaling factor for float8 quantization from absolute maximum history.
+    """Compute the scaling factor for float8 quantization from absolute maximum history.
 
     Args:
         amax_history: The tensor containing the history of absolute maximums.
@@ -357,7 +357,7 @@ def quantized_matmul(
     x: Tensor,
     config: QuantizedOpsConfig,
 ) -> Tensor:
-    """Performs a matrix multiplication using a quantized weight matrix configuration.
+    """Perform a matrix multiplication using a quantized weight matrix configuration.
 
     Args:
         x: The input tensor for the multiplication.
@@ -387,7 +387,7 @@ def gather_qmm(
     x: Tensor,
     config: QuantizedOpsConfig,
 ) -> Tensor:
-    """Gathers elements and performs a matrix multiplication with quantized weights.
+    """Gather elements and performs a matrix multiplication with quantized weights.
 
     Args:
         x: The input tensor containing gathered data or indices.
@@ -418,7 +418,7 @@ def quantized_linear(
     input: Tensor,
     config: QuantizedOpsConfig,
 ) -> Tensor:
-    """Applies a linear transformation to incoming data using quantized parameters.
+    """Apply a linear transformation to incoming data using quantized parameters.
 
     The weight tensor within the configuration is expected to be quantized (e.g., int4 or int8).
     This function conceptually dequantizes the weight and performs a linear
@@ -460,7 +460,7 @@ def quantized_embedding(
     input: Tensor,
     config: QuantizedOpsConfig,
 ) -> Tensor:
-    """Looks up embeddings from a quantized embedding weight table.
+    """Look up embeddings from a quantized embedding weight table.
 
     Args:
         input: The tensor containing the indices to look up.
@@ -545,7 +545,7 @@ def quantized_conv(
     dilation: int = 1,
     groups: int = 1,
 ) -> Tensor:
-    """Performs a convolution using a quantized weight configuration.
+    """Perform a convolution using a quantized weight configuration.
 
     Args:
         input: The input tensor for the convolution.

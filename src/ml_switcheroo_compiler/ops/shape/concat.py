@@ -1,6 +1,6 @@
 # pylint: disable=duplicate-code
 
-"""Defines shape manipulation operations for the ML Switcheroo framework."""
+"""Define shape manipulation operations for the ML Switcheroo framework."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -13,7 +13,15 @@ class Concatenate(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         """Infer the output shape for the Concatenate operation.
 
         Args:
@@ -42,7 +50,15 @@ class Stack(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         """Infer the output shape for the Stack operation.
 
         Args:
@@ -63,7 +79,15 @@ class Split(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         """Infer the output shape for the Split operation.
 
         Args:
@@ -86,7 +110,15 @@ class Hsplit(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         """Infer the output shape for the Hsplit operation.
 
         Args:
@@ -109,7 +141,15 @@ class Vsplit(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         """Infer the output shape for the Vsplit operation.
 
         Args:
@@ -132,7 +172,15 @@ class Dsplit(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         """Infer the output shape for the Dsplit operation.
 
         Args:
@@ -155,7 +203,15 @@ class Hstack(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
@@ -177,7 +233,15 @@ class Vstack(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
@@ -199,7 +263,15 @@ class Dstack(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
@@ -223,7 +295,15 @@ class ColumnStack(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
@@ -245,7 +325,15 @@ class RowStack(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         """Infer the output shape for the RowStack operation.
 
         Args:
@@ -286,7 +374,15 @@ class Append(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         if not args or not hasattr(args[0], "shape"):
             return ()
         axis = kwargs.get("axis")

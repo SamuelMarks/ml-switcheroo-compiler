@@ -1,20 +1,144 @@
 """Tests for ONNX backend coverage."""
 
+import sys
+from unittest.mock import MagicMock
+
+mock_onnx = MagicMock()
+mock_onnx.TensorProto.DOUBLE = 11
+mock_onnx.TensorProto.INT32 = 6
+mock_onnx.TensorProto.BOOL = 9
+mock_onnx.TensorProto.FLOAT = 1
+mock_onnx.helper.make_tensor_value_info.return_value = "ValueInfo"
+mock_onnx.helper.make_tensor.return_value = "Tensor"
+mock_onnx.helper.make_node.return_value = "Node"
+mock_onnx.helper.make_graph.return_value = "Graph"
+mock_onnx.helper.printable_graph.return_value = "PrintableGraph"
+sys.modules["onnx"] = mock_onnx
+
+import unittest
+from unittest.mock import patch
+
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 
-def test_onnx_more() -> None:
-    """Test onnx edge coverage."""
-    gen = ONNXCodeGenerator(IRGraph())
-    for op in ["Constant", "Add", "Sub", "Mul", "Div", "Other"]:
-        n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
-        gen.sorted_nodes.append(n)
-    try:
-        gen.generate()
-    except Exception:
-        pass
-    try:
-        gen.export_onnx("test.onnx")
-    except Exception:
-        pass
+class TestONNXCodeGenerator(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures."""
+        self.graph = IRGraph()
+        self.graph.outputs = ["n_Add"]
+
+        input_node = LogicalNode(id="in1", op_type="Input")
+        input_node.shape_metadata = (2, 3)
+        input_node.dtype = "float32"
+        self.graph.nodes = {"in1": input_node}
+
+        self.gen = ONNXCodeGenerator(self.graph)
+        self.gen.sorted_nodes = [input_node]
+
+        for op in ["Constant", "Add", "Subtract", "Multiply", "TrueDivide", "Div", "Exp", "Log", "Negative", "Neg", "Other"]:
+            n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
+            n.shape_metadata = (2, 3)
+            n.dtype = "float32"
+            if op == "Constant":
+                n.attributes = {"value": 1.0}
+            self.gen.sorted_nodes.append(n)
+
+        n_none = LogicalNode(id="n_NoneShape", op_type="Add", inputs=["in1"])
+        n_none.shape_metadata = None
+        n_none.dtype = "float32"
+        self.gen.sorted_nodes.append(n_none)
+
+        n_const_none = LogicalNode(id="n_ConstNoneShape", op_type="Constant", inputs=[])
+        n_const_none.shape_metadata = None
+        n_const_none.attributes = {"value": 1.0}
+        self.gen.sorted_nodes.append(n_const_none)
+
+    def test_generic_visit(self):
+        """Test generic visit."""
+        self.assertEqual(self.gen.generic_visit(None, []), "onnx_op")
+
+        node = LogicalNode(id="test_node", op_type="Add")
+        self.assertEqual(self.gen.generic_visit(node, []), "test_node")
+
+        # Node without id
+        class NodeNoId:
+            pass
+
+        node_noid = NodeNoId()
+        name = self.gen.generic_visit(node_noid, [])
+        self.assertTrue(isinstance(name, str))
+        self.assertGreater(len(name), 0)
+
+    def test_get_proto_type(self):
+        """Test get proto type."""
+
+        class TensorProto:
+            DOUBLE = 11
+            INT32 = 6
+            BOOL = 9
+            FLOAT = 1
+
+        self.assertEqual(self.gen._get_proto_type("float64", TensorProto), TensorProto.DOUBLE)
+        self.assertEqual(self.gen._get_proto_type("int32", TensorProto), TensorProto.INT32)
+        self.assertEqual(self.gen._get_proto_type("bool", TensorProto), TensorProto.BOOL)
+        self.assertEqual(self.gen._get_proto_type("float32", TensorProto), TensorProto.FLOAT)
+
+    def test_generate_text_fallback(self):
+        """Test generate text fallback."""
+        # Add output to graph
+        self.graph.outputs = ["n_Add"]
+        fallback = self.gen._generate_text_fallback()
+        self.assertIn("ir_version: 7", fallback)
+        self.assertIn('input: "in1"', fallback)
+        self.assertIn('"n_Add" = Add("in1", "in2")', fallback)
+        self.assertIn('output: "n_Add"', fallback)
+
+    def test_generate_with_onnx(self):
+        """Test generate with onnx."""
+        mock_onnx.helper.printable_graph.return_value = "PrintableGraph"
+
+        # Test with dynamic axes
+        dynamic_axes = {"in1": {0: "batch_size"}}
+        res = self.gen.generate(dynamic_axes=dynamic_axes)
+        self.assertEqual(res, "PrintableGraph")
+
+        # Test export
+        mock_model = MagicMock()
+        mock_model.SerializeToString.return_value = b"test"
+        mock_onnx.helper.make_model.return_value = mock_model
+
+        import os
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(delete=False) as tf:
+            tf.close()
+            self.gen.export_onnx(tf.name, dynamic_axes=dynamic_axes)
+            mock_model.SerializeToString.assert_called_once()
+            os.unlink(tf.name)
+
+    def test_generate_without_onnx(self):
+        """Test generate without onnx."""
+        # Test Import Error behavior by forcing ImportError in generate
+        with patch("builtins.__import__", side_effect=ImportError("mocked import error")):
+            res = self.gen.generate()
+            self.assertIn("ir_version: 7", res)
+
+    def test_get_node_and_name_none_node(self):
+        """Test get node and name none node."""
+        node, name = self.gen._get_node_and_name("missing_output", is_output=True)
+        self.assertIsNone(node)
+        self.assertEqual(name, "missing_output")
+
+    def test_build_single_value_info_missing_node(self):
+        """Test build single value info missing node."""
+        mock_onnx.helper.make_tensor_value_info.reset_mock()
+        self.gen._build_single_value_info("missing_output", None, mock_onnx.TensorProto, is_output=True)
+        mock_onnx.helper.make_tensor_value_info.assert_called_with("missing_output", 1, [])
+
+    def test_fallback_no_outputs_or_inputs(self):
+        """Test fallback no outputs or inputs."""
+        self.gen.graph.outputs = None
+        self.gen.sorted_nodes = []
+        res = self.gen._generate_text_fallback()
+        self.assertIn("ir_version: 7", res)

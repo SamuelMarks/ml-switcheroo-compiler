@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
 @register_op("All")
 class All(ReductionOp):
-    """Logical AND reduction operation.
+    """Apply logical AND reduction operation.
 
     Checks if all elements evaluate to True across specified dimensions of an input
     tensor
@@ -20,7 +20,7 @@ class All(ReductionOp):
 
 @register_op("Any")
 class AnyOp(ReductionOp):
-    """Logical OR reduction operation.
+    """Apply logical OR reduction operation.
 
     Checks if any elements evaluate to True across specified dimensions of an input
     tensor

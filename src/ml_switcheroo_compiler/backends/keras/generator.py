@@ -12,7 +12,7 @@ from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
 
 
 class KerasSignatureBuilder:
-    """Helper for building Keras Model signatures."""
+    """Help for building Keras Model signatures."""
 
     @staticmethod
     def get_input_assignment(var_name: str, node: IRNode) -> str:
@@ -45,18 +45,18 @@ class KerasSignatureBuilder:
 
 
 class KerasTensorManipulator:
-    """Helper for tensor manipulations."""
+    """Help for tensor manipulations."""
 
     @staticmethod
     def format_zeros_like(op: str, kwargs: object) -> str:
-        """Evaluate and process the format zeros like operation.
+        """Evaluate format_zeros_like operation.
 
         Args:
-            op (str): Required parameter for op.
-            kwargs (object): Required parameter for kwargs.
+        op (str): The op parameter.
+        kwargs (object): The kwargs parameter.
 
         Returns:
-            str: The evaluated or processed output.
+        str: Result.
         """
         res = f"keras.ops.{op}({{shape}})"
         if "dtype" in kwargs:
@@ -65,13 +65,13 @@ class KerasTensorManipulator:
 
     @staticmethod
     def format_full(kwargs: object) -> str:
-        """Evaluate and process the format full operation.
+        """Evaluate format_full operation.
 
         Args:
-            kwargs (object): Required parameter for kwargs.
+        kwargs (object): The kwargs parameter.
 
         Returns:
-            str: The evaluated or processed output.
+        str: Result.
         """
         res = "keras.ops.full({shape}, {fill_value})"
         if "dtype" in kwargs:
@@ -80,13 +80,13 @@ class KerasTensorManipulator:
 
     @staticmethod
     def format_transpose(kwargs: object) -> str:
-        """Evaluate and process the format transpose operation.
+        """Evaluate format_transpose operation.
 
         Args:
-            kwargs (object): Required parameter for kwargs.
+        kwargs (object): The kwargs parameter.
 
         Returns:
-            str: The evaluated or processed output.
+        str: Result.
         """
         if "axes" in kwargs:
             return "keras.ops.transpose({0}, {axes})"
@@ -176,7 +176,17 @@ class KerasCodeGenerator(BaseGenerator):
 
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
-        """Load."""
+        """Load a serialized object.
+
+        Args:
+            filepath (str): The file path.
+            allow_pickle (bool): Allow pickle.
+            fix_imports (bool): Fix imports.
+            encoding (str): The encoding.
+
+        Returns:
+            object: The loaded object.
+        """
         import pickle
 
         with open(filepath, "rb") as f:
@@ -184,7 +194,14 @@ class KerasCodeGenerator(BaseGenerator):
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
-        """Save."""
+        """Save an array to a file.
+
+        Args:
+            file (str): The file path.
+            arr (object): The array data.
+            allow_pickle (bool): Allow pickle.
+            fix_imports (bool): Fix imports.
+        """
         import pickle
 
         with open(file, "wb") as f:
@@ -192,7 +209,13 @@ class KerasCodeGenerator(BaseGenerator):
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez."""
+        """Save multiple arrays into a single file.
+
+        Args:
+            file (str): The file path.
+            *args (object): Positional array arguments.
+            **kwds (object): Keyword array arguments.
+        """
         import pickle
 
         data = {f"arr_{i}": arg for i, arg in enumerate(args)}
@@ -202,7 +225,13 @@ class KerasCodeGenerator(BaseGenerator):
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez compressed."""
+        """Save multiple arrays into a single compressed file.
+
+        Args:
+            file (str): The file path.
+            *args (object): Positional array arguments.
+            **kwds (object): Keyword array arguments.
+        """
         import gzip
         import pickle
 
@@ -220,7 +249,7 @@ class KerasCodeGenerator(BaseGenerator):
         return "keras"
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initializes the object.
+        """Initialize the generator.
 
         Args:
             *args (object): Additional keyword arguments.
@@ -232,25 +261,63 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_output_vars: list[str] = []
 
     def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate ConvTranspose."""
+        """Visit a ConvTranspose node.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): The inputs.
+            **kwargs (object): Additional kwargs.
+
+        Returns:
+            str: The generated code string.
+        """
         return f"keras_conv_transpose({input_vars[0]}, {input_vars[1]})"
 
     def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate RaggedDot."""
+        """Visit a RaggedDot node.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): The inputs.
+            **kwargs (object): Additional kwargs.
+
+        Returns:
+            str: The generated code string.
+        """
         return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Handle Einsum nodes."""
+        """Visit an Einsum node.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): The inputs.
+            **kwargs (object): Additional kwargs.
+
+        Returns:
+            str: The generated code string.
+        """
         args_str = ", ".join(input_vars)
         eq = kwargs.get("equation", "")
         return f"keras.ops.einsum('{eq}', {args_str})"
 
     def get_fallback_prefix(self) -> str:
-        """Get the fallback prefix for generic operations."""
+        """Get the fallback prefix for generic operations.
+
+        Returns:
+            str: The prefix string.
+        """
         return "keras.ops"
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Get op map."""
+        """Get the operation mapping dictionary.
+
+        Args:
+            kwargs (dict): The kwargs.
+
+        Returns:
+            dict[str, str]: The ops map.
+        """
         ops = super().get_ops_map(kwargs)
         ops.update(_KERAS_OP_REGISTRY)
         ops["Zeros"] = KerasTensorManipulator.format_zeros_like("zeros", kwargs)
@@ -260,51 +327,48 @@ class KerasCodeGenerator(BaseGenerator):
         return ops
 
     def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
-        """Evaluate emit input assignment.
+        """Evaluate _emit_input_assignment operation.
 
         Args:
-            var_name (str): Argument var_name
-            node (IRNode): Argument node
-            input_prefix (str): Argument input_prefix
-            input_idx (int): Argument input_idx
+            var_name (str): The var_name parameter.
+            node (IRNode): The node parameter.
+            input_prefix (str): The input_prefix parameter.
+            input_idx (int): The input_idx parameter.
         """
         self.add_line(KerasSignatureBuilder.get_input_assignment(var_name, node))
         self.keras_input_vars.append(var_name)
 
     def _emit_body_return(self, returns: list[str]) -> None:
-        """Emit a body return operation into the active computation graph.
+        """Evaluate _emit_body_return operation.
 
         Args:
-            returns (list): Required parameter for returns.
-
-        Returns:
-            Any: The evaluated or processed output.
+            returns (list): The returns parameter.
         """
         self.keras_output_vars.extend(returns)
 
     def _emit_output_assignment(self, node: IRNode, input_vars: list[str], returns: str) -> None:
-        """Evaluate emit output assignment.
+        """Emit output assignment.
 
         Args:
-            node (IRNode): Argument node
-            input_vars (list[str]): Argument input_vars
-            returns (str): Argument returns
+            node (IRNode): The node to process.
+            input_vars (list[str]): The input_vars parameter.
+            returns (str): The returns parameter.
         """
         self.keras_output_vars.extend(input_vars)
 
     def _generate_file_header(self) -> list[str]:
-        """Evaluate and process the generate file header operation.
+        """Evaluate _generate_file_header operation.
 
         Returns:
-            list: The evaluated or processed output.
+        object: Result.
         """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
-        """Evaluate and process the resolve imports operation.
+        """Evaluate _resolve_imports operation.
 
         Returns:
-            list: The evaluated or processed output.
+        object: Result.
         """
         tmpl_path = os.path.join(os.path.dirname(__file__), "keras_prefix.py.tmpl")
         with open(tmpl_path) as f:
@@ -312,11 +376,7 @@ class KerasCodeGenerator(BaseGenerator):
         return ["import keras\n", *keras_prefix_template.split("\n")]
 
     def _generate_function_signature(self) -> None:
-        """Evaluate and process the generate function signature operation.
-
-        Returns:
-            Any: The evaluated or processed output.
-        """
+        """Generate the model function signature."""
         self.indent_level = 0
         self.add_line("def get_model():")
         self.keras_input_vars = []
@@ -324,9 +384,5 @@ class KerasCodeGenerator(BaseGenerator):
         self.indent_level += 1
 
     def _generate_return_block(self) -> None:
-        """Evaluate and process the generate return block operation.
-
-        Returns:
-            Any: The evaluated or processed output.
-        """
+        """Generate the model return block."""
         self.add_line(KerasSignatureBuilder.get_return_block(self.keras_input_vars, self.keras_output_vars))

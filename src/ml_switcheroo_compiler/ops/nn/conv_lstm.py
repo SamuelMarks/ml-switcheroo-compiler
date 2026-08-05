@@ -22,16 +22,19 @@ def conv_lstm_cell(
     weights: RNNWeights,
     config: Optional[ConvLSTMConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
-    """Generic Convolutional LSTM cell.
+    """Provide generic Convolutional LSTM cell.
 
     Args:
-        inputs (Tensor): Input tensor.
-        state (tuple[Tensor, Tensor]): Previous state (h_prev, c_prev).
-        weights (RNNWeights): Weights for the cell.
-        config (Optional[ConvLSTMConfig]): Configuration.
+        inputs (Tensor): The inputs parameter.
+        state (tuple): The state parameter.
+        weights (RNNWeights): The weights parameter.
+        config (Optional): The config parameter.
 
     Returns:
-        tuple[Tensor, tuple[Tensor, Tensor]]: The new hidden state and the new state tuple (h_new, c_new).
+        tuple: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     ndim = len(inputs.shape)
     if ndim == MAGIC_VAL_3:
@@ -51,7 +54,18 @@ def _apply_conv_lstm_gates(
     weights: RNNWeights,
     data_format: str,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
-    """Apply LSTM gates."""
+    """Apply LSTM gates.
+
+    Args:
+        x_conv (Tensor): The x_conv parameter.
+        h_conv (Tensor): The h_conv parameter.
+        state (tuple): The state parameter.
+        weights (RNNWeights): The weights parameter.
+        data_format (str): The data_format parameter.
+
+    Returns:
+        tuple: Result.
+    """
     h_prev, c_prev = state
     gates = add(x_conv, h_conv)
     if weights.bias is not None:
@@ -186,7 +200,14 @@ def conv3d_lstm_cell(
 
 
 def _sigmoid(x: object) -> object:
-    """Sigmoid."""
+    """Sigmoid.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 
     return s(x)

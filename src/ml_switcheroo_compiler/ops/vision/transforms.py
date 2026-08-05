@@ -18,18 +18,17 @@ def perspective_transform(
     config_obj: object | None = None,
     **kwargs: object,
 ) -> Tensor:
-    """Applies a perspective transformation to the image(s).
+    """Apply a perspective transformation to the image(s).
 
     Args:
-        images (Tensor): Input images.
-        start_points (Tensor): Source points.
-        end_points (Tensor): Target points.
-        config_obj (PerspectiveConfig | None): Configuration.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        start_points (Tensor): The start_points parameter.
+        end_points (Tensor): The end_points parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Transformed images.
+        Tensor: Result.
     """
     if config_obj is None:
         config_obj = PerspectiveConfig(
@@ -63,17 +62,16 @@ def elastic_transform(
     config_obj: object | None = None,
     **kwargs: object,
 ) -> Tensor:
-    """Applies an elastic transformation to the image(s).
+    """Apply an elastic transformation to the image(s).
 
     Args:
-        images (Tensor): Input images.
-        displacement (Tensor): Displacement field (dy, dx).
-        config_obj (ElasticConfig | None): Configuration.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        displacement (Tensor): The displacement parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Transformed images.
+        Tensor: Result.
     """
     if config_obj is None:
         config_obj = ElasticConfig(
@@ -104,12 +102,10 @@ def flip_left_right(images: Tensor) -> Tensor:
     """Flips images horizontally.
 
     Args:
-        images (Tensor): Input images.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
 
     Returns:
-        Tensor: Flipped images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -123,12 +119,10 @@ def flip_up_down(images: Tensor) -> Tensor:
     """Flips images vertically.
 
     Args:
-        images (Tensor): Input images.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
 
     Returns:
-        Tensor: Flipped images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -145,5 +139,14 @@ class ElasticTransform(OpDef):
     op_name = "ElasticTransform"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the infer_shape operation.
+
+        Args:
+        images (object): The images parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return getattr(images, "shape", ())

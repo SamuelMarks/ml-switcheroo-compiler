@@ -7,20 +7,15 @@ from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
 def normal(key: object, shape: object = (), dtype: object = None) -> object:
-    """Samples standard normal random values from a given key.
+    """Sample standard normal random values from a given key.
 
     Args:
-        key (object): The PRNG key.
-
-        shape (object): The target shape.
-
-        dtype (object): The target data type.
-
-
+        key (object): The key parameter.
+        shape (object): The shape parameter.
+        dtype (object): The dtype parameter.
 
     Returns:
-        object: The evaluated output resulting from this operation.
-
+        object: Result.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomNormal", [key], shape, dtype)

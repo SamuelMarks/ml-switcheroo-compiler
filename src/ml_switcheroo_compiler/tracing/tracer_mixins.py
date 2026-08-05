@@ -15,14 +15,17 @@ class ProxyMathOverloadsMixin:
     """Math Overloads Mixin."""
 
     def _binary_op(self, other: object, op_type: str) -> "ProxyTensor":
-        """Help with binary operations.
+        """Trace a binary mathematical operation and append it to the computation graph.
 
         Args:
-            other (Any): The right-hand side operand
-            op_type (str): The ONNX operation type (e.g., 'Add')
+            other (object): The right-hand side operand (either a ProxyTensor or a scalar constant).
+            op_type (str): The name of the binary operation (e.g., 'Add', 'Mul').
 
         Returns:
-            ProxyTensor: A tensor containing the result of the operation.
+            ProxyTensor: A new proxy tensor representing the result of the binary operation.
+
+        Raises:
+            TracingError: If invoked outside of an active tracing context.
         """
         if not global_tracing_state.is_tracing:
             msg = f"Cannot perform {op_type} outside of a tracing context."
@@ -72,13 +75,16 @@ class ProxyMathOverloadsMixin:
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
     def _unary_op(self, op_type: str) -> "ProxyTensor":
-        """Evaluate unary op.
+        """Trace a unary mathematical operation and append it to the computation graph.
 
         Args:
-            op_type (str): Argument op_type
+            op_type (str): The name of the unary operation (e.g., 'Neg', 'Exp').
 
         Returns:
-            'ProxyTensor': The inferred shape or computed result
+            ProxyTensor: A new proxy tensor representing the result of the unary operation.
+
+        Raises:
+            TracingError: If invoked outside of an active tracing context.
         """
         if not global_tracing_state.is_tracing:
             msg = f"Cannot perform {op_type} outside of a tracing context."
@@ -104,13 +110,16 @@ class ProxyMathOverloadsMixin:
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
     def __getitem__(self, key: object) -> "ProxyTensor":
-        """Evaluate getitem.
+        """Trace a tensor slicing or indexing operation.
 
         Args:
-            key (object): Argument key
+            key (object): The slice, integer, or tuple defining the sub-region to extract.
 
         Returns:
-            'ProxyTensor': The inferred shape or computed result
+            ProxyTensor: A new proxy tensor representing the sliced result.
+
+        Raises:
+            TracingError: If invoked outside of an active tracing context.
         """
         if not global_tracing_state.is_tracing:
             msg = "Cannot perform Slice outside of a tracing context."
@@ -137,13 +146,17 @@ class ProxyMathOverloadsMixin:
         return ProxyTensor(id=out_id, shape=self.shape, dtype=self.dtype)
 
     def __matmul__(self, other: object) -> "ProxyTensor":
-        """Matrix multiplication.
+        """Trace a matrix multiplication operation.
 
         Args:
-            other (object): The other parameter for the operation.
+            other (object): The right-hand side proxy tensor.
 
         Returns:
-            ProxyTensor: A tensor containing the result of the operation.
+            ProxyTensor: A new proxy tensor representing the matrix multiplication result.
+
+        Raises:
+            TracingError: If invoked outside of an active tracing context.
+            ValueError: If the right-hand side is not a valid ProxyTensor.
         """
         if not global_tracing_state.is_tracing:
             msg = "Cannot perform MatMul outside of a tracing context."
@@ -180,13 +193,17 @@ class ProxyMathOverloadsMixin:
         return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
     def assign(self, value: "ProxyTensor") -> "ProxyTensor":
-        """Assign a new value to a variable proxy.
+        """Trace an assignment operation, updating a variable's state.
 
         Args:
-            value (ProxyTensor): The new value to assign
+            value (ProxyTensor): The incoming tensor to assign to the variable.
 
         Returns:
-            ProxyTensor: A proxy tensor representing the updated variable
+            ProxyTensor: A proxy tensor representing the updated state.
+
+        Raises:
+            TracingError: If invoked outside of an active tracing context.
+            ValueError: If the current proxy is not bound to a variable.
         """
         if not global_tracing_state.is_tracing:
             msg = "Cannot perform assign outside of a tracing context."

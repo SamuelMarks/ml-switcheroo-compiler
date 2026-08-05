@@ -8,16 +8,23 @@ _SHAPE_INFERENCE_REGISTRY: dict[str, Callable] = {}
 
 
 def register_shape_inference(op_type: str) -> Callable:
-    """Decorator to register a shape inference function for an op."""
+    """Decorate to register a shape inference function for an op.
+
+    Args:
+        op_type (str): The op_type parameter.
+
+    Returns:
+        Callable: Result.
+    """
 
     def decorator(func: Callable) -> Callable:
-        """Evaluate and process the decorator operation.
+        """Evaluate decorator operation.
 
         Args:
-            func (Callable): Required parameter for func.
+            func (Callable): The func parameter.
 
         Returns:
-            Callable: The evaluated or processed output.
+            Callable: Result.
         """
         _SHAPE_INFERENCE_REGISTRY[op_type] = func
         return func
@@ -26,7 +33,16 @@ def register_shape_inference(op_type: str) -> Callable:
 
 
 def infer_shape(op_type: str, *args: object, **kwargs: object) -> object:
-    """Infer shape using the registered function."""
+    """Infer shape using the registered function.
+
+    Args:
+        op_type (str): The op_type parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if op_type in _SHAPE_INFERENCE_REGISTRY:
         return _SHAPE_INFERENCE_REGISTRY[op_type](*args, **kwargs)
 

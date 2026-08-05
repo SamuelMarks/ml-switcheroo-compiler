@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.ops.base import OpDef
 
 
 class ReductionOp(OpDef):
-    """Base class for reduction operations.
+    """Define base class for reduction operations.
 
     Provides common functionality for operations that reduce one or more dimensions
     of an input tensor, such as shape inference, NumPy evaluation, and argument
@@ -16,7 +16,15 @@ class ReductionOp(OpDef):
     op_name: str = ""
 
     def __call__(self, *args: object, **kwargs: object) -> object:
-        """Universal dispatcher for the operation, handling dim/keepdim aliases."""
+        """Universal dispatcher for the operation, handling dim/keepdim aliases.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         if "dim" in kwargs and "axis" not in kwargs:
             kwargs["axis"] = kwargs.pop("dim")
         if "keepdim" in kwargs and "keepdims" not in kwargs:
@@ -29,14 +37,11 @@ class ReductionOp(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args: Args.
-            x (object): The first input tensor.
-            axis (object): The axis to process.
-            keepdims (bool): The keepdims to process.
-            **kwargs (object): Additional keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         return ()  # Symbolic shape inference will handle axis reduction logic
 
@@ -44,12 +49,11 @@ class ReductionOp(OpDef):
         """Format args.
 
         Args:
-            *args: Args.
-            x (str): The first input tensor.
-            **kwargs (object): Additional keyword arguments.
+            x (str): The x parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+            str: Result.
         """
         args = [x]
         if "axis" in kwargs and kwargs["axis"] is not None:

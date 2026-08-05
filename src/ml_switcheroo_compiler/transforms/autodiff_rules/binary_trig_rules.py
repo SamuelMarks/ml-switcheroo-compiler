@@ -16,7 +16,16 @@ class UnconnectedGradients(enum.Enum):
 
 @register_vjp("Atan2")
 def atan2_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Atan2."""
+    """VJP for Atan2.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     y = node.inputs[0]
     x = node.inputs[1]
     y_sq = emit_ir_node(graph, "Square", [y], graph.nodes[y].shape_metadata)
@@ -37,7 +46,18 @@ def atan2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Atan2")
 def atan2_jvp(tangent_y: str, tangent_x: str, y: str, x: str, **kwargs: object) -> str:
-    """JVP for Atan2."""
+    """JVP for Atan2.
+
+    Args:
+        tangent_y (str): The tangent_y parameter.
+        tangent_x (str): The tangent_x parameter.
+        y (str): The y parameter.
+        x (str): The x parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        str: Result.
+    """
     graph = kwargs["graph"]
     y_sq = emit_ir_node(graph, "Square", [y], graph.nodes[y].shape_metadata)
     x_sq = emit_ir_node(graph, "Square", [x], graph.nodes[x].shape_metadata)

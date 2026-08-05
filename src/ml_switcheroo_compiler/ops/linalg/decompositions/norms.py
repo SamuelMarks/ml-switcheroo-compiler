@@ -9,14 +9,14 @@ from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
 
 def matrix_power(input: Tensor, n: int) -> Tensor:
-    """Raises a square matrix to the integer power `n`.
+    """Raise a square matrix to the integer power `n`.
 
     Args:
-        input (Tensor): The square matrix
-        n (int): The exponent
+        input (Tensor): The input parameter.
+        n (int): The n parameter.
 
     Returns:
-    Tensor: The matrix raised to the power `n`
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -28,15 +28,15 @@ def matrix_power(input: Tensor, n: int) -> Tensor:
 
 
 def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None, keepdims: bool) -> tuple[int, ...]:
-    """Evaluate and process the norm out shape operation.
+    """Evaluate _norm_out_shape operation.
 
     Args:
-        x_shape (tuple): Required parameter for x_shape.
-        axis (Any): Required parameter for axis.
-        keepdims (bool): Required parameter for keepdims.
+        x_shape (object): The x_shape parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        object: Result.
     """
     if axis is None:
         return tuple(1 for _ in x_shape) if keepdims else ()
@@ -53,13 +53,13 @@ def norm(
     """Matrix or vector norm.
 
     Args:
-        x (Tensor): Input tensor.
-        ord (int | str | None): Order of the norm.
-        axis (int | tuple[int, ...] | None): If axis is an integer, it specifies the axis of x along which to compute the vector norms.
-        keepdims (bool): If True, the axes which are reduced are left in the result as dimensions with size one.
+        x (Tensor): The x parameter.
+        ord (object): The ord parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
 
     Returns:
-    Tensor: Norm of the matrix or vector(s).
+        Tensor: Result.
     """
     out_shape = _norm_out_shape(x.shape, axis, keepdims)
 
@@ -75,13 +75,13 @@ def norm(
 
 
 def matrix_exponential(a: Tensor) -> Tensor:
-    """Compute the matrix exponential of a square matrix.
+    """Evaluate matrix_exponential operation.
 
     Args:
-        a (Tensor): The input square matrix.
+        a (Tensor): The a parameter.
 
     Returns:
-    Tensor: The matrix exponential.
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -93,13 +93,13 @@ def matrix_exponential(a: Tensor) -> Tensor:
 
 
 def matrix_exp(a: Tensor) -> Tensor:
-    """Compute the matrix exponential of a square matrix.
+    """Evaluate matrix_exp operation.
 
     Args:
-        a (Tensor): The input square matrix.
+        a (Tensor): The a parameter.
 
     Returns:
-    Tensor: The matrix exponential.
+        Tensor: Result.
     """
     return matrix_exponential(a)
 
@@ -109,7 +109,16 @@ def _power_iteration_eager(
     num_iters: int,
     u: Tensor | None,
 ) -> tuple[Tensor, Tensor, Tensor]:
-    """Execute power iteration eagerly."""
+    """Execute power iteration eagerly.
+
+    Args:
+        input (Tensor): The input parameter.
+        num_iters (int): The num_iters parameter.
+        u (object): The u parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -133,19 +142,15 @@ def power_iteration(
     num_iters: int = 1,
     u: Tensor | None = None,
 ) -> tuple[Tensor, Tensor, Tensor]:
-    """Computes the dominant singular value and vectors using power iteration.
+    """Compute the dominant singular value and vectors using power iteration.
 
     Args:
-        input (Tensor): The input matrix of shape (..., M, N)
-        num_iters (int): The number of iterations to perform. Defaults to 1
-        u (Tensor | None): Optional initial estimate for the left singular vector
-            of shape (..., M, 1). If None, a uniform vector of ones is used.
+        input (Tensor): The input parameter.
+        num_iters (int): The num_iters parameter.
+        u (object): The u parameter.
 
     Returns:
-    tuple[Tensor, Tensor, Tensor]: A tuple containing:
-        - v (Tensor): Right singular vector estimate
-        - u (Tensor): Left singular vector estimate
-        - sigma (Tensor): Spectral norm estimate
+        tuple: Result.
     """
     if config.eager_mode:
         return _power_iteration_eager(input, num_iters, u)

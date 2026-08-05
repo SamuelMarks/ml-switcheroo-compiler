@@ -3,7 +3,7 @@
 
 
 class GeneratorLifecycleMixin:
-    """Mixin for the generation lifecycle."""
+    """Provide mixin for the generation lifecycle."""
 
     def generate(self) -> str:
         """Generate code from the IR graph.
@@ -18,11 +18,19 @@ class GeneratorLifecycleMixin:
         return "\n".join(self.code)
 
     def _generate_file_header(self) -> list[str]:
-        """Generate file header with module docstrings."""
+        """Generate file header with module docstrings.
+
+        Returns:
+            list[str]: The header lines.
+        """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
-        """Resolve and register required imports."""
+        """Resolve and register required imports.
+
+        Returns:
+            list[str]: The import lines.
+        """
         return []
 
     def _generate_function_signature(self) -> None:
@@ -36,7 +44,11 @@ class GeneratorLifecycleMixin:
         self._generate_body()
 
     def _generate_return_block(self) -> None:
-        """Format the final return statement (delegated to visitor)."""
+        """Format the final return statement (delegated to visitor).
+
+        Returns:
+            None
+        """
         return None
 
     def _generate_body(self, input_prefix: str = "args") -> None:
@@ -52,31 +64,31 @@ class GeneratorLifecycleMixin:
 
 
 class EagerExecutionMixin:
-    """Mixin for eager execution classmethods."""
+    """Provide mixin for eager execution classmethods."""
 
     @classmethod
     def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-        """Evaluate and process the execute op operation.
+        """Execute an operation eagerly.
 
         Args:
-            op_type (str): Required parameter for op_type.
-            *args (Any): Variable positional arguments.
-            **kwargs (Any): Arbitrary keyword arguments.
+            op_type (str): The operation type.
+            *args (object): Positional arguments.
+            **kwargs (object): Keyword arguments.
 
         Returns:
-            object: The evaluated or processed output.
+            object: The eager evaluation result.
         """
         return None
 
     @classmethod
     def zeros(cls: type, shape: tuple[int, ...]) -> object:
-        """Evaluate and process the zeros operation.
+        """Evaluate zeros operation.
 
         Args:
-            shape (tuple): Required parameter for shape.
+        shape (object): The shape parameter.
 
         Returns:
-            object: The evaluated or processed output.
+        object: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
 
@@ -84,14 +96,14 @@ class EagerExecutionMixin:
 
     @classmethod
     def array(cls: type, data: object, dtype: object = None) -> object:
-        """Evaluate and process the array operation.
+        """Evaluate array operation.
 
         Args:
-            data (object): Required parameter for data.
-            dtype (object): Required parameter for dtype.
+        data (object): The data parameter.
+        dtype (object): The dtype parameter.
 
         Returns:
-            object: The evaluated or processed output.
+        object: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
 
@@ -99,13 +111,13 @@ class EagerExecutionMixin:
 
     @classmethod
     def asarray(cls: type, data: object) -> object:
-        """Evaluate and process the asarray operation.
+        """Evaluate asarray operation.
 
         Args:
-            data (object): Required parameter for data.
+        data (object): The data parameter.
 
         Returns:
-            object: The evaluated or processed output.
+        object: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
 
@@ -113,13 +125,13 @@ class EagerExecutionMixin:
 
     @classmethod
     def item(cls: type, data: object) -> float:
-        """Evaluate and process the item operation.
+        """Evaluate item operation.
 
         Args:
-            data (object): Required parameter for data.
+        data (object): The data parameter.
 
         Returns:
-            float: The evaluated or processed output.
+        float: Result.
         """
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
 

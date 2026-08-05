@@ -166,7 +166,14 @@ _PROMOTION_TABLE = {
 
 
 def _clamp_x64(dtype: DType) -> DType:
-    """Clamps x64 types to x32 if jax_enable_x64 is false."""
+    """Clamps x64 types to x32 if jax_enable_x64 is false.
+
+    Args:
+        dtype (DType): The dtype parameter.
+
+    Returns:
+        DType: Result.
+    """
     if config.jax_enable_x64:
         return dtype
     _downcast = {
@@ -180,17 +187,15 @@ def _clamp_x64(dtype: DType) -> DType:
 def promote_types(dtype1: DType, dtype2: DType) -> DType:
     """Determine the resulting DType when operating on two tensors of dtype1 and dtype2.
 
-    Follows generalized NumPy promotion rules, clamped by config.jax_enable_x64.
-
     Args:
-        dtype1 (DType): The first data type
-        dtype2 (DType): The second data type
+        dtype1 (DType): The dtype1 parameter.
+        dtype2 (DType): The dtype2 parameter.
 
     Returns:
-    The resulting promoted DType
+        DType: Result.
 
     Raises:
-    DTypePromotionError: If the types cannot be safely promoted
+        DTypePromotionError: An exception.
     """
     if dtype1 == dtype2:
         return _clamp_x64(dtype1)

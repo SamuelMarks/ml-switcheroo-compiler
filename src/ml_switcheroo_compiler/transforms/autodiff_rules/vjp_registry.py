@@ -1,9 +1,7 @@
-"""Provides a registry for Vector-Jacobian Product (VJP) rules used in reverse-mode.
-
-automatic differentiation
+"""Provide a registry for Vector-Jacobian Product (VJP) rules used in reverse-mode automatic differentiation.
 
 This module allows registering and retrieving VJP functions for various mathematical
-operations, enabling the computation of gradients during the backward pass
+operations, enabling the computation of gradients during the backward pass.
 """
 
 from typing import Callable
@@ -13,30 +11,23 @@ _VJP_REGISTRY: dict[str, Callable] = {}
 
 
 def register_vjp(op_name: str) -> Callable:
-    """Registers a Vector-Jacobian Product (VJP) rule for a specific operation.
-
-    This function acts as a decorator factory. The decorated function should
-    implement the VJP for the specified operation
+    """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
     Args:
-        op_name (str): The name of the operation (e.g., 'add', 'multiply')
+        op_name (str): The op_name parameter.
 
     Returns:
-    Callable: A decorator function that registers the VJP rule
-
-    Raises:
-    ValueError: If a VJP rule is already registered for the given `op_name` when the
-    decorator is applied
+        Callable: Result.
     """
 
     def decorator(func: Callable) -> Callable:
-        """Execute decorator.
+        """Evaluate decorator operation.
 
         Args:
-            func (Any): Argument func.
+            func (Callable): The func parameter.
 
         Returns:
-        Any: The result.
+            Callable: Result.
         """
         if op_name in _VJP_REGISTRY:
             msg = f"VJP for operation '{op_name}' is already registered."
@@ -48,17 +39,13 @@ def register_vjp(op_name: str) -> Callable:
 
 
 def get_vjp(op_name: str) -> Callable:
-    """Retrieves the registered Vector-Jacobian Product (VJP) rule for a given operation.
+    """Retrieve the registered Vector-Jacobian Product (VJP) rule for a given operation.
 
     Args:
-        op_name (str): The name of the operation whose VJP rule is to be retrieved
+        op_name (str): The op_name parameter.
 
     Returns:
-    Callable: The registered VJP function for the operation
-
-    Raises:
-    ValueError: If no VJP rule has been registered for the specified
-    operation
+        Callable: Result.
     """
     if op_name not in _VJP_REGISTRY:
         raise ValueError(f"Missing VJP rule for operation: {op_name}")

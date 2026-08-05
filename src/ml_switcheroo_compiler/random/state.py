@@ -1,4 +1,4 @@
-"""Random operations."""
+"""Generate random operations."""
 
 from __future__ import annotations
 
@@ -26,17 +26,17 @@ def _emit_random_node(
     dtype: dtypes.DType,
     attributes: dict | None = None,
 ) -> Tensor:
-    """Execute _emit_random_node.
+    """Evaluate _emit_random_node operation.
 
     Args:
-        op_type (str): The op_type parameter for the operation.
-        inputs (list[Tensor]): The inputs parameter for the operation.
-        shape (tuple[int, ...]): The target shape.
-        dtype (dtypes.DType): The target data type.
-        attributes (dict | None): The attributes parameter for the operation.
+        op_type (str): The op_type parameter.
+        inputs (object): The inputs parameter.
+        shape (object): The shape parameter.
+        dtype (object): The dtype parameter.
+        attributes (object): The attributes parameter.
 
     Returns:
-        Tensor: The result.
+        Tensor: Result.
     """
     if config.eager_mode:
         attrs = dict(attributes) if attributes is not None else {}
@@ -61,7 +61,7 @@ def _emit_random_node(
 
 
 def PRNGKey(seed: int) -> Tensor:
-    """Creates a PRNG key given an integer seed.
+    """Create a PRNG key given an integer seed.
 
     Args:
         seed (int): The random seed.
@@ -89,7 +89,7 @@ def PRNGKey(seed: int) -> Tensor:
 
 
 def split(key: Tensor, num: int = 2) -> Tensor:
-    """Splits a PRNG key into num new keys.
+    """Split a PRNG key into num new keys.
 
     Args:
         key (Tensor): The PRNG key.
@@ -121,21 +121,31 @@ def fold_in(key: Tensor, data: int) -> Tensor:
 
 
 def _dispatch_random_eager(func_name: str, op_name: str, *args: object, **kwargs: object) -> object:
-    """Helper to dispatch random functions in eager mode."""
+    """Help to dispatch random functions in eager mode.
+
+    Args:
+        func_name (str): The func_name parameter.
+        op_name (str): The op_name parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     backend = get_active_backend()
     return backend.execute_op(op_name, *args, **kwargs)
 
 
 def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the dispatch random operation.
+    """Evaluate _dispatch_random operation.
 
     Args:
-        func_name (str): Required parameter for func_name.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        func_name (str): The func_name parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
@@ -150,37 +160,85 @@ def _dispatch_random(func_name: str, *args: object, **kwargs: object) -> object:
 
 
 def key(*args: object, **kwargs: object) -> object:
-    """Execute key."""
+    """Evaluate key operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("key", *args, **kwargs)
 
 
 def key_data(*args: object, **kwargs: object) -> object:
-    """Execute key_data."""
+    """Evaluate key_data operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("key_data", *args, **kwargs)
 
 
 def key_impl(*args: object, **kwargs: object) -> object:
-    """Execute key_impl."""
+    """Evaluate key_impl operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("key_impl", *args, **kwargs)
 
 
 def wrap_key_data(*args: object, **kwargs: object) -> object:
-    """Execute wrap_key_data."""
+    """Evaluate wrap_key_data operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("wrap_key_data", *args, **kwargs)
 
 
 def clone(*args: object, **kwargs: object) -> object:
-    """Execute clone."""
+    """Evaluate clone operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("clone", *args, **kwargs)
 
 
 def bits(*args: object, **kwargs: object) -> object:
-    """Execute bits."""
+    """Evaluate bits operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("bits", *args, **kwargs)
 
 
 def rng_bit_generator(key: object, shape: object, dtype: object = None) -> object:
-    """Generates random bits.
+    """Generate random bits.
 
     Args:
         key (object): PRNGKey.
@@ -194,7 +252,7 @@ def rng_bit_generator(key: object, shape: object, dtype: object = None) -> objec
 
 
 def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> object:
-    """Generates uniform random values.
+    """Generate uniform random values.
 
     Args:
         a (object): Lower bound.
@@ -209,6 +267,15 @@ def rng_uniform(a: object, b: object, shape: object, dtype: object = None) -> ob
 
 
 def _get_numpy_rng(*args: object, **kwargs: object) -> object:
+    """Get the NumPy RNG instance from the numpy backend.
+
+    Args:
+        *args (object): Positional arguments.
+        **kwargs (object): Keyword arguments.
+
+    Returns:
+        object: The NumPy RNG instance.
+    """
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
     backend_cls = BackendRegistry.get("numpy")

@@ -1,4 +1,4 @@
-"""Random ops module."""
+"""Generate random ops module."""
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -13,14 +13,14 @@ class Binomial(OpDef):
     op_name = "Binomial"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer the output shape based on the provided inputs.
+        """Infer shape.
 
         Args:
-            *args (object): Positional arguments typically representing input shapes or values.
-            **kwargs (object): Keyword arguments representing additional configurations.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+            object: Result.
         """
         return args[0] if args else ()
 
@@ -689,7 +689,16 @@ class categorical(OpDef):
     op_name = "categorical"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -700,7 +709,16 @@ class dirichlet(OpDef):
     op_name = "dirichlet"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -711,7 +729,16 @@ class binomial(OpDef):
     op_name = "binomial"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -722,7 +749,16 @@ class truncated_normal(OpDef):
     op_name = "truncated_normal"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -733,7 +769,16 @@ class permutation(OpDef):
     op_name = "permutation"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -744,5 +789,14 @@ class choice(OpDef):
     op_name = "choice"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())

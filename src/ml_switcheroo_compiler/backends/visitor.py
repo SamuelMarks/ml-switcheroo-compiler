@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 
 
 class CodeGeneratorVisitor:
-    """Base visitor for code generation."""
+    """Define base visitor for code generation."""
 
     def __init__(self, generator: "BaseGenerator") -> None:
-        """Initializes the object.
+        """Initialize the object.
 
         Args:
             generator (Any): The parent generator object.
@@ -39,11 +39,11 @@ class CodeGeneratorVisitor:
         self.generator._emit_body_return(self.generator._output_returns)
 
     def generate_node(self, node: IRNode, input_prefix: str) -> None:
-        """Execute _generate_node.
+        """Generate code for a single node.
 
         Args:
-            node (Any): Argument node.
-            input_prefix (Any): Argument input_prefix.
+            node (IRNode): The IR node.
+            input_prefix (str): Prefix for input variables.
         """
         if node.op_type == "Constant":
             self.handle_constant_node(node)
@@ -55,41 +55,41 @@ class CodeGeneratorVisitor:
             self.handle_compute_node(node)
 
     def handle_constant_node(self, node: IRNode) -> None:
-        """Execute _handle_constant_node.
+        """Handle a Constant node.
 
         Args:
-            node (Any): Argument node.
+            node (IRNode): The IR node.
         """
         val_repr = self.generator.emit_constant(node)
         var_name = self.generator.assign_var_name(node.id, "const")
         self.generator._emit_constant_assignment(var_name, val_repr)
 
     def handle_input_node(self, node: IRNode, input_prefix: str) -> None:
-        """Execute _handle_input_node.
+        """Handle an Input node.
 
         Args:
-            node (Any): Argument node.
-            input_prefix (Any): Argument input_prefix.
+            node (IRNode): The IR node.
+            input_prefix (str): Prefix for input variables.
         """
         var_name = self.generator.assign_var_name(node.id, "input")
         self.generator._emit_input_assignment(var_name, node, input_prefix, self.generator.input_idx)
         self.generator.input_idx += 1
 
     def handle_output_node(self, node: IRNode) -> None:
-        """Execute _handle_output_node.
+        """Handle an Output node.
 
         Args:
-            node (Any): Argument node.
+            node (IRNode): The IR node.
         """
         input_vars = resolve_input_vars(node, self.generator.var_names)
         returns = ", ".join(input_vars)
         self.generator._emit_output_assignment(node, input_vars, returns)
 
     def handle_compute_node(self, node: IRNode) -> None:
-        """Execute _handle_compute_node.
+        """Evaluate handle_compute_node operation.
 
         Args:
-            node (Any): Argument node.
+            node (IRNode): The node parameter.
         """
         var_name = self.generator.assign_var_name(node.id)
         input_vars = resolve_input_vars(node, self.generator.var_names)

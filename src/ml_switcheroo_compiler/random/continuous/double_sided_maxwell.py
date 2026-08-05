@@ -6,5 +6,13 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def double_sided_maxwell(*args: object, **kwargs: object) -> object:
-    """Execute double_sided_maxwell."""
+    """Evaluate double_sided_maxwell operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("double_sided_maxwell", *args, **kwargs)

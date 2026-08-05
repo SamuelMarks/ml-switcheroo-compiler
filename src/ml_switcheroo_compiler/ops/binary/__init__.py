@@ -206,7 +206,15 @@ except KeyError:
 
 
 def divide_no_nan(x: object, y: object) -> object:
-    """Divide no nan."""
+    """Divide no nan.
+
+    Args:
+        x (object): The x parameter.
+        y (object): The y parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.creation import zeros_like
     from ml_switcheroo_compiler.ops.shape.indexing import where
 
@@ -214,7 +222,15 @@ def divide_no_nan(x: object, y: object) -> object:
 
 
 def polar(abs: object, angle: object) -> object:
-    """Polar."""
+    """Polar.
+
+    Args:
+        abs (object): The abs parameter.
+        angle (object): The angle parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -222,7 +238,14 @@ def polar(abs: object, angle: object) -> object:
 
 
 def view_as_complex(x: object) -> object:
-    """View as complex."""
+    """View as complex.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -230,7 +253,14 @@ def view_as_complex(x: object) -> object:
 
 
 def view_as_real(x: object) -> object:
-    """View as real."""
+    """View as real.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()

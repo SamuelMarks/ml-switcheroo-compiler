@@ -12,14 +12,14 @@ from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
 def _calc_same_padding(operand_ndim: int, window_dimensions: list) -> list:
-    """Evaluate and process the calc same padding operation.
+    """Evaluate _calc_same_padding operation.
 
     Args:
-        operand_ndim (int): Required parameter for operand_ndim.
-        window_dimensions (list): Required parameter for window_dimensions.
+        operand_ndim (int): The operand_ndim parameter.
+        window_dimensions (list): The window_dimensions parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        list: Result.
     """
     pad_total = [max(0, w - 1) for w in window_dimensions]
     if len(pad_total) < operand_ndim:
@@ -28,15 +28,15 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: list) -> list:
 
 
 def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list) -> list:
-    """Evaluate and process the calculate padding for window operation.
+    """Evaluate _calculate_padding_for_window operation.
 
     Args:
-        padding (Any): Required parameter for padding.
-        operand_ndim (int): Required parameter for operand_ndim.
-        window_dimensions (list): Required parameter for window_dimensions.
+        padding (object): The padding parameter.
+        operand_ndim (int): The operand_ndim parameter.
+        window_dimensions (list): The window_dimensions parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        list: Result.
     """
     if isinstance(padding, str):
         if padding == "SAME":
@@ -48,14 +48,14 @@ def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim
 
 
 def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tuple[np.ndarray, tuple[int, ...]]:
-    """Evaluate and process the create sliding window view operation.
+    """Evaluate _create_sliding_window_view operation.
 
     Args:
-        operand (ndarray): Required parameter for operand.
-        config (WindowConfig): Required parameter for config.
+        operand (object): The operand parameter.
+        config (WindowConfig): The config parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     window_dimensions = config.window_dimensions
     window_strides = config.window_strides or [1] * len(window_dimensions)
@@ -80,15 +80,15 @@ def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tu
 
 
 def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: object) -> np.ndarray:
-    """Evaluate and process the apply base dilation operation.
+    """Evaluate _apply_base_dilation operation.
 
     Args:
-        operand (ndarray): Required parameter for operand.
-        base_dilation (Any): Required parameter for base_dilation.
-        init_value (object): Required parameter for init_value.
+        operand (object): The operand parameter.
+        base_dilation (object): The base_dilation parameter.
+        init_value (object): The init_value parameter.
 
     Returns:
-        ndarray: The evaluated or processed output.
+        object: Result.
     """
     if base_dilation is None or not any(d > 1 for d in base_dilation):
         return operand
@@ -100,15 +100,15 @@ def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[lis
 
 
 def _top_k(x: object, k: object, axis: object = -1) -> object:
-    """Evaluate and process the top k operation.
+    """Evaluate _top_k operation.
 
     Args:
-        x (object): Required parameter for x.
-        k (object): Required parameter for k.
-        axis (object): Required parameter for axis.
+        x (object): The x parameter.
+        k (object): The k parameter.
+        axis (object): The axis parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     idx = np.argsort(x, axis=axis)
     if axis < 0:
@@ -121,7 +121,20 @@ def _top_k(x: object, k: object, axis: object = -1) -> object:
 
 
 def _reduce_window(operand: object, init_value: object, computation: str, config: WindowConfig) -> object:
-    """Evaluate."""
+    """Evaluate.
+
+    Args:
+        operand (object): The operand parameter.
+        init_value (object): The init_value parameter.
+        computation (str): The computation parameter.
+        config (WindowConfig): The config parameter.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     operand_arr = np.asarray(operand)
     if not operand_arr.shape:
         operand_arr = operand_arr.reshape((1,))
@@ -136,30 +149,30 @@ def _reduce_window(operand: object, init_value: object, computation: str, config
 
 
 def _logsumexp(x: object, axis: object = None, keepdims: object = False) -> object:
-    """Evaluate and process the logsumexp operation.
+    """Evaluate _logsumexp operation.
 
     Args:
-        x (object): Required parameter for x.
-        axis (object): Required parameter for axis.
-        keepdims (object): Required parameter for keepdims.
+        x (object): The x parameter.
+        axis (object): The axis parameter.
+        keepdims (object): The keepdims parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     xmax = np.max(x, axis=axis, keepdims=True)
     return np.log(np.sum(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax)
 
 
 def _segment_sum(data: object, segment_ids: object, num_segments: object = None) -> object:
-    """Evaluate and process the segment sum operation.
+    """Evaluate _segment_sum operation.
 
     Args:
-        data (object): Required parameter for data.
-        segment_ids (object): Required parameter for segment_ids.
-        num_segments (object): Required parameter for num_segments.
+        data (object): The data parameter.
+        segment_ids (object): The segment_ids parameter.
+        num_segments (object): The num_segments parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -171,32 +184,32 @@ def _segment_sum(data: object, segment_ids: object, num_segments: object = None)
 
 @numpy_eager_registry.register("NonMaxSuppression")
 def _np_nms(backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> object:
-    """Evaluate the nms logic eagerly backed by NumPy.
+    """Evaluate _np_nms operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        boxes (object): Required parameter for boxes.
-        scores (object): Required parameter for scores.
-        max_output_size (object): Required parameter for max_output_size.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        boxes (object): The boxes parameter.
+        scores (object): The scores parameter.
+        max_output_size (object): The max_output_size parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return nms_eager(backend_module, boxes, scores, max_output_size, **kwargs)
 
 
 @numpy_eager_registry.register("TrapezoidalIntegral")
 def _np_trapezoidal_integral(backend_module: object, y: object, **kwargs: object) -> object:
-    """Evaluate the trapezoidal integral logic eagerly backed by NumPy.
+    """Evaluate _np_trapezoidal_integral operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        y (object): Required parameter for y.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        y (object): The y parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
@@ -208,16 +221,16 @@ def _np_trapezoidal_integral(backend_module: object, y: object, **kwargs: object
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(backend_module: object, labels: object, predictions: object, **kwargs: object) -> object:
-    """Evaluate the confusion matrix logic eagerly backed by NumPy.
+    """Evaluate _np_confusion_matrix operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        labels (object): Required parameter for labels.
-        predictions (object): Required parameter for predictions.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        labels (object): The labels parameter.
+        predictions (object): The predictions parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     num_classes = kwargs.get("num_classes", None)
     weights = kwargs.get("weights", None)
@@ -231,15 +244,15 @@ def _np_confusion_matrix(backend_module: object, labels: object, predictions: ob
 
 @numpy_eager_registry.register("Cummax")
 def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the cummax logic eagerly backed by NumPy.
+    """Evaluate _np_cummax operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -252,15 +265,15 @@ def _np_cummax(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Cummin")
 def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the cummin logic eagerly backed by NumPy.
+    """Evaluate _np_cummin operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -273,15 +286,15 @@ def _np_cummin(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Cumprod")
 def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the cumprod logic eagerly backed by NumPy.
+    """Evaluate _np_cumprod operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
@@ -291,15 +304,15 @@ def _np_cumprod(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("Cumlogsumexp")
 def _np_cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the cumlogsumexp logic eagerly backed by NumPy.
+    """Evaluate _np_cumlogsumexp operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = args[0]
     axis = kwargs.get("axis", None)
@@ -310,16 +323,16 @@ def _np_cumlogsumexp(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("ApproxMaxK")
 def _np_approx_max_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the approx max k logic eagerly backed by NumPy.
+    """Evaluate _np_approx_max_k operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
@@ -339,16 +352,16 @@ def _np_approx_max_k(backend_module: object, x: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("ApproxMinK")
 def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the approx min k logic eagerly backed by NumPy.
+    """Evaluate _np_approx_min_k operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
@@ -363,6 +376,14 @@ def _np_approx_min_k(backend_module: object, x: object, *args: object, **kwargs:
 
 
 def _get_k_val(k: object) -> int:
+    """Extract integer value from k.
+
+    Args:
+        k (object): The value to extract.
+
+    Returns:
+        int: Extracted integer.
+    """
     if hasattr(k, "item"):
         return int(k.item())
     if hasattr(k, "data") and hasattr(k.data, "item"):
@@ -372,16 +393,16 @@ def _get_k_val(k: object) -> int:
 
 @numpy_eager_registry.register("TopK")
 def _np_top_k(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the top k logic eagerly backed by NumPy.
+    """Evaluate _np_top_k operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     k_arg = args[0] if len(args) > 0 else kwargs.get("k", 1)
     k = _get_k_val(k_arg)

@@ -19,22 +19,16 @@ class MultivariateNormalOptions:
 
 
 def multivariate_normal(key: object, mean: object, cov: object, options: MultivariateNormalOptions | None = None) -> object:
-    """Samples from a multivariate normal distribution.
+    """Sample from a multivariate normal distribution.
 
     Args:
-        key (object): The PRNG key.
-
-        mean (object): Mean vector of the distribution.
-
-        cov (object): Covariance matrix of the distribution.
-
-        options (object): Options.
-
-
+        key (object): The key parameter.
+        mean (object): The mean parameter.
+        cov (object): The cov parameter.
+        options (object): The options parameter.
 
     Returns:
-        object: Sampled tensor.
-
+        object: Result.
     """
     options = options or MultivariateNormalOptions()
     shape = options.shape

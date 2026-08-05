@@ -36,26 +36,26 @@ class IndexingContext:
 
 
 def _dynamic_update_slice(x: object, update: object, start_indices: object) -> object:
-    """Evaluate and process the dynamic update slice operation.
+    """Evaluate _dynamic_update_slice operation.
 
     Args:
-        x (object): Required parameter for x.
-        update (object): Required parameter for update.
-        start_indices (object): Required parameter for start_indices.
+        x (object): The x parameter.
+        update (object): The update parameter.
+        start_indices (object): The start_indices parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     out = np.copy(x)
 
     def _to_int(v: object) -> int:
-        """Evaluate and process the to int operation.
+        """Evaluate _to_int operation.
 
         Args:
-            v (object): Required parameter for v.
+            v (object): The v parameter.
 
         Returns:
-            int: The evaluated or processed output.
+            int: Result.
         """
         if hasattr(v, "data"):
             v = v.data
@@ -70,48 +70,48 @@ def _dynamic_update_slice(x: object, update: object, start_indices: object) -> o
 
 @numpy_eager_registry.register("DynamicUpdateSlice")
 def _np_dynamic_update_slice(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the dynamic update slice logic eagerly backed by NumPy.
+    """Evaluate _np_dynamic_update_slice operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _dynamic_update_slice(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Unstack")
 def _np_unstack(backend_module: object, x: object, axis: object = 0, *args: object, **kwargs: object) -> object:
-    """Evaluate the unstack logic eagerly backed by NumPy.
+    """Evaluate _np_unstack operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        axis (object): Required parameter for axis.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        axis (object): The axis parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return [backend_module.squeeze(a, axis=axis) for a in backend_module.split(x, x.shape[axis], axis=axis)]
 
 
 @numpy_eager_registry.register("DynamicSlice")
 def _np_dynamic_slice(backend_module: object, x: object, start_indices: object, slice_sizes: object) -> object:
-    """Evaluate the dynamic slice logic eagerly backed by NumPy.
+    """Evaluate _np_dynamic_slice operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        start_indices (object): Required parameter for start_indices.
-        slice_sizes (object): Required parameter for slice_sizes.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        start_indices (object): The start_indices parameter.
+        slice_sizes (object): The slice_sizes parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     slices = tuple(slice(start, start + size) for (start, size) in zip(start_indices, slice_sizes))
     return x[slices]
@@ -119,17 +119,17 @@ def _np_dynamic_slice(backend_module: object, x: object, start_indices: object, 
 
 @numpy_eager_registry.register("DynamicSliceInDim")
 def _np_dynamic_slice_in_dim(backend_module: object, operand: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
-    """Evaluate the dynamic slice in dim logic eagerly backed by NumPy.
+    """Evaluate _np_dynamic_slice_in_dim operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        context (IndexingContext): Required parameter for context.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        context (IndexingContext): The context parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     operand = np.asarray(operand)
     start_index = np.asarray(context.start_index).item()
@@ -140,18 +140,18 @@ def _np_dynamic_slice_in_dim(backend_module: object, operand: object, context: I
 
 @numpy_eager_registry.register("DynamicUpdateSliceInDim")
 def _np_dynamic_update_slice_in_dim(backend_module: object, operand: object, update: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
-    """Evaluate the dynamic update slice in dim logic eagerly backed by NumPy.
+    """Evaluate _np_dynamic_update_slice_in_dim operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        update (object): Required parameter for update.
-        context (IndexingContext): Required parameter for context.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        update (object): The update parameter.
+        context (IndexingContext): The context parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     operand = np.copy(np.asarray(operand))
     start_index = np.asarray(context.start_index).item()
@@ -164,18 +164,18 @@ def _np_dynamic_update_slice_in_dim(backend_module: object, operand: object, upd
 
 @numpy_eager_registry.register("DynamicIndexInDim")
 def _np_dynamic_index_in_dim(backend_module: object, operand: object, index: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
-    """Evaluate the dynamic index in dim logic eagerly backed by NumPy.
+    """Evaluate _np_dynamic_index_in_dim operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        index (object): Required parameter for index.
-        context (IndexingContext): Required parameter for context.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        index (object): The index parameter.
+        context (IndexingContext): The context parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     operand = np.asarray(operand)
     idx = np.asarray(index).item()
@@ -191,22 +191,19 @@ def _np_dynamic_index_in_dim(backend_module: object, operand: object, index: obj
 
 @numpy_eager_registry.register("DynamicUpdateIndexInDim")
 def _np_dynamic_update_index_in_dim(backend_module: object, target: IndexTarget, context: IndexingContext, *args: object, **kwargs: object) -> object:
-    operand, update, index = target.operand, target.update, target.index
-
-    """Evaluate the dynamic update index in dim logic eagerly backed by NumPy.
+    """Evaluate _np_dynamic_update_index_in_dim operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        update (object): Required parameter for update.
-        index (object): Required parameter for index.
-        context (IndexingContext): Required parameter for context.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        target (IndexTarget): The target parameter.
+        context (IndexingContext): The context parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
+    operand, update, index = target.operand, target.update, target.index
     operand = np.copy(np.asarray(operand))
     idx = np.asarray(index).item()
     sl = [slice(None)] * operand.ndim
@@ -217,17 +214,17 @@ def _np_dynamic_update_index_in_dim(backend_module: object, target: IndexTarget,
 
 @numpy_eager_registry.register("SliceInDim")
 def _np_slice_in_dim(backend_module: object, operand: object, context: IndexingContext, *args: object, **kwargs: object) -> object:
-    """Evaluate the slice in dim logic eagerly backed by NumPy.
+    """Evaluate _np_slice_in_dim operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        context (IndexingContext): Required parameter for context.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        context (IndexingContext): The context parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     operand = np.asarray(operand)
     sl = [slice(None)] * operand.ndim
@@ -237,15 +234,15 @@ def _np_slice_in_dim(backend_module: object, operand: object, context: IndexingC
 
 @numpy_eager_registry.register("Slice")
 def _np_slice(backend_module: object, x: object, context: IndexingContext) -> object:
-    """Evaluate the slice logic eagerly backed by NumPy.
+    """Evaluate _np_slice operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        context (IndexingContext): Required parameter for context.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        context (IndexingContext): The context parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     sl = [slice(None)] * x.ndim
     sl[context.axis] = slice(context.start_index, context.limit_index, context.stride)
@@ -254,15 +251,15 @@ def _np_slice(backend_module: object, x: object, context: IndexingContext) -> ob
 
 @numpy_eager_registry.register("GetItem")
 def _np_getitem(backend_module: object, x: object, key: str) -> object:
-    """Evaluate the getitem logic eagerly backed by NumPy.
+    """Evaluate _np_getitem operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        key (str): Required parameter for key.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        key (str): The key parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     parsed_key = _safe_parse_key(key)
     return x[parsed_key]
@@ -270,16 +267,16 @@ def _np_getitem(backend_module: object, x: object, key: str) -> object:
 
 @numpy_eager_registry.register("SetItem")
 def _np_setitem(backend_module: object, x: object, value: object, key: str) -> object:
-    """Evaluate the setitem logic eagerly backed by NumPy.
+    """Evaluate _np_setitem operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        value (object): Required parameter for value.
-        key (str): Required parameter for key.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        value (object): The value parameter.
+        key (str): The key parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     parsed_key = _safe_parse_key(key)
     out = np.copy(np.asarray(x))
@@ -289,6 +286,16 @@ def _np_setitem(backend_module: object, x: object, value: object, key: str) -> o
 
 @numpy_eager_registry.register("IndexInDim")
 def _eager_indexindim(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Evaluate _eager_indexindim operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import numpy as np
 
     x, idx, dim = args[0], args[1], args[2]
@@ -297,7 +304,16 @@ def _eager_indexindim(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("Gather")
 def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
-    """gather_eager function."""
+    """gather_eager function.
+
+    Args:
+        np_mod (object): The np_mod parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     t = args[0]
     dim = args[1] if len(args) > 1 else kwargs.get("dim")
     index = args[2] if len(args) > 2 else kwargs.get("index")
@@ -310,7 +326,16 @@ def gather_eager(np_mod: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Stack")
 def stack_eager(np_mod: object, *args: object, **kwargs: object) -> object:
-    """stack_eager function."""
+    """stack_eager function.
+
+    Args:
+        np_mod (object): The np_mod parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     tensors = args[0] if len(args) > 0 else kwargs.get("tensors")
     dim = args[1] if len(args) > 1 else kwargs.get("dim", 0)
     if "axis" in kwargs:

@@ -13,14 +13,14 @@ class Det(OpDef):
     """Det Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         return ()
 
@@ -43,13 +43,13 @@ class Slogdet(OpDef):
 
 
 def det(input: Tensor) -> Tensor:
-    """Computes the determinant of a square matrix.
+    """Compute the determinant of a square matrix.
 
     Args:
-        input (Tensor): The square matrix
+        input (Tensor): The input parameter.
 
     Returns:
-    Tensor: The determinant of the input matrix
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -64,16 +64,13 @@ def det(input: Tensor) -> Tensor:
 
 
 def slogdet(input: Tensor) -> tuple[Tensor, Tensor]:
-    """Computes the sign and natural logarithm of the determinant of a square matrix.
+    """Compute the sign and natural logarithm of the determinant of a square matrix.
 
     Args:
-        input (Tensor): The square matrix
+        input (Tensor): The input parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - sign (Tensor): A number representing the sign of the determinant
-    - logdet (Tensor): The natural logarithm of the absolute value of the
-    determinant
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

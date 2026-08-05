@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 
 
 def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tensor:
-    """Applies a linear transformation to the incoming data: y = input @ weight.T + bias.
+    """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
         input: Incoming data.
@@ -28,7 +28,7 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tens
 
 
 def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tensor:
-    """Applies a bilinear transformation to the incoming data.
+    """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).
 

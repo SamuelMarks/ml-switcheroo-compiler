@@ -16,25 +16,23 @@ class Cholesky(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         return ()
 
 
 def cholesky(input: Tensor) -> Tensor:
-    """Computes the Cholesky decomposition of a symmetric/Hermitian positive-definite.
-
-    matrix
+    """Compute the Cholesky decomposition of a symmetric/Hermitian positive-definite.
 
     Args:
-        input (Tensor): The input symmetric/Hermitian positive-definite matrix
+        input (Tensor): The input parameter.
 
     Returns:
-    Tensor: The lower-triangular or upper-triangular Cholesky factor
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -50,12 +48,20 @@ class CholeskyEx(OpDef):
     """CholeskyEx Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
 def cholesky_ex(input: Tensor, check_errors: bool = False) -> tuple[Tensor, Tensor]:
-    """Computes the Cholesky decomposition with an info tensor.
+    """Compute the Cholesky decomposition with an info tensor.
 
     Args:
         input (Tensor): The input symmetric/Hermitian positive-definite matrix

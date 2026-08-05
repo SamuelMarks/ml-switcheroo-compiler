@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Base generator for emitting backend code from IR."""
+"""Define base generator for emitting backend code from IR."""
 
 import re
 from dataclasses import dataclass
@@ -14,21 +14,29 @@ from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
 
 
 class IRGraphWalker:
-    """Helper class to encapsulate IR graph traversal logic."""
+    """Help class to encapsulate IR graph traversal logic."""
 
     def __init__(self, generator: "BaseGenerator") -> None:
-        """Init walker."""
+        """Initialize the walker.
+
+        Args:
+            generator (BaseGenerator): The generator instance.
+        """
         self.generator = generator
 
     def walk(self, input_prefix: str = "args") -> None:
-        """Walk the graph."""
+        """Walk the graph and generate code.
+
+        Args:
+            input_prefix (str): The prefix for input args.
+        """
         visitor = CodeGeneratorVisitor(self.generator)
         visitor.generate_body(input_prefix)
 
 
 @dataclass
 class InputContext:
-    """Context for input assignment."""
+    """Provide context for input assignment."""
 
     var_name: str
     node: IRNode
@@ -37,63 +45,111 @@ class InputContext:
 
 
 class FormatterProxyMixin:
-    """Mixin for proxying formatter methods."""
+    """Provide mixin for proxying formatter methods."""
 
     @property
     def var_names(self) -> dict[str, str]:
-        """Proxy property for formatter var_names."""
+        """Provide proxy property for formatter var_names.
+
+        Returns:
+            dict[str, str]: The variable names map.
+        """
         return self.formatter.var_names
 
     @var_names.setter
     def var_names(self, value: dict[str, str]) -> None:
-        """Proxy property for formatter var_names."""
+        """Set formatter var_names.
+
+        Args:
+            value (dict[str, str]): The variable names map.
+        """
         self.formatter.var_names = value
 
     @property
     def code(self) -> list[str]:
-        """Proxy property for formatter code."""
+        """Provide proxy property for formatter code.
+
+        Returns:
+            list[str]: The generated code list.
+        """
         return self.formatter.code
 
     @code.setter
     def code(self, value: list[str]) -> None:
-        """Proxy property for formatter code."""
+        """Set formatter code.
+
+        Args:
+            value (list[str]): The generated code list.
+        """
         self.formatter.code = value
 
     @property
     def indent_level(self) -> int:
-        """Proxy property for formatter indent_level."""
+        """Provide proxy property for formatter indent_level.
+
+        Returns:
+            int: The current indent level.
+        """
         return self.formatter.indent_level
 
     @indent_level.setter
     def indent_level(self, value: int) -> None:
-        """Proxy property for formatter indent_level."""
+        """Set formatter indent_level.
+
+        Args:
+            value (int): The current indent level.
+        """
         self.formatter.indent_level = value
 
     @property
     def header(self) -> str:
-        """Proxy property for formatter header."""
+        """Provide proxy property for formatter header.
+
+        Returns:
+            str: The header string.
+        """
         return self.formatter.header
 
     @header.setter
     def header(self, value: str) -> None:
-        """Proxy property for formatter header."""
+        """Set formatter header.
+
+        Args:
+            value (str): The header string.
+        """
         self.formatter.header = value
 
     def get_indent(self) -> str:
-        """Evaluate get indent."""
+        """Get the indentation string.
+
+        Returns:
+            str: Indentation string.
+        """
         return self.formatter.get_indent()
 
     def add_line(self, line: str) -> None:
-        """Add line."""
+        """Add a line of code.
+
+        Args:
+            line (str): The line to add.
+        """
         self.formatter.add_line(line)
 
     def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
-        """Assign var name."""
+        """Assign a variable name.
+
+        Args:
+            node_id (str): The node ID.
+            prefix (str): The prefix to use.
+
+        Returns:
+            str: The assigned variable name.
+        """
         return self.formatter.assign_var_name(node_id, prefix)
 
 
 class EmitUtilsMixin:
-    """Mixin for emit utilities."""
+    """Provide mixin for emit utilities."""
 
     def _emit_body_return(self, returns: list[str]) -> None:
         """Emit the final return statement.
@@ -123,7 +179,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
     """Abstract base class for backend code generation."""
 
     def __init__(self, graph: IRGraph, delegates: list = None) -> None:
-        """Initializes the object.
+        """Initialize the object.
 
         Args:
             graph (IRGraph): The graph to process.
@@ -141,7 +197,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             node (IRNode): The node to process.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+            str: The computed result.
         """
         val = node.attributes.get("value")
         return repr(val)
@@ -155,7 +211,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             **kwargs: Additional keyword arguments.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+            str: The computed result.
         """
         op_type = getattr(node, "op_type", "")
         method_name = f"visit_{op_type}"
@@ -166,57 +222,57 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         return self.generic_visit(node, input_vars, **kwargs)
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the math ops property or mapping.
+        """Evaluate _get_math_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {}
 
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the linalg ops property or mapping.
+        """Evaluate _get_linalg_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {}
 
     def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the nn ops property or mapping.
+        """Evaluate _get_nn_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {}
 
     def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the creation ops property or mapping.
+        """Evaluate _get_creation_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {}
 
     def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the array ops property or mapping.
+        """Evaluate _get_array_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {}
 
@@ -256,15 +312,27 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         return ops
 
     def get_fallback_prefix(self) -> str:
-        """Get the fallback prefix for generic operations."""
+        """Get the fallback prefix for generic operations.
+
+        Returns:
+            str: The prefix.
+        """
         return "np"
 
     def get_fallback_axis_kwarg(self) -> str:
-        """Get the fallback axis keyword argument name."""
+        """Get the fallback axis keyword argument name.
+
+        Returns:
+            str: The axis keyword.
+        """
         return "axis"
 
     def get_fallback_keepdims_kwarg(self) -> str:
-        """Get the fallback keepdims keyword argument name."""
+        """Get the fallback keepdims keyword argument name.
+
+        Returns:
+            str: The keepdims keyword.
+        """
         return "keepdims"
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
@@ -321,13 +389,17 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
 
 class PythonStringGenerator(BaseGenerator):
-    """Mixin for python string generators to avoid DRY issues in generate()."""
+    """Provide mixin for python string generators to avoid DRY issues in generate()."""
 
     _import_header: Union[str, tuple[str, ...]] = ""
     _func_name: str = "evaluate"
 
     def generate(self) -> str:
-        """Generate the complete script."""
+        """Generate the complete script.
+
+        Returns:
+            str: The generated script.
+        """
         self.code = [self.header]
         if isinstance(self._import_header, str):
             self.add_line(self._import_header)
@@ -342,20 +414,32 @@ class PythonStringGenerator(BaseGenerator):
 
 
 class ClassBasedGenerator(BaseGenerator):
-    """Mixin for class-based string generators to avoid DRY issues in generate()."""
+    """Provide mixin for class-based string generators to avoid DRY issues in generate()."""
 
     _forward_method_name: str = "forward"
 
     def _get_prefix_code(self) -> list[str]:
-        """Return the code to be inserted before the class definition."""
+        """Return the code to be inserted before the class definition.
+
+        Returns:
+            list[str]: The prefix code lines.
+        """
         return []
 
     def _emit_init_body(self) -> bool:
-        """Emit initialization code. Return True if params were emitted, False otherwise."""
+        """Emit initialization code.
+
+        Returns:
+            bool: True if params were emitted, False otherwise.
+        """
         return False
 
     def generate(self) -> str:
-        """Generate the complete script."""
+        """Generate the complete script.
+
+        Returns:
+            str: The generated script.
+        """
         self.code = [self.header]
         self.code.extend(self._get_prefix_code())
         self.add_line("class CompiledModel(nn.Module):")

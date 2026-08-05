@@ -25,7 +25,7 @@ class AffineConfig:
 
 
 def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Tensor:
-    """Applies the given 2D affine transforms to the given images.
+    """Apply the given 2D affine transforms to the given images.
 
     Args:
         images (Tensor): Input images.
@@ -43,7 +43,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
 
 
 def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Tensor:
-    """Constructs 2D/3D affine matrices from angles, shears, and zoom factors.
+    """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
         batch_size (int): The batch size.
@@ -166,14 +166,13 @@ def random_zoom(
     """Randomly zoom images.
 
     Args:
-        images (Tensor): Input images.
-        height_factor (Union[tuple[float, float], float]): Factor for zooming height.
-        width_factor (Union[tuple[float, float], float, None]): Factor for zooming width.
-        config: Config.
-        **kwargs: Additional kwargs.
+        images (Tensor): The images parameter.
+        height_factor (object): The height_factor parameter.
+        width_factor (object): The width_factor parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Zoomed images.
+        Tensor: Result.
     """
     if global_config.eager_mode:
         backend = get_active_backend()
@@ -372,15 +371,15 @@ def random_elastic_transform(
 
 
 def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Tensor:
-    """Generates a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
+    """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
-        theta (Tensor): input batch of affine matrices with shape (N, 2, 3) for 2D or (N, 3, 4) for 3D
-        size (tuple[int, ...]): the target output image size
-        align_corners (bool): if True, consider -1 and 1 to refer to the centers of the corner pixels
+        theta (Tensor): The theta parameter.
+        size (tuple): The size parameter.
+        align_corners (bool): The align_corners parameter.
 
     Returns:
-    Tensor: output Tensor of size (N, H, W, 2)
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -399,14 +398,14 @@ def grid_sample(
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
-        input (Tensor): input of shape (N, C, H_in, W_in)
-        grid (Tensor): flow-field of shape (N, H_out, W_out, 2)
-        mode (str): interpolation mode to calculate output values 'bilinear' | 'nearest' | 'bicubic'
-        padding_mode (str): padding mode for outside grid values 'zeros' | 'border' | 'reflection'
-        align_corners (bool): Geometrically, we consider the pixels of the input as squares rather than points.
+        input (Tensor): The input parameter.
+        grid (Tensor): The grid parameter.
+        mode (str): The mode parameter.
+        padding_mode (str): The padding_mode parameter.
+        align_corners (bool): The align_corners parameter.
 
     Returns:
-    Tensor: output Tensor
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -435,7 +434,16 @@ class AffineGenerator(OpDef):
     op_name = "AffineGenerator"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        inputs (object): The inputs parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -446,7 +454,16 @@ class AffineGrid(OpDef):
     op_name = "AffineGrid"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -457,7 +474,16 @@ class AffineTransform(OpDef):
     op_name = "AffineTransform"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -468,5 +494,14 @@ class PerspectiveTransform(OpDef):
     op_name = "PerspectiveTransform"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())

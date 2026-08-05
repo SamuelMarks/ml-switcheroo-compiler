@@ -2,7 +2,15 @@
 
 
 def double_sided_maxwell(*args: object, **kwargs: object) -> object:
-    """DoubleSidedMaxwell frontend."""
+    """DoubleSidedMaxwell frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -15,7 +23,15 @@ def double_sided_maxwell(*args: object, **kwargs: object) -> object:
 
 
 def hamming(*args: object, **kwargs: object) -> object:
-    """Hamming frontend."""
+    """Hamming frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -28,7 +44,15 @@ def hamming(*args: object, **kwargs: object) -> object:
 
 
 def householder_product(*args: object, **kwargs: object) -> object:
-    """HouseholderProduct frontend."""
+    """HouseholderProduct frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -41,7 +65,15 @@ def householder_product(*args: object, **kwargs: object) -> object:
 
 
 def loggamma(*args: object, **kwargs: object) -> object:
-    """Loggamma frontend."""
+    """Loggamma frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -54,7 +86,15 @@ def loggamma(*args: object, **kwargs: object) -> object:
 
 
 def logistic(*args: object, **kwargs: object) -> object:
-    """Logistic frontend."""
+    """Logistic frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -67,7 +107,15 @@ def logistic(*args: object, **kwargs: object) -> object:
 
 
 def matrix_power(*args: object, **kwargs: object) -> object:
-    """MatrixPower frontend."""
+    """MatrixPower frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -80,7 +128,15 @@ def matrix_power(*args: object, **kwargs: object) -> object:
 
 
 def maxwell(*args: object, **kwargs: object) -> object:
-    """Maxwell frontend."""
+    """Maxwell frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -93,7 +149,15 @@ def maxwell(*args: object, **kwargs: object) -> object:
 
 
 def polyadd(*args: object, **kwargs: object) -> object:
-    """Polyadd frontend."""
+    """Polyadd frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -106,7 +170,15 @@ def polyadd(*args: object, **kwargs: object) -> object:
 
 
 def polydiv(*args: object, **kwargs: object) -> object:
-    """Polydiv frontend."""
+    """Polydiv frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -119,7 +191,15 @@ def polydiv(*args: object, **kwargs: object) -> object:
 
 
 def polymul(*args: object, **kwargs: object) -> object:
-    """Polymul frontend."""
+    """Polymul frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -132,7 +212,15 @@ def polymul(*args: object, **kwargs: object) -> object:
 
 
 def polysub(*args: object, **kwargs: object) -> object:
-    """Polysub frontend."""
+    """Polysub frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -145,7 +233,15 @@ def polysub(*args: object, **kwargs: object) -> object:
 
 
 def weibull_min(*args: object, **kwargs: object) -> object:
-    """WeibullMin frontend."""
+    """WeibullMin frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:

@@ -9,18 +9,18 @@ from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
 
 @numpy_eager_registry.register("SortKeyVal")
 def _np_sort_key_val(backend_module: object, keys: object, values: object, axis: int = -1, *args: object, **kwargs: object) -> object:
-    """Evaluate the sort key val logic eagerly backed by NumPy.
+    """Evaluate _np_sort_key_val operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        keys (object): Required parameter for keys.
-        values (object): Required parameter for values.
-        axis (int): Required parameter for axis.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        keys (object): The keys parameter.
+        values (object): The values parameter.
+        axis (int): The axis parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     keys_arr = np.asarray(keys)
     values_arr = np.asarray(values)
@@ -32,54 +32,90 @@ def _np_sort_key_val(backend_module: object, keys: object, values: object, axis:
 
 @numpy_eager_registry.register("Partition")
 def _np_partition(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Partition op."""
+    """Partition op.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return np.partition(np.asarray(args[0]), args[1], *args[2:], **kwargs)
 
 
 @numpy_eager_registry.register("Percentile")
 def _np_percentile(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Percentile op."""
+    """Percentile op.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return np.percentile(np.asarray(args[0]), args[1], *args[2:], **kwargs)
 
 
 @numpy_eager_registry.register("Quantile")
 def _np_quantile(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Quantile op."""
+    """Quantile op.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return np.quantile(np.asarray(args[0]), args[1], *args[2:], **kwargs)
 
 
 @numpy_eager_registry.register("Unique")
 def _np_unique(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Unique op."""
+    """Compute unique op.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return np.unique(np.asarray(args[0]), *args[1:], **kwargs)
 
 
 @numpy_eager_registry.register("ArgSort")
 def _np_argsort(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the argsort logic eagerly backed by NumPy.
+    """Evaluate _np_argsort operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.argsort(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Sort")
 def _np_sort(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the sort logic eagerly backed by NumPy.
+    """Evaluate _np_sort operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     is_stable = kwargs.pop("is_stable", True)
     kwargs.pop("dimension", None)
@@ -90,75 +126,75 @@ def _np_sort(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("TopK")
 def _np_top_k(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the top k logic eagerly backed by NumPy.
+    """Evaluate _np_top_k operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _top_k(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SearchSorted")
 def _np_search_sorted(backend_module: object, x: object, v: object, side: str = "left") -> object:
-    """Evaluate the search sorted logic eagerly backed by NumPy.
+    """Evaluate _np_search_sorted operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        v (object): Required parameter for v.
-        side (str): Required parameter for side.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        v (object): The v parameter.
+        side (str): The side parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.searchsorted(x, v, side=side)
 
 
 @numpy_eager_registry.register("Setdiff1d")
 def _np_setdiff1d(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the setdiff1d logic eagerly backed by NumPy.
+    """Evaluate _np_setdiff1d operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.setdiff1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Setxor1d")
 def _np_setxor1d(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the setxor1d logic eagerly backed by NumPy.
+    """Evaluate _np_setxor1d operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.setxor1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SortComplex")
 def _np_sort_complex(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the sort complex logic eagerly backed by NumPy.
+    """Evaluate _np_sort_complex operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.sort_complex(*args, **kwargs)

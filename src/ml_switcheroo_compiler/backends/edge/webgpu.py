@@ -167,9 +167,117 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         return res_var
 
+    def _create_js_input_buffers(self, input_nodes: list[object], js_code: list[str]) -> None:
+        """Create JS code to initialize and populate WebGPU input buffers.
+
+        Args:
+            input_nodes (list[object]): List of input IR nodes.
+            js_code (list[str]): List of JS code lines to append to.
+        """
+        for idx, node in enumerate(input_nodes):
+            nid = getattr(node, "id", f"n{idx}")
+            js_code.append(f"  const in_{idx}_buffer = device.createBuffer({{")
+            js_code.append(f"    size: inputs.{nid}.byteLength,")
+            js_code.append("    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,")
+            js_code.append("  });")
+            js_code.append(f"  device.queue.writeBuffer(in_{idx}_buffer, 0, inputs.{nid});")
+            js_code.append("")
+
+    def _create_js_output_buffers(self, output_ids: list[str], total_size: int, js_code: list[str]) -> None:
+        """Create JS code for WebGPU output and staging buffers.
+
+        Args:
+            output_ids (list[str]): List of output node IDs.
+            total_size (int): Total number of elements.
+            js_code (list[str]): List of JS code lines to append to.
+        """
+        for i, out_id in enumerate(output_ids):
+            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            shape, _ = self._get_shape_and_strides(out_node) if out_node else ([total_size], [])
+            num_elements = 1
+            for d in shape:
+                num_elements *= d
+            byte_length = num_elements * 4
+            js_code.append(f"  const out_{i}_buffer = device.createBuffer({{")
+            js_code.append(f"    size: {byte_length},")
+            js_code.append("    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,")
+            js_code.append("  });")
+            js_code.append(f"  const out_{i}_staging = device.createBuffer({{")
+            js_code.append(f"    size: {byte_length},")
+            js_code.append("    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,")
+            js_code.append("  });")
+            js_code.append("")
+
+    def _create_js_bind_group(self, input_nodes: list[object], output_ids: list[str], out_idx: int, js_code: list[str]) -> None:
+        """Create JS code to initialize the WebGPU bind group.
+
+        Args:
+            input_nodes (list[object]): List of input IR nodes.
+            output_ids (list[str]): List of output node IDs.
+            out_idx (int): The starting bind index for outputs.
+            js_code (list[str]): List of JS code lines to append to.
+        """
+        js_code.append("  const bindGroup = device.createBindGroup({")
+        js_code.append("    layout: pipeline.getBindGroupLayout(0),")
+        js_code.append("    entries: [")
+        for idx in range(len(input_nodes)):
+            js_code.append(f"      {{ binding: {idx}, resource: {{ buffer: in_{idx}_buffer }} }},")
+        for i in range(len(output_ids)):
+            js_code.append(f"      {{ binding: {out_idx + i}, resource: {{ buffer: out_{i}_buffer }} }},")
+        js_code.append("    ],")
+        js_code.append("  });")
+        js_code.append("")
+
+    def _create_js_copy_buffers(self, output_ids: list[str], total_size: int, js_code: list[str]) -> None:
+        """Create JS code to copy compute results to staging buffers.
+
+        Args:
+            output_ids (list[str]): List of output node IDs.
+            total_size (int): Total number of elements.
+            js_code (list[str]): List of JS code lines to append to.
+        """
+        for i, out_id in enumerate(output_ids):
+            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            shape, _ = self._get_shape_and_strides(out_node) if out_node else ([total_size], [])
+            num_elements = 1
+            for d in shape:
+                num_elements *= d
+            byte_length = num_elements * 4
+            js_code.append(f"  commandEncoder.copyBufferToBuffer(out_{i}_buffer, 0, out_{i}_staging, 0, {byte_length});")
+
+    def _create_js_read_back(self, output_ids: list[str], js_code: list[str]) -> None:
+        """Create JS code to map staging buffers and read back results.
+
+        Args:
+            output_ids (list[str]): List of output node IDs.
+            js_code (list[str]): List of JS code lines to append to.
+        """
+        ret_obj_entries = []
+        for i, out_id in enumerate(output_ids):
+            js_code.append(f"  await out_{i}_staging.mapAsync(GPUMapMode.READ);")
+            js_code.append(f"  const out_{i}_array = new Float32Array(out_{i}_staging.getMappedRange().slice());")
+            js_code.append(f"  out_{i}_staging.unmap();")
+            ret_obj_entries.append(f"    {out_id}: out_{i}_array,")
+
+        js_code.append("")
+        js_code.append("  return {")
+        for entry in ret_obj_entries:
+            js_code.append(entry)
+        js_code.append("  };")
+
     def _generate_js_orchestrator(self, wgsl_code_str: str, input_nodes: list[object], output_ids: list[str], out_idx: int, total_size: int) -> str:
-        """Generate the JS orchestration wrapper around WGSL code."""
-        # Build JavaScript Orchestrator boilerplate
+        """Generate the JS orchestration wrapper around WGSL code.
+
+        Args:
+        wgsl_code_str (str): The wgsl_code_str parameter.
+        input_nodes (object): The input_nodes parameter.
+        output_ids (object): The output_ids parameter.
+        out_idx (int): The out_idx parameter.
+        total_size (int): The total_size parameter.
+
+        Returns:
+        str: Result.
+        """
         js_code = []
         js_code.append("// WebGPU JavaScript Orchestrator Code Generated by ml-switcheroo-compiler")
         js_code.append("const shaderCode = `")
@@ -189,54 +297,17 @@ class WebGPUCodeGenerator(BaseGenerator):
         js_code.append("  const shaderModule = device.createShaderModule({ code: shaderCode });")
         js_code.append("")
 
-        # Create input buffers in JS
-        for idx, node in enumerate(input_nodes):
-            nid = getattr(node, "id", f"n{idx}")
-            js_code.append(f"  const in_{idx}_buffer = device.createBuffer({{")
-            js_code.append(f"    size: inputs.{nid}.byteLength,")
-            js_code.append("    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,")
-            js_code.append("  });")
-            js_code.append(f"  device.queue.writeBuffer(in_{idx}_buffer, 0, inputs.{nid});")
-            js_code.append("")
+        self._create_js_input_buffers(input_nodes, js_code)
+        self._create_js_output_buffers(output_ids, total_size, js_code)
 
-        # Create output buffers and staging buffers in JS
-        for i, out_id in enumerate(output_ids):
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-            shape, _ = self._get_shape_and_strides(out_node) if out_node else ([total_size], [])
-            num_elements = 1
-            for d in shape:
-                num_elements *= d
-            byte_length = num_elements * 4  # assuming float32 (4 bytes)
-            js_code.append(f"  const out_{i}_buffer = device.createBuffer({{")
-            js_code.append(f"    size: {byte_length},")
-            js_code.append("    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,")
-            js_code.append("  });")
-            js_code.append(f"  const out_{i}_staging = device.createBuffer({{")
-            js_code.append(f"    size: {byte_length},")
-            js_code.append("    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,")
-            js_code.append("  });")
-            js_code.append("")
-
-        # Setup compute pipeline
         js_code.append("  const pipeline = device.createComputePipeline({")
         js_code.append("    layout: 'auto',")
         js_code.append("    compute: { module: shaderModule, entryPoint: 'main' },")
         js_code.append("  });")
         js_code.append("")
 
-        # Create bind group
-        js_code.append("  const bindGroup = device.createBindGroup({")
-        js_code.append("    layout: pipeline.getBindGroupLayout(0),")
-        js_code.append("    entries: [")
-        for idx in range(len(input_nodes)):
-            js_code.append(f"      {{ binding: {idx}, resource: {{ buffer: in_{idx}_buffer }} }},")
-        for i in range(len(output_ids)):
-            js_code.append(f"      {{ binding: {out_idx + i}, resource: {{ buffer: out_{i}_buffer }} }},")
-        js_code.append("    ],")
-        js_code.append("  });")
-        js_code.append("")
+        self._create_js_bind_group(input_nodes, output_ids, out_idx, js_code)
 
-        # Dispatch pass
         js_code.append("  const commandEncoder = device.createCommandEncoder();")
         js_code.append("  const passEncoder = commandEncoder.beginComputePass();")
         js_code.append("  passEncoder.setPipeline(pipeline);")
@@ -245,35 +316,79 @@ class WebGPUCodeGenerator(BaseGenerator):
         js_code.append("  passEncoder.end();")
         js_code.append("")
 
-        # Copy buffer to buffer for outputs
-        for i, out_id in enumerate(output_ids):
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-            shape, _ = self._get_shape_and_strides(out_node) if out_node else ([total_size], [])
-            num_elements = 1
-            for d in shape:
-                num_elements *= d
-            byte_length = num_elements * 4
-            js_code.append(f"  commandEncoder.copyBufferToBuffer(out_{i}_buffer, 0, out_{i}_staging, 0, {byte_length});")
+        self._create_js_copy_buffers(output_ids, total_size, js_code)
 
         js_code.append("  device.queue.submit([commandEncoder.finish()]);")
         js_code.append("")
 
-        # Map staging buffers and read back
-        ret_obj_entries = []
-        for i, out_id in enumerate(output_ids):
-            js_code.append(f"  await out_{i}_staging.mapAsync(GPUMapMode.READ);")
-            js_code.append(f"  const out_{i}_array = new Float32Array(out_{i}_staging.getMappedRange().slice());")
-            js_code.append(f"  out_{i}_staging.unmap();")
-            ret_obj_entries.append(f"    {out_id}: out_{i}_array,")
-
-        js_code.append("")
-        js_code.append("  return {")
-        for entry in ret_obj_entries:
-            js_code.append(entry)
-        js_code.append("  };")
+        self._create_js_read_back(output_ids, js_code)
         js_code.append("}")
 
         return "\n".join(js_code)
+
+    def _declare_wgsl_inputs(self, input_nodes: list[object], wgsl_lines: list[str]) -> None:
+        """Declare WGSL input storage buffers and map them to variables.
+
+        Args:
+            input_nodes (list[object]): List of input IR nodes.
+            wgsl_lines (list[str]): List of WGSL code lines to append to.
+        """
+        for idx, node in enumerate(input_nodes):
+            meta_dtype = self._map_type(getattr(node, "dtype", "float32"))
+            wgsl_lines.append(f"@group(0) @binding({idx}) var<storage, read> in_{idx}: array<{meta_dtype}>;")
+            nid = getattr(node, "id", "")
+            shape, _ = self._get_shape_and_strides(node)
+            if len(shape) > 1:
+                self.var_map[nid] = f"in_{idx}[get_offset_{nid.replace('-', '_')}(idx)]"
+            else:
+                self.var_map[nid] = f"in_{idx}[idx]"
+
+    def _declare_wgsl_outputs(self, output_ids: list[str], out_idx: int, wgsl_lines: list[str]) -> None:
+        """Declare WGSL output storage buffers.
+
+        Args:
+            output_ids (list[str]): List of output node IDs.
+            out_idx (int): The starting bind index for outputs.
+            wgsl_lines (list[str]): List of WGSL code lines to append to.
+        """
+        for i, out_id in enumerate(output_ids):
+            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            meta_dtype = self._map_type(getattr(out_node, "dtype", "float32")) if out_node else "f32"
+            wgsl_lines.append(f"@group(0) @binding({out_idx + i}) var<storage, read_write> out_{i}: array<{meta_dtype}>;")
+
+    def _emit_wgsl_outputs(self, output_ids: list[str], wgsl_lines: list[str]) -> None:
+        """Emit WGSL assignments to store results in output buffers.
+
+        Args:
+            output_ids (list[str]): List of output node IDs.
+            wgsl_lines (list[str]): List of WGSL code lines to append to.
+        """
+        for i, out_id in enumerate(output_ids):
+            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            shape, _ = self._get_shape_and_strides(out_node) if out_node else ([], [])
+            res_var = self.var_map.get(out_id, out_id)
+            if len(shape) > 1:
+                wgsl_lines.append(f"  out_{i}[get_offset_{out_id.replace('-', '_')}(idx)] = {res_var};")
+            else:
+                wgsl_lines.append(f"  out_{i}[idx] = {res_var};")
+
+    def _compute_total_size(self, output_ids: list[str]) -> int:
+        """Evaluate _compute_total_size operation.
+
+        Args:
+        output_ids (object): The output_ids parameter.
+
+        Returns:
+        int: Result.
+        """
+        total_size = 1
+        if output_ids:
+            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == output_ids[0]), None)
+            if out_node:
+                shape, _ = self._get_shape_and_strides(out_node)
+                for dim in shape:
+                    total_size *= dim
+        return total_size
 
     def generate(self) -> str:
         """Generate WebGPU WGSL compute shader module code enclosed in a JavaScript orchestrator.
@@ -287,28 +402,12 @@ class WebGPUCodeGenerator(BaseGenerator):
         self.code = []
         self.body_lines = []
 
-        # Generate WGSL shader structure first
         wgsl_lines = []
+        self._declare_wgsl_inputs(input_nodes, wgsl_lines)
 
-        # Declare input binding parameters
-        for idx, node in enumerate(input_nodes):
-            meta_dtype = self._map_type(getattr(node, "dtype", "float32"))
-            wgsl_lines.append(f"@group(0) @binding({idx}) var<storage, read> in_{idx}: array<{meta_dtype}>;")
-            nid = getattr(node, "id", "")
-            shape, _ = self._get_shape_and_strides(node)
-            if len(shape) > 1:
-                self.var_map[nid] = f"in_{idx}[get_offset_{nid.replace('-', '_')}(idx)]"
-            else:
-                self.var_map[nid] = f"in_{idx}[idx]"
-
-        # Declare output binding parameters
         out_idx = len(input_nodes)
-        for i, out_id in enumerate(output_ids):
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-            meta_dtype = self._map_type(getattr(out_node, "dtype", "float32")) if out_node else "f32"
-            wgsl_lines.append(f"@group(0) @binding({out_idx + i}) var<storage, read_write> out_{i}: array<{meta_dtype}>;")
+        self._declare_wgsl_outputs(output_ids, out_idx, wgsl_lines)
 
-        # Append Coordinate Helpers to WGSL
         coord_helpers = self._generate_coord_helpers()
         if coord_helpers:
             wgsl_lines.append("")
@@ -319,36 +418,17 @@ class WebGPUCodeGenerator(BaseGenerator):
         wgsl_lines.append("fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {")
         wgsl_lines.append("  let idx = global_id.x;")
 
-        # Emit intermediate operations
         for node in self.sorted_nodes:
             if getattr(node, "op_type", "") != "Input":
                 self.generic_visit(node, [])
 
-        # Add all body lines to WGSL
         for line in self.body_lines:
             wgsl_lines.append(line)
 
-        # Emit output assignments in WGSL
-        for i, out_id in enumerate(output_ids):
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-            shape, _ = self._get_shape_and_strides(out_node) if out_node else ([], [])
-            res_var = self.var_map.get(out_id, out_id)
-            if len(shape) > 1:
-                wgsl_lines.append(f"  out_{i}[get_offset_{out_id.replace('-', '_')}(idx)] = {res_var};")
-            else:
-                wgsl_lines.append(f"  out_{i}[idx] = {res_var};")
-
+        self._emit_wgsl_outputs(output_ids, wgsl_lines)
         wgsl_lines.append("}")
 
         wgsl_code_str = "\n".join(wgsl_lines)
-
-        # Determine total output array size for orchestration
-        total_size = 1
-        if output_ids:
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == output_ids[0]), None)
-            if out_node:
-                shape, _ = self._get_shape_and_strides(out_node)
-                for dim in shape:
-                    total_size *= dim
+        total_size = self._compute_total_size(output_ids)
 
         return self._generate_js_orchestrator(wgsl_code_str, input_nodes, output_ids, out_idx, total_size)

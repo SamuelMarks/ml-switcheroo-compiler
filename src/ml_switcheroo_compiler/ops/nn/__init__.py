@@ -1,5 +1,8 @@
 # ruff: noqa
-# auto-generate-all\n\nfrom ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d\n
+# auto-generate-all
+"""Neural network operations and layers for the ML Switcheroo compiler."""
+
+from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d
 from .rnn_utils import rnn as rnn
 from .rnn_utils import RNNConfig as RNNConfig
 from .pooling import max_pool as max_pool

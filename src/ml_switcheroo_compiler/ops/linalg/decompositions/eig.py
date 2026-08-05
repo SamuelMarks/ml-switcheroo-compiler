@@ -13,14 +13,14 @@ class Eig(OpDef):
     """Eig Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         return ()
 
@@ -60,19 +60,14 @@ class Eigvalsh(OpDef):
 
 
 def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
-    """Computes the eigenvalues and eigenvectors of a complex Hermitian or real symmetric.
-
-    matrix
+    """Compute the eigenvalues and eigenvectors of a complex Hermitian or real symmetric.
 
     Args:
-        input (Tensor): The symmetric or Hermitian matrix
-        UPLO (str): Specifies whether the calculation is done with the lower ('L')
-        or upper ('U') triangular part of the matrix. Defaults to 'L'
+        input (Tensor): The input parameter.
+        UPLO (str): The UPLO parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - eigenvalues (Tensor): The eigenvalues in ascending order
-        - eigenvectors (Tensor): The column eigenvectors
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -87,15 +82,14 @@ def eigh(input: Tensor, UPLO: str = "L") -> tuple[Tensor, Tensor]:
 
 
 def eigvalsh(input: Tensor, UPLO: str = "L") -> Tensor:
-    """Computes the eigenvalues of a complex Hermitian or real symmetric matrix.
+    """Compute the eigenvalues of a complex Hermitian or real symmetric matrix.
 
     Args:
-        input (Tensor): The symmetric or Hermitian matrix
-        UPLO (str): Specifies whether the calculation is done with the lower ('L')
-        or upper ('U') triangular part of the matrix. Defaults to 'L'
+        input (Tensor): The input parameter.
+        UPLO (str): The UPLO parameter.
 
     Returns:
-    Tensor: The eigenvalues in ascending order
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -127,13 +121,13 @@ class Eigvals(OpDef):
 
 
 def eigvals(input: Tensor) -> Tensor:
-    """Computes the eigenvalues of a general matrix.
+    """Compute the eigenvalues of a general matrix.
 
     Args:
-        input (Tensor): The general square matrix
+        input (Tensor): The input parameter.
 
     Returns:
-    Tensor: The eigenvalues
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -148,15 +142,13 @@ def eigvals(input: Tensor) -> Tensor:
 
 
 def eig(input: Tensor) -> tuple[Tensor, Tensor]:
-    """Computes the eigenvalues and eigenvectors of a square matrix.
+    """Compute the eigenvalues and eigenvectors of a square matrix.
 
     Args:
-        input (Tensor): The square matrix.
+        input (Tensor): The input parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - eigenvalues (Tensor): The eigenvalues.
-        - eigenvectors (Tensor): The right eigenvectors.
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

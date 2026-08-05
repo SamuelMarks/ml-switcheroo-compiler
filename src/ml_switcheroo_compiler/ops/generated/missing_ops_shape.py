@@ -2,7 +2,15 @@
 
 
 def argpartition(*args: object, **kwargs: object) -> object:
-    """Argpartition frontend."""
+    """Argpartition frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -15,7 +23,15 @@ def argpartition(*args: object, **kwargs: object) -> object:
 
 
 def argsort(*args: object, **kwargs: object) -> object:
-    """Argsort frontend."""
+    """Argsort frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -28,7 +44,15 @@ def argsort(*args: object, **kwargs: object) -> object:
 
 
 def argwhere(*args: object, **kwargs: object) -> object:
-    """Argwhere frontend."""
+    """Argwhere frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -41,7 +65,15 @@ def argwhere(*args: object, **kwargs: object) -> object:
 
 
 def column_stack(*args: object, **kwargs: object) -> object:
-    """ColumnStack frontend."""
+    """ColumnStack frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -54,7 +86,15 @@ def column_stack(*args: object, **kwargs: object) -> object:
 
 
 def dsplit(*args: object, **kwargs: object) -> object:
-    """Dsplit frontend."""
+    """Dsplit frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -67,7 +107,15 @@ def dsplit(*args: object, **kwargs: object) -> object:
 
 
 def dstack(*args: object, **kwargs: object) -> object:
-    """Dstack frontend."""
+    """Dstack frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -80,7 +128,15 @@ def dstack(*args: object, **kwargs: object) -> object:
 
 
 def dynamic_index_in_dim(*args: object, **kwargs: object) -> object:
-    """DynamicIndexInDim frontend."""
+    """DynamicIndexInDim frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -93,7 +149,15 @@ def dynamic_index_in_dim(*args: object, **kwargs: object) -> object:
 
 
 def dynamic_slice(*args: object, **kwargs: object) -> object:
-    """DynamicSlice frontend."""
+    """DynamicSlice frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -106,7 +170,15 @@ def dynamic_slice(*args: object, **kwargs: object) -> object:
 
 
 def dynamic_slice_in_dim(*args: object, **kwargs: object) -> object:
-    """DynamicSliceInDim frontend."""
+    """DynamicSliceInDim frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -119,7 +191,15 @@ def dynamic_slice_in_dim(*args: object, **kwargs: object) -> object:
 
 
 def dynamic_update_index_in_dim(*args: object, **kwargs: object) -> object:
-    """DynamicUpdateIndexInDim frontend."""
+    """DynamicUpdateIndexInDim frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -132,7 +212,15 @@ def dynamic_update_index_in_dim(*args: object, **kwargs: object) -> object:
 
 
 def dynamic_update_slice_in_dim(*args: object, **kwargs: object) -> object:
-    """DynamicUpdateSliceInDim frontend."""
+    """DynamicUpdateSliceInDim frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -145,7 +233,15 @@ def dynamic_update_slice_in_dim(*args: object, **kwargs: object) -> object:
 
 
 def gather(*args: object, **kwargs: object) -> object:
-    """Gather frontend."""
+    """Gather frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -158,7 +254,15 @@ def gather(*args: object, **kwargs: object) -> object:
 
 
 def gather_nd(*args: object, **kwargs: object) -> object:
-    """GatherNd frontend."""
+    """GatherNd frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -171,7 +275,15 @@ def gather_nd(*args: object, **kwargs: object) -> object:
 
 
 def hsplit(*args: object, **kwargs: object) -> object:
-    """Hsplit frontend."""
+    """Hsplit frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -184,7 +296,15 @@ def hsplit(*args: object, **kwargs: object) -> object:
 
 
 def hstack(*args: object, **kwargs: object) -> object:
-    """Hstack frontend."""
+    """Hstack frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -197,7 +317,15 @@ def hstack(*args: object, **kwargs: object) -> object:
 
 
 def scatter_add(*args: object, **kwargs: object) -> object:
-    """ScatterAdd frontend."""
+    """ScatterAdd frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -210,7 +338,15 @@ def scatter_add(*args: object, **kwargs: object) -> object:
 
 
 def scatter_apply(*args: object, **kwargs: object) -> object:
-    """ScatterApply frontend."""
+    """ScatterApply frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -223,7 +359,15 @@ def scatter_apply(*args: object, **kwargs: object) -> object:
 
 
 def scatter_max(*args: object, **kwargs: object) -> object:
-    """ScatterMax frontend."""
+    """ScatterMax frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -236,7 +380,15 @@ def scatter_max(*args: object, **kwargs: object) -> object:
 
 
 def scatter_min(*args: object, **kwargs: object) -> object:
-    """ScatterMin frontend."""
+    """ScatterMin frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -249,7 +401,15 @@ def scatter_min(*args: object, **kwargs: object) -> object:
 
 
 def scatter_mul(*args: object, **kwargs: object) -> object:
-    """ScatterMul frontend."""
+    """ScatterMul frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -262,7 +422,15 @@ def scatter_mul(*args: object, **kwargs: object) -> object:
 
 
 def scatter_nd(*args: object, **kwargs: object) -> object:
-    """ScatterNd frontend."""
+    """ScatterNd frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -275,7 +443,15 @@ def scatter_nd(*args: object, **kwargs: object) -> object:
 
 
 def slice_in_dim(*args: object, **kwargs: object) -> object:
-    """SliceInDim frontend."""
+    """SliceInDim frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -288,7 +464,15 @@ def slice_in_dim(*args: object, **kwargs: object) -> object:
 
 
 def sort(*args: object, **kwargs: object) -> object:
-    """Sort frontend."""
+    """Sort frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -301,7 +485,15 @@ def sort(*args: object, **kwargs: object) -> object:
 
 
 def split(*args: object, **kwargs: object) -> object:
-    """Split frontend."""
+    """Split frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -314,7 +506,15 @@ def split(*args: object, **kwargs: object) -> object:
 
 
 def squeeze(*args: object, **kwargs: object) -> object:
-    """Squeeze frontend."""
+    """Squeeze frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -327,7 +527,15 @@ def squeeze(*args: object, **kwargs: object) -> object:
 
 
 def strided_slice(*args: object, **kwargs: object) -> object:
-    """StridedSlice frontend."""
+    """StridedSlice frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -340,7 +548,15 @@ def strided_slice(*args: object, **kwargs: object) -> object:
 
 
 def transpose(*args: object, **kwargs: object) -> object:
-    """Transpose frontend."""
+    """Transpose frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -353,7 +569,15 @@ def transpose(*args: object, **kwargs: object) -> object:
 
 
 def vsplit(*args: object, **kwargs: object) -> object:
-    """Vsplit frontend."""
+    """Vsplit frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -366,7 +590,15 @@ def vsplit(*args: object, **kwargs: object) -> object:
 
 
 def vstack(*args: object, **kwargs: object) -> object:
-    """Vstack frontend."""
+    """Vstack frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -379,7 +611,15 @@ def vstack(*args: object, **kwargs: object) -> object:
 
 
 def where(*args: object, **kwargs: object) -> object:
-    """Where frontend."""
+    """Where frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:

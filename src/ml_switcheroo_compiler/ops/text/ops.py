@@ -21,14 +21,14 @@ class StringToHash(OpDef):
     """Operation that computes a hash value for a given string tensor."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer the resulting shape after applying the string to hash conversion.
+        """Infer the output shape.
 
         Args:
-            *args: Variable length argument list including input tensors.
-            **kwargs: Arbitrary keyword arguments configuring the operation.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            A tuple representing the output shape.
+        object: Result.
         """
         return ()
 
@@ -275,7 +275,7 @@ class RegexFullMatch(OpDef):
 
 
 def string_to_hash(inputs: "Tensor", **kwargs: object) -> "Tensor":
-    """Applies a hashing algorithm to map input string tensors to hash representations.
+    """Apply a hashing algorithm to map input string tensors to hash representations.
 
     Args:
         inputs: The incoming string tensor to be hashed.
@@ -297,7 +297,7 @@ def string_to_hash(inputs: "Tensor", **kwargs: object) -> "Tensor":
 
 
 def lookup(inputs: "Tensor", **kwargs: object) -> "Tensor":
-    """Maps the given input strings or numbers into corresponding vocabulary indices or strings.
+    """Map the given input strings or numbers into corresponding vocabulary indices or strings.
 
     Args:
         inputs: The incoming tensor containing the elements to look up.
@@ -319,7 +319,7 @@ def lookup(inputs: "Tensor", **kwargs: object) -> "Tensor":
 
 
 def text_vectorization(inputs: "Tensor", **kwargs: object) -> "Tensor":
-    """Transforms textual data into numerical tensor sequences based on pre-computed vocabularies.
+    """Transform textual data into numerical tensor sequences based on pre-computed vocabularies.
 
     Args:
         inputs: The incoming string tensor containing sentences or text snippets.
@@ -382,7 +382,15 @@ class ArrayRepr(OpDef):
     op_name = "ArrayRepr"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -393,5 +401,13 @@ class ArrayStr(OpDef):
     op_name = "ArrayStr"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()

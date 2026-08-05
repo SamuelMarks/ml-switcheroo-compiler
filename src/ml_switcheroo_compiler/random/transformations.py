@@ -1,4 +1,4 @@
-"""Random transformations."""
+"""Generate random transformations."""
 
 from __future__ import annotations
 

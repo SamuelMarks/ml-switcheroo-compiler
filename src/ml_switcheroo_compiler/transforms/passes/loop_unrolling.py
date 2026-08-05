@@ -1,6 +1,8 @@
 # ruff: noqa: C901, PLR0912
 """Loop Unrolling pass for edge execution."""
 
+from __future__ import annotations
+
 import typing
 
 from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode, clone_logical_node
@@ -8,14 +10,21 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _block_to_graph(block: IRBlock) -> IRGraph:
-    """Helper to convert IRBlock to IRGraph for standard APIs."""
+    """Help to convert IRBlock to IRGraph for standard APIs.
+
+    Args:
+        block (IRBlock): The block parameter.
+
+    Returns:
+        IRGraph: Result.
+    """
     nodes_dict = {n.id: n for n in block.nodes}
     g = IRGraph(nodes=nodes_dict, outputs=block.outputs)
     return g
 
 
 def clone_subgraph(subgraph: IRBlock, id_suffix: str, input_remap: dict[str, str]) -> tuple[dict[str, IRNode], list[str]]:
-    """Cleanly duplicate a subgraph for unrolling.
+    """Clone duplicate a subgraph for unrolling.
 
     Args:
         subgraph (IRBlock): The input graph to mutate.
@@ -52,17 +61,17 @@ def clone_subgraph(subgraph: IRBlock, id_suffix: str, input_remap: dict[str, str
     return cloned_nodes, out_ids
 
 
-def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state: dict[str, typing.Any], max_iters: int = 100) -> typing.Optional[int]:
+def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state: dict[str, typing.Any], max_iters: int = 100) -> int | None:
     """Execute detect static bound.
 
     Args:
-        cond_graph (IRBlock): Argument cond_graph.
-        body_graph (IRBlock): Argument cond_graph.
-        initial_state (dict): Argument initial_state.
-        max_iters (int): Argument max_iters.
+        cond_graph (IRBlock): The cond_graph parameter.
+        body_graph (IRBlock): The body_graph parameter.
+        initial_state (dict): The initial_state parameter.
+        max_iters (int): The max_iters parameter.
 
     Returns:
-    Optional: The result.
+        object: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -111,14 +120,14 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
 
 
 def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any]:
-    """Execute _get_initial_constants.
+    """Evaluate _get_initial_constants operation.
 
     Args:
-        node (IRNode): Argument node.
-        graph (IRGraph): Argument graph.
+        node (IRNode): The node parameter.
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    dict: The result.
+        dict: Result.
     """
     state = {}
     cond_graph = node.attributes.get("cond")
@@ -130,6 +139,70 @@ def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any
         if outer_node and outer_node.op_type == "Constant":
             state[inner_inp] = outer_node.attributes["value"]
     return state
+
+
+def _perform_unroll(node: IRNode, body_graph: object, unroll_iters: int, new_nodes: dict) -> None:
+    """Perform actual unrolling of a loop body.
+
+    Args:
+        node (IRNode): The loop node.
+        body_graph (object): The body graph to unroll.
+        unroll_iters (int): Number of iterations.
+        new_nodes (dict): Target dictionary for new nodes.
+    """
+    current_inputs = list(node.inputs)
+
+    for i in range(unroll_iters):
+        input_remap = {inner: outer for inner, outer in zip(body_graph.inputs, current_inputs)}
+        cloned_nodes, next_inputs = clone_subgraph(body_graph, f"unroll_{node.id}_{i}", input_remap)
+
+        new_nodes.update(cloned_nodes)
+        current_inputs = next_inputs
+
+    if len(current_inputs) == 1:
+        new_nodes[node.id] = IRNode(id=node.id, op_type="Identity", inputs=[current_inputs[0]], shape_metadata=node.shape_metadata)
+    else:
+        new_nodes[node.id] = IRNode(id=node.id, op_type="Tuple", inputs=current_inputs, shape_metadata=node.shape_metadata)
+
+
+def _process_unroll_node(node: IRNode, graph: IRGraph, new_nodes: dict) -> bool:
+    """Process a node for potential unrolling.
+
+    Args:
+        node (IRNode): The IR node.
+        graph (IRGraph): The IR graph.
+        new_nodes (dict): Output nodes dictionary.
+
+    Returns:
+        bool: True if unrolled, False otherwise.
+    """
+    if node.op_type not in ("WhileLoop", "Loop") or "unrolled" in node.attributes:
+        return False
+
+    cond_graph = node.attributes.get("cond")
+    body_graph = node.attributes.get("body")
+
+    if not cond_graph or not body_graph:
+        return False
+
+    unroll_iters = node.attributes.get("unroll_iters")
+    if unroll_iters is None:
+        initial_state = _get_initial_constants(node, graph)
+        unroll_iters = detect_static_bound(cond_graph, body_graph, initial_state)
+
+    if unroll_iters is not None and unroll_iters > 0:
+        _perform_unroll(node, body_graph, unroll_iters, new_nodes)
+        return True
+    elif unroll_iters == 0:
+        if len(node.inputs) == 1:
+            new_nodes[node.id] = IRNode(id=node.id, op_type="Identity", inputs=[node.inputs[0]], shape_metadata=node.shape_metadata)
+        else:
+            new_nodes[node.id] = IRNode(id=node.id, op_type="Tuple", inputs=node.inputs, shape_metadata=node.shape_metadata)
+        return True
+    else:
+        node.attributes["unrolled"] = True
+        new_nodes[node.id] = node
+        return True
 
 
 def loop_unrolling_pass(graph: IRGraph) -> bool:
@@ -149,45 +222,9 @@ def loop_unrolling_pass(graph: IRGraph) -> bool:
     sorted_nodes = DAGTopologicalSorter.sort(graph)
 
     for node in sorted_nodes:
-        if node.op_type in ("WhileLoop", "Loop") and "unrolled" not in node.attributes:
-            cond_graph = node.attributes.get("cond")
-            body_graph = node.attributes.get("body")
-
-            if not cond_graph or not body_graph:
-                new_nodes[node.id] = node
-                continue
-
-            unroll_iters = node.attributes.get("unroll_iters")
-            if unroll_iters is None:
-                initial_state = _get_initial_constants(node, graph)
-                unroll_iters = detect_static_bound(cond_graph, body_graph, initial_state)
-
-            if unroll_iters is not None and unroll_iters > 0:
-                current_inputs = list(node.inputs)
-
-                for i in range(unroll_iters):
-                    input_remap = {inner: outer for inner, outer in zip(body_graph.inputs, current_inputs)}
-                    cloned_nodes, next_inputs = clone_subgraph(body_graph, f"unroll_{node.id}_{i}", input_remap)
-
-                    new_nodes.update(cloned_nodes)
-                    current_inputs = next_inputs
-
-                if len(current_inputs) == 1:
-                    new_nodes[node.id] = IRNode(id=node.id, op_type="Identity", inputs=[current_inputs[0]], shape_metadata=node.shape_metadata)
-                else:
-                    new_nodes[node.id] = IRNode(id=node.id, op_type="Tuple", inputs=current_inputs, shape_metadata=node.shape_metadata)
-                modified = True
-            elif unroll_iters == 0:
-                if len(node.inputs) == 1:
-                    new_nodes[node.id] = IRNode(id=node.id, op_type="Identity", inputs=[node.inputs[0]], shape_metadata=node.shape_metadata)
-                else:
-                    new_nodes[node.id] = IRNode(id=node.id, op_type="Tuple", inputs=node.inputs, shape_metadata=node.shape_metadata)
-                modified = True
-            else:
-                node.attributes["unrolled"] = True
-                new_nodes[node.id] = node
-                modified = True
-        else:
+        if _process_unroll_node(node, graph, new_nodes):
+            modified = True
+        elif node.id not in new_nodes:
             new_nodes[node.id] = node
 
     if modified:

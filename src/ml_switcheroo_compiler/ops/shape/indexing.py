@@ -31,7 +31,7 @@ class IndexSpec:
 
 
 def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
-    """Gathers values along an axis specified by dim using index tensor.
+    """Gather values along an axis specified by dim using index tensor.
 
     Args:
         input (Tensor): The source tensor
@@ -63,7 +63,7 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
 
 
 def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
-    """Gathers slices from input tensor using multi-dimensional indices.
+    """Gather slices from input tensor using multi-dimensional indices.
 
     Args:
         input (Tensor): The source tensor
@@ -72,7 +72,6 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
 
     Returns:
         Tensor: The gathered tensor.
-
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -95,7 +94,7 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
 
 
 def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Tensor:
-    """Takes elements from the input tensor at the specified flat indices.
+    """Take elements from the input tensor at the specified flat indices.
 
     Args:
         input (Tensor): The input tensor
@@ -127,7 +126,7 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Tensor:
 
 
 def take_along_axis(arr: object, indices: object, axis: int) -> object:
-    """Takes values from the input array along a specified axis using 1D indices.
+    """Take values from the input array along a specified axis using 1D indices.
 
     Args:
         arr (object): The source array or tensor
@@ -177,7 +176,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Tensor:
 
 
 def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
-    """Selects elements from input or other based on condition.
+    """Select elements from input or other based on condition.
 
     Args:
         condition (Tensor): A boolean tensor where True selects from input and False
@@ -210,7 +209,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
 
 
 def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Tensor:
-    """Selects elements from on_true or on_false based on pred.
+    """Select elements from on_true or on_false based on pred.
 
     Args:
         pred (Tensor): Boolean mask
@@ -260,7 +259,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
 
 
 def invert_permutation(x: Tensor) -> Tensor:
-    """Computes the inverse permutation of a tensor.
+    """Compute the inverse permutation of a tensor.
 
     Args:
         x (Tensor): 1-D int32 or int64 tensor.
@@ -293,7 +292,15 @@ class Extract(OpDef):
     op_name = "Extract"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the infer_shape operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         # Typically returns a 1D tensor of elements satisfying a condition.
         return (None,)
 
@@ -414,14 +421,14 @@ class DynamicSliceInDim(OpDef):
         """Infers the output shape for the dynamic slice in dim operation.
 
         Args:
-            operand (object): The input tensor.
-            start_index (object): The starting index tensor.
-            slice_size (int): The size of the slice.
-            axis (int, optional): The axis to slice. Defaults to 0.
-            **kwargs (object): Additional keyword arguments.
+            operand (object): The operand parameter.
+            start_index (object): The start_index parameter.
+            slice_size (int): The slice_size parameter.
+            axis (int): The axis parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The updated shape tuple.
+            object: Result.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -439,14 +446,14 @@ class DynamicUpdateSliceInDim(OpDef):
         """Infers the output shape for the dynamic update slice in dim operation.
 
         Args:
-            operand (object): The input tensor.
-            update (object): The update tensor.
-            start_index (object): The starting index tensor.
-            axis (int, optional): The axis to update. Defaults to 0.
-            **kwargs (object): Additional keyword arguments.
+            operand (object): The operand parameter.
+            update (object): The update parameter.
+            start_index (object): The start_index parameter.
+            axis (int): The axis parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape of the input tensor.
+            object: Result.
         """
         return getattr(operand, "shape", ())
 
@@ -461,14 +468,14 @@ class DynamicIndexInDim(OpDef):
         """Infers the output shape for the dynamic index in dim operation.
 
         Args:
-            operand (object): The input tensor.
-            index (object): The index tensor.
-            axis (int, optional): The axis to index. Defaults to 0.
-            keepdims (bool, optional): Whether to keep the indexed dimension. Defaults to True.
-            **kwargs (object): Additional keyword arguments.
+            operand (object): The operand parameter.
+            index (object): The index parameter.
+            axis (int): The axis parameter.
+            keepdims (bool): The keepdims parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The updated shape tuple.
+            object: Result.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -489,14 +496,14 @@ class DynamicUpdateIndexInDim(OpDef):
         """Infers the output shape for the dynamic update index in dim operation.
 
         Args:
-            operand (object): The input tensor.
-            update (object): The update tensor.
-            index (object): The index tensor.
-            axis (int, optional): The axis to update. Defaults to 0.
-            **kwargs (object): Additional keyword arguments.
+            operand (object): The operand parameter.
+            update (object): The update parameter.
+            index (object): The index parameter.
+            axis (int): The axis parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape of the input tensor.
+            object: Result.
         """
         return getattr(operand, "shape", ())
 

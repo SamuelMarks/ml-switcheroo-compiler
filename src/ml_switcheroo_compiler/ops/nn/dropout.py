@@ -33,7 +33,7 @@ class Dropout(OpDef):
     """Operation definition for standard dropout regularization."""
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Determines the output shape of the dropout operation based on the input.
+        """Determine the output shape of the dropout operation based on the input.
 
         Args:
             x: The input object, typically a tensor, from which to extract the shape.
@@ -51,7 +51,7 @@ def dropout(
     rate: float = 0.5,
     config: DropoutConfig | None = None,
 ) -> Tensor:
-    """Applies standard dropout regularization to the input tensor.
+    """Apply standard dropout regularization to the input tensor.
 
     Randomly zeroes out elements of the input tensor with the specified probability
     to prevent overfitting during training.
@@ -72,7 +72,7 @@ class AlphaDropout(OpDef):
     """Operation definition for alpha dropout regularization."""
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Determines the output shape for alpha dropout based on the input.
+        """Determine the output shape for alpha dropout based on the input.
 
         Args:
             x: The input object, typically a tensor, from which to extract the shape.
@@ -90,7 +90,7 @@ def alpha_dropout(
     rate: float = 0.5,
     config: DropoutConfig | None = None,
 ) -> Tensor:
-    """Applies alpha dropout regularization to the input tensor.
+    """Apply alpha dropout regularization to the input tensor.
 
     Alpha dropout is a type of dropout that maintains the mean and variance
     of the input data, often used with SELU activations.
@@ -111,7 +111,7 @@ class ActivityRegularization(OpDef):
     """Operation definition for applying activity regularization."""
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Determines the output shape for activity regularization based on the input.
+        """Determine the output shape for activity regularization based on the input.
 
         Args:
             x: The input object, which may be a tensor or a tuple/list of tensors.
@@ -131,7 +131,7 @@ def activity_regularization(
     l1: float = 0.0,
     l2: float = 0.0,
 ) -> Tensor:
-    """Applies L1 and L2 activity regularization to the given input tensor.
+    """Apply L1 and L2 activity regularization to the given input tensor.
 
     Adds regularization penalties based on the magnitude of the tensor's values.
 
@@ -153,7 +153,7 @@ class Dropout1d(OpDef):
     op_name = "Dropout1d"
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Determines the output shape of the 1D dropout operation.
+        """Determine the output shape of the 1D dropout operation.
 
         Args:
             x: The input object, typically a tensor.
@@ -166,7 +166,7 @@ class Dropout1d(OpDef):
 
 
 def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
-    """Applies 1D spatial dropout to the input tensor.
+    """Apply 1D spatial dropout to the input tensor.
 
     Randomly zeroes out entire channels (1D feature maps) of the input tensor.
 
@@ -194,7 +194,7 @@ class Dropout2d(OpDef):
     op_name = "Dropout2d"
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Determines the output shape of the 2D dropout operation.
+        """Determine the output shape of the 2D dropout operation.
 
         Args:
             x: The input object, typically a tensor.
@@ -207,7 +207,7 @@ class Dropout2d(OpDef):
 
 
 def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
-    """Applies 2D spatial dropout to the input tensor.
+    """Apply 2D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 2D feature maps (channels) of the input tensor.
 
@@ -240,7 +240,7 @@ class Dropout3d(OpDef):
     op_name = "Dropout3d"
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Determines the output shape of the 3D dropout operation.
+        """Determine the output shape of the 3D dropout operation.
 
         Args:
             x: The input object, typically a tensor.
@@ -253,7 +253,7 @@ class Dropout3d(OpDef):
 
 
 def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> Tensor:
-    """Applies 3D spatial dropout to the input tensor.
+    """Apply 3D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 3D feature maps (channels) of the input tensor.
 

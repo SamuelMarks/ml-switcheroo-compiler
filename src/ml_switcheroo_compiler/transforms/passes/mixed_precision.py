@@ -11,6 +11,17 @@ FP32_OPS: set[str] = {"Exp", "Log", "Softmax", "ReduceSum"}
 
 
 def _cast_inputs(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dict[str, IRNode]) -> tuple[list[str], bool]:
+    """Cast inputs of the given node to the target dtype.
+
+    Args:
+        node (IRNode): The node parameter.
+        graph (IRGraph): The graph parameter.
+        target_dtype (str): The target_dtype parameter.
+        new_nodes (dict): The new_nodes parameter.
+
+    Returns:
+        tuple: Result.
+    """
     new_inputs = []
     modified = False
     for inp_id in node.inputs:
@@ -35,6 +46,17 @@ def _cast_inputs(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dic
 
 
 def _process_node(node: IRNode, graph: IRGraph, target_dtype: str, new_nodes: dict[str, IRNode]) -> bool:
+    """Process a single node and cast it to the target dtype if needed.
+
+    Args:
+        node (IRNode): The node parameter.
+        graph (IRGraph): The graph parameter.
+        target_dtype (str): The target_dtype parameter.
+        new_nodes (dict): The new_nodes parameter.
+
+    Returns:
+        bool: Result.
+    """
     modified = False
     new_inputs, inputs_modified = _cast_inputs(node, graph, target_dtype, new_nodes)
     if inputs_modified:
@@ -88,6 +110,15 @@ def mixed_precision_pass(graph: IRGraph, target_dtype: str = "float16") -> bool:
 
 
 def _get_scale_nodes(new_nodes: dict[str, IRNode], scale: float) -> tuple[str, str]:
+    """Retrieve or create scaling constant nodes.
+
+    Args:
+        new_nodes (object): The new_nodes parameter.
+        scale (float): The scale parameter.
+
+    Returns:
+        object: Result.
+    """
     scale_node_id = "loss_scale_factor"
     inv_scale_node_id = "loss_scale_inv_factor"
     if scale_node_id not in new_nodes:
@@ -106,6 +137,13 @@ def _get_scale_nodes(new_nodes: dict[str, IRNode], scale: float) -> tuple[str, s
 
 
 def _scale_inputs(grad_inputs: list[str], new_nodes: dict[str, IRNode], scale_node_id: str) -> None:
+    """Scale the given gradient inputs by the scale factor.
+
+    Args:
+        grad_inputs (list): The grad_inputs parameter.
+        new_nodes (dict): The new_nodes parameter.
+        scale_node_id (str): The scale_node_id parameter.
+    """
     for g_id in grad_inputs:
         mul_id = f"{g_id}_scaled"
         if mul_id not in new_nodes:
@@ -121,6 +159,16 @@ def _scale_inputs(grad_inputs: list[str], new_nodes: dict[str, IRNode], scale_no
 
 
 def _unscale_outputs(graph: IRGraph, new_nodes: dict[str, IRNode], inv_scale_node_id: str) -> list[str]:
+    """Unscale the final outputs using the inverse scale factor.
+
+    Args:
+        graph (IRGraph): The graph parameter.
+        new_nodes (dict): The new_nodes parameter.
+        inv_scale_node_id (str): The inv_scale_node_id parameter.
+
+    Returns:
+        list: Result.
+    """
     new_outputs = []
     for out_id in graph.outputs:
         unscaled_id = f"{out_id}_unscaled"

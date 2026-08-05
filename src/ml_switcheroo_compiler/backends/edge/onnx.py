@@ -92,31 +92,70 @@ class ONNXCodeGenerator(BaseGenerator):
         lines.append("}")
         return "\n".join(lines)
 
-    def _build_onnx_value_infos(self, nodes_or_ids: list, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool = False) -> list:
+    def _get_node_and_name(self, item: object, is_output: bool) -> tuple[Optional[object], str]:
+        """Retrieve a node object and its ID name.
+
+        Args:
+            item (object): The IR node or its ID string.
+            is_output (bool): True if looking up an output node by ID.
+
+        Returns:
+            tuple[Optional[object], str]: A tuple containing the node and its name string.
+        """
+        if is_output:
+            out_id = item
+            node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            return node, out_id
+        return item, getattr(item, "id", "")
+
+    def _build_single_value_info(self, item: object, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool) -> object:
+        """Construct an ONNX TensorValueInfoProto for a single node.
+
+        Args:
+            item (object): The IR node or output ID.
+            dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
+            TensorProto (object): The ONNX TensorProto namespace object.
+            is_output (bool): True if building for an output.
+
+        Returns:
+            object: An ONNX ValueInfoProto object.
+        """
         from onnx import helper
 
-        infos = []
-        for item in nodes_or_ids:
-            if is_output:
-                out_id = item
-                node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-                name = out_id
-            else:
-                node = item
-                name = getattr(node, "id", "")
+        node, name = self._get_node_and_name(item, is_output)
+        shape = getattr(node, "shape_metadata", ()) or () if node else ()
+        dt = getattr(node, "dtype", "float32") if node else "float32"
+        proto_type = self._get_proto_type(dt, TensorProto)
+        shape_list = list(shape)
 
-            shape = getattr(node, "shape_metadata", ()) or () if node else ()
-            dt = getattr(node, "dtype", "float32") if node else "float32"
-            proto_type = self._get_proto_type(dt, TensorProto)
-            shape_list = list(shape)
+        if dynamic_axes and name in dynamic_axes:
+            for axis_idx, axis_name in dynamic_axes[name].items():
+                shape_list[axis_idx] = axis_name
+        return helper.make_tensor_value_info(name, proto_type, shape_list)
 
-            if dynamic_axes and name in dynamic_axes:
-                for axis_idx, axis_name in dynamic_axes[name].items():
-                    shape_list[axis_idx] = axis_name
-            infos.append(helper.make_tensor_value_info(name, proto_type, shape_list))
-        return infos
+    def _build_onnx_value_infos(self, nodes_or_ids: list, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool = False) -> list:
+        """Construct a list of ONNX TensorValueInfoProtos.
+
+        Args:
+            nodes_or_ids (list): List of IR nodes or output IDs.
+            dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
+            TensorProto (object): The ONNX TensorProto namespace object.
+            is_output (bool): True if building for outputs.
+
+        Returns:
+            list: A list of ONNX ValueInfoProto objects.
+        """
+        return [self._build_single_value_info(item, dynamic_axes, TensorProto, is_output) for item in nodes_or_ids]
 
     def _build_onnx_nodes(self, TensorProto: object) -> list:
+        """Construct all intermediate ONNX NodeProtos for the graph.
+
+        Args:
+            TensorProto (object): The ONNX TensorProto namespace object.
+
+        Returns:
+            list: A list of ONNX NodeProto objects.
+        """
         import math
 
         from onnx import helper
@@ -161,6 +200,14 @@ class ONNXCodeGenerator(BaseGenerator):
         return onnx_nodes
 
     def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> object:
+        """Construct the full ONNX GraphProto.
+
+        Args:
+            dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
+
+        Returns:
+            object: The ONNX GraphProto object.
+        """
         from onnx import TensorProto, helper
 
         input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
@@ -175,8 +222,11 @@ class ONNXCodeGenerator(BaseGenerator):
     def generate(self, dynamic_axes: Optional[dict[str, dict[int, str]]] = None) -> str:
         """Generate a readable string/text-proto representation of the ONNX Graph.
 
+        Args:
+        dynamic_axes (object): The dynamic_axes parameter.
+
         Returns:
-            str: Serialized ONNX printable text representation.
+        str: Result.
         """
         try:
             from onnx import helper
@@ -190,11 +240,8 @@ class ONNXCodeGenerator(BaseGenerator):
         """Export the IR Graph as a real, compliant binary .onnx file to disk.
 
         Args:
-            file_path (str): Path to write the .onnx binary file.
-            dynamic_axes (Optional[dict]): Map of node names to dynamic axes.
-
-        Raises:
-            ImportError: If the 'onnx' library is not installed.
+            file_path (str): The file_path parameter.
+            dynamic_axes (Optional): The dynamic_axes parameter.
         """
         from onnx import helper
 

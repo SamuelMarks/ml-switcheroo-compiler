@@ -2,7 +2,15 @@
 
 
 def conv_transpose(*args: object, **kwargs: object) -> object:
-    """ConvTranspose frontend."""
+    """ConvTranspose frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -15,7 +23,15 @@ def conv_transpose(*args: object, **kwargs: object) -> object:
 
 
 def pad(*args: object, **kwargs: object) -> object:
-    """Pad frontend."""
+    """Pad frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:

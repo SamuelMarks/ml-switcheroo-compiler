@@ -21,7 +21,7 @@ def _prepare_pool_config(
     strides: tuple,
     padding: str | tuple,
 ) -> WindowConfig:
-    """Prepares and validates the window configuration for pooling operations.
+    """Prepare and validates the window configuration for pooling operations.
 
     Args:
         rank (int): The total rank of the input tensor.
@@ -51,7 +51,7 @@ def _prepare_pool_config(
 
 
 def _compute_pool_out_shape(in_shape: tuple[int, ...], config: WindowConfig) -> list[int]:
-    """Computes the expected output shape for a pooling operation.
+    """Compute the expected output shape for a pooling operation.
 
     Args:
         in_shape (tuple[int, ...]): The shape of the input tensor.
@@ -84,7 +84,7 @@ def _max_pool_with_indices(
     padding: str | tuple[tuple[int, int], ...],
     config: WindowConfig,
 ) -> tuple[Tensor, Tensor]:
-    """Computes the max pooling operation and returns the resulting tensor along with its indices.
+    """Compute the max pooling operation and returns the resulting tensor along with its indices.
 
     Args:
         operand (Tensor): The input tensor to be pooled.
@@ -137,7 +137,7 @@ def max_pool(
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     return_indices: bool = False,
 ) -> Tensor | tuple[Tensor, Tensor]:
-    """Applies a max pooling operation over the input tensor.
+    """Apply a max pooling operation over the input tensor.
 
     Args:
         operand (Tensor): The input tensor to pool.
@@ -167,7 +167,7 @@ def avg_pool(
     strides: tuple[int, ...] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
 ) -> Tensor:
-    """Applies an average pooling operation over the input tensor.
+    """Apply an average pooling operation over the input tensor.
 
     Args:
         operand (Tensor): The input tensor to pool.
@@ -199,17 +199,20 @@ def pool1d(
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     pool_mode: str = "max",
 ) -> Tensor:
-    """Applies a 1D pooling operation over the input tensor.
+    """Apply a 1D pooling operation over the input tensor.
 
     Args:
-        operand (Tensor): The 1D input tensor to pool.
-        window_shape (int): The size of the 1D pooling window.
-        strides (int | None): The stride of the 1D pooling window.
-        padding (str | tuple[tuple[int, int], ...]): The padding configuration.
-        pool_mode (str): The pooling mode, either 'max' or 'avg'.
+        operand (Tensor): The operand parameter.
+        window_shape (int): The window_shape parameter.
+        strides (object): The strides parameter.
+        padding (object): The padding parameter.
+        pool_mode (str): The pool_mode parameter.
 
     Returns:
-        Tensor: The resulting pooled tensor.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     shape = (window_shape,)
     stride = (strides,) if strides is not None else None
@@ -227,17 +230,20 @@ def pool2d(
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     pool_mode: str = "max",
 ) -> Tensor:
-    """Applies a 2D pooling operation over the input tensor.
+    """Apply a 2D pooling operation over the input tensor.
 
     Args:
-        operand (Tensor): The 2D input tensor to pool.
-        window_shape (tuple[int, int]): The size of the 2D pooling window.
-        strides (tuple[int, int] | None): The strides of the 2D pooling window.
-        padding (str | tuple[tuple[int, int], ...]): The padding configuration.
-        pool_mode (str): The pooling mode, either 'max' or 'avg'.
+        operand (Tensor): The operand parameter.
+        window_shape (tuple): The window_shape parameter.
+        strides (object): The strides parameter.
+        padding (object): The padding parameter.
+        pool_mode (str): The pool_mode parameter.
 
     Returns:
-        Tensor: The resulting pooled tensor.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if pool_mode == "max":
         return max_pool(operand, window_shape, strides, padding)
@@ -253,17 +259,20 @@ def pool3d(
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     pool_mode: str = "max",
 ) -> Tensor:
-    """Applies a 3D pooling operation over the input tensor.
+    """Apply a 3D pooling operation over the input tensor.
 
     Args:
-        operand (Tensor): The 3D input tensor to pool.
-        window_shape (tuple[int, int, int]): The size of the 3D pooling window.
-        strides (tuple[int, int, int] | None): The strides of the 3D pooling window.
-        padding (str | tuple[tuple[int, int], ...]): The padding configuration.
-        pool_mode (str): The pooling mode, either 'max' or 'avg'.
+        operand (Tensor): The operand parameter.
+        window_shape (tuple): The window_shape parameter.
+        strides (object): The strides parameter.
+        padding (object): The padding parameter.
+        pool_mode (str): The pool_mode parameter.
 
     Returns:
-        Tensor: The resulting pooled tensor.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if pool_mode == "max":
         return max_pool(operand, window_shape, strides, padding)
@@ -279,7 +288,7 @@ def average_pool(
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     data_format: str | None = None,
 ) -> Tensor:
-    """Computes an average pool over the given input tensor.
+    """Compute an average pool over the given input tensor.
 
     Args:
         inputs (Tensor): The input tensor to process.
@@ -356,7 +365,7 @@ class PoolingConfig:
 
 
 def avg_pool1d(value: object, config: PoolingConfig) -> object:
-    """Executes a 1D average pooling operation based on the given configuration.
+    """Execute a 1D average pooling operation based on the given configuration.
 
     Args:
         value (object): The input tensor or data to pool.
@@ -374,7 +383,7 @@ def avg_pool1d(value: object, config: PoolingConfig) -> object:
 
 
 def avg_pool2d(value: object, config: PoolingConfig) -> object:
-    """Executes a 2D average pooling operation based on the given configuration.
+    """Execute a 2D average pooling operation based on the given configuration.
 
     Args:
         value (object): The input tensor or data to pool.
@@ -392,7 +401,7 @@ def avg_pool2d(value: object, config: PoolingConfig) -> object:
 
 
 def avg_pool3d(value: object, config: PoolingConfig) -> object:
-    """Executes a 3D average pooling operation based on the given configuration.
+    """Execute a 3D average pooling operation based on the given configuration.
 
     Args:
         value (object): The input tensor or data to pool.
@@ -410,7 +419,7 @@ def avg_pool3d(value: object, config: PoolingConfig) -> object:
 
 
 def max_pool1d(inputs: object, config: PoolingConfig) -> object:
-    """Executes a 1D max pooling operation based on the given configuration.
+    """Execute a 1D max pooling operation based on the given configuration.
 
     Args:
         inputs (object): The input tensor or data to pool.
@@ -428,7 +437,7 @@ def max_pool1d(inputs: object, config: PoolingConfig) -> object:
 
 
 def max_pool2d(inputs: object, config: PoolingConfig) -> object:
-    """Executes a 2D max pooling operation based on the given configuration.
+    """Execute a 2D max pooling operation based on the given configuration.
 
     Args:
         inputs (object): The input tensor or data to pool.
@@ -446,7 +455,7 @@ def max_pool2d(inputs: object, config: PoolingConfig) -> object:
 
 
 def max_pool3d(inputs: object, config: PoolingConfig) -> object:
-    """Executes a 3D max pooling operation based on the given configuration.
+    """Execute a 3D max pooling operation based on the given configuration.
 
     Args:
         inputs (object): The input tensor or data to pool.
@@ -467,7 +476,7 @@ def max_pool_with_argmax(
     input: object,
     config: PoolingConfig,
 ) -> object:
-    """Executes a max pooling operation and additionally computes the argmax indices based on the configuration.
+    """Execute a max pooling operation and additionally computes the argmax indices based on the configuration.
 
     Args:
         input (object): The input tensor or data to pool.
@@ -490,7 +499,7 @@ def fractional_avg_pool(
     value: Tensor,
     config: PoolingConfig,
 ) -> tuple[Tensor, Tensor, Tensor]:
-    """Performs fractional average pooling on the input tensor based on the given configuration.
+    """Perform fractional average pooling on the input tensor based on the given configuration.
 
     Args:
         value (Tensor): The input tensor to undergo fractional average pooling.
@@ -526,7 +535,7 @@ def fractional_max_pool(
     value: Tensor,
     config: PoolingConfig,
 ) -> tuple[Tensor, Tensor, Tensor]:
-    """Performs fractional max pooling on the input tensor based on the given configuration.
+    """Perform fractional max pooling on the input tensor based on the given configuration.
 
     Args:
         value (Tensor): The input tensor to undergo fractional max pooling.
@@ -562,7 +571,7 @@ def pool(
     input: object,
     config: PoolingConfig,
 ) -> object:
-    """Executes a generic pooling operation, delegating to either average or max pooling depending on the configuration.
+    """Execute a generic pooling operation, delegating to either average or max pooling depending on the configuration.
 
     Args:
         input (object): The input tensor or data to pool.

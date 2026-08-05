@@ -11,7 +11,15 @@ class CreateToken(OpDef):
 
 
 def create_token(*args: object, **kwargs: object) -> object:
-    """Create token."""
+    """Create token.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.base import get_op
 
     return get_op("CreateToken")()(*args, **kwargs)

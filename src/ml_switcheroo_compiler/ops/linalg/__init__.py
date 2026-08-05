@@ -114,14 +114,14 @@ class Vecdot(OpDef):
     op_name = "Vecdot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Evaluate and process the infer shape operation.
+        """Evaluate infer_shape operation.
 
         Args:
-            *args (Any): Variable positional arguments.
-            **kwargs (Any): Arbitrary keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated or processed output.
+            object: Result.
         """
         return args[0] if args else ()
 
@@ -133,14 +133,14 @@ class CustomLinearSolve(OpDef):
     op_name = "CustomLinearSolve"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Evaluate and process the infer shape operation.
+        """Evaluate infer_shape operation.
 
         Args:
-            *args (Any): Variable positional arguments.
-            **kwargs (Any): Arbitrary keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated or processed output.
+            object: Result.
         """
         return args[0] if args else ()
 
@@ -152,14 +152,14 @@ class CustomRoot(OpDef):
     op_name = "CustomRoot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Evaluate infer_shape operation.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: Computed shape.
+            object: Result.
         """
         return args[0] if args else ()
 

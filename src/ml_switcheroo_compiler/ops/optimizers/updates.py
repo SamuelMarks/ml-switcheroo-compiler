@@ -108,7 +108,7 @@ def sgd_update(
     config: SGDConfig,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Stochastic Gradient Descent (SGD) update to a parameter.
+    """Apply a functional Stochastic Gradient Descent (SGD) update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -154,7 +154,7 @@ def adam_update(
     hp: AdamHyperparams,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Adam optimization update to a parameter.
+    """Apply a functional Adam optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -208,7 +208,7 @@ def adamw_update(
     hp: AdamWHyperparams,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional AdamW optimization update to a parameter.
+    """Apply a functional AdamW optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -260,7 +260,7 @@ def adagrad_update(
     config: AdagradConfig,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Adagrad optimization update to a parameter.
+    """Apply a functional Adagrad optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -299,7 +299,7 @@ def rmsprop_update(
     hp: RMSPropHyperparams,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional RMSprop optimization update to a parameter.
+    """Apply a functional RMSprop optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -353,7 +353,7 @@ def adadelta_update(
     config: AdadeltaConfig,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Adadelta optimization update to a parameter.
+    """Apply a functional Adadelta optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -398,7 +398,7 @@ def adamax_update(
     hp: AdamaxHyperparams,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Adamax optimization update to a parameter.
+    """Apply a functional Adamax optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -445,7 +445,7 @@ def lion_update(
     config: LionConfig,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Lion optimization update to a parameter.
+    """Apply a functional Lion optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -486,7 +486,7 @@ def adafactor_update(
     lr: float,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Adafactor optimization update to a parameter.
+    """Apply a functional Adafactor optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -513,7 +513,7 @@ def muon_update(
     momentum: float = 0.95,
     state: Optional[dict[str, Tensor]] = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
-    """Applies a functional Muon optimization update to a parameter.
+    """Apply a functional Muon optimization update to a parameter.
 
     Args:
         param: The current parameter tensor to be updated.
@@ -547,7 +547,18 @@ class ApplyAdam(OpDef):
     op_name = "ApplyAdam"
 
     def infer_shape(self, param: object, m: object, v: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            param (object): The param parameter.
+            m (object): The m parameter.
+            v (object): The v parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(param, "shape", ())
 
 
@@ -558,7 +569,17 @@ class ApplyAdagrad(OpDef):
     op_name = "ApplyAdagrad"
 
     def infer_shape(self, param: object, accum: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            param (object): The param parameter.
+            accum (object): The accum parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(param, "shape", ())
 
 
@@ -569,7 +590,18 @@ class ApplyFtrl(OpDef):
     op_name = "ApplyFtrl"
 
     def infer_shape(self, param: object, accum: object, linear: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            param (object): The param parameter.
+            accum (object): The accum parameter.
+            linear (object): The linear parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(param, "shape", ())
 
 
@@ -580,12 +612,34 @@ class ApplyRMSProp(OpDef):
     op_name = "ApplyRMSProp"
 
     def infer_shape(self, param: object, ms: object, mom: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            param (object): The param parameter.
+            ms (object): The ms parameter.
+            mom (object): The mom parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(param, "shape", ())
 
 
 def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
-    """Apply Adam update."""
+    """Apply Adam update.
+
+    Args:
+        param (Tensor): The param parameter.
+        m (Tensor): The m parameter.
+        v (Tensor): The v parameter.
+        grad (Tensor): The grad parameter.
+        lr (float): The lr parameter.
+
+    Returns:
+        tuple: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("ApplyAdam", param, m, v, grad, lr=lr)
@@ -595,7 +649,17 @@ def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> 
 
 
 def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor]:
-    """Apply Adagrad update."""
+    """Apply Adagrad update.
+
+    Args:
+        param (Tensor): The param parameter.
+        accum (Tensor): The accum parameter.
+        grad (Tensor): The grad parameter.
+        lr (float): The lr parameter.
+
+    Returns:
+        tuple: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("ApplyAdagrad", param, accum, grad, lr=lr)
@@ -604,7 +668,18 @@ def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> tupl
 
 
 def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
-    """Apply FTRL update."""
+    """Apply FTRL update.
+
+    Args:
+        param (Tensor): The param parameter.
+        accum (Tensor): The accum parameter.
+        linear (Tensor): The linear parameter.
+        grad (Tensor): The grad parameter.
+        lr (float): The lr parameter.
+
+    Returns:
+        tuple: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("ApplyFtrl", param, accum, linear, grad, lr=lr)
@@ -613,7 +688,18 @@ def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: f
 
 
 def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
-    """Apply RMSProp update."""
+    """Apply RMSProp update.
+
+    Args:
+        param (Tensor): The param parameter.
+        ms (Tensor): The ms parameter.
+        mom (Tensor): The mom parameter.
+        grad (Tensor): The grad parameter.
+        lr (float): The lr parameter.
+
+    Returns:
+        tuple: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("ApplyRMSProp", param, ms, mom, grad, lr=lr)
@@ -628,7 +714,16 @@ class LionConfigOp(OpDef):
     op_name = "LionConfig"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -639,5 +734,14 @@ class AdamaxHyperparamsOp(OpDef):
     op_name = "AdamaxHyperparams"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())

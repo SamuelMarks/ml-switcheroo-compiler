@@ -9,30 +9,30 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 @numpy_eager_registry.register("Degeneration")
 def _np_degeneration(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the degeneration logic eagerly backed by NumPy.
+    """Evaluate _np_degeneration operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("GaussianBlur")
 def _np_gaussian_blur(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the gaussian blur logic eagerly backed by NumPy.
+    """Evaluate _np_gaussian_blur operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     config_obj = kwargs.get("config", kwargs)
     if isinstance(config_obj, dict):
@@ -46,30 +46,30 @@ def _np_gaussian_blur(backend_module: object, images: object, **kwargs: object) 
 
 @numpy_eager_registry.register("MedianFilter")
 def _np_median_filter(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the median filter logic eagerly backed by NumPy.
+    """Evaluate _np_median_filter operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return median_filter_eager(backend_module, images, **kwargs)
 
 
 @numpy_eager_registry.register("Sharpen")
 def _np_sharpen(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the sharpen logic eagerly backed by NumPy.
+    """Evaluate _np_sharpen operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return images
 

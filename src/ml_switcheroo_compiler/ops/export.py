@@ -10,12 +10,24 @@ class _DotGraphVisitor:
     """Visitor for DOT graph export."""
 
     def __init__(self, graph: object) -> None:
+        """Initialize the visitor.
+
+        Args:
+            graph (object): The IR graph.
+        """
         self.graph = graph
         self.visited = set()
         self.lines = ["digraph G {"]
 
     def visit(self, node_id: str) -> None:
-        """Visit a node."""
+        """Visit a node.
+
+        Args:
+        node_id (str): The node_id parameter.
+
+        Returns:
+        NoneType: Result.
+        """
         if not node_id or node_id not in self.graph.nodes or node_id in self.visited:
             return
 
@@ -35,12 +47,15 @@ class _DotGraphVisitor:
 
 
 def export_to_dot(file: typing.Union[str, typing.IO], *arrays: Tensor, **kwargs: object) -> None:
-    """Exports the computation graph of the given arrays to a DOT format file.
+    """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
-        file (Union[str, IO]): The file path or file-like object to write to.
-        *arrays (Tensor): The output tensors to trace back from.
-        **kwargs: Additional keyword arguments.
+        file (object): The file parameter.
+        *arrays (Tensor): Positional args.
+        **kwargs (object): Keyword args.
+
+    Raises:
+        RuntimeError: An exception.
     """
     graph = global_tracing_state.active_graph
     if graph is None:

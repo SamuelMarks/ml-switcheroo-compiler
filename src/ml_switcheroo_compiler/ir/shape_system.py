@@ -20,131 +20,128 @@ class SymInt:
     def __init__(self, name_or_expr: str) -> None:
         """Initialize SymInt.
 
-        name_or_expr (str): Argument name_or_expr
-
         Args:
-            name_or_expr (str): Argument name_or_expr
+            name_or_expr (str): The name_or_expr parameter.
         """
         self.expr = str(name_or_expr)
 
     def __add__(self, other: SymInt | int) -> SymInt:
-        """Evaluate add.
+        """Evaluate __add__ operation.
 
         Args:
-            other (Union['SymInt', int]): Argument other
+        other (object): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} + {other.expr})")
         return SymInt(f"({self.expr} + {other})")
 
     def __radd__(self, other: int) -> SymInt:
-        """Evaluate reverse add.
+        """Evaluate __radd__ operation.
 
         Args:
-            other (int): Argument other
+        other (int): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         return SymInt(f"({other} + {self.expr})")
 
     def __sub__(self, other: SymInt | int) -> SymInt:
-        """Evaluate sub.
+        """Evaluate __sub__ operation.
 
         Args:
-            other (Union['SymInt', int]): Argument other
+        other (object): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} - {other.expr})")
         return SymInt(f"({self.expr} - {other})")
 
     def __rsub__(self, other: int) -> SymInt:
-        """Evaluate reverse sub.
+        """Evaluate __rsub__ operation.
 
         Args:
-            other (int): Argument other
+        other (int): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         return SymInt(f"({other} - {self.expr})")
 
     def __mul__(self, other: SymInt | int) -> SymInt:
-        """Evaluate mul.
+        """Evaluate __mul__ operation.
 
         Args:
-            other (Union['SymInt', int]): Argument other
+        other (object): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} * {other.expr})")
         return SymInt(f"({self.expr} * {other})")
 
     def __rmul__(self, other: int) -> SymInt:
-        """Evaluate reverse mul.
+        """Evaluate __rmul__ operation.
 
         Args:
-            other (int): Argument other
+        other (int): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         return SymInt(f"({other} * {self.expr})")
 
     def __floordiv__(self, other: SymInt | int) -> SymInt:
-        """Evaluate floordiv.
+        """Evaluate __floordiv__ operation.
 
         Args:
-            other (Union['SymInt', int]): Argument other
+        other (object): The other parameter.
 
         Returns:
-            'SymInt': The inferred shape or computed result
+        SymInt: Result.
         """
         if isinstance(other, SymInt):
             return SymInt(f"({self.expr} // {other.expr})")
         return SymInt(f"({self.expr} // {other})")
 
     def __str__(self) -> str:
-        """Evaluate str.
+        """Evaluate __str__ operation.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+        str: Result.
         """
         return str(self.expr)
 
     def __repr__(self) -> str:
-        """Evaluate repr.
+        """Evaluate __repr__ operation.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+        str: Result.
         """
         return f"SymInt({self.expr})"
 
     def __hash__(self) -> int:
-        """Execute __hash__.
+        """Evaluate __hash__ operation.
 
         Returns:
-        Any: The result.
+        int: Result.
         """
         return hash(self.expr)
 
     def __eq__(self, other: object) -> bool:
-        """Evaluate eq.
+        """Evaluate __eq__ operation.
 
         Args:
-            other (object): Argument other
-
+        other (object): The other parameter.
 
         Returns:
-            bool: A boolean indicating the result of the check.
+        bool: Result.
         """
         if isinstance(other, SymInt):
             return self.expr == other.expr
@@ -158,13 +155,9 @@ class SymbolicSolver:
     def is_consistent(expr1: SymInt | int, expr2: SymInt | int) -> bool:
         """Check if two symbolic expressions are mathematically equivalent.
 
-        expr1 (Union[SymInt, int]): Argument expr1
-            expr2 (Union[SymInt, int]): Argument expr2
-
         Args:
-            expr1 (Union[SymInt, int]): Argument expr1
-            expr2 (Union[SymInt, int]): Argument expr2
-
+            expr1 (Union[SymInt, int]): The expr1 parameter.
+            expr2 (Union[SymInt, int]): The expr2 parameter.
 
         Returns:
             bool: A boolean indicating the result of the check.
@@ -180,25 +173,25 @@ class SymbolicSolver:
 
 
 def _to_str_shape(shape: tuple) -> tuple:
-    """Execute _to_str_shape.
+    """Convert shape to string representation.
 
     Args:
-        shape (Any): Argument shape.
+        shape (tuple): The shape tuple.
 
     Returns:
-    Any: The result.
+        tuple: The string represented shape.
     """
     return tuple(str(x) if isinstance(x, SymInt) else x for x in shape)
 
 
 def _from_str_shape(shape: tuple) -> tuple:
-    """Execute _from_str_shape.
+    """Convert shape from string representation.
 
     Args:
-        shape (Any): Argument shape.
+        shape (tuple): The string represented shape tuple.
 
     Returns:
-    Any: The result.
+        tuple: The integer or SymInt shape.
     """
     out_shape = []
     for dim in shape:
@@ -210,19 +203,17 @@ def _from_str_shape(shape: tuple) -> tuple:
 
 
 class ShapeTracker:
-    """Calculates exact output shapes given input TensorSpecs."""
+    """Calculate exact output shapes given input TensorSpecs."""
 
     @staticmethod
     def infer_elementwise(inputs: list[TensorSpec]) -> tuple[int | SymInt, ...]:
         """Infer shape for elementwise operations requiring broadcasting.
 
-        inputs (list[TensorSpec]): Argument inputs
-
         Returns:
             tuple[Union[int, SymInt], ...]: The inferred shape or computed result
 
         Args:
-            inputs (list[TensorSpec]): Argument inputs
+            inputs (list[TensorSpec]): The inputs for the operation.
         """
         if not inputs:
             return ()
@@ -240,15 +231,12 @@ class ShapeTracker:
     ) -> tuple[int | SymInt, ...]:
         """Infer shape for matrix multiplication.
 
-        input1 (TensorSpec): Argument input1
-            input2 (TensorSpec): Argument input2
-
         Returns:
             tuple[Union[int, SymInt], ...]: The inferred shape or computed result
 
         Args:
-            input1 (TensorSpec): Argument input1
-            input2 (TensorSpec): Argument input2
+            input1 (TensorSpec): The input1 parameter.
+            input2 (TensorSpec): The input2 parameter.
         """
         s1 = _to_str_shape(input1.shape)
         s2 = _to_str_shape(input2.shape)
@@ -262,14 +250,17 @@ ShapeType = tuple[Union[int, str], ...]
 
 
 def _broadcast_dim(a: int | str, b: int | str) -> int | str:
-    """Execute _broadcast_dim.
+    """Broadcast two dimensions.
 
     Args:
-        a (Any): Argument a.
-        b (Any): Argument b.
+        a (int | str): The first dimension.
+        b (int | str): The second dimension.
 
     Returns:
-    Any: The result.
+        int | str: The broadcasted dimension.
+
+    Raises:
+        ShapeMismatchError: If the dimensions are incompatible.
     """
     if a == b:
         return a
@@ -287,18 +278,12 @@ def _broadcast_dim(a: int | str, b: int | str) -> int | str:
 def broadcast_shapes(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """Broadcast two shapes together according to numpy rules.
 
-    shape_a (ShapeType): First shape
-    shape_b (ShapeType): Second shape
+    Args:
+        shape_a (ShapeType): First shape.
+        shape_b (ShapeType): Second shape.
 
     Returns:
-    ShapeType: The broadcasted shape
-
-    Raises:
-    ValueError: If shapes are not compatible for broadcasting
-
-    Args:
-        shape_a (ShapeType): The shape of the tensor._a
-        shape_b (ShapeType): The shape of the tensor._b
+        ShapeType: The broadcasted shape.
     """
     max_len = max(len(shape_a), len(shape_b))
     pad_a = (1,) * (max_len - len(shape_a)) + shape_a
@@ -310,11 +295,14 @@ def _matmul_shape_1d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """Calculate the output shape for a 1D dot product.
 
     Args:
-        shape_a (ShapeType): LHS shape
-        shape_b (ShapeType): RHS shape
+        shape_a (ShapeType): LHS shape.
+        shape_b (ShapeType): RHS shape.
 
     Returns:
-    ShapeType: Output shape
+        ShapeType: Output shape.
+
+    Raises:
+        ValueError: If the shapes are incompatible.
     """
     if shape_a[0] != shape_b[0]:
         msg = f"Incompatible 1D dot product shapes: {shape_a}, {shape_b}"
@@ -328,11 +316,14 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """Calculate the output shape for a 2D matrix multiplication.
 
     Args:
-        shape_a (ShapeType): LHS shape
-        shape_b (ShapeType): RHS shape
+        shape_a (ShapeType): LHS shape.
+        shape_b (ShapeType): RHS shape.
 
     Returns:
-    ShapeType: Output shape
+        ShapeType: Output shape.
+
+    Raises:
+        ShapeMismatchError: If the shapes are incompatible.
     """
     if shape_a[1] != shape_b[0]:
         msg = f"Incompatible 2D matmul shapes: {shape_a}, {shape_b}"
@@ -341,14 +332,14 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 
 
 def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, int, int]:
-    """Retrieve the matmul dims property or mapping.
+    """Evaluate _get_matmul_dims operation.
 
     Args:
-        shape_a (ShapeType): Required parameter for shape_a.
-        shape_b (ShapeType): Required parameter for shape_b.
+        shape_a (ShapeType): The shape_a parameter.
+        shape_b (ShapeType): The shape_b parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     m_dim = shape_a[-2] if len(shape_a) > 1 else 1
     k_dim_a = shape_a[-1]
@@ -358,13 +349,13 @@ def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[int, int, 
 
 
 def _get_batch_dims(shape: ShapeType) -> ShapeType:
-    """Retrieve the batch dims property or mapping.
+    """Evaluate _get_batch_dims operation.
 
     Args:
-        shape (ShapeType): Required parameter for shape.
+        shape (ShapeType): The shape parameter.
 
     Returns:
-        ShapeType: The evaluated or processed output.
+        ShapeType: Result.
     """
     return shape[:-2] if len(shape) > MAGIC_VAL_2 else ()
 
@@ -373,11 +364,14 @@ def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """Calculate the output shape for a batched matrix multiplication.
 
     Args:
-        shape_a (ShapeType): LHS shape
-        shape_b (ShapeType): RHS shape
+        shape_a (ShapeType): LHS shape.
+        shape_b (ShapeType): RHS shape.
 
     Returns:
-    ShapeType: Output shape
+        ShapeType: Output shape.
+
+    Raises:
+        ShapeMismatchError: If the inner dimensions are incompatible.
     """
     batch_a = _get_batch_dims(shape_a)
     batch_b = _get_batch_dims(shape_b)
@@ -401,15 +395,15 @@ def _matmul_shape_batched(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     """Calculate the output shape for a matrix multiplication.
 
+    Args:
+        shape_a (ShapeType): First shape.
+        shape_b (ShapeType): Second shape.
+
     Returns:
-    ShapeType: Output shape
+        ShapeType: Output shape.
 
     Raises:
-    ValueError: If shapes are incompatible
-
-    Args:
-        shape_a (ShapeType): The shape of the tensor._a
-        shape_b (ShapeType): The shape of the tensor._b
+        ShapeMismatchError: If shapes are incompatible or scalars.
     """
     if len(shape_a) == 0 or len(shape_b) == 0:
         msg = "Scalars cannot be matrix multiplied."
@@ -428,7 +422,18 @@ def matmul_shape(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 
 
 def _normalize_single_axis(axis: int, ndim: int) -> int:
-    """Normalize a single negative axis to be positive."""
+    """Normalize a single negative axis to be positive.
+
+    Args:
+        axis (int): The axis.
+        ndim (int): Number of dimensions.
+
+    Returns:
+        int: Normalized axis.
+
+    Raises:
+        ShapeMismatchError: If axis is out of bounds.
+    """
     if axis < -ndim or axis >= ndim:
         msg = f"Axis {axis} is out of bounds for tensor of dimension {ndim}"
         raise ShapeMismatchError(msg)
@@ -443,18 +448,15 @@ def normalize_axis(
 ) -> int | tuple[int, ...]:
     """Normalize a negative axis or tuple of axes to be positive.
 
-    axis: The axis or axes to normalize
-    ndim: The number of dimensions of the tensor
+    Args:
+        axis (Union[int, tuple[int, ...]]): The axis to operate along.
+        ndim (int): Number of dimensions.
 
     Returns:
-    The normalized axis or axes
+        int | tuple[int, ...]: Normalized axis or axes.
 
     Raises:
-    ValueError: If an axis is out of bounds [-ndim, ndim-1]
-
-    Args:
-        axis (Union[int, tuple[int, ...]]): The axis to operate along
-        ndim (int): Argument ndim
+        TypeError: If axis has an invalid type.
     """
     if isinstance(axis, int):
         return _normalize_single_axis(axis, ndim)

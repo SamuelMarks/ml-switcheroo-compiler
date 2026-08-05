@@ -8,14 +8,32 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 
 @register_vjp("TimeDistributed")
 def time_distributed_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for TimeDistributed."""
+    """VJP for TimeDistributed.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "TimeDistributed", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("TimeDistributed")
 def time_distributed_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for TimeDistributed."""
+    """JVP for TimeDistributed.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None

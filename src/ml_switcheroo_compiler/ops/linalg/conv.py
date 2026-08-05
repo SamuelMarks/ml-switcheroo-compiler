@@ -34,12 +34,12 @@ def conv_general_dilated(
     """General N-dimensional convolution with support for strides, padding, and dilations.
 
     Args:
-        lhs (Tensor): Left-hand side tensor (input).
-        rhs (Tensor): Right-hand side tensor (filters/weights).
-        config (ConvConfig): The configuration for the convolution.
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        config (ConvConfig): The config parameter.
 
     Returns:
-    Tensor: The result of the convolution.
+        Tensor: Result.
     """
     inputs = [lhs, rhs]
     attributes = {
@@ -71,10 +71,13 @@ def conv_general_dilated_local(
     """ConvGeneralDilatedLocal.
 
     Args:
-        lhs (Tensor): lhs.
-        rhs (Tensor): rhs.
-        config (ConvLocalHyperparams): config.
-        kwargs (object): kwargs.
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        config (ConvLocalHyperparams): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
     """
     window_strides, padding, filter_shape = config.window_strides, config.padding, config.filter_shape
     inputs = [lhs, rhs]
@@ -91,7 +94,18 @@ def conv_general_dilated_local(
 
 @dispatch_eager("ConvGeneralDilatedPatches")
 def conv_general_dilated_patches(lhs: Tensor, filter_shape: object, window_strides: object, padding: object, **kwargs: object) -> Tensor:
-    """ConvGeneralDilatedPatches."""
+    """ConvGeneralDilatedPatches.
+
+    Args:
+        lhs (Tensor): The lhs parameter.
+        filter_shape (object): The filter_shape parameter.
+        window_strides (object): The window_strides parameter.
+        padding (object): The padding parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     inputs = [lhs]
     attributes = {
         "filter_shape": filter_shape,
@@ -106,7 +120,18 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape: object, window_strid
 
 @dispatch_eager("ConvWithGeneralPadding")
 def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: object, padding: object, **kwargs: object) -> Tensor:
-    """ConvWithGeneralPadding."""
+    """ConvWithGeneralPadding.
+
+    Args:
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        window_strides (object): The window_strides parameter.
+        padding (object): The padding parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     inputs = [lhs, rhs]
     attributes = {"window_strides": window_strides, "padding": padding, **kwargs}
 

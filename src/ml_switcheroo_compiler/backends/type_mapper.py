@@ -6,7 +6,7 @@ from typing import Any
 
 
 class TypeMapper:
-    """Handles mapping between generic IR types and backend-specific types."""
+    """Handle mapping between generic IR types and backend-specific types."""
 
     def __init__(self, type_dict: typing.Optional[dict[str, Any]] = None) -> None:
         """Initialize.

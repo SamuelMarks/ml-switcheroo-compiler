@@ -89,6 +89,11 @@ class TensorLayoutClass:
     """Class representing TensorLayout."""
 
     def __init__(self, axes: tuple) -> None:
+        """Initialize TensorLayoutClass.
+
+        Args:
+            axes (tuple): Tuple of axis names.
+        """
         self.axes = axes
 
 

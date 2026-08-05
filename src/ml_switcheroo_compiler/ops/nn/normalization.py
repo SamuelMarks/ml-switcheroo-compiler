@@ -1,4 +1,4 @@
-"""Normalization operations."""
+"""Apply normalization operations."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -53,7 +53,18 @@ def local_response_normalization(
     alpha: float = 1.0,
     beta: float = 0.5,
 ) -> Tensor:
-    """Local Response Normalization."""
+    """Local Response Normalization.
+
+    Args:
+        operand (Tensor): The operand parameter.
+        depth_radius (int): The depth_radius parameter.
+        bias (float): The bias parameter.
+        alpha (float): The alpha parameter.
+        beta (float): The beta parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     rank = len(operand.shape)
     config = WindowConfig(
         window_dimensions=(1,) * (rank - 1) + (2 * depth_radius + 1,),
@@ -144,7 +155,19 @@ def batch_norm_with_global_normalization(
     gamma: object,
     **kwargs: object,
 ) -> object:
-    """Batch normalization with global normalization."""
+    """Batch normalization with global normalization.
+
+    Args:
+        t (object): The t parameter.
+        m (object): The m parameter.
+        v (object): The v parameter.
+        beta (object): The beta parameter.
+        gamma (object): The gamma parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = kwargs.get("config", BatchNormGlobalConfig())
     bn_config = BatchNormConfig(
         offset=beta,
@@ -161,15 +184,15 @@ def batch_norm_with_global_normalization(
 
 
 def lrn(input: object, config: LRNConfig = None, name: object = None) -> object:
-    """Evaluate and process the lrn operation.
+    """Evaluate lrn operation.
 
     Args:
-        input (object): Required parameter for input.
-        config (LRNConfig): Required parameter for config.
-        name (object): Required parameter for name.
+        input (object): The input parameter.
+        config (LRNConfig): The config parameter.
+        name (object): The name parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     config = config or LRNConfig()
     depth_radius = config.depth_radius
@@ -183,19 +206,52 @@ def lrn(input: object, config: LRNConfig = None, name: object = None) -> object:
 
 
 def l2_normalize(x: object, axis: object = None, epsilon: object = 1e-12, name: object = None, dim: object = None) -> object:
-    """Normalizes along dimension axis using an L2 norm."""
+    """Normalize along dimension axis using an L2 norm.
+
+    Args:
+        x (object): The x parameter.
+        axis (object): The axis parameter.
+        epsilon (object): The epsilon parameter.
+        name (object): The name parameter.
+        dim (object): The dim parameter.
+
+    Returns:
+        object: Result.
+    """
     square_sum = sum(multiply(x, x), axis=axis or dim, keepdims=True)
     x_inv_norm = true_divide(1.0, sqrt(maximum(square_sum, epsilon)))
     return multiply(x, x_inv_norm)
 
 
 def moments(x: object, axes: object, shift: object = None, keepdims: object = False, name: object = None) -> object:
-    """Calculate the mean and variance of x."""
+    """Calculate the mean and variance of x.
+
+    Args:
+        x (object): The x parameter.
+        axes (object): The axes parameter.
+        shift (object): The shift parameter.
+        keepdims (object): The keepdims parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     return mean(x, axis=axes, keepdims=keepdims), variance(x, axis=axes, keepdims=keepdims)
 
 
 def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shift: object, name: object = None) -> object:
-    """Calculate the mean and variance of based on the sufficient statistics."""
+    """Calculate the mean and variance of based on the sufficient statistics.
+
+    Args:
+        counts (object): The counts parameter.
+        mean_ss (object): The mean_ss parameter.
+        variance_ss (object): The variance_ss parameter.
+        shift (object): The shift parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -232,7 +288,18 @@ def normalize_moments(counts: object, mean_ss: object, variance_ss: object, shif
 
 
 def sufficient_statistics(x: object, axes: object, shift: object = None, keepdims: object = False, name: object = None) -> object:
-    """Calculate the sufficient statistics for the mean and variance of x."""
+    """Calculate the sufficient statistics for the mean and variance of x.
+
+    Args:
+        x (object): The x parameter.
+        axes (object): The axes parameter.
+        shift (object): The shift parameter.
+        keepdims (object): The keepdims parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -277,7 +344,18 @@ def weighted_moments(
     name: object = None,
     keepdims: object = False,
 ) -> object:
-    """Returns the frequency-weighted mean and variance of x."""
+    """Return the frequency-weighted mean and variance of x.
+
+    Args:
+        x (object): The x parameter.
+        axes (object): The axes parameter.
+        frequency_weights (object): The frequency_weights parameter.
+        name (object): The name parameter.
+        keepdims (object): The keepdims parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -314,7 +392,15 @@ def weighted_moments(
 
 
 def zero_fraction(value: object, name: object = None) -> object:
-    """Returns the fraction of zeros in value."""
+    """Return the fraction of zeros in value.
+
+    Args:
+        value (object): The value parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     return Tensor(0.0, TensorConfig((), "float32", "cpu"))
 
 
@@ -363,7 +449,21 @@ def group_norm(
     offset: Optional[Tensor] = None,
     epsilon: float = 1e-5,
 ) -> Tensor:
-    """Group normalization."""
+    """Group normalization.
+
+    Args:
+        x (Tensor): The x parameter.
+        num_groups (int): The num_groups parameter.
+        scale (Optional): The scale parameter.
+        offset (Optional): The offset parameter.
+        epsilon (float): The epsilon parameter.
+
+    Returns:
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     C = x.shape[1]
     if C % num_groups != 0:
         raise ValueError("Number of channels must be divisible by number of groups")

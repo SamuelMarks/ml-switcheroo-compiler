@@ -23,10 +23,10 @@ class NumpyTypeTranslator:
 
     @staticmethod
     def get_ops_map() -> dict:
-        """Retrieve the mapping of IR operations to NumPy specific string formats.
+        """Evaluate get_ops_map operation.
 
         Returns:
-            dict: A dictionary mapping operation names to string templates.
+        dict: Result.
         """
         return {
             "Infeed": "{0}",
@@ -244,13 +244,13 @@ class NumpyASTVisitor:
 
     @classmethod
     def _format_kwargs(cls, kwargs: dict[str, object]) -> str:
-        """Format the kwargs configuration or node into a backend-specific string.
+        """Evaluate _format_kwargs operation.
 
         Args:
-            kwargs (dict[str, object]): Required parameter for kwargs containing backend-specific configurations.
+        kwargs (object): The kwargs parameter.
 
         Returns:
-            str: The formatted keyword arguments string.
+        str: Result.
         """
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in ["equation", "dimension"]}
         if "dimension" in kwargs:
@@ -328,7 +328,7 @@ class NumpyASTVisitor:
 class NumpyGenerator(
     PythonStringGenerator,
 ):
-    """Generates NumPy python code from IR."""
+    """Generate NumPy python code from IR."""
 
     def __init__(self, graph: object) -> None:
         """Initialize the NumPy generator with an IR graph.
@@ -382,10 +382,7 @@ class NumpyGenerator(
 
         Args:
             *args (object): Positional arguments for np.save.
-            **kwargs (object): Keyword arguments for np.save.
-
-        Returns:
-            None: This function does not return a value.
+            **kwargs (object): Keyword arguments for np.save.: This function does not return a value.
         """
         import numpy as np
 
@@ -397,10 +394,7 @@ class NumpyGenerator(
 
         Args:
             *args (object): Positional arguments for np.savez.
-            **kwargs (object): Keyword arguments for np.savez.
-
-        Returns:
-            None: This function does not return a value.
+            **kwargs (object): Keyword arguments for np.savez.: This function does not return a value.
         """
         import numpy as np
 
@@ -412,10 +406,7 @@ class NumpyGenerator(
 
         Args:
             *args (object): Positional arguments for np.savez_compressed.
-            **kwargs (object): Keyword arguments for np.savez_compressed.
-
-        Returns:
-            None: This function does not return a value.
+            **kwargs (object): Keyword arguments for np.savez_compressed.: This function does not return a value.
         """
         import numpy as np
 
@@ -430,10 +421,10 @@ class NumpyGenerator(
         return "np"
 
     def get_helper_functions(self) -> list[str]:
-        """Evaluate and process the get helper functions operation.
+        """Evaluate get_helper_functions operation.
 
         Returns:
-            list: The evaluated or processed output.
+        object: Result.
         """
         res = []
         return res
@@ -561,13 +552,13 @@ class NumpyGenerator(
         return NumpyTypeTranslator.get_fallback_prefix()
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the mapping of IR operations to NumPy specific string formats.
+        """Evaluate get_ops_map operation.
 
         Args:
-            kwargs (dict): Required parameter for keyword arguments.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict[str, str]: A dictionary mapping operation names to string templates.
+            dict: Result.
         """
         res = super().get_ops_map(kwargs)
         res.update(NumpyTypeTranslator.get_ops_map())

@@ -15,15 +15,15 @@ from ml_switcheroo_compiler.ops.unary import tanh
 
 
 def _compute_gru_gates(x_parts: tuple, r_parts: tuple, state: Tensor) -> Tensor:
-    """Evaluate and process the compute gru gates operation.
+    """Evaluate _compute_gru_gates operation.
 
     Args:
-        x_parts (tuple): Required parameter for x_parts.
-        r_parts (tuple): Required parameter for r_parts.
-        state (Tensor): Required parameter for state.
+        x_parts (tuple): The x_parts parameter.
+        r_parts (tuple): The r_parts parameter.
+        state (Tensor): The state parameter.
 
     Returns:
-        Tensor: The evaluated or processed output.
+        Tensor: Result.
     """
     x_z, x_r, x_h = x_parts
     recurrent_z, recurrent_r, recurrent_h = r_parts
@@ -40,7 +40,18 @@ def gru_cell(
     recurrent_kernel: Tensor,
     bias: Optional[Tensor] = None,
 ) -> tuple[Tensor, Tensor]:
-    """Fused GRU cell math."""
+    """Fused GRU cell math.
+
+    Args:
+        inputs (Tensor): The inputs parameter.
+        state (Tensor): The state parameter.
+        kernel (Tensor): The kernel parameter.
+        recurrent_kernel (Tensor): The recurrent_kernel parameter.
+        bias (Optional): The bias parameter.
+
+    Returns:
+        tuple: Result.
+    """
     matrix_x = matmul(inputs, kernel)
     if bias is not None:
         matrix_x = add(matrix_x, bias)
@@ -61,12 +72,28 @@ class Gru(OpDef):
     op_name = "Gru"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the infer_shape operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return args[0] if args else ()
 
 
 def gru(*args: object, **kwargs: object) -> Tensor:
-    """GRU layer."""
+    """GRU layer.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         return backend.execute_op("Gru", *[getattr(a, "data", a) for a in args], **kwargs)
@@ -78,6 +105,14 @@ def gru(*args: object, **kwargs: object) -> Tensor:
 
 
 def _sigmoid(x: object) -> object:
+    """Evaluate _sigmoid operation.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 
     return s(x)

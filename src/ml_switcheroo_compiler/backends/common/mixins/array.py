@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Mixin module."""
+"""Provide mixin module."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from .common import CommonASTVisitor
 
 class ArrayASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
-    """Array and shape manipulation AST generator mixin."""
+    """Convert to array and shape manipulation AST generator mixin."""
 
     def visit_ApproxMaxK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate the AST string for an approximate maximum k-elements operation.

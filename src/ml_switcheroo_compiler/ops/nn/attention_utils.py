@@ -24,14 +24,14 @@ class RopeOp(OpDef):
     op_name = "Rope"
 
     def infer_shape(self, input: object, **kwargs: object) -> object:
-        """Infer shape for Rope.
+        """Infer shape.
 
         Args:
-            input (object): Argument input.
-            kwargs (object): Argument kwargs.
+            input (object): The input parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape.
+            object: Result.
         """
         return getattr(input, "shape", ())
 
@@ -42,7 +42,7 @@ def rope(
     base: float = 10000.0,
     offset: int = 0,
 ) -> Tensor:
-    """Applies Rotary Positional Encoding (RoPE) to the input tensor.
+    """Apply Rotary Positional Encoding (RoPE) to the input tensor.
 
     Args:
         input: The input tensor, usually of shape (..., seq_len, dim).
@@ -71,7 +71,7 @@ def sinusoidal_positional_encoding(
     base: float = 10000.0,
     dtype: object = None,
 ) -> Tensor:
-    """Generates sinusoidal positional encodings.
+    """Generate sinusoidal positional encodings.
 
     Args:
         seq_len: Length of the sequence.
@@ -94,7 +94,7 @@ def alibi_mask(
     num_heads: int,
     dtype: object = None,
 ) -> Tensor:
-    """Generates an ALiBi (Attention with Linear Biases) mask.
+    """Generate an ALiBi (Attention with Linear Biases) mask.
 
     Args:
         seq_len: The sequence length.
@@ -124,5 +124,15 @@ class ScaledDotProductAttention(OpDef):
     op_name = "ScaledDotProductAttention"
 
     def infer_shape(self, query: object, key: object, value: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            query (object): The query parameter.
+            key (object): The key parameter.
+            value (object): The value parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return query.shape

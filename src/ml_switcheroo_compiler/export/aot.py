@@ -37,7 +37,16 @@ def _fallback_eager(fn: Callable, args: tuple, kw: dict) -> object:
 
 
 def _build_signature_key(fn: Callable, backend: str, args: tuple) -> str:
-    """Build a cache key for the compilation signature."""
+    """Build a cache key for the compilation signature.
+
+    Args:
+        fn (Callable): The fn parameter.
+        backend (str): The backend parameter.
+        args (tuple): The args parameter.
+
+    Returns:
+        str: Result.
+    """
     sig_parts = []
     for a in args:
         if hasattr(a, "shape") and hasattr(a, "dtype"):
@@ -48,7 +57,14 @@ def _build_signature_key(fn: Callable, backend: str, args: tuple) -> str:
 
 
 def _prepare_proxy_args(args: tuple) -> list[object]:
-    """Prepare proxy arguments for tracing."""
+    """Prepare proxy arguments for tracing.
+
+    Args:
+        args (tuple): The args parameter.
+
+    Returns:
+        list: Result.
+    """
     proxy_args = []
     for i, a in enumerate(args):
         if hasattr(a, "shape") and hasattr(a, "dtype"):
@@ -72,7 +88,11 @@ def _prepare_proxy_args(args: tuple) -> list[object]:
 
 
 def _capture_outputs(out: object) -> None:
-    """Capture outputs in the active tracing graph."""
+    """Capture outputs in the active tracing graph.
+
+    Args:
+        out (object): The out parameter.
+    """
     if isinstance(out, Tensor):
         out_id, _ = TracingNodeBuilder.extract_from_tensor(out)
         out_node_id = TracingNodeBuilder.create_tracing_logical_node("Output", [out_id], {}, getattr(out, "shape", ()))
@@ -89,7 +109,15 @@ def _capture_outputs(out: object) -> None:
 
 
 def _get_namespace(backend: str, generator_cls: type) -> dict[str, object]:
-    """Get the namespace for executing generated code."""
+    """Get the namespace for executing generated code.
+
+    Args:
+        backend (str): The backend parameter.
+        generator_cls (type): The generator_cls parameter.
+
+    Returns:
+        dict: Result.
+    """
     namespace = {}
     if hasattr(generator_cls, "get_module"):
         namespace[backend] = generator_cls.get_module()
@@ -114,6 +142,15 @@ def compile_function(fn: Callable[..., object], backend: str = "numpy", **kwargs
     """
 
     def compiled_wrapper(*args: object, **kw: object) -> object:
+        """Wrap that traces and compiles the function on first call.
+
+        Args:
+            *args (object): Positional arguments for the function.
+            **kw (object): Keyword arguments for the function.
+
+        Returns:
+            object: The result of the compiled (or eager) function.
+        """
         key = _build_signature_key(fn, backend, args)
         if key in _COMPILATION_CACHE:
             return _COMPILATION_CACHE[key](*args, **kw)
@@ -155,12 +192,30 @@ def compile_function(fn: Callable[..., object], backend: str = "numpy", **kwargs
             if "apply_model" in namespace:
 
                 def apply_wrapper(*w_args: object, **w_kw: object) -> object:
+                    """Wrap to invoke the generated apply_model function.
+
+                    Args:
+                        *w_args (object): Positional arguments.
+                        **w_kw (object): Keyword arguments.
+
+                    Returns:
+                        object: The result.
+                    """
                     return namespace["apply_model"]({}, *w_args, **w_kw)
 
                 compiled_fn = apply_wrapper
             elif "evaluate" in namespace:
 
                 def eval_wrapper(*w_args: object, **w_kw: object) -> object:
+                    """Wrap to invoke the generated evaluate function.
+
+                    Args:
+                        *w_args (object): Positional arguments.
+                        **w_kw (object): Keyword arguments.
+
+                    Returns:
+                        object: The result.
+                    """
                     numpy_args = [a.data if isinstance(a, Tensor) else a for a in w_args]
                     return namespace["evaluate"](numpy_args)
 

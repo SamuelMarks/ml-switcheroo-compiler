@@ -20,10 +20,10 @@ from .tensor_array import TensorArray
 
 
 def image_data_format() -> str:
-    """Evaluate and process the image data format operation.
+    """Evaluate image_data_format operation.
 
     Returns:
-        str: The evaluated or processed output.
+        str: Result.
     """
     return "channels_last"
 
@@ -32,13 +32,24 @@ _uid_dict = {}
 
 
 def get_uid(prefix: str = "") -> int:
-    """Get a unique ID."""
+    """Get a unique ID for a prefix.
+
+    Args:
+        prefix (str): Prefix.
+
+    Returns:
+        int: uid.
+    """
     _uid_dict[prefix] = _uid_dict.get(prefix, 0) + 1
     return _uid_dict[prefix]
 
 
 def backend() -> str:
-    """Return backend."""
+    """Return backend name.
+
+    Returns:
+        str: name.
+    """
     return "numpy"
 
 

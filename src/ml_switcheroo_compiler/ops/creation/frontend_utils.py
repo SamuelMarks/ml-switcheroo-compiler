@@ -24,13 +24,16 @@ def _emit_creation_node(
     """Emit a creation node to the IR graph.
 
     Args:
-        op_type (str): The op_type parameter for the operation.
-        shape (Sequence[int]): The target shape.
-        dtype (DType): The target data type.
-        attributes (dict | None): The attributes parameter for the operation.
+        op_type (str): The op_type parameter.
+        shape (Sequence): The shape parameter.
+        dtype (DType): The dtype parameter.
+        attributes (object): The attributes parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
+
+    Raises:
+        RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."
@@ -61,11 +64,14 @@ def _emit_constant_node(
     """Emit a Constant node to the IR graph.
 
     Args:
-        value (object): The value parameter for the operation.
-        dtype (DType): The target data type.
+        value (object): The value parameter.
+        dtype (DType): The dtype parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
+
+    Raises:
+        RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
         msg = "Cannot emit Constant node outside of a tracing context."
@@ -99,19 +105,35 @@ class FromDlpack(OpDef):
     op_name = "FromDlpack"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         obj = args[0] if len(args) > 0 else None
         return getattr(obj, "shape", ())
 
 
 @register_op("Frompyfunc")
 class Frompyfunc(OpDef):
-    """Takes an arbitrary Python function and returns a NumPy ufunc."""
+    """Take an arbitrary Python function and returns a NumPy ufunc."""
 
     op_name = "Frompyfunc"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -122,7 +144,15 @@ class Geomspace(OpDef):
     op_name = "Geomspace"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         start = args[0] if len(args) > 0 else None
         stop = args[1] if len(args) > 1 else None
         num = kwargs.get("num", args[2] if len(args) > 2 else 50)
@@ -146,7 +176,15 @@ class Geometric(OpDef):
     op_name = "Geometric"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         p = args[0] if len(args) > 0 else None
         size = kwargs.get("size", args[1] if len(args) > 1 else None)
         if size is None:
@@ -157,28 +195,64 @@ class Geometric(OpDef):
 
 
 def from_dlpack(obj: object) -> object:
-    """Create a switcheroo array from a DLPack capsule."""
+    """Create a switcheroo array from a DLPack capsule.
+
+    Args:
+        obj (object): The obj parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("FromDlpack", obj)
 
 
 def frompyfunc(func: object, nin: int, nout: int) -> object:
-    """Takes an arbitrary Python function and returns a NumPy ufunc."""
+    """Take an arbitrary Python function and returns a NumPy ufunc.
+
+    Args:
+        func (object): The func parameter.
+        nin (int): The nin parameter.
+        nout (int): The nout parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Frompyfunc", func, nin, nout)
 
 
 def geomspace(start: object, stop: object, num: int = 50, endpoint: bool = True, dtype: object = None, axis: int = 0) -> object:
-    """Return numbers spaced evenly on a log scale (a geometric progression)."""
+    """Return numbers spaced evenly on a log scale (a geometric progression).
+
+    Args:
+        start (object): The start parameter.
+        stop (object): The stop parameter.
+        num (int): The num parameter.
+        endpoint (bool): The endpoint parameter.
+        dtype (object): The dtype parameter.
+        axis (int): The axis parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Geomspace", start, stop, num=num, endpoint=endpoint, dtype=dtype, axis=axis)
 
 
 def geometric(p: object, size: object = None) -> object:
-    """Draw samples from the geometric distribution."""
+    """Draw samples from the geometric distribution.
+
+    Args:
+        p (object): The p parameter.
+        size (object): The size parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Geometric", p, size=size)

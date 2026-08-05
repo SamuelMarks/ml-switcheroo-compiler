@@ -6,13 +6,13 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 def _get_node_items(block: object) -> Iterable[tuple[str, IRNode]]:
-    """Retrieve the node items property or mapping.
+    """Evaluate _get_node_items operation.
 
     Args:
-        block (object): Required parameter for block.
+        block (object): The block parameter.
 
     Returns:
-        Iterable: The evaluated or processed output.
+        object: Result.
     """
     if not hasattr(block, "nodes"):
         return []
@@ -23,15 +23,15 @@ def _get_node_items(block: object) -> Iterable[tuple[str, IRNode]]:
 
 
 def _lift_node_state(node: IRNode, nid: str, block: object) -> bool:
-    """Evaluate and process the lift node state operation.
+    """Evaluate _lift_node_state operation.
 
     Args:
-        node (IRNode): Required parameter for node.
-        nid (str): Required parameter for nid.
-        block (object): Required parameter for block.
+        node (IRNode): The node parameter.
+        nid (str): The nid parameter.
+        block (object): The block parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     if node.op_type == "ReadVariable":
         var_name = node.attributes.get("variable_name", f"var_{nid}")
@@ -51,13 +51,13 @@ def _lift_node_state(node: IRNode, nid: str, block: object) -> bool:
 
 
 def _lift_block(block: object) -> bool:
-    """Evaluate and process the lift block operation.
+    """Evaluate _lift_block operation.
 
     Args:
-        block (object): Required parameter for block.
+        block (object): The block parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     block_mod = False
     for nid, node in _get_node_items(block):

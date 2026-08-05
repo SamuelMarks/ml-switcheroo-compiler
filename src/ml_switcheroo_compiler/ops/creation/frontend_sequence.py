@@ -23,14 +23,14 @@ def arange(
     """Return a 1-D tensor of size with values from the interval `[start, stop)`.
 
     Args:
-        start (Union[float, int]): Argument start
-        stop (Optional[Union[float, int]]): Argument stop
-        step (Union[float, int]): Argument step
-        dtype (Optional[DType]): The data type
-        device (Optional[Device]): The device to store the tensor on.
+        start (float): The start parameter.
+        stop (object): The stop parameter.
+        step (float): The step parameter.
+        dtype (object): The dtype parameter.
+        device (object): The device parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -68,14 +68,14 @@ def linspace(
     """Create a 1D tensor evenly spaced from `start` to `stop`.
 
     Args:
-        start (Union[float, int]): Argument start
-        stop (Union[float, int]): Argument stop
-        steps (int): Argument steps
-        dtype (Optional[DType]): The data type
-        device (Optional[Device]): The device to store the tensor on.
+        start (float): The start parameter.
+        stop (float): The stop parameter.
+        steps (int): The steps parameter.
+        dtype (object): The dtype parameter.
+        device (object): The device parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device

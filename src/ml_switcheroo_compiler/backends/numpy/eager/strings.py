@@ -11,26 +11,26 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 @numpy_eager_registry.register("StringToHash")
 def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets: int, **kwargs: object) -> object:
-    """Evaluate the string to hash logic eagerly backed by NumPy.
+    """Evaluate _np_string_to_hash operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        input_tensor (object): Required parameter for input_tensor.
-        num_buckets (int): Required parameter for num_buckets.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        input_tensor (object): The input_tensor parameter.
+        num_buckets (int): The num_buckets parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
 
     def hash_str(s: str) -> int:
-        """Evaluate and process the hash str operation.
+        """Evaluate hash_str operation.
 
         Args:
-            s (str): Required parameter for s.
+        s (str): The s parameter.
 
         Returns:
-            int: The evaluated or processed output.
+        int: Result.
         """
         s = str(s)
         return int(hashlib.sha256(s.encode("utf-8")).hexdigest(), 16) % num_buckets
@@ -41,15 +41,15 @@ def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets
 
 @numpy_eager_registry.register("TextVectorization")
 def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: object) -> object:
-    """Evaluate the text vectorization logic eagerly backed by NumPy.
+    """Evaluate _np_text_vectorization operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        inputs (object): Required parameter for inputs.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     inputs = np.array(inputs)
     output_mode = kwargs.get("output_mode", "int")
@@ -63,34 +63,30 @@ def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: obj
 
 @numpy_eager_registry.register("AsString")
 def _np_as_string(backend_module: object, x: object, **kwargs: object) -> object:
-    """Evaluate the as string logic eagerly backed by NumPy.
+    """Evaluate _np_as_string operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return np.array([str(x)]) if np.isscalar(x) else x.astype(str)
 
 
 @numpy_eager_registry.register("CreateToken")
 def _np_create_token(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Create a token or execute a vocabulary-based tokenizer pipeline.
-
-    By default (XLA/Lax style), this returns a sequencing token (0).
-    If a string is passed in as the first argument, it runs a BPE/WordPiece-style
-    vocabulary execution pipeline to tokenize the string into integer IDs.
+    """Evaluate _np_create_token operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (object): Optional string input to be tokenized.
-        **kwargs (Any): Arbitrary keyword arguments, e.g., 'vocab'.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: A NumPy array containing the token or list of token IDs.
+        object: Result.
     """
     if args and isinstance(args[0], str):
         text = args[0]

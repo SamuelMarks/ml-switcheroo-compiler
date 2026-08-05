@@ -9,32 +9,32 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("AdjustBrightness")
 def _np_adjust_brightness(backend_module: object, images: object, delta: float, **kwargs: object) -> object:
-    """Evaluate the adjust brightness logic eagerly backed by NumPy.
+    """Evaluate _np_adjust_brightness operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        delta (float): Required parameter for delta.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        delta (float): The delta parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return np.clip(images + delta, 0.0, 1.0)
 
 
 @numpy_eager_registry.register("AdjustContrast")
 def _np_adjust_contrast(backend_module: object, images: object, contrast_factor: float, **kwargs: object) -> object:
-    """Evaluate the adjust contrast logic eagerly backed by NumPy.
+    """Evaluate _np_adjust_contrast operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        contrast_factor (float): Required parameter for contrast_factor.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        contrast_factor (float): The contrast_factor parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     mean = np.mean(images, axis=(-3, -2), keepdims=True)
     return np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0)
@@ -42,32 +42,32 @@ def _np_adjust_contrast(backend_module: object, images: object, contrast_factor:
 
 @numpy_eager_registry.register("AdjustHue")
 def _np_adjust_hue(backend_module: object, images: object, delta: float, **kwargs: object) -> object:
-    """Evaluate the adjust hue logic eagerly backed by NumPy.
+    """Evaluate _np_adjust_hue operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        delta (float): Required parameter for delta.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        delta (float): The delta parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("AdjustSaturation")
 def _np_adjust_saturation(backend_module: object, images: object, saturation_factor: float, **kwargs: object) -> object:
-    """Evaluate the adjust saturation logic eagerly backed by NumPy.
+    """Evaluate _np_adjust_saturation operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        saturation_factor (float): Required parameter for saturation_factor.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        saturation_factor (float): The saturation_factor parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     gray = _np_rgb_to_grayscale(backend_module, images)
     return np.clip(gray + (images - gray) * saturation_factor, 0.0, 1.0)
@@ -75,15 +75,15 @@ def _np_adjust_saturation(backend_module: object, images: object, saturation_fac
 
 @numpy_eager_registry.register("AutoContrast")
 def _np_auto_contrast(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the auto contrast logic eagerly backed by NumPy.
+    """Evaluate _np_auto_contrast operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     value_range = kwargs.get("value_range", (0, 255))
     low = np.min(images, axis=(-3, -2), keepdims=True)
@@ -96,15 +96,15 @@ def _np_auto_contrast(backend_module: object, images: object, **kwargs: object) 
 
 @numpy_eager_registry.register("Equalization")
 def _np_equalization(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the equalization logic eagerly backed by NumPy.
+    """Evaluate _np_equalization operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     images_uint8 = np.clip(images * 255.0, 0, 255).astype(np.uint8)
     out = np.empty_like(images_uint8)
@@ -124,15 +124,15 @@ def _np_equalization(backend_module: object, images: object, **kwargs: object) -
 
 @numpy_eager_registry.register("Invert")
 def _np_invert(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the invert logic eagerly backed by NumPy.
+    """Evaluate _np_invert operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     value_range = kwargs.get("value_range", (0, 255))
     return value_range[1] - images + value_range[0]
@@ -140,15 +140,15 @@ def _np_invert(backend_module: object, images: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("Posterize")
 def _np_posterize(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the posterize logic eagerly backed by NumPy.
+    """Evaluate _np_posterize operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     bits = kwargs.get("bits", 4)
     shift = 8 - bits
@@ -159,15 +159,15 @@ def _np_posterize(backend_module: object, images: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("RgbToGrayscale")
 def _np_rgb_to_grayscale(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the rgb to grayscale logic eagerly backed by NumPy.
+    """Evaluate _np_rgb_to_grayscale operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     np_mod = __import__("numpy")
     data_format = kwargs.get("data_format", "channels_last")
@@ -180,15 +180,15 @@ def _np_rgb_to_grayscale(backend_module: object, images: object, **kwargs: objec
 
 @numpy_eager_registry.register("Solarize")
 def _np_solarize(backend_module: object, images: object, **kwargs: object) -> object:
-    """Evaluate the solarize logic eagerly backed by NumPy.
+    """Evaluate _np_solarize operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     threshold = kwargs.get("threshold", 0.5)
     value_range = kwargs.get("value_range", (0, 255))

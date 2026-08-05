@@ -1,4 +1,4 @@
-"""Provides utilities for debugging tensor shapes and visualizing logical IR graphs.
+"""Provide utilities for debugging tensor shapes and visualizing logical IR graphs.
 
 This module includes functions to trace model execution shapes into Markdown tables, as
 well as export logical graphs to Graphviz DOT and HTML formats for visualization
@@ -18,18 +18,14 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
-    """Traces the execution of a model function to debug and document tensor shapes.
-
-    Generates a Markdown-formatted table containing the shape and data type of the
-    input and output tensors by executing the model function with a dummy input
-    of the specified shape
+    """Trace the execution of a model function to debug and document tensor shapes.
 
     Args:
-        model_func (Callable[..., Any]): The model function to trace
-        input_shape (object): The shape of the dummy input tensor to generate
+        model_func (object): The model_func parameter.
+        input_shape (object): The input_shape parameter.
 
     Returns:
-    str: A Markdown table detailing the node names, shapes, and data types
+        str: Result.
     """
     res = "| Node | Shape | DType |\n|---|---|---|\n"
     global_tracing_state.start_tracing()
@@ -52,16 +48,13 @@ def debug_shapes(model_func: Callable[..., Any], input_shape: object) -> str:
 
 
 def to_graphviz(graph: LogicalGraph) -> str:
-    """Converts a logical IR graph into a Graphviz DOT format string.
-
-    Iterates through the nodes and edges of the logical graph to construct a
-    directed graph representation suitable for visualization with Graphviz
+    """Convert a logical IR graph into a Graphviz DOT format string.
 
     Args:
-        graph (LogicalGraph): The logical intermediate representation graph to convert
+        graph (LogicalGraph): The graph parameter.
 
     Returns:
-    str: The Graphviz DOT language representation of the graph
+        str: Result.
     """
     dot = "digraph G {\n"
     for nid, node in graph.nodes.items():
@@ -73,16 +66,12 @@ def to_graphviz(graph: LogicalGraph) -> str:
 
 
 def to_html(graph: LogicalGraph) -> str:
-    """Converts a logical IR graph into an HTML visualization.
-
-    Generates an HTML document containing a visual representation of the logical
-    intermediate representation graph
+    """Convert a logical IR graph into an HTML visualization.
 
     Args:
-        graph (LogicalGraph): The logical intermediate representation graph to
-        visualize
+        graph (LogicalGraph): The graph parameter.
 
     Returns:
-    str: An HTML string containing the graph visualization
+        str: Result.
     """
     return "<html><body><h1>IR Graph</h1></body></html>"

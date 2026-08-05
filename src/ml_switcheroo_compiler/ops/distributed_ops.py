@@ -11,7 +11,16 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def shard_tensor(tensor: Tensor, device_mesh: Any, layout: Any) -> Tensor:
-    """Shard a tensor across devices."""
+    """Shard a tensor across devices.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        device_mesh (Any): The device_mesh parameter.
+        layout (Any): The layout parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op(
@@ -31,12 +40,28 @@ class ShardTensor(OpDef):
     op_name = "ShardTensor"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> Tensor:
-    """NCCL all-reduce."""
+    """NCCL all-reduce.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        op_type (str): The op_type parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("NcclAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
@@ -51,12 +76,28 @@ class NcclAllReduce(OpDef):
     op_name = "NcclAllReduce"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Tensor:
-    """Hierarchical copy all-reduce."""
+    """Hierarchical copy all-reduce.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        op_type (str): The op_type parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("HierarchicalCopyAllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
@@ -71,12 +112,28 @@ class HierarchicalCopyAllReduce(OpDef):
     op_name = "HierarchicalCopyAllReduce"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def broadcast(tensor: Tensor, root_rank: int = 0) -> Tensor:
-    """Broadcast."""
+    """Broadcast.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        root_rank (int): The root_rank parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Broadcast", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), root_rank=root_rank)
@@ -91,12 +148,28 @@ class Broadcast(OpDef):
     op_name = "Broadcast"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def all_gather(tensor: Tensor, axis: int = 0) -> Tensor:
-    """All-gather."""
+    """All-gather.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        axis (int): The axis parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AllGather", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), axis=axis)
@@ -111,12 +184,29 @@ class AllGather(OpDef):
     op_name = "AllGather"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> Tensor:
-    """Reduce."""
+    """Reduce.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        root_rank (int): The root_rank parameter.
+        op_type (str): The op_type parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op(
@@ -136,12 +226,28 @@ class Reduce(OpDef):
     op_name = "Reduce"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def all_reduce(tensor: Tensor, op_type: str = "sum") -> Tensor:
-    """Generic SPMD AllReduce."""
+    """Provide generic SPMD AllReduce.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        op_type (str): The op_type parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("AllReduce", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type)
@@ -156,12 +262,29 @@ class AllReduce(OpDef):
     op_name = "AllReduce"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
 def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Tensor:
-    """Generic SPMD ReduceScatter."""
+    """Provide generic SPMD ReduceScatter.
+
+    Args:
+        tensor (Tensor): The tensor parameter.
+        op_type (str): The op_type parameter.
+        axis (int): The axis parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("ReduceScatter", (tensor.data if type(tensor).__name__ == "Tensor" else tensor), op_type=op_type, axis=axis)
@@ -176,7 +299,15 @@ class ReduceScatter(OpDef):
     op_name = "ReduceScatter"
 
     def infer_shape(self, tensor: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            tensor (object): The tensor parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(tensor, "shape", ())
 
 
@@ -187,7 +318,15 @@ class AllToAll(OpDef):
     op_name = "AllToAll"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -206,7 +345,15 @@ class BroadcastArrays(OpDef):
     op_name = "BroadcastArrays"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -225,7 +372,15 @@ class BroadcastTo(OpDef):
     op_name = "BroadcastTo"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         if "shape" in kwargs:
@@ -246,7 +401,15 @@ class BroadcastToRank(OpDef):
     op_name = "BroadcastToRank"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         rank = kwargs.get("rank", 1)
         if args and hasattr(args[0], "shape"):
             shape = args[0].shape
@@ -261,7 +424,15 @@ class BroadcastedIota(OpDef):
     op_name = "BroadcastedIota"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -280,7 +451,15 @@ class Pbroadcast(OpDef):
     op_name = "Pbroadcast"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -293,42 +472,90 @@ class Pbroadcast(OpDef):
 
 
 def all_to_all(*args: object, **kwargs: object) -> object:
-    """AllToAll frontend."""
+    """AllToAll frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if config.eager_mode:
         return get_active_backend().execute_op("AllToAll", *args, **kwargs)
     return _emit_shape_node("AllToAll", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def broadcast_arrays(*args: object, **kwargs: object) -> object:
-    """BroadcastArrays frontend."""
+    """BroadcastArrays frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastArrays", *args, **kwargs)
     return _emit_shape_node("BroadcastArrays", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def broadcast_to(*args: object, **kwargs: object) -> object:
-    """BroadcastTo frontend."""
+    """BroadcastTo frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastTo", *args, **kwargs)
     return _emit_shape_node("BroadcastTo", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def broadcast_to_rank(*args: object, **kwargs: object) -> object:
-    """BroadcastToRank frontend."""
+    """BroadcastToRank frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastToRank", *args, **kwargs)
     return _emit_shape_node("BroadcastToRank", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
 def broadcasted_iota(*args: object, **kwargs: object) -> object:
-    """BroadcastedIota frontend."""
+    """BroadcastedIota frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if config.eager_mode:
         return get_active_backend().execute_op("BroadcastedIota", *args, **kwargs)
     return _emit_shape_node("BroadcastedIota", list(args), kwargs, (), "int32")
 
 
 def pbroadcast(*args: object, **kwargs: object) -> object:
-    """Pbroadcast frontend."""
+    """Pbroadcast frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if config.eager_mode:
         return get_active_backend().execute_op("Pbroadcast", *args, **kwargs)
     return _emit_shape_node("Pbroadcast", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
@@ -341,7 +568,15 @@ class Pmax(OpDef):
     op_name = "Pmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
@@ -353,7 +588,15 @@ class Pmin(OpDef):
     op_name = "Pmin"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
@@ -365,7 +608,15 @@ class Outfeed(OpDef):
     op_name = "Outfeed"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -376,7 +627,15 @@ class Pshuffle(OpDef):
     op_name = "Pshuffle"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
@@ -388,7 +647,15 @@ class Pswapaxes(OpDef):
     op_name = "Pswapaxes"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
         shape = list(getattr(x, "shape", ()))
@@ -404,7 +671,15 @@ class Ppermute(OpDef):
     op_name = "Ppermute"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
@@ -416,7 +691,15 @@ class PsumScatter(OpDef):
     op_name = "PsumScatter"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         scatter_dimension = kwargs.get("scatter_dimension", 0)
         shape = list(getattr(x, "shape", ()))
@@ -426,49 +709,105 @@ class PsumScatter(OpDef):
 
 
 def outfeed(*args: object, **kwargs: object) -> object:
-    """Write to the outfeed queue."""
+    """Write to the outfeed queue.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Outfeed", *args, **kwargs)
 
 
 def pmax(*args: object, **kwargs: object) -> object:
-    """Compute the maximum over a mapped axis."""
+    """Evaluate pmax operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Pmax", *args, **kwargs)
 
 
 def pmin(*args: object, **kwargs: object) -> object:
-    """Compute the minimum over a mapped axis."""
+    """Evaluate pmin operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Pmin", *args, **kwargs)
 
 
 def ppermute(*args: object, **kwargs: object) -> object:
-    """Permute data across the mapped axis."""
+    """Permute data across the mapped axis.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Ppermute", *args, **kwargs)
 
 
 def pshuffle(*args: object, **kwargs: object) -> object:
-    """Shuffle data across the mapped axis."""
+    """Shuffle data across the mapped axis.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Pshuffle", *args, **kwargs)
 
 
 def psum_scatter(*args: object, **kwargs: object) -> object:
-    """Scatter sum across a mapped axis."""
+    """Scatter sum across a mapped axis.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("PsumScatter", *args, **kwargs)
 
 
 def pswapaxes(*args: object, **kwargs: object) -> object:
-    """Swap axes of the data."""
+    """Swap axes of the data.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Pswapaxes", *args, **kwargs)

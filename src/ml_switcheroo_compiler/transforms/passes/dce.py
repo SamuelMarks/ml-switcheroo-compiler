@@ -5,27 +5,27 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _find_side_effect_nodes(graph: IRGraph) -> set[str]:
-    """Evaluate and process the find side effect nodes operation.
+    """Evaluate _find_side_effect_nodes operation.
 
     Args:
-        graph (IRGraph): Required parameter for graph.
+        graph (IRGraph): The graph parameter.
 
     Returns:
-        set: The evaluated or processed output.
+        set: Result.
     """
     side_effect_ops = {"Assert", "AssignVariable", "Print", "Seed", "ManualSeed"}
     return {node.id for node in graph.nodes.values() if node.op_type in side_effect_ops}
 
 
 def _build_reachable_set(graph: IRGraph, initial_reachable: set[str]) -> set[str]:
-    """Evaluate and process the build reachable set operation.
+    """Evaluate _build_reachable_set operation.
 
     Args:
-        graph (IRGraph): Required parameter for graph.
-        initial_reachable (set): Required parameter for initial_reachable.
+        graph (IRGraph): The graph parameter.
+        initial_reachable (set): The initial_reachable parameter.
 
     Returns:
-        set: The evaluated or processed output.
+        set: Result.
     """
     reachable = set(initial_reachable)
     sorted_nodes = DAGTopologicalSorter.sort(graph)
@@ -39,15 +39,11 @@ def _build_reachable_set(graph: IRGraph, initial_reachable: set[str]) -> set[str
 def dce_pass(graph: IRGraph) -> bool:
     """In-place Dead Code Elimination (DCE).
 
-    Removes nodes that do not contribute to the graph outputs
-
-    graph (IRGraph): The input graph
+    Args:
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    bool: True if the graph was modified
-
-    Args:
-        graph (IRGraph): Argument graph
+        bool: Result.
     """
     initial_reachable = set(graph.outputs) | _find_side_effect_nodes(graph)
     reachable = _build_reachable_set(graph, initial_reachable)

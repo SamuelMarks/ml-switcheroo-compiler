@@ -20,16 +20,15 @@ def dynamic_slice(
     start_indices: Sequence[Tensor],
     slice_sizes: Sequence[int],
 ) -> Tensor:
-    """Slices the input tensor dynamically using start indices and slice sizes.
+    """Slice the input tensor dynamically using start indices and slice sizes.
 
     Args:
-        input (Tensor): The input tensor
-        start_indices (Sequence[Tensor]): Dynamic start indices for each dimension
-        slice_sizes (Sequence[int]): The size of the slice for each dimension
+        input (Tensor): The input parameter.
+        start_indices (Sequence): The start_indices parameter.
+        slice_sizes (Sequence): The slice_sizes parameter.
 
     Returns:
-    Tensor: The dynamically sliced tensor
-
+        Tensor: Result.
     """
     if config.eager_mode:
         starts = []
@@ -55,19 +54,15 @@ def dynamic_slice(
 
 
 def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> Tensor:
-    """Updates a slice of the input tensor with an update tensor at specified start.
-
-    indices
+    """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
-        input (Tensor): The input tensor to be updated
-        update (Tensor): The tensor containing the update values
-        start_indices (Sequence[int]): The starting indices where the update should be
-        applied
+        input (Tensor): The input parameter.
+        update (Tensor): The update parameter.
+        start_indices (Sequence): The start_indices parameter.
 
     Returns:
-    Tensor: The updated tensor
-
+        Tensor: Result.
     """
     from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 
@@ -81,15 +76,15 @@ def dynamic_update_slice(
     update: Tensor,
     start_indices: Sequence[Tensor],
 ) -> Tensor:
-    """Updates a slice of an array at dynamically computed start indices.
+    """Update a slice of an array at dynamically computed start indices.
 
     Args:
-        operand (Tensor): The input tensor
-        update (Tensor): The tensor containing the update values
-        start_indices (Sequence[Tensor]): Dynamic start indices for each dimension
+        operand (Tensor): The operand parameter.
+        update (Tensor): The update parameter.
+        start_indices (Sequence): The start_indices parameter.
 
     Returns:
-    Tensor: The dynamically updated tensor
+        Tensor: Result.
     """
     inputs = [operand, update, *start_indices]
     return _emit_shape_node(
@@ -108,14 +103,14 @@ class DynamicSlice(OpDef):
     op_name = "DynamicSlice"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (object): x, start_indices, and slice_sizes.
-            **kwargs: Additional keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: Result.
         """
         slice_sizes = args[2] if len(args) > MAGIC_VAL_2 else kwargs["slice_sizes"]
         return tuple(slice_sizes)
@@ -143,6 +138,6 @@ class DynamicUpdateSlice(OpDef):
             **kwargs: Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         return getattr(x, "shape", ())

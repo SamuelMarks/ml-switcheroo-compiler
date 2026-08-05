@@ -1,4 +1,4 @@
-"""Defines special unary operations for the ML Switcheroo framework, including Cast,.
+"""Define special unary operations for the ML Switcheroo framework, including Cast,.
 
 Bitcast, and Frexp
 """
@@ -10,25 +10,25 @@ from .base import UnaryMathOp
 
 @register_op("Cast")
 class Cast(OpDef):
-    """An operation that casts an input array to a specified data type."""
+    """Provide an operation that casts an input array to a specified data type."""
 
     def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
-        """Infer the output shape of the operation.
+        """Infer shape.
 
         Args:
-            x (object): The first input tensor.
-            dtype (object, optional): The target data type.
-            **kwargs (object): Additional keyword arguments.
+            x (object): The x parameter.
+            dtype (object): The dtype parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         return x
 
 
 @register_op("Bitcast")
 class Bitcast(Cast):
-    """An operation that bitcasts an input array to a specified data type without copying."""
+    """Provide an operation that bitcasts an input array to a specified data type without copying."""
 
 
 @register_op("CanCast")
@@ -38,32 +38,40 @@ class CanCast(OpDef):
     op_name = "CanCast"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # CanCast returns a boolean scalar
         return ()
 
 
 @register_op("Frexp")
 class Frexp(OpDef):
-    """An operation that decomposes a floating-point array into mantissa and exponent."""
+    """Provide an operation that decomposes a floating-point array into mantissa and exponent."""
 
     def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The first input tensor.
-            dtype (object, optional): The target data type.
-            **kwargs (object): Additional keyword arguments.
+            x (object): The x parameter.
+            dtype (object): The dtype parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         return x
 
 
 @register_op("Erf")
 class Erf(UnaryMathOp):
-    """Computes the error function element-wise."""
+    """Compute the error function element-wise."""
 
     op_name = "Erf"
     np_op_name = "erf"
@@ -71,21 +79,21 @@ class Erf(UnaryMathOp):
 
 @register_op("BesselI0e")
 class BesselI0e(UnaryMathOp):
-    """An operation class for computing the exponentially scaled modified Bessel function of order 0."""
+    """Provide an operation class for computing the exponentially scaled modified Bessel function of order 0."""
 
     op_name = "BesselI0e"
 
 
 @register_op("BesselI1e")
 class BesselI1e(UnaryMathOp):
-    """An operation class for computing the exponentially scaled modified Bessel function of order 1."""
+    """Provide an operation class for computing the exponentially scaled modified Bessel function of order 1."""
 
     op_name = "BesselI1e"
 
 
 @register_op("Erfc")
 class Erfc(UnaryMathOp):
-    """Computes the complementary error function element-wise."""
+    """Compute the complementary error function element-wise."""
 
     op_name = "Erfc"
     np_op_name = "erfc"
@@ -93,7 +101,7 @@ class Erfc(UnaryMathOp):
 
 @register_op("Erfinv")
 class Erfinv(UnaryMathOp):
-    """Computes the inverse error function element-wise."""
+    """Compute the inverse error function element-wise."""
 
     op_name = "Erfinv"
     np_op_name = "erfinv"
@@ -101,7 +109,7 @@ class Erfinv(UnaryMathOp):
 
 @register_op("Lgamma")
 class Lgamma(UnaryMathOp):
-    """Computes the natural logarithm of the absolute value of the gamma function element-.
+    """Compute the natural logarithm of the absolute value of the gamma function element-.
 
     wise
     """
@@ -112,7 +120,7 @@ class Lgamma(UnaryMathOp):
 
 @register_op("Digamma")
 class Digamma(UnaryMathOp):
-    """Computes the digamma function element-wise."""
+    """Compute the digamma function element-wise."""
 
     op_name = "Digamma"
     np_op_name = "digamma"
@@ -120,14 +128,14 @@ class Digamma(UnaryMathOp):
 
 @register_op("Mvlgamma")
 class Mvlgamma(UnaryMathOp):
-    """Computes the multivariate log-gamma function with dimension p element-wise."""
+    """Compute the multivariate log-gamma function with dimension p element-wise."""
 
     op_name = "Mvlgamma"
 
 
 @register_op("SpecialGamma")
 class SpecialGamma(UnaryMathOp):
-    """Computes the gamma function element-wise."""
+    """Compute the gamma function element-wise."""
 
     op_name = "SpecialGamma"
     np_op_name = "gamma"
@@ -135,7 +143,7 @@ class SpecialGamma(UnaryMathOp):
 
 @register_op("BesselI0")
 class BesselI0(UnaryMathOp):
-    """Modified Bessel function of order 0."""
+    """Modify Bessel function of order 0."""
 
     op_name = "BesselI0"
     np_op_name = "i0"
@@ -143,7 +151,7 @@ class BesselI0(UnaryMathOp):
 
 @register_op("BesselI1")
 class BesselI1(UnaryMathOp):
-    """Modified Bessel function of order 1."""
+    """Modify Bessel function of order 1."""
 
     op_name = "BesselI1"
 
@@ -169,7 +177,15 @@ class Lbeta(OpDef):
     op_name = "Lbeta"
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            x (object): The x parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         shape = getattr(x, "shape", ())
         if len(shape) > 0:
             return shape[:-1]

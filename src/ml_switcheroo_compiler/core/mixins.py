@@ -14,13 +14,13 @@ class TensorArithmeticMixin:
     """Arithmetic mixin."""
 
     def _get_op(self, name: str) -> object:
-        """Execute _get_op.
+        """Get the requested operation from the registry.
 
         Args:
-            name (Any): Argument name.
+            name (str): The name of the operation to retrieve.
 
         Returns:
-        Any: The result.
+            object: The operation class or instance.
         """
         from ml_switcheroo_compiler.ops.registry import get_op
 
@@ -182,7 +182,7 @@ class TensorArithmeticMixin:
 
 
 class TensorBitwiseMixin:
-    """Bitwise mixin."""
+    """Apply bitwise mixin."""
 
     def __and__(self, other: object) -> "Tensor":
         """And.
@@ -328,7 +328,7 @@ class TensorBitwiseMixin:
 
 
 class TensorLogicalMixin:
-    """Logical mixin."""
+    """Apply logical mixin."""
 
     def __lt__(self, other: object) -> "Tensor":
         """Lt.
@@ -375,10 +375,10 @@ class TensorLogicalMixin:
         return self._get_op("GreaterEqual")(self, other)
 
     def __hash__(self) -> int:
-        """Execute __hash__.
+        """Evaluate __hash__ operation.
 
         Returns:
-        Any: The result.
+        int: Result.
         """
         return id(self)
 

@@ -1,4 +1,4 @@
-"""Pooling reduction operations."""
+"""Apply pooling reduction operations."""
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ops.base import OpDef, register_op

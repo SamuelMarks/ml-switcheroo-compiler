@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Mixin module."""
+"""Provide mixin module."""
 
 from __future__ import annotations
 
@@ -10,7 +10,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
     """LinearAlgebra AST visitor."""
 
     def visit_CholeskyVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate CholeskyVjp."""
+        """Evaluate visit_CholeskyVjp operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         if not hasattr(self.generator, "_cholesky_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _cholesky_vjp_eager")
             self.generator._cholesky_vjp_imported = True
@@ -19,7 +28,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"_cholesky_vjp_eager({backend_name}, {input_vars[0]}, {input_vars[1]})"
 
     def visit_LuVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate LuVjp."""
+        """Evaluate visit_LuVjp operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         if not hasattr(self.generator, "_lu_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _lu_vjp_eager")
             self.generator._lu_vjp_imported = True
@@ -31,21 +49,48 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
     """Linear algebra AST generator mixin."""
 
     def visit_BandPart(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate BandPart."""
+        """Evaluate visit_BandPart operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         pfx = self.generator._get_backend_prefix()
         num_lower = kwargs.get("num_lower", -1)
         num_upper = kwargs.get("num_upper", -1)
         return f"{pfx}_band_part({input_vars[0]}, {num_lower}, {num_upper})"
 
     def visit_BandedTriangularSolve(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate BandedTriangularSolve."""
+        """Evaluate visit_BandedTriangularSolve operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         pfx = self.generator._get_backend_prefix()
         lower = kwargs.get("lower", False)
         adjoint = kwargs.get("adjoint", False)
         return f"{pfx}_banded_triangular_solve({input_vars[0]}, {input_vars[1]}, lower={lower}, adjoint={adjoint})"
 
     def visit_GatherMm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate GatherMm."""
+        """Evaluate visit_GatherMm operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         args_str = f"{input_vars[0]}, {input_vars[1]}"
         if "lhs_indices" in node.attributes:
             args_str += f", lhs_indices={input_vars[node.attributes['lhs_indices']]}"
@@ -54,18 +99,45 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{self.generator._get_backend_prefix()}.gather_mm({args_str})"
 
     def visit_SegmentedMm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate SegmentedMm."""
+        """Evaluate visit_SegmentedMm operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         return f"{self.generator._get_backend_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[node.attributes.get('segments', 2)]})"
 
     def visit_BlockMaskedMm(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate BlockMaskedMm."""
+        """Evaluate visit_BlockMaskedMm operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         a = input_vars[0]
         b = input_vars[1]
         out = f"{self.generator._get_backend_prefix()}.matmul({a}, {b})"
         return out
 
     def visit_Quantize(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate Quantize."""
+        """Evaluate visit_Quantize operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         group_size = node.attributes.get("group_size", 64)
         bits = node.attributes.get("bits", 4)
         idx = node.attributes.get("return_idx", 0)
@@ -76,7 +148,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{input_vars[0]}"
 
     def visit_QuantizedMatmul(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate QuantizedMatmul."""
+        """Evaluate visit_QuantizedMatmul operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         transpose = node.attributes.get("transpose", True)
         group_size = node.attributes.get("group_size", 64)
         bits = node.attributes.get("bits", 4)
@@ -88,7 +169,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{pfx}.matmul({x}, {w}.T if {transpose} else {w})"
 
     def visit_GatherQMM(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate GatherQMM."""
+        """Evaluate visit_GatherQMM operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         transpose = node.attributes.get("transpose", True)
         group_size = node.attributes.get("group_size", 64)
         bits = node.attributes.get("bits", 4)
@@ -106,7 +196,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"{pfx}.matmul({x}, {w}[{indices}].T if {transpose} else {w}[{indices}])"
 
     def visit_QrVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate QrVjp."""
+        """Evaluate visit_QrVjp operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         if not hasattr(self.generator, "_qr_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _qr_vjp_eager")
             self.generator._qr_vjp_imported = True
@@ -114,7 +213,16 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         return f"_qr_vjp_eager({pfx}, {input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
     def visit_SvdVjp(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate SvdVjp."""
+        """Evaluate visit_SvdVjp operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         if not hasattr(self.generator, "_svd_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _svd_vjp_eager")
             self.generator._svd_vjp_imported = True

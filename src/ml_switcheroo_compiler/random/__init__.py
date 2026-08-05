@@ -1,4 +1,4 @@
-"""Random API."""
+"""Generate random API."""
 
 from ml_switcheroo_compiler.random.continuous import (
     ball,

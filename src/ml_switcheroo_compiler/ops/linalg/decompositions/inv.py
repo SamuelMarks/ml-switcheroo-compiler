@@ -16,11 +16,11 @@ class Inv(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         return ()
 
@@ -30,7 +30,15 @@ class InvEx(OpDef):
     """InvEx Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -52,13 +60,13 @@ class TriInv(OpDef):
 
 
 def inv(input: Tensor) -> Tensor:
-    """Computes the multiplicative inverse of a square matrix.
+    """Compute the multiplicative inverse of a square matrix.
 
     Args:
-        input (Tensor): The square matrix to invert
+        input (Tensor): The input parameter.
 
     Returns:
-    Tensor: The multiplicative inverse of the input matrix
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -70,7 +78,7 @@ def inv(input: Tensor) -> Tensor:
 
 
 def inv_ex(input: Tensor, check_errors: bool = False) -> tuple[Tensor, Tensor]:
-    """Computes the multiplicative inverse of a square matrix with info tensor.
+    """Compute the multiplicative inverse of a square matrix with info tensor.
 
     Args:
         input (Tensor): The square matrix to invert
@@ -92,14 +100,14 @@ def inv_ex(input: Tensor, check_errors: bool = False) -> tuple[Tensor, Tensor]:
 
 
 def pinv(input: Tensor, rcond: float = 1e-15) -> Tensor:
-    """Computes the Moore-Penrose pseudo-inverse of a matrix.
+    """Compute the Moore-Penrose pseudo-inverse of a matrix.
 
     Args:
-        input (Tensor): The matrix to invert
-        rcond (float): Cutoff for small singular values. Defaults to 1e-15
+        input (Tensor): The input parameter.
+        rcond (float): The rcond parameter.
 
     Returns:
-    Tensor: The pseudo-inverse of the input matrix
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -111,14 +119,14 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> Tensor:
 
 
 def tri_inv(a: Tensor, lower: bool = False) -> Tensor:
-    """Computes the inverse of a triangular matrix.
+    """Compute the inverse of a triangular matrix.
 
     Args:
-        a (Tensor): Triangular matrix
-        lower (bool): If True, a is assumed to be lower triangular. Otherwise, upper.
+        a (Tensor): The a parameter.
+        lower (bool): The lower parameter.
 
     Returns:
-    Tensor: The inverse matrix
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

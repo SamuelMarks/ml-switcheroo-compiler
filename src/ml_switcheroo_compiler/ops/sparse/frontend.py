@@ -31,15 +31,15 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
 def _sparse_op(op_name: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse op operation.
+    """Evaluate _sparse_op operation.
 
     Args:
-        op_name (object): Required parameter for op_name.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        op_name (object): The op_name parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     op_cls = get_op(op_name)
     if config.eager_mode:
@@ -62,353 +62,377 @@ def _sparse_op(op_name: object, *args: object, **kwargs: object) -> object:
 
 
 def sparse_bincount(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse bincount operation.
+    """Evaluate sparse_bincount operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseBincount", *args, **kwargs)
 
 
 def sparse_cross_hashed(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse cross hashed operation.
+    """Evaluate sparse_cross_hashed operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseCrossHashed", *args, **kwargs)
 
 
 def sparse_expand_dims(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse expand dims operation.
+    """Evaluate sparse_expand_dims operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseExpandDims", *args, **kwargs)
 
 
 def sparse_eye(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse eye operation.
+    """Evaluate sparse_eye operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseEye", *args, **kwargs)
 
 
 def sparse_fill_empty_rows(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse fill empty rows operation.
+    """Evaluate sparse_fill_empty_rows operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseFillEmptyRows", *args, **kwargs)
 
 
 def sparse_map_values(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse map values operation.
+    """Evaluate sparse_map_values operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseMapValues", *args, **kwargs)
 
 
 def sparse_mask(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse mask operation.
+    """Evaluate sparse_mask operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseMask", *args, **kwargs)
 
 
 def sparse_maximum(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse maximum operation.
+    """Evaluate sparse_maximum operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseMaximum", *args, **kwargs)
 
 
 def sparse_minimum(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse minimum operation.
+    """Evaluate sparse_minimum operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseMinimum", *args, **kwargs)
 
 
 def sparse_reduce_max(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse reduce max operation.
+    """Evaluate sparse_reduce_max operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseReduceMax", *args, **kwargs)
 
 
 def sparse_reduce_sum(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse reduce sum operation.
+    """Evaluate sparse_reduce_sum operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseReduceSum", *args, **kwargs)
 
 
 def sparse_reorder(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse reorder operation.
+    """Evaluate sparse_reorder operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseReorder", *args, **kwargs)
 
 
 def sparse_reset_shape(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse reset shape operation.
+    """Evaluate sparse_reset_shape operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseResetShape", *args, **kwargs)
 
 
 def sparse_reshape(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse reshape operation.
+    """Evaluate sparse_reshape operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseReshape", *args, **kwargs)
 
 
 def sparse_retain(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse retain operation.
+    """Evaluate sparse_retain operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseRetain", *args, **kwargs)
 
 
 def sparse_segment_mean(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse segment mean operation.
+    """Evaluate sparse_segment_mean operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseSegmentMean", *args, **kwargs)
 
 
 def sparse_segment_sqrt_n(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse segment sqrt n operation.
+    """Evaluate sparse_segment_sqrt_n operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseSegmentSqrtN", *args, **kwargs)
 
 
 def sparse_segment_sum(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse segment sum operation.
+    """Evaluate sparse_segment_sum operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseSegmentSum", *args, **kwargs)
 
 
 def sparse_slice(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse slice operation.
+    """Evaluate sparse_slice operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseSlice", *args, **kwargs)
 
 
 def sparse_softmax(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse softmax operation.
+    """Evaluate sparse_softmax operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseSoftmax", *args, **kwargs)
 
 
 def sparse_to_indicator(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse to indicator operation.
+    """Evaluate sparse_to_indicator operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseToIndicator", *args, **kwargs)
 
 
 def sparse_transpose(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse transpose operation.
+    """Evaluate sparse_transpose operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseTranspose", *args, **kwargs)
 
 
 def sparse_add(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse add operation.
+    """Evaluate sparse_add operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseAdd", *args, **kwargs)
 
 
 def sparse_dense_matmul(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse dense matmul operation.
+    """Evaluate sparse_dense_matmul operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseDenseMatMul", *args, **kwargs)
 
 
 def sparse_sampled_add(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the sparse sampled add operation.
+    """Evaluate sparse_sampled_add operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("SparseSampledAdd", *args, **kwargs)
 
 
 def smm(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the smm operation.
+    """Evaluate smm operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _sparse_op("Smm", *args, **kwargs)
 
 
 def sparse_concat(*args: object, **kwargs: object) -> object:
-    """Sparse concat."""
+    """Sparse concat.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _sparse_op("SparseConcat", *args, **kwargs)
 
 
 def sparse_split(*args: object, **kwargs: object) -> object:
-    """Sparse split."""
+    """Sparse split.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _sparse_op("SparseSplit", *args, **kwargs)
 
 
 def sparse_to_dense(*args: object, **kwargs: object) -> object:
-    """Sparse to dense."""
+    """Sparse to dense.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _sparse_op("SparseToDense", *args, **kwargs)

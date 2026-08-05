@@ -1,4 +1,4 @@
-"""Base definitions for the operation registry."""
+"""Define base definitions for the operation registry."""
 
 from __future__ import annotations
 
@@ -29,16 +29,40 @@ class OpDef(ABC):
     op_type: str = "Unknown"
 
     def __call__(self, *args: object, **kwargs: object) -> object:
-        """Universal dispatcher for the operation."""
+        """Universal dispatcher for the operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return dispatch_op(self.op_type, *args, **kwargs)
 
     @abstractmethod
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer the output shape(s) and dtype(s) of the operation."""
+        """Infer the output shape(s) and dtype(s) of the operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         ...
 
     def eager_eval(self, *args: object, **kwargs: object) -> object:
-        """Execute eager_eval."""
+        """Evaluate eager_eval operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -52,7 +76,18 @@ def emit_ir_node(
     shape_metadata: object = None,
     attributes: dict | None = None,
 ) -> str:
-    """Emit a new node into the IR graph directly."""
+    """Emit a new node into the IR graph directly.
+
+    Args:
+        graph (object): The graph parameter.
+        op_type (str): The op_type parameter.
+        inputs (list): The inputs parameter.
+        shape_metadata (object): The shape_metadata parameter.
+        attributes (object): The attributes parameter.
+
+    Returns:
+        str: Result.
+    """
     nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
     node = LogicalNode(
         id=nid,
@@ -71,28 +106,35 @@ def emit_ir_node(
 
 
 def dispatch_eager(op_name: str) -> Callable:
-    """Execute dispatch_eager."""
+    """Evaluate dispatch_eager operation.
+
+    Args:
+        op_name (str): The op_name parameter.
+
+    Returns:
+        Callable: Result.
+    """
 
     def decorator(func: Callable) -> Callable:
-        """Evaluate and process the decorator operation.
+        """Evaluate decorator operation.
 
         Args:
-            func (Callable): Required parameter for func.
+            func (Callable): The func parameter.
 
         Returns:
-            Callable: The evaluated or processed output.
+            Callable: Result.
         """
 
         @functools.wraps(func)
         def wrapper(*args: object, **kwargs: object) -> object:
-            """Evaluate and process the wrapper operation.
+            """Evaluate wrapper operation.
 
             Args:
-                *args (Any): Variable positional arguments.
-                **kwargs (Any): Arbitrary keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
             Returns:
-                object: The evaluated or processed output.
+            object: Result.
             """
             if config.eager_mode:
                 from ml_switcheroo_compiler.backends.registry import get_active_backend

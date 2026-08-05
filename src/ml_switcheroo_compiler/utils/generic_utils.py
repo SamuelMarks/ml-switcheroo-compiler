@@ -1,4 +1,4 @@
-"""Generic utilities."""
+"""Provide generic utilities."""
 
 from __future__ import annotations
 
@@ -62,7 +62,11 @@ class ProgbarConfig:
 
 
 def set_random_seed(seed: int) -> None:
-    """Sets all random seeds for the program."""
+    """Set all random seeds for the program.
+
+    Args:
+        seed (int): The seed parameter.
+    """
     config.seed = seed
     try:
         from ml_switcheroo_compiler.backends.numpy.utils import set_numpy_seed
@@ -77,12 +81,27 @@ def set_random_seed(seed: int) -> None:
 
 
 def _validate_cache(fpath: str) -> bool:
-    """Validate the cache."""
+    """Validate the cache.
+
+    Args:
+        fpath (str): The fpath parameter.
+
+    Returns:
+        bool: Result.
+    """
     return os.path.exists(fpath)
 
 
 def _download_remote_file(origin: str, fpath: str) -> None:
-    """Download a remote file."""
+    """Download a remote file.
+
+    Args:
+        origin (str): The origin parameter.
+        fpath (str): The fpath parameter.
+
+    Raises:
+        RuntimeError: An exception.
+    """
     try:
         urllib.request.urlretrieve(origin, fpath)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
@@ -90,7 +109,12 @@ def _download_remote_file(origin: str, fpath: str) -> None:
 
 
 def _extract_archive(fpath: str, datadir: str) -> None:
-    """Extract an archive."""
+    """Extract an archive.
+
+    Args:
+        fpath (str): The fpath parameter.
+        datadir (str): The datadir parameter.
+    """
     if fpath.endswith(".tar.gz") or fpath.endswith(".tgz"):
         with tarfile.open(fpath, "r:gz") as archive:
             archive.extractall(datadir)
@@ -107,7 +131,16 @@ def get_file(
     origin: str,
     config: GetFileConfig | None = None,
 ) -> str:
-    """Downloads a file from a URL if it not already in the cache."""
+    """Download a file from a URL if it not already in the cache.
+
+    Args:
+        fname (str): The fname parameter.
+        origin (str): The origin parameter.
+        config (object): The config parameter.
+
+    Returns:
+        str: Result.
+    """
     conf = config if config is not None else GetFileConfig()
     untar = conf.archive_config.untar
     cache_subdir = conf.cache_config.cache_subdir
@@ -154,7 +187,12 @@ class Progbar:
         target: int | None,
         config: ProgbarConfig | None = None,
     ) -> None:
-        """Initialize progress bar."""
+        """Initialize.
+
+        Args:
+            target (object): The target parameter.
+            config (object): The config parameter.
+        """
         conf = config if config is not None else ProgbarConfig()
 
         self.target = target
@@ -177,14 +215,11 @@ class Progbar:
         )
 
     def _update_values(self, current: int, values: list[Any]) -> None:
-        """Evaluate and process the update values operation.
+        """Evaluate _update_values operation.
 
         Args:
-            current (int): Required parameter for current.
-            values (list): Required parameter for values.
-
-        Returns:
-            Any: The evaluated or processed output.
+            current (int): The current parameter.
+            values (list): The values parameter.
         """
         for k, v in values:
             if k not in self._values_order:
@@ -195,15 +230,12 @@ class Progbar:
                 self._update_stateless_metric(k, v, current)
 
     def _update_stateless_metric(self, k: str, v: float, current: int) -> None:
-        """Evaluate and process the update stateless metric operation.
+        """Evaluate _update_stateless_metric operation.
 
         Args:
-            k (str): Required parameter for k.
-            v (float): Required parameter for v.
-            current (int): Required parameter for current.
-
-        Returns:
-            Any: The evaluated or processed output.
+            k (str): The k parameter.
+            v (float): The v parameter.
+            current (int): The current parameter.
         """
         if k not in self._values:
             self._values[k] = [
@@ -215,44 +247,50 @@ class Progbar:
             self._values[k][1] += current
 
     def _should_finalize(self, current: int, finalize: bool | None) -> bool:
-        """Evaluate and process the should finalize operation.
+        """Evaluate _should_finalize operation.
 
         Args:
-            current (int): Required parameter for current.
-            finalize (Any): Required parameter for finalize.
+        current (int): The current parameter.
+        finalize (object): The finalize parameter.
 
         Returns:
-            bool: The evaluated or processed output.
+        bool: Result.
         """
         if finalize is not None:
             return finalize
         return self.target is None or current >= self.target
 
     def _should_update(self, now: float, finalize: bool) -> bool:
-        """Evaluate and process the should update operation.
+        """Evaluate _should_update operation.
 
         Args:
-            now (float): Required parameter for now.
-            finalize (bool): Required parameter for finalize.
+        now (float): The now parameter.
+        finalize (bool): The finalize parameter.
 
         Returns:
-            bool: The evaluated or processed output.
+        bool: Result.
         """
         return finalize or (now - self._last_update > self.config.interval)
 
     def _format_info(self, current: int) -> str:
-        """Format the info configuration or node into a backend-specific string.
+        """Evaluate _format_info operation.
 
         Args:
-            current (int): Required parameter for current.
+        current (int): The current parameter.
 
         Returns:
-            str: The evaluated or processed output.
+        str: Result.
         """
         return f" - {current}/{self.target}" if self.target is not None else f" - {current}"
 
     def update(self, current: int, values: list[Any] | None = None, finalize: bool | None = None) -> None:
-        """Updates the progress bar."""
+        """Update the progress bar.
+
+        Args:
+            current (int): The current parameter.
+            values (object): The values parameter.
+            finalize (object): The finalize parameter.
+        """
         values = values or []
         self._update_values(current, values)
         self._seen_so_far = current
@@ -270,7 +308,12 @@ class FeatureSpace:
     """FeatureSpace utility class."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+        """
         self.args = args
         self.kwargs = kwargs
 
@@ -279,7 +322,12 @@ class Config:
     """Config utility class."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+        """
         self.args = args
         self.kwargs = kwargs
 
@@ -288,16 +336,31 @@ class CustomObjectScope:
     """Scope for custom objects."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+        """
         self.args = args
         self.kwargs = kwargs
 
     def __enter__(self) -> CustomObjectScope:
-        """Enter."""
+        """Enter.
+
+        Returns:
+        CustomObjectScope: Result.
+        """
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        """Exit."""
+        """Exit.
+
+        Args:
+            exc_type (object): The exc_type parameter.
+            exc_val (object): The exc_val parameter.
+            exc_tb (object): The exc_tb parameter.
+        """
         _ = None
 
 
@@ -305,7 +368,12 @@ class PyDataset:
     """PyDataset utility class."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+        """
         self.args = args
         self.kwargs = kwargs
 
@@ -314,7 +382,12 @@ class Sequence:
     """Sequence utility class."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+        """
         self.args = args
         self.kwargs = kwargs
 
@@ -452,6 +525,14 @@ def register_keras_serializable(*args: object, **kwargs: object) -> object:
     """
 
     def decorator(cls: object) -> object:
+        """Register the annotated class in the keras registry.
+
+        Args:
+            cls (object): The class to register.
+
+        Returns:
+            object: The original class.
+        """
         return cls
 
     return decorator
@@ -487,6 +568,11 @@ class bounding_boxes:
     """Bounding boxes utilities namespace."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+        """
         self.args = args
         self.kwargs = kwargs

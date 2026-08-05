@@ -7,24 +7,17 @@ from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
 def uniform(key: object, shape: object = (), dtype: object = None, minval: object = 0.0, maxval: object = 1.0) -> object:
-    """Samples uniform random values from a given key.
+    """Sample uniform random values from a given key.
 
     Args:
-        key (object): The PRNG key.
-
-        shape (object): The target shape.
-
-        dtype (object): The target data type.
-
-        minval (object): The minval parameter for the operation.
-
-        maxval (object): The maxval parameter for the operation.
-
-
+        key (object): The key parameter.
+        shape (object): The shape parameter.
+        dtype (object): The dtype parameter.
+        minval (object): The minval parameter.
+        maxval (object): The maxval parameter.
 
     Returns:
-        object: The evaluated output resulting from this operation.
-
+        object: Result.
     """
     dtype = dtype or dtypes.DType.Float32
     return _emit_random_node("RandomUniform", [key], shape, dtype, {"minval": minval, "maxval": maxval})

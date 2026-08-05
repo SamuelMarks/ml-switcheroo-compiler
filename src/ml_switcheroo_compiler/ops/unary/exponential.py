@@ -7,21 +7,21 @@ from .base import UnaryMathOp
 
 @register_op("Exp")
 class Exp(UnaryMathOp):
-    """Computes the exponential of all elements in the input."""
+    """Compute the exponential of all elements in the input."""
 
     op_name = "Exp"
 
 
 @register_op("Log")
 class Log(UnaryMathOp):
-    """Computes the natural logarithm element-wise."""
+    """Compute the natural logarithm element-wise."""
 
     op_name = "Log"
 
 
 @register_op("Exp2")
 class Exp2(UnaryMathOp):
-    """Computes 2**x element-wise."""
+    """Compute 2**x element-wise."""
 
     op_name = "Exp2"
     np_op_name = "exp2"
@@ -29,7 +29,7 @@ class Exp2(UnaryMathOp):
 
 @register_op("Expm1")
 class Expm1(UnaryMathOp):
-    """Computes exp(x) - 1 element-wise."""
+    """Compute exp(x) - 1 element-wise."""
 
     op_name = "Expm1"
     np_op_name = "expm1"
@@ -37,7 +37,7 @@ class Expm1(UnaryMathOp):
 
 @register_op("Log10")
 class Log10(UnaryMathOp):
-    """Computes the base-10 logarithm element-wise."""
+    """Compute the base-10 logarithm element-wise."""
 
     op_name = "Log10"
     np_op_name = "log10"
@@ -45,7 +45,7 @@ class Log10(UnaryMathOp):
 
 @register_op("Log1P")
 class Log1P(UnaryMathOp):
-    """Computes natural logarithm of 1 + x element-wise."""
+    """Compute natural logarithm of 1 + x element-wise."""
 
     op_name = "Log1P"
     np_op_name = "log1p"
@@ -53,7 +53,7 @@ class Log1P(UnaryMathOp):
 
 @register_op("Log2")
 class Log2(UnaryMathOp):
-    """Computes the base-2 logarithm element-wise."""
+    """Compute the base-2 logarithm element-wise."""
 
     op_name = "Log2"
     np_op_name = "log2"
@@ -61,19 +61,27 @@ class Log2(UnaryMathOp):
 
 @register_op("Logit")
 class Logit(UnaryMathOp):
-    """Computes the logit of a tensor element-wise."""
+    """Compute the logit of a tensor element-wise."""
 
     op_name = "Logit"
 
 
 @register_op("NanToNum")
 class NanToNum(UnaryMathOp):
-    """Replaces NaN, positive infinity, and negative infinity values."""
+    """Replace NaN, positive infinity, and negative infinity values."""
 
     op_name = "NanToNum"
 
     def __call__(self, x: object, **kwargs: object) -> object:
-        """Call NanToNum, filtering out the copy kwarg."""
+        """Call NanToNum, filtering out the copy kwarg.
+
+        Args:
+        x (object): The x parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         kwargs.pop("copy", None)
         return super().__call__(x, **kwargs)
 

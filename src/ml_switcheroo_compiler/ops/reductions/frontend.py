@@ -1,4 +1,4 @@
-"""Reduction operations frontend."""
+"""Apply reduction operations frontend."""
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -39,7 +39,16 @@ from .frontend_utils import reduce_window
 
 
 def sum(a: object, axis: object = None, keepdims: bool = False) -> Tensor:
-    """Sum."""
+    """Sum.
+
+    Args:
+        a (object): The a parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         data = get_active_backend().execute_op("Sum", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
@@ -47,7 +56,16 @@ def sum(a: object, axis: object = None, keepdims: bool = False) -> Tensor:
 
 
 def max(a: object, axis: object = None, keepdims: bool = False) -> Tensor:
-    """Max."""
+    """Max.
+
+    Args:
+        a (object): The a parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         data = get_active_backend().execute_op("Max", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
@@ -55,7 +73,16 @@ def max(a: object, axis: object = None, keepdims: bool = False) -> Tensor:
 
 
 def min(a: object, axis: object = None, keepdims: bool = False) -> Tensor:
-    """Min."""
+    """Min.
+
+    Args:
+        a (object): The a parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         data = get_active_backend().execute_op("Min", getattr(a, "data", a), axis=axis, keepdims=keepdims)
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))

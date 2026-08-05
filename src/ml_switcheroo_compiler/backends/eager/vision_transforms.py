@@ -12,12 +12,32 @@ from .vision_utils import ResizeContext, TransformInterpolationConfig
 
 
 def perspective_transform_eager(backend_module: object, images: object, start_points: object, end_points: object, config: PerspectiveConfig) -> object:
-    """Evaluate perspective transform eagerly."""
+    """Evaluate perspective_transform_eager operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        start_points (object): The start_points parameter.
+        end_points (object): The end_points parameter.
+        config (PerspectiveConfig): The config parameter.
+
+    Returns:
+        object: Result.
+    """
     return 0
 
 
 def _apply_elastic_batch(np_mod: object, imgs: object, config: TransformInterpolationConfig) -> object:
-    """Apply elastic coordinates across a batch."""
+    """Apply elastic coordinates across a batch.
+
+    Args:
+        np_mod (object): The np_mod parameter.
+        imgs (object): The imgs parameter.
+        config (TransformInterpolationConfig): The config parameter.
+
+    Returns:
+        object: Result.
+    """
     return 0
 
 
@@ -33,24 +53,41 @@ class ElasticGridContext:
 
 
 def _compute_elastic_grid(ctx: ElasticGridContext) -> tuple[object, object]:
-    """Evaluate and process the compute elastic grid operation.
+    """Evaluate _compute_elastic_grid operation.
 
     Args:
-        ctx (ElasticGridContext): Required parameter for ctx.
+        ctx (ElasticGridContext): The ctx parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     return 0
 
 
 def elastic_transform_eager(backend_module: object, images: object, displacement: object, config: ElasticConfig) -> object:
-    """Evaluate elastic transform eagerly."""
+    """Evaluate elastic_transform_eager operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        displacement (object): The displacement parameter.
+        config (ElasticConfig): The config parameter.
+
+    Returns:
+        object: Result.
+    """
     return 0
 
 
 def _get_resize_interpolation_order(interpolation: str) -> int:
-    """Get scipy ndimage order for interpolation string."""
+    """Get scipy ndimage order for interpolation string.
+
+    Args:
+        interpolation (str): The interpolation parameter.
+
+    Returns:
+        int: Result.
+    """
     if interpolation == "nearest":
         return 0
     elif interpolation in ("bicubic", "lanczos3"):
@@ -59,29 +96,46 @@ def _get_resize_interpolation_order(interpolation: str) -> int:
 
 
 def _compute_resize_grid(np_mod: object, ctx: ResizeContext) -> tuple[object, object]:
-    """Compute the sampling grid for resize operation."""
+    """Evaluate _compute_resize_grid operation.
+
+    Args:
+        np_mod (object): The np_mod parameter.
+        ctx (ResizeContext): The ctx parameter.
+
+    Returns:
+        tuple: Result.
+    """
     return 0
 
 
 def _apply_resize_batch(np_mod: object, imgs: object, out: object, coords: tuple[object, object], order: int) -> None:
-    """Evaluate and process the apply resize batch operation.
+    """Apply the resize operation across a batch of images using interpolation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        imgs (object): Required parameter for imgs.
-        out (object): Required parameter for out.
-        coords (tuple): Required parameter for coords.
-        order (int): Required parameter for order.
+        np_mod (object): The np_mod parameter.
+        imgs (object): The imgs parameter.
+        out (object): The out parameter.
+        coords (object): The coords parameter.
+        order (int): The order parameter.
 
     Returns:
-        Any: The evaluated or processed output.
+        NoneType: Result.
     """
     return 0
 
 
 @global_eager_registry.register("UpsampleNearest")
 def _upsample_nearest_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Evaluate _upsample_nearest_eager operation.
 
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return 0
 
 
@@ -89,16 +143,44 @@ def _upsample_nearest_eager(backend_module: object, *args: object, **kwargs: obj
 @global_eager_registry.register("UpsampleTrilinear")
 @global_eager_registry.register("UpsampleLinear")
 def _upsample_linear_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Evaluate _upsample_linear_eager operation.
 
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return 0
 
 
 @global_eager_registry.register("UpsampleBicubic")
 def _upsample_bicubic_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Evaluate _upsample_bicubic_eager operation.
 
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return 0
 
 
 def resize_eager(backend_module: object, images: object, size: tuple[int, int], config: ResizeOptions) -> object:
-    """Evaluate resize eagerly."""
+    """Evaluate resize_eager operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        size (tuple): The size parameter.
+        config (ResizeOptions): The config parameter.
+
+    Returns:
+        object: Result.
+    """
     return 0

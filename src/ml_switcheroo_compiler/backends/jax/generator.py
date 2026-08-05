@@ -245,34 +245,67 @@ class JAXCodeGenerator(BaseGenerator):
 
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
-        """Load."""
+        """Load.
+
+        Args:
+        filepath (str): The filepath parameter.
+        allow_pickle (bool): The allow_pickle parameter.
+        fix_imports (bool): The fix_imports parameter.
+        encoding (str): The encoding parameter.
+
+        Returns:
+        object: Result.
+        """
         import jax.numpy as jnp
 
         return jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
-        """Save."""
+        """Save.
+
+        Args:
+            file (str): The file parameter.
+            arr (object): The arr parameter.
+            allow_pickle (bool): The allow_pickle parameter.
+            fix_imports (bool): The fix_imports parameter.
+        """
         import jax.numpy as jnp
 
         jnp.save(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez."""
+        """Savez.
+
+        Args:
+            file (str): The file parameter.
+            *args (object): Positional args.
+            **kwds (object): Keyword args.
+        """
         import jax.numpy as jnp
 
         jnp.savez(file, *args, **kwds)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez compressed."""
+        """Savez compressed.
+
+        Args:
+            file (str): The file parameter.
+            *args (object): Positional args.
+            **kwds (object): Keyword args.
+        """
         import jax.numpy as jnp
 
         jnp.savez_compressed(file, *args, **kwds)
 
     def __init__(self, graph: object) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            graph (object): The graph parameter.
+        """
         super().__init__(graph)
         self.visitors.extend(
             [
@@ -294,14 +327,14 @@ class JAXCodeGenerator(BaseGenerator):
         return "jax"
 
     def _format_zeros_like(self, op: str, kwargs: object) -> str:
-        """Format the zeros like configuration or node into a backend-specific string.
+        """Evaluate _format_zeros_like operation.
 
         Args:
-            op (str): Required parameter for op.
-            kwargs (object): Required parameter for kwargs.
+        op (str): The op parameter.
+        kwargs (object): The kwargs parameter.
 
         Returns:
-            str: The evaluated or processed output.
+        str: Result.
         """
         res = f"jnp.{op}({{shape}})"
         if "dtype" in kwargs:
@@ -309,13 +342,13 @@ class JAXCodeGenerator(BaseGenerator):
         return res
 
     def _format_full(self, kwargs: object) -> str:
-        """Format the full configuration or node into a backend-specific string.
+        """Evaluate _format_full operation.
 
         Args:
-            kwargs (object): Required parameter for kwargs.
+        kwargs (object): The kwargs parameter.
 
         Returns:
-            str: The evaluated or processed output.
+        str: Result.
         """
         res = "jnp.full({shape}, {fill_value})"
         if "dtype" in kwargs:
@@ -323,7 +356,11 @@ class JAXCodeGenerator(BaseGenerator):
         return res
 
     def get_fallback_prefix(self) -> str:
-        """Get the fallback prefix for generic operations."""
+        """Get the fallback prefix for generic operations.
+
+        Returns:
+        str: Result.
+        """
         return "jnp"
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
@@ -343,20 +380,28 @@ class JAXCodeGenerator(BaseGenerator):
         return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
-        """Evaluate emit constant assignment.
+        """Evaluate _emit_constant_assignment operation.
 
         Args:
-            var_name (str): Argument var_name
-            val_repr (str): Argument val_repr
+            var_name (str): The var_name parameter.
+            val_repr (str): The val_repr parameter.
         """
         self.add_line(f"{var_name} = jnp.array({val_repr})")
 
     def _generate_file_header(self) -> list[str]:
-        """Generate file header with module docstrings."""
+        """Generate file header with module docstrings.
+
+        Returns:
+        object: Result.
+        """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
-        """Resolve and register required imports."""
+        """Resolve and register required imports.
+
+        Returns:
+        object: Result.
+        """
         tmpl_path = os.path.join(os.path.dirname(__file__), "jax_prefix.py.tmpl")
         with open(tmpl_path, encoding="utf-8") as f:
             jax_prefix_template = f.read()

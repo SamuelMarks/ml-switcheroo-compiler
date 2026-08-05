@@ -20,17 +20,17 @@ def slice(
     end: int | None = None,
     step: int = 1,
 ) -> Tensor:
-    """Slices the input tensor along a specific dimension.
+    """Slice the input tensor along a specific dimension.
 
     Args:
-        input (Tensor): The input tensor
-        dim (int): The dimension along which to slice
-        start (int | None): The starting index of the slice. Defaults to None
-        end (int | None): The ending index of the slice. Defaults to None
-        step (int): The step size of the slice. Defaults to 1
+        input (Tensor): The input parameter.
+        dim (int): The dim parameter.
+        start (object): The start parameter.
+        end (object): The end parameter.
+        step (int): The step parameter.
 
     Returns:
-    Tensor: The sliced tensor
+        Tensor: Result.
     """
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
@@ -55,17 +55,16 @@ def strided_slice(
     end: Sequence[int],
     strides: Sequence[int],
 ) -> Tensor:
-    """Extracts a strided slice from the input tensor.
+    """Extract a strided slice from the input tensor.
 
     Args:
-        input (Tensor): The input tensor
-        begin (Sequence[int]): The starting indices of the slice
-        end (Sequence[int]): The ending indices of the slice
-        strides (Sequence[int]): The step sizes for each dimension
+        input (Tensor): The input parameter.
+        begin (Sequence): The begin parameter.
+        end (Sequence): The end parameter.
+        strides (Sequence): The strides parameter.
 
     Returns:
-    Tensor: The sliced tensor
-
+        Tensor: Result.
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
@@ -88,7 +87,15 @@ class Slice(OpDef):
     """Slice operator definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape for Slice."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return ()
 
 
@@ -97,7 +104,15 @@ class StridedSlice(OpDef):
     """StridedSlice operator definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape for StridedSlice."""
+        """Infer shape for StridedSlice.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         return ()
 
 
@@ -109,7 +124,18 @@ class Choose(OpDef):
     np_op_name = "choose"
 
     def infer_shape(self, a: object, choices: object, out: object = None, mode: str = "raise", **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            a (object): The a parameter.
+            choices (object): The choices parameter.
+            out (object): The out parameter.
+            mode (str): The mode parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return a.shape if hasattr(a, "shape") else ()
 
 
@@ -120,7 +146,15 @@ class IndexInDim(OpDef):
     op_name = "IndexInDim"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         operand = args[0] if len(args) > 0 else None
         index = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", 0)
@@ -149,20 +183,44 @@ class UpdateSlice(OpDef):
     op_name = "UpdateSlice"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         operand = args[0] if len(args) > 0 else None
         return getattr(operand, "shape", ())
 
 
 def index_in_dim(*args: object, **kwargs: object) -> object:
-    """Returns the index in a dimension."""
+    """Return the index in a dimension.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("IndexInDim", *args, **kwargs)
 
 
 def update_slice(*args: object, **kwargs: object) -> object:
-    """Update a slice."""
+    """Update a slice.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("UpdateSlice", *args, **kwargs)

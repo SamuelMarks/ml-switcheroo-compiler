@@ -9,14 +9,19 @@
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
 
-The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution.
+The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution. Crucially, this architecture empowers developers to run precise forward and backward passes directly in the browser for exact shape learning, and to empirically benchmark any ML syntax across different execution backends.
+
+## Major Project Goals
+
+1. **In-Browser Shape Learning & Transpilation:** Enhance the original [ML Switcheroo](https://samuelmarks.github.io/ml-switcheroo) project (focused on ML framework and SASS/RDNA transpilation) with the ability to learn precise tensor shapes by executing actual forward and backward passes directly in the browser.
+2. **Cross-Backend Benchmarking:** Benchmark different execution backends independently of the frontend API (e.g., testing TensorFlow syntax running on the MLX backend). This allows us to empirically test hardware-specific performance claims—such as whether PyTorch is truly better for GPUs, JAX for TPUs, or MLX for Apple Silicon.
 
 ## Architectural Vision
 
 The compiler resolves the impedance mismatch between different machine learning paradigms, operating as a strictly decoupled, purely functional computational hub (Tier 2) with two primary targets:
 
-1. **Source-to-Source (AST-to-AST) Transpilation:** Seamlessly convert ML logic between frameworks like PyTorch, Keras, JAX, and MLX. This includes state lifting/lowering, explicit broadcasting rules, and mapping ecosystem-specific quirks using our universal Intermediate Representation (IR).
-2. **Direct-to-Edge Compilation:** Bypass Python deployment entirely by lowering the Unified IR down to highly optimized browser and edge executables powered by **WebGPU** and **WASM SIMD**.
+1. **Source-to-Source (AST-to-AST) Transpilation:** Seamlessly convert ML logic between frameworks like PyTorch, Keras, JAX, and MLX. This includes state lifting/lowering, explicit broadcasting rules, and mapping ecosystem-specific quirks using our universal Intermediate Representation (IR). This decoupling is the foundation for our **cross-backend benchmarking**—allowing you to write TensorFlow syntax but execute it on MLX to test hardware claims.
+2. **Direct-to-Edge Compilation:** Bypass Python deployment entirely by lowering the Unified IR down to highly optimized browser and edge executables powered by **WebGPU** and **WASM SIMD**. This target drives our **in-browser shape learning** goals, allowing the engine to execute precise forward and backward passes live in the client without a backend server.
 
 **Strict Decoupling Rule ("No Math in Frontends"):** The `ml-switcheroo-compiler` repository is exclusively responsible for all math, Automatic Differentiation (AD), and transformations. Frontend repositories (like `zero-pytorch` or `zero-jax`) contain NO math implementations; they are purely Tier 3/4 lightweight API shells that route inputs and lift object-oriented state into this compiler. Likewise, this compiler strictly forbids any framework-specific API mimicry.
 
@@ -47,7 +52,7 @@ flowchart LR
     PM -->|Optimized Graph| Backends
 ```
 
-- **Unified IR:** A strict, framework-agnostic intermediate representation defining shape semantics, mathematical primitives, control flow, and state management.
+- **Unified IR:** A strict, framework-agnostic intermediate representation defining precise shape semantics (learned via live forward/backward passes), mathematical primitives, control flow, and state management.
 - **Middle-End Optimization:** Executes high-level passes (state transformation, type promotion) and low-level passes (buffer allocation, kernel fusion, loop tiling) before code generation.
 - **Python Emission:** Emits idiomatic source code for the target Python framework (e.g., PyTorch `nn.Module`s, JAX Pytrees, Keras subclassed models, MLX classes).
 - **Web & Edge Emission:** Translates computation graphs into WGSL shaders for WebGPU parallel compute and C++/Rust for WASM SIMD (v128) CPU compute.
@@ -65,8 +70,8 @@ The engine supports a comprehensive suite of advanced optimizations and parity f
 
 To provide a standard developer experience, the engine supports two distinct execution paradigms:
 
-- **Eager Mode (Debug / Interactive):** Immediate-execution path where mathematical operations are evaluated eagerly, backed by NumPy or pure Python for accurate, host-level execution without compilation overhead.
-- **Graph Mode (Compiled):** A tracing and parsing execution path that constructs the Unified IR. The resulting computation graph is then routed through the optimization middle-end to the selected deployment backend.
+- **Eager Mode (Debug / Interactive):** Immediate-execution path where mathematical operations are evaluated eagerly, backed by NumPy or pure Python for accurate, host-level execution without compilation overhead. This is ideal for extracting exact shapes and executing live in-browser shape inference.
+- **Graph Mode (Compiled):** A tracing and parsing execution path that constructs the Unified IR. The resulting computation graph is then routed through the optimization middle-end to the selected deployment backend, enabling apples-to-apples cross-backend benchmarking.
 
 ## Ecosystem Dependency Graph
 
@@ -126,7 +131,7 @@ graph TD
 
 ## Internal Backends
 
-The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecosystem. While the frontends provide the API interfaces, the actual execution is delegated to one of several internal execution backends. You can specifically choose between the following backends depending on your platform and performance requirements:
+The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecosystem. While the frontends provide the API interfaces, the actual execution is delegated to one of several internal execution backends. You can specifically choose between the following backends depending on your platform and performance requirements. This decoupled backend architecture is the very foundation for our benchmarking goals—allowing you to run the exact same PyTorch or Keras code across MLX, JAX, and CuPy to verify hardware-specific performance claims:
 
 - **`numpy`**: Reference eager execution CPU backend.
 - **`jax`**: High-performance compiler and array library backend.

@@ -13,14 +13,14 @@ class Svd(OpDef):
     """Svd Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         if not args:
             return ()
@@ -45,21 +45,15 @@ def svd(
     full_matrices: bool = True,
     compute_uv: bool = True,
 ) -> tuple[Tensor, Tensor, Tensor]:
-    """Computes the Singular Value Decomposition (SVD) of a matrix.
+    """Compute the Singular Value Decomposition (SVD) of a matrix.
 
     Args:
-        input (Tensor): The input matrix of shape (..., M, N)
-        full_matrices (bool): If True, matrices U and Vh have shapes (..., M, M)
-        and (..., N, N). Otherwise, shapes are (..., M, K) and (..., K, N)
-        where K = min(M, N). Defaults to True
-        compute_uv (bool): Whether to compute U and Vh in addition to S. Defaults to
-        True
+        input (Tensor): The input parameter.
+        full_matrices (bool): The full_matrices parameter.
+        compute_uv (bool): The compute_uv parameter.
 
     Returns:
-    tuple[Tensor, Tensor, Tensor]: A tuple containing:
-        - U (Tensor): Left singular vectors
-        - S (Tensor): Singular values
-        - Vh (Tensor): Right singular vectors (conjugate transposed)
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

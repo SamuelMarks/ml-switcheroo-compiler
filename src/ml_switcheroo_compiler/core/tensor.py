@@ -1,4 +1,4 @@
-"""Defines the unified backend array base class for ml-switcheroo."""
+"""Define the unified backend array base class for ml-switcheroo."""
 
 from dataclasses import dataclass
 from typing import Union
@@ -17,7 +17,7 @@ from .tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPro
 
 
 class ArrayAt:
-    """A helper object to apply updates at specific indices."""
+    """Provide a helper object to apply updates at specific indices."""
 
     def __init__(self, tensor: "Tensor", indices: object) -> None:
         """Initialize ArrayAt.
@@ -33,9 +33,10 @@ class ArrayAt:
         """Add value at indices.
 
         Args:
-            value (object): The value to add
+        value (object): The value parameter.
+
         Returns:
-            Tensor: The updated tensor
+        str: Result.
         """
         return self.tensor
 
@@ -43,9 +44,10 @@ class ArrayAt:
         """Multiply value at indices.
 
         Args:
-            value (object): The value to multiply
+        value (object): The value parameter.
+
         Returns:
-            Tensor: The updated tensor
+        str: Result.
         """
         return self.tensor
 
@@ -53,9 +55,10 @@ class ArrayAt:
         """Set value at indices.
 
         Args:
-            value (object): The value to set
+        value (object): The value parameter.
+
         Returns:
-            Tensor: The updated tensor
+        str: Result.
         """
         return self.tensor
 
@@ -63,9 +66,10 @@ class ArrayAt:
         """Maximum value at indices.
 
         Args:
-            value (object): The value to compare
+        value (object): The value parameter.
+
         Returns:
-            Tensor: The updated tensor
+        str: Result.
         """
         return self.tensor
 
@@ -73,15 +77,16 @@ class ArrayAt:
         """Minimum value at indices.
 
         Args:
-            value (object): The value to compare
+        value (object): The value parameter.
+
         Returns:
-            Tensor: The updated tensor
+        str: Result.
         """
         return self.tensor
 
 
 class ArrayAtIndexer:
-    """A helper object to index a tensor for ArrayAt."""
+    """Provide a helper object to index a tensor for ArrayAt."""
 
     def __init__(self, tensor: "Tensor") -> None:
         """Initialize ArrayAtIndexer.
@@ -95,9 +100,10 @@ class ArrayAtIndexer:
         """Get ArrayAt for indices.
 
         Args:
-            indices (object): The indices to update at
+        indices (object): The indices parameter.
+
         Returns:
-            ArrayAt: The ArrayAt object
+        ArrayAt: Result.
         """
         return ArrayAt(self.tensor, indices)
 
@@ -121,7 +127,7 @@ class Tensor(
     TensorBitwiseMixin,
     TensorLogicalMixin,
 ):
-    """The unified backend array base class for ml-switcheroo.
+    """Return the unified backend array base class for ml-switcheroo.
 
     Represents a multi-dimensional array that wraps underlying backend-specific
     data payloads, supporting both eager execution and lazy tracing
@@ -137,7 +143,14 @@ class Tensor(
         self._data = data
 
         def _parse_dim(s: object) -> Union[int, str]:
-            """Parse dimension."""
+            """Parse dimension.
+
+            Args:
+            s (object): The s parameter.
+
+            Returns:
+            object: Result.
+            """
             try:
                 return int(s)  # type: ignore
             except (ValueError, TypeError):
@@ -176,7 +189,7 @@ class Tensor(
         get_util("backward")(self, *args, **kwargs)
 
     def view(self, *shape: int) -> "Tensor":
-        """Returns a new tensor with the same data but different size.
+        """Return a new tensor with the same data but different size.
 
         Args:
             *shape: Additional arguments.
@@ -195,7 +208,7 @@ class Tensor(
         return get_frontend("reshape")(self, tuple(flat_shape))
 
     def contiguous(self) -> "Tensor":
-        """Returns a contiguous in memory tensor.
+        """Return a contiguous in memory tensor.
 
         Returns:
             'Tensor': A tensor containing the result of the operation.
@@ -203,7 +216,7 @@ class Tensor(
         return self
 
     def detach(self) -> "Tensor":
-        """Returns a new Tensor, detached from the current graph.
+        """Return a new Tensor, detached from the current graph.
 
         Returns:
             'Tensor': A tensor containing the result of the operation.
@@ -212,7 +225,7 @@ class Tensor(
 
 
 class Variable(Tensor):
-    """A mutable variable tensor for tracking state."""
+    """Provide a mutable variable tensor for tracking state."""
 
     def __init__(self, data: object, config: TensorConfig) -> None:
         """Init.
@@ -234,9 +247,9 @@ class Variable(Tensor):
             Variable: The updated variable.
         """
         if config.eager_mode:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend = get_active_backend()  # pragma: no cover
+            backend = get_active_backend()
             self._data = backend.execute_op("Assign", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
@@ -255,10 +268,10 @@ class Variable(Tensor):
             Variable: The updated variable.
         """
         if config.eager_mode:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend = get_active_backend()  # pragma: no cover
-            self._data = backend.execute_op("AssignAdd", self._data, value.data)  # pragma: no cover
+            backend = get_active_backend()
+            self._data = backend.execute_op("AssignAdd", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -276,10 +289,10 @@ class Variable(Tensor):
             Variable: The updated variable.
         """
         if config.eager_mode:
-            from ml_switcheroo_compiler.backends.registry import get_active_backend  # pragma: no cover
+            from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            backend = get_active_backend()  # pragma: no cover
-            self._data = backend.execute_op("AssignSub", self._data, value.data)  # pragma: no cover
+            backend = get_active_backend()
+            self._data = backend.execute_op("AssignSub", self._data, value.data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -289,7 +302,7 @@ class Variable(Tensor):
 
 
 class Parameter(Variable):
-    """A trainable parameter tensor."""
+    """Provide a trainable parameter tensor."""
 
     def __init__(self, data: object, config: TensorConfig) -> None:
         """Init.
@@ -308,4 +321,4 @@ class Parameter(Variable):
         Returns:
             int: The integer value.
         """
-        return int(self.numpy())  # pragma: no cover
+        return int(self.numpy())

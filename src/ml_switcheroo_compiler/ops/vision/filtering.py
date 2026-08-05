@@ -12,16 +12,15 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def gaussian_blur(images: Tensor, config_obj: object | None = None, **kwargs: object) -> Tensor:
-    """Applies Gaussian blur to the image(s).
+    """Apply Gaussian blur to the image(s).
 
     Args:
-        images (Tensor): Input images.
-        config_obj (BlurConfig | None): Configuration.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Blurred images.
+        Tensor: Result.
     """
     if config_obj is None:
         kernel_size = kwargs.get("kernel_size", (3, 3))
@@ -58,18 +57,16 @@ def median_filter(
     padding: str = "same",
     data_format: str | None = None,
 ) -> Tensor:
-    """Applies a median filter to the image(s).
+    """Apply a median filter to the image(s).
 
     Args:
-        images (Tensor): Input images.
-        kernel_size (int | tuple[int, int]): Size of the median filter kernel.
-        padding (str): Padding mode ('same' or 'valid').
-        data_format (str | None): Data format ('channels_last' or 'channels_first').
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        kernel_size (object): The kernel_size parameter.
+        padding (str): The padding parameter.
+        data_format (object): The data_format parameter.
 
     Returns:
-        Tensor: Filtered images.
+        Tensor: Result.
     """
     if isinstance(kernel_size, int):
         kernel_size = (kernel_size, kernel_size)
@@ -102,17 +99,15 @@ def iou(
     boxes2: Tensor,
     bounding_box_format: str = "xyxy",
 ) -> Tensor:
-    """Computes Intersection-Over-Union between two sets of bounding boxes.
+    """Compute Intersection-Over-Union between two sets of bounding boxes.
 
     Args:
-        boxes1 (Tensor): First set of bounding boxes [N, 4].
-        boxes2 (Tensor): Second set of bounding boxes [M, 4].
-        bounding_box_format (str): The format of the bounding boxes ('xyxy', 'yxyx', 'xywh', 'center_xywh').
-
-        kwargs (object): Additional kwargs.\
+        boxes1 (Tensor): The boxes1 parameter.
+        boxes2 (Tensor): The boxes2 parameter.
+        bounding_box_format (str): The bounding_box_format parameter.
 
     Returns:
-        Tensor: IoU matrix of shape [N, M].
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -145,16 +140,14 @@ def non_max_suppression(
     """Greedily selects a subset of bounding boxes in descending order of score.
 
     Args:
-        boxes (Tensor): A 2-D float tensor of shape [num_boxes, 4].
-        scores (Tensor): A 1-D float tensor of shape [num_boxes] representing a single score corresponding to each box.
-        max_output_size (int): A scalar integer tensor representing the maximum number of boxes to be selected by non max suppression.
-        iou_threshold (float): A float representing the threshold for deciding whether boxes overlap too much with respect to IOU.
-        score_threshold (float): A float representing the threshold for deciding when to remove boxes based on score.
-
-        kwargs (object): Additional kwargs.\
+        boxes (Tensor): The boxes parameter.
+        scores (Tensor): The scores parameter.
+        max_output_size (int): The max_output_size parameter.
+        iou_threshold (float): The iou_threshold parameter.
+        score_threshold (float): The score_threshold parameter.
 
     Returns:
-        Tensor: A 1-D integer tensor of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -185,13 +178,11 @@ def sharpen(images: Tensor, factor: float = 1.0) -> Tensor:
     """Sharpen images.
 
     Args:
-        images (Tensor): Input images.
-        factor (float): Sharpening factor.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        factor (float): The factor parameter.
 
     Returns:
-        Tensor: Sharpened images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -213,14 +204,13 @@ def random_gaussian_blur(
     """Randomly apply Gaussian blur.
 
     Args:
-        images (Tensor): Input images.
-        kernel_size (int | tuple[int, int]): Size of the filter.
-        sigma (float | tuple[float, float]): Standard deviation.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        kernel_size (object): The kernel_size parameter.
+        sigma (object): The sigma parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Blurred images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -252,13 +242,12 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
     """Randomly adjust sharpness.
 
     Args:
-        images (Tensor): Input images.
-        factor (float | tuple[float, float]): Sharpness factor.
-
-        kwargs (object): Additional kwargs.\
+        images (Tensor): The images parameter.
+        factor (object): The factor parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Sharpened images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()

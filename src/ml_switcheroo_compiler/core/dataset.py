@@ -36,7 +36,7 @@ class Options:
     """Options for dataset pipeline optimization."""
 
     def __init__(self) -> None:
-        """Initialize dataset options."""
+        """Initialize the dataset with tensors."""
         self.autotune_algorithm: Optional[AutotuneAlgorithm] = None
         self.deterministic: Optional[bool] = None
         self.experimental_optimization: dict[str, bool] = {}
@@ -46,13 +46,16 @@ class Options:
 
 class Dataset:
     # pylint: disable=too-many-instance-attributes
-    """A dataset iterator for data pipeline primitives."""
+    """Provide a dataset iterator for data pipeline primitives."""
 
     def __init__(self, *tensors: Tensor) -> None:
         """Initialize the dataset with tensors.
 
         Args:
-            *tensors (Tensor): Tensors to iterate over.
+            *tensors (Tensor): Positional args.
+
+        Raises:
+            ValueError: An exception.
         """
         self.tensors = tensors
         if tensors:
@@ -76,10 +79,13 @@ class Dataset:
         """Create a dataset whose elements are slices of the given tensors.
 
         Args:
-            *tensors (Tensor): Tensors to iterate over.
+            *tensors (Tensor): Positional args.
 
         Returns:
-            Dataset: A dataset.
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if not tensors:
             raise ValueError("At least one tensor must be provided.")
@@ -117,11 +123,14 @@ class Dataset:
         """Set the batch size.
 
         Args:
-            batch_size (int): The batch size.
-            drop_remainder (bool): Whether to drop the remainder.
+            batch_size (int): The batch_size parameter.
+            drop_remainder (bool): The drop_remainder parameter.
 
         Returns:
-            Dataset: self
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if batch_size <= 0:
             raise ValueError("batch_size must be positive.")
@@ -153,11 +162,14 @@ class Dataset:
         """Batch dataset into ragged tensors.
 
         Args:
-            batch_size: Batch size.
-            drop_remainder: Drop remainder.
+            batch_size (int): The batch_size parameter.
+            drop_remainder (bool): The drop_remainder parameter.
 
         Returns:
-            Dataset: self.
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if batch_size <= 0:
             raise ValueError("batch_size must be positive.")
@@ -256,12 +268,15 @@ class Dataset:
         """Shuffle the dataset.
 
         Args:
-            buffer_size (int): The shuffle buffer size.
-            seed: Random seed.
-            reshuffle_each_iteration: Whether to reshuffle each time.
+            buffer_size (int): The buffer_size parameter.
+            seed (int): The seed parameter.
+            reshuffle_each_iteration (bool): The reshuffle_each_iteration parameter.
 
         Returns:
-            Dataset: self
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if buffer_size <= 0:
             raise ValueError("buffer_size must be positive.")
@@ -275,10 +290,13 @@ class Dataset:
         """Prefetch data.
 
         Args:
-            buffer_size (int): The prefetch buffer size.
+            buffer_size (int): The buffer_size parameter.
 
         Returns:
-            Dataset: self
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if buffer_size <= 0:
             raise ValueError("buffer_size must be positive.")
@@ -388,7 +406,7 @@ class NumpyIterator:
         self._iterator = iter(dataset)
 
     def __iter__(self) -> "NumpyIterator":
-        """Iter.
+        """Iterate.
 
         Returns:
             NumpyIterator: self.
@@ -417,7 +435,7 @@ class ArrayIterator:
         self._iterator = iter(dataset)
 
     def __iter__(self) -> "ArrayIterator":
-        """Iter.
+        """Iterate.
 
         Returns:
             ArrayIterator: self.
@@ -523,7 +541,7 @@ class ImageDataset(Dataset):
         self.normalize = normalize
 
     def __iter__(self) -> Iterator[tuple[Tensor, ...]]:
-        """Iter.
+        """Iterate.
 
         Yields:
             tuple[Tensor, ...]: A batch of tensors.

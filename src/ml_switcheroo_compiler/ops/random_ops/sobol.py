@@ -10,12 +10,22 @@ class SobolSample(OpDef):
     op_name = "SobolSample"
 
     def infer_shape(self, dim: int, num_results: int, skip: int = 0, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the infer_shape operation.
+
+        Args:
+        dim (int): The dim parameter.
+        num_results (int): The num_results parameter.
+        skip (int): The skip parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return (num_results, dim)
 
 
 def generate_sobol(dim: int, num_results: int, skip: int = 0) -> object:
-    """Generates a Sobol sequence mathematically.
+    """Generate a Sobol sequence mathematically.
 
     Args:
         dim: The dimension of the sequence.

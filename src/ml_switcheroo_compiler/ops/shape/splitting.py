@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.tracing import builder
 
 
 def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[int], dim: int) -> int:
-    """Calculates the number of splits for a tensor.
+    """Calculate the number of splits for a tensor.
 
     Args:
         input (Tensor): The input tensor
@@ -41,7 +41,18 @@ def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[
 
 
 def _validate_split_axis(input: Tensor, dim: int) -> int:
-    """Validates the split axis against the input tensor shape."""
+    """Validate the split axis against the input tensor shape.
+
+    Args:
+        input (Tensor): The input parameter.
+        dim (int): The dim parameter.
+
+    Returns:
+        int: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     shape = getattr(input, "shape", None)
     if shape is None:
         return dim
@@ -55,7 +66,17 @@ def _validate_split_axis(input: Tensor, dim: int) -> int:
 
 
 def _split_even(input: Tensor, split_size: int, dim: int, num_splits: int) -> Sequence[Tensor]:
-    """Handles splitting when an integer split_size_or_sections is provided."""
+    """Handle splitting when an integer split_size_or_sections is provided.
+
+    Args:
+        input (Tensor): The input parameter.
+        split_size (int): The split_size parameter.
+        dim (int): The dim parameter.
+        num_splits (int): The num_splits parameter.
+
+    Returns:
+        Sequence: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         input_data = getattr(input, "data", input)
@@ -84,7 +105,17 @@ def _split_even(input: Tensor, split_size: int, dim: int, num_splits: int) -> Se
 def _split_sections(  # pylint: disable=too-many-locals
     input: Tensor, sections: Sequence[int], dim: int, num_splits: int
 ) -> Sequence[Tensor]:
-    """Handles splitting when a sequence of sections is provided."""
+    """Handle splitting when a sequence of sections is provided.
+
+    Args:
+        input (Tensor): The input parameter.
+        sections (Sequence): The sections parameter.
+        dim (int): The dim parameter.
+        num_splits (int): The num_splits parameter.
+
+    Returns:
+        Sequence: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         input_data = getattr(input, "data", input)
@@ -115,16 +146,15 @@ def split(
     split_size_or_sections: int | Sequence[int],
     dim: int = 0,
 ) -> Sequence[Tensor]:
-    """Splits the input tensor into multiple sub-tensors.
+    """Split the input tensor into multiple sub-tensors.
 
     Args:
-        input (Tensor): The input tensor to split
-        split_size_or_sections (int | Sequence[int]): Size of a single chunk or list of
-        sizes for each chunk
-        dim (int): The dimension along which to split. Defaults to 0
+        input (Tensor): The input parameter.
+        split_size_or_sections (object): The split_size_or_sections parameter.
+        dim (int): The dim parameter.
 
     Returns:
-    Sequence[Tensor]: A sequence of sub-tensors
+        Sequence: Result.
     """
     valid_dim = _validate_split_axis(input, dim)
     num_splits = _calculate_num_splits(input, split_size_or_sections, valid_dim)
@@ -135,14 +165,14 @@ def split(
 
 
 def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
-    """Unstacks the input tensor along a specified dimension into a sequence of tensors.
+    """Unstack the input tensor along a specified dimension into a sequence of tensors.
 
     Args:
-        input (Tensor): The input tensor to unstack
-        dim (int): The dimension along which to unstack. Defaults to 0
+        input (Tensor): The input parameter.
+        dim (int): The dim parameter.
 
     Returns:
-    Sequence[Tensor]: A sequence of unstacked tensors
+        Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -173,13 +203,12 @@ def array_split(
     """Split an array into multiple sub-arrays.
 
     Args:
-        ary (Tensor): The input tensor to split
-        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
-        sizes for each chunk
-        axis (int): The dimension along which to split. Defaults to 0
+        ary (Tensor): The ary parameter.
+        indices_or_sections (object): The indices_or_sections parameter.
+        axis (int): The axis parameter.
 
     Returns:
-        Sequence[Tensor]: A sequence of sub-tensors
+        Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -200,12 +229,11 @@ def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
     """Split an array into multiple sub-arrays vertically (row-wise).
 
     Args:
-        ary (Tensor): The input tensor to split
-        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
-        sizes for each chunk
+        ary (Tensor): The ary parameter.
+        indices_or_sections (object): The indices_or_sections parameter.
 
     Returns:
-        Sequence[Tensor]: A sequence of sub-tensors
+        Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -239,12 +267,11 @@ def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
     """Split an array into multiple sub-arrays horizontally (column-wise).
 
     Args:
-        ary (Tensor): The input tensor to split
-        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
-        sizes for each chunk
+        ary (Tensor): The ary parameter.
+        indices_or_sections (object): The indices_or_sections parameter.
 
     Returns:
-        Sequence[Tensor]: A sequence of sub-tensors
+        Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -276,12 +303,11 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
     """Split array into multiple sub-arrays along the 3rd axis (depth).
 
     Args:
-        ary (Tensor): The input tensor to split
-        indices_or_sections (int | Sequence[int]): Size of a single chunk or list of
-        sizes for each chunk
+        ary (Tensor): The ary parameter.
+        indices_or_sections (object): The indices_or_sections parameter.
 
     Returns:
-        Sequence[Tensor]: A sequence of sub-tensors
+        Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -314,7 +340,16 @@ class GetItemOp(OpDef):
     """Operation to retrieve an item from a tensor."""
 
     def infer_shape(self, x: object, output_index: int = 0, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape of get_item result."""
+        """Infer shape for Unstack.
+
+        Args:
+            x (object): The x parameter.
+            output_index (int): The output_index parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         # We don't have enough info here if x is a node, but we can just return None
         return getattr(x, "shape", ())
 
@@ -327,7 +362,15 @@ class Unstack(OpDef):
     """Unstack op for shape inference."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape for Unstack."""
+        """Infer shape for Unstack.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         input_shape = args[0].shape
         dim = kwargs.get("axis", kwargs.get("dim", 0))
         return tuple([input_shape[:dim] + input_shape[dim + 1 :]] * input_shape[dim])

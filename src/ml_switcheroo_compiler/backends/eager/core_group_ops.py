@@ -5,30 +5,33 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 def _get_reduction_axes(reshaped_dims: list, axis: int) -> tuple:
-    """Retrieve the reduction axes property or mapping.
+    """Evaluate _get_reduction_axes operation.
 
     Args:
-        reshaped_dims (list): Required parameter for reshaped_dims.
-        axis (int): Required parameter for axis.
+        reshaped_dims (list): The reshaped_dims parameter.
+        axis (int): The axis parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
 
 
 def _invoke_grouped_op(backend_module: object, op_name: str, reshaped_x: object, reduction_axes: tuple, is_torch: bool) -> object:
-    """Evaluate and process the invoke grouped op operation.
+    """Evaluate _invoke_grouped_op operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        op_name (str): Required parameter for op_name.
-        reshaped_x (object): Required parameter for reshaped_x.
-        reduction_axes (tuple): Required parameter for reduction_axes.
-        is_torch (bool): Required parameter for is_torch.
+        backend_module (object): The backend_module parameter.
+        op_name (str): The op_name parameter.
+        reshaped_x (object): The reshaped_x parameter.
+        reduction_axes (tuple): The reduction_axes parameter.
+        is_torch (bool): The is_torch parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if op_name == "mean":
         if is_torch:
@@ -43,16 +46,16 @@ def _invoke_grouped_op(backend_module: object, op_name: str, reshaped_x: object,
 
 
 def _apply_grouped_reduction(backend_module: object, op_name: str, x: object, **kwargs: int) -> object:
-    """Evaluate and process the apply grouped reduction operation.
+    """Evaluate _apply_grouped_reduction operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        op_name (str): Required parameter for op_name.
-        x (object): Required parameter for x.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        op_name (str): The op_name parameter.
+        x (object): The x parameter.
+        **kwargs (int): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     groups = kwargs["groups"]
     axis = kwargs["axis"]
@@ -72,15 +75,15 @@ def _apply_grouped_reduction(backend_module: object, op_name: str, x: object, **
 
 @global_eager_registry.register("GroupMean")
 def _group_mean(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the group mean operation.
+    """Evaluate _group_mean operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
@@ -90,15 +93,15 @@ def _group_mean(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @global_eager_registry.register("GroupVariance")
 def _group_variance(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the group variance operation.
+    """Evaluate _group_variance operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
@@ -107,7 +110,17 @@ def _group_variance(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 def _apply_affine_transform(backend_module: object, out: object, axis: int, **kwargs: object) -> object:
-    """Apply affine transform scaling to normalized output."""
+    """Apply affine transform scaling to normalized output.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        out (object): The out parameter.
+        axis (int): The axis parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     weight = kwargs.get("weight")
     bias = kwargs.get("bias")
     shape = out.shape
@@ -126,14 +139,14 @@ def _apply_affine_transform(backend_module: object, out: object, axis: int, **kw
 
 
 def _parse_group_norm_args(args: tuple, kwargs: dict) -> tuple:
-    """Parse the group norm args abstract syntax tree node into its semantic representation.
+    """Evaluate _parse_group_norm_args operation.
 
     Args:
-        args (tuple): Required parameter for args.
-        kwargs (dict): Required parameter for kwargs.
+        args (tuple): The args parameter.
+        kwargs (dict): The kwargs parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     x = args[0]
     groups = kwargs.get("groups") if "groups" in kwargs else args[1]
@@ -145,17 +158,17 @@ def _parse_group_norm_args(args: tuple, kwargs: dict) -> tuple:
 
 
 def _compute_group_norm(backend_module: object, x: object, shape: list, group_params: tuple[int, int], stats: tuple[object, object, float]) -> object:
-    """Evaluate and process the compute group norm operation.
+    """Evaluate _compute_group_norm operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        x (object): Required parameter for x.
-        shape (list): Required parameter for shape.
-        group_params (tuple): Required parameter for group_params.
-        stats (tuple): Required parameter for stats.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        shape (list): The shape parameter.
+        group_params (tuple): The group_params parameter.
+        stats (tuple): The stats parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     (axis, groups) = group_params
     (mean, var, epsilon) = stats
@@ -169,15 +182,15 @@ def _compute_group_norm(backend_module: object, x: object, shape: list, group_pa
 
 @global_eager_registry.register("GroupNorm")
 def _group_norm(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the group norm operation.
+    """Evaluate _group_norm operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     (x, groups, weight, bias, axis, epsilon) = _parse_group_norm_args(args, kwargs)
     shape = list(x.shape)

@@ -11,7 +11,15 @@ class Finfo(OpDef):
     op_name = "Finfo"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return ()
 
 
@@ -22,7 +30,15 @@ class Iinfo(OpDef):
     op_name = "Iinfo"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -33,7 +49,15 @@ class GetPrintoptions(OpDef):
     op_name = "GetPrintoptions"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -44,7 +68,15 @@ class Gradient(OpDef):
     op_name = "Gradient"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -57,7 +89,15 @@ class Histogram(OpDef):
     op_name = "Histogram"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         bins = kwargs.get("bins", 10)
         if hasattr(bins, "shape") and len(bins.shape) > 0:
             return (bins.shape[0] - 1,)
@@ -73,7 +113,15 @@ class Histogram2d(OpDef):
     op_name = "Histogram2d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         bins = kwargs.get("bins", 10)
         if isinstance(bins, (list, tuple)):
             if len(bins) == 2:
@@ -86,12 +134,20 @@ class Histogram2d(OpDef):
 
 @register_op("HistogramBinEdges")
 class HistogramBinEdges(OpDef):
-    """Function to calculate only the edges of the bins used by the histogram function."""
+    """Provide function to calculate only the edges of the bins used by the histogram function."""
 
     op_name = "HistogramBinEdges"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         bins = kwargs.get("bins", 10)
         if hasattr(bins, "shape") and len(bins.shape) > 0:
             return bins.shape
@@ -107,7 +163,15 @@ class Histogramdd(OpDef):
     op_name = "Histogramdd"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         sample = args[0]
@@ -117,12 +181,20 @@ class Histogramdd(OpDef):
 
 @register_op("I0")
 class I0(OpDef):
-    """Modified Bessel function of the first kind, order 0."""
+    """Modify Bessel function of the first kind, order 0."""
 
     op_name = "I0"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -135,7 +207,15 @@ class Indices(OpDef):
     op_name = "Indices"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         dimensions = args[0]
@@ -150,7 +230,15 @@ class Infeed(OpDef):
     op_name = "Infeed"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return kwargs.get("shape", ())
 
 
@@ -161,7 +249,15 @@ class Interp(OpDef):
     op_name = "Interp"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -174,18 +270,34 @@ class Intersect1d(OpDef):
     op_name = "Intersect1d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (None,)
 
 
 @register_op("Isscalar")
 class Isscalar(OpDef):
-    """Returns True if the type of num is a scalar type."""
+    """Return True if the type of num is a scalar type."""
 
     op_name = "Isscalar"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -196,7 +308,15 @@ class Iterable(OpDef):
     op_name = "Iterable"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -207,7 +327,15 @@ class Ix(OpDef):
     op_name = "Ix"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         nd = len(args)
         if nd == 0:
             return ()
@@ -227,7 +355,15 @@ class Kron(OpDef):
     op_name = "Kron"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if len(args) < 2:
             return ()
         a, b = args[0], args[1]
@@ -246,7 +382,15 @@ class MaskIndices(OpDef):
     op_name = "MaskIndices"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (None,)
 
 
@@ -257,7 +401,15 @@ class Median(OpDef):
     op_name = "Median"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         shape = list(getattr(args[0], "shape", ()))
@@ -283,7 +435,15 @@ class Mgrid(OpDef):
     op_name = "Mgrid"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return kwargs.get("shape", ())
 
 
@@ -294,7 +454,15 @@ class Mish(OpDef):
     op_name = "Mish"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -307,7 +475,15 @@ class Modf(OpDef):
     op_name = "Modf"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -320,7 +496,15 @@ class Ogrid(OpDef):
     op_name = "Ogrid"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return kwargs.get("shape", ())
 
 
@@ -331,7 +515,15 @@ class Piecewise(OpDef):
     op_name = "Piecewise"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -339,34 +531,58 @@ class Piecewise(OpDef):
 
 @register_op("PromoteTypes")
 class PromoteTypes(OpDef):
-    """Returns the data type with the smallest size and smallest scalar kind."""
+    """Return the data type with the smallest size and smallest scalar kind."""
 
     op_name = "PromoteTypes"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
 @register_op("R")
 class R(OpDef):
-    """Translates slice objects to concatenation along the first axis."""
+    """Translate slice objects to concatenation along the first axis."""
 
     op_name = "R"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (None,)
 
 
 @register_op("ResultType")
 class ResultType(OpDef):
-    """Returns the type that results from applying the NumPy type promotion rules."""
+    """Return the type that results from applying the NumPy type promotion rules."""
 
     op_name = "ResultType"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -377,7 +593,15 @@ class Rot90(OpDef):
     op_name = "Rot90"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         shape = list(getattr(args[0], "shape", ()))
@@ -394,7 +618,15 @@ class Trapezoid(OpDef):
     op_name = "Trapezoid"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         shape = list(getattr(args[0], "shape", ()))
@@ -406,12 +638,20 @@ class Trapezoid(OpDef):
 
 @register_op("Tri")
 class Tri(OpDef):
-    """An array with ones at and below the given diagonal and zeros elsewhere."""
+    """Provide an array with ones at and below the given diagonal and zeros elsewhere."""
 
     op_name = "Tri"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         N = args[0] if args else 0
         M = kwargs.get("M", N)
         return (N, M)
@@ -424,7 +664,15 @@ class Tril(OpDef):
     op_name = "Tril"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -437,7 +685,15 @@ class TrimZeros(OpDef):
     op_name = "TrimZeros"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (None,)
 
 
@@ -448,7 +704,15 @@ class Triu(OpDef):
     op_name = "Triu"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -461,7 +725,15 @@ class Unwrap(OpDef):
     op_name = "Unwrap"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
@@ -474,7 +746,15 @@ class Vander(OpDef):
     op_name = "Vander"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         x = getattr(args[0], "shape", ())
@@ -489,7 +769,15 @@ class Vectorize(OpDef):
     op_name = "Vectorize"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -500,245 +788,525 @@ class AxisIndex(OpDef):
     op_name = "AxisIndex"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return getattr(args[0], "shape", ())
 
 
 def mgrid(*args: object, **kwargs: object) -> object:
-    """nd_grid instance which returns a dense multi-dimensional 'meshgrid'."""
+    """nd_grid instance which returns a dense multi-dimensional 'meshgrid'.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Mgrid", *args, **kwargs)
 
 
 def ogrid(*args: object, **kwargs: object) -> object:
-    """nd_grid instance which returns an open multi-dimensional 'meshgrid'."""
+    """nd_grid instance which returns an open multi-dimensional 'meshgrid'.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Ogrid", *args, **kwargs)
 
 
 def r_(*args: object, **kwargs: object) -> object:
-    """Translates slice objects to concatenation along the first axis."""
+    """Translate slice objects to concatenation along the first axis.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("R", *args, **kwargs)
 
 
 def gradient(*args: object, **kwargs: object) -> object:
-    """Return the gradient of an N-dimensional array."""
+    """Return the gradient of an N-dimensional array.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Gradient", *args, **kwargs)
 
 
 def histogram(*args: object, **kwargs: object) -> object:
-    """Compute the histogram of a set of data."""
+    """Evaluate histogram operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Histogram", *args, **kwargs)
 
 
 def histogram2d(*args: object, **kwargs: object) -> object:
-    """Compute the bi-dimensional histogram of two data samples."""
+    """Evaluate histogram2d operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Histogram2d", *args, **kwargs)
 
 
 def histogram_bin_edges(*args: object, **kwargs: object) -> object:
-    """Function to calculate only the edges of the bins used by the histogram function."""
+    """Provide function to calculate only the edges of the bins used by the histogram function.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("HistogramBinEdges", *args, **kwargs)
 
 
 def histogramdd(*args: object, **kwargs: object) -> object:
-    """Compute the multidimensional histogram of some data."""
+    """Evaluate histogramdd operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Histogramdd", *args, **kwargs)
 
 
 def i0(*args: object, **kwargs: object) -> object:
-    """Modified Bessel function of the first kind, order 0."""
+    """Modify Bessel function of the first kind, order 0.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("I0", *args, **kwargs)
 
 
 def interp(*args: object, **kwargs: object) -> object:
-    """One-dimensional linear interpolation."""
+    """One-dimensional linear interpolation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Interp", *args, **kwargs)
 
 
 def median(*args: object, **kwargs: object) -> object:
-    """Compute the median along the specified axis."""
+    """Evaluate median operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Median", *args, **kwargs)
 
 
 def modf(*args: object, **kwargs: object) -> object:
-    """Return the fractional and integral parts of an array, element-wise."""
+    """Return the fractional and integral parts of an array, element-wise.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Modf", *args, **kwargs)
 
 
 def piecewise(*args: object, **kwargs: object) -> object:
-    """Evaluate a piecewise-defined function."""
+    """Evaluate piecewise operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Piecewise", *args, **kwargs)
 
 
 def trapezoid(*args: object, **kwargs: object) -> object:
-    """Integrate along the given axis using the composite trapezoidal rule."""
+    """Integrate along the given axis using the composite trapezoidal rule.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Trapezoid", *args, **kwargs)
 
 
 def indices(*args: object, **kwargs: object) -> object:
-    """Return an array representing the indices of a grid."""
+    """Return an array representing the indices of a grid.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Indices", *args, **kwargs)
 
 
 def ix_(*args: object, **kwargs: object) -> object:
-    """Construct an open mesh from multiple sequences."""
+    """Construct an open mesh from multiple sequences.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Ix", *args, **kwargs)
 
 
 def kron(*args: object, **kwargs: object) -> object:
-    """Kronecker product of two arrays."""
+    """Kronecker product of two arrays.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Kron", *args, **kwargs)
 
 
 def mask_indices(*args: object, **kwargs: object) -> object:
-    """Return the indices to access (n, n) arrays."""
+    """Return the indices to access (n, n) arrays.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("MaskIndices", *args, **kwargs)
 
 
 def rot90(*args: object, **kwargs: object) -> object:
-    """Rotate an array by 90 degrees in the plane specified by axes."""
+    """Rotate an array by 90 degrees in the plane specified by axes.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Rot90", *args, **kwargs)
 
 
 def tri(*args: object, **kwargs: object) -> object:
-    """An array with ones at and below the given diagonal and zeros elsewhere."""
+    """Provide an array with ones at and below the given diagonal and zeros elsewhere.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Tri", *args, **kwargs)
 
 
 def tril(*args: object, **kwargs: object) -> object:
-    """Lower triangle of an array."""
+    """Lower triangle of an array.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Tril", *args, **kwargs)
 
 
 def trim_zeros(*args: object, **kwargs: object) -> object:
-    """Trim the leading and/or trailing zeros from a 1-D array or sequence."""
+    """Trim the leading and/or trailing zeros from a 1-D array or sequence.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("TrimZeros", *args, **kwargs)
 
 
 def triu(*args: object, **kwargs: object) -> object:
-    """Upper triangle of an array."""
+    """Upper triangle of an array.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Triu", *args, **kwargs)
 
 
 def vander(*args: object, **kwargs: object) -> object:
-    """Generate a Vandermonde matrix."""
+    """Generate a Vandermonde matrix.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Vander", *args, **kwargs)
 
 
 def intersect1d(*args: object, **kwargs: object) -> object:
-    """Find the intersection of two arrays."""
+    """Find the intersection of two arrays.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Intersect1d", *args, **kwargs)
 
 
 def iinfo(*args: object, **kwargs: object) -> object:
-    """Iinfo operation."""
+    """Iinfo operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Iinfo", *args, **kwargs)
 
 
 def isscalar(*args: object, **kwargs: object) -> object:
-    """Returns True if the type of num is a scalar type."""
+    """Return True if the type of num is a scalar type.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Isscalar", *args, **kwargs)
 
 
 def iterable(*args: object, **kwargs: object) -> object:
-    """Check whether or not an object can be iterated over."""
+    """Check whether or not an object can be iterated over.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Iterable", *args, **kwargs)
 
 
 def promote_types(*args: object, **kwargs: object) -> object:
-    """Returns the data type with the smallest size and smallest scalar kind."""
+    """Return the data type with the smallest size and smallest scalar kind.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("PromoteTypes", *args, **kwargs)
 
 
 def result_type(*args: object, **kwargs: object) -> object:
-    """Returns the type that results from applying the NumPy type promotion rules."""
+    """Return the type that results from applying the NumPy type promotion rules.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("ResultType", *args, **kwargs)
 
 
 def infeed(*args: object, **kwargs: object) -> object:
-    """Read from the infeed queue."""
+    """Read from the infeed queue.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Infeed", *args, **kwargs)
 
 
 def get_printoptions(*args: object, **kwargs: object) -> object:
-    """Get the current print options."""
+    """Get the current print options.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("GetPrintoptions", *args, **kwargs)
 
 
 def unwrap(*args: object, **kwargs: object) -> object:
-    """Unwrap an array."""
+    """Unwrap an array.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Unwrap", *args, **kwargs)
 
 
 def vectorize(*args: object, **kwargs: object) -> object:
-    """Vectorize a python function."""
+    """Vectorize a python function.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Vectorize", *args, **kwargs)

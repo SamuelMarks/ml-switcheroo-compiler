@@ -173,7 +173,7 @@ class MLXOpRegistryMixin:
     }
 
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Retrieves the dictionary mapping operation names to their corresponding MLX format strings.
+        """Retrieve the dictionary mapping operation names to their corresponding MLX format strings.
 
         Args:
             kwargs: A dictionary of operation keyword arguments.
@@ -206,7 +206,7 @@ class MLXNNOpsVisitor:
     """MLX NN ops visitor mixin."""
 
     def visit_Rope(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Rope operation.
+        """Generate MLX code for the Rope operation.
 
         Args:
             node: The AST node representing the operation.
@@ -224,7 +224,7 @@ class MLXNNOpsVisitor:
         return f"mx.fast.rope({input_vars[0]}, {dim}, traditional={traditional}, base={base}, scale={scale}, offset={offset})"
 
     def visit_PowerIteration(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the PowerIteration operation.
+        """Generate MLX code for the PowerIteration operation.
 
         Args:
             node: The AST node representing the operation.
@@ -243,7 +243,7 @@ class MLXVisionVisitor:
     """MLX Vision ops visitor mixin."""
 
     def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the ElasticTransform operation.
+        """Generate MLX code for the ElasticTransform operation.
 
         Args:
             node: The AST node representing the operation.
@@ -258,7 +258,7 @@ class MLXVisionVisitor:
         return f"mlx_elastic_transform({input_vars[0]}, {input_vars[1]}, '{interpolation}', {fill_value}, {df_str})"
 
     def visit_GaussianBlur(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the GaussianBlur operation.
+        """Generate MLX code for the GaussianBlur operation.
 
         Args:
             node: The AST node representing the operation.
@@ -273,7 +273,7 @@ class MLXVisionVisitor:
         return f"mlx_gaussian_blur({input_vars[0]}, {kernel_size}, {sigma}, '{padding}', {df_str})"
 
     def visit_MedianFilter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the MedianFilter operation.
+        """Generate MLX code for the MedianFilter operation.
 
         Args:
             node: The AST node representing the operation.
@@ -288,7 +288,7 @@ class MLXVisionVisitor:
         return f"mlx_median_filter({input_vars[0]}, {kernel_size}, '{padding}', {df_str})"
 
     def visit_ExtractBoundingBoxes(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the ExtractBoundingBoxes operation.
+        """Generate MLX code for the ExtractBoundingBoxes operation.
 
         Args:
             node: The AST node representing the operation.
@@ -303,7 +303,7 @@ class MLXVisionVisitor:
         return f"mlx_extract_bounding_boxes({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, {crop_size}, '{interpolation}', {extrapolation_value}, {df_str})"
 
     def visit_IoU(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the IoU operation.
+        """Generate MLX code for the IoU operation.
 
         Args:
             node: The AST node representing the operation.
@@ -317,7 +317,7 @@ class MLXVisionVisitor:
         return f"mlx_iou({input_vars[0]}, {input_vars[1]}, '{bounding_box_format}')"
 
     def visit_NonMaxSuppression(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the NonMaxSuppression operation.
+        """Generate MLX code for the NonMaxSuppression operation.
 
         Args:
             node: The AST node representing the operation.
@@ -333,7 +333,7 @@ class MLXVisionVisitor:
         return f"mlx_nms({input_vars[0]}, {input_vars[1]}, {max_output_size}, {iou_threshold}, {score_threshold})"
 
     def visit_ResizeBicubic(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the ResizeBicubic operation.
+        """Generate MLX code for the ResizeBicubic operation.
 
         Args:
             node: The AST node representing the operation.
@@ -348,7 +348,7 @@ class MLXVisionVisitor:
         return f"mlx_resize({input_vars[0]}, {size}, 'bicubic', {align_corners})"
 
     def visit_ResizeLanczos3(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the ResizeLanczos3 operation.
+        """Generate MLX code for the ResizeLanczos3 operation.
 
         Args:
             node: The AST node representing the operation.
@@ -363,7 +363,7 @@ class MLXVisionVisitor:
         return f"mlx_resize({input_vars[0]}, {size}, 'lanczos3', {align_corners})"
 
     def visit_PerspectiveTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the PerspectiveTransform operation.
+        """Generate MLX code for the PerspectiveTransform operation.
 
         Args:
             node: The AST node representing the operation.
@@ -382,7 +382,7 @@ class MLXAudioVisitor:
     """MLX Audio ops visitor mixin."""
 
     def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Istft operation.
+        """Generate MLX code for the Istft operation.
 
         Args:
             node: The AST node representing the operation.
@@ -398,7 +398,7 @@ class MLXAudioVisitor:
         return f"mlx_istft({input_vars[0]}, STFTConfig({frame_length}, {frame_step}, {fft_len_str}, '{window}', {center}))"
 
     def visit_MelFilterbank(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the MelFilterbank operation.
+        """Generate MLX code for the MelFilterbank operation.
 
         Args:
             node: The AST node representing the operation.
@@ -416,7 +416,7 @@ class MLXAudioVisitor:
         return f"mlx_mel_filterbank({num_mel_bins}, {num_spectrogram_bins}, {sample_rate}, {lower_edge_hertz}, {upper_edge_hertz})"
 
     def visit_Mfcc(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Mfcc operation.
+        """Generate MLX code for the Mfcc operation.
 
         Args:
             node: The AST node representing the operation.
@@ -438,15 +438,14 @@ class MLXShapeOpsVisitor:
     """Visitor for MLX shape operations."""
 
     def _format_einsum(self, input_vars: list[str], kwargs: dict[str, object]) -> str:
-        """Formats the MLX code for the einsum operation.
+        """Format the MLX code for the einsum operation.
 
         Args:
-            input_vars: A list of input variable names.
-            op: The string name of the operation (e.g., "zeros" or "ones").
-            kwargs: A dictionary of keyword arguments.
+            input_vars (list): The input_vars parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            A string representing the formatted MLX code for einsum.
+            str: Result.
         """
         equation = kwargs.get("equation", "")
         if "operands" in kwargs:
@@ -457,7 +456,7 @@ class MLXShapeOpsVisitor:
         return f"mx.einsum('{equation}', {', '.join(input_vars)})"
 
     def _format_zeros_ones(self, op: str, kwargs: dict[str, object]) -> str:
-        """Formats the MLX code for the zeros_ones operation.
+        """Format the MLX code for the zeros_ones operation.
 
         Args:
             op: The string name of the operation (e.g., "zeros" or "ones").
@@ -474,14 +473,13 @@ class MLXShapeOpsVisitor:
         return f"mx.{op}({shape}, dtype={dt})"
 
     def _format_full(self, kwargs: dict[str, object]) -> str:
-        """Formats the MLX code for the full operation.
+        """Format the MLX code for the full operation.
 
         Args:
-            op: The string name of the operation (e.g., "zeros" or "ones").
-            kwargs: A dictionary of keyword arguments.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            A string representing the formatted MLX code for full.
+            str: Result.
         """
         shape = kwargs.get("shape", ())
         if isinstance(shape, list):
@@ -492,34 +490,32 @@ class MLXShapeOpsVisitor:
         return f"mx.full({shape}, {fill_value}, dtype={dt})"
 
     def _format_transpose(self, kwargs: dict[str, object]) -> str:
-        """Formats the MLX code for the transpose operation.
+        """Format the MLX code for the transpose operation.
 
         Args:
-            op: The string name of the operation (e.g., "zeros" or "ones").
-            kwargs: A dictionary of keyword arguments.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            A string representing the formatted MLX code for transpose.
+            str: Result.
         """
         axes = kwargs.get("axes", None)
         return f"axes={axes}" if axes is not None else ""
 
     def _format_random_categorical(self, input_vars: list[str], kwargs: dict[str, object]) -> str:
-        """Formats the MLX code for the random_categorical operation.
+        """Format the MLX code for the random_categorical operation.
 
         Args:
-            input_vars: A list of input variable names.
-            op: The string name of the operation (e.g., "zeros" or "ones").
-            kwargs: A dictionary of keyword arguments.
+            input_vars (list): The input_vars parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            A string representing the formatted MLX code for random_categorical.
+            str: Result.
         """
         num_samples = kwargs.get("num_samples", 1)
         return f"mx.random.categorical({input_vars[0]}, num_samples={num_samples})"
 
     def visit_Concatenate(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Concatenate operation.
+        """Generate MLX code for the Concatenate operation.
 
         Args:
             node: The AST node representing the operation.
@@ -533,7 +529,7 @@ class MLXShapeOpsVisitor:
         return f"mx.concatenate({input_vars[0]}, axis={axis})"
 
     def visit_Stack(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Stack operation.
+        """Generate MLX code for the Stack operation.
 
         Args:
             node: The AST node representing the operation.
@@ -547,7 +543,7 @@ class MLXShapeOpsVisitor:
         return f"mx.stack({input_vars[0]}, axis={axis})"
 
     def visit_Partition(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Partition operation.
+        """Generate MLX code for the Partition operation.
 
         Args:
             node: The AST node representing the operation.
@@ -562,7 +558,7 @@ class MLXShapeOpsVisitor:
         return f"mx.partition({input_vars[0]}, {kth}, axis={axis})"
 
     def visit_Argpartition(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Argpartition operation.
+        """Generate MLX code for the Argpartition operation.
 
         Args:
             node: The AST node representing the operation.
@@ -577,7 +573,7 @@ class MLXShapeOpsVisitor:
         return f"mx.argpartition({input_vars[0]}, {kth}, axis={axis})"
 
     def visit_Repeat(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Repeat operation.
+        """Generate MLX code for the Repeat operation.
 
         Args:
             node: The AST node representing the operation.
@@ -592,7 +588,7 @@ class MLXShapeOpsVisitor:
         return f"mx.repeat({input_vars[0]}, {repeats}, axis={axis})"
 
     def visit_Roll(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Roll operation.
+        """Generate MLX code for the Roll operation.
 
         Args:
             node: The AST node representing the operation.
@@ -607,7 +603,7 @@ class MLXShapeOpsVisitor:
         return f"mx.roll({input_vars[0]}, {shift}, axis={axis})"
 
     def visit_Tile(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Tile operation.
+        """Generate MLX code for the Tile operation.
 
         Args:
             node: The AST node representing the operation.
@@ -621,7 +617,7 @@ class MLXShapeOpsVisitor:
         return f"mx.tile({input_vars[0]}, {reps})"
 
     def visit_TopK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the TopK operation.
+        """Generate MLX code for the TopK operation.
 
         Args:
             node: The AST node representing the operation.
@@ -636,7 +632,7 @@ class MLXShapeOpsVisitor:
         return f"mx.topk({input_vars[0]}, {k}, axis={axis})"
 
     def visit_Moveaxis(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Moveaxis operation.
+        """Generate MLX code for the Moveaxis operation.
 
         Args:
             node: The AST node representing the operation.
@@ -651,7 +647,7 @@ class MLXShapeOpsVisitor:
         return f"mx.moveaxis({input_vars[0]}, {source}, {destination})"
 
     def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the RaggedDot operation.
+        """Generate MLX code for the RaggedDot operation.
 
         Args:
             node: The AST node representing the operation.
@@ -664,7 +660,7 @@ class MLXShapeOpsVisitor:
         return f"mx.matmul({input_vars[0]}, {input_vars[1]})"
 
     def visit_NanToNum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the NanToNum operation.
+        """Generate MLX code for the NanToNum operation.
 
         Args:
             node: The AST node representing the operation.
@@ -680,7 +676,7 @@ class MLXShapeOpsVisitor:
         return f"mx.nan_to_num({input_vars[0]}, nan={nan}, posinf={posinf}, neginf={neginf})"
 
     def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Einsum operation.
+        """Generate MLX code for the Einsum operation.
 
         Args:
             node: The AST node representing the operation.
@@ -693,7 +689,7 @@ class MLXShapeOpsVisitor:
         return self._format_einsum(input_vars, node.attributes)
 
     def visit_Zeros(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Zeros operation.
+        """Generate MLX code for the Zeros operation.
 
         Args:
             node: The AST node representing the operation.
@@ -706,7 +702,7 @@ class MLXShapeOpsVisitor:
         return self._format_zeros_ones("zeros", node.attributes)
 
     def visit_Ones(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Ones operation.
+        """Generate MLX code for the Ones operation.
 
         Args:
             node: The AST node representing the operation.
@@ -719,7 +715,7 @@ class MLXShapeOpsVisitor:
         return self._format_zeros_ones("ones", node.attributes)
 
     def visit_Full(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Full operation.
+        """Generate MLX code for the Full operation.
 
         Args:
             node: The AST node representing the operation.
@@ -732,7 +728,7 @@ class MLXShapeOpsVisitor:
         return self._format_full(node.attributes)
 
     def visit_ConstantOfShape(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the ConstantOfShape operation.
+        """Generate MLX code for the ConstantOfShape operation.
 
         Args:
             node: The AST node representing the operation.
@@ -745,7 +741,7 @@ class MLXShapeOpsVisitor:
         return self._format_full(node.attributes)
 
     def visit_Transpose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the Transpose operation.
+        """Generate MLX code for the Transpose operation.
 
         Args:
             node: The AST node representing the operation.
@@ -759,7 +755,7 @@ class MLXShapeOpsVisitor:
         return f"mx.transpose({input_vars[0]}, {args_str})" if args_str else f"mx.transpose({input_vars[0]})"
 
     def visit_RandomCategorical(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generates MLX code for the RandomCategorical operation.
+        """Generate MLX code for the RandomCategorical operation.
 
         Args:
             node: The AST node representing the operation.

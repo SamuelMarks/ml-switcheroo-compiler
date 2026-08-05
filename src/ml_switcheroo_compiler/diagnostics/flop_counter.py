@@ -6,7 +6,14 @@ from ml_switcheroo_ir import LogicalGraph
 
 
 def _estimate_node_flops(node: object) -> int:
-    """Estimate flops for a single node."""
+    """Estimate flops for a single node.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        int: Result.
+    """
     if node.op_type == "MatMul":
         # rough estimate
         return 100
@@ -27,13 +34,11 @@ def _estimate_node_flops(node: object) -> int:
 def estimate_flops(graph: LogicalGraph) -> int:
     """Estimate the number of floating-point operations in the graph.
 
-    graph (LogicalGraph): The IR graph to analyze
+    Args:
+        graph (LogicalGraph): The graph parameter.
 
     Returns:
-    int: Estimated total FLOPs
-
-    Args:
-        graph (LogicalGraph): Argument graph
+        int: Result.
     """
     total_flops = 0
     for node in graph.nodes.values():

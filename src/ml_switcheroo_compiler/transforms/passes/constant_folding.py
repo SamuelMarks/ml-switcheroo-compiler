@@ -9,14 +9,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> bool:
-    """Execute _are_all_inputs_constant.
+    """Evaluate _are_all_inputs_constant operation.
 
     Args:
-        canonical_inputs (Any): Argument canonical_inputs.
-        graph (Any): Argument graph.
+        canonical_inputs (list): The canonical_inputs parameter.
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    Any: The result.
+        bool: Result.
     """
     if not canonical_inputs:
         return False
@@ -27,16 +27,16 @@ def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> boo
 
 
 def _evaluate_constant_node(node: object, canonical_inputs: list[str], graph: IRGraph, backend: object) -> object:
-    """Execute _evaluate_constant_node.
+    """Evaluate _evaluate_constant_node operation.
 
     Args:
-        node (Any): Argument node.
-        canonical_inputs (Any): Argument canonical_inputs.
-        graph (Any): Argument graph.
-        backend (Any): Argument backend.
+        node (object): The node parameter.
+        canonical_inputs (list): The canonical_inputs parameter.
+        graph (IRGraph): The graph parameter.
+        backend (object): The backend parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     subgraph = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:
@@ -50,7 +50,6 @@ def _evaluate_constant_node(node: object, canonical_inputs: list[str], graph: IR
     )
     outputs = evaluate_graph(subgraph, {})
     val = outputs[node.id]
-
     if (hasattr(val, "size") and val.size == 1) or (hasattr(val, "numel") and val.numel() == 1):
         val = backend.item(val)
     return val
@@ -59,22 +58,21 @@ def _evaluate_constant_node(node: object, canonical_inputs: list[str], graph: IR
 def constant_folding_pass(graph: IRGraph) -> bool:
     """In-place Constant Folding.
 
-    Evaluates pure operations on constant inputs eagerly using the interpreter
+    Raises:
+        Exception: An exception.
 
     Args:
-        graph (IRGraph): Argument graph
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    bool: True if the graph was modified
+        bool: Result.
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
     id_map: dict[str, str] = {}
     backend = get_active_backend()
-
     for node in sorted_nodes:
         canonical_inputs = [id_map.get(inp, inp) for inp in node.inputs]
-
         if _are_all_inputs_constant(canonical_inputs, graph):
             try:
                 val = _evaluate_constant_node(node, canonical_inputs, graph, backend)
@@ -97,7 +95,5 @@ def constant_folding_pass(graph: IRGraph) -> bool:
                     continue
                 else:
                     raise
-
         id_map[node.id] = node.id
-
     return modified

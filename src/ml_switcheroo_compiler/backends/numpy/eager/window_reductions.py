@@ -9,46 +9,46 @@ from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_windo
 
 @numpy_eager_registry.register("ReduceWindow")
 def _np_reduce_window(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the reduce window logic eagerly backed by NumPy.
+    """Evaluate _np_reduce_window operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _reduce_window(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the segment sum logic eagerly backed by NumPy.
+    """Evaluate _np_segment_sum operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _segment_sum(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentMax")
 def _np_segment_max(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
-    """Evaluate the segment max logic eagerly backed by NumPy.
+    """Evaluate _np_segment_max operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        data (object): Required parameter for data.
-        segment_ids (object): Required parameter for segment_ids.
-        num_segments (object): Required parameter for num_segments.
+        backend_module (object): The backend_module parameter.
+        data (object): The data parameter.
+        segment_ids (object): The segment_ids parameter.
+        num_segments (object): The num_segments parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -62,16 +62,16 @@ def _np_segment_max(backend_module: object, data: object, segment_ids: object, n
 
 @numpy_eager_registry.register("SegmentMin")
 def _np_segment_min(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
-    """Evaluate the segment min logic eagerly backed by NumPy.
+    """Evaluate _np_segment_min operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        data (object): Required parameter for data.
-        segment_ids (object): Required parameter for segment_ids.
-        num_segments (object): Required parameter for num_segments.
+        backend_module (object): The backend_module parameter.
+        data (object): The data parameter.
+        segment_ids (object): The segment_ids parameter.
+        num_segments (object): The num_segments parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -85,16 +85,16 @@ def _np_segment_min(backend_module: object, data: object, segment_ids: object, n
 
 @numpy_eager_registry.register("SegmentProd")
 def _np_segment_prod(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
-    """Evaluate the segment prod logic eagerly backed by NumPy.
+    """Evaluate _np_segment_prod operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        data (object): Required parameter for data.
-        segment_ids (object): Required parameter for segment_ids.
-        num_segments (object): Required parameter for num_segments.
+        backend_module (object): The backend_module parameter.
+        data (object): The data parameter.
+        segment_ids (object): The segment_ids parameter.
+        num_segments (object): The num_segments parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -107,14 +107,14 @@ def _np_segment_prod(backend_module: object, data: object, segment_ids: object, 
 
 
 def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int, int]]:
-    """Compute start and end input indices for 1D adaptive pooling.
+    """Evaluate _adaptive_pool_1d_indices operation.
 
     Args:
-        input_dim (int): Size of input dimension.
-        output_dim (int): Size of target output dimension.
+        input_dim (int): The input_dim parameter.
+        output_dim (int): The output_dim parameter.
 
     Returns:
-        list[tuple[int, int]]: Index ranges.
+        object: Result.
     """
     indices = []
     for i in range(output_dim):
@@ -128,16 +128,16 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
 
 @numpy_eager_registry.register("AdaptiveAvgPool2D")
 def _np_adaptive_avg_pool2d(backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object) -> object:
-    """Evaluate the adaptive avg pool2d logic eagerly backed by NumPy.
+    """Evaluate _np_adaptive_avg_pool2d operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        output_size (tuple): Required parameter for output_size.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        output_size (object): The output_size parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -160,7 +160,17 @@ def _np_adaptive_avg_pool2d(backend_module: object, operand: object, output_size
 
 @numpy_eager_registry.register("AdaptiveAvgPool3D")
 def _np_adaptive_avg_pool3d(backend_module: object, operand: object, output_size: tuple[int, int, int], **kwargs: object) -> object:
-    """Evaluate np adaptive avg pool3d."""
+    """Evaluate _np_adaptive_avg_pool3d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        output_size (object): The output_size parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
         d_in, h_in, w_in = sh[-3], sh[-2], sh[-1]
@@ -184,7 +194,17 @@ def _np_adaptive_avg_pool3d(backend_module: object, operand: object, output_size
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D")
 def _np_adaptive_max_pool3d(backend_module: object, operand: object, output_size: tuple[int, int, int], **kwargs: object) -> object:
-    """Evaluate np adaptive max pool3d."""
+    """Evaluate _np_adaptive_max_pool3d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        output_size (object): The output_size parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
         d_in, h_in, w_in = sh[-3], sh[-2], sh[-1]
@@ -208,23 +228,33 @@ def _np_adaptive_max_pool3d(backend_module: object, operand: object, output_size
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D_Indices")
 def _np_adaptive_max_pool3d_indices(backend_module: object, operand: object, output_size: tuple[int, int, int], **kwargs: object) -> object:
-    """Evaluate np adaptive max pool3d indices."""
+    """Evaluate _np_adaptive_max_pool3d_indices operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        output_size (object): The output_size parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     res = _np_adaptive_max_pool3d(backend_module, operand, output_size, **kwargs)
     return (res, np.zeros_like(res, dtype=np.int64))
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool2D")
 def _np_adaptive_max_pool2d(backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object) -> object:
-    """Evaluate the adaptive max pool2d logic eagerly backed by NumPy.
+    """Evaluate _np_adaptive_max_pool2d operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        operand (object): Required parameter for operand.
-        output_size (tuple): Required parameter for output_size.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        operand (object): The operand parameter.
+        output_size (object): The output_size parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -247,29 +277,29 @@ def _np_adaptive_max_pool2d(backend_module: object, operand: object, output_size
 
 @numpy_eager_registry.register("FractionalAvgPool")
 def _np_fractional_avg_pool(backend_module: object, value: object, **kwargs: object) -> object:
-    """Evaluate the fractional avg pool logic eagerly backed by NumPy.
+    """Evaluate _np_fractional_avg_pool operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        value (object): Required parameter for value.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        value (object): The value parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return np.asarray(value)
 
 
 @numpy_eager_registry.register("FractionalMaxPool")
 def _np_fractional_max_pool(backend_module: object, value: object, **kwargs: object) -> object:
-    """Evaluate the fractional max pool logic eagerly backed by NumPy.
+    """Evaluate _np_fractional_max_pool operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        value (object): Required parameter for value.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        value (object): The value parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return np.asarray(value)

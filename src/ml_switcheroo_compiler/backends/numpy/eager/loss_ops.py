@@ -7,7 +7,17 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 def _np_ctc_loss_update_alpha(t: int, S: int, augmented: np.ndarray, alpha: np.ndarray, probs: np.ndarray, num_classes: int, blank: int) -> None:
-    """Helper to update CTC loss alpha values at step t."""
+    """Update CTC loss alpha matrix.
+
+    Args:
+        alpha (object): The alpha matrix.
+        probs (object): The probabilities.
+        augmented (object): The augmented labels.
+        t (int): Time step.
+        S (int): Sequence length.
+        blank (int): Blank token index.
+        num_classes (int): Number of classes.
+    """
     for s in range(S):
         prob_term = probs[t, augmented[s] % num_classes]
         sum_term = alpha[t - 1, s]
@@ -19,7 +29,7 @@ def _np_ctc_loss_update_alpha(t: int, S: int, augmented: np.ndarray, alpha: np.n
 
 
 def _np_ctc_loss_single(probs: np.ndarray, b_labels: np.ndarray, T: int, L: int) -> float:
-    """Helper to compute the CTC loss for a single sequence.
+    """Help to compute the CTC loss for a single sequence.
 
     Args:
         probs (np.ndarray): Probability distribution of logits over time.
@@ -55,18 +65,18 @@ def _np_ctc_loss_single(probs: np.ndarray, b_labels: np.ndarray, T: int, L: int)
 
 @numpy_eager_registry.register("CtcLoss")
 def _np_ctc_loss(backend_module: object, labels: object, logits: object, label_length: object, logit_length: object, **kwargs: object) -> object:
-    """Evaluate the ctc loss logic eagerly backed by NumPy.
+    """Evaluate _np_ctc_loss operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        labels (object): Required parameter for labels.
-        logits (object): Required parameter for logits.
-        label_length (object): Required parameter for label_length.
-        logit_length (object): Required parameter for logit_length.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        labels (object): The labels parameter.
+        logits (object): The logits parameter.
+        label_length (object): The label_length parameter.
+        logit_length (object): The logit_length parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     logits_arr = np.asarray(logits)
     labels_arr = np.asarray(labels)
@@ -107,7 +117,16 @@ def _np_ctc_loss(backend_module: object, labels: object, logits: object, label_l
 
 @numpy_eager_registry.register("CircleLoss")
 def _np_circle_loss(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate circle loss."""
+    """Evaluate _np_circle_loss operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if len(args) < 2:
         return backend_module.zeros(1)
     y_true = np.asarray(args[0])
@@ -145,7 +164,16 @@ def _np_circle_loss(backend_module: object, *args: object, **kwargs: object) -> 
 
 @numpy_eager_registry.register("CategoricalGeneralizedCrossEntropy")
 def _np_categorical_generalized_cross_entropy(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate categorical generalized cross entropy."""
+    """Evaluate _np_categorical_generalized_cross_entropy operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if len(args) < 2:
         return backend_module.zeros(1)
     y_true = np.asarray(args[0])

@@ -16,11 +16,11 @@ class LuFactor(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         return ()
 
@@ -30,20 +30,28 @@ class LuPivotsToPermutation(OpDef):
     """LuPivotsToPermutation Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if not args:
             return ()
         return args[0].shape[:-1] + (kwargs.get("permutation_size", 0),)
 
 
 def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
-    """Computes pivoted LU decomposition of a matrix for use in `lu_solve`.
+    """Compute pivoted LU decomposition of a matrix for use in `lu_solve`.
 
     Args:
-        a (Tensor): The input matrix to decompose
+        a (Tensor): The a parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple (lu, piv) containing the LU factorization and pivot indices
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -61,14 +69,14 @@ def lu_factor(a: Tensor) -> tuple[Tensor, Tensor]:
 
 
 def lu_pivots_to_permutation(pivots: Tensor, permutation_size: int) -> Tensor:
-    """Converts LU pivots to a permutation matrix or array.
+    """Convert LU pivots to a permutation matrix or array.
 
     Args:
-        pivots (Tensor): The LU pivots
-        permutation_size (int): The size of the permutation
+        pivots (Tensor): The pivots parameter.
+        permutation_size (int): The permutation_size parameter.
 
     Returns:
-    Tensor: The permutation array
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

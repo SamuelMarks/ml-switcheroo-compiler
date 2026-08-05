@@ -17,15 +17,15 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
 def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:
-    """Evaluate and process the cond tracing operation.
+    """Evaluate cond_tracing operation.
 
     Args:
-        pred (Tensor): Required parameter for pred.
-        true_fn (Callable): Required parameter for true_fn.
-        false_fn (Callable): Required parameter for false_fn.
+        pred (Tensor): The pred parameter.
+        true_fn (Callable): The true_fn parameter.
+        false_fn (Callable): The false_fn parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -47,15 +47,15 @@ def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[]
 
 
 def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object) -> object:
-    """Evaluate and process the while loop tracing operation.
+    """Evaluate while_loop_tracing operation.
 
     Args:
-        cond_fn (Callable): Required parameter for cond_fn.
-        body_fn (Callable): Required parameter for body_fn.
-        init_val (object): Required parameter for init_val.
+        cond_fn (object): The cond_fn parameter.
+        body_fn (object): The body_fn parameter.
+        init_val (object): The init_val parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -80,13 +80,13 @@ def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any]
 
 
 def _flatten_inputs(obj: object) -> list[str]:
-    """Evaluate and process the flatten inputs operation.
+    """Evaluate _flatten_inputs operation.
 
     Args:
-        obj (object): Required parameter for obj.
+        obj (object): The obj parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     if isinstance(obj, Tensor):
         return [obj.data.id]
@@ -99,16 +99,16 @@ def _flatten_inputs(obj: object) -> list[str]:
 
 
 def scan_tracing(f: Callable, init: object, xs: object, length: int | None = None) -> tuple[Any, Any]:
-    """Evaluate and process the scan tracing operation.
+    """Evaluate scan_tracing operation.
 
     Args:
-        f (Callable): Required parameter for f.
-        init (object): Required parameter for init.
-        xs (object): Required parameter for xs.
-        length (Any): Required parameter for length.
+        f (Callable): The f parameter.
+        init (object): The init parameter.
+        xs (object): The xs parameter.
+        length (object): The length parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -134,15 +134,15 @@ def scan_tracing(f: Callable, init: object, xs: object, length: int | None = Non
 
 
 def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> Tensor:
-    """Evaluate and process the map fn tracing operation.
+    """Evaluate map_fn_tracing operation.
 
     Args:
-        fn (Callable): Required parameter for fn.
-        elems (Tensor): Required parameter for elems.
-        dtype (Any): Required parameter for dtype.
+        fn (Callable): The fn parameter.
+        elems (Tensor): The elems parameter.
+        dtype (object): The dtype parameter.
 
     Returns:
-        Tensor: The evaluated or processed output.
+        Tensor: Result.
     """
     if not global_tracing_state.is_tracing:
         from ml_switcheroo_compiler.core.errors import TracingError
@@ -168,24 +168,24 @@ def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> T
 
 
 def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
-    """Evaluate and process the pmap tracing operation.
+    """Evaluate pmap_tracing operation.
 
     Args:
-        func (Callable): Required parameter for func.
-        axis_name (Any): Required parameter for axis_name.
+        func (Callable): The func parameter.
+        axis_name (object): The axis_name parameter.
 
     Returns:
-        Callable: The evaluated or processed output.
+        Callable: Result.
     """
 
     def wrapped(*args: object) -> object:
-        """Evaluate and process the wrapped operation.
+        """Evaluate wrapped operation.
 
         Args:
-            *args (Any): Variable positional arguments.
+            *args (object): Positional args.
 
         Returns:
-            object: The evaluated or processed output.
+            object: Result.
         """
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.core.errors import TracingError
@@ -217,13 +217,13 @@ def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
 
 
 def stop_gradient_tracing(x: object) -> object:
-    """Evaluate and process the stop gradient tracing operation.
+    """Evaluate stop_gradient_tracing operation.
 
     Args:
-        x (object): Required parameter for x.
+        x (object): The x parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if not global_tracing_state.is_tracing:
         return x
@@ -242,14 +242,14 @@ def stop_gradient_tracing(x: object) -> object:
 
 
 def assert_value_tracing(condition: object, message: str = "") -> None:
-    """Evaluate and process the assert value tracing operation.
+    """Evaluate assert_value_tracing operation.
 
     Args:
-        condition (object): Required parameter for condition.
-        message (str): Required parameter for message.
+        condition (object): The condition parameter.
+        message (str): The message parameter.
 
     Returns:
-        Any: The evaluated or processed output.
+        NoneType: Result.
     """
     if not global_tracing_state.is_tracing:
         record_assertion(condition, message)

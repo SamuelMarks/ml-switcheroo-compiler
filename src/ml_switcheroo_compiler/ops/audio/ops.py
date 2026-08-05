@@ -265,7 +265,7 @@ class Idct(OpDef):
 
 @register_op("Mdct")
 class Mdct(OpDef):
-    """Modified discrete cosine transform (MDCT) operator."""
+    """Modify discrete cosine transform (MDCT) operator."""
 
     op_name = "Mdct"
 

@@ -27,8 +27,8 @@ def eye(
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere.
 
     Args:
-        n (int): Argument n
-        m (Optional[int]): Argument m
+        n (int): The n parameter.
+        m (Optional[int]): The m parameter.
         k (int): Index of the diagonal.
         dtype (Optional[DType]): The data type
         device (Optional[Device]): The device to store the tensor on.
@@ -61,7 +61,7 @@ def identity(
     """Return the 2-D identity matrix of shape `(n, n)`.
 
     Args:
-        n (int): Argument n
+        n (int): The n parameter.
         dtype (Optional[DType]): The data type
         device (Optional[Device]): The device to store the tensor on.
 
@@ -72,6 +72,17 @@ def identity(
 
 
 def _diag_eager(input: Tensor, diagonal: int, device: object, dtype: object) -> Tensor:
+    """Evaluate _diag_eager operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        diagonal (int): The diagonal parameter.
+        device (object): The device parameter.
+        dtype (object): The dtype parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
     shape = data.shape if hasattr(data, "shape") else ()
     if dtype is None:
@@ -83,11 +94,15 @@ def diag(input: Tensor, diagonal: int = 0) -> Tensor:
     """Return a 2-D square tensor with diagonal, or extracts diagonal.
 
     Args:
-        input (Tensor): The input tensor
-        diagonal (int): Argument diagonal
+        input (Tensor): The input parameter.
+        diagonal (int): The diagonal parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
+
+    Raises:
+        RuntimeError: An exception.
+        ValueError: An exception.
     """
     device = getattr(input, "device", None)
     dtype = getattr(input, "dtype", None)

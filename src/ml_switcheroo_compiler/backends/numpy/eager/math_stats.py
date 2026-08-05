@@ -6,15 +6,15 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("Average")
 def _np_average(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the weighted average along the specified axis.
+    """Evaluate _np_average operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return backend_module.average(*args, **kwargs)
 
@@ -141,24 +141,18 @@ def _np_median_(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the confusion_matrix operation using NumPy.
+    """Evaluate _np_confusion_matrix operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        ValueError: An exception.
     """
     import numpy as np
 
@@ -185,19 +179,18 @@ def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("Descriptive")
 def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the descriptive operation using NumPy.
+    """Evaluate _np_descriptive operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        ValueError: An exception.
     """
     import numpy as np
 
@@ -213,19 +206,15 @@ def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> 
 
 @numpy_eager_registry.register("Distributions")
 def _np_distributions(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the distributions operation using NumPy.
+    """Evaluate _np_distributions operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 
@@ -234,19 +223,15 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("RandomCategorical")
 def _np_randomcategorical(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the randomcategorical operation using NumPy.
+    """Evaluate _np_randomcategorical operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 
@@ -270,19 +255,15 @@ def _np_randomcategorical(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("RandomPermutation")
 def _np_randompermutation(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the randompermutation operation using NumPy.
+    """Evaluate _np_randompermutation operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 
@@ -300,14 +281,32 @@ def _np_randompermutation(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
 def _np_randomtruncatednormal(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate RandomTruncatedNormal logic eagerly backed by NumPy."""
+    """Evaluate _np_randomtruncatednormal operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
 
 
 @numpy_eager_registry.register("RandomBernoulli")
 def _np_randombernoulli(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate RandomBernoulli logic eagerly backed by NumPy."""
+    """Evaluate _np_randombernoulli operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
     return backend_module.random.binomial(1, p, size=shape)
@@ -315,7 +314,16 @@ def _np_randombernoulli(backend_module: object, *args: object, **kwargs: object)
 
 @numpy_eager_registry.register("RandomUniform")
 def _np_randomuniform(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate RandomUniform logic eagerly backed by NumPy."""
+    """Evaluate _np_randomuniform operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     low = kwargs.get("minval", args[1] if len(args) > 1 else 0.0)
     high = kwargs.get("maxval", args[2] if len(args) > 2 else 1.0)
@@ -324,19 +332,15 @@ def _np_randomuniform(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("RandomChoice")
 def _np_randomchoice(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the randomchoice operation using NumPy.
+    """Evaluate _np_randomchoice operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 
@@ -355,19 +359,15 @@ def _np_randomchoice(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("RandomShuffle")
 def _np_randomshuffle(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the randomshuffle operation using NumPy.
+    """Evaluate _np_randomshuffle operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 
@@ -381,19 +381,15 @@ def _np_randomshuffle(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("Dirichlet")
 def _np_dirichlet(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the dirichlet operation using NumPy.
+    """Evaluate _np_dirichlet operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     import numpy as np
 

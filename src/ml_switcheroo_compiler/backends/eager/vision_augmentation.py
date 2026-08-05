@@ -62,13 +62,13 @@ def random_flip_eager(backend_module: object, images: object, mode: str, seed: o
     """Apply a random flip transformation to a batch of images eagerly.
 
     Args:
-        backend_module (object): The backend module to use for array operations.
-        images (object): The input tensor of images to transform.
-        mode (str): The flipping strategy, one of 'horizontal', 'vertical', or 'horizontal_and_vertical'.
-        seed (object, optional): The random seed for reproducibility. Defaults to None.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        mode (str): The mode parameter.
+        seed (object): The seed parameter.
 
     Returns:
-        object: The batch of transformed images.
+        object: Result.
     """
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -231,13 +231,13 @@ def random_crop_eager(backend_module: object, images: object, size: tuple, seed:
     """Execute a random spatial crop on a batch of images eagerly.
 
     Args:
-        backend_module (object): The backend module to use for array operations.
-        images (object): The input tensor of images to crop.
-        size (tuple): The target spatial dimensions (height, width) of the crop.
-        seed (object, optional): The random seed for reproducibility. Defaults to None.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        size (tuple): The size parameter.
+        seed (object): The seed parameter.
 
     Returns:
-        object: The batch of cropped images.
+        object: Result.
     """
     return (0, 0)
 

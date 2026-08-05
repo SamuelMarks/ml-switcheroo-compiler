@@ -1,4 +1,4 @@
-"""Provides the Environment class for managing variable state and tensor memory mappings.
+"""Provide the Environment class for managing variable state and tensor memory mappings.
 
 during evaluation
 """
@@ -19,7 +19,7 @@ class Environment:
     """
 
     def __init__(self, inputs: dict[str, object] | None = None) -> None:
-        """Initializes the object.
+        """Initialize the object.
 
         Args:
             inputs (dict[str, object]): The inputs to process.
@@ -27,13 +27,16 @@ class Environment:
         self.memory: dict[str, object] = inputs or {}
 
     def get(self, name: str) -> object:
-        """Retrieves the value associated with the given name.
+        """Retrieve the value associated with the given node or variable name.
 
         Args:
-            name (str): The variable name.
+            name (str): The unique identifier for the tensor or variable to retrieve.
 
         Returns:
-            The computed shape or evaluation result.
+            object: The concrete tensor, scalar, or value associated with the name.
+
+        Raises:
+            ValueError: If the requested name does not exist in the environment's memory.
         """
         if name not in self.memory:
             msg = f"Missing input value for node '{name}'"
@@ -41,21 +44,21 @@ class Environment:
         return self.memory[name]
 
     def set(self, name: str, value: object) -> None:
-        """Sets the value associated with the given name.
+        """Store or update a value in the environment for a specific node or variable.
 
         Args:
-            name (str): The variable name.
-            value (object): The value to set or add.
+            name (str): The unique identifier where the value should be stored.
+            value (object): The concrete tensor, scalar, or object to store.
         """
         self.memory[name] = value
 
     def __contains__(self, name: str) -> bool:
-        """Check if an item is in the environment.
+        """Check if a specific node or variable name exists within the environment.
 
         Args:
-            name (str): The name parameter for the operation.
+            name (str): The unique identifier to check for in the memory store.
 
         Returns:
-            bool: A boolean indicating the result of the check.
+            bool: True if the name is present in the environment's memory, False otherwise.
         """
         return name in self.memory

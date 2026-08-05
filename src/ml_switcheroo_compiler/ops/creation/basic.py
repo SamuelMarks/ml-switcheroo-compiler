@@ -1,4 +1,4 @@
-"""Defines tensor creation operations for the ML Switcheroo framework.
+"""Define tensor creation operations for the ML Switcheroo framework.
 
 This module contains operations that generate new tensors, such as zeros, ones, full,
 and arange, along with their shape inference and NumPy evaluation implementations
@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 class CreationOp(OpDef):
-    """Base class for tensor creation operations.
+    """Define base class for tensor creation operations.
 
     Provides common implementations for shape inference and NumPy evaluation
     for operations that create tensors of a specified shape (e.g., Zeros, Ones)
@@ -18,35 +18,35 @@ class CreationOp(OpDef):
     op_name: str = ""
 
     def infer_shape(self, shape: object, **kwargs: object) -> object:
-        """Infer the output shape of the operation.
+        """Infer shape.
 
         Args:
-            shape (object): The shape of the tensor.
-            **kwargs (object): Additional keyword arguments.
+            shape (object): The shape parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         return shape
 
 
 @register_op("Zeros")
 class Zeros(CreationOp):
-    """An operation that creates a tensor of a specified shape filled with zeros."""
+    """Provide an operation that creates a tensor of a specified shape filled with zeros."""
 
     op_name = "Zeros"
 
 
 @register_op("Ones")
 class Ones(CreationOp):
-    """An operation that creates a tensor of a specified shape filled with ones."""
+    """Provide an operation that creates a tensor of a specified shape filled with ones."""
 
     op_name = "Ones"
 
 
 @register_op("Full")
 class Full(CreationOp):
-    """An operation that creates a tensor of a specified shape filled with a constant.
+    """Provide an operation that creates a tensor of a specified shape filled with a constant.
 
     value
     """
@@ -74,7 +74,7 @@ class Full(CreationOp):
 
 @register_op("Arange")
 class Arange(OpDef):
-    """An operation that creates a 1-D tensor containing a sequence of evenly spaced.
+    """Provide an operation that creates a 1-D tensor containing a sequence of evenly spaced.
 
     values
 
@@ -96,7 +96,7 @@ class Arange(OpDef):
 
 @register_op("Rand")
 class Rand(CreationOp):
-    """Creates a tensor with random numbers from a uniform distribution [0, 1)."""
+    """Create a tensor with random numbers from a uniform distribution [0, 1)."""
 
     op_name = "Rand"
 
@@ -119,14 +119,14 @@ class Rand(CreationOp):
 
 @register_op("Randn")
 class Randn(Rand):
-    """Creates a tensor with random numbers from a standard normal distribution."""
+    """Create a tensor with random numbers from a standard normal distribution."""
 
     op_name = "Randn"
 
 
 @register_op("Randint")
 class Randint(CreationOp):
-    """Creates a tensor with random integers from [low, high)."""
+    """Create a tensor with random integers from [low, high)."""
 
     op_name = "Randint"
 
@@ -149,7 +149,7 @@ class Randint(CreationOp):
 
 @register_op("ManualSeed")
 class ManualSeed(OpDef):
-    """Sets the seed for generating random numbers."""
+    """Set the seed for generating random numbers."""
 
     op_name = "ManualSeed"
 
@@ -206,7 +206,15 @@ class Blackman(OpDef):
     """Blackman window."""
 
     def infer_shape(self, M: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            M (object): The M parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
@@ -215,7 +223,15 @@ class Bartlett(OpDef):
     """Bartlett window."""
 
     def infer_shape(self, M: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            M (object): The M parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
@@ -224,7 +240,15 @@ class Hamming(OpDef):
     """Hamming window."""
 
     def infer_shape(self, M: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            M (object): The M parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
@@ -233,7 +257,15 @@ class Hanning(OpDef):
     """Hanning window."""
 
     def infer_shape(self, M: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            M (object): The M parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
@@ -242,7 +274,15 @@ class Kaiser(OpDef):
     """Kaiser window."""
 
     def infer_shape(self, M: object, **kwargs: object) -> object:
-        """Infer the output shape."""
+        """Infer the output shape.
+
+        Args:
+            M (object): The M parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (M,) if isinstance(M, int) else (M.item(),)
 
 
@@ -329,7 +369,15 @@ class Logspace(CreationOp):
     op_name = "Logspace"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (kwargs.get("num", args[2] if len(args) > 2 and isinstance(args[2], int) else 50),)
 
 
@@ -338,7 +386,15 @@ class Frombuffer(OpDef):
     """Operator Frombuffer."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Typically 1D array of elements depending on dtype and buffer size
         if "count" in kwargs and kwargs["count"] != -1:
             return (kwargs["count"],)

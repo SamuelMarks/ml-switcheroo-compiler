@@ -1,4 +1,4 @@
-"""Random ops module."""
+"""Generate random ops module."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.random.state import _dispatch_random, _emit_random_n
 
 
 def randint(key: object, shape: object, minval: object, maxval: object, dtype: object = None) -> object:
-    """Samples uniform random integers from a given key.
+    """Sample uniform random integers from a given key.
 
     Args:
         key (object): The PRNG key.
@@ -18,14 +18,14 @@ def randint(key: object, shape: object, minval: object, maxval: object, dtype: o
         dtype (object): The target data type.
 
     Returns:
-        object: The evaluated output resulting from this operation.
+        object: The computed result.
     """
     dtype = dtype or dtypes.DType.Int32
     return _emit_random_node("RandomRandint", [key], shape, dtype, {"minval": minval, "maxval": maxval})
 
 
 def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
-    """Samples Bernoulli random variables from a given key.
+    """Sample Bernoulli random variables from a given key.
 
     Args:
         key (object): The PRNG key.
@@ -33,7 +33,7 @@ def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
         shape (object): The target shape.
 
     Returns:
-        object: The evaluated output resulting from this operation.
+        object: The computed result.
     """
     if shape is None:
         shape = ()
@@ -41,7 +41,7 @@ def bernoulli(key: object, p: object = 0.5, shape: object = None) -> object:
 
 
 def categorical(key: object, logits: object, axis: object = -1, shape: object = None) -> object:
-    """Samples categorical random variables from a given key.
+    """Sample categorical random variables from a given key.
 
     Args:
         key (object): The PRNG key.
@@ -50,7 +50,7 @@ def categorical(key: object, logits: object, axis: object = -1, shape: object = 
         shape (object): The target shape.
 
     Returns:
-        object: The evaluated output resulting from this operation.
+        object: The computed result.
     """
     out_shape = shape or ()
     inputs = [key]
@@ -60,14 +60,24 @@ def categorical(key: object, logits: object, axis: object = -1, shape: object = 
 
 
 def permutation(key: object, x: object, axis: object = 0, independent: object = False) -> object:
-    """Random permutation of a sequence."""
+    """Generate random permutation of a sequence.
+
+    Args:
+        key (object): The key parameter.
+        x (object): The x parameter.
+        axis (object): The axis parameter.
+        independent (object): The independent parameter.
+
+    Returns:
+        object: Result.
+    """
     shape = getattr(x, "shape", ())
     dtype = getattr(x, "dtype", None)
     return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 
 
 def choice(key: object, a: object, **kwargs: object) -> object:
-    """Generates a random sample from a given 1-D array.
+    """Generate a random sample from a given 1-D array.
 
     Args:
         key (object): The PRNG key.
@@ -75,7 +85,7 @@ def choice(key: object, a: object, **kwargs: object) -> object:
         **kwargs (object): Optional arguments shape, replace, p, axis.
 
     Returns:
-        object: The evaluated output resulting from this operation.
+        object: The computed result.
     """
     shape = kwargs.get("shape", ())
     replace = kwargs.get("replace", True)
@@ -88,7 +98,18 @@ def choice(key: object, a: object, **kwargs: object) -> object:
 
 
 def binomial(key: object, n: object, p: object, shape: object = None, dtype: object = None) -> object:
-    """Samples binomial random values from a given key."""
+    """Sample binomial random values from a given key.
+
+    Args:
+        key (object): The key parameter.
+        n (object): The n parameter.
+        p (object): The p parameter.
+        shape (object): The shape parameter.
+        dtype (object): The dtype parameter.
+
+    Returns:
+        object: Result.
+    """
     if shape is None:
         shape = ()
     dtype = dtype or dtypes.DType.Int32
@@ -96,12 +117,30 @@ def binomial(key: object, n: object, p: object, shape: object = None, dtype: obj
 
 
 def geometric(*args: object, **kwargs: object) -> object:
-    """Execute geometric."""
+    """Evaluate geometric operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("geometric", *args, **kwargs)
 
 
 def poisson(key: object, lam: object, shape: object = None, dtype: object = None) -> object:
-    """Samples poisson random values from a given key."""
+    """Sample poisson random values from a given key.
+
+    Args:
+        key (object): The key parameter.
+        lam (object): The lam parameter.
+        shape (object): The shape parameter.
+        dtype (object): The dtype parameter.
+
+    Returns:
+        object: Result.
+    """
     if shape is None:
         shape = ()
     dtype = dtype or dtypes.DType.Int32
@@ -109,12 +148,20 @@ def poisson(key: object, lam: object, shape: object = None, dtype: object = None
 
 
 def rademacher(*args: object, **kwargs: object) -> object:
-    """Execute rademacher."""
+    """Evaluate rademacher operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("rademacher", *args, **kwargs)
 
 
 def multinomial(key: object, n: int, pvals: object, shape: object = None) -> object:
-    """Samples from multinomial distribution.
+    """Sample from multinomial distribution.
 
     Args:
         key (object): The PRNG key.
@@ -123,7 +170,7 @@ def multinomial(key: object, n: int, pvals: object, shape: object = None) -> obj
         shape (object): Target shape.
 
     Returns:
-        object: The evaluated output resulting from this operation.
+        object: The computed result.
     """
     if shape is None:
         shape = ()

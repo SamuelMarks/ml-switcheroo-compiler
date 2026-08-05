@@ -110,15 +110,15 @@ def lstsq(
     b: Tensor,
     rcond: float | None = None,
 ) -> Tensor:
-    """Compute the least squares solution to a linear matrix equation.
+    """Evaluate lstsq operation.
 
     Args:
-        a (Tensor): The matrix A in the equation Ax = b.
-        b (Tensor): The right-hand side tensor.
-        rcond (float | None): Cut-off ratio for small singular values. Defaults to None.
+        a (Tensor): The a parameter.
+        b (Tensor): The b parameter.
+        rcond (object): The rcond parameter.
 
     Returns:
-        Tensor: The least squares solution tensor.
+        Tensor: Result.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("Lstsq", a.data, b.data, rcond=rcond)
@@ -132,30 +132,30 @@ def lstsq(
 
 
 def lu(input: object, output_idx_type: object = None, name: object = None) -> object:
-    """Compute the LU decomposition of a given matrix.
+    """Evaluate lu operation.
 
     Args:
-        input (object): The matrix to be decomposed.
-        output_idx_type (object): The type for output indices. Defaults to None.
-        name (object): Optional name for the operation. Defaults to None.
+        input (object): The input parameter.
+        output_idx_type (object): The output_idx_type parameter.
+        name (object): The name parameter.
 
     Returns:
-        object: A tuple containing the LU decomposition matrices and pivot indices.
+        object: Result.
     """
     return input, input, input
 
 
 def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: bool = False, name: str = None) -> Tensor:
-    """Compute the inverse of a matrix from its LU decomposition.
+    """Evaluate lu_matrix_inverse operation.
 
     Args:
-        lower_upper (Tensor): The LU factorized matrix.
-        perm (Tensor): The permutation matrix or vector.
-        validate_args (bool): Whether to validate arguments. Defaults to False.
-        name (str): Optional name for the operation. Defaults to None.
+        lower_upper (Tensor): The lower_upper parameter.
+        perm (Tensor): The perm parameter.
+        validate_args (bool): The validate_args parameter.
+        name (str): The name parameter.
 
     Returns:
-        Tensor: The inverse of the original matrix.
+        Tensor: Result.
     """
     if config.eager_mode:
         data = get_active_backend().execute_op("LuMatrixInverse", lower_upper.data, perm.data, validate_args=validate_args)
@@ -263,15 +263,15 @@ def tridiagonal_solve(
 
 
 def tensorinv(a: Tensor, ind: int = 2, name: str = None) -> Tensor:
-    """Compute the inverse of a tensor operationally.
+    """Evaluate tensorinv operation.
 
     Args:
-        a (Tensor): The input tensor to invert.
-        ind (int): The number of first indices that are involved in the inverse sum. Defaults to 2.
-        name (str): Optional name for the operation. Defaults to None.
+        a (Tensor): The a parameter.
+        ind (int): The ind parameter.
+        name (str): The name parameter.
 
     Returns:
-        Tensor: The inverted tensor.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -314,7 +314,7 @@ class Pinv(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         if hasattr(a, "shape"):
             s = list(a.shape)

@@ -14,19 +14,31 @@ from ml_switcheroo_compiler.ir.core import IRNode
 
 @register_backend("dask")
 class DaskGenerator(PythonStringGenerator):
-    """Generates Dask python code from IR."""
+    """Generate Dask python code from IR."""
 
     def __init__(self, graph: object) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            graph (object): The graph parameter.
+        """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
     def _get_backend_prefix(self) -> str:
-        r"""Get the library prefix string used when emitting Dask array operations.\n\n        Returns:\n            str: The string \'da\'.\n."""
+        """Get the library prefix string used when emitting Dask array operations.
+
+        Returns:
+        str: Result.
+        """
         return "da"
 
     def get_helper_functions(self) -> list[str]:
-        """Get helper functions."""
+        """Get helper functions.
+
+        Returns:
+        object: Result.
+        """
         res = []
         return res
 
@@ -34,18 +46,45 @@ class DaskGenerator(PythonStringGenerator):
     _func_name = "evaluate"
 
     def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Handle Einsum nodes."""
+        """Handle Einsum nodes.
+
+        Args:
+            node (IRNode): The node parameter.
+            input_vars (list): The input_vars parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            str: Result.
+        """
         args_str = ", ".join(input_vars)
         eq = kwargs.get("equation", "")
         return f"dask.einsum('{eq}', {args_str})"
 
     def visit_TruncateDiv(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for TruncateDiv."""
+        """Generate code for TruncateDiv.
+
+        Args:
+            node (IRNode): The node parameter.
+            input_vars (list): The input_vars parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            str: Result.
+        """
         (x, y) = input_vars
         return f"da.trunc(da.divide({x}, {y}))"
 
     def visit_TruncateMod(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for TruncateMod."""
+        """Generate code for TruncateMod.
+
+        Args:
+            node (IRNode): The node parameter.
+            input_vars (list): The input_vars parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            str: Result.
+        """
         (x, y) = input_vars
         return f"da.fmod({x}, {y})"
 
@@ -53,8 +92,8 @@ class DaskGenerator(PythonStringGenerator):
         """Fallback for generic nodes.
 
         Args:
-            node (IRNode): Argument node.
-            input_vars (list[str]): Argument input_vars.
+            node (IRNode): The node to process.
+            input_vars (list[str]): The input_vars parameter.
             **kwargs: Extra attributes.
 
         Returns:

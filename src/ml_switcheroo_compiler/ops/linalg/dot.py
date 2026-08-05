@@ -1,16 +1,18 @@
 """Dot product operations."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 def _has_valid_shape(obj: object) -> bool:
-    """Evaluate and process the has valid shape operation.
+    """Evaluate _has_valid_shape operation.
 
     Args:
-        obj (object): Required parameter for obj.
+        obj (object): The obj parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     return hasattr(obj, "shape") and bool(obj.shape)
 
@@ -23,15 +25,15 @@ class Dot(OpDef):
     """
 
     def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
-        """Infer the output shape of the operation.
+        """Infer shape.
 
         Args:
-            a (object): The first input tensor.
-            b (object): The second input tensor.
-            **kwargs (object): Additional keyword arguments.
+            a (object): The a parameter.
+            b (object): The b parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         return None
 
@@ -46,7 +48,15 @@ class DotGeneral(OpDef):
     op_name = "DotGeneral"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -58,15 +68,15 @@ class DotGeneral(OpDef):
         return res
 
     def _compute_out_shape(self, lhs_shape: tuple, rhs_shape: tuple, dimension_numbers: tuple) -> tuple:
-        """Execute _compute_out_shape.
+        """Evaluate _compute_out_shape operation.
 
         Args:
-            lhs_shape (Any): Argument lhs_shape.
-            rhs_shape (Any): Argument rhs_shape.
-            dimension_numbers (Any): Argument dimension_numbers.
+            lhs_shape (tuple): The lhs_shape parameter.
+            rhs_shape (tuple): The rhs_shape parameter.
+            dimension_numbers (tuple): The dimension_numbers parameter.
 
         Returns:
-        Any: The result.
+            tuple: Result.
         """
         contracting, batch = dimension_numbers
         lhs_contracting, rhs_contracting = contracting
@@ -95,7 +105,7 @@ class Tensordot(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         return ()
 
@@ -116,7 +126,7 @@ class Inner(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         return ()
 
@@ -137,9 +147,32 @@ class Outer(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         return ()
+
+
+def _compute_pdot_shape(lhs_shape: tuple, rhs_shape: tuple) -> tuple:
+    """Evaluate _compute_pdot_shape operation.
+
+    Args:
+        lhs_shape (tuple): The lhs_shape parameter.
+        rhs_shape (tuple): The rhs_shape parameter.
+
+    Returns:
+        tuple: Result.
+    """
+    if len(lhs_shape) == 1 and len(rhs_shape) == 1:
+        return ()
+    elif len(lhs_shape) == 2 and len(rhs_shape) == 2:
+        return (lhs_shape[0], rhs_shape[1])
+    elif len(lhs_shape) == 0 or len(rhs_shape) == 0:
+        # scalar multiplication
+        return lhs_shape if len(lhs_shape) > 0 else rhs_shape
+    elif len(rhs_shape) == 1:
+        return lhs_shape[:-1]
+    else:
+        return lhs_shape[:-1] + rhs_shape[:-2] + rhs_shape[-1:]
 
 
 @register_op("Pdot")
@@ -149,26 +182,32 @@ class Pdot(OpDef):
     op_name = "Pdot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         lhs = args[0] if len(args) > 0 else None
         rhs = args[1] if len(args) > 1 else None
         lhs_shape = getattr(lhs, "shape", ())
         rhs_shape = getattr(rhs, "shape", ())
-        if len(lhs_shape) == 1 and len(rhs_shape) == 1:
-            return ()
-        elif len(lhs_shape) == 2 and len(rhs_shape) == 2:
-            return (lhs_shape[0], rhs_shape[1])
-        elif len(lhs_shape) == 0 or len(rhs_shape) == 0:
-            # scalar multiplication
-            return lhs_shape if len(lhs_shape) > 0 else rhs_shape
-        elif len(rhs_shape) == 1:
-            return lhs_shape[:-1]
-        else:
-            return lhs_shape[:-1] + rhs_shape[:-2] + rhs_shape[-1:]
+        return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 
 def pdot(*args: object, **kwargs: object) -> object:
-    """Compute the parallel dot product."""
+    """Evaluate pdot operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Pdot", *args, **kwargs)

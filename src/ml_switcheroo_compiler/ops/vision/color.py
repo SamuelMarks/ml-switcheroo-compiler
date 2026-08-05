@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def rgb_to_hsv(images: Tensor) -> Tensor:
-    """Converts one or more images from RGB to HSV.
+    """Convert one or more images from RGB to HSV.
 
     Args:
         images (Tensor): Input images.
@@ -28,7 +28,7 @@ def rgb_to_hsv(images: Tensor) -> Tensor:
 
 
 def hsv_to_rgb(images: Tensor) -> Tensor:
-    """Converts one or more images from HSV to RGB.
+    """Convert one or more images from HSV to RGB.
 
     Args:
         images (Tensor): Input images.
@@ -175,12 +175,12 @@ def solarize(images: Tensor, threshold: float = 0.5, value_range: tuple = (0, 25
     """Solarize images (invert all pixel values above a threshold).
 
     Args:
-        images (Tensor): Input images.
-        threshold (float): Threshold for solarization.
-        value_range (tuple, optional): The range of pixel values. Defaults to (0, 255).
+        images (Tensor): The images parameter.
+        threshold (float): The threshold parameter.
+        value_range (tuple): The value_range parameter.
 
     Returns:
-        Tensor: Solarized images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -198,11 +198,11 @@ def invert(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
     """Invert image pixels.
 
     Args:
-        images (Tensor): Input images.
-        value_range (tuple, optional): The range of pixel values. Defaults to (0, 255).
+        images (Tensor): The images parameter.
+        value_range (tuple): The value_range parameter.
 
     Returns:
-        Tensor: Inverted images.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -285,11 +285,11 @@ def auto_contrast(images: Tensor, value_range: tuple = (0, 255)) -> Tensor:
     """AutoContrast operation.
 
     Args:
-        images: Input images.
-        value_range (tuple, optional): The range of pixel values. Defaults to (0, 255).
+        images (Tensor): The images parameter.
+        value_range (tuple): The value_range parameter.
 
     Returns:
-        Tensor.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -367,13 +367,13 @@ def equalization(images: Tensor) -> Tensor:
 
 
 def rgb_to_yiq(images: Tensor) -> Tensor:
-    """Converts one or more images from RGB to YIQ.
+    """Convert one or more images from RGB to YIQ.
 
     Args:
-        images (Tensor): Input images.
+        images (Tensor): The images parameter.
 
     Returns:
-    Tensor: Images in YIQ space.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -386,13 +386,13 @@ def rgb_to_yiq(images: Tensor) -> Tensor:
 
 
 def yiq_to_rgb(images: Tensor) -> Tensor:
-    """Converts one or more images from YIQ to RGB.
+    """Convert one or more images from YIQ to RGB.
 
     Args:
-        images (Tensor): Input images.
+        images (Tensor): The images parameter.
 
     Returns:
-    Tensor: Images in RGB space.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -405,13 +405,13 @@ def yiq_to_rgb(images: Tensor) -> Tensor:
 
 
 def rgb_to_yuv(images: Tensor) -> Tensor:
-    """Converts one or more images from RGB to YUV.
+    """Convert one or more images from RGB to YUV.
 
     Args:
-        images (Tensor): Input images.
+        images (Tensor): The images parameter.
 
     Returns:
-    Tensor: Images in YUV space.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -424,13 +424,13 @@ def rgb_to_yuv(images: Tensor) -> Tensor:
 
 
 def yuv_to_rgb(images: Tensor) -> Tensor:
-    """Converts one or more images from YUV to RGB.
+    """Convert one or more images from YUV to RGB.
 
     Args:
-        images (Tensor): Input images.
+        images (Tensor): The images parameter.
 
     Returns:
-    Tensor: Images in RGB space.
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -449,7 +449,16 @@ class AdjustBrightness(OpDef):
     op_name = "AdjustBrightness"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        images (object): The images parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -460,7 +469,16 @@ class AdjustContrast(OpDef):
     op_name = "AdjustContrast"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -471,7 +489,16 @@ class AdjustHue(OpDef):
     op_name = "AdjustHue"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -482,7 +509,16 @@ class AdjustSaturation(OpDef):
     op_name = "AdjustSaturation"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -493,7 +529,16 @@ class AugMix(OpDef):
     op_name = "AugMix"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -504,7 +549,16 @@ class AutoContrast(OpDef):
     op_name = "AutoContrast"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -515,7 +569,16 @@ class Equalization(OpDef):
     op_name = "Equalization"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -526,7 +589,16 @@ class Invert(OpDef):
     op_name = "Invert"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -537,7 +609,16 @@ class Posterize(OpDef):
     op_name = "Posterize"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())
 
 
@@ -548,7 +629,16 @@ class RgbToGrayscale(OpDef):
     op_name = "RgbToGrayscale"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         s = list(getattr(images, "shape", ()))
         if len(s) > 0:
             data_format = kwargs.get("data_format", "channels_last")
@@ -566,5 +656,14 @@ class Solarize(OpDef):
     op_name = "Solarize"
 
     def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            images (object): The images parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(images, "shape", ())

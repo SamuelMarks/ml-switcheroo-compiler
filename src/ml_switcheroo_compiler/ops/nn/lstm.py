@@ -50,6 +50,14 @@ def lstm_cell(
 
 
 def _sigmoid(x: object) -> object:
+    """Evaluate _sigmoid operation.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 
     return s(x)

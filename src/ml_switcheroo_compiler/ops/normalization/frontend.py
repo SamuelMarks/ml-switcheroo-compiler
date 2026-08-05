@@ -1,4 +1,4 @@
-"""Normalization frontend operations."""
+"""Apply normalization frontend operations."""
 
 import typing
 from dataclasses import dataclass
@@ -29,7 +29,17 @@ def group_mean(
     axis: typing.Union[int, tuple[int, ...]] = -1,
     keepdims: bool = False,
 ) -> object:
-    """Computes the mean over groups."""
+    """Compute the mean over groups.
+
+    Args:
+        x (object): The x parameter.
+        groups (int): The groups parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        object: Result.
+    """
     return get_op("GroupMean")()(x, groups=groups, axis=axis, keepdims=keepdims)
 
 
@@ -39,7 +49,17 @@ def group_variance(
     axis: typing.Union[int, tuple[int, ...]] = -1,
     keepdims: bool = False,
 ) -> object:
-    """Computes the variance over groups."""
+    """Compute the variance over groups.
+
+    Args:
+        x (object): The x parameter.
+        groups (int): The groups parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        object: Result.
+    """
     return get_op("GroupVariance")()(x, groups=groups, axis=axis, keepdims=keepdims)
 
 
@@ -49,7 +69,7 @@ def group_norm(
     config: typing.Optional[NormConfig] = None,
     axis: typing.Union[int, tuple[int, ...]] = -1,
 ) -> object:
-    """Computes the group normalization.
+    """Compute the group normalization.
 
     Args:
         x (object): Input tensor.
@@ -70,7 +90,7 @@ def spectral_normalization(
     u: object,
     num_iters: int = 1,
 ) -> tuple[object, object]:
-    """Computes the spectral normalization.
+    """Compute the spectral normalization.
 
     Args:
         w (object): Weight tensor.

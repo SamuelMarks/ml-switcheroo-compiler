@@ -10,7 +10,17 @@ BASE_PORT = 15200
 
 
 def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:
-    """Exchange IPC data as coordinator."""
+    """Exchange IPC data as coordinator.
+
+    Args:
+        size (int): Size.
+        tensor_data (object): Data.
+        timeout (float): Timeout.
+        retry_interval (float): Retry interval.
+
+    Returns:
+        list: Outputs.
+    """
     import time
 
     address = ("localhost", BASE_PORT)
@@ -53,7 +63,21 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: 
 
 
 def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:
-    """Exchange IPC data as worker."""
+    """Exchange IPC data as worker.
+
+    Args:
+        rank (int): Rank.
+        size (int): Size.
+        tensor_data (object): Data.
+        timeout (float): Timeout.
+        retry_interval (float): Retry interval.
+
+    Returns:
+        list: Outputs.
+
+    Raises:
+        TimeoutError: On timeout.
+    """
     import time
 
     port = BASE_PORT + rank
@@ -101,15 +125,15 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np
 
 
 def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
-    """Evaluate and process the multi-process IPC all gather operation.
+    """Evaluate _ipc_all_gather operation.
 
     Args:
-        tensor (object): The input tensor.
-        axis (int): Axis along which to concatenate.
-        mesh (object): Mesh configuration.
+        tensor (object): The tensor parameter.
+        axis (int): The axis parameter.
+        mesh (object): The mesh parameter.
 
     Returns:
-        object: The gathered output array.
+        object: Result.
     """
     if isinstance(tensor, str):
         return tensor
@@ -127,16 +151,16 @@ def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
 
 
 def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> object:
-    """Evaluate and process the multi-process IPC reduce scatter operation.
+    """Evaluate _ipc_reduce_scatter operation.
 
     Args:
-        tensor (object): The input tensor.
-        op (str): Reduction operator.
-        axis (int): Axis along which to scatter.
-        mesh (object): Mesh configuration.
+        tensor (object): The tensor parameter.
+        op (str): The op parameter.
+        axis (int): The axis parameter.
+        mesh (object): The mesh parameter.
 
     Returns:
-        object: The reduced and scattered output.
+        object: Result.
     """
     if isinstance(tensor, str):
         return tensor
@@ -167,15 +191,15 @@ def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> obj
 
 
 def _ipc_all_reduce(tensor: object, op: str, mesh: object) -> object:
-    """Evaluate and process the multi-process IPC all reduce operation.
+    """Evaluate _ipc_all_reduce operation.
 
     Args:
-        tensor (object): The input tensor.
-        op (str): Reduction operator.
-        mesh (object): Mesh configuration.
+        tensor (object): The tensor parameter.
+        op (str): The op parameter.
+        mesh (object): The mesh parameter.
 
     Returns:
-        object: The reduced output.
+        object: Result.
     """
     if isinstance(tensor, str):
         return tensor

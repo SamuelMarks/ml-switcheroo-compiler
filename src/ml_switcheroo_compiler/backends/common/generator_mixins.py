@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Mixin module."""
+"""Provide mixin module."""
 
 from .mixins.array import ArrayASTVisitor
 from .mixins.control_flow import ControlFlowASTVisitor
@@ -10,7 +10,14 @@ from .mixins.variable import VariableASTVisitor
 
 
 def get_shared_ast_visitors(generator: object) -> list[object]:
-    """Returns a list of shared AST visitors."""
+    """Return a list of shared AST visitors.
+
+    Args:
+        generator (object): The generator parameter.
+
+    Returns:
+        object: Result.
+    """
     return [
         ImageASTVisitor(generator=generator),
         ControlFlowASTVisitor(generator=generator),

@@ -2,7 +2,14 @@
 
 
 def encode_varint(value: int) -> bytes:
-    """Encode an integer as a protobuf varint."""
+    """Encode an integer as a protobuf varint.
+
+    Args:
+        value (int): The value parameter.
+
+    Returns:
+        bytes: Result.
+    """
     if value < 0:
         value += 1 << 64
     res = bytearray()
@@ -18,31 +25,55 @@ def encode_varint(value: int) -> bytes:
 
 
 class ProtobufWriter:
-    """A minimal writer for protobuf binary format."""
+    """Provide a minimal writer for protobuf binary format."""
 
     def __init__(self) -> None:
         """Initialize ProtobufWriter."""
         self.data = bytearray()
 
     def add_varint(self, tag: int, value: int) -> None:
-        """Add a varint field."""
+        """Add a varint field.
+
+        Args:
+            tag (int): The tag parameter.
+            value (int): The value parameter.
+        """
         self.data.extend(encode_varint((tag << 3) | 0))
         self.data.extend(encode_varint(value))
 
     def add_bytes(self, tag: int, value: bytes) -> None:
-        """Add a length-delimited bytes field."""
+        """Add a length-delimited bytes field.
+
+        Args:
+            tag (int): The tag parameter.
+            value (bytes): The value parameter.
+        """
         self.data.extend(encode_varint((tag << 3) | 2))
         self.data.extend(encode_varint(len(value)))
         self.data.extend(value)
 
     def add_string(self, tag: int, value: str) -> None:
-        """Add a length-delimited string field."""
+        """Add a length-delimited string field.
+
+        Args:
+            tag (int): The tag parameter.
+            value (str): The value parameter.
+        """
         self.add_bytes(tag, value.encode("utf-8"))
 
     def add_message(self, tag: int, writer: "ProtobufWriter") -> None:
-        """Add a nested message field."""
+        """Add a nested message field.
+
+        Args:
+            tag (int): The tag parameter.
+            writer (object): The writer parameter.
+        """
         self.add_bytes(tag, writer.get_bytes())
 
     def get_bytes(self) -> bytes:
-        """Get the encoded bytes."""
+        """Get the encoded bytes.
+
+        Returns:
+        bytes: Result.
+        """
         return bytes(self.data)

@@ -13,7 +13,15 @@ from ml_switcheroo_compiler.ops.unary import sqrt, square
 
 
 def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
-    """Computes the global norm of an iterable of parameters."""
+    """Compute the global norm of an iterable of parameters.
+
+    Args:
+        parameters (object): The parameters parameter.
+        norm_type (float): The norm_type parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     norms = []
     for p in parameters:
         if norm_type == float("inf"):
@@ -34,7 +42,16 @@ def _compute_global_norm(parameters: list[Tensor], norm_type: float) -> Tensor:
 
 
 def _scale_gradients(parameters: list[Tensor], max_norm: float, total_norm: Tensor) -> list[Tensor]:
-    """Scales gradients in-place based on maximum and total norm."""
+    """Scales gradients in-place based on maximum and total norm.
+
+    Args:
+        parameters (list): The parameters parameter.
+        max_norm (float): The max_norm parameter.
+        total_norm (Tensor): The total_norm parameter.
+
+    Returns:
+        list: Result.
+    """
     max_norm_t = max_norm
     clip_coef = divide(max_norm_t, add(total_norm, 1e-6))
     clip_coef_clamped = minimum(1.0, clip_coef)
@@ -51,7 +68,7 @@ def clip_grad_norm(
     norm_type: float = 2.0,
     error_if_nonfinite: bool = False,
 ) -> tuple[Union[Tensor, list[Tensor]], Tensor]:
-    """Clips gradient norm of an iterable of parameters.
+    """Clip gradient norm of an iterable of parameters.
 
     The norm is computed over all gradients together, as if they were
     concatenated into a single vector. Gradients are modified in-place if possible,

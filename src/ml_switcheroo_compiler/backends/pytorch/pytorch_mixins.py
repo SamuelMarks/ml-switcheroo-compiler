@@ -6,19 +6,55 @@ class PyTorchScatterVisitor:
     """Mixin."""
 
     def visit_TensorScatterUpdate(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Handle TensorScatterUpdate nodes."""
+        """Handle TensorScatterUpdate nodes.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]})"
 
     def visit_TensorScatterAdd(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Handle TensorScatterAdd nodes."""
+        """Handle TensorScatterAdd nodes.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
 
     def visit_TensorScatterMax(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate tensor scatter max."""
+        """Evaluate visit_TensorScatterMax operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
     def visit_TensorScatterMin(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate tensor scatter min."""
+        """Evaluate visit_TensorScatterMin operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
 
@@ -26,17 +62,44 @@ class PyTorchDistributedVisitor:
     """Mixin."""
 
     def visit_all_gather(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for all_gather."""
+        """Generate code for all_gather.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         tensor = input_vars[0]
         return f"torch.distributed.all_gather_into_tensor(torch.empty_like({tensor}), {tensor})"
 
     def visit_reduce_scatter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for reduce_scatter."""
+        """Generate code for reduce_scatter.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         tensor = input_vars[0]
         return f"torch.distributed.reduce_scatter_tensor(torch.empty_like({tensor}), {tensor})"
 
     def visit_all_reduce(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Generate code for all_reduce."""
+        """Generate code for all_reduce.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         tensor = input_vars[0]
         return f"torch.distributed.all_reduce({tensor})"
 
@@ -45,6 +108,14 @@ class PyTorchLinalgMixin:
     """Linalg."""
 
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
+        """Get mapping of linear algebra operations for PyTorch.
+
+        Args:
+            kwargs (dict): Optional keyword arguments for operations.
+
+        Returns:
+            dict[str, str]: The operation mapping dictionary.
+        """
         return _PYTORCH_OP_REGISTRY
 
     """Linalg Mixin."""
@@ -176,4 +247,12 @@ class PyTorchNNMixin:
     """NN Mixin."""
 
     def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
+        """Get mapping of neural network operations for PyTorch.
+
+        Args:
+            kwargs (dict): Optional keyword arguments.
+
+        Returns:
+            dict[str, str]: The operation mapping dictionary.
+        """
         return {}

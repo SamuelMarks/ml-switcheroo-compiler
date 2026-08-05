@@ -1,6 +1,8 @@
 # ruff: noqa: C901, PLR0912, F841, PLR0917
 """Numpy eager fallback implementations for stubbed NN operations."""
 
+from __future__ import annotations
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -8,6 +10,16 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("IsotonicRegression")
 def _np_isotonic_regression(backend_module: object, y: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_isotonic_regression.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        y (object): The y parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     y_arr = np.asarray(y, dtype=np.float32)
     res = np.copy(y_arr)
     w = np.ones_like(y_arr)
@@ -34,6 +46,17 @@ def _np_isotonic_regression(backend_module: object, y: object, **kwargs: object)
 
 @numpy_eager_registry.register("ConvTranspose")
 def _np_conv_transpose(backend_module: object, input: object, filters: object, **kwargs: object) -> object:
+    """Eager fallback for _np_conv_transpose.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        input (object): The input parameter.
+        filters (object): The filters parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.signal
 
     arr = np.asarray(input)
@@ -65,6 +88,18 @@ def _np_conv_transpose(backend_module: object, input: object, filters: object, *
 
 @numpy_eager_registry.register("DepthwiseConv2dBackpropFilter")
 def _np_depthwise_conv2d_backprop_filter(backend_module: object, input: object, filter_sizes: object, out_backprop: object, **kwargs: object) -> object:
+    """Eager fallback for _np_depthwise_conv2d_backprop_filter.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        input (object): The input parameter.
+        filter_sizes (object): The filter_sizes parameter.
+        out_backprop (object): The out_backprop parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.signal
 
     arr = np.asarray(input)
@@ -81,6 +116,18 @@ def _np_depthwise_conv2d_backprop_filter(backend_module: object, input: object, 
 
 @numpy_eager_registry.register("DepthwiseConv2dBackpropInput")
 def _np_depthwise_conv2d_backprop_input(backend_module: object, input_sizes: object, filter: object, out_backprop: object, **kwargs: object) -> object:
+    """Eager fallback for _np_depthwise_conv2d_backprop_input.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        input_sizes (object): The input_sizes parameter.
+        filter (object): The filter parameter.
+        out_backprop (object): The out_backprop parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.signal
 
     f = np.asarray(filter)
@@ -98,6 +145,17 @@ def _np_depthwise_conv2d_backprop_input(backend_module: object, input_sizes: obj
 
 @numpy_eager_registry.register("Dilation2d")
 def _np_dilation2d(backend_module: object, input: object, filter: object, **kwargs: object) -> object:
+    """Eager fallback for _np_dilation2d.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        input (object): The input parameter.
+        filter (object): The filter parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.ndimage
 
     arr = np.asarray(input)
@@ -113,6 +171,17 @@ def _np_dilation2d(backend_module: object, input: object, filter: object, **kwar
 
 @numpy_eager_registry.register("Erosion2d")
 def _np_erosion2d(backend_module: object, value: object, kernel: object, **kwargs: object) -> object:
+    """Eager fallback for _np_erosion2d.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        value (object): The value parameter.
+        kernel (object): The kernel parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.ndimage
 
     arr = np.asarray(value)
@@ -128,6 +197,17 @@ def _np_erosion2d(backend_module: object, value: object, kernel: object, **kwarg
 
 @numpy_eager_registry.register("InTopK")
 def _np_in_top_k(backend_module: object, targets: object, predictions: object, **kwargs: object) -> object:
+    """Eager fallback for _np_in_top_k.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        targets (object): The targets parameter.
+        predictions (object): The predictions parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     t = np.asarray(targets)
     p = np.asarray(predictions)
     k = kwargs.get("k", 1)
@@ -140,6 +220,17 @@ def _np_in_top_k(backend_module: object, targets: object, predictions: object, *
 
 @numpy_eager_registry.register("LogPoissonLoss")
 def _np_log_poisson_loss(backend_module: object, targets: object, log_input: object, **kwargs: object) -> object:
+    """Eager fallback for _np_log_poisson_loss.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        targets (object): The targets parameter.
+        log_input (object): The log_input parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     t = np.asarray(targets)
     log_inp = np.asarray(log_input)
     compute_full = kwargs.get("compute_full_loss", False)
@@ -153,6 +244,16 @@ def _np_log_poisson_loss(backend_module: object, targets: object, log_input: obj
 
 @numpy_eager_registry.register("AllCandidateSampler")
 def _np_all_candidate_sampler(backend_module: object, true_classes: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_all_candidate_sampler.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        true_classes (object): The true_classes parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     t = np.asarray(true_classes)
     num_sampled = kwargs.get("num_sampled", 1)
     num_classes = kwargs.get("num_classes", 10)
@@ -162,8 +263,70 @@ def _np_all_candidate_sampler(backend_module: object, true_classes: object, **kw
     return sampled.astype(np.int32), true_expected_count, sampled_expected_count
 
 
+def _np_ctc_beam_step(beam: dict, log_p: object, num_classes: int, blank: int, beam_width: int) -> dict:
+    """Eager fallback for _np_ctc_beam_step.
+
+    Args:
+        beam (dict): The beam parameter.
+        log_p (object): The log_p parameter.
+        num_classes (int): The num_classes parameter.
+        blank (int): The blank parameter.
+        beam_width (int): The beam_width parameter.
+
+    Returns:
+        dict: Result.
+    """
+    next_beam: dict = {}
+    for path, (p_b, p_nb) in beam.items():
+        p_tot = np.logaddexp(p_b, p_nb)
+
+        # Case 1: extension with blank
+        n_p_b = p_tot + log_p[blank]
+        if path in next_beam:
+            next_beam[path] = (np.logaddexp(next_beam[path][0], n_p_b), next_beam[path][1])
+        else:
+            next_beam[path] = (n_p_b, -float("inf"))
+
+        # Case 2: extension with non-blank
+        for c in range(num_classes - 1):
+            n_path = path + (c,)
+            c_log_p = log_p[c]
+
+            if len(path) > 0 and path[-1] == c:
+                # same char, needs a blank in between to be separated
+                # path extended by same char: comes from blank
+                n_p_nb = p_b + c_log_p
+
+                # path not extended (same char absorbed)
+                n_p_nb_keep = p_nb + c_log_p
+
+                next_beam[path] = (next_beam[path][0], np.logaddexp(next_beam[path][1], n_p_nb_keep))
+            else:
+                n_p_nb = p_tot + c_log_p
+
+            if n_path in next_beam:
+                next_beam[n_path] = (next_beam[n_path][0], np.logaddexp(next_beam[n_path][1], n_p_nb))
+            else:
+                next_beam[n_path] = (-float("inf"), n_p_nb)
+
+    # Prune beam
+    sorted_beam = sorted(next_beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
+    return dict(sorted_beam[:beam_width])
+
+
 @numpy_eager_registry.register("CtcBeamSearchDecoder")
 def _np_ctc_beam_search_decoder(backend_module: object, inputs: object, sequence_length: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_ctc_beam_search_decoder.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        sequence_length (object): The sequence_length parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(inputs)
     seq_len = np.asarray(sequence_length)
     beam_width = kwargs.get("beam_width", 100)
@@ -194,43 +357,7 @@ def _np_ctc_beam_search_decoder(backend_module: object, inputs: object, sequence
             max_p = np.max(probs)
             log_p = probs - max_p - np.log(np.sum(np.exp(probs - max_p)))
 
-            next_beam = {}
-
-            for path, (p_b, p_nb) in beam.items():
-                p_tot = np.logaddexp(p_b, p_nb)
-
-                # Case 1: extension with blank
-                n_p_b = p_tot + log_p[blank]
-                if path in next_beam:
-                    next_beam[path] = (np.logaddexp(next_beam[path][0], n_p_b), next_beam[path][1])
-                else:
-                    next_beam[path] = (n_p_b, -float("inf"))
-
-                # Case 2: extension with non-blank
-                for c in range(num_classes - 1):
-                    n_path = path + (c,)
-                    c_log_p = log_p[c]
-
-                    if len(path) > 0 and path[-1] == c:
-                        # same char, needs a blank in between to be separated
-                        # path extended by same char: comes from blank
-                        n_p_nb = p_b + c_log_p
-
-                        # path not extended (same char absorbed)
-                        n_p_nb_keep = p_nb + c_log_p
-
-                        next_beam[path] = (next_beam[path][0], np.logaddexp(next_beam[path][1], n_p_nb_keep))
-                    else:
-                        n_p_nb = p_tot + c_log_p
-
-                    if n_path in next_beam:
-                        next_beam[n_path] = (next_beam[n_path][0], np.logaddexp(next_beam[n_path][1], n_p_nb))
-                    else:
-                        next_beam[n_path] = (-float("inf"), n_p_nb)
-
-            # Prune beam
-            sorted_beam = sorted(next_beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
-            beam = dict(sorted_beam[:beam_width])
+            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, beam_width)
 
         # Select top paths
         best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
@@ -261,6 +388,17 @@ def _np_ctc_beam_search_decoder(backend_module: object, inputs: object, sequence
 
 @numpy_eager_registry.register("CtcGreedyDecoder")
 def _np_ctc_greedy_decoder(backend_module: object, inputs: object, sequence_length: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_ctc_greedy_decoder.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        sequence_length (object): The sequence_length parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(inputs)
     argmax = np.argmax(arr, axis=-1)
     decoded = []
@@ -285,6 +423,16 @@ def _np_ctc_greedy_decoder(backend_module: object, inputs: object, sequence_leng
 
 @numpy_eager_registry.register("CtcUniqueLabels")
 def _np_ctc_unique_labels(backend_module: object, labels: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_ctc_unique_labels.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        labels (object): The labels parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(labels)
     unique, indices = np.unique(arr, return_inverse=True)
     return unique.astype(np.int32), indices.astype(np.int32)
@@ -292,6 +440,19 @@ def _np_ctc_unique_labels(backend_module: object, labels: object, **kwargs: obje
 
 @numpy_eager_registry.register("NormalizeMoments")
 def _np_normalize_moments(backend_module: object, counts: object, mean_ss: object, variance_ss: object, shift: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_normalize_moments.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        counts (object): The counts parameter.
+        mean_ss (object): The mean_ss parameter.
+        variance_ss (object): The variance_ss parameter.
+        shift (object): The shift parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     c = np.asarray(counts)
     m = np.asarray(mean_ss)
     v = np.asarray(variance_ss)
@@ -303,6 +464,17 @@ def _np_normalize_moments(backend_module: object, counts: object, mean_ss: objec
 
 @numpy_eager_registry.register("SufficientStatistics")
 def _np_sufficient_statistics(backend_module: object, x: object, axes: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_sufficient_statistics.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        axes (object): The axes parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(x)
     axes = tuple(np.asarray(axes).tolist()) if axes is not None else None
     divisor = np.prod([arr.shape[i] for i in range(arr.ndim) if i not in (axes or [])]) if axes else 1
@@ -316,6 +488,18 @@ def _np_sufficient_statistics(backend_module: object, x: object, axes: object, *
 
 @numpy_eager_registry.register("WeightedMoments")
 def _np_weighted_moments(backend_module: object, x: object, axes: object, frequency_weights: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_weighted_moments.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        axes (object): The axes parameter.
+        frequency_weights (object): The frequency_weights parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(x)
     fw = np.asarray(frequency_weights)
     axes = tuple(np.asarray(axes).tolist()) if axes is not None else None
@@ -328,6 +512,16 @@ def _np_weighted_moments(backend_module: object, x: object, axes: object, freque
 
 @numpy_eager_registry.register("MaxPoolWithArgmax")
 def _np_max_pool_with_argmax(backend_module: object, input: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_max_pool_with_argmax.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        input (object): The input parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(input)
     import scipy.ndimage
 
@@ -341,6 +535,16 @@ def _np_max_pool_with_argmax(backend_module: object, input: object, **kwargs: ob
 
 @numpy_eager_registry.register("CollapseRepeated")
 def _np_collapse_repeated(backend_module: object, labels: object, **kwargs: object) -> tuple:
+    """Eager fallback for _np_collapse_repeated.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        labels (object): The labels parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     arr = np.asarray(labels)
     if arr.size == 0:
         return arr, np.zeros_like(arr, dtype=np.int32)

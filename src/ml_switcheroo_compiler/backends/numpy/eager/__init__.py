@@ -56,25 +56,26 @@ from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-    """Execute execute_op.
+    """Evaluate execute_op operation.
 
     Args:
-        cls (Any): The class.
-        op_type (Any): Argument op_type.
-        *args (Any): Argument *args.
-        **kwargs (Any): Argument **kwargs.
+        cls (type): Class.
+        op_type (str): The op_type parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-    Any: The result.
+        object: Result.
+
+    Raises:
+        UnimplementedMathError: An exception.
     """
     func_registry = numpy_eager_registry.get(op_type)
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
-
     func_registry = global_eager_registry.get(op_type)
     if func_registry is not None:
         return func_registry(np, *args, **kwargs)
-
     try:
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
@@ -94,13 +95,21 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
 
                 msg = f"Operation {op_type} is not implemented in interpreter."
                 raise UnimplementedMathError(msg) from None
-
     return func(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Repeat")
 def repeat(np: object, *args: object, **kwargs: object) -> object:
-    """Repeat."""
+    """Repeat.
+
+    Args:
+        np (object): The np parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if "dim" in kwargs:
         kwargs["axis"] = kwargs.pop("dim")
     return np.repeat(*args, **kwargs)
@@ -108,7 +117,16 @@ def repeat(np: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Searchsorted")
 def searchsorted(np: object, *args: object, **kwargs: object) -> object:
-    """Searchsorted."""
+    """Searchsorted.
+
+    Args:
+        np (object): The np parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return np.searchsorted(*args, **kwargs)
 
 
@@ -190,7 +208,6 @@ def unstack(np_mod: object, x: object, dim: int = 0, *args: object, **kwargs: ob
     """
     ax = dim if dim != 0 else kwargs.get("axis", 0)
     # unstack is basically split into 1-sized chunks along axis and squeezed
-
     if hasattr(x, "shape"):
         num_splits = x.shape[ax]
         splits = np_mod.split(x, num_splits, axis=ax)

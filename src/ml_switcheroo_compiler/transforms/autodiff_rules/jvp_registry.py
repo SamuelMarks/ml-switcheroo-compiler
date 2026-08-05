@@ -1,9 +1,7 @@
-"""Provides a registry for Jacobian-Vector Product (JVP) rules used in forward-mode.
-
-automatic differentiation
+"""Provide a registry for Jacobian-Vector Product (JVP) rules used in forward-mode automatic differentiation.
 
 This module allows registering and retrieving JVP functions for various mathematical
-operations
+operations.
 """
 
 from typing import Callable
@@ -13,32 +11,23 @@ _JVP_REGISTRY: dict[str, Callable] = {}
 
 
 def register_jvp(op_name: str) -> Callable:
-    """Registers a Jacobian-Vector Product (JVP) rule for a specific mathematical.
-
-    operation
-
-    This function acts as a decorator factory. The decorated function should define
-    how to compute the JVP for the given operation name
+    """Register a Jacobian-Vector Product (JVP) rule for a specific mathematical.
 
     Args:
-        op_name (str): The unique name of the operation to register
+        op_name (str): The op_name parameter.
 
     Returns:
-    Callable: A decorator function that registers the decorated JVP rule
-
-    Raises:
-    ValueError: If a JVP rule for the specified operation name is already
-    registered
+        Callable: Result.
     """
 
     def decorator(func: Callable) -> Callable:
-        """Execute decorator.
+        """Evaluate decorator operation.
 
         Args:
-            func (Any): Argument func.
+            func (Callable): The func parameter.
 
         Returns:
-        Any: The result.
+            Callable: Result.
         """
         if op_name in _JVP_REGISTRY:
             msg = f"JVP for operation '{op_name}' is already registered."
@@ -50,17 +39,13 @@ def register_jvp(op_name: str) -> Callable:
 
 
 def get_jvp(op_name: str) -> Callable:
-    """Retrieves the registered Jacobian-Vector Product (JVP) rule for a given operation.
+    """Retrieve the registered Jacobian-Vector Product (JVP) rule for a given operation.
 
     Args:
-        op_name (str): The name of the operation whose JVP rule is being requested
+        op_name (str): The op_name parameter.
 
     Returns:
-    Callable: The registered JVP function associated with the operation
-
-    Raises:
-    ValueError: If no JVP rule has been registered for the specified
-    operation
+        Callable: Result.
     """
     if op_name not in _JVP_REGISTRY:
         raise ValueError(f"Missing JVP rule for operation: {op_name}")

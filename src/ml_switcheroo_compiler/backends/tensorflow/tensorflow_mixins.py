@@ -6,13 +6,13 @@ class TensorFlowMathMixin:
     """Math Mixin."""
 
     def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the math ops property or mapping.
+        """Evaluate _get_math_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {
             "TruncateDiv": "tf.math.truncatediv({0}, {1})",
@@ -30,13 +30,13 @@ class TensorFlowMathMixin:
         }
 
     def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the linalg ops property or mapping.
+        """Evaluate _get_linalg_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {
             "Matmul": "tf.linalg.matmul({0}, {1})",
@@ -76,13 +76,13 @@ class TensorFlowControlFlowMixin:
     """Control Flow / Array / NN Mixin."""
 
     def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the nn ops property or mapping.
+        """Evaluate _get_nn_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {
             "Relu": "tf.nn.relu({0})",
@@ -110,13 +110,13 @@ class TensorFlowControlFlowMixin:
         }
 
     def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the array ops property or mapping.
+        """Evaluate _get_array_ops operation.
 
         Args:
-            kwargs (dict): Required parameter for kwargs.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            dict: The evaluated or processed output.
+            dict: Result.
         """
         return {
             "BroadcastInDim": "{0}.broadcast_in_dim({1}, {2})",

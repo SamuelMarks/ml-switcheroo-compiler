@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.backends.generator_utils import (
 
 
 class JaxDistributedVisitor:
-    """Mixin for JAX distributed node visitors."""
+    """Provide mixin for JAX distributed node visitors."""
 
     def visit_all_gather(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate JAX code for the all_gather operation.
@@ -65,7 +65,7 @@ class JaxDistributedVisitor:
 
 
 class JaxMathVisitor:
-    """Mixin for JAX math node visitors."""
+    """Provide mixin for JAX math node visitors."""
 
     def visit_SegmentSum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate JAX code for the SegmentSum operation.
@@ -294,7 +294,7 @@ class JaxMathVisitor:
 
 
 class JaxControlFlowVisitor:
-    """Mixin for JAX control flow node visitors."""
+    """Provide mixin for JAX control flow node visitors."""
 
     def visit_If(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate JAX code for the If operation.
@@ -338,7 +338,7 @@ class JaxControlFlowVisitor:
 
 
 class JaxVisionVisitor:
-    """Mixin for JAX vision node visitors."""
+    """Provide mixin for JAX vision node visitors."""
 
     def visit_ElasticTransform(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate JAX code for the ElasticTransform operation.
@@ -477,7 +477,7 @@ class JaxVisionVisitor:
 
 
 class JaxAudioVisitor:
-    """Mixin for JAX audio node visitors."""
+    """Provide mixin for JAX audio node visitors."""
 
     def visit_Istft(self, node: object, input_vars: list[str], **kwargs: object) -> str:
         """Generate JAX code for the Istft operation.

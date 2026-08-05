@@ -11,7 +11,7 @@ from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTor
 
 
 class PyTorchVisionVisitor:
-    """Handles vision ops for PyTorch."""
+    """Handle vision ops for PyTorch."""
 
     handled_ops = {
         "ElasticTransform",
@@ -53,7 +53,7 @@ class PyTorchVisionVisitor:
 
 
 class PyTorchAudioVisitor:
-    """Handles audio ops for PyTorch."""
+    """Handle audio ops for PyTorch."""
 
     handled_ops = {"Istft", "MelFilterbank", "Mfcc"}
     _handlers = {
@@ -309,11 +309,8 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """Emit the code to assign a constant parameter to a local variable.
 
         Args:
-            var_name (str): The name of the variable to bind.
-            val_repr (str): The string representation of the constant value.
-
-        Returns:
-            None
+            var_name (str): The var_name parameter.
+            val_repr (str): The val_repr parameter.
         """
         self.add_line(f"{var_name} = self.{var_name}")
 
@@ -345,21 +342,44 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
-        """Load."""
+        """Load.
+
+        Args:
+        filepath (str): The filepath parameter.
+        allow_pickle (bool): The allow_pickle parameter.
+        fix_imports (bool): The fix_imports parameter.
+        encoding (str): The encoding parameter.
+
+        Returns:
+        object: Result.
+        """
         import torch
 
         return torch.load(filepath, weights_only=not allow_pickle)
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
-        """Save."""
+        """Save.
+
+        Args:
+            file (str): The file parameter.
+            arr (object): The arr parameter.
+            allow_pickle (bool): The allow_pickle parameter.
+            fix_imports (bool): The fix_imports parameter.
+        """
         import torch
 
         torch.save(arr, file)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez."""
+        """Savez.
+
+        Args:
+            file (str): The file parameter.
+            *args (object): Positional args.
+            **kwds (object): Keyword args.
+        """
         import torch
 
         data = {f"arr_{i}": arg for i, arg in enumerate(args)}
@@ -368,7 +388,13 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez compressed."""
+        """Savez compressed.
+
+        Args:
+            file (str): The file parameter.
+            *args (object): Positional args.
+            **kwds (object): Keyword args.
+        """
         import torch
 
         data = {f"arr_{i}": arg for i, arg in enumerate(args)}

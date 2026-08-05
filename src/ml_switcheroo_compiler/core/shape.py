@@ -2,7 +2,20 @@
 
 
 def _broadcast_dim(d1: int, d2: int, shape1: tuple[int, ...], shape2: tuple[int, ...]) -> int:
-    """Broadcast a single dimension."""
+    """Broadcast a single dimension.
+
+    Args:
+        d1 (int): The d1 parameter.
+        d2 (int): The d2 parameter.
+        shape1 (tuple): The shape1 parameter.
+        shape2 (tuple): The shape2 parameter.
+
+    Returns:
+        int: Result.
+
+    Raises:
+        ShapeMismatchError: An exception.
+    """
     if d1 == d2:
         return d1
     if d1 == 1:
@@ -18,14 +31,11 @@ def broadcast_shapes(shape1: tuple[int, ...], shape2: tuple[int, ...]) -> tuple[
     """Calculate the broadcasted shape of two tuples.
 
     Args:
-        shape1: The first shape.
-        shape2: The second shape.
+        shape1 (tuple): The shape1 parameter.
+        shape2 (tuple): The shape2 parameter.
 
     Returns:
-        The broadcasted shape.
-
-    Raises:
-        ValueError: If the shapes are not compatible.
+        tuple: Result.
     """
     ndim = max(len(shape1), len(shape2))
     shape1_pad = (1,) * (ndim - len(shape1)) + tuple(shape1)

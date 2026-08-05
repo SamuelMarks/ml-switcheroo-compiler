@@ -16,16 +16,16 @@ class FFTConfig:
 
 @numpy_eager_registry.register("Fft3d")
 def _np_fft3d(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the fft3d logic eagerly backed by NumPy.
+    """Evaluate _np_fft3d operation.
 
     Args:
-        backend_module: Required parameter for backend_module.
-        a: Required parameter for a.
-        config: FFT configuration.
-        **kwargs: Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        The evaluated or processed output.
+        object: Result.
     """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.fftn(a, s=config.s, axes=config.axes, norm=config.norm)
@@ -33,82 +33,207 @@ def _np_fft3d(backend_module: object, a: object, config: FFTConfig = None, **kwa
 
 @numpy_eager_registry.register("Ifft3d")
 def _np_ifft3d(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the ifft3d logic eagerly backed by NumPy."""
+    """Evaluate _np_ifft3d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.ifftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Rfft2d")
 def _np_rfft2d(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the rfft2d logic eagerly backed by NumPy."""
+    """Evaluate _np_rfft2d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=(-2, -1))
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Rfft3d")
 def _np_rfft3d(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the rfft3d logic eagerly backed by NumPy."""
+    """Evaluate _np_rfft3d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Irfft2d")
 def _np_irfft2d(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the irfft2d logic eagerly backed by NumPy."""
+    """Evaluate _np_irfft2d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=(-2, -1))
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Irfft3d")
 def _np_irfft3d(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the irfft3d logic eagerly backed by NumPy."""
+    """Evaluate _np_irfft3d operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=(-3, -2, -1))
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Fftnd")
 def _np_fftnd(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the fftnd logic eagerly backed by NumPy."""
+    """Evaluate _np_fftnd operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.fftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Ifftnd")
 def _np_ifftnd(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the ifftnd logic eagerly backed by NumPy."""
+    """Evaluate _np_ifftnd operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.ifftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Rfftnd")
 def _np_rfftnd(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the rfftnd logic eagerly backed by NumPy."""
+    """Evaluate _np_rfftnd operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.rfftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("Irfftnd")
 def _np_irfftnd(backend_module: object, a: object, config: FFTConfig = None, **kwargs: object) -> object:
-    """Evaluate the irfftnd logic eagerly backed by NumPy."""
+    """Evaluate _np_irfftnd operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        config (FFTConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = config or FFTConfig(axes=None)
     return backend_module.fft.irfftn(a, s=config.s, axes=config.axes, norm=config.norm)
 
 
 @numpy_eager_registry.register("WindowHann")
 def _np_window_hann(backend_module: object, length: int, *args: object, **kwargs: object) -> object:
-    """Evaluate the window hann logic eagerly backed by NumPy."""
+    """Evaluate _np_window_hann operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        length (int): The length parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.hanning(length)
 
 
 @numpy_eager_registry.register("WindowHamming")
 def _np_window_hamming(backend_module: object, length: int, *args: object, **kwargs: object) -> object:
-    """Evaluate the window hamming logic eagerly backed by NumPy."""
+    """Evaluate _np_window_hamming operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        length (int): The length parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.hamming(length)
 
 
 @numpy_eager_registry.register("Stft")
 def _np_stft(backend_module: object, x: object, nfft: int, noverlap: int = 0, *args: object, **kwargs: object) -> object:
-    """Evaluate the stft logic eagerly backed by NumPy."""
+    """Evaluate _np_stft operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        nfft (int): The nfft parameter.
+        noverlap (int): The noverlap parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     x_arr = backend_module.asarray(x)
     step = nfft - noverlap
     if step <= 0:
@@ -122,7 +247,22 @@ def _np_stft(backend_module: object, x: object, nfft: int, noverlap: int = 0, *a
 
 @numpy_eager_registry.register("Istft")
 def _np_istft(backend_module: object, x: object, nfft: int, noverlap: int = 0, *args: object, **kwargs: object) -> object:
-    """Evaluate the istft logic eagerly backed by NumPy."""
+    """Evaluate _np_istft operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        nfft (int): The nfft parameter.
+        noverlap (int): The noverlap parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     x_arr = backend_module.asarray(x)
     step = nfft - noverlap
     if step <= 0:

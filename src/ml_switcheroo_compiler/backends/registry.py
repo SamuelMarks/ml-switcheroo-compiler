@@ -2,45 +2,54 @@
 """Backend Registry."""
 
 import logging
-from typing import Literal
+from typing import Callable, Literal
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.core.config import config
 
 
 def _load_numpy() -> None:
+    """Load the NumPy backend."""
     import ml_switcheroo_compiler.backends.numpy  # noqa: F401
 
 
 def _load_pytorch() -> None:
+    """Load the PyTorch backend."""
     import ml_switcheroo_compiler.backends.pytorch  # noqa: F401
 
 
 def _load_jax() -> None:
+    """Load the JAX backend."""
     import ml_switcheroo_compiler.backends.jax  # noqa: F401
 
 
 def _load_tensorflow() -> None:
+    """Load the TensorFlow backend."""
     import ml_switcheroo_compiler.backends.tensorflow  # noqa: F401
 
 
 def _load_mlx() -> None:
+    """Load the MLX backend."""
     import ml_switcheroo_compiler.backends.mlx  # noqa: F401
 
 
 def _load_dask() -> None:
+    """Load the Dask backend."""
     import ml_switcheroo_compiler.backends.dask  # noqa: F401
 
 
 def _load_keras() -> None:
+    """Load the Keras backend."""
     import ml_switcheroo_compiler.backends.keras  # noqa: F401
 
 
 def _load_cupy() -> None:
+    """Load the CuPy backend."""
     import ml_switcheroo_compiler.backends.cupy  # noqa: F401
 
 
 def _load_pure_python() -> None:
+    """Load the Pure Python backend."""
     import ml_switcheroo_compiler.backends.pure_python  # noqa: F401
 
 
@@ -80,23 +89,20 @@ class BackendRegistry:
 
     @classmethod
     def register(cls, name: BackendName, backend_class: type["BaseGenerator"]) -> None:
-        """Register a backend.
+        """Register a new backend for compilation and execution.
 
         Args:
-            name (str): The name parameter for the operation.
-            backend_class (type['BaseGenerator']): The backend_class parameter for the operation.
+            name (BackendName): The name of the backend (e.g., 'numpy', 'pytorch').
+            backend_class (type['BaseGenerator']): The class implementing the backend logic.
         """
         cls._registry[name] = backend_class
 
     @classmethod
     def _try_load_lazy(cls, name: BackendName) -> None:
-        """Evaluate and process the try load lazy operation.
+        """Attempt to lazily load a backend module if it hasn't been loaded yet.
 
         Args:
-            name (BackendName): Required parameter for name.
-
-        Returns:
-            Any: The evaluated or processed output.
+            name (BackendName): The name of the backend to load.
         """
         if name not in cls._registry and name in cls._LAZY_MODULES:
             try:
@@ -107,13 +113,13 @@ class BackendRegistry:
 
     @classmethod
     def _resolve_alias(cls, name: BackendName) -> BackendName:
-        """Evaluate and process the resolve alias operation.
+        """Resolve backend name aliases to their canonical names.
 
         Args:
-            name (BackendName): Required parameter for name.
+            name (BackendName): The requested backend name or alias.
 
         Returns:
-            BackendName: The evaluated or processed output.
+            BackendName: The canonical backend name (e.g., 'pytorch' instead of 'torch').
         """
         if name not in cls._registry and name == "torch" and "pytorch" in cls._registry:
             return "pytorch"
@@ -121,13 +127,16 @@ class BackendRegistry:
 
     @classmethod
     def get(cls, name: BackendName) -> type["BaseGenerator"]:
-        """Get a backend by name.
+        """Retrieve a registered backend class by name.
 
         Args:
-            name (str): The name parameter for the operation.
+            name (BackendName): The name of the backend to retrieve.
 
         Returns:
-            type['BaseGenerator']: The evaluated output resulting from this operation.
+            type['BaseGenerator']: The registered backend class.
+
+        Raises:
+            ValueError: If the specified backend is not found or cannot be loaded.
         """
         cls._try_load_lazy(name)
         resolved_name = cls._resolve_alias(name)
@@ -140,10 +149,10 @@ class BackendRegistry:
 
     @classmethod
     def get_all(cls) -> dict[BackendName, type["BaseGenerator"]]:
-        """Get all registered backends.
+        """Retrieve all registered backends, loading them if necessary.
 
         Returns:
-            dict[BackendName, type['BaseGenerator']]: The evaluated output.
+            dict[BackendName, type['BaseGenerator']]: A dictionary mapping canonical backend names to their implementing classes.
         """
         for name in cls._LAZY_MODULES:
             if name not in cls._registry:
@@ -156,29 +165,32 @@ class BackendRegistry:
 
 
 def get_active_backend() -> type["BaseGenerator"]:
-    """Get the currently active backend based on config.
+    """Retrieve the currently active backend class based on global configuration.
 
     Returns:
-        type['BaseGenerator']: The active backend class.
+        type['BaseGenerator']: The currently active backend class.
     """
     return BackendRegistry.get(config.backend)
 
 
-def register_backend(name: BackendName) -> object:
-    """Decorator to register a backend.
+def register_backend(name: BackendName) -> Callable[[type["BaseGenerator"]], type["BaseGenerator"]]:
+    """Decorate to register a class as a backend for a specific name.
 
     Args:
-        name (str): The name parameter for the operation.
+        name (BackendName): The name to register the backend under.
 
     Returns:
-        object: The evaluated output resulting from this operation.
+        Callable: A decorator that registers the backend class.
     """
 
     def decorator(cls: type["BaseGenerator"]) -> type["BaseGenerator"]:
-        """Execute decorator.
+        """Register the annotated class in the backend registry.
+
+        Args:
+            cls (type['BaseGenerator']): The class to register.
 
         Returns:
-        Any: The result.
+            type['BaseGenerator']: The original class.
         """
         BackendRegistry.register(name, cls)
         return cls

@@ -39,11 +39,14 @@ def _get_transpose(spec: Union[str, Iterable[int]], default: str) -> tuple[int, 
     """Get transpose.
 
     Args:
-        spec (Union[str, Iterable[int]]): Spec.
-        default (str): Default.
+        spec (Union): The spec parameter.
+        default (str): The default parameter.
 
     Returns:
-        tuple[int, ...]: Transpose.
+        tuple: Result.
+
+    Raises:
+        TypeError: An exception.
     """
     if isinstance(spec, str):
         try:
@@ -55,13 +58,13 @@ def _get_transpose(spec: Union[str, Iterable[int]], default: str) -> tuple[int, 
 
 
 def _get_conv_defaults(spatial_dims: int) -> tuple[str, str]:
-    """Retrieve the conv defaults property or mapping.
+    """Evaluate _get_conv_defaults operation.
 
     Args:
-        spatial_dims (int): Required parameter for spatial_dims.
+        spatial_dims (int): The spatial_dims parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        object: Result.
     """
     if spatial_dims == 1:
         return ("NCW", "OIW")
@@ -71,7 +74,17 @@ def _get_conv_defaults(spatial_dims: int) -> tuple[str, str]:
 
 
 def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: int, dimension_numbers: object) -> ConvDimSpecs:
-    """Parse dimension numbers for convolution."""
+    """Parse dimension numbers for convolution.
+
+    Args:
+        lhs_ndim (int): The lhs_ndim parameter.
+        rhs_ndim (int): The rhs_ndim parameter.
+        spatial_dims (int): The spatial_dims parameter.
+        dimension_numbers (object): The dimension_numbers parameter.
+
+    Returns:
+        ConvDimSpecs: Result.
+    """
     if dimension_numbers is None:
         lhs_spec = (0, 1) + tuple(range(2, lhs_ndim))
         rhs_spec = (0, 1) + tuple(range(2, rhs_ndim))
@@ -100,16 +113,16 @@ def _calculate_same_padding(
     rhs_dilation: list[int],
     window_strides: Union[tuple[int, ...], list[int]],
 ) -> list[tuple[int, int]]:
-    """Evaluate and process the calculate same padding operation.
+    """Evaluate _calculate_same_padding operation.
 
     Args:
-        lhs_shape (tuple): Required parameter for lhs_shape.
-        rhs_shape (tuple): Required parameter for rhs_shape.
-        rhs_dilation (list): Required parameter for rhs_dilation.
-        window_strides (Union): Required parameter for window_strides.
+        lhs_shape (object): The lhs_shape parameter.
+        rhs_shape (object): The rhs_shape parameter.
+        rhs_dilation (object): The rhs_dilation parameter.
+        window_strides (object): The window_strides parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     spatial_dims = len(lhs_shape) - 2
     pad_list = []
@@ -125,7 +138,16 @@ def _calculate_same_padding(
 
 
 def _calculate_conv_padding(config: ConvConfig, lhs_shape: tuple[int, ...], rhs_shape: tuple[int, ...]) -> list[tuple[int, int]]:
-    """Calculate convolution padding."""
+    """Calculate convolution padding.
+
+    Args:
+        config (ConvConfig): The config parameter.
+        lhs_shape (tuple): The lhs_shape parameter.
+        rhs_shape (tuple): The rhs_shape parameter.
+
+    Returns:
+        list: Result.
+    """
     spatial_dims = len(lhs_shape) - 2
     padding = config.padding
     if not isinstance(padding, str):
@@ -141,7 +163,16 @@ def _calculate_conv_padding(config: ConvConfig, lhs_shape: tuple[int, ...], rhs_
 
 
 def _apply_conv_dilation(tensor: np.ndarray, dilation: list[int], spatial_dims: int) -> np.ndarray:
-    """Apply dilation to a convolution tensor."""
+    """Apply dilation to a convolution tensor.
+
+    Args:
+        tensor (object): The tensor parameter.
+        dilation (object): The dilation parameter.
+        spatial_dims (int): The spatial_dims parameter.
+
+    Returns:
+        object: Result.
+    """
     if not any(d > 1 for d in dilation):
         return tensor
     new_shape = list(tensor.shape)
@@ -165,16 +196,16 @@ class PatchConfig:
 
 
 def _compute_conv_patch_group(lhs_patch: np.ndarray, rhs_c: np.ndarray, config: PatchConfig, g: int) -> np.ndarray:
-    """Evaluate and process the compute conv patch group operation.
+    """Evaluate _compute_conv_patch_group operation.
 
     Args:
-        lhs_patch (ndarray): Required parameter for lhs_patch.
-        rhs_c (ndarray): Required parameter for rhs_c.
-        config (PatchConfig): Required parameter for config.
-        g (int): Required parameter for g.
+        lhs_patch (object): The lhs_patch parameter.
+        rhs_c (object): The rhs_c parameter.
+        config (PatchConfig): The config parameter.
+        g (int): The g parameter.
 
     Returns:
-        ndarray: The evaluated or processed output.
+        object: Result.
     """
     group_in_c = config.group_in_c
     group_out_c = config.group_out_c
@@ -184,17 +215,14 @@ def _compute_conv_patch_group(lhs_patch: np.ndarray, rhs_c: np.ndarray, config: 
 
 
 def _compute_single_patch_grouped(lhs_patch: np.ndarray, rhs_c: np.ndarray, out: np.ndarray, spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
-    """Evaluate and process the compute single patch grouped operation.
+    """Evaluate _compute_single_patch_grouped operation.
 
     Args:
-        lhs_patch (ndarray): Required parameter for lhs_patch.
-        rhs_c (ndarray): Required parameter for rhs_c.
-        out (ndarray): Required parameter for out.
-        spatial_indices (tuple): Required parameter for spatial_indices.
-        config (PatchConfig): Required parameter for config.
-
-    Returns:
-        Any: The evaluated or processed output.
+        lhs_patch (object): The lhs_patch parameter.
+        rhs_c (object): The rhs_c parameter.
+        out (object): The out parameter.
+        spatial_indices (tuple): The spatial_indices parameter.
+        config (PatchConfig): The config parameter.
     """
     for g in range(config.feature_group_count):
         res = _compute_conv_patch_group(lhs_patch, rhs_c, config, g)
@@ -203,15 +231,15 @@ def _compute_single_patch_grouped(lhs_patch: np.ndarray, rhs_c: np.ndarray, out:
 
 
 def _get_patch_slices(spatial_indices: tuple[int, ...], window_strides: Union[tuple[int, ...], list[int]], rhs_shape: tuple[int, ...]) -> tuple[slice, ...]:
-    """Retrieve the patch slices property or mapping.
+    """Evaluate _get_patch_slices operation.
 
     Args:
-        spatial_indices (tuple): Required parameter for spatial_indices.
-        window_strides (Union): Required parameter for window_strides.
-        rhs_shape (tuple): Required parameter for rhs_shape.
+        spatial_indices (object): The spatial_indices parameter.
+        window_strides (object): The window_strides parameter.
+        rhs_shape (object): The rhs_shape parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        object: Result.
     """
     slices = [slice(None), slice(None)]
     for i, idx in enumerate(spatial_indices):
@@ -222,14 +250,11 @@ def _get_patch_slices(spatial_indices: tuple[int, ...], window_strides: Union[tu
 
 
 def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int, ...]) -> None:
-    """Evaluate and process the compute single patch operation.
+    """Evaluate _compute_single_patch operation.
 
     Args:
-        state (ConvExecutionState): Required parameter for state.
-        spatial_indices (tuple): Required parameter for spatial_indices.
-
-    Returns:
-        Any: The evaluated or processed output.
+        state (ConvExecutionState): The state parameter.
+        spatial_indices (tuple): The spatial_indices parameter.
     """
     slices = _get_patch_slices(spatial_indices, state.config.window_strides, state.rhs_c.shape)
     lhs_patch = state.lhs_pad[slices]
@@ -252,7 +277,14 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
 
 
 def _compute_conv_patches(lhs_pad: np.ndarray, rhs_c: np.ndarray, out: np.ndarray, config: ConvConfig) -> None:
-    """Compute convolution patches."""
+    """Evaluate _compute_conv_patches operation.
+
+    Args:
+        lhs_pad (object): The lhs_pad parameter.
+        rhs_c (object): The rhs_c parameter.
+        out (object): The out parameter.
+        config (ConvConfig): The config parameter.
+    """
     spatial_dims = len(lhs_pad.shape) - 2
     out_spatial = out.shape[2:]
     for spatial_indices in itertools.product(*[range(d) for d in out_spatial]):
@@ -261,15 +293,15 @@ def _compute_conv_patches(lhs_pad: np.ndarray, rhs_c: np.ndarray, out: np.ndarra
 
 
 def _apply_conv_padding_helper(lhs_c: np.ndarray, rhs_c: np.ndarray, config: ConvConfig) -> np.ndarray:
-    """Evaluate and process the apply conv padding helper operation.
+    """Evaluate _apply_conv_padding_helper operation.
 
     Args:
-        lhs_c (ndarray): Required parameter for lhs_c.
-        rhs_c (ndarray): Required parameter for rhs_c.
-        config (ConvConfig): Required parameter for config.
+        lhs_c (object): The lhs_c parameter.
+        rhs_c (object): The rhs_c parameter.
+        config (ConvConfig): The config parameter.
 
     Returns:
-        ndarray: The evaluated or processed output.
+        object: Result.
     """
     pad_list = _calculate_conv_padding(config, lhs_c.shape, rhs_c.shape)
     pad_width = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
@@ -277,16 +309,16 @@ def _apply_conv_padding_helper(lhs_c: np.ndarray, rhs_c: np.ndarray, config: Con
 
 
 def _preprocess_conv_tensors(lhs: np.ndarray, rhs: np.ndarray, config: ConvConfig, specs: ConvDimSpecs) -> tuple[np.ndarray, np.ndarray]:
-    """Evaluate and process the preprocess conv tensors operation.
+    """Evaluate _preprocess_conv_tensors operation.
 
     Args:
-        lhs (ndarray): Required parameter for lhs.
-        rhs (ndarray): Required parameter for rhs.
-        config (ConvConfig): Required parameter for config.
-        specs (ConvDimSpecs): Required parameter for specs.
+        lhs (object): The lhs parameter.
+        rhs (object): The rhs parameter.
+        config (ConvConfig): The config parameter.
+        specs (ConvDimSpecs): The specs parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     lhs_c = np.transpose(lhs, specs.lhs_spec)
     rhs_c = np.transpose(rhs, specs.rhs_spec)
@@ -313,29 +345,29 @@ def _compute_out_shape(
     spatial_dims: int,
     window_strides: Union[tuple[int, ...], list[int]],
 ) -> list[int]:
-    """Evaluate and process the compute out shape operation.
+    """Evaluate _compute_out_shape operation.
 
     Args:
-        lhs_pad_shape (tuple): Required parameter for lhs_pad_shape.
-        rhs_c_shape (tuple): Required parameter for rhs_c_shape.
-        spatial_dims (int): Required parameter for spatial_dims.
-        window_strides (Union): Required parameter for window_strides.
+        lhs_pad_shape (object): The lhs_pad_shape parameter.
+        rhs_c_shape (object): The rhs_c_shape parameter.
+        spatial_dims (int): The spatial_dims parameter.
+        window_strides (object): The window_strides parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     out_spatial = [(lhs_pad_shape[2 + i] - rhs_c_shape[2 + i]) // window_strides[i] + 1 for i in range(spatial_dims)]
     return [lhs_pad_shape[0], rhs_c_shape[0]] + out_spatial
 
 
 def _get_inv_out_spec(out_spec: tuple[int, ...]) -> list[int]:
-    """Retrieve the inv out spec property or mapping.
+    """Evaluate _get_inv_out_spec operation.
 
     Args:
-        out_spec (tuple): Required parameter for out_spec.
+        out_spec (object): The out_spec parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     inv_out_spec = [0] * len(out_spec)
     for i, p in enumerate(out_spec):
@@ -344,7 +376,17 @@ def _get_inv_out_spec(out_spec: tuple[int, ...]) -> list[int]:
 
 
 def _conv_general_dilated(lhs: object, rhs: object, config: ConvConfig, **kwargs: object) -> object:
-    """Evaluate."""
+    """Evaluate.
+
+    Args:
+        lhs (object): The lhs parameter.
+        rhs (object): The rhs parameter.
+        config (ConvConfig): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     lhs = np.asarray(lhs)
     rhs = np.asarray(rhs)
     spatial_dims = lhs.ndim - 2
@@ -359,15 +401,15 @@ def _conv_general_dilated(lhs: object, rhs: object, config: ConvConfig, **kwargs
 
 @numpy_eager_registry.register("ConvGeneralDilated")
 def _np_conv_general_dilated(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the conv general dilated logic eagerly backed by NumPy.
+    """Evaluate _np_conv_general_dilated operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
@@ -379,7 +421,17 @@ def _np_conv_general_dilated(backend_module: object, *args: object, **kwargs: ob
 
 
 def _calculate_conv_transpose_padding(spatial_in: tuple, spatial_k: tuple, strides: tuple, padding: str) -> tuple:
-    """Calculate output spatial shapes and paddings for transposed convolution."""
+    """Calculate output spatial shapes and paddings for transposed convolution.
+
+    Args:
+        spatial_in (tuple): The spatial_in parameter.
+        spatial_k (tuple): The spatial_k parameter.
+        strides (tuple): The strides parameter.
+        padding (str): The padding parameter.
+
+    Returns:
+        tuple: Result.
+    """
     out_spatial = []
     pads = []
     for s_in, k, st in zip(spatial_in, spatial_k, strides):
@@ -427,15 +479,15 @@ def _build_conv_transpose_config(spatial_in: tuple, spatial_k: tuple, strides: t
 
 @numpy_eager_registry.register("ConvTranspose")
 def _np_conv_transpose(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the conv transpose logic eagerly backed by NumPy.
+    """Evaluate _np_conv_transpose operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     lhs = np.asarray(args[0])
     rhs = np.asarray(args[1])
@@ -445,9 +497,7 @@ def _np_conv_transpose(backend_module: object, *args: object, **kwargs: object) 
     spatial_k = rhs.shape[2:]
     if isinstance(strides, int):
         strides = (strides,) * len(spatial_in)
-
     out_spatial, pads = _calculate_conv_transpose_padding(spatial_in, spatial_k, strides, padding)
     slices, config_obj = _build_conv_transpose_config(spatial_in, spatial_k, strides, pads)
-
     rhs_rev = rhs[slices]
     return _np_conv_general_dilated(backend_module, lhs, rhs_rev, config_obj)

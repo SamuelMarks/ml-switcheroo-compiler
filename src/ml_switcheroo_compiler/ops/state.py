@@ -1,4 +1,4 @@
-"""Defines stateful operations for reading and writing variables within the ML Switcheroo.
+"""Define stateful operations for reading and writing variables within the ML Switcheroo.
 
 framework
 """
@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 @register_op("ReadVariable")
 class ReadVariable(OpDef):
-    """An operation definition for reading the value of a stateful variable within the.
+    """Provide an operation definition for reading the value of a stateful variable within the.
 
     computational graph
     """
@@ -28,7 +28,7 @@ class ReadVariable(OpDef):
 
 @register_op("AssignVariable")
 class AssignVariable(OpDef):
-    """An operation definition for assigning a new value to a stateful variable within the.
+    """Provide an operation definition for assigning a new value to a stateful variable within the.
 
     computational graph
     """

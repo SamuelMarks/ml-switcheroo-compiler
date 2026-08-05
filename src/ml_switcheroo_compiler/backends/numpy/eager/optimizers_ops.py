@@ -7,6 +7,19 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("ApplyAdam")
 def _np_apply_adam(backend_module: object, param: object, m: object, v: object, grad: object, **kwargs: object) -> tuple:
+    """Numpy eager fallback for ApplyAdam.
+
+    Args:
+        backend_module: The active backend module.
+        param: The parameter array to update.
+        m: The first moment array.
+        v: The second moment array.
+        grad: The gradient array.
+        **kwargs: Additional hyperparameters like lr.
+
+    Returns:
+        A tuple of (updated_param, updated_m, updated_v).
+    """
     p, m_, v_, g = np.asarray(param), np.asarray(m), np.asarray(v), np.asarray(grad)
     lr = kwargs.get("lr", 0.001)
     beta1, beta2, eps = 0.9, 0.999, 1e-8
@@ -19,6 +32,18 @@ def _np_apply_adam(backend_module: object, param: object, m: object, v: object, 
 
 @numpy_eager_registry.register("ApplyAdagrad")
 def _np_apply_adagrad(backend_module: object, param: object, accum: object, grad: object, **kwargs: object) -> tuple:
+    """Numpy eager fallback for ApplyAdagrad.
+
+    Args:
+        backend_module: The active backend module.
+        param: The parameter array to update.
+        accum: The accumulation array.
+        grad: The gradient array.
+        **kwargs: Additional hyperparameters like lr.
+
+    Returns:
+        A tuple of (updated_param, updated_accum).
+    """
     p, a, g = np.asarray(param), np.asarray(accum), np.asarray(grad)
     lr = kwargs.get("lr", 0.01)
     a_new = a + g**2
@@ -29,6 +54,19 @@ def _np_apply_adagrad(backend_module: object, param: object, accum: object, grad
 
 @numpy_eager_registry.register("ApplyFtrl")
 def _np_apply_ftrl(backend_module: object, param: object, accum: object, linear: object, grad: object, **kwargs: object) -> tuple:
+    """Numpy eager fallback for ApplyFtrl.
+
+    Args:
+        backend_module: The active backend module.
+        param: The parameter array to update.
+        accum: The accumulation array.
+        linear: The linear accumulation array.
+        grad: The gradient array.
+        **kwargs: Additional hyperparameters like lr.
+
+    Returns:
+        A tuple of (updated_param, updated_accum, updated_linear).
+    """
     p, a, lin, g = np.asarray(param), np.asarray(accum), np.asarray(linear), np.asarray(grad)
     lr = kwargs.get("lr", 0.001)
     a_new = a + g**2
@@ -40,6 +78,19 @@ def _np_apply_ftrl(backend_module: object, param: object, accum: object, linear:
 
 @numpy_eager_registry.register("ApplyRMSProp")
 def _np_apply_rmsprop(backend_module: object, param: object, ms: object, mom: object, grad: object, **kwargs: object) -> tuple:
+    """Numpy eager fallback for ApplyRMSProp.
+
+    Args:
+        backend_module: The active backend module.
+        param: The parameter array to update.
+        ms: The mean square accumulation array.
+        mom: The momentum array.
+        grad: The gradient array.
+        **kwargs: Additional hyperparameters like lr.
+
+    Returns:
+        A tuple of (updated_param, updated_ms, updated_mom).
+    """
     p, m, mo, g = np.asarray(param), np.asarray(ms), np.asarray(mom), np.asarray(grad)
     lr = kwargs.get("lr", 0.001)
     rho, momentum, eps = 0.9, 0.0, 1e-8

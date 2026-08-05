@@ -13,37 +13,35 @@ from .frontend_utils import _emit_reduction_node
 
 @dispatch_eager("Psum")
 def psum(x: Tensor, axis_name: str) -> Tensor:
-    """Computes an all-reduce sum over the specified mapped axis.
+    """Compute an all-reduce sum over the specified mapped axis.
 
     Args:
-        x (Tensor): The input tensor
-        axis_name (str): The axis to map over
+        x (Tensor): The x parameter.
+        axis_name (str): The axis_name parameter.
 
     Returns:
-    Tensor: The reduced tensor
-
+        Tensor: Result.
     """
     return _emit_reduction_node("Psum", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
 @dispatch_eager("Pmean")
 def pmean(x: Tensor, axis_name: str) -> Tensor:
-    """Computes an all-reduce mean over the specified mapped axis.
+    """Compute an all-reduce mean over the specified mapped axis.
 
     Args:
-        x (Tensor): The input tensor
-        axis_name (str): The axis to map over
+        x (Tensor): The x parameter.
+        axis_name (str): The axis_name parameter.
 
     Returns:
-    Tensor: The reduced tensor
-
+        Tensor: Result.
     """
     return _emit_reduction_node("Pmean", [x], {"axis_name": axis_name}, x.shape, x.dtype)
 
 
 @dispatch_eager("ApproxMaxK")
 def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> tuple[Tensor, Tensor]:
-    """Computes approximate top-k max elements and their indices.
+    """Compute approximate top-k max elements and their indices.
 
     Args:
         operand (Tensor): The input tensor
@@ -67,7 +65,7 @@ def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
 
 @dispatch_eager("ApproxMinK")
 def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> tuple[Tensor, Tensor]:
-    """Computes approximate top-k min elements and their indices.
+    """Compute approximate top-k min elements and their indices.
 
     Args:
         operand (Tensor): The input tensor
@@ -111,7 +109,18 @@ def ctc_loss(
 
 
 def corrcoef(x: object, y: object = None, rowvar: bool = True, bias: object = None, ddof: object = None) -> Tensor:
-    """Return Pearson product-moment correlation coefficients."""
+    """Return Pearson product-moment correlation coefficients.
+
+    Args:
+        x (object): The x parameter.
+        y (object): The y parameter.
+        rowvar (bool): The rowvar parameter.
+        bias (object): The bias parameter.
+        ddof (object): The ddof parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "Corrcoef",
@@ -132,7 +141,16 @@ def corrcoef(x: object, y: object = None, rowvar: bool = True, bias: object = No
 
 
 def correlate(a: object, v: object, mode: str = "valid") -> Tensor:
-    """Cross-correlation of two 1-dimensional sequences."""
+    """Cross-correlation of two 1-dimensional sequences.
+
+    Args:
+        a (object): The a parameter.
+        v (object): The v parameter.
+        mode (str): The mode parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         data = get_active_backend().execute_op("Correlate", getattr(a, "data", a), getattr(v, "data", v), mode=mode)
         return Tensor(data, TensorConfig(data.shape, "float32", getattr(a, "device", None)))
@@ -147,17 +165,15 @@ def cov(
     """Estimate a covariance matrix, given data and weights.
 
     Args:
-        m (object): A 1-D or 2-D array containing multiple variables and observations.
-        y (object, optional): An additional set of variables and observations.
-        **kwargs: Optional covariance configuration parameters. Allowed keys are:
-            - rowvar (bool): If rowvar is True (default), then each row represents a variable.
-            - bias (bool): Default normalization is False.
-            - ddof (int): If not None the default value implied by bias is overridden.
-            - fweights (object): 1-D array of integer frequency weights.
-            - aweights (object): 1-D array of observation vector weights.
+        m (object): The m parameter.
+        y (object): The y parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: The covariance matrix.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     allowed_keys = {"rowvar", "bias", "ddof", "fweights", "aweights"}
     for k in kwargs:

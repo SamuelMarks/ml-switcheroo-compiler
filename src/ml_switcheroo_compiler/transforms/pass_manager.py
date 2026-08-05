@@ -16,16 +16,14 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 class IRValidator:
-    """Validates the structural integrity and metadata consistency of an IR graph."""
+    """Validate the structural integrity and metadata consistency of an IR graph."""
 
     @staticmethod
     def check_cycles(graph: IRGraph) -> None:
         """Validate that the graph has no cycles.
 
-        graph (IRGraph): Argument graph
-
         Args:
-            graph (IRGraph): Argument graph
+            graph (IRGraph): The intermediate representation graph.
         """
         topological_sort(graph)
 
@@ -33,10 +31,11 @@ class IRValidator:
     def check_shapes(graph: IRGraph) -> None:
         """Validate shape consistency.
 
-        graph (IRGraph): Argument graph
-
         Args:
-            graph (IRGraph): Argument graph
+            graph (IRGraph): The intermediate representation graph.
+
+        Raises:
+            CompilationError: If a node is missing shape metadata.
         """
         # Simple validator: ensure every node has shape metadata
         for node_id, node in graph.nodes.items():
@@ -46,16 +45,13 @@ class IRValidator:
 
 
 def _graph_hash(graph: IRGraph) -> str:
-    """Computes a deterministic MD5 hash of the graph's structure.
-
-    The hash is based on the operation types and inputs of all nodes in the graph,
-    allowing for quick comparison of graph states to detect modifications
+    """Evaluate _graph_hash operation.
 
     Args:
-        graph (IRGraph): The intermediate representation graph to hash
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    str: A hexadecimal MD5 hash representing the structural state of the graph
+        str: Result.
     """
     state = {}
     for node_id, node in graph.nodes.items():
@@ -88,20 +84,16 @@ class PassManager:
 
         A pass should return True if it modified the graph
 
-            ir_pass (Callable[[IRGraph], bool]): Argument ir_pass
-
         Args:
-            ir_pass (Callable[[IRGraph], bool]): Argument ir_pass
+            ir_pass (Callable[[IRGraph], bool]): The transformation pass.
         """
         self.passes.append(ir_pass)
 
     def validate(self, graph: IRGraph) -> None:
         """Run all validators on the graph.
 
-        graph (IRGraph): Argument graph
-
         Args:
-            graph (IRGraph): Argument graph
+            graph (IRGraph): The intermediate representation graph.
         """
         for validator in self.validators:
             validator(graph)
@@ -109,14 +101,11 @@ class PassManager:
     def run(self, graph: IRGraph) -> IRGraph:
         """Run all passes sequentially on the graph.
 
-        graph (IRGraph): Argument graph
-
         Args:
-            graph (IRGraph): Argument graph
-
+            graph (IRGraph): The intermediate representation graph.
 
         Returns:
-            IRGraph: The evaluated output resulting from this operation.
+            IRGraph: The transformed graph.
         """
         self.validate(graph)
         for ir_pass in self.passes:
@@ -127,16 +116,12 @@ class PassManager:
     def run_until_converged(self, graph: IRGraph, max_iterations: int = 10) -> IRGraph:
         """Run passes until the graph stops changing or max_iterations reached.
 
-        graph (IRGraph): Argument graph
-            max_iterations (int): Argument max_iterations
-
         Args:
-            graph (IRGraph): Argument graph
-            max_iterations (int): Argument max_iterations
-
+            graph (IRGraph): The intermediate representation graph.
+            max_iterations (int): The maximum number of iterations.
 
         Returns:
-            IRGraph: The evaluated output resulting from this operation.
+            IRGraph: The transformed graph.
         """
         self.validate(graph)
 
@@ -159,12 +144,12 @@ class DAGTopologicalSorter:
 
     @staticmethod
     def sort(graph: "object") -> list["object"]:
-        """Execute sort.
+        """Sort the graph topologically.
 
         Args:
-            graph (Any): Argument graph.
+            graph (object): The intermediate representation graph.
 
         Returns:
-        Any: The result.
+            list[object]: The topologically sorted list of nodes.
         """
         return topological_sort(graph)

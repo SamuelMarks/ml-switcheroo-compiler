@@ -10,14 +10,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _infer_constant_shape(node: object, shapes: dict) -> tuple:
-    """Execute _infer_constant_shape.
+    """Evaluate _infer_constant_shape operation.
 
     Args:
-        node (Any): Argument node.
-        shapes (Any): Argument shapes.
+        node (object): The node parameter.
+        shapes (dict): The shapes parameter.
 
     Returns:
-    Any: The result.
+        tuple: Result.
     """
     val = node.attributes.get("value")
 
@@ -27,14 +27,14 @@ def _infer_constant_shape(node: object, shapes: dict) -> tuple:
 
 
 def _infer_output_shape(node: object, shapes: dict) -> tuple | None:
-    """Execute _infer_output_shape.
+    """Evaluate _infer_output_shape operation.
 
     Args:
-        node (Any): Argument node.
-        shapes (Any): Argument shapes.
+        node (object): The node parameter.
+        shapes (dict): The shapes parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     if node.inputs:
         return shapes.get(node.inputs[0])
@@ -42,13 +42,13 @@ def _infer_output_shape(node: object, shapes: dict) -> tuple | None:
 
 
 def _prepare_op_kwargs(node: object) -> dict:
-    """Evaluate and process the prepare op kwargs operation.
+    """Evaluate _prepare_op_kwargs operation.
 
     Args:
-        node (object): Required parameter for node.
+        node (object): The node parameter.
 
     Returns:
-        dict: The evaluated or processed output.
+        dict: Result.
     """
     kwargs = {**node.attributes}
     if hasattr(node, "shape_metadata") and node.shape_metadata:
@@ -60,14 +60,14 @@ def _prepare_op_kwargs(node: object) -> dict:
 
 
 def _infer_op_shape(node: object, shapes: dict) -> tuple | None:
-    """Execute _infer_op_shape.
+    """Evaluate _infer_op_shape operation.
 
     Args:
-        node (Any): Argument node.
-        shapes (Any): Argument shapes.
+        node (object): The node parameter.
+        shapes (dict): The shapes parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     op_cls = get_op(node.op_type)
     op = op_cls()
@@ -77,14 +77,17 @@ def _infer_op_shape(node: object, shapes: dict) -> tuple | None:
 
 
 def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...]]) -> tuple[int, ...] | None:
-    """Evaluate and process the determine node shape operation.
+    """Evaluate _determine_node_shape operation.
 
     Args:
-        node (IRNode): Required parameter for node.
-        shapes (dict): Required parameter for shapes.
+        node (IRNode): The node parameter.
+        shapes (dict): The shapes parameter.
 
     Returns:
-        Any: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        CompilationError: An exception.
     """
     handlers = {
         "Constant": lambda: _infer_constant_shape(node, shapes),
@@ -107,13 +110,11 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...]]) -> t
 def shape_inference_pass(graph: IRGraph) -> bool:
     """In-place shape inference.
 
-    Updates node.shape_metadata based on operations
-
     Args:
-        graph (IRGraph): Argument graph
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    bool: True if modified
+        bool: Result.
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)

@@ -7,14 +7,17 @@ import torch
 
 
 def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute accumulate n operation.
+    """Evaluate _execute_accumulate_n operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -26,14 +29,14 @@ def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
 
 
 def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute tensor scatter max operation.
+    """Evaluate _execute_tensor_scatter_max operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     tensor, indices, updates = (
         cast(Any, args[0]),
@@ -47,14 +50,14 @@ def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
 
 
 def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute tensor scatter min operation.
+    """Evaluate _execute_tensor_scatter_min operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     tensor, indices, updates = (
         cast(Any, args[0]),
@@ -68,40 +71,40 @@ def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
 
 
 def _execute_tensor_scatter_update(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute tensor scatter update operation.
+    """Evaluate _execute_tensor_scatter_update operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]))
 
 
 def _execute_tensor_scatter_add(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute tensor scatter add operation.
+    """Evaluate _execute_tensor_scatter_add operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]), accumulate=True)
 
 
 def _execute_power_iteration(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute power iteration operation.
+    """Evaluate _execute_power_iteration operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     w = args[0]
     num_iters = kwargs.get("num_iters", 1)
@@ -119,27 +122,27 @@ def _execute_power_iteration(*args: object, **kwargs: object) -> object:
 
 
 def _execute_broadcast_to(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute broadcast to operation.
+    """Evaluate _execute_broadcast_to operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return cast(Any, args[0]).expand(kwargs["shape"])
 
 
 def _execute_cast(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute cast operation.
+    """Evaluate _execute_cast operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     tensor = cast(Any, args[0])
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -160,46 +163,54 @@ def _execute_cast(*args: object, **kwargs: object) -> object:
 
 
 def _execute_cummax(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute cummax operation.
+    """Evaluate _execute_cummax operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return torch.cummax(*args, **kwargs)[0]
 
 
 def _execute_cummin(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute cummin operation.
+    """Evaluate _execute_cummin operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return torch.cummin(*args, **kwargs)[0]
 
 
 def _execute_cumlogsumexp(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute cumlogsumexp operation.
+    """Evaluate _execute_cumlogsumexp operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return torch.logcumsumexp(*args, **kwargs)
 
 
 def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
-    """Evaluate execute ragged tensor to dense."""
+    """Evaluate _execute_ragged_tensor_to_dense operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     # Dummy mock returning dense tensor with proper shape padding or just the tensor itself for testing fallback.
     # In PyTorch, ragged tensors might be list of tensors, converting to dense means padding.
     import torch
@@ -235,37 +246,54 @@ def _get_custom_torch_op_map() -> dict:
 
 
 def _torch_variance(*args: object, **kwargs: object) -> object:
-    """Evaluate torch variance."""
+    """Evaluate _torch_variance operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     kwargs.setdefault("correction", kwargs.pop("ddof", 0))
     return torch.var(*args, **kwargs)
 
 
 def _torch_tensordot(*args: object, **kwargs: object) -> object:
-    """Evaluate torch tensordot."""
+    """Evaluate _torch_tensordot operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if "axes" in kwargs:
         kwargs["dims"] = kwargs.pop("axes")
     return torch.tensordot(*args, **kwargs)
 
 
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-    """Execute execute_op.
+    """Evaluate execute_op operation.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        op_type (Any): Argument op_type.
-        *args (Any): Argument *args.
-        **kwargs (Any): Argument **kwargs.
+        cls (type): The class.
+        op_type (str): The op_type parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-    Any: The result.
+        object: Result.
+
+    Raises:
+        BackendNotSupportedError: An exception.
     """
     if op_type in _TORCH_EAGER_OP_MAP:
         return _TORCH_EAGER_OP_MAP[op_type](*args, **kwargs)
-
     custom_op_map = _get_custom_torch_op_map()
     if op_type in custom_op_map:
         return custom_op_map[op_type](*args, **kwargs)
-
     try:
         func = getattr(torch, op_type.lower())
         return func(*args, **kwargs)
@@ -275,12 +303,10 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         global_func = global_eager_registry.get(op_type)
         if global_func is not None:
             return global_func(torch, *args, **kwargs)
-
         import re
 
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
         import torch.nn.functional as F
 
         func = None
@@ -288,10 +314,8 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
             if mod is not None and hasattr(mod, snake):
                 func = getattr(mod, snake)
                 break
-
         if func is not None:
             return func(*args, **kwargs)
-
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
         raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

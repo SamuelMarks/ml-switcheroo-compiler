@@ -54,18 +54,21 @@ def conv(
     kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Tensor:
-    """Evaluate and process the conv operation.
+    """Evaluate conv operation.
 
     Args:
-        inputs (Tensor): Required parameter for inputs.
-        kernel (Tensor): Required parameter for kernel.
-        config (Any): Required parameter for config.
+        inputs (Tensor): The inputs parameter.
+        kernel (Tensor): The kernel parameter.
+        config (object): The config parameter.
 
     Returns:
-        Tensor: The evaluated or processed output.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     conf = config if config is not None else GenericConvConfig()
-    """Generic convolution.
+    """Provide generic convolution.
 
     Args:
         inputs (Tensor): The input tensor.
@@ -115,18 +118,21 @@ def depthwise_conv(
     kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Tensor:
-    """Evaluate and process the depthwise conv operation.
+    """Evaluate depthwise_conv operation.
 
     Args:
-        inputs (Tensor): Required parameter for inputs.
-        kernel (Tensor): Required parameter for kernel.
-        config (Any): Required parameter for config.
+        inputs (Tensor): The inputs parameter.
+        kernel (Tensor): The kernel parameter.
+        config (object): The config parameter.
 
     Returns:
-        Tensor: The evaluated or processed output.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     conf = config if config is not None else GenericConvConfig()
-    """Generic depthwise convolution.
+    """Provide generic depthwise convolution.
 
     Args:
         inputs (Tensor): Input tensor.
@@ -169,19 +175,22 @@ def separable_conv(
     pointwise_kernel: Tensor,
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Tensor:
-    """Evaluate and process the separable conv operation.
+    """Evaluate separable_conv operation.
 
     Args:
-        inputs (Tensor): Required parameter for inputs.
-        depthwise_kernel (Tensor): Required parameter for depthwise_kernel.
-        pointwise_kernel (Tensor): Required parameter for pointwise_kernel.
-        config (Any): Required parameter for config.
+        inputs (Tensor): The inputs parameter.
+        depthwise_kernel (Tensor): The depthwise_kernel parameter.
+        pointwise_kernel (Tensor): The pointwise_kernel parameter.
+        config (object): The config parameter.
 
     Returns:
-        Tensor: The evaluated or processed output.
+        Tensor: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     conf = config if config is not None else GenericConvConfig()
-    """Generic separable convolution.
+    """Provide generic separable convolution.
 
     Args:
         inputs (Tensor): Input tensor.

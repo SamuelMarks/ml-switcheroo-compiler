@@ -7,19 +7,15 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 
 @register_vjp("Reshape")
 def reshape_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Computes the Vector-Jacobian Product (VJP) for a Reshape operation.
-
-    This rule reshapes the incoming cotangent back to the original shape of the
-    input tensor
+    """Compute the Vector-Jacobian Product (VJP) for a Reshape operation.
 
     Args:
-        graph (object): The computation graph
-        node (object): The Reshape node
-        cotangent (str): The cotangent variable name
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
 
     Returns:
-    tuple: A tuple containing the name of the emitted node representing the
-    reshaped cotangent
+        tuple: Result.
     """
     x = node.inputs[0]
     return (
@@ -35,17 +31,15 @@ def reshape_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Reshape")
 def reshape_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for a Reshape operation.
-
-    Emits an IR node that reshapes the tangent vector to the target shape
+    """Compute the Jacobian-Vector Product (JVP) for a Reshape operation.
 
     Args:
-        graph (object): The computation graph
-        node (object): The Reshape node
-        tangent (str): The tangent variable name
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangent (str): The tangent parameter.
 
     Returns:
-    str: The identifier of the emitted node
+        str: Result.
     """
     return emit_ir_node(
         graph,
@@ -58,19 +52,15 @@ def reshape_jvp(graph: object, node: object, tangent: str) -> str:
 
 @register_vjp("Transpose")
 def transpose_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Computes the Vector-Jacobian Product (VJP) for a Transpose operation.
-
-    This rule transposes the incoming cotangent using the inverse permutation
-    of the original transpose axes to match the input's original shape
+    """Compute the Vector-Jacobian Product (VJP) for a Transpose operation.
 
     Args:
-        graph (object): The computation graph
-        node (object): The Transpose node
-        cotangent (str): The cotangent variable name
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
 
     Returns:
-    tuple: A tuple containing the name of the emitted node representing the
-    transposed cotangent
+        tuple: Result.
     """
     x = node.inputs[0]
     axes = node.attributes.get("axes")
@@ -93,18 +83,15 @@ def transpose_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Transpose")
 def transpose_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for a Transpose operation.
-
-    Emits an IR node that transposes the tangent vector using the same axes
-    as the original operation
+    """Compute the Jacobian-Vector Product (JVP) for a Transpose operation.
 
     Args:
-        graph (object): The computation graph
-        node (object): The Transpose node
-        tangent (str): The tangent variable name
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangent (str): The tangent parameter.
 
     Returns:
-    str: The identifier of the emitted node
+        str: Result.
     """
     return emit_ir_node(
         graph,
@@ -117,15 +104,15 @@ def transpose_jvp(graph: object, node: object, tangent: str) -> str:
 
 @register_vjp("BroadcastTo")
 def broadcast_to_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Computes the Vector-Jacobian Product (VJP) for the BroadcastTo operation.
+    """Compute the Vector-Jacobian Product (VJP) for the BroadcastTo operation.
 
     Args:
-        graph (object): The computation graph
-        node (object): The BroadcastTo operation node
-        cotangent (str): The identifier of the cotangent tensor
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
 
     Returns:
-    tuple: A tuple containing the identifier of the summed cotangent tensor
+        tuple: Result.
     """
     x = node.inputs[0]
     res = emit_ir_node(graph, "Sum", [cotangent], graph.nodes[x].shape_metadata)
@@ -134,17 +121,15 @@ def broadcast_to_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("BroadcastTo")
 def broadcast_to_jvp(graph: object, node: object, tangent: str) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for a BroadcastTo operation.
-
-    Emits an IR node that broadcasts the tangent vector to the target shape
+    """Compute the Jacobian-Vector Product (JVP) for a BroadcastTo operation.
 
     Args:
-        graph (object): The computation graph
-        node (object): The BroadcastTo node
-        tangent (str): The tangent variable name
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangent (str): The tangent parameter.
 
     Returns:
-    str: The identifier of the emitted node
+        str: Result.
     """
     return emit_ir_node(
         graph,
@@ -181,7 +166,16 @@ def split_vjp(graph: object, node: object, cotangents: tuple) -> tuple:
 
 @register_jvp("Split")
 def split_jvp(graph: object, node: object, tangent: object) -> str:
-    """JVP for Split."""
+    """JVP for Split.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangent (object): The tangent parameter.
+
+    Returns:
+        str: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     # Split the tangent exactly the same way the primal is split
@@ -191,7 +185,16 @@ def split_jvp(graph: object, node: object, tangent: object) -> str:
 
 @register_jvp("GetItem")
 def getitem_jvp(graph: object, node: object, tangent: object) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for a GetItem operation."""
+    """Compute the Jacobian-Vector Product (JVP) for a GetItem operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangent (object): The tangent parameter.
+
+    Returns:
+        str: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     tangent_x = tangent[0] if isinstance(tangent, (tuple, list)) else tangent
@@ -207,7 +210,16 @@ def getitem_jvp(graph: object, node: object, tangent: object) -> str:
 
 @register_vjp("GetItem")
 def getitem_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Computes the Vector-Jacobian Product (VJP) for a GetItem operation."""
+    """Compute the Vector-Jacobian Product (VJP) for a GetItem operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     x = node.inputs[0]
@@ -226,7 +238,16 @@ def getitem_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("SetItem")
 def setitem_jvp(graph: object, node: object, tangent: object) -> str:
-    """Computes the Jacobian-Vector Product (JVP) for a SetItem operation."""
+    """Compute the Jacobian-Vector Product (JVP) for a SetItem operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangent (object): The tangent parameter.
+
+    Returns:
+        str: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     # inputs are [x, value]
@@ -251,7 +272,16 @@ def setitem_jvp(graph: object, node: object, tangent: object) -> str:
 
 @register_vjp("SetItem")
 def setitem_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Computes the Vector-Jacobian Product (VJP) for a SetItem operation."""
+    """Compute the Vector-Jacobian Product (VJP) for a SetItem operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     x = node.inputs[0]

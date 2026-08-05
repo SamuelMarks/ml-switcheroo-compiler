@@ -9,7 +9,11 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def eval(*args: object) -> None:
-    """Forces the evaluation of the given tensors."""
+    """Force the evaluation of the given tensors.
+
+    Args:
+        *args (object): Positional args.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -22,7 +26,7 @@ def eval(*args: object) -> None:
 
 
 def synchronize() -> None:
-    """Synchronizes the default device."""
+    """Synchronize the default device."""
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -31,7 +35,11 @@ def synchronize() -> None:
 
 
 def get_peak_memory() -> int:
-    """Gets the peak memory usage of the device in bytes."""
+    """Get the peak memory usage of the device in bytes.
+
+    Returns:
+        int: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -52,7 +60,15 @@ class DeviceContextOp(OpDef):
     """Operation definition for setting or altering a generic device context."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return getattr(args[0], "shape", ())
 
 
@@ -61,12 +77,20 @@ class DeviceTransferOp(OpDef):
     """Operation definition for migrating data between logical devices (e.g., host-to-device)."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(args[0], "shape", ())
 
 
 def device_transfer(input: Tensor, target_device: str, stream: str = None) -> Tensor:
-    """Simulates data migration between devices for a tensor.
+    """Simulate data migration between devices for a tensor.
 
     Args:
         input: The tensor to transfer.

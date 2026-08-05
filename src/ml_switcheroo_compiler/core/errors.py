@@ -2,7 +2,7 @@
 
 
 class SwitcherooError(Exception):
-    """Base class for all ml-switcheroo errors."""
+    """Define base class for all ml-switcheroo errors."""
 
 
 class TracingError(SwitcherooError):

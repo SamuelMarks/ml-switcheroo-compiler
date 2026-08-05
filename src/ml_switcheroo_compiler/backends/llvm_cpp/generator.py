@@ -1,6 +1,8 @@
 # ruff: noqa: ANN401, C901, PLR0912, PLR0915
 """LLVM / C++ code generator for CPU fallback."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -15,9 +17,9 @@ class CppGenerator(BaseGenerator):
         """Initialize the C++ generator.
 
         Args:
-            graph (Any, optional): Logical Graph.
-            use_simd (bool): Whether to emit SIMD intrinsics.
-            use_openmp (bool): Whether to emit OpenMP pragmas.
+            graph (Any): The graph parameter.
+            use_simd (bool): The use_simd parameter.
+            use_openmp (bool): The use_openmp parameter.
         """
         super().__init__(graph=graph)
         self.use_simd = use_simd
@@ -52,6 +54,80 @@ class CppGenerator(BaseGenerator):
         self.lines.append("}")
         return "\n".join(self.lines)
 
+    def _visit_binary_op(self, node: Any, op_sym: str) -> None:
+        """Visit a binary operation node and emit C++ code.
+
+        Args:
+            node (Any): The binary operation node.
+            op_sym (str): The binary operator symbol (e.g., '+', '-').
+        """
+        assert len(node.inputs) >= 2
+        in1, in2 = node.inputs[:2]
+        self.lines.append(f"    std::vector<float> {node.id}({in1}.size());")
+        if self.use_openmp:
+            self.lines.append("    #pragma omp parallel for")
+        self.lines.append(f"    for(size_t i=0; i<{in1}.size(); ++i) {{")
+        self.lines.append(f"        {node.id}[i] = {in1}[i] {op_sym} {in2}[i];")
+        self.lines.append("    }")
+
+    def _visit_unary_op(self, node: Any, func: str) -> None:
+        """Visit a unary operation node and emit C++ code.
+
+        Args:
+            node (Any): The unary operation node.
+            func (str): The unary function or operator symbol (e.g., '-', 'std::exp').
+        """
+        assert len(node.inputs) >= 1
+        in1 = node.inputs[0]
+        self.lines.append(f"    std::vector<float> {node.id}({in1}.size());")
+        if self.use_openmp:
+            self.lines.append("    #pragma omp parallel for")
+        self.lines.append(f"    for(size_t i=0; i<{in1}.size(); ++i) {{")
+        if func == "-":
+            self.lines.append(f"        {node.id}[i] = -{in1}[i];")
+        else:
+            self.lines.append(f"        {node.id}[i] = {func}({in1}[i]);")
+        self.lines.append("    }")
+
+    def _visit_if_op(self, node: Any) -> None:
+        """Visit a conditional (If) node and emit C++ code.
+
+        Args:
+            node (Any): The conditional operation node.
+        """
+        assert len(node.inputs) >= 1
+        cond_var = node.inputs[0]
+        self.lines.append(f"    if ({cond_var}[0] > 0.0f) {{")
+        then_graph = node.attributes.get("then_branch")
+        if then_graph:
+            for _, sub_node in then_graph.nodes.items():
+                self._visit_node(sub_node)
+        self.lines.append("    } else {")
+        else_graph = node.attributes.get("else_branch")
+        if else_graph:
+            for _, sub_node in else_graph.nodes.items():
+                self._visit_node(sub_node)
+        self.lines.append("    }")
+
+    def _visit_loop_op(self, node: Any) -> None:
+        """Visit a loop operation node and emit C++ code.
+
+        Args:
+            node (Any): The loop operation node.
+        """
+        self.lines.append("    while (true) {")
+        cond_graph = node.attributes.get("cond")
+        if cond_graph:
+            for _, sub_node in cond_graph.nodes.items():
+                self._visit_node(sub_node)
+            self.lines.append("        // if (!cond_output) break;")
+        body_graph = node.attributes.get("body")
+        if body_graph:
+            for _, sub_node in body_graph.nodes.items():
+                self._visit_node(sub_node)
+        self.lines.append("        break; // Prevent infinite loop in placeholder")
+        self.lines.append("    }")
+
     def _visit_node(self, node: Any) -> None:
         """Visit a node and emit C++ code.
 
@@ -84,60 +160,18 @@ class CppGenerator(BaseGenerator):
             val = node.attributes.get("value", 0.0)
             self.lines.append(f"    float {node.id} = {val}; // Constant")
         elif op in binary_ops:
-            assert len(node.inputs) >= 2
-            in1, in2 = node.inputs[:2]
-            op_sym = binary_ops[op]
-            self.lines.append(f"    std::vector<float> {node.id}({in1}.size());")
-            if self.use_openmp:
-                self.lines.append("    #pragma omp parallel for")
-            self.lines.append(f"    for(size_t i=0; i<{in1}.size(); ++i) {{")
-            self.lines.append(f"        {node.id}[i] = {in1}[i] {op_sym} {in2}[i];")
-            self.lines.append("    }")
+            self._visit_binary_op(node, binary_ops[op])
         elif op in unary_ops:
-            assert len(node.inputs) >= 1
-            in1 = node.inputs[0]
-            func = unary_ops[op]
-            self.lines.append(f"    std::vector<float> {node.id}({in1}.size());")
-            if self.use_openmp:
-                self.lines.append("    #pragma omp parallel for")
-            self.lines.append(f"    for(size_t i=0; i<{in1}.size(); ++i) {{")
-            if func == "-":
-                self.lines.append(f"        {node.id}[i] = -{in1}[i];")
-            else:
-                self.lines.append(f"        {node.id}[i] = {func}({in1}[i]);")
-            self.lines.append("    }")
+            self._visit_unary_op(node, unary_ops[op])
         elif op == "MatMul":
             assert len(node.inputs) >= 2
             in1, in2 = node.inputs[:2]
             self.lines.append(f"    std::vector<float> {node.id}; // MatMul of {in1} and {in2}")
             self.lines.append("    // TODO: Need shape info for proper C++ GEMM.")
-        elif op == "If" or op == "Cond":
-            assert len(node.inputs) >= 1
-            cond_var = node.inputs[0]
-            self.lines.append(f"    if ({cond_var}[0] > 0.0f) {{")
-            then_graph = node.attributes.get("then_branch")
-            if then_graph:
-                for _, sub_node in then_graph.nodes.items():
-                    self._visit_node(sub_node)
-            self.lines.append("    } else {")
-            else_graph = node.attributes.get("else_branch")
-            if else_graph:
-                for _, sub_node in else_graph.nodes.items():
-                    self._visit_node(sub_node)
-            self.lines.append("    }")
-        elif op == "Loop" or op == "WhileLoop":
-            self.lines.append("    while (true) {")
-            cond_graph = node.attributes.get("cond")
-            if cond_graph:
-                for _, sub_node in cond_graph.nodes.items():
-                    self._visit_node(sub_node)
-                self.lines.append("        // if (!cond_output) break;")
-            body_graph = node.attributes.get("body")
-            if body_graph:
-                for _, sub_node in body_graph.nodes.items():
-                    self._visit_node(sub_node)
-            self.lines.append("        break; // Prevent infinite loop in placeholder")
-            self.lines.append("    }")
+        elif op in ("If", "Cond"):
+            self._visit_if_op(node)
+        elif op in ("Loop", "WhileLoop"):
+            self._visit_loop_op(node)
         elif op == "Output":
             self.lines.append(f"    // Output {node.inputs[0]}")
         else:
@@ -154,6 +188,11 @@ class CppGenerator(BaseGenerator):
         """
 
         def executable() -> str:
+            """Simulate the execution of the compiled C++ code.
+
+            Returns:
+                str: A simulated execution result.
+            """
             return "Execution simulated"
 
         return executable

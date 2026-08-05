@@ -1,6 +1,6 @@
 # pylint: disable=duplicate-code
 
-"""Defines shape manipulation operations for the ML Switcheroo framework."""
+"""Define shape manipulation operations for the ML Switcheroo framework."""
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -8,7 +8,14 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 def _get_shape_list(x: object) -> list:
-    """Helper to convert shape to list."""
+    """Help to convert shape to list.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        list: Result.
+    """
     if isinstance(x, (tuple, list)):
         return list(x)
     if not hasattr(x, "shape") or x.shape is None:
@@ -24,13 +31,29 @@ def _get_shape_list(x: object) -> list:
 
 
 def _normalize_axes(axes: object, length: int) -> list:
-    """Helper to normalize axes."""
+    """Help to normalize axes.
+
+    Args:
+        axes (object): The axes parameter.
+        length (int): The length parameter.
+
+    Returns:
+        list: Result.
+    """
     a = [axes] if isinstance(axes, int) else axes
     return [x + length if x < 0 else x for x in a]
 
 
 def _resolve_reshape_minus_one(x_shape: tuple, newshape: list) -> list:
-    """Resolve the -1 dimension in a reshape operation."""
+    """Resolve the -1 dimension in a reshape operation.
+
+    Args:
+        x_shape (tuple): The x_shape parameter.
+        newshape (list): The newshape parameter.
+
+    Returns:
+        list: Result.
+    """
     import math
 
     known = math.prod(s for s in newshape if s != -1 and s is not None)
@@ -42,17 +65,17 @@ def _resolve_reshape_minus_one(x_shape: tuple, newshape: list) -> list:
 
 @register_op("Reshape")
 class Reshape(OpDef):
-    """An operator definition for reshaping a tensor to a new shape."""
+    """Provide an operator definition for reshaping a tensor to a new shape."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer the output shape of the operation.
+        """Infer shape.
 
         Args:
-            *args (object): The first input tensor and the newshape.
-            **kwargs (object): Additional keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+        object: Result.
         """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         newshape = args[1] if len(args) > 1 else kwargs["newshape"]
@@ -69,7 +92,7 @@ class Reshape(OpDef):
 
 @register_op("Transpose")
 class Transpose(OpDef):
-    """An operator definition for transposing the dimensions of a tensor."""
+    """Provide an operator definition for transposing the dimensions of a tensor."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
@@ -88,32 +111,35 @@ class Transpose(OpDef):
         return None
 
     def _format_args(self, x: str, axes: object) -> str:
-        """Evaluate format args to create a string representation.
+        """Evaluate _format_args operation.
 
         Args:
-            x (str): Argument x representing the tensor.
-            axes (object): Argument axes representing the axes to transpose.
+        x (str): The x parameter.
+        axes (object): The axes parameter.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+        str: Result.
         """
         return f"{x}" if axes is None else f"{x}, {axes}"
 
 
 @register_op("BroadcastTo")
 class BroadcastTo(OpDef):
-    """An operator definition for broadcasting a tensor to a new shape."""
+    """Provide an operator definition for broadcasting a tensor to a new shape."""
 
     def infer_shape(self, x: object, shape: object, **kwargs: object) -> object:
         """Infer the output shape of the operation.
 
         Args:
-            x (object): The first input tensor.
-            shape (object): The shape of the tensor.
-            **kwargs (object): Additional keyword arguments.
+            x (object): The x parameter.
+            shape (object): The shape parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if not (isinstance(x, tuple) and isinstance(shape, tuple)):
             return shape
@@ -130,7 +156,7 @@ class BroadcastTo(OpDef):
 
 @register_op("BroadcastInDim")
 class BroadcastInDim(OpDef):
-    """An operator definition for broadcasting a tensor in a given set of dimensions."""
+    """Provide an operator definition for broadcasting a tensor in a given set of dimensions."""
 
     op_name = "BroadcastInDim"
 
@@ -150,14 +176,14 @@ class BroadcastInDim(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         return tuple(shape)
 
 
 @register_op("Resize")
 class Resize(OpDef):
-    """An operator definition for resizing an image tensor to a target shape."""
+    """Provide an operator definition for resizing an image tensor to a target shape."""
 
     op_name = "Resize"
 
@@ -177,7 +203,7 @@ class Resize(OpDef):
             **kwargs (object): Additional keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         if not hasattr(image, "shape") or not image.shape:
             return ()
@@ -192,12 +218,20 @@ class Resize(OpDef):
 
 @register_op("Atleast1d")
 class Atleast1d(OpDef):
-    """An operator definition for atleast_1d."""
+    """Provide an operator definition for atleast_1d."""
 
     op_name = "Atleast1d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:
             return (1,)
@@ -209,12 +243,20 @@ class Atleast1d(OpDef):
 
 @register_op("Atleast2d")
 class Atleast2d(OpDef):
-    """An operator definition for atleast_2d."""
+    """Provide an operator definition for atleast_2d."""
 
     op_name = "Atleast2d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:
             return (1, 1)
@@ -228,12 +270,20 @@ class Atleast2d(OpDef):
 
 @register_op("Atleast3d")
 class Atleast3d(OpDef):
-    """An operator definition for atleast_3d."""
+    """Provide an operator definition for atleast_3d."""
 
     op_name = "Atleast3d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:
             return (1, 1, 1)
@@ -249,12 +299,20 @@ class Atleast3d(OpDef):
 
 @register_op("ExpandDims")
 class ExpandDims(OpDef):
-    """An operator definition for expanding the dimensions of a tensor."""
+    """Provide an operator definition for expanding the dimensions of a tensor."""
 
     op_name = "ExpandDims"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         if not hasattr(x, "shape") or x.shape is None:
@@ -275,7 +333,15 @@ class Block(OpDef):
     op_name = "Block"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         arrays = args[0] if args else kwargs.get("arrays")
         if not isinstance(arrays, (list, tuple)):
             return ()
@@ -289,7 +355,15 @@ class C(OpDef):
     op_name = "C"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -300,7 +374,15 @@ class Collapse(OpDef):
     op_name = "Collapse"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -311,7 +393,15 @@ class Delete(OpDef):
     op_name = "Delete"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         arr = args[0] if args else kwargs.get("arr")
         if not hasattr(arr, "shape"):
             return None
@@ -325,7 +415,15 @@ class DiagIndices(OpDef):
     op_name = "DiagIndices"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
         return tuple([(n,)] * ndim)
@@ -338,7 +436,15 @@ class DiagIndicesFrom(OpDef):
     op_name = "DiagIndicesFrom"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         arr = args[0] if args else kwargs.get("arr")
         if not hasattr(arr, "shape"):
             return None
@@ -352,7 +458,15 @@ class Diagflat(OpDef):
     op_name = "Diagflat"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         v = args[0] if args else kwargs.get("v")
         if not hasattr(v, "shape"):
             return None
@@ -371,7 +485,15 @@ class FillDiagonal(OpDef):
     op_name = "FillDiagonal"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a = args[0] if args else kwargs.get("a")
         if not hasattr(a, "shape"):
             return None
@@ -385,7 +507,15 @@ class Insert(OpDef):
     op_name = "Insert"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         arr = args[0] if args else kwargs.get("arr")
         if not hasattr(arr, "shape"):
             return None
@@ -394,12 +524,20 @@ class Insert(OpDef):
 
 @register_op("Moveaxis")
 class Moveaxis(OpDef):
-    """An operator definition for moving axes of a tensor."""
+    """Provide an operator definition for moving axes of a tensor."""
 
     op_name = "Moveaxis"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or x.shape is None:
             return None
@@ -409,6 +547,16 @@ class Moveaxis(OpDef):
         return self._calc_shape(shape, source, destination)
 
     def _calc_shape(self, shape: list[int], source: object, destination: object) -> tuple:
+        """Calculate the output shape for a moveaxis operation.
+
+        Args:
+            shape (list[int]): The input shape.
+            source (object): The source axes.
+            destination (object): The destination axes.
+
+        Returns:
+            tuple: The calculated shape.
+        """
         length = len(shape)
         sl = _normalize_axes(source, length)
         dl = _normalize_axes(destination, length)
@@ -420,12 +568,20 @@ class Moveaxis(OpDef):
 
 @register_op("Permute")
 class Permute(OpDef):
-    """An operator definition for permuting the dimensions of a tensor."""
+    """Provide an operator definition for permuting the dimensions of a tensor."""
 
     op_name = "Permute"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
@@ -438,12 +594,20 @@ class Permute(OpDef):
 
 @register_op("Roll")
 class Roll(OpDef):
-    """An operator definition for rolling array elements along a given axis."""
+    """Provide an operator definition for rolling array elements along a given axis."""
 
     op_name = "Roll"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
@@ -452,12 +616,20 @@ class Roll(OpDef):
 
 @register_op("Squeeze")
 class Squeeze(OpDef):
-    """An operator definition for squeezing dimensions of a tensor."""
+    """Provide an operator definition for squeezing dimensions of a tensor."""
 
     op_name = "Squeeze"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
@@ -466,6 +638,15 @@ class Squeeze(OpDef):
         return self._calc_shape(shape, axis)
 
     def _calc_shape(self, shape: list[int], axis: object) -> tuple:
+        """Calculate the output shape for a squeeze operation.
+
+        Args:
+            shape (list[int]): The input shape.
+            axis (object): The axis or axes to squeeze.
+
+        Returns:
+            tuple: The calculated shape.
+        """
         if axis is None:
             return tuple(s for s in shape if s != 1)
         axes = [axis] if isinstance(axis, int) else axis
@@ -475,12 +656,20 @@ class Squeeze(OpDef):
 
 @register_op("Swapaxes")
 class Swapaxes(OpDef):
-    """An operator definition for swapping two axes of an array."""
+    """Provide an operator definition for swapping two axes of an array."""
 
     op_name = "Swapaxes"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
@@ -495,12 +684,20 @@ class Swapaxes(OpDef):
 
 @register_op("Flip")
 class Flip(OpDef):
-    """An operator definition for flipping an array."""
+    """Provide an operator definition for flipping an array."""
 
     op_name = "Flip"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
@@ -509,12 +706,20 @@ class Flip(OpDef):
 
 @register_op("Fliplr")
 class Fliplr(OpDef):
-    """An operator definition for flipping an array left/right."""
+    """Provide an operator definition for flipping an array left/right."""
 
     op_name = "Fliplr"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
@@ -523,12 +728,20 @@ class Fliplr(OpDef):
 
 @register_op("Flipud")
 class Flipud(OpDef):
-    """An operator definition for flipping an array up/down."""
+    """Provide an operator definition for flipping an array up/down."""
 
     op_name = "Flipud"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None

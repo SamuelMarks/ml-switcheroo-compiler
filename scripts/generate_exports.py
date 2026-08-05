@@ -115,8 +115,8 @@ def generate_init(
     except SyntaxError:
         pass
 
-    new_source = f'# pylint: disable=too-many-lines\n"""Auto-generated {module_name} module exports."""\n\n'
-    new_source += "\n".join(import_lines) + "\n\n"
+    new_source = '# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
+    new_source += "# pylint: disable=duplicate-code\n"
     new_source += "__all__ = [\n"
     for e in all_exports:
         new_source += f'    "{e}",\n'
@@ -284,7 +284,6 @@ if __name__ == "__main__":
         "mixing",
         "transforms",
         "frontend",
-        "ops_package",
     ]
     # First, generate vision exports specifically
     generate_init(
@@ -342,7 +341,6 @@ if __name__ == "__main__":
         "normalization",
         "vision",
         "image",
-        "vision.ops_package",
         "stats.descriptive_extras",
         "stats.cumulative",
         "stats.type_testing",

@@ -158,33 +158,25 @@ class WebGLCodeGenerator(BaseGenerator):
 
         return res_var
 
-    def generate(self) -> str:
-        """Generate WebGL ES 3.0 fragment shader code enclosed in a JavaScript orchestrator.
+    def _check_has_ndim_gt_1(self) -> bool:
+        """Check if any input node in the graph has more than one dimension.
 
         Returns:
-            str: Complete, executable WebGL2 JavaScript orchestration code wrapper.
+            bool: True if at least one input node has > 1 dimension, False otherwise.
         """
-        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        output_ids = getattr(self.graph, "outputs", []) or []
-
-        self.code = []
-        self.body_lines = []
-
-        # Determine if we have multi-dimensional nodes (ndim > 1)
-        has_ndim_gt_1 = False
         for node in self.sorted_nodes:
             shape, _ = self._get_shape_and_strides(node)
             if len(shape) > 1:
-                has_ndim_gt_1 = True
-                break
+                return True
+        return False
 
-        # Generate WebGL GLSL Shader Code
-        glsl_lines = []
-        glsl_lines.append("#version 300 es")
-        glsl_lines.append("precision highp float;")
-        glsl_lines.append("out vec4 fragColor;")
+    def _declare_glsl_inputs(self, input_nodes: list[Any], glsl_lines: list[str]) -> None:
+        """Declare GLSL uniform sampler inputs and update the variable map.
 
-        # Declare uniform samplers for inputs
+        Args:
+            input_nodes (list[Any]): List of input IR nodes.
+            glsl_lines (list[str]): List of GLSL code lines to append to.
+        """
         for idx, node in enumerate(input_nodes):
             glsl_lines.append(f"uniform sampler2D in_{idx};")
             nid = getattr(node, "id", "")
@@ -194,45 +186,15 @@ class WebGLCodeGenerator(BaseGenerator):
             else:
                 self.var_map[nid] = f"texture(in_{idx}, uv).r"
 
-        # Generate Coordinate space helpers for N-dimensional texture mappings
-        tex_helpers = self._generate_texture_helpers(input_nodes)
-        if tex_helpers:
-            glsl_lines.append("")
-            glsl_lines.append(tex_helpers)
+    def _compute_total_size(self, output_ids: list[str]) -> int:
+        """Evaluate _compute_total_size operation.
 
-        glsl_lines.append("")
-        glsl_lines.append("void main() {")
+        Args:
+        output_ids (object): The output_ids parameter.
 
-        if input_nodes:
-            glsl_lines.append("  vec2 uv = gl_FragCoord.xy / vec2(textureSize(in_0, 0));")
-            if has_ndim_gt_1:
-                glsl_lines.append("  int idx = int(gl_FragCoord.x) + int(gl_FragCoord.y) * textureSize(in_0, 0).x;")
-        else:
-            glsl_lines.append("  vec2 uv = vec2(0.5, 0.5);")
-            if has_ndim_gt_1:
-                glsl_lines.append("  int idx = 0;")
-
-        # Emit intermediate operations
-        for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") != "Input":
-                self.generic_visit(node, [])
-
-        # Add all GLSL body lines
-        for line in self.body_lines:
-            glsl_lines.append(line)
-
-        # Emit output assignments to fragColor
-        if output_ids:
-            res_var = self.var_map.get(output_ids[0], output_ids[0])
-            glsl_lines.append(f"  fragColor = vec4({res_var}, 0.0, 0.0, 1.0);")
-        else:
-            glsl_lines.append("  fragColor = vec4(0.0, 0.0, 0.0, 1.0);")
-
-        glsl_lines.append("}")
-
-        glsl_code_str = "\n".join(glsl_lines)
-
-        # Determine total output array size for orchestration
+        Returns:
+        int: Result.
+        """
         total_size = 1
         if output_ids:
             out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == output_ids[0]), None)
@@ -240,21 +202,22 @@ class WebGLCodeGenerator(BaseGenerator):
                 shape, _ = self._get_shape_and_strides(out_node)
                 for dim in shape:
                     total_size *= dim
+        return total_size
 
-        # Pack outputs into square layout
-        import math
+    def _build_js_shader_compiler(self, js_code: list[str], glsl_code_str: str, tex_width: int, tex_height: int) -> None:
+        """Generate JS code to initialize WebGL context, compile shaders, and link the program.
 
-        tex_width = int(math.ceil(math.sqrt(total_size)))
-        tex_height = int(math.ceil(total_size / tex_width))
-
-        # Build JavaScript Boilerplate for WebGL2 Orchestration
-        js_code = []
+        Args:
+            js_code (list[str]): List of JS code lines to append to.
+            glsl_code_str (str): The GLSL fragment shader source code.
+            tex_width (int): The width of the WebGL canvas and textures.
+            tex_height (int): The height of the WebGL canvas and textures.
+        """
         js_code.append("// WebGL2 JavaScript Orchestrator Code Generated by ml-switcheroo-compiler")
         js_code.append("const fragmentShaderSource = `")
         js_code.append(glsl_code_str)
         js_code.append("`;")
         js_code.append("")
-        # Declare vertex shader using void main(void) to bypass python simulator parsing regex
         js_code.append("const vertexShaderSource = `#version 300 es")
         js_code.append("in vec2 position;")
         js_code.append("void main(void) {")
@@ -271,8 +234,6 @@ class WebGLCodeGenerator(BaseGenerator):
         js_code.append("  }")
         js_code.append("  gl.getExtension('EXT_color_buffer_float');")
         js_code.append("")
-
-        # Helper to compile shader
         js_code.append("  function compileShader(source, type) {")
         js_code.append("    const shader = gl.createShader(type);")
         js_code.append("    gl.shaderSource(shader, source);")
@@ -295,7 +256,15 @@ class WebGLCodeGenerator(BaseGenerator):
         js_code.append("  gl.useProgram(program);")
         js_code.append("")
 
-        # Create screen quad buffer
+    def _build_js_input_textures(self, input_nodes: list[Any], js_code: list[str]) -> None:
+        """Generate JS code to bind inputs as WebGL textures.
+
+        Args:
+            input_nodes (list[Any]): List of input IR nodes.
+            js_code (list[str]): List of JS code lines to append to.
+        """
+        import math
+
         js_code.append("  const positionBuffer = gl.createBuffer();")
         js_code.append("  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);")
         js_code.append("  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([")
@@ -307,7 +276,6 @@ class WebGLCodeGenerator(BaseGenerator):
         js_code.append("  gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);")
         js_code.append("")
 
-        # Setup input textures
         for idx, node in enumerate(input_nodes):
             nid = getattr(node, "id", f"n{idx}")
             shape, _ = self._get_shape_and_strides(node)
@@ -333,7 +301,15 @@ class WebGLCodeGenerator(BaseGenerator):
             js_code.append(f"  gl.uniform1i(gl.getUniformLocation(program, 'in_{idx}'), {idx});")
             js_code.append("")
 
-        # Setup offscreen framebuffer for float output rendering
+    def _build_js_framebuffer_and_render(self, js_code: list[str], tex_width: int, tex_height: int, total_size: int) -> None:
+        """Generate JS code to configure the framebuffer, run the render pass, and read back the output.
+
+        Args:
+            js_code (list[str]): List of JS code lines to append to.
+            tex_width (int): The width of the output texture.
+            tex_height (int): The height of the output texture.
+            total_size (int): The total number of elements to extract.
+        """
         js_code.append("  const outTex = gl.createTexture();")
         js_code.append("  gl.bindTexture(gl.TEXTURE_2D, outTex);")
         js_code.append("  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);")
@@ -344,16 +320,12 @@ class WebGLCodeGenerator(BaseGenerator):
         js_code.append("  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);")
         js_code.append("  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outTex, 0);")
         js_code.append("")
-
-        # Run render pass and read results
         js_code.append(f"  gl.viewport(0, 0, {tex_width}, {tex_height});")
         js_code.append("  gl.drawArrays(gl.TRIANGLES, 0, 6);")
         js_code.append("")
         js_code.append(f"  const pixels = new Float32Array({tex_width} * {tex_height} * 4);")
         js_code.append(f"  gl.readPixels(0, 0, {tex_width}, {tex_height}, gl.RGBA, gl.FLOAT, pixels);")
         js_code.append("")
-
-        # Extract output channels
         js_code.append(f"  const outData = new Float32Array({total_size});")
         js_code.append(f"  for (let i = 0; i < {total_size}; i++) {{")
         js_code.append("    outData[i] = pixels[i * 4];")
@@ -361,5 +333,90 @@ class WebGLCodeGenerator(BaseGenerator):
         js_code.append("")
         js_code.append("  return outData;")
         js_code.append("}")
+
+    def _emit_glsl_main_coords(self, input_nodes: list[Any], has_ndim_gt_1: bool, glsl_lines: list[str]) -> None:
+        """Emit GLSL code for deriving coordinate indices within the fragment shader.
+
+        Args:
+            input_nodes (list[Any]): List of input IR nodes.
+            has_ndim_gt_1 (bool): Flag indicating if any input has > 1 dimension.
+            glsl_lines (list[str]): List of GLSL code lines to append to.
+        """
+        if input_nodes:
+            glsl_lines.append("  vec2 uv = gl_FragCoord.xy / vec2(textureSize(in_0, 0));")
+            if has_ndim_gt_1:
+                glsl_lines.append("  int idx = int(gl_FragCoord.x) + int(gl_FragCoord.y) * textureSize(in_0, 0).x;")
+        else:
+            glsl_lines.append("  vec2 uv = vec2(0.5, 0.5);")
+            if has_ndim_gt_1:
+                glsl_lines.append("  int idx = 0;")
+
+    def _emit_glsl_main_body(self, output_ids: list[str], glsl_lines: list[str]) -> None:
+        """Emit GLSL code for executing the operations and writing to the output fragment.
+
+        Args:
+            output_ids (list[str]): List of output node IDs.
+            glsl_lines (list[str]): List of GLSL code lines to append to.
+        """
+        for node in self.sorted_nodes:
+            if getattr(node, "op_type", "") != "Input":
+                self.generic_visit(node, [])
+
+        for line in self.body_lines:
+            glsl_lines.append(line)
+
+        if output_ids:
+            res_var = self.var_map.get(output_ids[0], output_ids[0])
+            glsl_lines.append(f"  fragColor = vec4({res_var}, 0.0, 0.0, 1.0);")
+        else:
+            glsl_lines.append("  fragColor = vec4(0.0, 0.0, 0.0, 1.0);")
+
+    def generate(self) -> str:
+        """Generate WebGL ES 3.0 fragment shader code enclosed in a JavaScript orchestrator.
+
+        Returns:
+            str: Complete, executable WebGL2 JavaScript orchestration code wrapper.
+        """
+        import math
+
+        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        output_ids = getattr(self.graph, "outputs", []) or []
+
+        self.code = []
+        self.body_lines = []
+
+        has_ndim_gt_1 = self._check_has_ndim_gt_1()
+
+        glsl_lines = []
+        glsl_lines.append("#version 300 es")
+        glsl_lines.append("precision highp float;")
+        glsl_lines.append("out vec4 fragColor;")
+
+        self._declare_glsl_inputs(input_nodes, glsl_lines)
+
+        tex_helpers = self._generate_texture_helpers(input_nodes)
+        if tex_helpers:
+            glsl_lines.append("")
+            glsl_lines.append(tex_helpers)
+
+        glsl_lines.append("")
+        glsl_lines.append("void main() {")
+
+        self._emit_glsl_main_coords(input_nodes, has_ndim_gt_1, glsl_lines)
+        self._emit_glsl_main_body(output_ids, glsl_lines)
+
+        glsl_lines.append("}")
+
+        glsl_code_str = "\n".join(glsl_lines)
+
+        total_size = self._compute_total_size(output_ids)
+
+        tex_width = int(math.ceil(math.sqrt(total_size)))
+        tex_height = int(math.ceil(total_size / tex_width))
+
+        js_code = []
+        self._build_js_shader_compiler(js_code, glsl_code_str, tex_width, tex_height)
+        self._build_js_input_textures(input_nodes, js_code)
+        self._build_js_framebuffer_and_render(js_code, tex_width, tex_height, total_size)
 
         return "\n".join(js_code)

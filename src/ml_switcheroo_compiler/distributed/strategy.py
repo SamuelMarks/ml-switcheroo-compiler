@@ -10,6 +10,11 @@ class ParameterServerStrategy(Distribution):
     """Parameter server strategy."""
 
     def __init__(self, cluster_resolver: Any = None) -> None:
+        """Initialize ParameterServerStrategy.
+
+        Args:
+            cluster_resolver (Any): The cluster_resolver parameter.
+        """
         super().__init__()
         self.cluster_resolver = cluster_resolver
 
@@ -18,6 +23,11 @@ class MultiWorkerMirroredStrategy(Distribution):
     """Multi-worker mirrored strategy."""
 
     def __init__(self, cluster_resolver: Any = None) -> None:
+        """Initialize MultiWorkerMirroredStrategy.
+
+        Args:
+            cluster_resolver (Any): The cluster_resolver parameter.
+        """
         super().__init__()
         self.cluster_resolver = cluster_resolver
 
@@ -26,6 +36,7 @@ class CentralStorageStrategy(Distribution):
     """Central storage strategy."""
 
     def __init__(self) -> None:
+        """Initialize CentralStorageStrategy."""
         super().__init__()
 
 
@@ -33,14 +44,25 @@ class TPUStrategy(Distribution):
     """TPU strategy."""
 
     def __init__(self, tpu_cluster_resolver: Any = None) -> None:
+        """Initialize TPUStrategy.
+
+        Args:
+            tpu_cluster_resolver (Any): The tpu_cluster_resolver parameter.
+        """
         super().__init__()
         self.tpu_cluster_resolver = tpu_cluster_resolver
 
 
 class PreemptionCheckpointHandler:
-    """Handles asynchronous checkpointing for preemptible instances."""
+    """Handle asynchronous checkpointing for preemptible instances."""
 
     def __init__(self, cluster_resolver: Any, checkpoint_dir: str) -> None:
+        """Initialize PreemptionCheckpointHandler.
+
+        Args:
+            cluster_resolver (Any): The cluster resolver.
+            checkpoint_dir (str): The directory to save checkpoints.
+        """
         self.cluster_resolver = cluster_resolver
         self.checkpoint_dir = checkpoint_dir
 
@@ -49,6 +71,13 @@ class Server:
     """Distributed execution server."""
 
     def __init__(self, server_def: Any, job_name: str = None, task_index: int = None) -> None:
+        """Initialize Server.
+
+        Args:
+            server_def (Any): The server_def parameter.
+            job_name (str): The job_name parameter.
+            task_index (int): The task_index parameter.
+        """
         self.server_def = server_def
         self.job_name = job_name
         self.task_index = task_index
@@ -79,6 +108,7 @@ class Server:
         self._thread.start()
 
     def _run_server(self) -> None:
+        """Run the server loop to accept connections."""
         while self._running and self._server:
             try:
                 conn, _ = self._server.accept()
@@ -121,7 +151,7 @@ class Coordinator:
 
 
 class TFConfigClusterResolver:
-    """Resolves cluster topology from TF_CONFIG env var."""
+    """Resolve cluster topology from TF_CONFIG env var."""
 
     def __init__(self) -> None:
         """Initialize."""
@@ -140,7 +170,7 @@ class TFConfigClusterResolver:
 
 
 class KubernetesClusterResolver:
-    """Resolves cluster topology from Kubernetes env vars."""
+    """Resolve cluster topology from Kubernetes env vars."""
 
     def __init__(self) -> None:
         """Initialize."""
@@ -165,7 +195,7 @@ class KubernetesClusterResolver:
 
 
 class SlurmClusterResolver:
-    """Resolves cluster topology from Slurm env vars."""
+    """Resolve cluster topology from Slurm env vars."""
 
     def __init__(self) -> None:
         """Initialize."""
@@ -200,6 +230,11 @@ class PerWorkerValue:
     """Represents a value that varies across workers."""
 
     def __init__(self, values: list[Any]) -> None:
+        """Initialize PerWorkerValue.
+
+        Args:
+            values (list[Any]): The list of values across workers.
+        """
         self.values = values
 
 
@@ -252,7 +287,12 @@ class PipelineParallelismStrategy(Distribution):
         return stages
 
     def insert_send_recv(self, graph: Any, stages: list[list[Any]]) -> None:
-        """Implement actual Send and Recv IR node insertion across stage boundaries."""
+        """Implement actual Send and Recv IR node insertion across stage boundaries.
+
+        Args:
+            graph (Any): The graph parameter.
+            stages (list): The stages parameter.
+        """
         from ml_switcheroo_compiler.ir.core import IRNode
 
         node_to_stage = {}
@@ -282,7 +322,14 @@ class PipelineParallelismStrategy(Distribution):
         graph.nodes = new_nodes
 
     def generate_microbatch_loop(self, graph: Any) -> None:
-        """Implement microbatch loop generation (splitting global batch size into sequential chunks)."""
+        """Implement microbatch loop generation (splitting global batch size into sequential chunks).
+
+        Args:
+            graph (Any): The graph parameter.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.ir.core import IRNode
 
         if self.num_microbatches <= 1:
@@ -292,7 +339,14 @@ class PipelineParallelismStrategy(Distribution):
         graph.nodes[loop_node.id] = loop_node
 
     def generate_1f1b_schedule(self, graph: Any) -> list[tuple[str, int]]:
-        """Implement 1F1B (One-Forward-One-Backward) schedule generation for optimal bubble reduction."""
+        """Implement 1F1B (One-Forward-One-Backward) schedule generation for optimal bubble reduction.
+
+        Args:
+            graph (Any): The graph parameter.
+
+        Returns:
+            list: Result.
+        """
         schedule = []
         num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
 
@@ -307,7 +361,11 @@ class PipelineParallelismStrategy(Distribution):
         return schedule
 
     def track_gradient_accumulation(self, graph: Any) -> None:
-        """Implement gradient accumulation tracking across pipeline stages."""
+        """Implement gradient accumulation tracking across pipeline stages.
+
+        Args:
+            graph (Any): The graph parameter.
+        """
         from ml_switcheroo_compiler.ir.core import IRNode
 
         grad_nodes = [n for n in graph.nodes.values() if n.op_type == "Grad"]
@@ -324,8 +382,8 @@ class MeshShardingStrategy(Distribution):
         """Initialize MeshShardingStrategy.
 
         Args:
-            mesh (Any, optional): The device mesh (e.g., DeviceMesh).
-            layout_map (Any, optional): LayoutMap specifying sharding specs.
+            mesh (Any): The mesh parameter.
+            layout_map (Any): The layout_map parameter.
         """
         super().__init__()
         self.mesh = mesh

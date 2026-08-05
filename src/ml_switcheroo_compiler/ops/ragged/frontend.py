@@ -16,15 +16,15 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
 def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged op operation.
+    """Evaluate _ragged_op operation.
 
     Args:
-        op_name (object): Required parameter for op_name.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        op_name (object): The op_name parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     op_cls = get_op(op_name)
     if config.eager_mode:
@@ -53,127 +53,143 @@ def _ragged_op(op_name: object, *args: object, **kwargs: object) -> object:
 
 
 def ragged_constant(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged constant operation.
+    """Evaluate ragged_constant operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedConstant", *args, **kwargs)
 
 
 def ragged_cross(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged cross operation.
+    """Evaluate ragged_cross operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)  # Alias
 
 
 def ragged_cross_hashed(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged cross hashed operation.
+    """Evaluate ragged_cross_hashed operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedCrossHashed", *args, **kwargs)
 
 
 def ragged_range(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged range operation.
+    """Evaluate ragged_range operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedRange", *args, **kwargs)
 
 
 def ragged_row_splits_to_segment_ids(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged row splits to segment ids operation.
+    """Evaluate ragged_row_splits_to_segment_ids operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedRowSplitsToSegmentIds", *args, **kwargs)
 
 
 def ragged_segment_ids_to_row_splits(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged segment ids to row splits operation.
+    """Evaluate ragged_segment_ids_to_row_splits operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedSegmentIdsToRowSplits", *args, **kwargs)
 
 
 def ragged_stack(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged stack operation.
+    """Evaluate ragged_stack operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedStack", *args, **kwargs)
 
 
 def ragged_stack_dynamic_partitions(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged stack dynamic partitions operation.
+    """Evaluate ragged_stack_dynamic_partitions operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedStackDynamicPartitions", *args, **kwargs)
 
 
 def ragged_dot(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the ragged dot operation.
+    """Evaluate ragged_dot operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return _ragged_op("RaggedDot", *args, **kwargs)
 
 
 def boolean_mask(*args: object, **kwargs: object) -> object:
-    """Boolean mask."""
+    """Boolean mask.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _ragged_op("BooleanMask", *args, **kwargs)
 
 
 def map_flat_values(*args: object, **kwargs: object) -> object:
-    """Map flat values."""
+    """Map flat values.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _ragged_op("MapFlatValues", *args, **kwargs)

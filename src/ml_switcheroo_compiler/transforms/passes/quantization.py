@@ -12,6 +12,13 @@ class QuantizationConfig:
     """Quantization specification configuration."""
 
     def __init__(self, target_dtype: DType, per_channel: bool = False, symmetric: bool = True) -> None:
+        """Initialize QuantizationConfig.
+
+        Args:
+            target_dtype (DType): The target_dtype parameter.
+            per_channel (bool): The per_channel parameter.
+            symmetric (bool): The symmetric parameter.
+        """
         self.target_dtype = target_dtype
         self.per_channel = per_channel
         self.symmetric = symmetric
@@ -21,13 +28,23 @@ class PTQPass:
     """Post-Training Quantization pass."""
 
     def __init__(self, config: QuantizationConfig, representative_dataset: Dataset) -> None:
+        """Initialize PTQPass.
+
+        Args:
+            config (QuantizationConfig): The quantization config.
+            representative_dataset (Dataset): The representative dataset for calibration.
+        """
         self.config = config
         self.dataset = representative_dataset
 
     def __call__(self, graph: IRGraph) -> IRGraph:
-        """Run the PTQ pass on the graph.
+        """Lower ops to their integer quantized equivalents.
 
-        Annotates applicable linear algebra operations for lowering to quantized backends.
+        Args:
+            graph (IRGraph): The graph parameter.
+
+        Returns:
+            IRGraph: Result.
         """
         optimized = False
         new_nodes = {}
@@ -55,6 +72,13 @@ class PTQCalibrationPass:
     """Post-Training Quantization calibration statistics gathering pass."""
 
     def __init__(self, config: QuantizationConfig, dataset: Dataset, method: str = "minmax") -> None:
+        """Initialize PTQCalibrationPass.
+
+        Args:
+            config (QuantizationConfig): The config parameter.
+            dataset (Dataset): The dataset parameter.
+            method (str): The method parameter.
+        """
         self.config = config
         self.dataset = dataset
         self.method = method
@@ -62,7 +86,11 @@ class PTQCalibrationPass:
     def __call__(self, graph: IRGraph) -> bool:
         """Run the PTQ Calibration pass.
 
-        Annotates nodes with min/max or histogram statistics based on a representative dataset.
+        Args:
+            graph (IRGraph): The graph parameter.
+
+        Returns:
+            bool: Result.
         """
         modified = False
         new_nodes = dict(graph.nodes)
@@ -88,10 +116,22 @@ class QATFakeQuantizePass:
     """Quantization-Aware Training fake-quantize node insertion pass."""
 
     def __init__(self, config: QuantizationConfig) -> None:
+        """Initialize QATFakeQuantizePass.
+
+        Args:
+            config (QuantizationConfig): The quantization config.
+        """
         self.config = config
 
     def __call__(self, graph: IRGraph) -> bool:
-        """Insert FakeQuantize nodes for Quantization-Aware Training."""
+        """Insert FakeQuantize nodes for Quantization-Aware Training.
+
+        Args:
+            graph (IRGraph): The graph parameter.
+
+        Returns:
+            bool: Result.
+        """
         modified = False
         sorted_nodes = DAGTopologicalSorter.sort(graph)
         new_nodes = dict(graph.nodes)
@@ -121,10 +161,22 @@ class IntegerQuantizationLoweringPass:
     """Symmetric and asymmetric integer quantization lowering pass."""
 
     def __init__(self, config: QuantizationConfig) -> None:
+        """Initialize IntegerQuantizationLoweringPass.
+
+        Args:
+            config (QuantizationConfig): The quantization config.
+        """
         self.config = config
 
     def __call__(self, graph: IRGraph) -> bool:
-        """Lower ops to their integer quantized equivalents."""
+        """Lower ops to their integer quantized equivalents.
+
+        Args:
+            graph (IRGraph): The graph parameter.
+
+        Returns:
+            bool: Result.
+        """
         modified = False
         new_nodes = dict(graph.nodes)
 

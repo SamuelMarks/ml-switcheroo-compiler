@@ -1,4 +1,4 @@
-"""Defines binary mathematical operations and their shape inference and evaluation logic.
+"""Define binary mathematical operations and their shape inference and evaluation logic.
 
 This module provides a base class `BinaryMathOp` and concrete implementations for
 various element-wise binary mathematical operations (e.g., Add, Subtract, Multiply,
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 class BinaryMathOp(OpDef):
-    """Base class for binary mathematical operations.
+    """Define base class for binary mathematical operations.
 
     This class defines the interface and common evaluation logic for operations
     that take two inputs and produce a single output
@@ -21,14 +21,14 @@ class BinaryMathOp(OpDef):
     op_name: str = ""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Infer the output shape of the operation.
+        """Infer shape.
 
         Args:
-            *shapes: The input shapes.
-            **kwargs: Additional keyword arguments.
+            *shapes (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         if shapes and all(isinstance(s, tuple) for s in shapes):
             return _bs(*shapes) if len(shapes) > 1 else shapes[0]
@@ -366,7 +366,15 @@ class Diff(OpDef):
     op_name = "Diff"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Typically out_shape is similar to input, maybe -1 on one axis
         return ()
 
@@ -378,7 +386,15 @@ class Digitize(OpDef):
     op_name = "Digitize"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Returns indices matching input shape
         if args and hasattr(args[0], "shape"):
             return args[0].shape
@@ -392,48 +408,56 @@ class ArrayEquiv(OpDef):
     op_name = "ArrayEquiv"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
 @register_op("Xlogy")
 class Xlogy(BinaryMathOp):
-    """An operation class for computing x * log(y)."""
+    """Provide an operation class for computing x * log(y)."""
 
     op_name = "Xlogy"
 
 
 @register_op("Igamma")
 class Igamma(BinaryMathOp):
-    """An operation class for computing the regularized lower incomplete gamma function."""
+    """Provide an operation class for computing the regularized lower incomplete gamma function."""
 
     op_name = "Igamma"
 
 
 @register_op("Igammac")
 class Igammac(BinaryMathOp):
-    """An operation class for computing the regularized upper incomplete gamma function."""
+    """Provide an operation class for computing the regularized upper incomplete gamma function."""
 
     op_name = "Igammac"
 
 
 @register_op("Zeta")
 class Zeta(BinaryMathOp):
-    """An operation class for computing the Hurwitz zeta function."""
+    """Provide an operation class for computing the Hurwitz zeta function."""
 
     op_name = "Zeta"
 
 
 @register_op("BesselJn")
 class BesselJn(BinaryMathOp):
-    """An operation class for computing the Bessel function of the first kind of real order and complex argument."""
+    """Provide an operation class for computing the Bessel function of the first kind of real order and complex argument."""
 
     op_name = "BesselJn"
 
 
 @register_op("Polygamma")
 class Polygamma(BinaryMathOp):
-    """An operation class for computing the polygamma function."""
+    """Provide an operation class for computing the polygamma function."""
 
     op_name = "Polygamma"
 
@@ -445,7 +469,17 @@ class Betainc(OpDef):
     op_name = "Betainc"
 
     def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            a (object): The a parameter.
+            b (object): The b parameter.
+            x (object): The x parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         shape_a = getattr(a, "shape", ())
         shape_b = getattr(b, "shape", ())
         shape_x = getattr(x, "shape", ()) if x is not None else ()
@@ -763,14 +797,14 @@ class Roots(BinaryMathOp):
 
 @register_op("IgammaGradA")
 class IgammaGradA(BinaryMathOp):
-    """An operation class for computing the gradient of the regularized lower incomplete gamma function with respect to a."""
+    """Provide an operation class for computing the gradient of the regularized lower incomplete gamma function with respect to a."""
 
     op_name = "IgammaGradA"
 
 
 @register_op("RandomGammaGrad")
 class RandomGammaGrad(BinaryMathOp):
-    """An operation class for computing the gradient of random_gamma with respect to alpha."""
+    """Provide an operation class for computing the gradient of random_gamma with respect to alpha."""
 
     op_name = "RandomGammaGrad"
 
@@ -794,14 +828,32 @@ class Clip(OpDef):
     """Operator Clip."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if args and hasattr(args[0], "shape"):
             return args[0].shape
         return ()
 
 
 def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: object) -> object:
-    """Clip values in a tensor."""
+    """Clip values in a tensor.
+
+    Args:
+        x (object): The x parameter.
+        min_val (object): The min_val parameter.
+        max_val (object): The max_val parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -816,14 +868,14 @@ def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: ob
 
 
 def rem(*args: object, **kwargs: object) -> object:
-    """Evaluate rem.
+    """Evaluate rem operation.
 
     Args:
-        *args: Positional arguments.
-        **kwargs: Keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        The result of the Rem op.
+        object: Result.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
@@ -901,21 +953,45 @@ class LegendrePolynomialP(BinaryMathOp):
 
 
 def igamma_grad_a(*args: object, **kwargs: object) -> object:
-    """Computes the gradient of the regularized incomplete gamma function."""
+    """Compute the gradient of the regularized incomplete gamma function.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("IgammaGradA", *args, **kwargs)
 
 
 def random_gamma_grad(*args: object, **kwargs: object) -> object:
-    """Computes the derivative of a Gamma random variable."""
+    """Compute the derivative of a Gamma random variable.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("RandomGammaGrad", *args, **kwargs)
 
 
 def sort_key_val(*args: object, **kwargs: object) -> object:
-    """Sort keys and values."""
+    """Sort keys and values.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("SortKeyVal", *args, **kwargs)

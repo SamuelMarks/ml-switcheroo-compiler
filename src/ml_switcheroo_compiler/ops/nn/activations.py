@@ -8,7 +8,16 @@ from ml_switcheroo_compiler.ops.shape.joining import concatenate
 
 
 def crelu(features: object, axis: object = -1, name: object = None) -> object:
-    """Computes Concatenated ReLU."""
+    """Compute Concatenated ReLU.
+
+    Args:
+        features (object): The features parameter.
+        axis (object): The axis parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     negative = get_op("Negative")()
 
     from ml_switcheroo_compiler.ops.binary import maximum
@@ -17,7 +26,17 @@ def crelu(features: object, axis: object = -1, name: object = None) -> object:
 
 
 def isotonic_regression(y: object, sample_weights: object = None, increasing: object = True, name: object = None) -> object:
-    """Solves isotonic regression problems."""
+    """Solves isotonic regression problems.
+
+    Args:
+        y (object): The y parameter.
+        sample_weights (object): The sample_weights parameter.
+        increasing (object): The increasing parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -35,7 +54,14 @@ __all__ = ["softplus", "softmax", "log_softmax", "sigmoid", "one_hot", "rrelu"]
 
 
 def softplus(x: object) -> object:
-    """Softplus activation."""
+    """Softplus activation.
+
+    Args:
+        x (object): The x parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.unary import exp, log1p
 
     return log1p(exp(x))
@@ -48,7 +74,15 @@ class Softmax(OpDef):
     op_name = "Softmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -61,7 +95,17 @@ class Softmax(OpDef):
 
 
 def softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> object:
-    """Softmax activation."""
+    """Softmax activation.
+
+    Args:
+        x (object): The x parameter.
+        axis (int): The axis parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -80,7 +124,15 @@ class LogSoftmax(OpDef):
     op_name = "LogSoftmax"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -93,7 +145,17 @@ class LogSoftmax(OpDef):
 
 
 def log_softmax(x: object, axis: int = -1, *args: object, **kwargs: object) -> object:
-    """LogSoftmax activation."""
+    """LogSoftmax activation.
+
+    Args:
+        x (object): The x parameter.
+        axis (int): The axis parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -112,7 +174,15 @@ class Sigmoid(OpDef):
     op_name = "Sigmoid"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -125,7 +195,16 @@ class Sigmoid(OpDef):
 
 
 def sigmoid(x: object, *args: object, **kwargs: object) -> object:
-    """Sigmoid activation."""
+    """Sigmoid activation.
+
+    Args:
+        x (object): The x parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -144,7 +223,15 @@ class OneHot(OpDef):
     op_name = "OneHot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -157,7 +244,17 @@ class OneHot(OpDef):
 
 
 def one_hot(indices: object, depth: int, *args: object, **kwargs: object) -> object:
-    """OneHot encoding."""
+    """OneHot encoding.
+
+    Args:
+        indices (object): The indices parameter.
+        depth (int): The depth parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -183,7 +280,15 @@ class Rrelu(OpDef):
     op_name = "Rrelu"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -196,7 +301,16 @@ class Rrelu(OpDef):
 
 
 def rrelu(x: object, *args: object, **kwargs: object) -> object:
-    """Rrelu activation."""
+    """Rrelu activation.
+
+    Args:
+        x (object): The x parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -215,7 +329,15 @@ class HardSilu(OpDef):
     op_name = "HardSilu"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
@@ -227,7 +349,15 @@ class HardSwish(OpDef):
     op_name = "HardSwish"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
@@ -239,34 +369,74 @@ class Squareplus(OpDef):
     op_name = "Squareplus"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         x = args[0] if len(args) > 0 else None
         return getattr(x, "shape", ())
 
 
 def hard_silu(*args: object, **kwargs: object) -> object:
-    """Hard SiLU activation."""
+    """Hard SiLU activation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("HardSilu", *args, **kwargs)
 
 
 def hard_swish(*args: object, **kwargs: object) -> object:
-    """Hard Swish activation."""
+    """Hard Swish activation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("HardSwish", *args, **kwargs)
 
 
 def mish(*args: object, **kwargs: object) -> object:
-    """Mish activation."""
+    """Mish activation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Mish", *args, **kwargs)
 
 
 def squareplus(*args: object, **kwargs: object) -> object:
-    """Squareplus activation."""
+    """Squareplus activation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Squareplus", *args, **kwargs)

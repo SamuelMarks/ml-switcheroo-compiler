@@ -9,46 +9,46 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("MelFilterbank")
 def _np_mel_filterbank(backend_module: object, _: object, **kwargs: object) -> object:
-    """Evaluate the mel filterbank logic eagerly backed by NumPy.
+    """Evaluate _np_mel_filterbank operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        _ (object): Required parameter for _.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        _ (object): The _ parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return mel_filterbank_eager(backend_module, None, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("Mfcc")
 def _np_mfcc(backend_module: object, spectrogram: object, **kwargs: object) -> object:
-    """Evaluate the mfcc logic eagerly backed by NumPy.
+    """Evaluate _np_mfcc operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        spectrogram (object): Required parameter for spectrogram.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        spectrogram (object): The spectrogram parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return mfcc_eager(backend_module, spectrogram, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("PowerIteration")
 def _np_power_iteration(backend_module: object, w: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the power iteration logic eagerly backed by NumPy.
+    """Evaluate _np_power_iteration operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        w (object): Required parameter for w.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        w (object): The w parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     num_iters = kwargs.get("num_iters", 1)
     u = kwargs.get("u", None)

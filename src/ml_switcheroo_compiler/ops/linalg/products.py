@@ -13,7 +13,15 @@ class BandPart(OpDef):
     """
 
     def infer_shape(self, input: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            input (object): The input parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return input if isinstance(input, tuple) else None
 
 
@@ -25,7 +33,15 @@ class Diag(OpDef):
     """
 
     def infer_shape(self, input: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            input (object): The input parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         if isinstance(input, tuple):
             if len(input) == 1:
                 return (input[0], input[0])
@@ -61,13 +77,13 @@ class Matmul(OpDef):
 
 
 def _has_valid_shape(obj: object) -> bool:
-    """Evaluate and process the has valid shape operation.
+    """Evaluate _has_valid_shape operation.
 
     Args:
-        obj (object): Required parameter for obj.
+        obj (object): The obj parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     return hasattr(obj, "shape") and bool(obj.shape)
 
@@ -83,8 +99,11 @@ class MatrixPower(OpDef):
         """Infer shape.
 
         Args:
-            a: Arg.
-            **kwargs: Kwargs.
+            a (object): The a parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
         """
         """Infer shape.
 
@@ -116,8 +135,11 @@ class Trace(OpDef):
         """Infer shape.
 
         Args:
-            a: Arg.
-            **kwargs: Kwargs.
+            a (object): The a parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
         """
         shape = list(a.shape)
         axis1 = kwargs.get("axis1", 0)
@@ -138,8 +160,11 @@ class MatrixRank(OpDef):
         """Infer shape.
 
         Args:
-            a: Arg.
-            **kwargs: Kwargs.
+            a (object): The a parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -158,8 +183,11 @@ class MatrixTranspose(OpDef):
         """Infer shape.
 
         Args:
-            a: Arg.
-            **kwargs: Kwargs.
+            a (object): The a parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -174,7 +202,15 @@ class Adjoint(OpDef):
     op_name = "Adjoint"
 
     def infer_shape(self, matrix: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            matrix (object): The matrix parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         shape = list(matrix.shape)
         if len(shape) >= 2:
             shape[-1], shape[-2] = shape[-2], shape[-1]
@@ -188,7 +224,15 @@ class Diagonal(OpDef):
     op_name = "Diagonal"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -199,7 +243,15 @@ class EinsumPath(OpDef):
     op_name = "EinsumPath"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Typically returns a tuple representing the path and a string representation.
         return ()
 
@@ -211,5 +263,13 @@ class MultiDot(OpDef):
     op_name = "MultiDot"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()

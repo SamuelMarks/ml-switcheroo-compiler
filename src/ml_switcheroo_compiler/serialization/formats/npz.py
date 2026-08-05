@@ -8,7 +8,14 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
     """NPZ weight format handler."""
 
     def load(self, filepath: str) -> dict:
-        """Load npz weights."""
+        """Load npz weights.
+
+        Args:
+        filepath (str): The filepath parameter.
+
+        Returns:
+        dict: Result.
+        """
         import ml_switcheroo_compiler.backends.registry as registry
 
         backend = registry.get_active_backend()
@@ -23,7 +30,15 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         return parse_npz(filepath)
 
     def save(self, weights_np: dict, filepath: str) -> None:
-        """Save npz weights."""
+        """Save npz weights.
+
+        Args:
+            weights_np (dict): The weights_np parameter.
+            filepath (str): The filepath parameter.
+
+        Returns:
+            object: Result.
+        """
         import numpy as np
 
         import ml_switcheroo_compiler.backends.registry as registry

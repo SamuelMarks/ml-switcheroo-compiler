@@ -16,7 +16,15 @@ class Convolve2d(OpDef):
     """Convolve2d."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return args[0].shape
 
 
@@ -25,7 +33,15 @@ class Fftconvolve(OpDef):
     """Fftconvolve."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
@@ -34,7 +50,15 @@ class Welch(OpDef):
     """Welch."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
@@ -45,16 +69,46 @@ def _emit_signal_node(
     out_shape: tuple[int, ...],
     dtype: str,
 ) -> Tensor:
-    """Emit a signal node."""
+    """Emit a signal node.
+
+    Args:
+        op_type (str): The op_type parameter.
+        inputs (list): The inputs parameter.
+        attrs (dict): The attrs parameter.
+        out_shape (tuple): The out_shape parameter.
+        dtype (str): The dtype parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     return _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype])
 
 
 def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
+    """Validate arguments for convolve2d.
+
+    Args:
+        in1 (Tensor): First input.
+        in2 (Tensor): Second input.
+
+    Raises:
+        ValueError: If shapes are not statically known.
+    """
     if in1.shape is None or in2.shape is None:
         raise ValueError("Inputs to convolve2d must have statically known shapes.")
 
 
 def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, object]:
+    """Calculate padding configuration for convolve2d.
+
+    Args:
+        mode (str): Padding mode.
+        boundary (str): Boundary condition.
+        fillvalue (float): Fill value for 'fill' boundary.
+
+    Returns:
+        dict[str, object]: Padding configuration dictionary.
+    """
     return {"mode": mode, "boundary": boundary, "fillvalue": fillvalue}
 
 
@@ -65,17 +119,17 @@ def convolve2d(
     boundary: str = "fill",
     fillvalue: float = 0.0,
 ) -> Tensor:
-    """Evaluate convolve2d.
+    """Evaluate convolve2d operation.
 
     Args:
-        in1: First input.
-        in2: Second input.
-        mode: The mode.
-        boundary: The boundary condition.
-        fillvalue: The fill value.
+        in1 (Tensor): The in1 parameter.
+        in2 (Tensor): The in2 parameter.
+        mode (str): The mode parameter.
+        boundary (str): The boundary parameter.
+        fillvalue (float): The fillvalue parameter.
 
     Returns:
-        The convolved tensor.
+        Tensor: Result.
     """
     _validate_conv2d_args(in1, in2)
     kwargs = _calculate_padding(mode, boundary, fillvalue)
@@ -95,7 +149,17 @@ def convolve2d(
 
 
 def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: object = None) -> Tensor:
-    """Evaluate fftconvolve."""
+    """Evaluate fftconvolve operation.
+
+    Args:
+        in1 (Tensor): The in1 parameter.
+        in2 (Tensor): The in2 parameter.
+        mode (str): The mode parameter.
+        axes (object): The axes parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
 
@@ -147,7 +211,15 @@ def welch(
     x: Tensor,
     config_params: Optional[WelchConfig] = None,
 ) -> tuple[Tensor, Tensor]:
-    """Evaluate welch."""
+    """Evaluate welch operation.
+
+    Args:
+        x (Tensor): The x parameter.
+        config_params (Optional): The config_params parameter.
+
+    Returns:
+        tuple: Result.
+    """
     if config_params is None:
         config_params = WelchConfig()
 
@@ -201,12 +273,29 @@ class Fft(OpDef):
     """Fft class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
 def fft(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the one-dimensional discrete Fourier Transform."""
+    """Evaluate fft operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fft", input.data, *args, **kwargs)
@@ -222,7 +311,15 @@ class Rfft(OpDef):
     """Rfft class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
@@ -231,7 +328,15 @@ class Fft2(OpDef):
     """Fft2 class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
@@ -240,7 +345,17 @@ class Fftfreq(OpDef):
     """Fftfreq class."""
 
     def infer_shape(self, n: object, d: object = 1.0, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            n (object): The n parameter.
+            d (object): The d parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (n,) if isinstance(n, int) else ()
 
 
@@ -249,7 +364,15 @@ class Irfft(OpDef):
     """Irfft class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
@@ -258,7 +381,15 @@ class Ihfft(OpDef):
     """Ihfft class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape
 
 
@@ -267,7 +398,15 @@ class WindowHann(OpDef):
     """WindowHann class."""
 
     def infer_shape(self, length: int, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            length (int): The length parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (length,)
 
 
@@ -276,7 +415,15 @@ class WindowHamming(OpDef):
     """WindowHamming class."""
 
     def infer_shape(self, length: int, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            length (int): The length parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return (length,)
 
 
@@ -285,7 +432,20 @@ class Stft(OpDef):
     """Stft class."""
 
     def infer_shape(self, x: object, nfft: int, noverlap: int = 0, **kwargs: object) -> object:
-        """infer_shape function."""
+        """infer_shape function.
+
+        Args:
+            x (object): The x parameter.
+            nfft (int): The nfft parameter.
+            noverlap (int): The noverlap parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
+        """
         if not hasattr(x, "shape") or not x.shape:
             return ()
         step = nfft - noverlap
@@ -300,7 +460,20 @@ class Istft(OpDef):
     """Istft class."""
 
     def infer_shape(self, x: object, nfft: int, noverlap: int = 0, **kwargs: object) -> object:
-        """infer_shape function."""
+        """infer_shape function.
+
+        Args:
+            x (object): The x parameter.
+            nfft (int): The nfft parameter.
+            noverlap (int): The noverlap parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+
+        Raises:
+            ValueError: An exception.
+        """
         if not hasattr(x, "shape") or not x.shape or len(x.shape) < 2:
             return ()
         step = nfft - noverlap
@@ -312,7 +485,14 @@ class Istft(OpDef):
 
 
 def window_hann(length: int) -> Tensor:
-    """Generates a Hann window."""
+    """Generate a Hann window.
+
+    Args:
+        length (int): The length parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHann", length)
@@ -322,7 +502,14 @@ def window_hann(length: int) -> Tensor:
 
 
 def window_hamming(length: int) -> Tensor:
-    """Generates a Hamming window."""
+    """Generate a Hamming window.
+
+    Args:
+        length (int): The length parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHamming", length)
@@ -331,7 +518,16 @@ def window_hamming(length: int) -> Tensor:
 
 
 def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Tensor:
-    """Computes the Short Time Fourier Transform."""
+    """Compute the Short Time Fourier Transform.
+
+    Args:
+        x (Tensor): The x parameter.
+        nfft (int): The nfft parameter.
+        noverlap (int): The noverlap parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
@@ -342,7 +538,16 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Tensor:
 
 
 def istft(x: Tensor, nfft: int, noverlap: int = 0) -> Tensor:
-    """Computes the Inverse Short Time Fourier Transform."""
+    """Compute the Inverse Short Time Fourier Transform.
+
+    Args:
+        x (Tensor): The x parameter.
+        nfft (int): The nfft parameter.
+        noverlap (int): The noverlap parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
@@ -357,12 +562,29 @@ class Ifft(OpDef):
     """Ifft class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def ifft(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Ifft operation."""
+    """Evaluate ifft operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Ifft", input.data, *args, **kwargs)
@@ -375,12 +597,29 @@ class Fftn(OpDef):
     """Fftn class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def fftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Fftn operation."""
+    """Evaluate fftn operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fftn", input.data, *args, **kwargs)
@@ -393,12 +632,29 @@ class Ifftn(OpDef):
     """Ifftn class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def ifftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Ifftn operation."""
+    """Evaluate ifftn operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Ifftn", input.data, *args, **kwargs)
@@ -411,12 +667,29 @@ class Rfftn(OpDef):
     """Rfftn class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def rfftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Rfftn operation."""
+    """Evaluate rfftn operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Rfftn", input.data, *args, **kwargs)
@@ -429,12 +702,29 @@ class Irfftn(OpDef):
     """Irfftn class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def irfftn(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Irfftn operation."""
+    """Evaluate irfftn operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Irfftn", input.data, *args, **kwargs)
@@ -447,12 +737,29 @@ class Ifft2(OpDef):
     """Ifft2 class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def ifft2(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Ifft2 operation."""
+    """Evaluate ifft2 operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Ifft2", input.data, *args, **kwargs)
@@ -465,12 +772,29 @@ class Rfft2(OpDef):
     """Rfft2 class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def rfft2(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Rfft2 operation."""
+    """Evaluate rfft2 operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Rfft2", input.data, *args, **kwargs)
@@ -483,12 +807,29 @@ class Irfft2(OpDef):
     """Irfft2 class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def irfft2(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Irfft2 operation."""
+    """Evaluate irfft2 operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Irfft2", input.data, *args, **kwargs)
@@ -501,12 +842,29 @@ class Fftnd(OpDef):
     """Fftnd class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def fftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Fftnd operation."""
+    """Evaluate fftnd operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fftnd", input.data, *args, **kwargs)
@@ -519,12 +877,29 @@ class Ifftnd(OpDef):
     """Ifftnd class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def ifftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Ifftnd operation."""
+    """Evaluate ifftnd operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Ifftnd", input.data, *args, **kwargs)
@@ -537,12 +912,29 @@ class Rfftnd(OpDef):
     """Rfftnd class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def rfftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Rfftnd operation."""
+    """Evaluate rfftnd operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Rfftnd", input.data, *args, **kwargs)
@@ -555,12 +947,29 @@ class Irfftnd(OpDef):
     """Irfftnd class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def irfftnd(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Irfftnd operation."""
+    """Evaluate irfftnd operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Irfftnd", input.data, *args, **kwargs)
@@ -573,12 +982,29 @@ class Fftshift(OpDef):
     """Fftshift class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def fftshift(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Fftshift operation."""
+    """Evaluate fftshift operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Fftshift", input.data, *args, **kwargs)
@@ -591,12 +1017,29 @@ class Ifftshift(OpDef):
     """Ifftshift class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def ifftshift(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Ifftshift operation."""
+    """Evaluate ifftshift operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Ifftshift", input.data, *args, **kwargs)
@@ -609,12 +1052,29 @@ class Hfft(OpDef):
     """Hfft class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def hfft(input: Tensor, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Hfft operation."""
+    """Evaluate hfft operation.
+
+    Args:
+        input (Tensor): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Hfft", input.data, *args, **kwargs)
@@ -627,12 +1087,29 @@ class Rfftfreq(OpDef):
     """Rfftfreq class."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
 def rfftfreq(input: int, *args: object, **kwargs: object) -> Tensor:
-    """Compute the Rfftfreq operation."""
+    """Evaluate rfftfreq operation.
+
+    Args:
+        input (int): The input parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
+    """
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Rfftfreq", getattr(input, "data", input), *args, **kwargs)

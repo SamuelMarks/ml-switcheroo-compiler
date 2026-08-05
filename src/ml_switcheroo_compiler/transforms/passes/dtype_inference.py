@@ -9,7 +9,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _get_value_dtype(val: object) -> Optional[DType]:
-    """Get the dtype from a constant value."""
+    """Get the dtype from a constant value.
+
+    Args:
+        val (object): The val parameter.
+
+    Returns:
+        object: Result.
+    """
     if hasattr(val, "dtype"):
         return DType(str(val.dtype))
     if isinstance(val, bool):
@@ -81,13 +88,13 @@ def _infer_output_dtype(node: object, dtypes: dict[str, str]) -> bool:
 
 
 def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
-    """Execute _get_promoted_dtype.
+    """Evaluate _get_promoted_dtype operation.
 
     Args:
-        valid_dtypes (Any): Argument valid_dtypes.
+        valid_dtypes (object): The valid_dtypes parameter.
 
     Returns:
-    Any: The result.
+        str: Result.
     """
     if len(valid_dtypes) == 1:
         return valid_dtypes[0]
@@ -101,14 +108,14 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
 
 
 def _handle_cast_dtype(node: object, valid_dtypes: list[str]) -> Optional[str]:
-    """Execute _handle_cast_dtype.
+    """Evaluate _handle_cast_dtype operation.
 
     Args:
-        node (Any): Argument node.
-        valid_dtypes (Any): Argument valid_dtypes.
+        node (object): The node parameter.
+        valid_dtypes (object): The valid_dtypes parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     if "dtype" in node.attributes:
         val = node.attributes["dtype"]
@@ -117,14 +124,14 @@ def _handle_cast_dtype(node: object, valid_dtypes: list[str]) -> Optional[str]:
 
 
 def _handle_boolean_dtype(node: object, valid_dtypes: list[str]) -> str:
-    """Execute _handle_boolean_dtype.
+    """Evaluate _handle_boolean_dtype operation.
 
     Args:
-        node (Any): Argument node.
-        valid_dtypes (Any): Argument valid_dtypes.
+        node (object): The node parameter.
+        valid_dtypes (object): The valid_dtypes parameter.
 
     Returns:
-    Any: The result.
+        str: Result.
     """
     return DType.Bool.value
 
@@ -151,14 +158,14 @@ DTYPE_INFERENCE_REGISTRY = {
 
 
 def _get_node_valid_dtypes(node: object, dtypes: dict[str, str]) -> list[str]:
-    """Retrieve the node valid dtypes property or mapping.
+    """Evaluate _get_node_valid_dtypes operation.
 
     Args:
-        node (object): Required parameter for node.
-        dtypes (dict): Required parameter for dtypes.
+        node (object): The node parameter.
+        dtypes (object): The dtypes parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     valid = []
     for inp in node.inputs:

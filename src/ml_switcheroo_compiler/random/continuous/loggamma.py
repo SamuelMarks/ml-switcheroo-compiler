@@ -6,5 +6,13 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def loggamma(*args: object, **kwargs: object) -> object:
-    """Execute loggamma."""
+    """Evaluate loggamma operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("loggamma", *args, **kwargs)

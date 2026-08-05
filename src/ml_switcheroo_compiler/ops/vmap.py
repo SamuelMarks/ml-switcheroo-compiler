@@ -1,9 +1,9 @@
-"""Provides higher-order control flow primitives for tracing and eager execution.
+"""Provide higher-order control flow primitives for tracing and eager execution.
 
 This module implements functional control flow operators such as conditional branching,
 while loops, scanning, vectorizing maps (vmap), and parallel maps (pmap). These
 operators support both eager execution (using NumPy/Python loops) and tracing into an
-intermediate representation (IR) graph for compilation
+intermediate representation (IR) graph for compilation.
 """
 
 from __future__ import annotations
@@ -26,23 +26,21 @@ def _eager_vmap(
     out_axes: int | tuple[int, ...],
     args: tuple[object, ...],
 ) -> object:
-    """Evaluate and process the eager vmap operation.
+    """Evaluate _eager_vmap operation.
 
     Args:
-        func (Callable): Required parameter for func.
-        in_axes (Any): Required parameter for in_axes.
-        out_axes (Any): Required parameter for out_axes.
-        args (tuple): Required parameter for args.
+        func (Callable): The func parameter.
+        in_axes (object): The in_axes parameter.
+        out_axes (object): The out_axes parameter.
+        args (tuple): The args parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     arg = args[0]
     in_axis = in_axes if isinstance(in_axes, int) else in_axes[0]
     out_axis = out_axes if isinstance(out_axes, int) else out_axes[0]
-
     batch_size = arg.shape[in_axis] if arg.shape else 1
-
     outs = []
     backend = get_active_backend()
     for i in range(batch_size):
@@ -50,33 +48,32 @@ def _eager_vmap(
         sliced_shape = tuple(s for j, s in enumerate(arg.shape) if j != in_axis)
         sliced_arg = Tensor(sliced_data, TensorConfig(sliced_shape, arg.dtype, arg.device))
         outs.append(func(sliced_arg).data)
-
     out_data = backend.execute_op("Stack", outs, axis=out_axis)
     return Tensor(out_data, TensorConfig(out_data.shape, arg.dtype, arg.device))
 
 
 def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
-    """Evaluate and process the resolve vmap axis operation.
+    """Evaluate _resolve_vmap_axis operation.
 
     Args:
-        in_axes (Any): Required parameter for in_axes.
-        i (int): Required parameter for i.
+        in_axes (object): The in_axes parameter.
+        i (int): The i parameter.
 
     Returns:
-        Any: The evaluated or processed output.
+        object: Result.
     """
     return in_axes if isinstance(in_axes, int) else (in_axes[i] if i < len(in_axes) else 0)
 
 
 def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
-    """Evaluate and process the compute vmap shape operation.
+    """Evaluate _compute_vmap_shape operation.
 
     Args:
-        a (Tensor): Required parameter for a.
-        axis (Any): Required parameter for axis.
+        a (Tensor): The a parameter.
+        axis (object): The axis parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     if axis is not None and len(a.shape) > 0:
         return tuple(s for j, s in enumerate(a.shape) if j != axis)
@@ -84,14 +81,14 @@ def _compute_vmap_shape(a: Tensor, axis: int | None) -> tuple[int, ...]:
 
 
 def _create_vmap_symbolic_args(args: tuple[object, ...], in_axes: int | tuple[int, ...]) -> list[object]:
-    """Evaluate and process the create vmap dummy args operation.
+    """Evaluate _create_vmap_symbolic_args operation.
 
     Args:
-        args (tuple): Required parameter for args.
-        in_axes (Any): Required parameter for in_axes.
+        args (object): The args parameter.
+        in_axes (object): The in_axes parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     symbolic_args = []
     for i, a in enumerate(args):
@@ -111,20 +108,19 @@ def _trace_vmap(
     out_axes: int | tuple[int, ...],
     args: tuple[object, ...],
 ) -> object:
-    """Evaluate and process the trace vmap operation.
+    """Evaluate _trace_vmap operation.
 
     Args:
-        func (Callable): Required parameter for func.
-        in_axes (Any): Required parameter for in_axes.
-        out_axes (Any): Required parameter for out_axes.
-        args (tuple): Required parameter for args.
+        func (Callable): The func parameter.
+        in_axes (object): The in_axes parameter.
+        out_axes (object): The out_axes parameter.
+        args (tuple): The args parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
     body_graph = _trace_function(func, tuple(symbolic_args), "vmap_body")
-
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
@@ -134,7 +130,6 @@ def _trace_vmap(
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-
     arg = args[0]
     proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
     return Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
@@ -145,39 +140,31 @@ def vmap(
     in_axes: int | tuple[int, ...] = 0,
     out_axes: int | tuple[int, ...] = 0,
 ) -> Callable:
-    """Creates a vectorized version of a function mapped over specified axes.
-
-    In eager mode, the returned function applies the original function sequentially
-    over the batch dimension using a loop. In tracing mode, it records a 'Vmap'
-    logical node in the IR
+    """Create a vectorized version of a function mapped over specified axes.
 
     Args:
-        func (Callable): The function to vectorize
-        in_axes (int | tuple[int, ...]): Specifies which axes of the inputs to map over
-        Defaults to 0
-        out_axes (int | tuple[int, ...]): Specifies where the mapped axis should appear
-        in the outputs. Defaults to 0
+        func (Callable): The func parameter.
+        in_axes (object): The in_axes parameter.
+        out_axes (object): The out_axes parameter.
 
     Returns:
-    Callable: A vectorized version of the input function
+        Callable: Result.
     """
 
     def wrapped(*args: object) -> object:
-        """Wrapped.
+        """Wrap.
 
         Args:
-            *args (object): Additional keyword arguments.
+            *args (object): Positional args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         if config.eager_mode:
             return _eager_vmap(func, in_axes, out_axes, args)
-
         if not global_tracing_state.is_tracing:
             msg = "Cannot emit Vmap outside of a tracing context."
             raise RuntimeError(msg)
-
         return _trace_vmap(func, in_axes, out_axes, args)
 
     return wrapped

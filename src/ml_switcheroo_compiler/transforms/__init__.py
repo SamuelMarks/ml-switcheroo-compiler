@@ -1,4 +1,4 @@
-"""Transforms and Pass Manager package."""
+"""Transform and Pass Manager package."""
 
 from ml_switcheroo_compiler.transforms.autodiff import grad, hvp, jvp
 from ml_switcheroo_compiler.transforms.pass_manager import (

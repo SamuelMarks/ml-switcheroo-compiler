@@ -8,13 +8,11 @@ from ml_switcheroo_ir import LogicalGraph
 def memory_profiler(graph: LogicalGraph) -> int:
     """Estimate memory usage of the graph.
 
-    graph (LogicalGraph): The IR graph to analyze
+    Args:
+        graph (LogicalGraph): The IR graph to analyze.
 
     Returns:
-    int: Estimated peak memory usage in bytes
-
-    Args:
-        graph (LogicalGraph): Argument graph
+        int: Estimated peak memory usage in bytes.
     """
     total_mem = 0
     for node in graph.nodes.values():

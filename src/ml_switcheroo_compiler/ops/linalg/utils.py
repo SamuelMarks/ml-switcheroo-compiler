@@ -19,16 +19,16 @@ def _build_linalg_output_tensors(
     out_dtypes: Sequence[DType],
     device: object,
 ) -> list[Tensor]:
-    """Evaluate and process the build linalg output tensors operation.
+    """Evaluate _build_linalg_output_tensors operation.
 
     Args:
-        out_ids (list): Required parameter for out_ids.
-        out_shapes (Sequence): Required parameter for out_shapes.
-        out_dtypes (Sequence): Required parameter for out_dtypes.
-        device (object): Required parameter for device.
+        out_ids (object): The out_ids parameter.
+        out_shapes (object): The out_shapes parameter.
+        out_dtypes (object): The out_dtypes parameter.
+        device (object): The device parameter.
 
     Returns:
-        list: The evaluated or processed output.
+        object: Result.
     """
     tensors = []
     for out_id, shape, dtype in zip(out_ids, out_shapes, out_dtypes):
@@ -44,21 +44,20 @@ def _emit_linalg_node(
     out_shapes: Sequence[Sequence[int]],
     out_dtypes: Sequence[DType],
 ) -> Tensor | tuple[Tensor, ...]:
-    """Emits a linear algebra operation node to the tracing IR graph.
+    """Emit a linear algebra operation node to the tracing IR graph.
 
     Args:
-        op_type (str): The name of the linear algebra operation
-        inputs (Sequence[Tensor]): The input tensors for the operation
-        attrs (dict): Attributes/parameters for the operation
-        out_shapes (Sequence[Sequence[int]]): Expected shapes of the output tensors
-        out_dtypes (Sequence[DType]): Expected data types of the output tensors
+        op_type (str): The op_type parameter.
+        inputs (Sequence): The inputs parameter.
+        attrs (dict): The attrs parameter.
+        out_shapes (Sequence): The out_shapes parameter.
+        out_dtypes (Sequence): The out_dtypes parameter.
 
     Returns:
-    Tensor | tuple[Tensor, ...]: A single output Tensor or a tuple of output
-    Tensors
+        object: Result.
 
     Raises:
-    RuntimeError: If called outside of an active tracing context
+        RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
         msg = f"Cannot emit {op_type} node outside of a tracing context."

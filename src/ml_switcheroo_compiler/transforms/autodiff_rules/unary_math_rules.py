@@ -7,7 +7,16 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 
 @register_vjp("Abs")
 def abs_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     sign_x = emit_ir_node(graph, "Sign", inputs=[x])
@@ -17,7 +26,16 @@ def abs_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Abs")
 def abs_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -28,7 +46,16 @@ def abs_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Exp")
 def exp_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     exp_x = emit_ir_node(graph, "Exp", inputs=[x])
@@ -38,7 +65,16 @@ def exp_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Exp")
 def exp_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Evaluate JVP for Exp."""
+    """Evaluate exp_jvp operation.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     x = node.inputs[0]
     t_x = tangents[0]
     exp_x = emit_ir_node(graph, "Exp", inputs=[x])
@@ -48,7 +84,16 @@ def exp_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Exp2")
 def exp2_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     import math
@@ -62,7 +107,16 @@ def exp2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Exp2")
 def exp2_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -77,7 +131,16 @@ def exp2_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Expm1")
 def expm1_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     exp_x = emit_ir_node(graph, "Exp", inputs=[x])
@@ -87,7 +150,16 @@ def expm1_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Expm1")
 def expm1_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -98,7 +170,16 @@ def expm1_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Log")
 def log_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     one = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": 1.0})
@@ -109,7 +190,16 @@ def log_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Log")
 def log_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -121,7 +211,16 @@ def log_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Log10")
 def log10_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     import math
@@ -134,7 +233,16 @@ def log10_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Log10")
 def log10_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -148,7 +256,16 @@ def log10_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Log1P")
 def log1p_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     one = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": 1.0})
@@ -160,7 +277,16 @@ def log1p_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Log1P")
 def log1p_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -173,7 +299,16 @@ def log1p_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Log2")
 def log2_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     import math
@@ -186,7 +321,16 @@ def log2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Log2")
 def log2_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -200,7 +344,16 @@ def log2_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Sqrt")
 def sqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     half = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": 0.5})
@@ -212,7 +365,16 @@ def sqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Sqrt")
 def sqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -225,7 +387,16 @@ def sqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Rsqrt")
 def rsqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     neg_half = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": -0.5})
@@ -238,7 +409,16 @@ def rsqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Rsqrt")
 def rsqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -252,7 +432,16 @@ def rsqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Square")
 def square_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     two = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": 2.0})
@@ -263,7 +452,16 @@ def square_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Square")
 def square_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     """Docstring."""
     x = node.inputs[0]
     t_x = tangents[0]
@@ -275,35 +473,80 @@ def square_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Negative")
 def negative_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     dx = emit_ir_node(graph, "Negative", inputs=[cotangent])
     return (dx,)
 
 
 @register_jvp("Negative")
 def negative_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     dy = emit_ir_node(graph, "Negative", inputs=[tangents[0]])
     return dy
 
 
 @register_vjp("Positive")
 def positive_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     dx = emit_ir_node(graph, "Positive", inputs=[cotangent])
     return (dx,)
 
 
 @register_jvp("Positive")
 def positive_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     dy = emit_ir_node(graph, "Positive", inputs=[tangents[0]])
     return dy
 
 
 @register_vjp("Reciprocal")
 def reciprocal_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     x = node.inputs[0]
     neg_one = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": -1.0})
     x_sq = emit_ir_node(graph, "Square", inputs=[x])
@@ -314,7 +557,16 @@ def reciprocal_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Reciprocal")
 def reciprocal_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     x = node.inputs[0]
     t_x = tangents[0]
     neg_one = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": -1.0})
@@ -326,7 +578,16 @@ def reciprocal_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Cbrt")
 def cbrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     x = node.inputs[0]
     one_third = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": 1.0 / 3.0})
     x_squared = emit_ir_node(graph, "Square", inputs=[x])
@@ -341,7 +602,16 @@ def cbrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Cbrt")
 def cbrt_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """Docstring."""
+    """Docstring.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     x = node.inputs[0]
     t_x = tangents[0]
     one_third = emit_ir_node(graph, "Constant", inputs=[], attributes={"value": 1.0 / 3.0})
@@ -357,7 +627,16 @@ def cbrt_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Cosh")
 def cosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Cosh."""
+    """VJP for Cosh.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     x = node.inputs[0]
@@ -368,7 +647,16 @@ def cosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Cosh")
 def cosh_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Cosh."""
+    """JVP for Cosh.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     x = node.inputs[0]
@@ -380,7 +668,16 @@ def cosh_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Acosh")
 def acosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Acosh."""
+    """VJP for Acosh.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     x = node.inputs[0]
@@ -395,7 +692,16 @@ def acosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Acosh")
 def acosh_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Acosh."""
+    """JVP for Acosh.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     x = node.inputs[0]

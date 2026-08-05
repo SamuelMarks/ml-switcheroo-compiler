@@ -7,7 +7,7 @@ from .base import UnaryMathOp
 
 @register_op("Conj")
 class Conj(UnaryMathOp):
-    """Computes the complex conjugate element-wise."""
+    """Compute the complex conjugate element-wise."""
 
     op_name = "Conj"
     np_op_name = "conj"
@@ -15,7 +15,7 @@ class Conj(UnaryMathOp):
 
 @register_op("Imag")
 class Imag(UnaryMathOp):
-    """Returns the imaginary part of the complex argument element-wise."""
+    """Return the imaginary part of the complex argument element-wise."""
 
     op_name = "Imag"
     np_op_name = "imag"
@@ -23,7 +23,7 @@ class Imag(UnaryMathOp):
 
 @register_op("Real")
 class Real(UnaryMathOp):
-    """Returns the real part of the complex argument element-wise."""
+    """Return the real part of the complex argument element-wise."""
 
     op_name = "Real"
     np_op_name = "real"

@@ -49,23 +49,84 @@ class WasmCodeGenerator(BaseGenerator):
         }.get(str(dtype).lower(), "float")
 
     def _simd_constant(self, res_var: str, val: float, in_vars: list[str]) -> str:
+        """Emit a SIMD constant assignment.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            val (float): The constant value.
+            in_vars (list[str]): Input variables (ignored for constants).
+
+        Returns:
+            str: C++ code for the assignment.
+        """
         return f"    v128_t {res_var} = wasm_f32x4_splat({val});"
 
     def _simd_binary(self, res_var: str, func: str, in_vars: list[str]) -> str:
+        """Emit a SIMD binary operation.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            func (str): The SIMD intrinsic function name.
+            in_vars (list[str]): Input variables.
+
+        Returns:
+            str: C++ code for the operation.
+        """
         return f"    v128_t {res_var} = {func}({in_vars[0]}, {in_vars[1]});"
 
     def _simd_unary(self, res_var: str, func: str, in_vars: list[str]) -> str:
+        """Emit a SIMD unary operation.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            func (str): The SIMD intrinsic function name.
+            in_vars (list[str]): Input variables.
+
+        Returns:
+            str: C++ code for the operation.
+        """
         return f"    v128_t {res_var} = {func}({in_vars[0]});"
 
     def _simd_math(self, res_var: str, func: str, in_vars: list[str]) -> str:
+        """Emit a SIMD math operation using scalar fallbacks for each lane.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            func (str): The scalar math function name.
+            in_vars (list[str]): Input variables.
+
+        Returns:
+            str: C++ code for the operation.
+        """
         ext = [f"std::{func}(wasm_f32x4_extract_lane({in_vars[0]}, {i}))" for i in range(4)]
         return f"    v128_t {res_var} = wasm_f32x4_make({', '.join(ext)});"
 
     def _simd_fallback(self, res_var: str, op_type: str, in_vars: list[str]) -> str:
+        """Emit a fallback SIMD operation by extracting lanes, calling a generic function, and making a new vector.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            op_type (str): The operation type name.
+            in_vars (list[str]): Input variables.
+
+        Returns:
+            str: C++ code for the operation.
+        """
         ext = [f"{op_type.lower()}({', '.join(f'wasm_f32x4_extract_lane({v}, {i})' for v in in_vars)})" for i in range(4)]
         return f"    v128_t {res_var} = wasm_f32x4_make({', '.join(ext)});"
 
     def _visit_simd(self, node: object, nid: str, op_type: str, res_var_base: str) -> str:
+        """Process a node and emit SIMD instructions.
+
+        Args:
+            node (object): The IR node to process.
+            nid (str): Node ID.
+            op_type (str): Operation type.
+            res_var_base (str): Base name for the result variable.
+
+        Returns:
+            str: The generated variable name.
+        """
         res_var = f"{res_var_base}_simd"
         self.var_map[nid] = res_var
 
@@ -90,15 +151,58 @@ class WasmCodeGenerator(BaseGenerator):
         return res_var
 
     def _scalar_constant(self, res_var: str, val: float, dtype_c: str) -> str:
+        """Emit a scalar constant assignment.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            val (float): The constant value.
+            dtype_c (str): The C++ data type.
+
+        Returns:
+            str: C++ code for the assignment.
+        """
         return f"    {dtype_c} {res_var} = {val};"
 
     def _scalar_binary(self, res_var: str, op: str, in_vars: list[str], dtype_c: str) -> str:
+        """Emit a scalar binary operation.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            op (str): The operator symbol (e.g., '+', '-').
+            in_vars (list[str]): Input variables.
+            dtype_c (str): The C++ data type.
+
+        Returns:
+            str: C++ code for the operation.
+        """
         return f"    {dtype_c} {res_var} = {f' {op} '.join(in_vars)};"
 
     def _scalar_math(self, res_var: str, func: str, in_vars: list[str], dtype_c: str) -> str:
+        """Emit a scalar math operation.
+
+        Args:
+            res_var (str): The variable name to store the result.
+            func (str): The standard library function name.
+            in_vars (list[str]): Input variables.
+            dtype_c (str): The C++ data type.
+
+        Returns:
+            str: C++ code for the operation.
+        """
         return f"    {dtype_c} {res_var} = std::{func}({in_vars[0]});"
 
     def _visit_scalar(self, node: object, nid: str, op_type: str, res_var_base: str) -> str:
+        """Process a node and emit scalar instructions.
+
+        Args:
+            node (object): The IR node to process.
+            nid (str): Node ID.
+            op_type (str): Operation type.
+            res_var_base (str): Base name for the result variable.
+
+        Returns:
+            str: The generated variable name.
+        """
         res_var = f"{res_var_base}_scalar"
         self.var_map[nid] = res_var
         dtype_c = self._map_type(getattr(node, "dtype", "float32"))
@@ -147,6 +251,12 @@ class WasmCodeGenerator(BaseGenerator):
             return self._visit_scalar(node, nid, op_type, res_var_base)
 
     def _generate_simd_loop(self, input_nodes: list, output_ids: list) -> None:
+        """Generate the SIMD-vectorized execution loop.
+
+        Args:
+            input_nodes (list): The list of input nodes.
+            output_ids (list): The list of output node IDs.
+        """
         self.is_simd = True
         self.var_map = self.var_map_simd
         for idx, node in enumerate(input_nodes):
@@ -170,6 +280,12 @@ class WasmCodeGenerator(BaseGenerator):
         self.add_line("  }")
 
     def _generate_scalar_loop(self, input_nodes: list, output_ids: list) -> None:
+        """Generate the scalar fallback loop for remainder elements.
+
+        Args:
+            input_nodes (list): The list of input nodes.
+            output_ids (list): The list of output node IDs.
+        """
         self.is_simd = False
         self.var_map = self.var_map_scalar
         for idx, node in enumerate(input_nodes):

@@ -11,17 +11,17 @@ from ml_switcheroo_compiler.interpreter.environment import Environment
 
 
 def evaluate_graph(graph: LogicalGraph, inputs: dict[str, object]) -> dict[str, object]:
-    """Evaluate an IR graph eagerly.
-
-    graph (LogicalGraph): The graph to evaluate
-    inputs (Dict[str, Any]): The input dictionary mapping node IDs to values
-
-    Returns:
-    Dict[str, Any]: The outputs mapping node IDs to values
+    """Execute a logical computation graph using eager mode evaluation.
 
     Args:
-        graph (LogicalGraph): Argument graph
-        inputs (dict[str, object]): Argument inputs
+        graph (LogicalGraph): The directed acyclic graph defining the operations to evaluate.
+        inputs (dict[str, object]): A mapping of input node IDs to their corresponding concrete tensor values.
+
+    Returns:
+        dict[str, object]: A dictionary mapping output node IDs to their computed tensor results.
+
+    Raises:
+        RuntimeError: If an output node was never evaluated during the graph execution.
     """
     env = Environment(inputs)
     sorted_nodes = topological_sort(graph)
@@ -40,6 +40,14 @@ def evaluate_graph(graph: LogicalGraph, inputs: dict[str, object]) -> dict[str, 
 
 
 def _parse_slice_call(node: ast.Call) -> object:
+    """Parse a slice call AST node into a python slice or array object.
+
+    Args:
+        node (ast.Call): The Call AST node.
+
+    Returns:
+        object: The parsed slice object.
+    """
     if not isinstance(node.func, ast.Name):
         return None
     if node.func.id == "slice":
@@ -50,28 +58,79 @@ def _parse_slice_call(node: ast.Call) -> object:
 
 
 def _parse_tuple(node: ast.Tuple) -> object:
+    """Parse a tuple AST node.
+
+    Args:
+        node (ast.Tuple): The Tuple AST node.
+
+    Returns:
+        object: The parsed tuple object.
+    """
     return tuple(_parse_slice_node(elt) for elt in node.elts)
 
 
 def _parse_list(node: ast.List) -> object:
+    """Parse a list AST node.
+
+    Args:
+        node (ast.List): The List AST node.
+
+    Returns:
+        object: The parsed list object.
+    """
     return list(_parse_slice_node(elt) for elt in node.elts)
 
 
 def _parse_constant(node: ast.Constant) -> object:
+    """Parse a constant AST node.
+
+    Args:
+        node (ast.Constant): The Constant AST node.
+
+    Returns:
+        object: The parsed constant value.
+    """
     return node.value
 
 
 def _parse_name(node: ast.Name) -> object:
+    """Parse a name AST node into standard singletons.
+
+    Args:
+        node (ast.Name): The Name AST node.
+
+    Returns:
+        object: The parsed name object (e.g., None, Ellipsis).
+    """
     return {"None": None, "Ellipsis": Ellipsis, "False": False, "True": True}.get(node.id)
 
 
 def _parse_unary(node: ast.UnaryOp) -> object:
+    """Parse a unary operation AST node.
+
+    Args:
+        node (ast.UnaryOp): The UnaryOp AST node.
+
+    Returns:
+        object: The parsed unary operation value.
+    """
     if isinstance(node.op, ast.USub) and isinstance(node.operand, ast.Constant):
         return -node.operand.value
     return None
 
 
 def _parse_slice_node(node: ast.AST) -> object:
+    """Dispatch and parse an AST node for a slice representation into native Python types.
+
+    Args:
+        node (ast.AST): The parsed AST node representing a portion of a slice index.
+
+    Returns:
+        object: The interpreted Python slice object, tuple, list, or constant value.
+
+    Raises:
+        ValueError: If the AST node type is not supported in slice expressions.
+    """
     dispatch = {
         ast.Tuple: _parse_tuple,
         ast.List: _parse_list,
@@ -88,6 +147,14 @@ def _parse_slice_node(node: ast.AST) -> object:
 
 
 def _parse_slice_string(s: str) -> object:
+    """Parse a string representation of a slice index.
+
+    Args:
+        s (str): The slice string to evaluate.
+
+    Returns:
+        object: The parsed python slice object.
+    """
     return _parse_slice_node(ast.parse(str(s), mode="eval").body)
 
 
@@ -98,7 +165,15 @@ def _handle_slice(
     in_vals: list[object],
     kwargs: dict[str, object],
 ) -> None:
-    """Handle slice operations during evaluation."""
+    """Execute a slicing operation on a tensor and store the result.
+
+    Args:
+        node (LogicalNode): The IR node representing the slice operation.
+        env (Environment): The current local variable environment for storing results.
+        backend (object): The active compute backend used for array manipulation.
+        in_vals (list[object]): List containing the input tensor to be sliced.
+        kwargs (dict[str, object]): Keyword arguments defining the slice parameters (e.g. 'slices', 'dim', 'start', 'end', 'step').
+    """
     if "slices" in kwargs:
         parsed_key = _parse_slice_string(str(kwargs["slices"]))
         env.set(node.id, backend.asarray(in_vals[0])[parsed_key])
@@ -121,7 +196,15 @@ def _handle_getitem(
     in_vals: list[object],
     kwargs: dict[str, object],
 ) -> None:
-    """Handle getitem operations during evaluation."""
+    """Execute a getitem operation (advanced indexing) and store the result.
+
+    Args:
+        node (LogicalNode): The IR node representing the getitem operation.
+        env (Environment): The local variable environment.
+        backend (object): The active compute backend for array manipulation.
+        in_vals (list[object]): List containing the input tensor.
+        kwargs (dict[str, object]): Keyword arguments containing the 'key' for indexing.
+    """
     key = kwargs.get("key")
 
     parsed_key = _parse_slice_string(str(key))
@@ -133,7 +216,13 @@ def _handle_checkpoint(
     env: Environment,
     in_vals: list[object],
 ) -> None:
-    """Handle Checkpoint operation during evaluation."""
+    """Execute a gradient checkpointing subgraph dynamically.
+
+    Args:
+        node (LogicalNode): The IR node representing the checkpoint wrapper.
+        env (Environment): The local variable environment.
+        in_vals (list[object]): List of input tensors to feed into the subgraph.
+    """
     subgraph = node.attributes["subgraph"]
     sub_inputs = {}
     for inp_val, in_id in zip(in_vals, subgraph.inputs):
@@ -167,19 +256,51 @@ def _handle_meshgrid(
     in_vals: list[object],
     kwargs: dict[str, object],
 ) -> None:
-    """Handle Meshgrid operation during evaluation."""
+    """Execute a meshgrid operation and extract the correct output index.
+
+    Args:
+        node (LogicalNode): The IR node representing the meshgrid operation.
+        env (Environment): The local variable environment.
+        backend (object): The active compute backend for execution.
+        in_vals (list[object]): List of input 1D coordinate arrays.
+        kwargs (dict[str, object]): Keyword arguments including 'output_index' to select the desired returned grid.
+    """
     idx = kwargs.pop("output_index", 0)
     result = backend.execute_op("Meshgrid", *in_vals, **kwargs)
     env.set(node.id, result[idx])
 
 
-def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None:
-    """Evaluate a single logical node and update the environment.
+def _dispatch_op(node: LogicalNode, env: Environment, backend: object, target_op: str, in_vals: list, kwargs: dict) -> None:
+    """Dispatch the execution of an operation to the appropriate handler.
 
     Args:
-        node (LogicalNode): The node to evaluate.
-        env (Environment): The local variable environment.
+        node (LogicalNode): The IR node.
+        env (Environment): The current local variable environment.
         backend (object): The active compute backend.
+        target_op (str): The name of the target operation.
+        in_vals (list): List of input values.
+        kwargs (dict): Keyword arguments for the operation.
+    """
+    if target_op == "Slice":
+        _handle_slice(node, env, backend, in_vals, kwargs)
+    elif target_op == "GetItem":
+        _handle_getitem(node, env, backend, in_vals, kwargs)
+    elif target_op == "Checkpoint":
+        _handle_checkpoint(node, env, in_vals)
+    elif target_op == "Meshgrid":
+        _handle_meshgrid(node, env, backend, in_vals, kwargs)
+    else:
+        result = backend.execute_op(target_op, *in_vals, **kwargs)
+        env.set(node.id, result)
+
+
+def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None:
+    """Execute a single logical node and update the local environment with its result.
+
+    Args:
+        node (LogicalNode): The graph node to evaluate.
+        env (Environment): The local variable environment acting as memory for the execution.
+        backend (object): The underlying backend engine to dispatch computation to.
     """
     if node.op_type == "Input":
         env.get(node.id)
@@ -193,18 +314,7 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: object) -> None
         in_vals = [env.get(inp) for inp in node.inputs]
         target_op = _get_op_alias(node.op_type)
         kwargs = _prepare_node_kwargs(node, target_op)
-
-        if target_op == "Slice":
-            _handle_slice(node, env, backend, in_vals, kwargs)
-        elif target_op == "GetItem":
-            _handle_getitem(node, env, backend, in_vals, kwargs)
-        elif target_op == "Checkpoint":
-            _handle_checkpoint(node, env, in_vals)
-        elif target_op == "Meshgrid":
-            _handle_meshgrid(node, env, backend, in_vals, kwargs)
-        else:
-            result = backend.execute_op(target_op, *in_vals, **kwargs)
-            env.set(node.id, result)
+        _dispatch_op(node, env, backend, target_op, in_vals, kwargs)
 
 
 def _get_op_alias(op_type: str) -> str:

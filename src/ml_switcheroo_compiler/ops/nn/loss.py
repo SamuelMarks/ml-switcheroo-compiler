@@ -1,4 +1,4 @@
-"""Loss functions."""
+"""Calculate loss functions."""
 
 from typing import Optional, Union
 
@@ -41,7 +41,7 @@ def dice_loss(
     axis: Optional[Union[tuple[int, ...], int]] = None,
     smooth: float = 1e-5,
 ) -> Tensor:
-    """Computes the Dice loss.
+    """Compute the Dice loss.
 
     Args:
         y_true (Tensor): True labels.
@@ -64,16 +64,16 @@ def dice_loss(
 
 
 def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> Tensor:
-    """Compute the categorical generalized cross-entropy loss.
+    """Evaluate categorical_generalized_cross_entropy operation.
 
     Args:
-        y_true: Ground truth values.
-        y_pred: The predicted values.
-        q: The q parameter for the loss.
-        axis: The axis along which to compute the loss.
+        y_true (Tensor): The y_true parameter.
+        y_pred (Tensor): The y_pred parameter.
+        q (float): The q parameter.
+        axis (int): The axis parameter.
 
     Returns:
-        The computed loss tensor.
+        Tensor: Result.
     """
     # Clip predictions to prevent NaNs
     epsilon = 1e-7
@@ -89,7 +89,7 @@ def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: flo
 
 
 def _compute_circle_margins(margin: float) -> tuple[float, float, float, float]:
-    """Computes the positive and negative margin parameters for circle loss.
+    """Compute the positive and negative margin parameters for circle loss.
 
     Args:
         margin (float): The margin used for optimization.
@@ -101,7 +101,7 @@ def _compute_circle_margins(margin: float) -> tuple[float, float, float, float]:
 
 
 def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> tuple[Tensor, Tensor]:
-    """Computes the scaled logits for the positive and negative classes in circle loss.
+    """Compute the scaled logits for the positive and negative classes in circle loss.
 
     Args:
         y_pred (Tensor): The predicted logits or similarities.
@@ -121,7 +121,7 @@ def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> tuple
 
 
 def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor) -> Tensor:
-    """Reduces the circle loss logits into the final scalar or per-sample loss.
+    """Reduce the circle loss logits into the final scalar or per-sample loss.
 
     Args:
         logit_p (Tensor): The positive class logits.
@@ -143,16 +143,16 @@ def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Ten
 
 
 def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> Tensor:
-    """Compute the circle loss.
+    """Evaluate circle_loss operation.
 
     Args:
-        y_true: Ground truth values.
-        y_pred: The predicted values.
-        margin: The margin parameter for the loss.
-        gamma: The gamma parameter for the loss.
+        y_true (Tensor): The y_true parameter.
+        y_pred (Tensor): The y_pred parameter.
+        margin (float): The margin parameter.
+        gamma (float): The gamma parameter.
 
     Returns:
-        The computed loss tensor.
+        Tensor: Result.
     """
     mask_p = y_true
     mask_n = subtract(1.0, y_true)
@@ -161,7 +161,7 @@ def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: flo
 
 
 def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> Tensor:
-    """Computes the Tversky loss, a generalization of the Dice loss.
+    """Compute the Tversky loss, a generalization of the Dice loss.
 
     Args:
         y_true (Tensor): The ground truth values.
@@ -181,7 +181,7 @@ def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float
 
 
 def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Tensor:
-    """Clips probabilities if from_logits is False.
+    """Clip probabilities if from_logits is False.
 
     Args:
         y_pred (Tensor): The input predictions tensor.
@@ -196,7 +196,7 @@ def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Tensor:
 
 
 def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Tensor:
-    """Mathematical computation for BCE loss.
+    """Apply mathematical computation for BCE loss.
 
     Args:
         y_true (Tensor): The ground truth values.
@@ -228,7 +228,7 @@ def binary_crossentropy(
     label_smoothing: float = 0.0,
     axis: int = -1,
 ) -> Tensor:
-    """Computes the binary crossentropy loss.
+    """Compute the binary crossentropy loss.
 
     Args:
         y_true (Tensor): True labels.
@@ -256,7 +256,7 @@ def categorical_crossentropy(
     label_smoothing: float = 0.0,
     axis: int = -1,
 ) -> Tensor:
-    """Computes the categorical crossentropy loss.
+    """Compute the categorical crossentropy loss.
 
     Args:
         y_true (Tensor): True labels.
@@ -290,7 +290,7 @@ def sparse_categorical_crossentropy(
     ignore_class: Optional[int] = None,
     axis: int = -1,
 ) -> Tensor:
-    """Computes the sparse categorical crossentropy loss.
+    """Compute the sparse categorical crossentropy loss.
 
     Args:
         y_true (Tensor): True labels (integers).
@@ -320,7 +320,7 @@ def ctc_decode(
     beam_width: int = 100,
     top_paths: int = 1,
 ) -> tuple[list[Tensor], Tensor]:
-    """Decodes CTC predictions.
+    """Decode CTC predictions.
 
     Args:
         inputs (Tensor): The input tensor containing the predictions.
@@ -362,16 +362,19 @@ class AdaptiveLogSoftmaxWithLoss(OpDef):
 
 
 def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs: object, add_cluster_prob: bool) -> tuple[Tensor, Tensor]:
-    """Emits a logical node representing the adaptive log softmax with loss computation during tracing.
+    """Emit a logical node representing the adaptive log softmax with loss computation during tracing.
 
     Args:
-        input (Tensor): The input tensor.
-        target (Tensor): The target tensor.
-        cutoffs (object): The cutoff boundaries used to split the vocabulary into clusters.
-        add_cluster_prob (bool): Whether to include cluster probabilities.
+        input (Tensor): The input parameter.
+        target (Tensor): The target parameter.
+        cutoffs (object): The cutoffs parameter.
+        add_cluster_prob (bool): The add_cluster_prob parameter.
 
     Returns:
-        tuple[Tensor, Tensor]: The output and loss tensors.
+        tuple: Result.
+
+    Raises:
+        RuntimeError: An exception.
     """
     import uuid
 
@@ -410,7 +413,7 @@ def adaptive_log_softmax_with_loss(
     cutoffs: object,
     add_cluster_prob: bool = True,
 ) -> tuple[Tensor, Tensor]:
-    """Computes the adaptive log softmax and its corresponding loss.
+    """Compute the adaptive log softmax and its corresponding loss.
 
     Args:
         input (Tensor): The input tensor.
@@ -442,7 +445,7 @@ def adaptive_log_softmax_with_loss(
 
 
 def log_poisson_loss(targets: object, log_input: object, compute_full_loss: object = False, name: object = None) -> object:
-    """Computes log Poisson loss.
+    """Compute log Poisson loss.
 
     Args:
         targets (object): The ground truth target values.
@@ -472,7 +475,7 @@ def in_top_k(targets: object, predictions: object, k: object, name: object = Non
 
 
 def l2_loss(t: object, name: object = None) -> object:
-    """Computes half the L2 norm of a tensor without the sqrt.
+    """Compute half the L2 norm of a tensor without the sqrt.
 
     Args:
         t (object): The input tensor.

@@ -5,6 +5,11 @@ _OP_MAPPING = None
 
 
 def _get_op_mapping() -> dict:
+    """Retrieve the operation mapping for the Keras backend.
+
+    Returns:
+        dict: A dictionary mapping operation types to their implementations.
+    """
     global _OP_MAPPING
     if _OP_MAPPING is not None:
         return _OP_MAPPING
@@ -186,16 +191,19 @@ def _get_op_mapping() -> dict:
 
 
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-    """Execute execute_op.
+    """Execute an eager operation using the Keras backend.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        op_type (Any): Argument op_type.
-        *args (Any): Argument *args.
-        **kwargs (Any): Argument **kwargs.
+        cls (type): The tensor class.
+        op_type (str): The name of the operation to execute.
+        *args (object): Positional arguments for the operation.
+        **kwargs (object): Keyword arguments for the operation.
 
     Returns:
-        Any: The result.
+        object: The result of the operation execution.
+
+    Raises:
+        BackendNotSupportedError: If the operation is not supported by the Keras backend.
     """
     import ml_switcheroo_compiler.backends.eager  # noqa: F401
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry

@@ -1,4 +1,4 @@
-"""Defines special binary operations for the ml_switcheroo_compiler framework, including element-.
+"""Define special binary operations for the ml_switcheroo_compiler framework, including element-.
 
 wise trigonometric, division, and comparison operations
 """
@@ -11,17 +11,17 @@ from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 
 @register_op("Atan2")
 class Atan2(OpDef):
-    """An operation class for computing the element-wise arc tangent of x/y."""
+    """Provide an operation class for computing the element-wise arc tangent of x/y."""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Execute infer_shape.
+        """Evaluate infer_shape operation.
 
         Args:
-            *shapes (Any): Argument *shapes.
-            **kwargs (Any): Argument **kwargs.
+        *shapes (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-        Any: The result.
+        object: Result.
         """
         """Infer the output shape of the operation.
 
@@ -39,10 +39,18 @@ class Atan2(OpDef):
 
 @register_op("Divmod")
 class Divmod(OpDef):
-    """An operation class for computing element-wise quotient and remainder."""
+    """Provide an operation class for computing element-wise quotient and remainder."""
 
     def __call__(self, *args: object, **kwargs: object) -> object:
-        """Call Divmod."""
+        """Call Divmod.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         if config.eager_mode:
             return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
 
@@ -51,14 +59,14 @@ class Divmod(OpDef):
         return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Execute infer_shape.
+        """Evaluate infer_shape operation.
 
         Args:
-            *shapes (Any): Argument *shapes.
-            **kwargs (Any): Argument **kwargs.
+            *shapes (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-        Any: The result.
+            object: Result.
         """
         """Infer the output shape of the operation.
 
@@ -76,37 +84,37 @@ class Divmod(OpDef):
 
 @register_op("Allclose")
 class Allclose(OpDef):
-    """An operation class for checking if two arrays are element-wise equal within a.
+    """Provide an operation class for checking if two arrays are element-wise equal within a.
 
     tolerance
     """
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Infer the output shape of the operation.
+        """Evaluate infer_shape operation.
 
         Args:
-            *shapes: The input shapes.
-            **kwargs: Additional keyword arguments.
+            *shapes (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The computed shape or evaluation result.
+            object: Result.
         """
         return ()
 
 
 @register_op("Isclose")
 class Isclose(OpDef):
-    """An operation class for checking element-wise equality within a tolerance."""
+    """Provide an operation class for checking element-wise equality within a tolerance."""
 
     def infer_shape(self, *shapes: object, **kwargs: object) -> object:
-        """Execute infer_shape.
+        """Evaluate infer_shape operation.
 
         Args:
-            *shapes (Any): Argument *shapes.
-            **kwargs (Any): Argument **kwargs.
+            *shapes (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-        Any: The result.
+            object: Result.
         """
         """Infer the output shape of the operation.
 

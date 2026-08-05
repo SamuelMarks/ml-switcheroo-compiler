@@ -24,14 +24,13 @@ def conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None,
     """2D Convolution.
 
     Args:
-        lhs (Tensor): Left-hand side tensor (batch, height, width, in_channels).
-        rhs (Tensor): Right-hand side tensor (height, width, in_channels, out_channels).
-        config_obj (ConvConfig | None): Configuration.
-
-        kwargs (object): Additional kwargs.\
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: The result of the convolution.
+        Tensor: Result.
     """
     if config_obj is None:
         config_obj = _build_conv_config(kwargs, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2)))
@@ -48,15 +47,13 @@ def conv2d_transpose(
     """2D convolution transpose.
 
     Args:
-        lhs (Tensor): Left-hand side tensor.
-        rhs (Tensor): Right-hand side tensor.
-        strides (Union[Sequence[int], int]): Strides.
-        padding (Union[str, Sequence[tuple[int, int]]]): Padding.
-
-        kwargs (object): Additional kwargs.\
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        strides (Union): The strides parameter.
+        padding (Union): The padding parameter.
 
     Returns:
-        Tensor: The result of the convolution.
+        Tensor: Result.
     """
     conv_transpose = get_op("ConvTranspose")()
 
@@ -67,14 +64,13 @@ def depthwise_conv2d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[objec
     """2D Depthwise Convolution.
 
     Args:
-        lhs (Tensor): Left-hand side tensor (batch, height, width, in_channels).
-        rhs (Tensor): Right-hand side tensor (height, width, in_channels, channel_multiplier).
-        config_obj (ConvConfig | None): Configuration.
-
-        kwargs (object): Additional kwargs.\
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: The result of the convolution.
+        Tensor: Result.
     """
     dimension_numbers = ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))
     rhs_reshaped, config_obj = _prepare_depthwise_conv(lhs, rhs, 2, dimension_numbers, config_obj, **kwargs)
@@ -91,11 +87,14 @@ def separable_conv2d(
     """2D Separable Convolution.
 
     Args:
-        lhs (Tensor): Left-hand side tensor.
-        depthwise_filter (Tensor): Depthwise filter.
-        pointwise_filter (Tensor): Pointwise filter.
-        config (ConvHyperparams): Hyperparameters.
-        kwargs (object): kwargs.
+        lhs (Tensor): The lhs parameter.
+        depthwise_filter (Tensor): The depthwise_filter parameter.
+        pointwise_filter (Tensor): The pointwise_filter parameter.
+        config (ConvHyperparams): The config parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        Tensor: Result.
     """
     config = config or ConvHyperparams()
     strides, padding = config.strides, config.padding

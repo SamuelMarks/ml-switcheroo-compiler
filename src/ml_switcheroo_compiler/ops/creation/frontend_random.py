@@ -93,13 +93,13 @@ def randint(
 
 
 def manual_seed(seed: int) -> int:
-    """Sets the seed for generating random numbers.
+    """Set the seed for generating random numbers.
 
     Args:
         seed (int): The random seed.
 
     Returns:
-        int: The evaluated output resulting from this operation.
+        int: The computed result.
     """
     if config.eager_mode:
         get_active_backend().execute_op("Seed", seed)

@@ -7,7 +7,7 @@ from .base import UnaryMathOp
 
 @register_op("Acosh")
 class Acosh(UnaryMathOp):
-    """Computes the inverse hyperbolic cosine element-wise."""
+    """Compute the inverse hyperbolic cosine element-wise."""
 
     op_name = "Acosh"
     np_op_name = "arccosh"
@@ -15,7 +15,7 @@ class Acosh(UnaryMathOp):
 
 @register_op("Asinh")
 class Asinh(UnaryMathOp):
-    """Computes the inverse hyperbolic sine element-wise."""
+    """Compute the inverse hyperbolic sine element-wise."""
 
     op_name = "Asinh"
     np_op_name = "arcsinh"
@@ -23,7 +23,7 @@ class Asinh(UnaryMathOp):
 
 @register_op("Atanh")
 class Atanh(UnaryMathOp):
-    """Computes the inverse hyperbolic tangent element-wise."""
+    """Compute the inverse hyperbolic tangent element-wise."""
 
     op_name = "Atanh"
     np_op_name = "arctanh"
@@ -31,7 +31,7 @@ class Atanh(UnaryMathOp):
 
 @register_op("Cosh")
 class Cosh(UnaryMathOp):
-    """Computes the hyperbolic cosine element-wise."""
+    """Compute the hyperbolic cosine element-wise."""
 
     op_name = "Cosh"
     np_op_name = "cosh"
@@ -39,7 +39,7 @@ class Cosh(UnaryMathOp):
 
 @register_op("Sinh")
 class Sinh(UnaryMathOp):
-    """Computes the hyperbolic sine element-wise."""
+    """Compute the hyperbolic sine element-wise."""
 
     op_name = "Sinh"
     np_op_name = "sinh"
@@ -47,7 +47,7 @@ class Sinh(UnaryMathOp):
 
 @register_op("Tanh")
 class Tanh(UnaryMathOp):
-    """Computes the hyperbolic tangent element-wise."""
+    """Compute the hyperbolic tangent element-wise."""
 
     op_name = "Tanh"
     np_op_name = "tanh"

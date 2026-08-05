@@ -6,5 +6,13 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def generalized_normal(*args: object, **kwargs: object) -> object:
-    """Execute generalized_normal."""
+    """Evaluate generalized_normal operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("generalized_normal", *args, **kwargs)

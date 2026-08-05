@@ -7,15 +7,15 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
 def _generate_gaussian_kernel(np_mod: object, kernel_size: tuple[int, int], sigma: tuple[float, float]) -> object:
-    """Evaluate and process the generate gaussian kernel operation.
+    """Evaluate _generate_gaussian_kernel operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        kernel_size (tuple): Required parameter for kernel_size.
-        sigma (tuple): Required parameter for sigma.
+        np_mod (object): The np_mod parameter.
+        kernel_size (object): The kernel_size parameter.
+        sigma (object): The sigma parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     kx, ky = kernel_size
     sx, sy = sigma
@@ -27,16 +27,19 @@ def _generate_gaussian_kernel(np_mod: object, kernel_size: tuple[int, int], sigm
 
 
 def _apply_conv2d_batch(np_mod: object, imgs: object, kernel: object, mode: str) -> object:
-    """Evaluate and process the apply conv2d batch operation.
+    """Evaluate _apply_conv2d_batch operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        imgs (object): Required parameter for imgs.
-        kernel (object): Required parameter for kernel.
-        mode (str): Required parameter for mode.
+        np_mod (object): The np_mod parameter.
+        imgs (object): The imgs parameter.
+        kernel (object): The kernel parameter.
+        mode (str): The mode parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     # Basic implementation for 4D images (B, C, H, W)
     if imgs.ndim != 4:
@@ -59,14 +62,14 @@ def _apply_conv2d_batch(np_mod: object, imgs: object, kernel: object, mode: str)
 
 
 def _get_blur_config(kwargs: dict, config_obj: typing.Optional[object]) -> object:
-    """Retrieve the blur config property or mapping.
+    """Evaluate _get_blur_config operation.
 
     Args:
-        kwargs (dict): Required parameter for kwargs.
-        config_obj (Any): Required parameter for config_obj.
+        kwargs (dict): The kwargs parameter.
+        config_obj (object): The config_obj parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if config_obj is None:
         return BlurConfig(
@@ -78,23 +81,36 @@ def _get_blur_config(kwargs: dict, config_obj: typing.Optional[object]) -> objec
 
 
 def gaussian_blur_eager(backend_module: object, images: object, config_obj: typing.Optional[object] = None, **kwargs: object) -> object:
-    """Evaluate gaussian blur eagerly."""
+    """Evaluate gaussian_blur_eager operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     config = _get_blur_config(kwargs, config_obj)
     kernel = _generate_gaussian_kernel(backend_module, config.kernel_size, config.sigma)
     return _apply_conv2d_batch(backend_module, images, kernel, "reflect")
 
 
 def _apply_median_filter_batch(np_mod: object, imgs: object, kernel_size: tuple[int, int], padding: str) -> object:
-    """Evaluate and process the apply median filter batch operation.
+    """Evaluate _apply_median_filter_batch operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        imgs (object): Required parameter for imgs.
-        kernel_size (tuple): Required parameter for kernel_size.
-        padding (str): Required parameter for padding.
+        np_mod (object): The np_mod parameter.
+        imgs (object): The imgs parameter.
+        kernel_size (object): The kernel_size parameter.
+        padding (str): The padding parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if imgs.ndim != 4:
         raise ValueError("Images must be 4D")
@@ -120,5 +136,16 @@ def median_filter_eager(
     padding: str = "same",
     data_format: object = None,
 ) -> object:
-    """Evaluate median filter eagerly."""
+    """Evaluate median_filter_eager operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        kernel_size (object): The kernel_size parameter.
+        padding (str): The padding parameter.
+        data_format (object): The data_format parameter.
+
+    Returns:
+        object: Result.
+    """
     return _apply_median_filter_batch(backend_module, images, kernel_size, padding)

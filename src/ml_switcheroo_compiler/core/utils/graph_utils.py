@@ -4,7 +4,7 @@ from ml_switcheroo_compiler.core.errors import CompilationError
 
 
 class _TopologicalSorter:
-    """Helper class for topological sorting."""
+    """Help class for topological sorting."""
 
     def __init__(self, graph: object) -> None:
         """Initialize the sorter.

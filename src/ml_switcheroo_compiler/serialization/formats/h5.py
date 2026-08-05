@@ -9,7 +9,14 @@ class H5WeightFormat(WeightLoader, WeightSaver):
     """H5 weight format handler."""
 
     def load(self, filepath: str) -> dict:
-        """Load h5 weights."""
+        """Load h5 weights.
+
+        Args:
+        filepath (str): The filepath parameter.
+
+        Returns:
+        dict: Result.
+        """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -20,6 +27,12 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         with h5py.File(filepath, "r") as f:
 
             def _visit(name: str, node: object) -> None:
+                """Visit h5py items to extract datasets.
+
+                Args:
+                    name (str): The dataset name.
+                    node (object): The node object.
+                """
                 if isinstance(node, h5py.Dataset):
                     result[name] = node[()]  # h5py returns numpy arrays from slicing
 
@@ -27,7 +40,15 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         return result
 
     def save(self, weights_np: dict, filepath: str) -> None:
-        """Save h5 weights."""
+        """Save h5 weights.
+
+        Args:
+            weights_np (dict): The weights_np parameter.
+            filepath (str): The filepath parameter.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()

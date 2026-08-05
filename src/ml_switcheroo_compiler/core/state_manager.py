@@ -4,14 +4,11 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
 
 def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
-    """Evaluate and process the process assign node operation.
+    """Process an Assign node by updating the state environment mapping.
 
     Args:
-        node (LogicalNode): Required parameter for node.
-        state_env (dict): Required parameter for state_env.
-
-    Returns:
-        Any: The evaluated or processed output.
+        node (LogicalNode): The Assign node to process.
+        state_env (dict[str, str]): The mapping of state variables to their current node IDs.
     """
     target = node.inputs[0]
     new_val = node.inputs[1]
@@ -20,14 +17,14 @@ def _process_assign_node(node: LogicalNode, state_env: dict[str, str]) -> None:
 
 
 def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
-    """Evaluate and process the rewrite node operation.
+    """Rewrite a node by substituting its inputs with their current state mapped IDs.
 
     Args:
-        node (LogicalNode): Required parameter for node.
-        state_env (dict): Required parameter for state_env.
+        node (LogicalNode): The node to rewrite.
+        state_env (dict[str, str]): The state mapping environment.
 
     Returns:
-        LogicalNode: The evaluated or processed output.
+        LogicalNode: The new cloned node with updated inputs.
     """
     new_inputs = [state_env.get(inp, inp) for inp in node.inputs]
     return LogicalNode(
@@ -44,15 +41,15 @@ def _rewrite_node(node: LogicalNode, state_env: dict[str, str]) -> LogicalNode:
 
 
 def _build_functional_outputs(graph_outputs: list[str], state_vars: list[str], state_env: dict[str, str]) -> list[str]:
-    """Evaluate and process the build functional outputs operation.
+    """Build the updated list of outputs containing original outputs and updated states.
 
     Args:
-        graph_outputs (list): Required parameter for graph_outputs.
-        state_vars (list): Required parameter for state_vars.
-        state_env (dict): Required parameter for state_env.
+        graph_outputs (list[str]): The original graph outputs.
+        state_vars (list[str]): The initial state variables.
+        state_env (dict[str, str]): The final state mapping environment.
 
     Returns:
-        list: The evaluated or processed output.
+        list[str]: The new functional outputs list.
     """
     functional_outputs = list(graph_outputs)
     for v in state_vars:
@@ -61,24 +58,19 @@ def _build_functional_outputs(graph_outputs: list[str], state_vars: list[str], s
 
 
 def lift_state(graph: LogicalGraph, state_vars: list[str]) -> LogicalGraph:
-    """Lifts mutable state into pure functional boundaries.
+    """Lift mutable state into pure functional boundaries.
 
-    In frameworks like Flax or PyTorch, models have mutable state
-    (parameters, batch stats)
-    This pass assumes that mutable updates are represented as specific nodes
-    (e.g., 'Assign' or 'UpdateState' nodes). It rewrites the graph so that
-    state variables are treated as explicit inputs and their updated values
-    are explicit outputs
-
-    graph (LogicalGraph): The input graph containing state nodes
-    state_vars (List[str]): The IDs of nodes representing initial state variables
-
-    Returns:
-    LogicalGraph: The functionalized graph
+    In frameworks like Flax or PyTorch, models have mutable state (parameters, batch stats).
+    This pass assumes that mutable updates are represented as specific nodes (e.g., 'Assign').
+    It rewrites the graph so that state variables are treated as explicit inputs and their updated
+    values are explicit outputs.
 
     Args:
-        graph (LogicalGraph): Argument graph
-        state_vars (list[str]): Argument state_vars
+        graph (LogicalGraph): The input graph containing state nodes.
+        state_vars (list[str]): The IDs of nodes representing initial state variables.
+
+    Returns:
+        LogicalGraph: The functionalized graph.
     """
     new_graph = LogicalGraph(name=f"{graph.name}_functional", mesh=graph.mesh)
     sorted_nodes = topological_sort(graph)

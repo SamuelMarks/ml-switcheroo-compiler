@@ -1,6 +1,8 @@
 # ruff: noqa: E501
 """Backend utilities."""
 
+from __future__ import annotations
+
 import builtins
 
 import mlx.core as mx
@@ -8,56 +10,60 @@ import mlx.core as mx
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, mlx_eager_registry
 
 
-# ruff: noqa: C901
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-    """Execute execute_op.
+def _get_mlx_func(op_type: str) -> object:
+    """Retrieve the corresponding MLX function for a given operation type.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        op_type (Any): Argument op_type.
-        *args (Any): Argument *args.
-        **kwargs (Any): Argument **kwargs.
+        op_type (str): The name of the operation.
 
     Returns:
-    Any: The result.
+        object: The MLX function if found, otherwise None.
+    """
+    import re
+
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
+    snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+    if snake == "mul":
+        snake = "multiply"
+    elif snake == "sub":
+        snake = "subtract"
+    elif snake == "div":
+        snake = "divide"
+    for mod in [mx, getattr(mx, "linalg", None), getattr(mx, "fft", None)]:
+        if mod is not None and hasattr(mod, snake):
+            return getattr(mod, snake)
+    return None
+
+
+# ruff: noqa: C901
+def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+    """Evaluate execute_op operation.
+
+    Args:
+        cls (type): The class.
+        op_type (str): The op_type parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        BackendNotSupportedError: An exception.
     """
     try:
         if "dim" in kwargs and op_type not in ("TakeAlongAxis", "Take"):
             kwargs["axis"] = kwargs.pop("dim")
-
         func_registry = mlx_eager_registry.get(op_type)
         if func_registry is not None:
             return func_registry(mx, *args, **kwargs)
-
         func_registry = global_eager_registry.get(op_type)
         if func_registry is not None:
             return func_registry(mx, *args, **kwargs)
-
-        import re
-
-        s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
-        snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
-        # specific MLX name mappings
-        if snake == "mul":
-            snake = "multiply"
-        elif snake == "sub":
-            snake = "subtract"
-        elif snake == "div":
-            snake = "divide"
-
-        # Try finding the function in mx, mx.linalg, or mx.fft
-        func = None
-        for mod in [mx, getattr(mx, "linalg", None), getattr(mx, "fft", None)]:
-            if mod is not None and hasattr(mod, snake):
-                func = getattr(mod, snake)
-                break
-
+        func = _get_mlx_func(op_type)
         if func is None:
-            raise AttributeError(f"No attribute {snake} found")
-
+            raise AttributeError(f"No attribute found for {op_type}")
         return func(*args, **kwargs)
-
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -66,6 +72,16 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
 
 @mlx_eager_registry.register("Cast")
 def _mlx_cast(backend_module: object, *args: object, **kwargs: object) -> object:
+    """Evaluate _mlx_cast operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     tensor = args[0]
     dtype_val = kwargs.get("dtype") if "dtype" in kwargs else args[1]
     dtype = _resolve_dtype(backend_module, dtype_val)
@@ -76,50 +92,60 @@ def _mlx_cast(backend_module: object, *args: object, **kwargs: object) -> object
 
 @mlx_eager_registry.register("RaggedTensorToDense")
 def _mlx_ragged_tensor_to_dense(backend_module: object, rt_input: object, **kwargs: object) -> object:
+    """Convert a ragged tensor to dense using MLX (stubbed).
+
+    Args:
+        backend_module (object): The MLX backend module.
+        rt_input (object): The input ragged tensor.
+        **kwargs (object): Keyword arguments.
+
+    Returns:
+        object: The input tensor unchanged.
+    """
     return rt_input
 
 
 @mlx_eager_registry.register("TakeAlongAxis")
 def _mlx_take_along_axis(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx take along axis operation.
+    """Evaluate _mlx_take_along_axis operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.take_along_axis(*args, **kwargs)
 
 
 @mlx_eager_registry.register("Take")
 def _mlx_take(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx take operation.
+    """Evaluate _mlx_take operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return backend_module.take(*args, **kwargs)
 
 
 @mlx_eager_registry.register("TensorScatterUpdate")
 def _mlx_tensor_scatter_update(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx tensor scatter update operation.
+    """Evaluate _mlx_tensor_scatter_update operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
@@ -130,7 +156,16 @@ def _mlx_tensor_scatter_update(backend_module: object, *args: object, **kwargs: 
 
 @mlx_eager_registry.register("TensorScatterAdd")
 def _mlx_tensor_scatter_add(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorScatterAdd."""
+    """Implement TensorScatterAdd.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
     idx = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
@@ -140,7 +175,16 @@ def _mlx_tensor_scatter_add(backend_module: object, *args: object, **kwargs: obj
 
 @mlx_eager_registry.register("TensorScatterMax")
 def _mlx_tensor_scatter_max(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorScatterMax."""
+    """Implement TensorScatterMax.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import mlx.core as mx
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
@@ -152,7 +196,16 @@ def _mlx_tensor_scatter_max(backend_module: object, *args: object, **kwargs: obj
 
 @mlx_eager_registry.register("TensorScatterMin")
 def _mlx_tensor_scatter_min(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorScatterMin."""
+    """Implement TensorScatterMin.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import mlx.core as mx
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
@@ -164,15 +217,15 @@ def _mlx_tensor_scatter_min(backend_module: object, *args: object, **kwargs: obj
 
 @mlx_eager_registry.register("ScatterNd")
 def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx scatter nd operation.
+    """Evaluate _mlx_scatter_nd operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     indices = args[0]
     updates = args[1]
@@ -183,7 +236,6 @@ def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> 
         shape = shape.tolist()
     if isinstance(shape, tuple):
         shape = list(shape)
-
     # Implement native MLX ScatterNd logic using array indexing
     res = backend_module.zeros(shape, dtype=updates.dtype)
     idx = tuple(indices[..., dim] for dim in range(indices.shape[-1]))
@@ -193,15 +245,15 @@ def _mlx_scatter_nd(backend_module: object, *args: object, **kwargs: object) -> 
 
 @mlx_eager_registry.register("Reshape")
 def _mlx_reshape(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx reshape operation.
+    """Evaluate _mlx_reshape operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     shape = kwargs.get("shape", args[1] if len(args) > 1 else kwargs.get("newshape"))
     if hasattr(shape, "data"):
@@ -221,6 +273,15 @@ _MLX_DTYPE_FALLBACK_MAP = {
 
 
 def _resolve_dtype(backend_module: object, dtype_val: object) -> object:
+    """Resolve a given dtype object or string to a valid MLX dtype.
+
+    Args:
+        backend_module (object): The MLX backend module.
+        dtype_val (object): The requested dtype.
+
+    Returns:
+        object: The resolved MLX dtype.
+    """
     if dtype_val is None:
         return None
     dtype_str = str(dtype_val).split(".")[-1]
@@ -234,15 +295,15 @@ def _resolve_dtype(backend_module: object, dtype_val: object) -> object:
 
 @mlx_eager_registry.register("Zeros")
 def _mlx_zeros(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx zeros operation.
+    """Evaluate _mlx_zeros operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
@@ -261,15 +322,15 @@ def _mlx_zeros(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @mlx_eager_registry.register("Ones")
 def _mlx_ones(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx ones operation.
+    """Evaluate _mlx_ones operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
@@ -288,15 +349,15 @@ def _mlx_ones(backend_module: object, *args: object, **kwargs: object) -> object
 
 @mlx_eager_registry.register("Full")
 def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx full operation.
+    """Evaluate _mlx_full operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else (1,))
     if hasattr(shape, "data"):
@@ -316,7 +377,14 @@ def _mlx_full(backend_module: object, *args: object, **kwargs: object) -> object
 
 @mlx_eager_registry.register("Partition")
 def _parse_partition_k(k: object) -> int:
-    """Parse k parameter for partition."""
+    """Parse k parameter for partition.
+
+    Args:
+        k (object): The k parameter.
+
+    Returns:
+        int: Result.
+    """
     if hasattr(k, "item"):
         return int(k.item())
     if hasattr(k, "data") and hasattr(k.data, "item"):
@@ -325,47 +393,43 @@ def _parse_partition_k(k: object) -> int:
 
 
 def _mlx_partition(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx partition operation.
+    """Evaluate _mlx_partition operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = args[0]
     k_raw = kwargs.get("k", args[1] if len(args) > 1 else 1)
     k = _parse_partition_k(k_raw)
-
     return_indices = kwargs.get("return_indices", None)
     kth = max(0, a.shape[-1] - k)
-
     if return_indices is False:
         if hasattr(backend_module, "topk"):
             return backend_module.topk(a, k)
         return backend_module.partition(a, kth, axis=-1)[..., -k:]
-
     indices = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
     if return_indices is True:
         return indices
-
     values = backend_module.take_along_axis(a, indices, axis=-1)
     return (values, indices)
 
 
 @mlx_eager_registry.register("NanToNum")
 def _mlx_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx nan to num operation.
+    """Evaluate _mlx_nan_to_num operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     valid_kwargs = {}
     for key in ("nan", "posinf", "neginf"):
@@ -383,15 +447,15 @@ def _mlx_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> 
 
 @mlx_eager_registry.register("Cummax")
 def _mlx_cummax(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx cummax operation.
+    """Evaluate _mlx_cummax operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cummax(*args, **kwargs)
@@ -402,15 +466,15 @@ def _mlx_cummax(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @mlx_eager_registry.register("Cummin")
 def _mlx_cummin(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx cummin operation.
+    """Evaluate _mlx_cummin operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cummin(*args, **kwargs)
@@ -421,15 +485,15 @@ def _mlx_cummin(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @mlx_eager_registry.register("Cumprod")
 def _mlx_cumprod(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx cumprod operation.
+    """Evaluate _mlx_cumprod operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     dtype = kwargs.pop("dtype", None)
     res = backend_module.cumprod(*args, **kwargs)
@@ -440,15 +504,15 @@ def _mlx_cumprod(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @mlx_eager_registry.register("Slice")
 def _mlx_slice(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx slice operation.
+    """Evaluate _mlx_slice operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = args[0]
     dim = kwargs.get("dim")
@@ -462,15 +526,15 @@ def _mlx_slice(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @mlx_eager_registry.register("Eye")
 def _mlx_eye(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx eye operation.
+    """Evaluate _mlx_eye operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     n_arg = args[0]
     if hasattr(n_arg, "data"):
@@ -488,9 +552,12 @@ def _mlx_rope(backend_module: object, x: object, **kwargs: object) -> object:
     """Apply Rotary Positional Encoding using MLX.
 
     Args:
-        backend_module: Arg.
-        x: Arg.
-        kwargs: Arg.
+        backend_module (object): The backend_module parameter.
+        x (object): The x parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
     """
     dim = kwargs.get("dim")
     base = kwargs.get("base", 10000.0)
@@ -502,15 +569,15 @@ def _mlx_rope(backend_module: object, x: object, **kwargs: object) -> object:
 
 @mlx_eager_registry.register("Variance")
 def _mlx_variance(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate and process the mlx variance operation.
+    """Evaluate _mlx_variance operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     kwargs.setdefault("ddof", 0)
     return backend_module.var(*args, **kwargs)

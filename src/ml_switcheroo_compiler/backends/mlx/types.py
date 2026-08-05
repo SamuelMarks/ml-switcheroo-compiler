@@ -12,41 +12,67 @@ from ml_switcheroo_compiler.backends.eager import (
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> object:
-    """Execute zeros.
+    """Evaluate zeros operation.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        shape (Any): Argument shape.
+        cls (type): Class.
+        shape (tuple): Shape.
+
+    Args:
+        cls (type): Class.
+        shape (tuple): Shape.
+
+    Args:
+        cls (type): The class.
+    shape (tuple): The shape parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     return generic_zeros(mx, shape)
 
 
 def array(cls: type, data: object, dtype: object = None) -> object:
-    """Execute array.
+    """Evaluate array operation.
 
     Args:
-        cls (type): The class type.
-        data (object): The data to convert.
-        dtype (object): The data type.
+        cls (type): Class.
+        data (object): Data.
+        dtype (object): Dtype.
+
+    Args:
+        cls (type): Class.
+        data (object): Data.
+        dtype (object): Dtype.
+
+    Args:
+        cls (type): The class.
+    data (object): The data parameter.
+        dtype (object): The dtype parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     return generic_array(mx, data, dtype)
 
 
 def asarray(cls: type, data: object) -> object:
-    """Execute asarray.
+    """Evaluate asarray operation.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        data (Any): Argument data.
+        cls (type): Class.
+        data (object): Data.
+
+    Args:
+        cls (type): Class.
+        data (object): Data.
+
+    Args:
+        cls (type): The class.
+    data (object): The data parameter.
 
     Returns:
-    Any: The result.
+        object: Result.
     """
     if hasattr(mx, "asarray"):
         return generic_asarray(mx, data)
@@ -54,13 +80,21 @@ def asarray(cls: type, data: object) -> object:
 
 
 def item(cls: type, data: object) -> float:
-    """Execute item.
+    """Evaluate item operation.
 
     Args:
-        cls (Any): The cls parameter for the operation.
-        data (Any): Argument data.
+        cls (type): Class.
+        data (object): Data.
+
+    Args:
+        cls (type): Class.
+        data (object): Data.
+
+    Args:
+        cls (type): The class.
+    data (object): The data parameter.
 
     Returns:
-    Any: The result.
+        float: Result.
     """
     return generic_item(mx, data)

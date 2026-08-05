@@ -1,12 +1,100 @@
-"""Tests for stablehlo code generator coverage."""
+"""Tests for StableHLO backend coverage."""
+
+import unittest
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 
-def test_stablehlo_coverage() -> None:
-    """Test stablehlo code generation edge cases."""
-    gen = StableHLOCodeGenerator(IRGraph())
-    for op in ["Add", "Subtract", "Multiply", "Div", "Exp", "Log", "Abs", "Min", "Max", "Negative", "Other"]:
-        n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
-        gen.generic_visit(n, [])
+class TestStableHLOCodeGenerator(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures."""
+        self.graph = IRGraph()
+        self.graph.outputs = ["n_Add"]
+
+        self.input_node = LogicalNode(id="in1", op_type="Input")
+        self.input_node.shape_metadata = (2, 3)
+        self.input_node.dtype = "float32"
+
+        self.graph.nodes = {"in1": self.input_node}
+
+        self.gen = StableHLOCodeGenerator(self.graph)
+        self.gen.sorted_nodes = [self.input_node]
+
+        for op in ["Constant", "Add", "Subtract", "Multiply", "TrueDivide", "Div", "Exp", "Log", "Negative", "Neg", "Other"]:
+            n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "missing_node"])
+            n.shape_metadata = (2, 3)
+            n.dtype = "float32"
+            if op == "Constant":
+                n.attributes = {"value": 1.0}
+            self.gen.sorted_nodes.append(n)
+
+        n_none = LogicalNode(id="n_NoneShape", op_type="Add", inputs=["in1"])
+        n_none.shape_metadata = None
+        n_none.dtype = "float32"
+        self.gen.sorted_nodes.append(n_none)
+
+        n_const_none = LogicalNode(id="n_ConstNoneShape", op_type="Constant", inputs=[])
+        n_const_none.shape_metadata = None
+        n_const_none.attributes = {"value": 1.0}
+        self.gen.sorted_nodes.append(n_const_none)
+
+    def test_map_type(self):
+        """Test map type."""
+        self.assertEqual(self.gen._map_type((2, 3), "float32"), "tensor<2x3xf32>")
+        self.assertEqual(self.gen._map_type((), "float32"), "tensor<f32>")
+        self.assertEqual(self.gen._map_type((2,), "float64"), "tensor<2xf64>")
+        self.assertEqual(self.gen._map_type((2, 3, 4), "int32"), "tensor<2x3x4xi32>")
+        self.assertEqual(self.gen._map_type((2,), "bool"), "tensor<2xi1>")
+        self.assertEqual(self.gen._map_type((2,), "unknown"), "tensor<2xf32>")
+
+    def test_resolve_input_types(self):
+        """Test resolve input types."""
+        n = LogicalNode(id="test_node", op_type="Add", inputs=["in1", "missing_node"])
+        types = self.gen._resolve_input_types(n, "tensor<f32>")
+        self.assertEqual(types, ["tensor<2x3xf32>", "tensor<f32>"])
+
+    def test_generic_visit_input(self):
+        """Test generic visit input."""
+        name = self.gen.generic_visit(self.input_node, [])
+        self.assertTrue(name.startswith("%arg"))
+
+    def test_generate(self):
+        """Test generate."""
+        code = self.gen.generate()
+        self.assertIn("module @jit_fun", code)
+        self.assertIn("func.func @main", code)
+        self.assertIn("stablehlo.constant", code)
+        self.assertIn("stablehlo.add", code)
+        self.assertIn("stablehlo.subtract", code)
+        self.assertIn("stablehlo.multiply", code)
+        self.assertIn("stablehlo.divide", code)
+        self.assertIn("stablehlo.exponential", code)
+        self.assertIn("stablehlo.log", code)
+        self.assertIn("stablehlo.negate", code)
+        self.assertIn("stablehlo.custom_call", code)
+        self.assertIn("return %v_n_Add", code)
+
+    def test_build_out_types(self):
+        """Test build out types."""
+        # Test with missing node
+        types = self.gen._build_out_types(["n_Add", "missing_node"])
+        self.assertEqual(types, ["tensor<2x3xf32>", "tensor<f32>"])
+
+    def test_get_returns_str(self):
+        """Test get returns str."""
+        self.assertEqual(self.gen._get_returns_str([]), "tensor<f32>")
+        self.assertEqual(self.gen._get_returns_str(["tensor<f32>"]), "tensor<f32>")
+        self.assertEqual(self.gen._get_returns_str(["tensor<f32>", "tensor<i32>"]), "tensor<f32>, tensor<i32>")
+
+    def test_get_ret_vars_str(self):
+        """Test get ret vars str."""
+        self.assertEqual(self.gen._get_ret_vars_str([]), "")
+        self.assertEqual(self.gen._get_ret_vars_str(["%v_1"]), "%v_1")
+        self.assertEqual(self.gen._get_ret_vars_str(["%v_1", "%v_2"]), "%v_1, %v_2")
+
+    def test_generate_no_outputs(self):
+        """Test generate no outputs."""
+        self.gen.graph.outputs = None
+        code = self.gen.generate()
+        self.assertIn("return", code)

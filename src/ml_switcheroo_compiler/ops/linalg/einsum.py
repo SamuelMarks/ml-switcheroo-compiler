@@ -13,7 +13,14 @@ class EinsumLexer:
 
     @staticmethod
     def parse_equation_sides(equation: str) -> tuple[str, str]:
-        """Split equation into input and output subscripts."""
+        """Evaluate parse_equation_sides operation.
+
+        Args:
+        equation (str): The equation parameter.
+
+        Returns:
+        object: Result.
+        """
         equation = equation.replace(" ", "")
         if "->" in equation:
             in_subs, out_sub = equation.split("->")
@@ -33,7 +40,15 @@ class EinsumValidator:
 
     @staticmethod
     def validate_inputs(in_subs: str, shapes: list[tuple[int, ...]]) -> None:
-        """Validate input subscripts against shapes."""
+        """Validate input subscripts against shapes.
+
+        Args:
+            in_subs (str): The in_subs parameter.
+            shapes (list): The shapes parameter.
+
+        Raises:
+            ValueError: An exception.
+        """
         in_parts = in_subs.split(",")
         if len(in_parts) != len(shapes):
             raise ValueError(f"Equation expected {len(in_parts)} inputs but got {len(shapes)}")
@@ -47,17 +62,29 @@ class ParsedEquationPart:
     shape: tuple[int, ...]
 
     def validate_length(self) -> None:
-        """Validates that the string length matches the shape length."""
+        """Validate that the string length matches the shape length.
+
+        Raises:
+            ValueError: An exception.
+        """
         if len(self.chars) != len(self.shape):
             raise ValueError(f"Shape {self.shape} cannot match subscript {self.chars}")
 
     def validate_characters(self) -> None:
-        """Validates that the string only contains alphabetic characters."""
+        """Validate that the string only contains alphabetic characters.
+
+        Raises:
+            ValueError: An exception.
+        """
         if not re.match(r"^[a-zA-Z]*$", self.chars):
             raise ValueError(f"Invalid characters in einsum subscript: {self.chars}")
 
     def process_axis_map(self, axis_map: dict[str, int]) -> None:
-        """Processes the characters and dimensions to update the axis map."""
+        """Process the characters and dimensions to update the axis map.
+
+        Args:
+            axis_map (dict): The axis_map parameter.
+        """
         # Isolate the logic that identifies and handles duplicate dimension labels
         for char, dim in zip(self.chars, self.shape):
             self._check_dimension_mismatch(axis_map, char, dim)
@@ -65,7 +92,16 @@ class ParsedEquationPart:
                 axis_map[char] = dim
 
     def _check_dimension_mismatch(self, axis_map: dict[str, int], char: str, dim: int) -> None:
-        """Checks for dimension mismatches, handling duplicates gracefully if matching."""
+        """Check for dimension mismatches, handling duplicates gracefully if matching.
+
+        Args:
+            axis_map (dict): The axis_map parameter.
+            char (str): The char parameter.
+            dim (int): The dim parameter.
+
+        Raises:
+            ValueError: An exception.
+        """
         if char in axis_map and axis_map[char] != dim and axis_map[char] != 1 and dim != 1:
             raise ValueError(f"Dimension mismatch for axis {char}")
 
@@ -75,31 +111,34 @@ class EinsumPlanner:
 
     @staticmethod
     def _validate_ellipsis_count(part: str, shape: tuple[int, ...]) -> None:
-        """Evaluate and process the validate ellipsis count operation.
+        """Evaluate _validate_ellipsis_count operation.
 
         Args:
-            part (str): Required parameter for part.
-            shape (tuple): Required parameter for shape.
+            part (str): The part parameter.
+            shape (tuple): The shape parameter.
 
-        Returns:
-            Any: The evaluated or processed output.
+        Raises:
+            ValueError: An exception.
         """
         if part.count("...") > 1:
             raise ValueError(f"Shape {shape} cannot match subscript {part}")
 
     @staticmethod
     def _count_hidden_dims(left_len: int, right_len: int, shape_len: int, part: str, shape: tuple[int, ...]) -> int:
-        """Evaluate and process the count hidden dims operation.
+        """Evaluate _count_hidden_dims operation.
 
         Args:
-            left_len (int): Required parameter for left_len.
-            right_len (int): Required parameter for right_len.
-            shape_len (int): Required parameter for shape_len.
-            part (str): Required parameter for part.
-            shape (tuple): Required parameter for shape.
+            left_len (int): The left_len parameter.
+            right_len (int): The right_len parameter.
+            shape_len (int): The shape_len parameter.
+            part (str): The part parameter.
+            shape (tuple): The shape parameter.
 
         Returns:
-            int: The evaluated or processed output.
+            int: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         num_named = left_len + right_len
         num_bcast = shape_len - num_named
@@ -109,14 +148,17 @@ class EinsumPlanner:
 
     @staticmethod
     def _combine_broadcast_shapes(broadcast_shape: Optional[tuple[int, ...]], bcast_dims: tuple[int, ...]) -> tuple[int, ...]:
-        """Evaluate and process the combine broadcast shapes operation.
+        """Evaluate _combine_broadcast_shapes operation.
 
         Args:
-            broadcast_shape (Optional): Required parameter for broadcast_shape.
-            bcast_dims (tuple): Required parameter for bcast_dims.
+            broadcast_shape (Optional): The broadcast_shape parameter.
+            bcast_dims (tuple): The bcast_dims parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         if broadcast_shape is None:
             return bcast_dims
@@ -129,15 +171,15 @@ class EinsumPlanner:
 
     @staticmethod
     def _handle_ellipsis(part: str, shape: tuple[int, ...], broadcast_shape: Optional[tuple[int, ...]]) -> tuple[str, tuple[int, ...], Optional[tuple[int, ...]]]:
-        """Evaluate and process the handle ellipsis operation.
+        """Evaluate _handle_ellipsis operation.
 
         Args:
-            part (str): Required parameter for part.
-            shape (tuple): Required parameter for shape.
-            broadcast_shape (Optional): Required parameter for broadcast_shape.
+        part (str): The part parameter.
+        shape (object): The shape parameter.
+        broadcast_shape (object): The broadcast_shape parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+        object: Result.
         """
         EinsumPlanner._validate_ellipsis_count(part, shape)
         parts_str = part.split("...")
@@ -155,15 +197,12 @@ class EinsumPlanner:
 
     @staticmethod
     def _parse_named_part(part: str, shape: tuple[int, ...], axis_map: dict[str, int]) -> None:
-        """Parse the named part abstract syntax tree node into its semantic representation.
+        """Evaluate _parse_named_part operation.
 
         Args:
-            part (str): Required parameter for part.
-            shape (tuple): Required parameter for shape.
-            axis_map (dict): Required parameter for axis_map.
-
-        Returns:
-            Any: The evaluated or processed output.
+            part (str): The part parameter.
+            shape (tuple): The shape parameter.
+            axis_map (dict): The axis_map parameter.
         """
         parsed_part = ParsedEquationPart(part, shape)
         parsed_part.validate_length()
@@ -177,16 +216,16 @@ class EinsumPlanner:
         axis_map: dict[str, int],
         broadcast_shape: Optional[tuple[int, ...]],
     ) -> Optional[tuple[int, ...]]:
-        """Parse the ellipsis part abstract syntax tree node into its semantic representation.
+        """Evaluate _parse_ellipsis_part operation.
 
         Args:
-            part (str): Required parameter for part.
-            shape (tuple): Required parameter for shape.
-            axis_map (dict): Required parameter for axis_map.
-            broadcast_shape (Optional): Required parameter for broadcast_shape.
+            part (str): The part parameter.
+            shape (tuple): The shape parameter.
+            axis_map (dict): The axis_map parameter.
+            broadcast_shape (Optional): The broadcast_shape parameter.
 
         Returns:
-            Optional: The evaluated or processed output.
+            Optional: Result.
         """
         part_chars, named_shape, new_broadcast_shape = EinsumPlanner._handle_ellipsis(part, shape, broadcast_shape)
         EinsumPlanner._parse_named_part(part_chars, named_shape, axis_map)
@@ -194,7 +233,15 @@ class EinsumPlanner:
 
     @staticmethod
     def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
-        """Build a map of character to dimension size."""
+        """Evaluate build_axis_size_map operation.
+
+        Args:
+        in_subs (str): The in_subs parameter.
+        shapes (object): The shapes parameter.
+
+        Returns:
+        object: Result.
+        """
         in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
         broadcast_shape: Optional[tuple[int, ...]] = None
@@ -213,15 +260,15 @@ class EinsumPlanner:
         axis_map: dict[str, int],
         broadcast_shape: Optional[tuple[int, ...]],
     ) -> list[int]:
-        """Evaluate and process the compute output shape with ellipsis operation.
+        """Evaluate _compute_output_shape_with_ellipsis operation.
 
         Args:
-            parts (list): Required parameter for parts.
-            axis_map (dict): Required parameter for axis_map.
-            broadcast_shape (Optional): Required parameter for broadcast_shape.
+            parts (list): The parts parameter.
+            axis_map (dict): The axis_map parameter.
+            broadcast_shape (Optional): The broadcast_shape parameter.
 
         Returns:
-            list: The evaluated or processed output.
+            list: Result.
         """
         out_shape: list[int] = []
         for char in parts[0]:
@@ -238,14 +285,14 @@ class EinsumPlanner:
 
     @staticmethod
     def _resolve_chars(out_sub: str, axis_map: dict[str, int]) -> list[int]:
-        """Evaluate and process the resolve chars operation.
+        """Evaluate _resolve_chars operation.
 
         Args:
-            out_sub (str): Required parameter for out_sub.
-            axis_map (dict): Required parameter for axis_map.
+        out_sub (str): The out_sub parameter.
+        axis_map (object): The axis_map parameter.
 
         Returns:
-            list: The evaluated or processed output.
+        object: Result.
         """
         out_shape = []
         for char in out_sub:
@@ -260,7 +307,19 @@ class EinsumPlanner:
         axis_map: dict[str, int],
         broadcast_shape: Optional[tuple[int, ...]],
     ) -> tuple[int, ...]:
-        """Compute the final output shape."""
+        """Evaluate compute_output_shape operation.
+
+        Args:
+            out_sub (str): The out_sub parameter.
+            axis_map (dict): The axis_map parameter.
+            broadcast_shape (Optional): The broadcast_shape parameter.
+
+        Returns:
+            tuple: Result.
+
+        Raises:
+            ValueError: An exception.
+        """
         if out_sub.count("...") > 1:
             raise ValueError("Multiple ellipses in output subscript")
 
@@ -278,40 +337,40 @@ class EinsumEquationParser:
 
     @staticmethod
     def parse_equation_sides(equation: str) -> tuple[str, str]:
-        """Evaluate and process the parse equation sides operation.
+        """Evaluate parse_equation_sides operation.
 
         Args:
-            equation (str): Required parameter for equation.
+            equation (str): The equation parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: Result.
         """
         return EinsumLexer.parse_equation_sides(equation)
 
     @staticmethod
     def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
-        """Evaluate and process the build axis size map operation.
+        """Evaluate build_axis_size_map operation.
 
         Args:
-            in_subs (str): Required parameter for in_subs.
-            shapes (list): Required parameter for shapes.
+            in_subs (str): The in_subs parameter.
+            shapes (list): The shapes parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: Result.
         """
         EinsumValidator.validate_inputs(in_subs, shapes)
         return EinsumPlanner.build_axis_size_map(in_subs, shapes)
 
     @staticmethod
     def _resolve_chars(out_sub: str, axis_map: dict[str, int]) -> list[int]:
-        """Evaluate and process the resolve chars operation.
+        """Evaluate _resolve_chars operation.
 
         Args:
-            out_sub (str): Required parameter for out_sub.
-            axis_map (dict): Required parameter for axis_map.
+            out_sub (str): The out_sub parameter.
+            axis_map (dict): The axis_map parameter.
 
         Returns:
-            list: The evaluated or processed output.
+            list: Result.
         """
         out_shape = []
         for char in out_sub:
@@ -326,21 +385,29 @@ class EinsumEquationParser:
         axis_map: dict[str, int],
         broadcast_shape: Optional[tuple[int, ...]],
     ) -> tuple[int, ...]:
-        """Evaluate and process the compute output shape operation.
+        """Evaluate compute_output_shape operation.
 
         Args:
-            out_sub (str): Required parameter for out_sub.
-            axis_map (dict): Required parameter for axis_map.
-            broadcast_shape (Optional): Required parameter for broadcast_shape.
+            out_sub (str): The out_sub parameter.
+            axis_map (dict): The axis_map parameter.
+            broadcast_shape (Optional): The broadcast_shape parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: Result.
         """
         return EinsumPlanner.compute_output_shape(out_sub, axis_map, broadcast_shape)
 
     @staticmethod
     def parse_and_infer_shape(equation: str, shapes: list[tuple[int, ...]]) -> tuple[int, ...]:
-        """Parse equation and infer output shape."""
+        """Parse equation and infer output shape.
+
+        Args:
+        equation (str): The equation parameter.
+        shapes (object): The shapes parameter.
+
+        Returns:
+        object: Result.
+        """
         in_subs, out_sub = EinsumLexer.parse_equation_sides(equation)
         EinsumValidator.validate_inputs(in_subs, shapes)
         axis_map, broadcast_shape = EinsumPlanner.build_axis_size_map(in_subs, shapes)
@@ -356,14 +423,17 @@ class Einsum(OpDef):
 
     @staticmethod
     def _extract_equation(args: tuple[object, ...], kwargs: dict[str, object]) -> tuple[str, tuple[object, ...]]:
-        """Evaluate and process the extract equation operation.
+        """Evaluate _extract_equation operation.
 
         Args:
-            args (tuple): Required parameter for args.
-            kwargs (dict): Required parameter for kwargs.
+            args (tuple): The args parameter.
+            kwargs (dict): The kwargs parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: Result.
+
+        Raises:
+            ValueError: An exception.
         """
         equation = kwargs.get("equation", kwargs.get("subscripts"))
         if isinstance(equation, str):
@@ -374,13 +444,13 @@ class Einsum(OpDef):
 
     @staticmethod
     def _extract_shapes(args: tuple[object, ...]) -> Optional[list[tuple[int, ...]]]:
-        """Evaluate and process the extract shapes operation.
+        """Evaluate _extract_shapes operation.
 
         Args:
-            args (tuple): Required parameter for args.
+        args (object): The args parameter.
 
         Returns:
-            Optional: The evaluated or processed output.
+        object: Result.
         """
         shapes: list[tuple[int, ...]] = []
         for arg in args:
@@ -401,14 +471,11 @@ class Einsum(OpDef):
         """Infer the output shape of the operation.
 
         Args:
-            *args (object): Operand shapes.
-            **kwargs (object): Additional keyword arguments, expects 'equation' or 'subscripts'.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The computed shape.
-
-        Raises:
-            ValueError: If the equation is invalid or shapes do not match.
+            object: Result.
         """
         equation, remaining_args = self._extract_equation(args, kwargs)
         shapes = self._extract_shapes(remaining_args)

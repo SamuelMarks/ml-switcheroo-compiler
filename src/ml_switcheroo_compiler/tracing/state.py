@@ -17,12 +17,22 @@ class TracingState:
         self.constant_cache: dict[object, object] = {}
 
     def _enrich_ast_and_domain(self, node: object) -> None:
+        """Enrich a node with AST and domain information.
+
+        Args:
+            node (object): The IR node to enrich.
+        """
         if getattr(node, "source_ast_ref", None) is None:
             node.source_ast_ref = get_source_ast_ref()
         if self.active_graph.name is not None and getattr(node, "domain", "") == "":
             node.domain = self.active_graph.name
 
     def _enrich_stream(self, node: object) -> None:
+        """Enrich a node with current stream information.
+
+        Args:
+            node (object): The IR node to enrich.
+        """
         if "ml_switcheroo_compiler.core.config" not in sys.modules:
             return
         config = sys.modules["ml_switcheroo_compiler.core.config"].config
@@ -30,15 +40,22 @@ class TracingState:
             node.stream = config.current_stream
 
     def _enrich_node(self, node: object) -> None:
-        """Enrich node with implicit metadata."""
+        """Enrich a newly created node with implicit context metadata (AST, domain, stream).
+
+        Args:
+            node (object): The IR node to enrich with metadata.
+        """
         self._enrich_ast_and_domain(node)
         self._enrich_stream(node)
 
     def add_node(self, node: object) -> None:
-        """Add node.
+        """Register a node into the currently active trace graph.
 
         Args:
-            node (object): node
+            node (object): The IR node to append to the computational graph.
+
+        Raises:
+            RuntimeError: If tracing is not currently active.
         """
         if not self.is_tracing or self.active_graph is None:
             msg = "Cannot add node: not currently tracing."
@@ -48,13 +65,13 @@ class TracingState:
         self.active_graph.nodes[node.id] = node
 
     def start_tracing(self, name: str = "Model") -> object:
-        """Start tracing.
+        """Activate the tracing context and initialize a new empty graph.
 
         Args:
-            name (str): name
+            name (str): The logical name assigned to the computational graph.
 
         Returns:
-            object: graph
+            object: The newly initialized LogicalGraph instance.
         """
         self.active_graph = LogicalGraph(name=name)
         self.constant_cache = {}
@@ -62,10 +79,10 @@ class TracingState:
         return self.active_graph
 
     def stop_tracing(self) -> object:
-        """Stop tracing.
+        """Deactivate the tracing context and return the captured graph.
 
         Returns:
-            object: graph
+            object: The populated LogicalGraph containing all operations captured during tracing.
         """
         graph = self.active_graph
         self.active_graph = None

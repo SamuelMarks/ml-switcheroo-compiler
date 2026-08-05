@@ -5,14 +5,14 @@ from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
 def _compute_node_signature(node: object, canonical_inputs: list[str]) -> str:
-    """Evaluate and process the compute node signature operation.
+    """Evaluate _compute_node_signature operation.
 
     Args:
-        node (object): Required parameter for node.
-        canonical_inputs (list): Required parameter for canonical_inputs.
+        node (object): The node parameter.
+        canonical_inputs (object): The canonical_inputs parameter.
 
     Returns:
-        str: The evaluated or processed output.
+        str: Result.
     """
     attr_list = []
     for k, v in node.attributes.items():
@@ -24,16 +24,11 @@ def _compute_node_signature(node: object, canonical_inputs: list[str]) -> str:
 def cse_pass(graph: IRGraph) -> bool:
     """In-place Common Subexpression Elimination (CSE).
 
-    Merges nodes that perform the same operation with the same inputs and
-    attributes
-
-    graph (IRGraph): The input graph
+    Args:
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    bool: True if the graph was modified
-
-    Args:
-        graph (IRGraph): Argument graph
+        bool: Result.
     """
     modified = False
     seen_expressions: dict[str, str] = {}

@@ -4,7 +4,7 @@ from ml_switcheroo_compiler.ops.base import OpDef
 
 
 class UnaryMathOp(OpDef):
-    """Base class for unary mathematical operations.
+    """Define base class for unary mathematical operations.
 
     Provides default implementations for shape inference and NumPy evaluation
     for operations that take a single input and apply an element-wise mathematical

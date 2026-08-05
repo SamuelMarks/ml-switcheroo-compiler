@@ -18,14 +18,14 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
-    """Concatenates a sequence of tensors along a specified dimension.
+    """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
-        tensors (Sequence[Tensor]): The sequence of tensors to concatenate
-        dim (int): The dimension along which to concatenate. Defaults to 0
+        tensors (object): The tensors parameter.
+        dim (int): The dim parameter.
 
     Returns:
-    Tensor: The concatenated tensor
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -51,14 +51,14 @@ def concatenate(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
 
 
 def stack(tensors: Sequence[Tensor], dim: int = 0) -> Tensor:
-    """Stacks a sequence of tensors along a new dimension.
+    """Stack a sequence of tensors along a new dimension.
 
     Args:
-        tensors (Sequence[Tensor]): The sequence of tensors to stack
-        dim (int): The index of the new dimension to insert. Defaults to 0
+        tensors (object): The tensors parameter.
+        dim (int): The dim parameter.
 
     Returns:
-    Tensor: The stacked tensor
+        Tensor: Result.
     """
     out_dtype = getattr(tensors[0], "dtype", "float32")
     if hasattr(out_dtype, "name"):

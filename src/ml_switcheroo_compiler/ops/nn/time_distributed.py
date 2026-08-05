@@ -11,7 +11,15 @@ class TimeDistributed(OpDef):
     """TimeDistributed operation."""
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer the output shape for the infer_shape operation.
+
+        Args:
+        x (object): The x parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         # Note: True shape inference depends on the wrapped op.
         # This is a placeholder since the IR maps it to an identity or reshapes.
         return x.shape

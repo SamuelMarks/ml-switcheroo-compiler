@@ -38,7 +38,7 @@ def band_part(input: Tensor, num_lower: int, num_upper: int) -> Tensor:
 
 
 def diag(input: Tensor, k: int = 0) -> Tensor:
-    """Extracts a diagonal or constructs a diagonal array.
+    """Extract a diagonal or constructs a diagonal array.
 
     Args:
         input (Tensor): The input tensor.
@@ -66,7 +66,7 @@ def cross(
     b: Tensor,
     axes: dict[str, int | None] | None = None,
 ) -> Tensor:
-    """Computes the vector cross product of two arrays.
+    """Compute the vector cross product of two arrays.
 
     Args:
         a (Tensor): The first input vector or array of vectors.
@@ -137,7 +137,7 @@ def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) 
 
 
 def matrix_transpose(a: Tensor) -> Tensor:
-    """Transposes last two dimensions of tensor.
+    """Transpose last two dimensions of tensor.
 
     Args:
         a (Tensor): The input tensor.
@@ -154,7 +154,7 @@ def matrix_transpose(a: Tensor) -> Tensor:
 
 
 def sqrtm(a: Tensor) -> Tensor:
-    """Computes the matrix square root of a tensor.
+    """Compute the matrix square root of a tensor.
 
     Args:
         a (Tensor): The input tensor.
@@ -171,7 +171,7 @@ def sqrtm(a: Tensor) -> Tensor:
 
 
 def tensor_diag(input: Tensor, k: int = 0) -> Tensor:
-    """Provides an alias for the diag operation.
+    """Provide an alias for the diag operation.
 
     Args:
         input (Tensor): The input tensor.
@@ -184,7 +184,7 @@ def tensor_diag(input: Tensor, k: int = 0) -> Tensor:
 
 
 def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Tensor:
-    """Provides an alias for the diagonal operation, extracting diagonals from a tensor.
+    """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
         a (Tensor): The input tensor.
@@ -199,7 +199,7 @@ def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1)
 
 
 def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Tensor:
-    """Provides an alias for the diagonal operation, extracting diagonals from a tensor.
+    """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
         a (Tensor): The input tensor.
@@ -214,7 +214,7 @@ def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Ten
 
 
 def adjoint(matrix: Tensor) -> Tensor:
-    """Transposes the last two dimensions of and conjugates tensor matrix.
+    """Transpose the last two dimensions of and conjugates tensor matrix.
 
     Args:
         matrix (Tensor): The input matrix.
@@ -235,7 +235,7 @@ def eigh_tridiagonal(
     beta: Tensor,
     kwargs: dict[str, bool | str | object | float | None] | None = None,
 ) -> Tensor:
-    """Computes the eigenvalues of a Hermitian tridiagonal matrix.
+    """Compute the eigenvalues of a Hermitian tridiagonal matrix.
 
     Args:
         alpha (Tensor): The diagonal elements.
@@ -261,7 +261,7 @@ def eigh_tridiagonal(
 
 
 def expm(input: object, name: object = None) -> object:
-    """Computes the matrix exponential of a given square matrix.
+    """Compute the matrix exponential of a given square matrix.
 
     Args:
         input (object): The input square matrix.
@@ -274,7 +274,7 @@ def expm(input: object, name: object = None) -> object:
 
 
 def global_norm(t_list: object, name: object = None) -> object:
-    """Computes the global norm of multiple tensors.
+    """Compute the global norm of multiple tensors.
 
     Args:
         t_list (object): A list of tensors.
@@ -287,7 +287,7 @@ def global_norm(t_list: object, name: object = None) -> object:
 
 
 def logdet(matrix: object, name: object = None) -> object:
-    """Computes the logarithm of the absolute value of the determinant.
+    """Compute the logarithm of the absolute value of the determinant.
 
     Args:
         matrix (object): The input matrix.
@@ -300,7 +300,7 @@ def logdet(matrix: object, name: object = None) -> object:
 
 
 def logm(input: object, name: object = None) -> object:
-    """Computes the matrix logarithm of a given square matrix.
+    """Compute the matrix logarithm of a given square matrix.
 
     Args:
         input (object): The input square matrix.
@@ -313,7 +313,7 @@ def logm(input: object, name: object = None) -> object:
 
 
 def normalize(tensor: object, ord: object = "euclidean", axis: object = None, name: object = None) -> object:
-    """Normalizes the input tensor along a given axis.
+    """Normalize the input tensor along a given axis.
 
     Args:
         tensor (object): The input tensor.
@@ -328,7 +328,7 @@ def normalize(tensor: object, ord: object = "euclidean", axis: object = None, na
 
 
 def set_diag(input: object, diagonal: object, name: object = None) -> object:
-    """Replaces the diagonal elements of a tensor with new values.
+    """Replace the diagonal elements of a tensor with new values.
 
     Args:
         input (object): The input tensor.
@@ -342,7 +342,7 @@ def set_diag(input: object, diagonal: object, name: object = None) -> object:
 
 
 def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Tensor:
-    """Multiplies tridiagonal matrix by matrix.
+    """Multiply tridiagonal matrix by matrix.
 
     Args:
         dl (Tensor): Subdiagonal, where dl[0] is ignored.
@@ -362,7 +362,7 @@ def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Tensor:
 
 
 def matrix_norm(x: Tensor, keepdims: bool = False, name: str = None) -> Tensor:
-    """Computes the matrix norm of the input tensor.
+    """Compute the matrix norm of the input tensor.
 
     Args:
         x (Tensor): The input tensor.
@@ -380,7 +380,7 @@ def matrix_norm(x: Tensor, keepdims: bool = False, name: str = None) -> Tensor:
 
 
 def vector_norm(x: object, axis: object = None, keepdims: object = False, ord: object = 2, name: object = None) -> object:
-    """Computes the vector norm of the input tensor.
+    """Compute the vector norm of the input tensor.
 
     Args:
         x (object): The input tensor.
@@ -407,11 +407,11 @@ class Svdvals(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-        object: The inferred output shape.
+            object: Result.
         """
         x = args[0]
         shape = getattr(x, "shape", ())
@@ -421,7 +421,7 @@ class Svdvals(OpDef):
 
 
 def svdvals(x: Tensor, name: str = None) -> Tensor:
-    """Computes the singular values of a matrix.
+    """Compute the singular values of a matrix.
 
     Args:
         x (Tensor): The input tensor.
@@ -439,7 +439,7 @@ def svdvals(x: Tensor, name: str = None) -> Tensor:
 
 
 def diagonal(x: object, offset: object = 0, axis1: object = 0, axis2: object = 1, name: object = None) -> object:
-    """Extracts a diagonal from the input tensor.
+    """Extract a diagonal from the input tensor.
 
     Args:
         x (object): The input tensor.
@@ -468,14 +468,14 @@ class TridiagonalMatmul(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-        dl (object): Input argument dl.
-        d (object): Input argument d.
-        du (object): Input argument du.
-        b (object): Input argument b.
-        **kwargs (object): Keyword arguments.
+            dl (object): The dl parameter.
+            d (object): The d parameter.
+            du (object): The du parameter.
+            b (object): The b parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-        object: The inferred output shape.
+            object: Result.
         """
         return b.shape
 
@@ -488,17 +488,17 @@ class Cond(OpDef):
         """Infers the output shape for the operation.
 
         Args:
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-        object: The inferred output shape.
+            object: Result.
         """
         return ()
 
 
 def cond(input: Tensor, p: (str | float | None) = None) -> Tensor:
-    """Computes the condition number of a matrix.
+    """Compute the condition number of a matrix.
 
     Args:
         input (Tensor): The input matrix.

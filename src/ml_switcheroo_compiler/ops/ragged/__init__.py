@@ -23,16 +23,14 @@ class RaggedGather(OpDef):
     op_name = "RaggedGather"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged gather operation.
+        """Infer shape.
 
         Args:
-            *args: Positional arguments.
-            params: The source tensor from which to gather values.
-            indices: The index tensor specifying which elements to gather.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the ragged gather operation result.
+            object: Result.
         """
         return ()
 
@@ -48,15 +46,14 @@ class RaggedTensorToDense(OpDef):
     op_name = "RaggedTensorToDense"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape when converting to a dense tensor.
+        """Calculate the output shape when converting to a dense tensor.
 
         Args:
-            *args: Positional arguments.
-            rt_input: The input ragged tensor to convert.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the resulting dense tensor.
+            object: Result.
         """
         return ()
 
@@ -68,7 +65,7 @@ def ragged_tensor_to_dense(
     row_partition_types: object = None,
     shape: object = None,
 ) -> "Tensor":
-    """Converts a ragged tensor representation into a regular dense tensor.
+    """Convert a ragged tensor representation into a regular dense tensor.
 
     Pads the variable-length dimensions of the input ragged tensor with the
     specified default value to create a dense tensor with uniform dimensions.
@@ -124,16 +121,14 @@ class RaggedAdd(OpDef):
     op_name = "RaggedAdd"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged addition operation.
+        """Calculate the output shape for a ragged addition operation.
 
         Args:
-            *args: Positional arguments.
-            a: The first input ragged tensor.
-            b: The second input ragged tensor.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the ragged addition result.
+            object: Result.
         """
         return ()
 
@@ -149,16 +144,14 @@ class RaggedMatMul(OpDef):
     op_name = "RaggedMatMul"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged matrix multiplication.
+        """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
-            *args: Positional arguments.
-            a: The first input tensor (potentially ragged).
-            b: The second input tensor (potentially ragged).
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the ragged matrix multiplication result.
+            object: Result.
         """
         return ()
 
@@ -174,16 +167,14 @@ class RaggedDynamicBroadcast(OpDef):
     op_name = "RaggedDynamicBroadcast"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape after a ragged dynamic broadcast.
+        """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
-            *args: Positional arguments.
-            rt_input: The input ragged tensor to broadcast.
-            shape: The target shape to broadcast to.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the broadcasted ragged tensor.
+            object: Result.
         """
         return ()
 
@@ -199,15 +190,14 @@ class RaggedConstant(OpDef):
     op_name = "RaggedConstant"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged constant operation.
+        """Calculate the output shape for a ragged constant operation.
 
         Args:
-            *args: Positional arguments.
-            pylist: The nested python list representing the ragged constant.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the created ragged constant tensor.
+            object: Result.
         """
         return ()
 
@@ -223,15 +213,14 @@ class RaggedCrossHashed(OpDef):
     op_name = "RaggedCrossHashed"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged cross hashed operation.
+        """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
-            *args: Positional arguments.
-            inputs: A list or tuple of ragged tensors to cross.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the hashed cross product result.
+            object: Result.
         """
         return ()
 
@@ -247,17 +236,14 @@ class RaggedRange(OpDef):
     op_name = "RaggedRange"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged range operation.
+        """Calculate the output shape for a ragged range operation.
 
         Args:
-            *args: Positional arguments.
-            starts: The starting values for the sequences.
-            limits: The upper limits (exclusive) for the sequences.
-            deltas: The step sizes for the sequences.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the generated ragged range tensor.
+            object: Result.
         """
         return ()
 
@@ -273,15 +259,14 @@ class RaggedRowSplitsToSegmentIds(OpDef):
     op_name = "RaggedRowSplitsToSegmentIds"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape when converting row splits to segment IDs.
+        """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
-            *args: Positional arguments.
-            splits: The row splits tensor defining the ragged boundaries.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the resulting segment IDs tensor.
+            object: Result.
         """
         return ()
 
@@ -297,15 +282,14 @@ class RaggedSegmentIdsToRowSplits(OpDef):
     op_name = "RaggedSegmentIdsToRowSplits"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape when converting segment IDs to row splits.
+        """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
-            *args: Positional arguments.
-            segment_ids: The segment IDs tensor to convert.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the resulting row splits tensor.
+            object: Result.
         """
         return ()
 
@@ -321,15 +305,14 @@ class RaggedStack(OpDef):
     op_name = "RaggedStack"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged stack operation.
+        """Calculate the output shape for a ragged stack operation.
 
         Args:
-            *args: Positional arguments.
-            values: A list or tuple of ragged tensors to stack.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the stacked ragged tensor.
+            object: Result.
         """
         return ()
 
@@ -345,17 +328,14 @@ class RaggedStackDynamicPartitions(OpDef):
     op_name = "RaggedStackDynamicPartitions"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Calculates the output shape for a ragged stack dynamic partitions op.
+        """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
-            *args: Positional arguments.
-            data: The input tensor containing the data to partition.
-            partitions: The tensor specifying which partition each element goes to.
-            num_partitions: The total number of partitions.
-            **kwargs: Additional keyword arguments for the shape inference.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            The inferred shape tuple for the dynamically partitioned ragged tensor.
+            object: Result.
         """
         return ()
 
@@ -384,19 +364,40 @@ __all__ = [
 
 @register_op("BooleanMask")
 class BooleanMask(OpDef):
+    """Boolean mask operation."""
+
     op_name = "BooleanMask"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
 @register_op("MapFlatValues")
 class MapFlatValues(OpDef):
+    """Map flat values operation."""
+
     op_name = "MapFlatValues"
 
     def infer_shape(self, op: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            op (object): The op parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 

@@ -2,7 +2,15 @@
 
 
 def eigvals(*args: object, **kwargs: object) -> object:
-    """Eigvals frontend."""
+    """Eigvals frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -15,7 +23,15 @@ def eigvals(*args: object, **kwargs: object) -> object:
 
 
 def generalized_normal(*args: object, **kwargs: object) -> object:
-    """GeneralizedNormal frontend."""
+    """GeneralizedNormal frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -28,7 +44,15 @@ def generalized_normal(*args: object, **kwargs: object) -> object:
 
 
 def lognormal(*args: object, **kwargs: object) -> object:
-    """Lognormal frontend."""
+    """Lognormal frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -41,7 +65,15 @@ def lognormal(*args: object, **kwargs: object) -> object:
 
 
 def multivariate_normal(*args: object, **kwargs: object) -> object:
-    """MultivariateNormal frontend."""
+    """MultivariateNormal frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -54,7 +86,15 @@ def multivariate_normal(*args: object, **kwargs: object) -> object:
 
 
 def pinv(*args: object, **kwargs: object) -> object:
-    """Pinv frontend."""
+    """Pinv frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -67,7 +107,15 @@ def pinv(*args: object, **kwargs: object) -> object:
 
 
 def ragged_dot(*args: object, **kwargs: object) -> object:
-    """RaggedDot frontend."""
+    """RaggedDot frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -80,7 +128,15 @@ def ragged_dot(*args: object, **kwargs: object) -> object:
 
 
 def rayleigh(*args: object, **kwargs: object) -> object:
-    """Rayleigh frontend."""
+    """Rayleigh frontend.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:

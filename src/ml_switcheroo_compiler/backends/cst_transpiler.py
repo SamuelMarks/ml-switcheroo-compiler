@@ -13,7 +13,7 @@ class CSTTransformer(cst.CSTTransformer):
         target_framework (str): The target framework to transpile to
 
         Args:
-            target_framework (str): Argument target_framework
+            target_framework (str): The target_framework parameter.
         """
         super().__init__()
         self.target_framework = target_framework
@@ -25,15 +25,12 @@ class CSTTransformer(cst.CSTTransformer):
     ) -> cst.ImportFrom:
         """Robust Import Resolution Pass.
 
-        original_node (cst.ImportFrom): Argument original_node
-            updated_node (cst.ImportFrom): Argument updated_node
-
         Returns:
             cst.ImportFrom: The inferred shape or computed result
 
         Args:
-            original_node (cst.ImportFrom): Argument original_node
-            updated_node (cst.ImportFrom): Argument updated_node
+            original_node (cst.ImportFrom): The original_node parameter.
+            updated_node (cst.ImportFrom): The updated_node parameter.
         """
         if (self.target_framework == "jax" and updated_node.module and isinstance(updated_node.module, cst.Name)) and updated_node.module.value == "torch":
             return updated_node.with_changes(module=cst.Name("jax"))
@@ -46,15 +43,12 @@ class CSTTransformer(cst.CSTTransformer):
     ) -> cst.CSTNode:
         """Handle Framework-Specific Quirks & Stateful-to-Functional rewrites.
 
-        original_node (cst.Call): Argument original_node
-            updated_node (cst.Call): Argument updated_node
-
         Returns:
             cst.CSTNode: The inferred shape or computed result
 
         Args:
-            original_node (cst.Call): Argument original_node
-            updated_node (cst.Call): Argument updated_node
+            original_node (cst.Call): The original_node parameter.
+            updated_node (cst.Call): The updated_node parameter.
         """
         if not isinstance(updated_node.func, cst.Attribute):
             return updated_node
@@ -73,15 +67,12 @@ class CSTTransformer(cst.CSTTransformer):
 def transpile_source(source_code: str, target_framework: str = "jax") -> str:
     """Parse source files while retaining 100% formatting, whitespace, comments.
 
-    source_code (str): The original source code
-    target_framework (str): The target framework
+    Args:
+        source_code (str): The source_code parameter.
+        target_framework (str): The target_framework parameter.
 
     Returns:
-    str: The transpiled source code
-
-    Args:
-        source_code (str): Argument source_code
-        target_framework (str): Argument target_framework
+        str: Result.
     """
     tree = cst.parse_module(source_code)
     wrapper = cst.MetadataWrapper(tree)
@@ -93,15 +84,12 @@ def transpile_source(source_code: str, target_framework: str = "jax") -> str:
 def validate_diff(source_code: str, transpiled_code: str) -> bool:
     """Implement a Source-Level Diff Validator.
 
-    source_code (str): The original source code
-    transpiled_code (str): The transpiled source code
+    Args:
+        source_code (str): The source_code parameter.
+        transpiled_code (str): The transpiled_code parameter.
 
     Returns:
-    bool: True if they are syntactically valid and different
-
-    Args:
-        source_code (str): Argument source_code
-        transpiled_code (str): Argument transpiled_code
+        bool: Result.
     """
     if source_code == transpiled_code:
         return False
@@ -115,13 +103,11 @@ def validate_diff(source_code: str, transpiled_code: str) -> bool:
 def type_infer_dry_run(source_code: str) -> dict[str, str]:
     """Implement Hybrid Type-Inference.
 
-    source_code (str): The code to analyze
+    Args:
+        source_code (str): The source_code parameter.
 
     Returns:
-    Dict[str, str]: A mapping of variable names to inferred types
-
-    Args:
-        source_code (str): Argument source_code
+        object: Result.
     """
     try:
         cst.parse_module(source_code)

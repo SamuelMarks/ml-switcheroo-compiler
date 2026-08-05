@@ -11,7 +11,14 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
     """Safetensors weight format handler."""
 
     def load(self, filepath: str) -> dict:
-        """Load safetensors weights."""
+        """Load safetensors weights.
+
+        Args:
+        filepath (str): The filepath parameter.
+
+        Returns:
+        dict: Result.
+        """
         with open(filepath, "rb") as f:
             header_size_bytes = f.read(8)
             if len(header_size_bytes) < MAGIC_VAL_8:
@@ -41,7 +48,12 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
             return weights
 
     def save(self, weights_np: dict, filepath: str) -> None:
-        """Save safetensors weights."""
+        """Save safetensors weights.
+
+        Args:
+            weights_np (dict): The weights_np parameter.
+            filepath (str): The filepath parameter.
+        """
         header = {}
         offset = 0
         buffers = []

@@ -43,7 +43,7 @@ def stateless_random_uniform(
     maxval: float = 1.0,
     dtype: str = "float32",
 ) -> Tensor:
-    """Generates random values from a uniform distribution without maintaining state.
+    """Generate random values from a uniform distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
@@ -73,7 +73,7 @@ def stateless_random_normal(
     stddev: float = 1.0,
     dtype: str = "float32",
 ) -> Tensor:
-    """Generates random values from a normal distribution without maintaining state.
+    """Generate random values from a normal distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
@@ -103,7 +103,7 @@ def stateless_random_binomial(
     probabilities: Union[float, Tensor],
     dtype: str = "int32",
 ) -> Tensor:
-    """Generates random values from a binomial distribution without maintaining state.
+    """Generate random values from a binomial distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
@@ -129,7 +129,7 @@ def stateless_truncated_normal(
     stddev: float = 1.0,
     dtype: str = "float32",
 ) -> Tensor:
-    """Generates random values from a truncated normal distribution without maintaining state.
+    """Generate random values from a truncated normal distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
@@ -162,7 +162,7 @@ def stateless_categorical(
     seed: Tensor,
     dtype: str = "int32",
 ) -> Tensor:
-    """Generates random values from a categorical distribution without maintaining state.
+    """Generate random values from a categorical distribution without maintaining state.
 
     Args:
         logits (Tensor): The logits tensor (batch_size, num_classes).
@@ -192,7 +192,7 @@ def stateless_gamma(
     alpha: Tensor,
     dtype: str = "float32",
 ) -> Tensor:
-    """Generates random values from a gamma distribution without maintaining state.
+    """Generate random values from a gamma distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
@@ -217,7 +217,7 @@ def stateless_beta(
     beta_param: Tensor,
     dtype: str = "float32",
 ) -> Tensor:
-    """Generates random values from a beta distribution without maintaining state.
+    """Generate random values from a beta distribution without maintaining state.
 
     Args:
         shape (Sequence[int]): The shape of the output tensor.
@@ -273,7 +273,7 @@ class RandomGenerationConfig:
 
 
 def stateless_parameterized_truncated_normal(shape: object, seed: object, config: Optional[RandomGenerationConfig] = None) -> Tensor:
-    """Generates random values from a truncated normal distribution with custom config.
+    """Generate random values from a truncated normal distribution with custom config.
 
     Args:
         shape (object): The shape of the output tensor.
@@ -289,7 +289,7 @@ def stateless_parameterized_truncated_normal(shape: object, seed: object, config
 
 
 class Algorithm:
-    """Defines constants for random number generation algorithms.
+    """Define constants for random number generation algorithms.
 
     These algorithms dictate the specific random number generation
     under the hood, like Philox or Threefry.
@@ -301,32 +301,32 @@ class Algorithm:
 
 
 class Generator:
-    """A random number generator with internal state.
+    """Provide a random number generator with internal state.
 
     This class encapsulates the state and algorithm required to
     produce deterministic random numbers based on an initial seed.
     """
 
     def __init__(self, copy_from: object = None, state: object = None, alg: object = None) -> None:
-        """Initializes the random number generator.
+        """Initialize the random number generator.
 
         Args:
-            copy_from (object, optional): Generator to copy the state from.
-            state (object, optional): Explicit state to set for the generator.
-            alg (object, optional): The algorithm to use for random generation.
+            copy_from (object): The copy_from parameter.
+            state (object): The state parameter.
+            alg (object): The alg parameter.
         """
         self.state = state
 
     @classmethod
     def from_seed(cls, seed: object, alg: object = None) -> "Generator":
-        """Creates a Generator instance from a given seed.
+        """Create a Generator instance from a given seed.
 
         Args:
-            seed (object): The seed value to initialize the state.
-            alg (object, optional): The specific algorithm to use.
+            seed (object): The seed parameter.
+            alg (object): The alg parameter.
 
         Returns:
-            Generator: A new generator instance.
+            object: Result.
         """
         return cls(state=seed, alg=alg)
 
@@ -334,13 +334,13 @@ class Generator:
         """Draws samples from a normal distribution using the generator's state.
 
         Args:
-            shape (object): The shape of the output tensor.
-            config (Optional[NormalConfig]): Distribution parameters.
-            dtype (object): The data type for the returned tensor.
-            name (object, optional): A name for the operation.
+            shape (object): The shape parameter.
+            config (Optional): The config parameter.
+            dtype (object): The dtype parameter.
+            name (object): The name parameter.
 
         Returns:
-            Tensor: A tensor containing normally distributed random numbers.
+            Tensor: Result.
         """
         config = config or NormalConfig()
         from ml_switcheroo_compiler.core.config import config as core_config
@@ -358,13 +358,13 @@ class Generator:
         """Draws samples from a uniform distribution using the generator's state.
 
         Args:
-            shape (object): The shape of the output tensor.
-            config (Optional[UniformConfig]): Distribution parameters.
-            dtype (object): The data type for the returned tensor.
-            name (object, optional): A name for the operation.
+            shape (object): The shape parameter.
+            config (Optional): The config parameter.
+            dtype (object): The dtype parameter.
+            name (object): The name parameter.
 
         Returns:
-            Tensor: A tensor containing uniformly distributed random numbers.
+            Tensor: Result.
         """
         config = config or UniformConfig()
         from ml_switcheroo_compiler.core.config import config as core_config
@@ -380,14 +380,14 @@ class Generator:
 
 
 def create_rng_state(seed: object, alg: object = None) -> object:
-    """Creates a random number generator state from a seed.
+    """Create a random number generator state from a seed.
 
     Args:
-        seed (object): The initial seed value.
-        alg (object, optional): The random generation algorithm to use.
+        seed (object): The seed parameter.
+        alg (object): The alg parameter.
 
     Returns:
-        object: A tensor representing the RNG state.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
@@ -398,7 +398,7 @@ _GLOBAL_GENERATOR_STATE = {"generator": None}
 
 
 def get_global_generator() -> object:
-    """Retrieves the globally registered random number generator.
+    """Retrieve the globally registered random number generator.
 
     Returns:
         object: The global Generator instance.
@@ -409,7 +409,7 @@ def get_global_generator() -> object:
 
 
 def set_global_generator(generator: object) -> None:
-    """Registers a globally accessible random number generator.
+    """Register a globally accessible random number generator.
 
     Args:
         generator (object): The generator instance to set globally.
@@ -445,14 +445,14 @@ def stateless_fold_in(seed: object, data: object) -> object:
 
 
 def stateless_split(seed: object, num: object = 2) -> object:
-    """Splits a single seed into multiple independent seeds.
+    """Split a single seed into multiple independent seeds.
 
     Args:
-        seed (object): The original seed.
-        num (object, optional): The number of derived seeds to generate.
+        seed (object): The seed parameter.
+        num (object): The num parameter.
 
     Returns:
-        object: A tensor containing the split seeds.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -472,7 +472,17 @@ def stateless_poisson(
     lam: Tensor,
     dtype: str = "int32",
 ) -> Tensor:
-    """Generates random values from a poisson distribution without maintaining state."""
+    """Generate random values from a poisson distribution without maintaining state.
+
+    Args:
+        shape (Sequence): The shape parameter.
+        seed (Tensor): The seed parameter.
+        lam (Tensor): The lam parameter.
+        dtype (str): The dtype parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     from ml_switcheroo_compiler.random.distributions_discrete import poisson
 
     dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype

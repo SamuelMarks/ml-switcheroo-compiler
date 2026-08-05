@@ -99,7 +99,11 @@ class MLXCodeGenerator(ClassBasedGenerator):
     """Emit MLX-compatible code from IR."""
 
     def __init__(self, graph: object) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            graph (object): The graph parameter.
+        """
         super().__init__(graph)
         self.visitors.extend(
             [
@@ -121,7 +125,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def save_gguf(cls, file: str, arrays: dict[str, object]) -> None:
-        """Save a dictionary of arrays to GGUF format."""
+        """Save a dictionary of arrays to GGUF format.
+
+        Args:
+            file (str): The file parameter.
+            arrays (dict): The arrays parameter.
+        """
         import mlx.core as mx
 
         if hasattr(mx, "save_gguf"):
@@ -129,7 +138,11 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def set_default_stream(cls, stream: object) -> None:
-        """Set the default stream."""
+        """Set the default stream.
+
+        Args:
+            stream (object): The stream parameter.
+        """
         import mlx.core as mx
 
         if hasattr(mx, "set_default_stream"):
@@ -137,7 +150,11 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def set_memory_limit(cls, limit: int) -> None:
-        """Set the memory limit."""
+        """Set the memory limit.
+
+        Args:
+            limit (int): The limit parameter.
+        """
         import mlx.core as mx
 
         if hasattr(mx, "metal") and hasattr(mx.metal, "set_memory_limit"):
@@ -145,22 +162,30 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def set_wired_limit(cls, limit: int) -> None:
-        """Set the wired limit."""
+        """Set the wired limit.
+
+        Args:
+            limit (int): The limit parameter.
+        """
         import mlx.core as mx
 
         if hasattr(mx, "metal") and hasattr(mx.metal, "set_wired_limit"):
             mx.metal.set_wired_limit(limit)
 
     def get_fallback_prefix(self) -> str:
-        """Get the fallback prefix for generic operations."""
+        """Get the fallback prefix for generic operations.
+
+        Returns:
+        str: Result.
+        """
         return "mx"
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
-        """Evaluate emit constant assignment.
+        """Evaluate _emit_constant_assignment operation.
 
         Args:
-            var_name (str): Argument var_name
-            val_repr (str): Argument val_repr
+            var_name (str): The var_name parameter.
+            val_repr (str): The val_repr parameter.
         """
         self.add_line(f"{var_name} = mx.array({val_repr})")
 
@@ -186,7 +211,17 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
-        """Load."""
+        """Load.
+
+        Args:
+        filepath (str): The filepath parameter.
+        allow_pickle (bool): The allow_pickle parameter.
+        fix_imports (bool): The fix_imports parameter.
+        encoding (str): The encoding parameter.
+
+        Returns:
+        object: Result.
+        """
         import mlx.core as mx
 
         # Note: MLX load does not use allow_pickle, fix_imports, or encoding
@@ -194,14 +229,27 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
-        """Save."""
+        """Save.
+
+        Args:
+            file (str): The file parameter.
+            arr (object): The arr parameter.
+            allow_pickle (bool): The allow_pickle parameter.
+            fix_imports (bool): The fix_imports parameter.
+        """
         import mlx.core as mx
 
         mx.save(file, arr)
 
     @classmethod
     def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez."""
+        """Savez.
+
+        Args:
+            file (str): The file parameter.
+            *args (object): Positional args.
+            **kwds (object): Keyword args.
+        """
         import mlx.core as mx
 
         data = {f"arr_{i}": arg for i, arg in enumerate(args)}
@@ -210,7 +258,13 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
-        """Savez compressed."""
+        """Savez compressed.
+
+        Args:
+            file (str): The file parameter.
+            *args (object): Positional args.
+            **kwds (object): Keyword args.
+        """
         import mlx.core as mx
 
         data = {f"arr_{i}": arg for i, arg in enumerate(args)}

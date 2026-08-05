@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Mixin module."""
+"""Provide mixin module."""
 
 from __future__ import annotations
 
@@ -11,19 +11,46 @@ class DistributedASTVisitor(CommonASTVisitor):
     """Distributed communication AST generator mixin."""
 
     def visit_AllGather(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate AllGather."""
+        """Evaluate visit_AllGather operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         pfx = self.generator._get_backend_prefix()
         axis = kwargs.get("axis", 0)
         return f"{pfx}_all_gather({input_vars[0]}, axis={axis})"
 
     def visit_AllReduce(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate AllReduce."""
+        """Evaluate visit_AllReduce operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         pfx = self.generator._get_backend_prefix()
         op = kwargs.get("op", "sum")
         return f"{pfx}_all_reduce({input_vars[0]}, op='{op}')"
 
     def visit_AllToAll(self, node: object, input_vars: list[str], **kwargs: object) -> str:
-        """Evaluate AllToAll."""
+        """Evaluate visit_AllToAll operation.
+
+        Args:
+        node (object): The node parameter.
+        input_vars (object): The input_vars parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        str: Result.
+        """
         pfx = self.generator._get_backend_prefix()
         split_axis = kwargs.get("split_axis", 0)
         concat_axis = kwargs.get("concat_axis", 0)

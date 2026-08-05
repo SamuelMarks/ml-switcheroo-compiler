@@ -82,16 +82,13 @@ def scan(
     """Scan loop construct.
 
     Args:
-        f (object): The scan function.
-        init (tuple[Tensor, ...]): The initial carry.
-        xs (Tensor): The input sequence.
-        length (Optional[int]): The length of the sequence.
-        reverse (bool): Whether to reverse the sequence.
-        unroll (bool): Whether to unroll the loop.
-        config (Optional[ScanConfig]): Configuration for scan.
+        f (object): The f parameter.
+        init (tuple): The init parameter.
+        xs (Tensor): The xs parameter.
+        config (Optional): The config parameter.
 
     Returns:
-        tuple[tuple[Tensor, ...], Tensor]: The final carry and the stacked outputs.
+        tuple: Result.
     """
     conf = config if config is not None else ScanConfig()
 
@@ -167,7 +164,14 @@ def bidirectional(
 
 
 def _permute_time_major(inputs: Tensor) -> Tensor:
-    """Swap batch and time dimensions."""
+    """Swap batch and time dimensions.
+
+    Args:
+        inputs (Tensor): The inputs parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     dims = list(range(len(inputs.shape)))
     dims[0], dims[1] = 1, 0
     return permute(inputs, tuple(dims))
@@ -179,34 +183,30 @@ def rnn(
     cell_fn: object,
     config: Optional[RNNConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
-    """Base recurrent loop evaluation.
+    """Define base recurrent loop evaluation.
 
     Args:
-        inputs (Tensor): The input sequence.
-        initial_state (tuple[Tensor, ...]): The initial states.
-        cell_fn (object): The RNN cell function.
-        time_major (bool): Whether inputs are time-major.
-        go_backwards (bool): Whether to go backwards.
-        unroll (bool): Whether to unroll the loop.
-        return_all_outputs (bool): Whether to return all outputs or just the last.
-        config (Optional[RNNConfig]): Configuration for RNN.
+        inputs (Tensor): The inputs parameter.
+        initial_state (tuple): The initial_state parameter.
+        cell_fn (object): The cell_fn parameter.
+        config (Optional): The config parameter.
 
     Returns:
-        tuple[Tensor, tuple[Tensor, ...]]: The output sequence and the final states.
+        tuple: Result.
     """
     conf = config if config is not None else RNNConfig()
     if not conf.time_major:
         inputs = _permute_time_major(inputs)
 
     def scan_fn(carry: Tensor, x: Tensor) -> tuple[Tensor, Tensor]:
-        """Evaluate and process the scan fn operation.
+        """Evaluate scan_fn operation.
 
         Args:
-            carry (Tensor): Required parameter for carry.
-            x (Tensor): Required parameter for x.
+            carry (Tensor): The carry parameter.
+            x (Tensor): The x parameter.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: Result.
         """
         out, new_carry = cell_fn(x, carry)
         return new_carry, out
@@ -230,12 +230,27 @@ class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
     def __init__(self, cell: object, device: object, **kwargs: object) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            cell (object): The cell parameter.
+            device (object): The device parameter.
+            **kwargs (object): Keyword args.
+        """
         self._cell = cell
         self._device = device
 
     def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple:
-        """Call."""
+        """Call.
+
+        Args:
+        inputs (object): The inputs parameter.
+        state (object): The state parameter.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        tuple: Result.
+        """
         return self._cell(inputs, state, **kwargs)
 
 
@@ -254,7 +269,7 @@ class DropoutWrapperConfig:
 
 
 class RNNCellDropoutWrapper:
-    """Wrapper that adds dropout to input and/or output of the given cell."""
+    """Wrap that adds dropout to input and/or output of the given cell."""
 
     def __init__(
         self,
@@ -295,12 +310,27 @@ class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
     def __init__(self, cell: object, residual_fn: object = None, **kwargs: object) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            cell (object): The cell parameter.
+            residual_fn (object): The residual_fn parameter.
+            **kwargs (object): Keyword args.
+        """
         self._cell = cell
         self._residual_fn = residual_fn
 
     def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple:
-        """Call."""
+        """Call.
+
+        Args:
+            inputs (object): The inputs parameter.
+            state (object): The state parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         out, new_state = self._cell(inputs, state, **kwargs)
         if self._residual_fn is not None:
             out = self._residual_fn(inputs, out)

@@ -1,5 +1,7 @@
 """Core abstractions and logic definitions for logical.py."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -7,7 +9,7 @@ from .base import UnaryMathOp
 
 @register_op("BitwiseNot")
 class BitwiseNot(UnaryMathOp):
-    """Computes bitwise NOT element-wise."""
+    """Compute bitwise NOT element-wise."""
 
     op_name = "BitwiseNot"
     np_op_name = "bitwise_not"
@@ -55,7 +57,7 @@ class Isposinf(UnaryMathOp):
 
 @register_op("LogicalNot")
 class LogicalNot(UnaryMathOp):
-    """Computes the truth value of NOT x element-wise."""
+    """Compute the truth value of NOT x element-wise."""
 
     op_name = "LogicalNot"
     np_op_name = "logical_not"
@@ -63,7 +65,7 @@ class LogicalNot(UnaryMathOp):
 
 @register_op("BitwiseCount")
 class BitwiseCount(UnaryMathOp):
-    """Computes the number of 1-bits in the binary representation of x."""
+    """Compute the number of 1-bits in the binary representation of x."""
 
     op_name = "BitwiseCount"
     np_op_name = "bitwise_count"
@@ -90,7 +92,15 @@ class Packbits(OpDef):
     op_name = "Packbits"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -109,7 +119,15 @@ class Unpackbits(OpDef):
     op_name = "Unpackbits"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
@@ -173,7 +191,15 @@ class Iscomplexobj(OpDef):
     np_op_name = "iscomplexobj"
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            x (object): The x parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -185,7 +211,15 @@ class Isrealobj(OpDef):
     np_op_name = "isrealobj"
 
     def infer_shape(self, x: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            x (object): The x parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -197,20 +231,56 @@ class Issubdtype(OpDef):
     np_op_name = "issubdtype"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
 @register_op("Isin")
 class Isin(OpDef):
-    """Calculates element in test_elements, broadcasting over element only."""
+    """Calculate element in test_elements, broadcasting over element only."""
 
     op_name = "Isin"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         element = args[0] if len(args) > 0 else None
         return getattr(element, "shape", ())
+
+
+def _get_size_from_shape(obj: object) -> int | None:
+    """Calculate the total number of elements from an object's shape.
+
+    Args:
+        obj (object): The object.
+
+    Returns:
+        int | None: The size.
+    """
+    shape = getattr(obj, "shape", ())
+    if not shape:
+        return 1
+    size = 1
+    for s in shape:
+        if s is None:
+            return None
+        size *= s
+    return size
 
 
 @register_op("Ediff1d")
@@ -221,101 +291,149 @@ class Ediff1d(OpDef):
     np_op_name = "ediff1d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:  # noqa: C901, PLR0912
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         ary = args[0] if len(args) > 0 else None
         to_end = kwargs.get("to_end")
         to_begin = kwargs.get("to_begin")
-        shape = getattr(ary, "shape", ())
-        size = 1
-        for s in shape:
-            if s is None:
-                size = None
-                break
-            size *= s
 
+        size = _get_size_from_shape(ary)
         if size is not None:
             size -= 1
 
         if to_begin is not None:
-            begin_shape = getattr(to_begin, "shape", ())
-            if not begin_shape:
-                size = size + 1 if size is not None else None
-            else:
-                s_b = 1
-                for s in begin_shape:
-                    if s is None:
-                        s_b = None
-                        break
-                    s_b *= s
-                size = size + s_b if size is not None and s_b is not None else None
+            s_b = _get_size_from_shape(to_begin)
+            size = size + s_b if size is not None and s_b is not None else None
 
         if to_end is not None:
-            end_shape = getattr(to_end, "shape", ())
-            if not end_shape:
-                size = size + 1 if size is not None else None
-            else:
-                s_e = 1
-                for s in end_shape:
-                    if s is None:
-                        s_e = None
-                        break
-                    s_e *= s
-                size = size + s_e if size is not None and s_e is not None else None
+            s_e = _get_size_from_shape(to_end)
+            size = size + s_e if size is not None and s_e is not None else None
 
         return (size,)
 
 
 def population_count(*args: object, **kwargs: object) -> object:
-    """Calculates element-wise population count (a.k.a. popcount, bitsum, bitcount)."""
+    """Calculate element-wise population count (a.k.a. popcount, bitsum, bitcount).
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("PopulationCount", *args, **kwargs)
 
 
 def isin(*args: object, **kwargs: object) -> object:
-    """Calculates element in test_elements, broadcasting over element only."""
+    """Calculate element in test_elements, broadcasting over element only.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Isin", *args, **kwargs)
 
 
 def iscomplex(*args: object, **kwargs: object) -> object:
-    """Returns a bool array, where True if input element is complex."""
+    """Return a bool array, where True if input element is complex.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Iscomplex", *args, **kwargs)
 
 
 def iscomplexobj(*args: object, **kwargs: object) -> object:
-    """Check for a complex type or an array of complex numbers."""
+    """Check for a complex type or an array of complex numbers.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Iscomplexobj", *args, **kwargs)
 
 
 def isreal(*args: object, **kwargs: object) -> object:
-    """Returns a bool array, where True if input element is real."""
+    """Return a bool array, where True if input element is real.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Isreal", *args, **kwargs)
 
 
 def isrealobj(*args: object, **kwargs: object) -> object:
-    """Return True if x is a not complex type or an array of complex numbers."""
+    """Return True if x is a not complex type or an array of complex numbers.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Isrealobj", *args, **kwargs)
 
 
 def issubdtype(*args: object, **kwargs: object) -> object:
-    """Returns True if first argument is a typecode lower/equal in type hierarchy."""
+    """Return True if first argument is a typecode lower/equal in type hierarchy.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Issubdtype", *args, **kwargs)
 
 
 def reduce_precision(*args: object, **kwargs: object) -> object:
-    """Reduce precision operation."""
+    """Reduce precision operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("ReducePrecision", *args, **kwargs)

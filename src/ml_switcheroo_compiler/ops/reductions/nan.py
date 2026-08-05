@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
 @register_op("Nanargmax")
 class Nanargmax(ReductionOp):
-    """Computes the index of the maximum value, ignoring NaNs."""
+    """Compute the index of the maximum value, ignoring NaNs."""
 
     op_name = "Nanargmax"
     np_op_name = "nanargmax"
@@ -14,7 +14,7 @@ class Nanargmax(ReductionOp):
 
 @register_op("Nanargmin")
 class Nanargmin(ReductionOp):
-    """Computes the index of the minimum value, ignoring NaNs."""
+    """Compute the index of the minimum value, ignoring NaNs."""
 
     op_name = "Nanargmin"
     np_op_name = "nanargmin"
@@ -22,7 +22,7 @@ class Nanargmin(ReductionOp):
 
 @register_op("Nancumprod")
 class Nancumprod(ReductionOp):
-    """Computes the cumulative product, ignoring NaNs."""
+    """Compute the cumulative product, ignoring NaNs."""
 
     op_name = "Nancumprod"
     np_op_name = "nancumprod"
@@ -30,7 +30,7 @@ class Nancumprod(ReductionOp):
 
 @register_op("Nancumsum")
 class Nancumsum(ReductionOp):
-    """Computes the cumulative sum, ignoring NaNs."""
+    """Compute the cumulative sum, ignoring NaNs."""
 
     op_name = "Nancumsum"
     np_op_name = "nancumsum"
@@ -38,7 +38,7 @@ class Nancumsum(ReductionOp):
 
 @register_op("Nanmax")
 class Nanmax(ReductionOp):
-    """Computes the maximum value, ignoring NaNs."""
+    """Compute the maximum value, ignoring NaNs."""
 
     op_name = "Nanmax"
     np_op_name = "nanmax"
@@ -46,7 +46,7 @@ class Nanmax(ReductionOp):
 
 @register_op("Nanmean")
 class Nanmean(ReductionOp):
-    """Computes the mean, ignoring NaNs."""
+    """Compute the mean, ignoring NaNs."""
 
     op_name = "Nanmean"
     np_op_name = "nanmean"
@@ -54,7 +54,7 @@ class Nanmean(ReductionOp):
 
 @register_op("Nanmedian")
 class Nanmedian(ReductionOp):
-    """Computes the median, ignoring NaNs."""
+    """Compute the median, ignoring NaNs."""
 
     op_name = "Nanmedian"
     np_op_name = "nanmedian"
@@ -62,7 +62,7 @@ class Nanmedian(ReductionOp):
 
 @register_op("Nanmin")
 class Nanmin(ReductionOp):
-    """Computes the minimum value, ignoring NaNs."""
+    """Compute the minimum value, ignoring NaNs."""
 
     op_name = "Nanmin"
     np_op_name = "nanmin"
@@ -70,7 +70,7 @@ class Nanmin(ReductionOp):
 
 @register_op("Nanpercentile")
 class Nanpercentile(ReductionOp):
-    """Computes the percentile, ignoring NaNs."""
+    """Compute the percentile, ignoring NaNs."""
 
     op_name = "Nanpercentile"
     np_op_name = "nanpercentile"
@@ -78,7 +78,7 @@ class Nanpercentile(ReductionOp):
 
 @register_op("Nanprod")
 class Nanprod(ReductionOp):
-    """Computes the product, ignoring NaNs."""
+    """Compute the product, ignoring NaNs."""
 
     op_name = "Nanprod"
     np_op_name = "nanprod"
@@ -86,7 +86,7 @@ class Nanprod(ReductionOp):
 
 @register_op("Nanquantile")
 class Nanquantile(ReductionOp):
-    """Computes the quantile, ignoring NaNs."""
+    """Compute the quantile, ignoring NaNs."""
 
     op_name = "Nanquantile"
     np_op_name = "nanquantile"
@@ -94,7 +94,7 @@ class Nanquantile(ReductionOp):
 
 @register_op("Nanstd")
 class Nanstd(ReductionOp):
-    """Computes the standard deviation, ignoring NaNs."""
+    """Compute the standard deviation, ignoring NaNs."""
 
     op_name = "Nanstd"
     np_op_name = "nanstd"
@@ -102,7 +102,7 @@ class Nanstd(ReductionOp):
 
 @register_op("Nansum")
 class Nansum(ReductionOp):
-    """Computes the sum, ignoring NaNs."""
+    """Compute the sum, ignoring NaNs."""
 
     op_name = "Nansum"
     np_op_name = "nansum"
@@ -110,7 +110,7 @@ class Nansum(ReductionOp):
 
 @register_op("Nanvar")
 class Nanvar(ReductionOp):
-    """Computes the variance, ignoring NaNs."""
+    """Compute the variance, ignoring NaNs."""
 
     op_name = "Nanvar"
     np_op_name = "nanvar"

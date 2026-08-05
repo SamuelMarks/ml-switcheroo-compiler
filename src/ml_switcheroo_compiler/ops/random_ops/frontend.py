@@ -1,4 +1,4 @@
-"""Random ops frontend."""
+"""Generate random ops frontend."""
 
 import uuid
 
@@ -15,12 +15,15 @@ def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Tensor:
     """Sobol sequence generator.
 
     Args:
-        dim (int): The dimensionality of the sequence.
-        num_results (int): The number of results.
-        skip (int): The number of sequence elements to skip.
+        dim (int): The dim parameter.
+        num_results (int): The num_results parameter.
+        skip (int): The skip parameter.
 
     Returns:
-        Tensor: A tensor of shape (num_results, dim).
+        Tensor: Result.
+
+    Raises:
+        RuntimeError: An exception.
     """
     dtype = DType("float32")
     out_shape = (num_results, dim)

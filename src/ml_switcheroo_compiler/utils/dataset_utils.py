@@ -79,7 +79,7 @@ else:
 
 
 class NumpyDataset:
-    """A simple dataset iterator for numpy arrays."""
+    """Provide a simple dataset iterator for numpy arrays."""
 
     def __init__(
         self,
@@ -110,7 +110,12 @@ class NumpyDataset:
     def __iter__(
         self,
     ) -> Iterator[object | tuple[object, object]]:
-        """Iterate over dataset."""
+        """Iterate over dataset.
+
+        Yields:
+            object: Yielded value.
+            Iterator: Result.
+        """
         for i in range(0, len(self._indices), self.batch_size):
             batch_idx = self._indices[i : i + self.batch_size]
             batch_x = [self.x[idx] for idx in batch_idx]
@@ -121,21 +126,42 @@ class NumpyDataset:
                 yield batch_x
 
     def __len__(self) -> int:
-        """Length of dataset."""
+        """Length of dataset.
+
+        Returns:
+        int: Result.
+        """
         if len(self._indices) == 0:
             return 0
         return int((len(self._indices) + self.batch_size - 1) // self.batch_size)
 
 
 def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> list[str]:
-    """Parse class labels from folder names."""
+    """Parse class labels from folder names.
+
+    Args:
+        directory (str): The directory parameter.
+        class_names (object): The class_names parameter.
+
+    Yields:
+            object: Result.
+    """
     if class_names is not None:
         return list(class_names)
     return sorted([d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))])
 
 
 def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None) -> bool:
-    """Check if file is valid based on extension and symlink/readability."""
+    """Check if file is valid based on extension and symlink/readability.
+
+    Args:
+        fname (str): The fname parameter.
+        class_dir (str): The class_dir parameter.
+        valid_exts (object): The valid_exts parameter.
+
+    Returns:
+        bool: Result.
+    """
     if valid_exts and not any(fname.endswith(ext) for ext in valid_exts):
         return False
     # Add check for broken symlink or unreadable
@@ -146,7 +172,16 @@ def _is_valid_file(fname: str, class_dir: str, valid_exts: Sequence[str] | None)
 
 
 def _walk_directory_and_filter(directory: str, class_names: list[str], valid_exts: Sequence[str] | None) -> tuple[list[str], list[int]]:
-    """Walk through the directory and filter files."""
+    """Walk through the directory and filter files.
+
+    Args:
+        directory (str): The directory parameter.
+        class_names (object): The class_names parameter.
+        valid_exts (object): The valid_exts parameter.
+
+    Yields:
+            object: Result.
+    """
     file_paths = []
     file_labels = []
     for i, class_name in enumerate(class_names):
@@ -166,20 +201,30 @@ def _get_files_and_labels(
     class_names: Sequence[str] | None = None,
     valid_exts: Sequence[str] | None = None,
 ) -> tuple[list[str], list[int], list[str]]:
-    """Get files and labels from directory."""
+    """Get files and labels from directory.
+
+    Args:
+        directory (str): The directory parameter.
+        labels (object): The labels parameter.
+        class_names (object): The class_names parameter.
+        valid_exts (object): The valid_exts parameter.
+
+    Returns:
+        tuple: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     directory = os.path.abspath(directory)
     if not os.path.exists(directory):
         raise ValueError(f"Directory {directory} does not exist.")
-
     parsed_class_names = _parse_class_names(directory, class_names)
     file_paths, file_labels = _walk_directory_and_filter(directory, parsed_class_names, valid_exts)
-
     if labels != "inferred":
         if not isinstance(labels, str):
             if len(labels) != len(file_paths):
                 raise ValueError("Length of labels does not match number of files.")
             file_labels = list(labels)
-
     return file_paths, file_labels, parsed_class_names
 
 
@@ -187,13 +232,20 @@ def audio_dataset_from_directory(
     directory: str,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
-    """Generates a dataset from audio files in a directory."""
+    """Generate a dataset from audio files in a directory.
+
+    Args:
+        directory (str): The directory parameter.
+        config (object): The config parameter.
+
+    Returns:
+        NumpyDataset: Result.
+    """
     conf = config if config is not None else DatasetConfig()
     labels = conf.io_config.labels
     class_names = conf.io_config.class_names
     batch_size = conf.batch_config.batch_size
     seed = conf.batch_config.seed
-
     file_paths, file_labels, class_names = _get_files_and_labels(directory, labels, class_names, valid_exts=(".wav", ".mp3", ".flac"))
     return NumpyDataset(
         file_paths,
@@ -206,14 +258,21 @@ def image_dataset_from_directory(
     directory: str,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
-    """Generates a dataset from image files in a directory."""
+    """Generate a dataset from image files in a directory.
+
+    Args:
+        directory (str): The directory parameter.
+        config (object): The config parameter.
+
+    Returns:
+        NumpyDataset: Result.
+    """
     conf = config if config is not None else DatasetConfig()
     labels = conf.io_config.labels
     class_names = conf.io_config.class_names
     batch_size = conf.batch_config.batch_size
     shuffle = conf.batch_config.shuffle
     seed = conf.batch_config.seed
-
     file_paths, file_labels, class_names = _get_files_and_labels(
         directory,
         labels,
@@ -231,14 +290,21 @@ def text_dataset_from_directory(
     directory: str,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
-    """Generates a dataset from text files in a directory."""
+    """Generate a dataset from text files in a directory.
+
+    Args:
+        directory (str): The directory parameter.
+        config (object): The config parameter.
+
+    Returns:
+        NumpyDataset: Result.
+    """
     conf = config if config is not None else DatasetConfig()
     labels = conf.io_config.labels
     class_names = conf.io_config.class_names
     batch_size = conf.batch_config.batch_size
     shuffle = conf.batch_config.shuffle
     seed = conf.batch_config.seed
-
     file_paths, file_labels, class_names = _get_files_and_labels(directory, labels, class_names, valid_exts=(".txt",))
     texts = []
     for fp in file_paths:
@@ -251,14 +317,14 @@ def _get_timeseries_indices(
     data_len: int,
     config: dict[str, int | None],
 ) -> tuple[int, int, int]:
-    """Retrieve the timeseries indices property or mapping.
+    """Evaluate _get_timeseries_indices operation.
 
     Args:
-        data_len (int): Required parameter for data_len.
-        config (dict): Required parameter for config.
+        data_len (int): The data_len parameter.
+        config (object): The config parameter.
 
-    Returns:
-        tuple: The evaluated or processed output.
+    Yields:
+            object: Result.
     """
     start = 0 if config["start_index"] is None else config["start_index"]
     end = data_len if config["end_index"] is None else config["end_index"]
@@ -272,16 +338,16 @@ def _extract_timeseries_windows(
     params: dict[str, int],
     bounds: tuple[int, int, int],
 ) -> tuple[list[Any], list[Any] | None]:
-    """Evaluate and process the extract timeseries windows operation.
+    """Evaluate _extract_timeseries_windows operation.
 
     Args:
-        data (object): Required parameter for data.
-        targets (object): Required parameter for targets.
-        params (dict): Required parameter for params.
-        bounds (tuple): Required parameter for bounds.
+        data (object): The data parameter.
+        targets (object): The targets parameter.
+        params (object): The params parameter.
+        bounds (object): The bounds parameter.
 
-    Returns:
-        tuple: The evaluated or processed output.
+    Yields:
+            object: Result.
     """
     x = []
     y = [] if targets is not None else None
@@ -300,11 +366,20 @@ def timeseries_dataset_from_array(
     sequence_length: int,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
-    """Creates a dataset of sliding windows over a timeseries provided as array."""
+    """Create a dataset of sliding windows over a timeseries provided as array.
+
+    Args:
+        data (object): The data parameter.
+        targets (object): The targets parameter.
+        sequence_length (int): The sequence_length parameter.
+        config (object): The config parameter.
+
+    Returns:
+        NumpyDataset: Result.
+    """
     conf = config if config is not None else DatasetConfig()
     sequence_stride = conf.loader.sequence_stride
     sampling_rate = conf.loader.sampling_rate if conf.loader.sampling_rate is not None else 1
-
     start, stop, stride = _get_timeseries_indices(
         len(data),  # type: ignore
         {
@@ -315,14 +390,12 @@ def timeseries_dataset_from_array(
             "end_index": conf.loader.end_index,
         },
     )
-
     x, y = _extract_timeseries_windows(
         data,
         targets,
         {"sequence_length": sequence_length, "sampling_rate": sampling_rate},
         (start, stop, stride),
     )
-
     return NumpyDataset(
         x,
         y,
@@ -377,7 +450,6 @@ def pad_sequences(
         return []
     if maxlen is None:
         maxlen = max(len(seq) for seq in sequences)
-
     padded = []
     for seq in sequences:
         if len(seq) > maxlen:

@@ -6,5 +6,13 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def laplace(*args: object, **kwargs: object) -> object:
-    """Execute laplace."""
+    """Evaluate laplace operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("laplace", *args, **kwargs)

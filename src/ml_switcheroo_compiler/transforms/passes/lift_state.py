@@ -48,13 +48,13 @@ def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:
 
 
 def _get_nodes(block: object) -> Iterable[IRNode]:
-    """Retrieve the nodes property or mapping.
+    """Evaluate _get_nodes operation.
 
     Args:
-        block (object): Required parameter for block.
+        block (object): The block parameter.
 
     Returns:
-        Iterable: The evaluated or processed output.
+        object: Result.
     """
     nodes = getattr(block, "nodes", [])
     if isinstance(nodes, dict):
@@ -63,14 +63,14 @@ def _get_nodes(block: object) -> Iterable[IRNode]:
 
 
 def _lift_node(node: IRNode, block: object) -> bool:
-    """Evaluate and process the lift node operation.
+    """Evaluate _lift_node operation.
 
     Args:
-        node (IRNode): Required parameter for node.
-        block (object): Required parameter for block.
+        node (IRNode): The node parameter.
+        block (object): The block parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     if node.op_type == "ReadVariable":
         node.op_type = "Input"
@@ -87,13 +87,13 @@ def _lift_node(node: IRNode, block: object) -> bool:
 
 
 def _lift_block_ir(block: object) -> bool:
-    """Evaluate and process the lift block ir operation.
+    """Evaluate _lift_block_ir operation.
 
     Args:
-        block (object): Required parameter for block.
+        block (object): The block parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     mod = False
     for node in _get_nodes(block):
@@ -107,15 +107,10 @@ def _lift_block_ir(block: object) -> bool:
 def lift_state_pass(graph: IRGraph) -> bool:
     """In-place pass to lift implicit state into functional I/O.
 
-    Transforms stateful operations (like reading/writing variables)
-    into additional inputs and outputs of the graph
-
-    graph: The IR graph
+    Args:
+        graph (IRGraph): The graph parameter.
 
     Returns:
-    bool: True if modified
-
-    Args:
-        graph (IRGraph): Argument graph
+        bool: Result.
     """
     return _lift_block_ir(graph)

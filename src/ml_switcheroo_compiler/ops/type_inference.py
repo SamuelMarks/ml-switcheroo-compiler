@@ -6,7 +6,15 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 
 def resolve_dtype(res_data: object, first_tensor: object) -> object:
-    """Resolve the dtype for the eager result."""
+    """Resolve the dtype for the eager result.
+
+    Args:
+        res_data (object): The raw result data.
+        first_tensor (object): The first input tensor, used as fallback.
+
+    Returns:
+        object: The resolved DType.
+    """
     if hasattr(res_data, "dtype"):
         dtype_str = str(res_data.dtype)
         if "dtype" in dtype_str:
@@ -26,7 +34,15 @@ def resolve_dtype(res_data: object, first_tensor: object) -> object:
 
 
 def resolve_output_dtype_and_device(first_tensor: object, kwargs: dict) -> tuple[object, object]:
-    """Resolve output dtype and device."""
+    """Resolve output dtype and device based on inputs and kwargs.
+
+    Args:
+        first_tensor (object): The first input tensor.
+        kwargs (dict): The keyword arguments passed to the operation.
+
+    Returns:
+        tuple[object, object]: A tuple containing the resolved dtype and device.
+    """
     out_dtype = None
     if "dtype" in kwargs:
         out_dtype = kwargs["dtype"]

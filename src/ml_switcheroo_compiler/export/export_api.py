@@ -34,7 +34,14 @@ class ExportArchive:
         self.endpoints[name] = fn
 
     def _build_signature_def(self, name: str) -> ProtobufWriter:
-        """Build a SignatureDef protobuf message."""
+        """Build a SignatureDef protobuf message.
+
+        Args:
+        name (str): The name parameter.
+
+        Returns:
+        ProtobufWriter: Result.
+        """
         sig = ProtobufWriter()
         sig.add_string(3, name)  # method_name
 
@@ -52,7 +59,11 @@ class ExportArchive:
         return sig
 
     def _build_graph_def(self) -> ProtobufWriter:
-        """Build a GraphDef protobuf message."""
+        """Build a GraphDef protobuf message.
+
+        Returns:
+        ProtobufWriter: Result.
+        """
         graph = ProtobufWriter()
         # Add a dummy node just to be compliant
         node = ProtobufWriter()
@@ -67,7 +78,11 @@ class ExportArchive:
         return graph
 
     def _build_saved_model(self) -> bytes:
-        """Build the SavedModel protobuf bytes."""
+        """Build the SavedModel protobuf bytes.
+
+        Returns:
+        bytes: Result.
+        """
         saved_model = ProtobufWriter()
         saved_model.add_varint(1, 1)  # saved_model_schema_version
 

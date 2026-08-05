@@ -20,7 +20,7 @@ class TriangularSolve(OpDef):
             **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+            object: Result.
         """
         return ()
 
@@ -136,7 +136,15 @@ class Polar(OpDef):
     """Polar Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape, args[0].shape
 
 
@@ -145,18 +153,26 @@ class TridiagonalSolve(OpDef):
     """TridiagonalSolve Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[3].shape
 
 
 def lu(a: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-    """Computes the LU decomposition of a matrix.
+    """Compute the LU decomposition of a matrix.
 
     Args:
-        a (Tensor): The input matrix to decompose
+        a (Tensor): The a parameter.
 
     Returns:
-    tuple[Tensor, Tensor, Tensor]: The LU decomposition components (P, L, U)
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -175,11 +191,11 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Tensor:
     """Solve an equation system, a x = b, given the LU factorization of a.
 
     Args:
-        lu_and_piv (tuple[Tensor, Tensor]): LU factorization and pivot indices from lu_factor.
-        b (Tensor): Right-hand side matrix or vector.
+        lu_and_piv (tuple): The lu_and_piv parameter.
+        b (Tensor): The b parameter.
 
     Returns:
-    Tensor: The solution matrix `x`
+        Tensor: Result.
     """
     lu, piv = lu_and_piv
     if config.eager_mode:
@@ -192,16 +208,14 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Tensor:
 
 
 def polar(a: Tensor, side: str = "right") -> tuple[Tensor, Tensor]:
-    """Computes the polar decomposition of a matrix.
+    """Compute the polar decomposition of a matrix.
 
     Args:
-        a (Tensor): The input matrix
-        side (str): "right" or "left"
+        a (Tensor): The a parameter.
+        side (str): The side parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - U (Tensor): The unitary/orthogonal matrix
-        - P (Tensor): The positive semi-definite matrix
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -219,13 +233,13 @@ def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Tensor:
     """Solves a tridiagonal linear system.
 
     Args:
-        dl (Tensor): The lower diagonal
-        d (Tensor): The main diagonal
-        du (Tensor): The upper diagonal
-        b (Tensor): The right-hand side
+        dl (Tensor): The dl parameter.
+        d (Tensor): The d parameter.
+        du (Tensor): The du parameter.
+        b (Tensor): The b parameter.
 
     Returns:
-    Tensor: The solution matrix `x`
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -243,5 +257,16 @@ class TridiagonalMatmul(OpDef):
     op_name = "TridiagonalMatmul"
 
     def infer_shape(self, dl: object, d: object, du: object, b: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            dl (object): The dl parameter.
+            d (object): The d parameter.
+            du (object): The du parameter.
+            b (object): The b parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return b.shape

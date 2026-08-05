@@ -12,15 +12,18 @@ def _resolve_scale_factor(
     scale_factor: Union[float, Sequence[float]],
     spatial_dims: int,
 ) -> tuple[int, ...]:
-    """Resolves the scale factor for upsampling.
+    """Resolve the scale factor for upsampling.
 
     Args:
-        input (Tensor): The input tensor.
-        scale_factor (Union[float, Sequence[float]]): The scale factor.
-        spatial_dims (int): The number of spatial dimensions.
+        input (Tensor): The input parameter.
+        scale_factor (Union): The scale_factor parameter.
+        spatial_dims (int): The spatial_dims parameter.
 
     Returns:
-        tuple[int, ...]: The resolved target size.
+        tuple: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if isinstance(scale_factor, (float, int)):
         sfs = [float(scale_factor)] * spatial_dims
@@ -43,15 +46,18 @@ def _upsample_resolve_size(
     size: Optional[Union[int, Sequence[int]]],
     scale_factor: Optional[Union[float, Sequence[float]]],
 ) -> tuple[int, ...]:
-    """Evaluate and process the upsample resolve size operation.
+    """Evaluate _upsample_resolve_size operation.
 
     Args:
-        input (Tensor): Required parameter for input.
-        size (Optional): Required parameter for size.
-        scale_factor (Optional): Required parameter for scale_factor.
+        input (Tensor): The input parameter.
+        size (Optional): The size parameter.
+        scale_factor (Optional): The scale_factor parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     has_size = size is not None
     has_sf = scale_factor is not None
@@ -80,17 +86,17 @@ def _upsample_dispatch(  # noqa: PLR0911
     scale_factor: Optional[Union[float, Sequence[float]]],
     align_corners: bool,
 ) -> Tensor:
-    """Evaluate and process the upsample dispatch operation.
+    """Evaluate _upsample_dispatch operation.
 
     Args:
-        input (Tensor): Required parameter for input.
-        mode (str): Required parameter for mode.
-        size (Optional): Required parameter for size.
-        scale_factor (Optional): Required parameter for scale_factor.
-        align_corners (bool): Required parameter for align_corners.
+        input (Tensor): The input parameter.
+        mode (str): The mode parameter.
+        size (Optional): The size parameter.
+        scale_factor (Optional): The scale_factor parameter.
+        align_corners (bool): The align_corners parameter.
 
     Returns:
-        Tensor: The evaluated or processed output.
+        Tensor: Result.
     """
     target_size = _upsample_resolve_size(input, size, scale_factor)
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1

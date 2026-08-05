@@ -10,14 +10,14 @@ class Setdiff1d(OpDef):
     op_name = "Setdiff1d"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args (object): Arguments.
-            **kwargs (object): Keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: Computed shape.
+        object: Result.
         """
         return args[0] if args else ()
 

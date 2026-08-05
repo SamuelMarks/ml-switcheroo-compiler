@@ -10,15 +10,15 @@ from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
 @global_eager_registry.register("ExtractVolumePatches")
 def _extract_volume_patches(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Fallback eager execution for ExtractVolumePatches.
+    """Evaluate _extract_volume_patches operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The extracted patches.
+        object: Result.
     """
     import numpy as np
 
@@ -82,14 +82,17 @@ def _get_box_coords(np_mod: object, box_ctx: tuple[int, int, int, int], box: obj
 
 
 def _extract_box_channels(np_mod: object, img: object, out: object, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
-    """Evaluate and process the extract box channels operation.
+    """Evaluate _extract_box_channels operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        img (object): Required parameter for img.
-        out (object): Required parameter for out.
-        coords_and_i (tuple): Required parameter for coords_and_i.
-        config (BBoxConfig): Required parameter for config.
+        np_mod (object): The np_mod parameter.
+        img (object): The img parameter.
+        out (object): The out parameter.
+        coords_and_i (tuple): The coords_and_i parameter.
+        config (BBoxConfig): The config parameter.
+
+    Returns:
+        object: Result.
     """
     (y1_i, x1_i), (y2_i, x2_i) = coords_and_i[0]
     i = coords_and_i[1]
@@ -109,13 +112,16 @@ def _extract_box_channels(np_mod: object, img: object, out: object, coords_and_i
 
 
 def _extract_single_box(np_mod: object, batch_ctx: tuple[object, object, object, object], i: int, config: BBoxConfig) -> None:
-    """Evaluate and process the extract single box operation.
+    """Evaluate _extract_single_box operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        batch_ctx (tuple): Required parameter for batch_ctx.
-        i (int): Required parameter for i.
-        config (BBoxConfig): Required parameter for config.
+        np_mod (object): The np_mod parameter.
+        batch_ctx (tuple): The batch_ctx parameter.
+        i (int): The i parameter.
+        config (BBoxConfig): The config parameter.
+
+    Returns:
+        object: Result.
     """
     imgs, bxs, bxs_idx, out = batch_ctx
     img_idx = int(bxs_idx[i])
@@ -158,17 +164,17 @@ def _extract_boxes_batch(np_mod: object, imgs: object, bxs: object, bxs_idx: obj
 
 
 def _extract_boxes_tf(backend_module: object, images: object, boxes: object, box_indices: object, config: BBoxConfig) -> object:
-    """Evaluate and process the extract boxes tf operation.
+    """Evaluate _extract_boxes_tf operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        boxes (object): Required parameter for boxes.
-        box_indices (object): Required parameter for box_indices.
-        config (BBoxConfig): Required parameter for config.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        boxes (object): The boxes parameter.
+        box_indices (object): The box_indices parameter.
+        config (BBoxConfig): The config parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -180,31 +186,34 @@ def _extract_boxes_tf(backend_module: object, images: object, boxes: object, box
 
 
 def extract_bounding_boxes_eager(backend_module: object, images: object, boxes: object, box_indices: object, config: BBoxConfig) -> object:
-    """Evaluate extract bounding boxes eagerly.
+    """Evaluate extract_bounding_boxes_eager operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        images (object): Required parameter for images.
-        boxes (object): Required parameter for boxes.
-        box_indices (object): Required parameter for box_indices.
-        config (BBoxConfig): Required parameter for config.
+        backend_module (object): The backend_module parameter.
+        images (object): The images parameter.
+        boxes (object): The boxes parameter.
+        box_indices (object): The box_indices parameter.
+        config (BBoxConfig): The config parameter.
 
     Returns:
-        object: The extracted bounding boxes.
+        object: Result.
     """
     return _extract_boxes_tf(backend_module, images, boxes, box_indices, config)
 
 
 def _to_xyxy_format(np_mod: object, boxes: object, format: str) -> object:
-    """Evaluate and process the to xyxy format operation.
+    """Evaluate _to_xyxy_format operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        boxes (object): Required parameter for boxes.
-        format (str): Required parameter for format.
+        np_mod (object): The np_mod parameter.
+        boxes (object): The boxes parameter.
+        format (str): The format parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     boxes = np_mod.asarray(boxes)
     if format == "xyxy":
@@ -221,15 +230,15 @@ def _to_xyxy_format(np_mod: object, boxes: object, format: str) -> object:
 
 
 def _compute_iou(np_mod: object, b1: object, b2: object) -> object:
-    """Evaluate and process the compute iou operation.
+    """Evaluate _compute_iou operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        b1 (object): Required parameter for b1.
-        b2 (object): Required parameter for b2.
+        np_mod (object): The np_mod parameter.
+        b1 (object): The b1 parameter.
+        b2 (object): The b2 parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     b1 = np_mod.asarray(b1)
     b2 = np_mod.asarray(b2)
@@ -254,16 +263,16 @@ def _compute_iou(np_mod: object, b1: object, b2: object) -> object:
 
 
 def iou_eager(backend_module: object, boxes1: object, boxes2: object, bounding_box_format: str = "xyxy") -> object:
-    """Evaluate IoU eagerly.
+    """Evaluate iou_eager operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        boxes1 (object): Required parameter for boxes1.
-        boxes2 (object): Required parameter for boxes2.
-        bounding_box_format (str): Required parameter for bounding_box_format.
+        backend_module (object): The backend_module parameter.
+        boxes1 (object): The boxes1 parameter.
+        boxes2 (object): The boxes2 parameter.
+        bounding_box_format (str): The bounding_box_format parameter.
 
     Returns:
-        object: The IoU values.
+        object: Result.
     """
     import numpy as np
 
@@ -274,16 +283,16 @@ def iou_eager(backend_module: object, boxes1: object, boxes2: object, bounding_b
 
 
 def _sort_boxes_by_score(np_mod: object, boxes: object, scores: object, score_threshold: float) -> tuple[object, object, object, object]:
-    """Evaluate and process the sort boxes by score operation.
+    """Evaluate _sort_boxes_by_score operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        boxes (object): Required parameter for boxes.
-        scores (object): Required parameter for scores.
-        score_threshold (float): Required parameter for score_threshold.
+        np_mod (object): The np_mod parameter.
+        boxes (object): The boxes parameter.
+        scores (object): The scores parameter.
+        score_threshold (float): The score_threshold parameter.
 
     Returns:
-        tuple: (filtered_boxes, filtered_scores, indices, order).
+        object: Result.
     """
     boxes = np_mod.asarray(boxes)
     scores = np_mod.asarray(scores)
@@ -301,16 +310,16 @@ def _sort_boxes_by_score(np_mod: object, boxes: object, scores: object, score_th
 
 
 def _compute_overlap(np_mod: object, bxs: object, i: int, order: list[int]) -> object:
-    """Evaluate and process the compute overlap operation.
+    """Evaluate _compute_overlap operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        bxs (object): Required parameter for bxs.
-        i (int): Required parameter for i.
-        order (list): Required parameter for order.
+        np_mod (object): The np_mod parameter.
+        bxs (object): The bxs parameter.
+        i (int): The i parameter.
+        order (object): The order parameter.
 
     Returns:
-        object: The overlap IoU.
+        object: Result.
     """
     b1 = bxs[order[i]]
     b2 = bxs[order[1:]]
@@ -318,17 +327,17 @@ def _compute_overlap(np_mod: object, bxs: object, i: int, order: list[int]) -> o
 
 
 def _apply_suppression_threshold(np_mod: object, bxs: object, order: object, max_output_size: int, iou_threshold: float) -> object:
-    """Evaluate and process the apply suppression threshold operation.
+    """Evaluate _apply_suppression_threshold operation.
 
     Args:
-        np_mod (object): Required parameter for np_mod.
-        bxs (object): Required parameter for bxs.
-        order (object): Required parameter for order.
-        max_output_size (int): Required parameter for max_output_size.
-        iou_threshold (float): Required parameter for iou_threshold.
+        np_mod (object): The np_mod parameter.
+        bxs (object): The bxs parameter.
+        order (object): The order parameter.
+        max_output_size (int): The max_output_size parameter.
+        iou_threshold (float): The iou_threshold parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     keep = []
     order_list = list(order)
@@ -350,16 +359,16 @@ def _apply_suppression_threshold(np_mod: object, bxs: object, order: object, max
 
 
 def _nms_tf(backend_module: object, boxes: object, scores: object, config: Optional[NMSConfig] = None) -> object:
-    """Evaluate and process the nms tf operation.
+    """Evaluate _nms_tf operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        boxes (object): Required parameter for boxes.
-        scores (object): Required parameter for scores.
-        config (Optional): Required parameter for config.
+        backend_module (object): The backend_module parameter.
+        boxes (object): The boxes parameter.
+        scores (object): The scores parameter.
+        config (object): The config parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if config is None:
         config = NMSConfig(max_output_size=boxes.shape[0] if hasattr(boxes, "shape") else 100)
@@ -368,15 +377,15 @@ def _nms_tf(backend_module: object, boxes: object, scores: object, config: Optio
 
 
 def _nms_torch(boxes: object, scores: object, config: NMSConfig) -> object:
-    """Evaluate and process the nms torch operation.
+    """Evaluate _nms_torch operation.
 
     Args:
-        boxes (object): Required parameter for boxes.
-        scores (object): Required parameter for scores.
-        config (NMSConfig): Required parameter for config.
+        boxes (object): The boxes parameter.
+        scores (object): The scores parameter.
+        config (NMSConfig): The config parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -390,15 +399,15 @@ def _nms_torch(boxes: object, scores: object, config: NMSConfig) -> object:
 
 
 def nms_eager(backend_module: object, boxes: object, scores: object, config: Optional[NMSConfig] = None) -> object:
-    """Evaluate non max suppression eagerly.
+    """Evaluate nms_eager operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        boxes (object): Required parameter for boxes.
-        scores (object): Required parameter for scores.
-        config (Optional): Required parameter for config.
+        backend_module (object): The backend_module parameter.
+        boxes (object): The boxes parameter.
+        scores (object): The scores parameter.
+        config (object): The config parameter.
 
     Returns:
-        object: The selected indices.
+        object: Result.
     """
     return _nms_tf(backend_module, boxes, scores, config)

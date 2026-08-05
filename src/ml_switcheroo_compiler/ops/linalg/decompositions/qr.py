@@ -16,11 +16,11 @@ class Qr(OpDef):
         """Infer shape.
 
         Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The shape.
+        object: Result.
         """
         if not args:
             return ()
@@ -40,7 +40,15 @@ class Hessenberg(OpDef):
     """Hessenberg Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape, args[0].shape
 
 
@@ -49,7 +57,15 @@ class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -58,7 +74,15 @@ class Schur(OpDef):
     """Schur Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape, args[0].shape
 
 
@@ -67,7 +91,15 @@ class Tridiagonal(OpDef):
     """Tridiagonal Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a_shape = args[0].shape
         diag_shape = a_shape[:-1]
         off_diag_shape = a_shape[:-2] + (a_shape[-1] - 1,) if a_shape[-1] > 0 else a_shape[:-1]
@@ -75,17 +107,14 @@ class Tridiagonal(OpDef):
 
 
 def qr(input: Tensor, mode: str = "reduced") -> tuple[Tensor, Tensor]:
-    """Computes the QR decomposition of a matrix.
+    """Compute the QR decomposition of a matrix.
 
     Args:
-        input (Tensor): The input matrix
-        mode (str): Specifies the mode of decomposition ('reduced', 'complete',
-        'r', or 'raw'). Defaults to 'reduced'
+        input (Tensor): The input parameter.
+        mode (str): The mode parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - Q (Tensor): The orthonormal matrix
-        - R (Tensor): The upper-triangular matrix
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -112,15 +141,13 @@ def qr(input: Tensor, mode: str = "reduced") -> tuple[Tensor, Tensor]:
 
 
 def hessenberg(a: Tensor) -> tuple[Tensor, Tensor]:
-    """Computes the Hessenberg decomposition of a matrix.
+    """Compute the Hessenberg decomposition of a matrix.
 
     Args:
-        a (Tensor): The input matrix
+        a (Tensor): The a parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - H (Tensor): The upper Hessenberg matrix
-        - Q (Tensor): The unitary/orthogonal matrix
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -135,14 +162,14 @@ def hessenberg(a: Tensor) -> tuple[Tensor, Tensor]:
 
 
 def householder_product(a: Tensor, tau: Tensor) -> Tensor:
-    """Computes the product of Householder reflectors.
+    """Compute the product of Householder reflectors.
 
     Args:
-        a (Tensor): Vectors with Householder reflectors
-        tau (Tensor): Scalar factors
+        a (Tensor): The a parameter.
+        tau (Tensor): The tau parameter.
 
     Returns:
-    Tensor: The orthogonal/unitary matrix
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -154,15 +181,13 @@ def householder_product(a: Tensor, tau: Tensor) -> Tensor:
 
 
 def schur(a: Tensor) -> tuple[Tensor, Tensor]:
-    """Computes the Schur decomposition of a matrix.
+    """Compute the Schur decomposition of a matrix.
 
     Args:
-        a (Tensor): The input matrix
+        a (Tensor): The a parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: A tuple containing:
-        - T (Tensor): The Schur form
-        - Z (Tensor): The unitary/orthogonal matrix
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -177,16 +202,13 @@ def schur(a: Tensor) -> tuple[Tensor, Tensor]:
 
 
 def tridiagonal(a: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-    """Computes the tridiagonal decomposition of a symmetric matrix.
+    """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
-        a (Tensor): The input symmetric matrix
+        a (Tensor): The a parameter.
 
     Returns:
-    tuple[Tensor, Tensor, Tensor]: A tuple containing:
-        - diag (Tensor): The main diagonal
-        - off_diag (Tensor): The off-diagonal
-        - q (Tensor): The unitary/orthogonal matrix
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -208,20 +230,28 @@ class Qdwh(OpDef):
     """Qdwh Operation Definition."""
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 
 
 def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> tuple[Tensor, Tensor, Tensor, Tensor]:
-    """Computes the QR-based dynamically weighted Halley iteration.
+    """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:
-        a (Tensor): The input matrix
-        is_hermitian (bool): Whether the matrix is Hermitian
-        max_iterations (int): Maximum iterations
+        a (Tensor): The a parameter.
+        is_hermitian (bool): The is_hermitian parameter.
+        max_iterations (int): The max_iterations parameter.
 
     Returns:
-    tuple[Tensor, Tensor, Tensor, Tensor]: Q, H, num_iters, is_converged
+        tuple: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend

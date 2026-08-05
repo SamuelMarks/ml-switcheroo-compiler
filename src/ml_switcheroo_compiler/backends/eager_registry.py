@@ -16,20 +16,20 @@ class EagerOpRegistry:
         """Register an eager operation.
 
         Args:
-            op_type (str): The operation type.
+            op_type (str): The op_type parameter.
 
         Returns:
-            Callable: The decorator function.
+            Callable: Result.
         """
 
         def decorator(func: Callable) -> Callable:
-            """Evaluate and process the decorator operation.
+            """Evaluate decorator operation.
 
             Args:
-                func (Callable): Required parameter for func.
+                func (Callable): The func parameter.
 
             Returns:
-                Callable: The evaluated or processed output.
+                Callable: Result.
             """
             self._registry[op_type] = func
             return func
@@ -57,6 +57,9 @@ class EagerOpRegistry:
 
         Returns:
             object: The result.
+
+        Raises:
+            ValueError: If the operation is not found in the registry.
         """
         func = self.get(op_type)
         if func is not None:

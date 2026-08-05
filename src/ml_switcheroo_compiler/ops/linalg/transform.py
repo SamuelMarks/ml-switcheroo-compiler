@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 
 
 def hadamard_transform(x: Tensor, scale: float = 1.0) -> Tensor:
-    """Applies the Walsh-Hadamard Transform to the last dimension of the input tensor.
+    """Apply the Walsh-Hadamard Transform to the last dimension of the input tensor.
 
     Args:
         x (Tensor): The input tensor. Its last dimension must be a power of 2.

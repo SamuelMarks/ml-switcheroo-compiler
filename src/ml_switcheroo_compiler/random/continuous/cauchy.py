@@ -6,5 +6,13 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def cauchy(*args: object, **kwargs: object) -> object:
-    """Execute cauchy."""
+    """Evaluate cauchy operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("cauchy", *args, **kwargs)

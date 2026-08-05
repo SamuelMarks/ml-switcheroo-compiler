@@ -24,14 +24,17 @@ def plot_model(
     model: object,
     config: PlotModelConfig | None = None,
 ) -> object:
-    """Converts a model to dot format and save to a file.
+    """Convert a model to dot format and save to a file.
 
     Args:
-        model: Model to plot.
-        config: PlotModel configuration.
+        model (object): The model parameter.
+        config (object): The config parameter.
 
     Returns:
-        Plot model.
+        object: Result.
+
+    Raises:
+        ImportError: An exception.
     """
     config = config if config is not None else PlotModelConfig()
 
@@ -138,13 +141,32 @@ def model_to_dot(*args: object, **kwargs: object) -> object:
         return None
 
 
+def _array_to_image(val: object, np: object, Image: object) -> object:
+    """Help to convert array to image.
+
+    Args:
+        val (object): The val parameter.
+        np (object): The np parameter.
+        Image (object): The Image parameter.
+
+    Returns:
+        object: Result.
+    """
+    if val.ndim == 3 and val.shape[-1] == 1:
+        val = val.squeeze(-1)
+    return Image.fromarray(np.clip(val, 0, 255).astype(np.uint8))
+
+
 def save_img(path: str, x: object, **kwargs: object) -> None:
     """Save an image.
 
     Args:
-        path (str): Path to save the image.
-        x (object): Image array or PIL Image.
-        **kwargs: keyword arguments.
+        path (str): The path parameter.
+        x (object): The x parameter.
+        **kwargs (object): Keyword args.
+
+    Raises:
+        ImportError: An exception.
     """
     try:
         from PIL import Image
@@ -159,16 +181,11 @@ def save_img(path: str, x: object, **kwargs: object) -> None:
         has_np = False
 
     if has_np and isinstance(x, np.ndarray):
-        if x.ndim == 3 and x.shape[-1] == 1:
-            x = x.squeeze(-1)
-        img = Image.fromarray(np.clip(x, 0, 255).astype(np.uint8))
+        img = _array_to_image(x, np, Image)
     elif hasattr(x, "numpy"):
         # For tensors
         if has_np:
-            val = x.numpy()
-            if val.ndim == 3 and val.shape[-1] == 1:
-                val = val.squeeze(-1)
-            img = Image.fromarray(np.clip(val, 0, 255).astype(np.uint8))
+            img = _array_to_image(x.numpy(), np, Image)
         else:
             img = x
     else:

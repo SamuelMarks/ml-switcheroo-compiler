@@ -7,6 +7,19 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
+    """Evaluate _dct_1d_matrix operation.
+
+    Args:
+        N (int): The N parameter.
+        type (int): The type parameter.
+        norm (str): The norm parameter.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     n = np.arange(N)
     k = np.arange(N)[:, None]
     if type == 1:
@@ -47,7 +60,16 @@ def _dct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
 
 @numpy_eager_registry.register("Dct")
 def _np_dct(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the dct logic eagerly backed by NumPy."""
+    """Evaluate _np_dct operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     x = np.asarray(args[0])
     type = kwargs.get("type", 2)
     axis = kwargs.get("axis", -1)
@@ -61,6 +83,19 @@ def _np_dct(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 def _idct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
+    """Evaluate _idct_1d_matrix operation.
+
+    Args:
+        N (int): The N parameter.
+        type (int): The type parameter.
+        norm (str): The norm parameter.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     if type == 1:
         m = _dct_1d_matrix(N, 1, norm)
         if norm != "ortho":
@@ -86,7 +121,16 @@ def _idct_1d_matrix(N: int, type: int, norm: str = None) -> np.ndarray:
 
 @numpy_eager_registry.register("Idct")
 def _np_idct(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the idct logic eagerly backed by NumPy."""
+    """Evaluate _np_idct operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     x = np.asarray(args[0])
     type = kwargs.get("type", 2)
     axis = kwargs.get("axis", -1)
@@ -101,7 +145,19 @@ def _np_idct(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Mdct")
 def _np_mdct(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement MDCT eagerly in numpy."""
+    """Implement MDCT eagerly in numpy.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     x = np.asarray(args[0])
     N = kwargs.get("N", x.shape[-1] // 2)
 
@@ -117,7 +173,16 @@ def _np_mdct(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("InverseMdct")
 def _np_inverse_mdct(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement Inverse MDCT eagerly in numpy."""
+    """Implement Inverse MDCT eagerly in numpy.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     x = np.asarray(args[0])
     N = x.shape[-1]
 
@@ -130,7 +195,16 @@ def _np_inverse_mdct(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("Frame")
 def _np_frame(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement Frame eagerly in numpy."""
+    """Implement Frame eagerly in numpy.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     x = np.asarray(args[0])
     frame_length = kwargs.get("frame_length", 1)
     frame_step = kwargs.get("frame_step", 1)
@@ -144,7 +218,16 @@ def _np_frame(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("OverlapAndAdd")
 def _np_overlap_and_add(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement OverlapAndAdd eagerly in numpy."""
+    """Implement OverlapAndAdd eagerly in numpy.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     x = np.asarray(args[0])
     frame_step = kwargs.get("frame_step", 1)
     num_frames = x.shape[-2]

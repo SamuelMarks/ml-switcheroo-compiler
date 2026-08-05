@@ -6,6 +6,7 @@ from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
 
 
 def test_webgl_compilation_and_orchestration():
+    """Test webgl compilation and orchestration."""
     g = LogicalGraph(outputs=["out"])
 
     n_multi = LogicalNode(id="in1", op_type="Input", shape_metadata=(2, 3, 4))
@@ -21,6 +22,7 @@ def test_webgl_compilation_and_orchestration():
 
 
 def test_webgl_compilation_1d():
+    """Test webgl compilation 1d."""
     g = LogicalGraph(outputs=["out"])
 
     n1 = LogicalNode(id="in1", op_type="Input", shape_metadata=(4,))
@@ -90,6 +92,7 @@ def test_webgl_evaluate_input_directly():
 
 
 def test_webgl_orchestration_branches():
+    """Test webgl orchestration branches."""
     # To hit 212->216 (has_ndim_gt_1 = True, but input_nodes is empty)
     # How to make has_ndim_gt_1 = True if input_nodes is empty?
     # Make a non-input node have shape > 1!

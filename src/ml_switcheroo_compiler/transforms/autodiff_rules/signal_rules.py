@@ -8,14 +8,32 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 
 @register_vjp("Dct")
 def dct_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Dct."""
+    """VJP for Dct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "Idct", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("Dct")
 def dct_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Dct."""
+    """JVP for Dct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None
@@ -24,14 +42,32 @@ def dct_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Idct")
 def idct_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Idct."""
+    """VJP for Idct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "Dct", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("Idct")
 def idct_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Idct."""
+    """JVP for Idct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None
@@ -40,14 +76,32 @@ def idct_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Frame")
 def frame_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Frame."""
+    """VJP for Frame.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "OverlapAndAdd", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("Frame")
 def frame_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Frame."""
+    """JVP for Frame.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None
@@ -56,14 +110,32 @@ def frame_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("OverlapAndAdd")
 def overlap_and_add_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for OverlapAndAdd."""
+    """VJP for OverlapAndAdd.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "Frame", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("OverlapAndAdd")
 def overlap_and_add_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for OverlapAndAdd."""
+    """JVP for OverlapAndAdd.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None
@@ -72,14 +144,32 @@ def overlap_and_add_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("Mdct")
 def mdct_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for Mdct."""
+    """VJP for Mdct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "InverseMdct", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("Mdct")
 def mdct_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for Mdct."""
+    """JVP for Mdct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None
@@ -88,14 +178,32 @@ def mdct_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 @register_vjp("InverseMdct")
 def inverse_mdct_vjp(graph: object, node: object, cotangent: str) -> tuple:
-    """VJP for InverseMdct."""
+    """VJP for InverseMdct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
     res = emit_ir_node(graph, "Mdct", [cotangent], graph.nodes[node.inputs[0]].shape_metadata, node.attributes)
     return (res,)
 
 
 @register_jvp("InverseMdct")
 def inverse_mdct_jvp(graph: object, node: object, tangents: tuple) -> str:
-    """JVP for InverseMdct."""
+    """JVP for InverseMdct.
+
+    Args:
+        graph (object): The graph parameter.
+        node (object): The node parameter.
+        tangents (tuple): The tangents parameter.
+
+    Returns:
+        str: Result.
+    """
     t_x = tangents[0]
     if t_x is None:
         return None

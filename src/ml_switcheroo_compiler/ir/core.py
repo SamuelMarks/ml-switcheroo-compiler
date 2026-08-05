@@ -12,7 +12,15 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 
 def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:
-    """Clones a LogicalNode, allowing overrides via kwargs."""
+    """Clones a LogicalNode, allowing overrides via kwargs.
+
+    Args:
+        node (LogicalNode): The node parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        LogicalNode: Result.
+    """
     attributes = dict(node.attributes)
     inputs = list(node.inputs)
 

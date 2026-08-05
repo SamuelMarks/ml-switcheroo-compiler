@@ -1,11 +1,11 @@
-"""Logical hardware topology abstraction."""
+"""Apply logical hardware topology abstraction."""
 
 from collections.abc import Sequence
 from typing import Optional
 
 
 class DeviceMesh:
-    """Logical hardware topology abstraction for distributed execution."""
+    """Apply logical hardware topology abstraction for distributed execution."""
 
     def __init__(
         self,
@@ -16,9 +16,12 @@ class DeviceMesh:
         """Initialize DeviceMesh.
 
         Args:
-            shape: Shape of the mesh.
-            axis_names: Names of the axes.
-            devices: Sequence of devices (e.g., JAX devices or strings).
+            shape (Sequence): The shape parameter.
+            axis_names (Sequence): The axis_names parameter.
+            devices (Optional): The devices parameter.
+
+        Raises:
+            ValueError: An exception.
         """
         if len(shape) != len(axis_names):
             msg = "Length of shape and axis_names must match."
@@ -40,11 +43,22 @@ class DeviceMesh:
             self.devices = tuple(range(expected_devices))
 
     def __repr__(self) -> str:
-        """Return representation."""
+        """Return representation.
+
+        Returns:
+        str: Result.
+        """
         return f"DeviceMesh(shape={self.shape}, axis_names={self.axis_names})"
 
     def __eq__(self, other: object) -> bool:
-        """Equality check."""
+        """Equality check.
+
+        Args:
+        other (object): The other parameter.
+
+        Returns:
+        bool: Result.
+        """
         if not isinstance(other, DeviceMesh):
             return False
         return self.shape == other.shape and self.axis_names == other.axis_names and self.devices == other.devices

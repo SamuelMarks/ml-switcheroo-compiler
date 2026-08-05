@@ -7,7 +7,19 @@ from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
 def dispatch_op(op_type: str, *args: object, **kwargs: object) -> object:
-    """Route operation to eager or tracing handler."""
+    """Route operation to eager or tracing handler.
+
+    Args:
+        op_type (str): The op_type parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        RuntimeError: An exception.
+    """
     if config.eager_mode:
         return EagerEvaluator.evaluate(op_type, *args, **kwargs)
 

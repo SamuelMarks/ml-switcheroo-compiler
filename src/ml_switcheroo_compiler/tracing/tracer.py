@@ -63,34 +63,29 @@ class TracerTape(threading.local):
         super().__init__()
 
     def start_tracing(self, name: str = "Model") -> LogicalGraph:
-        """Begin tracking a new graph.
-
-        name (str): The name of the graph
-
-        Returns:
-            LogicalGraph: The new active graph
+        """Begin tracking operations and constructing a new computational graph.
 
         Args:
-            name (str): Argument name
+            name (str): The string identifier used to name the newly created graph.
+
+        Returns:
+            LogicalGraph: The newly initialized empty graph ready for node insertion.
         """
         return global_tracing_state.start_tracing(name)
 
     def stop_tracing(self) -> LogicalGraph | None:
-        """Stop tracking and return the current graph.
+        """Stop tracking operations and finalize the current computational graph.
 
         Returns:
-            Optional[LogicalGraph]: The captured graph, if any
+            LogicalGraph | None: The finalized graph containing all traced operations, or None if no trace was active.
         """
         return global_tracing_state.stop_tracing()
 
     def add_node(self, node: IRNode) -> None:
-        """Add a node to the active graph.
-
-        Raises:
-            RuntimeError: If not currently tracing
+        """Append a newly constructed intermediate representation node to the active graph.
 
         Args:
-            node (IRNode): Argument node
+            node (IRNode): The intermediate representation node to insert.
         """
         global_tracing_state.add_node(node)
 
@@ -100,7 +95,7 @@ _tracer = TracerTape()
 
 
 class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
-    """A proxy object that intercepts mathematical operations and builds the IR graph.
+    """Provide a proxy object that intercepts mathematical operations and builds the IR graph.
 
     Attributes:
         id (str): The ID of the IRNode producing this tensor

@@ -12,47 +12,47 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 @numpy_eager_registry.register("Xlogy")
 def _np_xlogy(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute x * log(y) element-wise, returning 0 if x == 0.
+    """Evaluate _np_xlogy operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return _xlogy(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Mvlgamma")
 def _np_mvlgamma(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the multivariate log-gamma function.
+    """Evaluate _np_mvlgamma operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return backend_module.mvlgamma(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Pmean")
 def _np_pmean(backend_module: object, x: object, axis_name: object, *args: object, **kwargs: object) -> object:
-    """Compute the parallel mean across a given axis name.
+    """Evaluate _np_pmean operation.
 
     Args:
         backend_module (object): The backend_module parameter.
         x (object): The x parameter.
         axis_name (object): The axis_name parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return x
 
@@ -62,12 +62,14 @@ def _np_logsumexp(backend_module: object, a: object, axis: object = None, keepdi
     """Evaluate _np_logsumexp logic eagerly backed by NumPy.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        a (object): The a parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -84,17 +86,17 @@ def _np_logsumexp(backend_module: object, a: object, axis: object = None, keepdi
 
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(backend_module: object, data: object, segment_ids: object, num_segments: object = None, **kwargs: object) -> object:
-    """Compute the sum of segments of a tensor.
+    """Evaluate _np_segment_sum operation.
 
     Args:
         backend_module (object): The backend_module parameter.
         data (object): The data parameter.
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
-        **kwargs (object): Arbitrary keyword arguments.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     num_segments = num_segments if num_segments is not None else np.max(segment_ids) + 1
     out = np.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
@@ -104,15 +106,15 @@ def _np_segment_sum(backend_module: object, data: object, segment_ids: object, n
 
 @numpy_eager_registry.register("Psum")
 def _np_psum(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the parallel sum across a given axis name.
+    """Evaluate _np_psum operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _mock_dist_ctx
 
@@ -125,31 +127,31 @@ def _np_psum(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Log1P")
 def _np_log1p2(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute natural logarithm of one plus the input array, element-wise.
+    """Evaluate _np_log1p2 operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return backend_module.log1p(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Rsqrt")
 def _np_rsqrt(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
-    """Compute the reciprocal of the square root, element-wise.
+    """Evaluate _np_rsqrt operation.
 
     Args:
         backend_module (object): The backend_module parameter.
         x (object): The x parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     with np.errstate(divide="ignore", invalid="ignore"):
         return 1.0 / np.sqrt(x)
@@ -157,15 +159,15 @@ def _np_rsqrt(backend_module: object, x: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("TruncateDiv")
 def _np_truncate_div(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the truncated division of x by y, element-wise.
+    """Evaluate _np_truncate_div operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     (x, y) = args
     return np.trunc(np.divide(x, y))
@@ -173,15 +175,15 @@ def _np_truncate_div(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("TruncateMod")
 def _np_truncate_mod(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the truncated remainder of division of x by y, element-wise.
+    """Evaluate _np_truncate_mod operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     (x, y) = args
     return np.fmod(x, y)
@@ -189,15 +191,15 @@ def _np_truncate_mod(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("Betainc")
 def _np_betainc(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the regularized incomplete beta function.
+    """Evaluate _np_betainc operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     import scipy.special as sc
 
@@ -209,15 +211,15 @@ def _np_betainc(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("BesselI0e")
 def _np_bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the exponentially scaled modified Bessel function of order 0.
+    """Evaluate _np_bessel_i0e operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     import scipy.special as sc
 
@@ -226,15 +228,15 @@ def _np_bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("BesselI1e")
 def _np_bessel_i1e(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the exponentially scaled modified Bessel function of order 1.
+    """Evaluate _np_bessel_i1e operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     import scipy.special as sc
 
@@ -248,11 +250,14 @@ def _np_clz(backend_module: object, x: object, *args: object, **kwargs: object) 
     Args:
         backend_module (object): The backend_module parameter.
         x (object): The x parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
+
+    Raises:
+        TypeError: An exception.
     """
     x_arr = np.asarray(x)
     if not np.issubdtype(x_arr.dtype, np.integer):
@@ -261,13 +266,13 @@ def _np_clz(backend_module: object, x: object, *args: object, **kwargs: object) 
 
     @np.vectorize
     def _clz_scalar(val: object) -> object:
-        """Evaluate the count of leading zero bits for a scalar integer.
+        """Evaluate _clz_scalar operation.
 
         Args:
-            val (object): The val parameter.
+        val (object): The val parameter.
 
         Returns:
-            object: The computed result.
+        object: Result.
         """
         val = int(val)
         if val < 0:
@@ -415,15 +420,15 @@ def _np_unpackbits(backend_module: object, *args: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("Piecewise")
 def _np_piecewise(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate a piecewise-defined function.
+    """Evaluate _np_piecewise operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return np.piecewise(np.asarray(args[0]), args[1], args[2], *args[3:], **kwargs)
 
@@ -640,15 +645,15 @@ def _np_unwrap(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Vander")
 def _np_vander(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Generate a Vandermonde matrix.
+    """Evaluate _np_vander operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return np.vander(np.asarray(args[0]), *args[1:], **kwargs)
 
@@ -685,15 +690,15 @@ def _np_append(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Average")
 def _np_average(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Compute the weighted average along the specified axis.
+    """Evaluate _np_average operation.
 
     Args:
         backend_module (object): The backend_module parameter.
-        *args (object): Variable positional arguments.
-        **kwargs (object): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The computed result.
+        object: Result.
     """
     return backend_module.average(*args, **kwargs)
 
@@ -865,7 +870,7 @@ def _np_compress(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @numpy_eager_registry.register("Convolve")
 def _np_convolve(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Returns the discrete, linear convolution of two one-dimensional sequences.
+    """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
         backend_module (object): The backend_module parameter.
@@ -2065,13 +2070,31 @@ def _np_linalg_pinv_(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("AffineConfig")
 def _np_affineconfig(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement AffineConfig."""
+    """Implement AffineConfig.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return kwargs
 
 
 @numpy_eager_registry.register("AsStringConfig")
 def _np_asstringconfig(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement AsStringConfig."""
+    """Implement AsStringConfig.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
 
     return AsStringConfig(*args, **kwargs)
@@ -2079,7 +2102,16 @@ def _np_asstringconfig(backend_module: object, *args: object, **kwargs: object) 
 
 @numpy_eager_registry.register("AssertOp")
 def _np_assertop(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement AssertOp."""
+    """Implement AssertOp.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import numpy as np
 
     condition = args[0] if len(args) > 0 else kwargs.get("condition", None)
@@ -2090,7 +2122,16 @@ def _np_assertop(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @numpy_eager_registry.register("BlurConfig")
 def _np_blurconfig(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement BlurConfig."""
+    """Implement BlurConfig.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.configs import BlurConfig
 
     return BlurConfig(*args, **kwargs)
@@ -2098,7 +2139,16 @@ def _np_blurconfig(backend_module: object, *args: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("Callable")
 def _np_callable(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement Callable."""
+    """Implement Callable.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     if args:
         return callable(args[0])
     return False
@@ -2106,7 +2156,16 @@ def _np_callable(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @numpy_eager_registry.register("ConvGeneralDilatedLocal")
 def _np_convgeneraldilatedlocal(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement ConvGeneralDilatedLocal."""
+    """Implement ConvGeneralDilatedLocal.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     # A generic fallback using scipy.signal
     import scipy.signal
 
@@ -2115,7 +2174,16 @@ def _np_convgeneraldilatedlocal(backend_module: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("ConvGeneralDilatedPatches")
 def _np_convgeneraldilatedpatches(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement ConvGeneralDilatedPatches."""
+    """Implement ConvGeneralDilatedPatches.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.signal
 
     return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
@@ -2123,7 +2191,16 @@ def _np_convgeneraldilatedpatches(backend_module: object, *args: object, **kwarg
 
 @numpy_eager_registry.register("ConvWithGeneralPadding")
 def _np_convwithgeneralpadding(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement ConvWithGeneralPadding."""
+    """Implement ConvWithGeneralPadding.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.signal
 
     return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
@@ -2131,7 +2208,16 @@ def _np_convwithgeneralpadding(backend_module: object, *args: object, **kwargs: 
 
 @numpy_eager_registry.register("CustomLinearSolve")
 def _np_customlinearsolve(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement CustomLinearSolve."""
+    """Implement CustomLinearSolve.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     # CustomLinearSolve typically takes (matvec_or_matrix, b, solve, ...).
     # If a custom solve is provided, we use it, otherwise fallback to np.linalg.solve if it's a matrix.
     if callable(args[0]):
@@ -2146,7 +2232,16 @@ def _np_customlinearsolve(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("CustomRoot")
 def _np_customroot(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement CustomRoot."""
+    """Implement CustomRoot.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     f = args[0]
     initial_guess = args[1]
     solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
@@ -2157,7 +2252,19 @@ def _np_customroot(backend_module: object, *args: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("DebugInfs")
 def _np_debuginfs(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement DebugInfs."""
+    """Implement DebugInfs.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     x = args[0]
     if backend_module.any(backend_module.isinf(x)):
         raise ValueError("Infinity found in tensor.")
@@ -2166,7 +2273,19 @@ def _np_debuginfs(backend_module: object, *args: object, **kwargs: object) -> ob
 
 @numpy_eager_registry.register("DebugNans")
 def _np_debugnans(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement DebugNans."""
+    """Implement DebugNans.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
+    """
     x = args[0]
     if backend_module.any(backend_module.isnan(x)):
         raise ValueError("NaN found in tensor.")
@@ -2174,15 +2293,15 @@ def _np_debugnans(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_numbers: tuple) -> str:
-    """Evaluate the build_dot_general_einsum_str operation using NumPy.
+    """Evaluate _build_dot_general_einsum_str operation.
 
     Args:
-        lhs_ndim (int): The lhs ndim.
-        rhs_ndim (int): The rhs ndim.
-        dimension_numbers (tuple): The dimension numbers.
+        lhs_ndim (int): The lhs_ndim parameter.
+        rhs_ndim (int): The rhs_ndim parameter.
+        dimension_numbers (tuple): The dimension_numbers parameter.
 
     Returns:
-        str: The result.
+        str: Result.
     """
     (lhs_cont, rhs_cont), (lhs_batch, rhs_batch) = dimension_numbers
     batch_chars = [chr(ord("a") + i) for i in range(len(lhs_batch))]
@@ -2216,7 +2335,16 @@ def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_number
 
 @numpy_eager_registry.register("DotGeneral")
 def _np_dotgeneral(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement DotGeneral."""
+    """Implement DotGeneral.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     lhs, rhs = np.asarray(args[0]), np.asarray(args[1])
     dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ())))
     einsum_str = _build_dot_general_einsum_str(lhs.ndim, rhs.ndim, dimension_numbers)
@@ -2225,7 +2353,16 @@ def _np_dotgeneral(backend_module: object, *args: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("ElasticConfig")
 def _np_elasticconfig(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement ElasticConfig."""
+    """Implement ElasticConfig.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.configs import ElasticConfig
 
     return ElasticConfig(*args, **kwargs)
@@ -2233,7 +2370,16 @@ def _np_elasticconfig(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("ExtractPatchesOptions")
 def _np_extractpatchesoptions(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement ExtractPatchesOptions."""
+    """Implement ExtractPatchesOptions.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.vision.bbox import ExtractPatchesOptions
 
     return ExtractPatchesOptions(*args, **kwargs)
@@ -2241,7 +2387,16 @@ def _np_extractpatchesoptions(backend_module: object, *args: object, **kwargs: o
 
 @numpy_eager_registry.register("LinearOperator")
 def _np_linearoperator(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperator."""
+    """Implement LinearOperator.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperator
 
     return LinearOperator(*args, **kwargs)
@@ -2249,7 +2404,16 @@ def _np_linearoperator(backend_module: object, *args: object, **kwargs: object) 
 
 @numpy_eager_registry.register("LinearOperatorAdjoint")
 def _np_linearoperatoradjoint(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorAdjoint."""
+    """Implement LinearOperatorAdjoint.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorAdjoint
 
     return LinearOperatorAdjoint(*args, **kwargs)
@@ -2257,7 +2421,16 @@ def _np_linearoperatoradjoint(backend_module: object, *args: object, **kwargs: o
 
 @numpy_eager_registry.register("LinearOperatorBlockDiag")
 def _np_linearoperatorblockdiag(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorBlockDiag."""
+    """Implement LinearOperatorBlockDiag.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockDiag
 
     return LinearOperatorBlockDiag(*args, **kwargs)
@@ -2265,7 +2438,16 @@ def _np_linearoperatorblockdiag(backend_module: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("LinearOperatorBlockLowerTriangular")
 def _np_linearoperatorblocklowertriangular(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorBlockLowerTriangular."""
+    """Implement LinearOperatorBlockLowerTriangular.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorBlockLowerTriangular
 
     return LinearOperatorBlockLowerTriangular(*args, **kwargs)
@@ -2273,7 +2455,16 @@ def _np_linearoperatorblocklowertriangular(backend_module: object, *args: object
 
 @numpy_eager_registry.register("LinearOperatorCirculant")
 def _np_linearoperatorcirculant(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorCirculant."""
+    """Implement LinearOperatorCirculant.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorCirculant
 
     return LinearOperatorCirculant(*args, **kwargs)
@@ -2281,7 +2472,16 @@ def _np_linearoperatorcirculant(backend_module: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("LinearOperatorCirculant2D")
 def _np_linearoperatorcirculant2d(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorCirculant2D."""
+    """Implement LinearOperatorCirculant2D.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorCirculant2D
 
     return LinearOperatorCirculant2D(*args, **kwargs)
@@ -2289,7 +2489,16 @@ def _np_linearoperatorcirculant2d(backend_module: object, *args: object, **kwarg
 
 @numpy_eager_registry.register("LinearOperatorCirculant3D")
 def _np_linearoperatorcirculant3d(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorCirculant3D."""
+    """Implement LinearOperatorCirculant3D.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorCirculant3D
 
     return LinearOperatorCirculant3D(*args, **kwargs)
@@ -2297,7 +2506,16 @@ def _np_linearoperatorcirculant3d(backend_module: object, *args: object, **kwarg
 
 @numpy_eager_registry.register("LinearOperatorComposition")
 def _np_linearoperatorcomposition(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorComposition."""
+    """Implement LinearOperatorComposition.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorComposition
 
     return LinearOperatorComposition(*args, **kwargs)
@@ -2305,7 +2523,16 @@ def _np_linearoperatorcomposition(backend_module: object, *args: object, **kwarg
 
 @numpy_eager_registry.register("LinearOperatorDiag")
 def _np_linearoperatordiag(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorDiag."""
+    """Implement LinearOperatorDiag.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorDiag
 
     return LinearOperatorDiag(*args, **kwargs)
@@ -2313,7 +2540,16 @@ def _np_linearoperatordiag(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("LinearOperatorFullMatrix")
 def _np_linearoperatorfullmatrix(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorFullMatrix."""
+    """Implement LinearOperatorFullMatrix.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorFullMatrix
 
     return LinearOperatorFullMatrix(*args, **kwargs)
@@ -2321,7 +2557,16 @@ def _np_linearoperatorfullmatrix(backend_module: object, *args: object, **kwargs
 
 @numpy_eager_registry.register("LinearOperatorHouseholder")
 def _np_linearoperatorhouseholder(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorHouseholder."""
+    """Implement LinearOperatorHouseholder.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorHouseholder
 
     return LinearOperatorHouseholder(*args, **kwargs)
@@ -2329,7 +2574,16 @@ def _np_linearoperatorhouseholder(backend_module: object, *args: object, **kwarg
 
 @numpy_eager_registry.register("LinearOperatorIdentity")
 def _np_linearoperatoridentity(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorIdentity."""
+    """Implement LinearOperatorIdentity.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorIdentity
 
     return LinearOperatorIdentity(*args, **kwargs)
@@ -2337,7 +2591,16 @@ def _np_linearoperatoridentity(backend_module: object, *args: object, **kwargs: 
 
 @numpy_eager_registry.register("LinearOperatorInversion")
 def _np_linearoperatorinversion(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorInversion."""
+    """Implement LinearOperatorInversion.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorInversion
 
     return LinearOperatorInversion(*args, **kwargs)
@@ -2345,7 +2608,16 @@ def _np_linearoperatorinversion(backend_module: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("LinearOperatorKronecker")
 def _np_linearoperatorkronecker(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorKronecker."""
+    """Implement LinearOperatorKronecker.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorKronecker
 
     return LinearOperatorKronecker(*args, **kwargs)
@@ -2353,7 +2625,16 @@ def _np_linearoperatorkronecker(backend_module: object, *args: object, **kwargs:
 
 @numpy_eager_registry.register("LinearOperatorLowRankUpdate")
 def _np_linearoperatorlowrankupdate(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorLowRankUpdate."""
+    """Implement LinearOperatorLowRankUpdate.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorLowRankUpdate
 
     return LinearOperatorLowRankUpdate(*args, **kwargs)
@@ -2361,7 +2642,16 @@ def _np_linearoperatorlowrankupdate(backend_module: object, *args: object, **kwa
 
 @numpy_eager_registry.register("LinearOperatorLowerTriangular")
 def _np_linearoperatorlowertriangular(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorLowerTriangular."""
+    """Implement LinearOperatorLowerTriangular.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorLowerTriangular
 
     return LinearOperatorLowerTriangular(*args, **kwargs)
@@ -2369,7 +2659,16 @@ def _np_linearoperatorlowertriangular(backend_module: object, *args: object, **k
 
 @numpy_eager_registry.register("LinearOperatorPermutation")
 def _np_linearoperatorpermutation(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorPermutation."""
+    """Implement LinearOperatorPermutation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorPermutation
 
     return LinearOperatorPermutation(*args, **kwargs)
@@ -2377,7 +2676,16 @@ def _np_linearoperatorpermutation(backend_module: object, *args: object, **kwarg
 
 @numpy_eager_registry.register("LinearOperatorScaledIdentity")
 def _np_linearoperatorscaledidentity(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorScaledIdentity."""
+    """Implement LinearOperatorScaledIdentity.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorScaledIdentity
 
     return LinearOperatorScaledIdentity(*args, **kwargs)
@@ -2385,7 +2693,16 @@ def _np_linearoperatorscaledidentity(backend_module: object, *args: object, **kw
 
 @numpy_eager_registry.register("LinearOperatorToeplitz")
 def _np_linearoperatortoeplitz(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorToeplitz."""
+    """Implement LinearOperatorToeplitz.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorToeplitz
 
     return LinearOperatorToeplitz(*args, **kwargs)
@@ -2393,7 +2710,16 @@ def _np_linearoperatortoeplitz(backend_module: object, *args: object, **kwargs: 
 
 @numpy_eager_registry.register("LinearOperatorTridiag")
 def _np_linearoperatortridiag(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorTridiag."""
+    """Implement LinearOperatorTridiag.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorTridiag
 
     return LinearOperatorTridiag(*args, **kwargs)
@@ -2401,7 +2727,16 @@ def _np_linearoperatortridiag(backend_module: object, *args: object, **kwargs: o
 
 @numpy_eager_registry.register("LinearOperatorZeros")
 def _np_linearoperatorzeros(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement LinearOperatorZeros."""
+    """Implement LinearOperatorZeros.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.linalg.linear_operator import LinearOperatorZeros
 
     return LinearOperatorZeros(*args, **kwargs)
@@ -2409,7 +2744,16 @@ def _np_linearoperatorzeros(backend_module: object, *args: object, **kwargs: obj
 
 @numpy_eager_registry.register("PerspectiveConfig")
 def _np_perspectiveconfig(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement PerspectiveConfig."""
+    """Implement PerspectiveConfig.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
     return PerspectiveConfig(*args, **kwargs)
@@ -2417,13 +2761,31 @@ def _np_perspectiveconfig(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("RaggedDot")
 def _np_raggeddot(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement RaggedDot."""
+    """Implement RaggedDot.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.matmul(args[0], args[1])
 
 
 @numpy_eager_registry.register("RawConv2D")
 def _np_rawconv2d(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement RawConv2D."""
+    """Implement RawConv2D.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import scipy.signal
 
     return scipy.signal.convolve(np.asarray(args[0]), np.asarray(args[1]), mode="valid")
@@ -2431,7 +2793,19 @@ def _np_rawconv2d(backend_module: object, *args: object, **kwargs: object) -> ob
 
 @numpy_eager_registry.register("RawMatMul")
 def _np_rawmatmul(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement RawMatMul."""
+    """Implement RawMatMul.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        RuntimeError: An exception.
+    """
     try:
         import ml_switcheroo_compiler.ops as _ops
 
@@ -2451,20 +2825,47 @@ def _np_rawmatmul(backend_module: object, *args: object, **kwargs: object) -> ob
 
 @numpy_eager_registry.register("RawMerge")
 def _np_rawmerge(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement RawMerge."""
+    """Implement RawMerge.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     inputs = args[0] if len(args) == 1 and isinstance(args[0], (list, tuple)) else args
     return (inputs[0], np.array(0, dtype=np.int32)) if inputs else (None, np.array(-1, dtype=np.int32))
 
 
 @numpy_eager_registry.register("RawOp")
 def _np_rawop(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement RawOp."""
+    """Implement RawOp.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return args[0] if args else None
 
 
 @numpy_eager_registry.register("RawSwitch")
 def _np_rawswitch(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement RawSwitch."""
+    """Implement RawSwitch.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     data = args[0]
     pred = args[1] if len(args) > 1 else kwargs.get("pred", False)
 
@@ -2474,7 +2875,15 @@ def _np_rawswitch(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 def _parse_scanop_args(args: tuple, kwargs: dict) -> tuple:
-    """Parse ScanOp arguments."""
+    """Parse ScanOp arguments.
+
+    Args:
+        args (tuple): The args parameter.
+        kwargs (dict): The kwargs parameter.
+
+    Returns:
+        tuple: Result.
+    """
     fn = args[0] if len(args) > 0 else kwargs.get("fn")
     elems = args[1] if len(args) > 1 else kwargs.get("elems")
     acc = args[2] if len(args) > 2 else None
@@ -2484,7 +2893,16 @@ def _parse_scanop_args(args: tuple, kwargs: dict) -> tuple:
 
 @numpy_eager_registry.register("ScanOp")
 def _np_scanop(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement ScanOp."""
+    """Implement ScanOp.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     fn, elems, acc, has_acc = _parse_scanop_args(args, kwargs)
 
     if not callable(fn) or elems is None:
@@ -2509,7 +2927,19 @@ def _np_scanop(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("SobolSample")
 def _np_sobolsample(backend_module: object, dim: int, num_results: int, skip: int = 0, *args: object, **kwargs: object) -> object:
-    """Implement SobolSample eagerly."""
+    """Implement SobolSample eagerly.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        dim (int): The dim parameter.
+        num_results (int): The num_results parameter.
+        skip (int): The skip parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import numpy as np
 
     np.random.seed((42 + skip) % (2**32 - 1))
@@ -2518,7 +2948,19 @@ def _np_sobolsample(backend_module: object, dim: int, num_results: int, skip: in
 
 @numpy_eager_registry.register("SparseDenseMatMul")
 def _np_sparsedensematmul(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseDenseMatMul."""
+    """Implement SparseDenseMatMul.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        RuntimeError: An exception.
+    """
     try:
         import ml_switcheroo_compiler.ops as _ops
 
@@ -2538,7 +2980,16 @@ def _np_sparsedensematmul(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("SparseMapValues")
 def _np_sparsemapvalues(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseMapValues."""
+    """Implement SparseMapValues.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     fn = args[0]
     sp_input = args[1]
     return fn(backend_module.array(sp_input))
@@ -2546,38 +2997,92 @@ def _np_sparsemapvalues(backend_module: object, *args: object, **kwargs: object)
 
 @numpy_eager_registry.register("SparseReduceMax")
 def _np_sparsereducemax(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseReduceMax."""
+    """Implement SparseReduceMax.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.max(args[0], axis=-1)
 
 
 @numpy_eager_registry.register("SparseReshape")
 def _np_sparsereshape(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseReshape."""
+    """Implement SparseReshape.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.reshape(args[0], args[1])
 
 
 @numpy_eager_registry.register("SparseSampledAdd")
 def _np_sparsesampledadd(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseSampledAdd."""
+    """Implement SparseSampledAdd.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.add(args[0], args[1])
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
 def _np_sparsesegmentsum(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseSegmentSum."""
+    """Implement SparseSegmentSum.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     data = backend_module.asarray(args[0])
     return backend_module.sum(data, axis=0, keepdims=True)
 
 
 @numpy_eager_registry.register("SparseTranspose")
 def _np_sparsetranspose(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SparseTranspose."""
+    """Implement SparseTranspose.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return backend_module.transpose(args[0])
 
 
 @numpy_eager_registry.register("SwitchOp")
 def _np_switchop(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement SwitchOp."""
+    """Implement SwitchOp.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     data = args[0]
     pred = args[1] if len(args) > 1 else kwargs.get("pred", False)
 
@@ -2588,7 +3093,16 @@ def _np_switchop(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @numpy_eager_registry.register("Tensor")
 def _np_tensor(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement Tensor."""
+    """Implement Tensor.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     # Convert inputs to a numpy array.
     if not args and not kwargs:
         return backend_module.array([])
@@ -2597,7 +3111,16 @@ def _np_tensor(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("TensorArrayRead")
 def _np_tensorarrayread(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorArrayRead."""
+    """Implement TensorArrayRead.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     handle = args[0]
     index = args[1]
     return handle[index]
@@ -2605,14 +3128,32 @@ def _np_tensorarrayread(backend_module: object, *args: object, **kwargs: object)
 
 @numpy_eager_registry.register("TensorArrayStack")
 def _np_tensorarraystack(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorArrayStack."""
+    """Implement TensorArrayStack.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     handle = args[0]
     return backend_module.stack(handle)
 
 
 @numpy_eager_registry.register("TensorArrayWrite")
 def _np_tensorarraywrite(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorArrayWrite."""
+    """Implement TensorArrayWrite.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     handle = args[0]
     index = args[1]
     value = args[2]
@@ -2627,7 +3168,16 @@ def _np_tensorarraywrite(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("TensorConfig")
 def _np_tensorconfig(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement TensorConfig."""
+    """Implement TensorConfig.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
     return TensorConfig(*args, **kwargs)
@@ -2635,7 +3185,16 @@ def _np_tensorconfig(backend_module: object, *args: object, **kwargs: object) ->
 
 @numpy_eager_registry.register("Vecdot")
 def _np_vecdot(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement Vecdot."""
+    """Implement Vecdot.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     x = args[0]
     y = args[1]
     axis = kwargs.get("axis", -1)
@@ -2651,107 +3210,94 @@ def _np_vecdot(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("decode_csv")
 def _np_decode_csv(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the decode_csv operation using NumPy.
+    """Evaluate _np_decode_csv operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_decode_csv_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("decode_image")
 def _np_decode_image(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the decode_image operation using NumPy.
+    """Evaluate _np_decode_image operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_decode_image_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("parse_example")
 def _np_parse_example(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the parse_example operation using NumPy.
+    """Evaluate _np_parse_example operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_parse_example_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("parse_tensor")
 def _np_parse_tensor(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the parse_tensor operation using NumPy.
+    """Evaluate _np_parse_tensor operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_parse_tensor_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("read_file")
 def _np_read_file(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the read_file operation using NumPy.
+    """Evaluate _np_read_file operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_read_file_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("rem")
 def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement rem."""
+    """Evaluate _np_rem operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        RuntimeError: An exception.
+    """
     try:
         import ml_switcheroo_compiler.ops as _ops
 
@@ -2771,45 +3317,49 @@ def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("serialize_tensor")
 def _np_serialize_tensor(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the serialize_tensor operation using NumPy.
+    """Evaluate _np_serialize_tensor operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_serialize_tensor_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("write_file")
 def _np_write_file(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the write_file operation using NumPy.
+    """Evaluate _np_write_file operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
-
+        object: Result.
     """
     return _np_write_file_camel(backend_module, *args, **kwargs)
 
 
 @numpy_eager_registry.register("confusion_matrix")
 def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement confusion_matrix."""
+    """Evaluate _np_confusion_matrix operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+
+    Raises:
+        RuntimeError: An exception.
+    """
     try:
         import ml_switcheroo_compiler.ops as _ops
 
@@ -2835,19 +3385,18 @@ def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("descriptive")
 def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the descriptive operation using NumPy.
+    """Evaluate _np_descriptive operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
@@ -2867,19 +3416,18 @@ def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> 
 
 @numpy_eager_registry.register("distributions")
 def _np_distributions(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the distributions operation using NumPy.
+    """Evaluate _np_distributions operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     try:
         import ml_switcheroo_compiler.ops as _ops
@@ -2899,15 +3447,15 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("BitwiseCount")
 def _np_bitwise_count(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_bitwise_count logic eagerly backed by NumPy.
+    """Evaluate _np_bitwise_count operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -2917,15 +3465,15 @@ def _np_bitwise_count(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("FromDlpack")
 def _np_fromdlpack(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_fromdlpack logic eagerly backed by NumPy.
+    """Evaluate _np_fromdlpack operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if hasattr(backend_module, "from_dlpack"):
         return backend_module.from_dlpack(*args, **kwargs)
@@ -2934,15 +3482,15 @@ def _np_fromdlpack(backend_module: object, *args: object, **kwargs: object) -> o
 
 @numpy_eager_registry.register("RandomCategorical")
 def _np_randomcategorical(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_randomcategorical logic eagerly backed by NumPy.
+    """Evaluate _np_randomcategorical operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     logits = backend_module.asarray(args[0])
     num_samples = args[1] if len(args) > 1 else kwargs.get("num_samples", 1)
@@ -2953,15 +3501,15 @@ def _np_randomcategorical(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("RandomPermutation")
 def _np_randompermutation(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_randompermutation logic eagerly backed by NumPy.
+    """Evaluate _np_randompermutation operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -2973,22 +3521,31 @@ def _np_randompermutation(backend_module: object, *args: object, **kwargs: objec
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
 def _np_randomtruncatednormal(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate RandomTruncatedNormal logic eagerly backed by NumPy."""
+    """Evaluate _np_randomtruncatednormal operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     return backend_module.random.standard_normal(size=shape)
 
 
 @numpy_eager_registry.register("Key")
 def _np_key(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_key logic eagerly backed by NumPy.
+    """Evaluate _np_key operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     if len(args) > 0:
         return np.array([args[0], 0], dtype=np.uint32)
@@ -3000,12 +3557,15 @@ def _np_stridedslice(backend_module: object, data: object, start: object, end: o
     """Evaluate _np_stridedslice logic eagerly backed by NumPy.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        data (object): The data parameter.
+        start (object): The start parameter.
+        end (object): The end parameter.
+        strides (object): The strides parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     slices = tuple(slice(s, e, st) for s, e, st in zip(start, end, strides))
     return data[slices]
@@ -3013,27 +3573,39 @@ def _np_stridedslice(backend_module: object, data: object, start: object, end: o
 
 @numpy_eager_registry.register("RandomBernoulli")
 def _np_randombernoulli(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate RandomBernoulli logic eagerly backed by NumPy."""
+    """Evaluate _np_randombernoulli operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
     return backend_module.random.binomial(1, p, size=shape)
 
 
 def _get_np_arg(arg: Sequence[object], i: int) -> Optional[np.ndarray]:
-    """Get numpy arg."""
+    """Get numpy arg.
+
+    Args:
+        arg (object): The arg parameter.
+        i (int): The i parameter.
+
+    Returns:
+        object: Result.
+    """
     return np.asarray(arg[i]) if len(arg) > i else None
 
 
 def _get_sc() -> object:
-    """Evaluate _get_sc logic eagerly backed by NumPy.
-
-    Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+    """Evaluate _get_sc operation.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     try:
         import scipy.special as sc
@@ -3047,12 +3619,14 @@ def _poly_recurrence(n: object, x: object, p0: float, p1_func: object, p_next_fu
     """Evaluate _poly_recurrence logic eagerly backed by NumPy.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        n (object): The n parameter.
+        x (object): The x parameter.
+        p0 (float): The p0 parameter.
+        p1_func (object): The p1_func parameter.
+        p_next_func (object): The p_next_func parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -3078,15 +3652,18 @@ def _poly_recurrence(n: object, x: object, p0: float, p1_func: object, p_next_fu
 
 @numpy_eager_registry.register("chebyshev_polynomial_t")
 def _np_chebyshev_polynomial_t(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_chebyshev_polynomial_t logic eagerly backed by NumPy.
+    """Evaluate _np_chebyshev_polynomial_t operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     x, n = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None:
@@ -3096,15 +3673,18 @@ def _np_chebyshev_polynomial_t(backend_module: object, *args: object, **kwargs: 
 
 @numpy_eager_registry.register("chebyshev_polynomial_u")
 def _np_chebyshev_polynomial_u(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_chebyshev_polynomial_u logic eagerly backed by NumPy.
+    """Evaluate _np_chebyshev_polynomial_u operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     x, n = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None:
@@ -3114,15 +3694,18 @@ def _np_chebyshev_polynomial_u(backend_module: object, *args: object, **kwargs: 
 
 @numpy_eager_registry.register("hermite_polynomial_h")
 def _np_hermite_polynomial_h(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_hermite_polynomial_h logic eagerly backed by NumPy.
+    """Evaluate _np_hermite_polynomial_h operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     x, n = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None:
@@ -3132,15 +3715,18 @@ def _np_hermite_polynomial_h(backend_module: object, *args: object, **kwargs: ob
 
 @numpy_eager_registry.register("hermite_polynomial_he")
 def _np_hermite_polynomial_he(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_hermite_polynomial_he logic eagerly backed by NumPy.
+    """Evaluate _np_hermite_polynomial_he operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     x, n = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None:
@@ -3150,15 +3736,18 @@ def _np_hermite_polynomial_he(backend_module: object, *args: object, **kwargs: o
 
 @numpy_eager_registry.register("laguerre_polynomial_l")
 def _np_laguerre_polynomial_l(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_laguerre_polynomial_l logic eagerly backed by NumPy.
+    """Evaluate _np_laguerre_polynomial_l operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     x, n = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None:
@@ -3168,15 +3757,18 @@ def _np_laguerre_polynomial_l(backend_module: object, *args: object, **kwargs: o
 
 @numpy_eager_registry.register("legendre_polynomial_p")
 def _np_legendre_polynomial_p(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_legendre_polynomial_p logic eagerly backed by NumPy.
+    """Evaluate _np_legendre_polynomial_p operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     x, n = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None:
@@ -3186,15 +3778,15 @@ def _np_legendre_polynomial_p(backend_module: object, *args: object, **kwargs: o
 
 @numpy_eager_registry.register("modified_bessel_i0")
 def _np_modified_bessel_i0(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_modified_bessel_i0 logic eagerly backed by NumPy.
+    """Evaluate _np_modified_bessel_i0 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 
@@ -3206,15 +3798,15 @@ def _np_modified_bessel_i0(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("modified_bessel_i1")
 def _np_modified_bessel_i1(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_modified_bessel_i1 logic eagerly backed by NumPy.
+    """Evaluate _np_modified_bessel_i1 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     sc = _get_sc()
     x = _get_np_arg(args, 0)
@@ -3233,15 +3825,15 @@ def _np_modified_bessel_i1(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("modified_bessel_k0")
 def _np_modified_bessel_k0(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_modified_bessel_k0 logic eagerly backed by NumPy.
+    """Evaluate _np_modified_bessel_k0 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     sc = _get_sc()
     x = _get_np_arg(args, 0)
@@ -3260,15 +3852,15 @@ def _np_modified_bessel_k0(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("modified_bessel_k1")
 def _np_modified_bessel_k1(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_modified_bessel_k1 logic eagerly backed by NumPy.
+    """Evaluate _np_modified_bessel_k1 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     sc = _get_sc()
     x = _get_np_arg(args, 0)
@@ -3287,7 +3879,16 @@ def _np_modified_bessel_k1(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_t")
 def _np_shifted_chebyshev_polynomial_t(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement shifted_chebyshev_polynomial_t."""
+    """Implement shifted_chebyshev_polynomial_t.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     sc = _get_sc()
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None or sc is None:
@@ -3297,7 +3898,16 @@ def _np_shifted_chebyshev_polynomial_t(backend_module: object, *args: object, **
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_u")
 def _np_shifted_chebyshev_polynomial_u(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement shifted_chebyshev_polynomial_u."""
+    """Implement shifted_chebyshev_polynomial_u.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     sc = _get_sc()
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
     if n is None or x is None or sc is None:
@@ -3307,7 +3917,16 @@ def _np_shifted_chebyshev_polynomial_u(backend_module: object, *args: object, **
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_v")
 def _np_shifted_chebyshev_polynomial_v(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement shifted_chebyshev_polynomial_v."""
+    """Implement shifted_chebyshev_polynomial_v.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     sc = _get_sc()
     # V_n(x) = U_n(x) - U_{n-1}(x) / 2
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
@@ -3321,7 +3940,16 @@ def _np_shifted_chebyshev_polynomial_v(backend_module: object, *args: object, **
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_w")
 def _np_shifted_chebyshev_polynomial_w(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Implement shifted_chebyshev_polynomial_w."""
+    """Implement shifted_chebyshev_polynomial_w.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     sc = _get_sc()
     # W_n(x) = U_n(x) + U_{n-1}(x) / 2
     n, x = _get_np_arg(args, 0), _get_np_arg(args, 1)
@@ -3335,15 +3963,15 @@ def _np_shifted_chebyshev_polynomial_w(backend_module: object, *args: object, **
 
 @numpy_eager_registry.register("Rfft")
 def _np_rfft(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rfft logic eagerly backed by NumPy.
+    """Evaluate _np_rfft operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3355,15 +3983,15 @@ def _np_rfft(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Ifft")
 def _np_ifft(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_ifft logic eagerly backed by NumPy.
+    """Evaluate _np_ifft operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3375,15 +4003,15 @@ def _np_ifft(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Fftn")
 def _np_fftn(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_fftn logic eagerly backed by NumPy.
+    """Evaluate _np_fftn operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3395,15 +4023,15 @@ def _np_fftn(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Ifftn")
 def _np_ifftn(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_ifftn logic eagerly backed by NumPy.
+    """Evaluate _np_ifftn operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3415,15 +4043,15 @@ def _np_ifftn(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Rfftn")
 def _np_rfftn(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rfftn logic eagerly backed by NumPy.
+    """Evaluate _np_rfftn operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3435,15 +4063,15 @@ def _np_rfftn(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Irfftn")
 def _np_irfftn(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_irfftn logic eagerly backed by NumPy.
+    """Evaluate _np_irfftn operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3455,15 +4083,15 @@ def _np_irfftn(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Ifft2")
 def _np_ifft2(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_ifft2 logic eagerly backed by NumPy.
+    """Evaluate _np_ifft2 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3475,15 +4103,15 @@ def _np_ifft2(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Rfft2")
 def _np_rfft2(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rfft2 logic eagerly backed by NumPy.
+    """Evaluate _np_rfft2 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3495,15 +4123,15 @@ def _np_rfft2(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Irfft2")
 def _np_irfft2(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_irfft2 logic eagerly backed by NumPy.
+    """Evaluate _np_irfft2 operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3515,15 +4143,15 @@ def _np_irfft2(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Fftnd")
 def _np_fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_fftnd logic eagerly backed by NumPy.
+    """Evaluate _np_fftnd operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3535,15 +4163,15 @@ def _np_fftnd(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Ifftnd")
 def _np_ifftnd(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_ifftnd logic eagerly backed by NumPy.
+    """Evaluate _np_ifftnd operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3555,15 +4183,15 @@ def _np_ifftnd(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Rfftnd")
 def _np_rfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rfftnd logic eagerly backed by NumPy.
+    """Evaluate _np_rfftnd operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3575,15 +4203,15 @@ def _np_rfftnd(backend_module: object, *args: object, **kwargs: object) -> objec
 
 @numpy_eager_registry.register("Irfftnd")
 def _np_irfftnd(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_irfftnd logic eagerly backed by NumPy.
+    """Evaluate _np_irfftnd operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3595,15 +4223,15 @@ def _np_irfftnd(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("Fftshift")
 def _np_fftshift(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_fftshift logic eagerly backed by NumPy.
+    """Evaluate _np_fftshift operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3615,15 +4243,15 @@ def _np_fftshift(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @numpy_eager_registry.register("Ifftshift")
 def _np_ifftshift(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_ifftshift logic eagerly backed by NumPy.
+    """Evaluate _np_ifftshift operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3635,15 +4263,15 @@ def _np_ifftshift(backend_module: object, *args: object, **kwargs: object) -> ob
 
 @numpy_eager_registry.register("Hfft")
 def _np_hfft(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_hfft logic eagerly backed by NumPy.
+    """Evaluate _np_hfft operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3655,15 +4283,15 @@ def _np_hfft(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Rfftfreq")
 def _np_rfftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rfftfreq logic eagerly backed by NumPy.
+    """Evaluate _np_rfftfreq operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy.fft as fft
 
@@ -3679,15 +4307,15 @@ def _np_rfftfreq(backend_module: object, *args: object, **kwargs: object) -> obj
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_confusion_matrix logic eagerly backed by NumPy.
+    """Evaluate _np_confusion_matrix operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     y_true = _get_np_arg(args, 0)
     y_pred = _get_np_arg(args, 1)
@@ -3701,15 +4329,15 @@ def _np_confusion_matrix(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("Descriptive")
 def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_descriptive logic eagerly backed by NumPy.
+    """Evaluate _np_descriptive operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     # Just returning a dummy dict or array for descriptive stats
     a = _get_np_arg(args, 0)
@@ -3720,7 +4348,16 @@ def _np_descriptive(backend_module: object, *args: object, **kwargs: object) -> 
 
 @numpy_eager_registry.register("Distributions")
 def _np_distributions(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_distributions logic eagerly backed by NumPy."""
+    """Evaluate _np_distributions operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     a = _get_np_arg(args, 0)
     if a is None:
         return None
@@ -3730,15 +4367,15 @@ def _np_distributions(backend_module: object, *args: object, **kwargs: object) -
 
 @numpy_eager_registry.register("Rrelu")
 def _np_rrelu(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rrelu logic eagerly backed by NumPy.
+    """Evaluate _np_rrelu operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -3751,15 +4388,15 @@ def _np_rrelu(backend_module: object, *args: object, **kwargs: object) -> object
 
 @numpy_eager_registry.register("Clip")
 def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_clip logic eagerly backed by NumPy.
+    """Evaluate _np_clip operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -3771,15 +4408,15 @@ def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("Softmax")
 def _np_softmax(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_softmax logic eagerly backed by NumPy.
+    """Evaluate _np_softmax operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -3791,15 +4428,15 @@ def _np_softmax(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("Sigmoid")
 def _np_sigmoid(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_sigmoid logic eagerly backed by NumPy.
+    """Evaluate _np_sigmoid operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -3809,15 +4446,15 @@ def _np_sigmoid(backend_module: object, *args: object, **kwargs: object) -> obje
 
 @numpy_eager_registry.register("LogSoftmax")
 def _np_log_softmax(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_log_softmax logic eagerly backed by NumPy.
+    """Evaluate _np_log_softmax operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = _get_np_arg(args, 0)
     if a is None:
@@ -3829,15 +4466,15 @@ def _np_log_softmax(backend_module: object, *args: object, **kwargs: object) -> 
 
 @numpy_eager_registry.register("OneHot")
 def _np_one_hot(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_one_hot logic eagerly backed by NumPy.
+    """Evaluate _np_one_hot operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     indices = _get_np_arg(args, 0)
     depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None)
@@ -3862,12 +4499,15 @@ def _parse_csv_row(row: list[str], record_defaults: list[object], np: object) ->
     """Parse a single CSV row, applying defaults on parse error or missing elements.
 
     Args:
-        row: The CSV row as a list of strings.
-        record_defaults: The default values for each column.
-        np: The numpy module.
+        row (list): The row parameter.
+        record_defaults (list): The record_defaults parameter.
+        np (object): The np parameter.
 
     Returns:
-        The parsed row as a list of arrays.
+        list: Result.
+
+    Raises:
+        RuntimeError: An exception.
     """
     row_out = []
     for i, val in enumerate(row):
@@ -3914,24 +4554,18 @@ def _get_csv_defaults(args: tuple[object, ...], kwargs: dict[str, object]) -> li
 
 @numpy_eager_registry.register("DecodeCsv")
 def _np_decode_csv_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the decode_csv_camel operation using NumPy.
+    """Evaluate _np_decode_csv_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        ValueError: An exception.
     """
     import csv
     import io
@@ -3959,19 +4593,18 @@ def _np_decode_csv_camel(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("DecodeImage")
 def _np_decode_image_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the decode_image_camel operation using NumPy.
+    """Evaluate _np_decode_image_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     import numpy as np
 
@@ -3993,19 +4626,18 @@ def _np_decode_image_camel(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("ParseExample")
 def _np_parse_example_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the parse_example_camel operation using NumPy.
+    """Evaluate _np_parse_example_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     import json
 
@@ -4032,19 +4664,18 @@ def _np_parse_example_camel(backend_module: object, *args: object, **kwargs: obj
 
 @numpy_eager_registry.register("ParseTensor")
 def _np_parse_tensor_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the parse_tensor_camel operation using NumPy.
+    """Evaluate _np_parse_tensor_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     import pickle
 
@@ -4062,19 +4693,18 @@ def _np_parse_tensor_camel(backend_module: object, *args: object, **kwargs: obje
 
 @numpy_eager_registry.register("ReadFile")
 def _np_read_file_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the read_file_camel operation using NumPy.
+    """Evaluate _np_read_file_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     import numpy as np
 
@@ -4090,15 +4720,15 @@ def _np_read_file_camel(backend_module: object, *args: object, **kwargs: object)
 
 @numpy_eager_registry.register("Rem")
 def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_rem logic eagerly backed by NumPy.
+    """Evaluate _np_rem operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)
@@ -4109,24 +4739,18 @@ def _np_rem(backend_module: object, *args: object, **kwargs: object) -> object:
 
 @numpy_eager_registry.register("SerializeTensor")
 def _np_serialize_tensor_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the serialize_tensor_camel operation using NumPy.
+    """Evaluate _np_serialize_tensor_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
-    Args:
-        backend_module (object): The backend module.
-        *args (object): Positional arguments.
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        RuntimeError: An exception.
     """
     import pickle
 
@@ -4142,19 +4766,18 @@ def _np_serialize_tensor_camel(backend_module: object, *args: object, **kwargs: 
 
 @numpy_eager_registry.register("WriteFile")
 def _np_write_file_camel(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate the write_file_camel operation using NumPy.
+    """Evaluate _np_write_file_camel operation.
 
     Args:
-        backend_module (object): The backend module.
-
-        *args (object): Positional arguments.
-
-        **kwargs (object): Keyword arguments.
-
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
 
+    Raises:
+        OSError: An exception.
     """
     import numpy as np
 
@@ -4175,15 +4798,15 @@ def _np_write_file_camel(backend_module: object, *args: object, **kwargs: object
 
 @numpy_eager_registry.register("Frombuffer")
 def _np_frombuffer(backend_module: object, *args: object, **kwargs: object) -> object:
-    """Evaluate _np_frombuffer logic eagerly backed by NumPy.
+    """Evaluate _np_frombuffer operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     import numpy as np
 

@@ -17,13 +17,13 @@ from .frontend_utils import _emit_creation_node
 
 
 def _unpack_shape(shape: tuple) -> tuple:
-    """Evaluate and process the unpack shape operation.
+    """Evaluate _unpack_shape operation.
 
     Args:
-        shape (tuple): Required parameter for shape.
+        shape (tuple): The shape parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     unpacked_shape = []
     for s in shape:
@@ -40,7 +40,14 @@ def _unpack_shape(shape: tuple) -> tuple:
 
 
 def _infer_dtype(val_arr: object) -> DType:
-    """Infers the DType from a backend array."""
+    """Infers the DType from a backend array.
+
+    Args:
+        val_arr (object): The val_arr parameter.
+
+    Returns:
+        DType: Result.
+    """
     dtype_str = str(val_arr.dtype)
     if dtype_str.startswith("<U") or dtype_str.startswith("|S"):
         return DType.String
@@ -50,7 +57,14 @@ def _infer_dtype(val_arr: object) -> DType:
 
 
 def _get_dtype_val(dtype: object) -> object:
-    """Gets the backend dtype value."""
+    """Get the backend dtype value.
+
+    Args:
+        dtype (object): The dtype parameter.
+
+    Returns:
+        object: Result.
+    """
     if hasattr(dtype, "value"):
         return dtype.value
     if hasattr(dtype, "name"):
@@ -59,7 +73,16 @@ def _get_dtype_val(dtype: object) -> object:
 
 
 def _try_create_array(backend: object, obj: object, dtype_val: object = None) -> object:
-    """Try create array."""
+    """Try create array.
+
+    Args:
+        backend (object): The backend parameter.
+        obj (object): The obj parameter.
+        dtype_val (object): The dtype_val parameter.
+
+    Returns:
+        object: Result.
+    """
     if dtype_val is None:
         try:
             return backend.array(obj)
@@ -72,7 +95,15 @@ def _try_create_array(backend: object, obj: object, dtype_val: object = None) ->
 
 
 def _create_backend_array(object: object, dtype: object) -> object:
-    """Creates the backend array."""
+    """Create the backend array.
+
+    Args:
+        object (object): The object parameter.
+        dtype (object): The dtype parameter.
+
+    Returns:
+        object: Result.
+    """
     backend = get_active_backend()
     dtype_val = None
     if dtype is not None:
@@ -87,14 +118,14 @@ def array(
     object: object,
     dtype: DType | None = None,
 ) -> Tensor:
-    """Creates an array.
+    """Create an array.
 
     Args:
-        object (Any): Argument object to convert
-        dtype (Optional[DType]): The data type
+        object (object): The object parameter.
+        dtype (object): The dtype parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
     """
     val_arr = _create_backend_array(object, dtype)
     if dtype is None:
@@ -114,14 +145,14 @@ def asarray(
     a: object,
     dtype: DType | None = None,
 ) -> Tensor:
-    """Converts the input to an array.
+    """Convert the input to an array.
 
     Args:
-        a (Any): Argument object to convert
-        dtype (Optional[DType]): The data type
+        a (object): The a parameter.
+        dtype (object): The dtype parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
     """
     if isinstance(a, Tensor):
         if dtype is not None and a.dtype != dtype:
@@ -134,7 +165,7 @@ def convert_to_tensor(
     x: object,
     dtype: DType | None = None,
 ) -> Tensor:
-    """Converts the given object to a Tensor.
+    """Convert the given object to a Tensor.
 
     Args:
         x (object): Object to convert.
@@ -205,7 +236,14 @@ def ones(
 
 
 def _extract_fill_value(fill_value: object) -> object:
-    """Extract fill value."""
+    """Extract fill value.
+
+    Args:
+        fill_value (object): The fill_value parameter.
+
+    Returns:
+        object: Result.
+    """
     if hasattr(fill_value, "data"):
         fill_value = fill_value.data
     if hasattr(fill_value, "item"):
@@ -214,7 +252,17 @@ def _extract_fill_value(fill_value: object) -> object:
 
 
 def _full_eager(shape: tuple[int, ...], fill_value: object, dtype: DType, device: Device) -> Tensor:
-    """Full eager."""
+    """Full eager.
+
+    Args:
+        shape (tuple): The shape parameter.
+        fill_value (object): The fill_value parameter.
+        dtype (DType): The dtype parameter.
+        device (Device): The device parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     dt_val = dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype))
     data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dt_val)
     return Tensor(data, TensorConfig(shape, dtype, device))
@@ -229,13 +277,13 @@ def full(
     """Return a tensor filled with `fill_value`.
 
     Args:
-        shape (Union[int, Sequence[int]]): The shape of the tensor.
-        fill_value (Union[float, int]): The value to fill the tensor with.
-        dtype (Optional[DType]): The data type
-        device (Optional[Device]): The device to store the tensor on.
+        shape (object): The shape parameter.
+        fill_value (float): The fill_value parameter.
+        dtype (object): The dtype parameter.
+        device (object): The device parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
     """
     dtype = dtype or config.default_float_dtype
     device = device or config.default_device
@@ -316,13 +364,13 @@ def full_like(
     """Return a tensor filled with `fill_value`, with the same size as `input`.
 
     Args:
-        input (Tensor): The input tensor
-        fill_value (Union[float, int]): The value to fill the tensor with.
-        dtype (Optional[DType]): The data type
-        device (Optional[Device]): The device to store the tensor on.
+        input (Tensor): The input parameter.
+        fill_value (float): The fill_value parameter.
+        dtype (object): The dtype parameter.
+        device (object): The device parameter.
 
     Returns:
-        Tensor: A tensor containing the result of the operation.
+        Tensor: Result.
     """
     dtype = dtype or input.dtype
     device = device or input.device
@@ -385,7 +433,7 @@ def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
 
 
 def convert_to_numpy(x: Tensor) -> object:
-    """Converts a tensor to a numpy array.
+    """Convert a tensor to a numpy array.
 
     Args:
         x (Tensor): Input tensor.

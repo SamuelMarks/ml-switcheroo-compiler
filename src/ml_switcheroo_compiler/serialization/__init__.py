@@ -1,4 +1,3 @@
-# ruff: noqa: E402, D107, D102
 """Serialization package."""
 
 import json
@@ -7,48 +6,68 @@ import pickle
 import tempfile
 import zipfile
 from dataclasses import dataclass
-from typing import Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Callable, Optional, TypeVar
+
+if TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.tensor import Tensor
 
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
-from ml_switcheroo_compiler.serialization.utils import (
-    _extract_numpy_weights,
-    concatenate_arrays,
-    get_npz_bytes,
-    is_numpy_array,
-    load_npz,
-    to_numpy,
-)
+from ml_switcheroo_compiler.serialization.utils import _extract_numpy_weights, concatenate_arrays, get_npz_bytes, is_numpy_array, load_npz, to_numpy
 
 
 class MsgpackWeightFormat:
     """MsgpackWeightFormat handles loading and saving msgpack files."""
 
     def load(self, filepath: str) -> dict:
-        """Load weights from a msgpack file."""
+        """Load method for SavedModel.
+
+        Args:
+            filepath (str): The filepath parameter.
+
+        Returns:
+            dict: Result.
+
+        Raises:
+            ImportError: An exception.
+        """
         try:
             import msgpack
         except ImportError:
             raise ImportError("Msgpack is required for this weight format. Please `pip install msgpack`.") from None
-
         with open(filepath, "rb") as f:
             return msgpack.unpackb(f.read())
 
     def save(self, weights: dict, filepath: str) -> None:
-        """Save weights to a msgpack file."""
+        """Save method for SavedModel.
+
+        Args:
+            weights (dict): The weights parameter.
+            filepath (str): The filepath parameter.
+
+        Raises:
+            ImportError: An exception.
+        """
         try:
             import msgpack
         except ImportError:
             raise ImportError("Msgpack is required for this weight format. Please `pip install msgpack`.") from None
-
         with open(filepath, "wb") as f:
             f.write(msgpack.packb(weights))
 
 
 def graph_to_json(graph: object) -> str:
+    """Convert graph to JSON.
+
+    Args:
+        graph (object): The graph parameter.
+
+    Returns:
+        str: Result.
+    """
     return graph.to_json()
 
 
@@ -99,11 +118,8 @@ def _save_as_h5(weights_np: dict, filepath: str) -> None:
     """Save the given weights dictionary to an HDF5 file.
 
     Args:
-        weights_np (dict): A dictionary of weights.
-        filepath (str): The path where the HDF5 file will be saved.
-
-    Returns:
-        None: This function does not return a value.
+        weights_np (dict): The weights_np parameter.
+        filepath (str): The filepath parameter.
     """
     H5WeightFormat().save(weights_np, filepath)
 
@@ -112,11 +128,8 @@ def _save_as_safetensors(weights_np: dict, filepath: str) -> None:
     """Save the given weights dictionary to a safetensors file.
 
     Args:
-        weights_np (dict): A dictionary of weights.
-        filepath (str): The path where the safetensors file will be saved.
-
-    Returns:
-        None: This function does not return a value.
+        weights_np (dict): The weights_np parameter.
+        filepath (str): The filepath parameter.
     """
     SafetensorsWeightFormat().save(weights_np, filepath)
 
@@ -173,11 +186,11 @@ def _validate_and_map_weights(weights_dict: dict, target_model: object = None) -
     """Validate the loaded weights and map them to the target model if provided.
 
     Args:
-        weights_dict (dict): The dictionary of loaded weights.
-        target_model (object, optional): The target model to map the weights to. Defaults to None.
+        weights_dict (dict): The weights_dict parameter.
+        target_model (object): The target_model parameter.
 
     Returns:
-        dict: The validated and mapped weights dictionary.
+        dict: Result.
     """
     return weights_dict
 
@@ -186,11 +199,11 @@ def load_weights(filepath: str, target_model: object = None) -> dict:
     """Load weights from a specified file path and map them to a target model.
 
     Args:
-        filepath (str): The path to the file containing the weights.
-        target_model (object, optional): The model to map the loaded weights to. Defaults to None.
+        filepath (str): The filepath parameter.
+        target_model (object): The target_model parameter.
 
     Returns:
-        dict: A dictionary of the loaded and mapped weights.
+        dict: Result.
     """
     fmt = _infer_weight_format(filepath)
     handler = _get_format_handler(fmt)
@@ -202,13 +215,10 @@ def save_weights(model: object, filepath: str, overwrite: bool = True, **kwargs:
     """Save the weights of a given model to a specified file path.
 
     Args:
-        model (object): The model whose weights are to be saved.
-        filepath (str): The destination file path for saving the weights.
-        overwrite (bool, optional): Whether to overwrite the file if it exists. Defaults to True.
-        **kwargs (object): Additional keyword arguments.
-
-    Returns:
-        None: This function does not return a value.
+        model (object): The model parameter.
+        filepath (str): The filepath parameter.
+        overwrite (bool): The overwrite parameter.
+        **kwargs (object): Keyword args.
     """
     with open(filepath, "wb") as f:
         pickle.dump({}, f)
@@ -218,11 +228,8 @@ def export_to_onnx(graph: IRGraph, filepath: str) -> None:
     """Export the internal representation graph to ONNX format.
 
     Args:
-        graph (IRGraph): The internal representation graph to export.
-        filepath (str): The destination file path for the ONNX export.
-
-    Returns:
-        None: This function does not return a value.
+        graph (IRGraph): The graph parameter.
+        filepath (str): The filepath parameter.
     """
     with open(filepath, "wb") as f:
         f.write(b"ONNX")
@@ -232,11 +239,8 @@ def export_to_tflite(graph: IRGraph, filepath: str) -> None:
     """Export the internal representation graph to TFLite format.
 
     Args:
-        graph (IRGraph): The internal representation graph to export.
-        filepath (str): The destination file path for the TFLite export.
-
-    Returns:
-        None: This function does not return a value.
+        graph (IRGraph): The graph parameter.
+        filepath (str): The filepath parameter.
     """
     with open(filepath, "wb") as f:
         f.write(b"TFLITE")
@@ -246,11 +250,8 @@ def export_model_topology(graph: IRGraph, filepath: str) -> None:
     """Export the model topology and IR specifications to a JSON file.
 
     Args:
-        graph (IRGraph): The internal representation graph to export.
-        filepath (str): The destination file path for the JSON export.
-
-    Returns:
-        None: This function does not return a value.
+        graph (IRGraph): The graph parameter.
+        filepath (str): The filepath parameter.
     """
     json_str = graph_to_json(graph)
     with open(filepath, "w") as f:
@@ -275,14 +276,11 @@ def _extract_model_weights(model: object) -> dict[str, object]:
 
 
 def _extract_optimizer_state(model: object, state_store: dict[str, object]) -> None:
-    r"""Extract optimizer momentums and variables into a flat numpy dictionary.
+    """Extract optimizer momentums and variables into a flat numpy dictionary.
 
     Args:
-        model (object): The target Keras or Flax model.
-        state_store (dict): A dictionary to store extracted weights.
-
-    Returns:
-        None: This function modifies state_store in place.
+        model (object): The model parameter.
+        state_store (dict): The state_store parameter.
     """
     if hasattr(model, "optimizer"):
         if hasattr(model.optimizer, "variables"):
@@ -296,15 +294,12 @@ def _extract_optimizer_state(model: object, state_store: dict[str, object]) -> N
 
 
 def _extract_non_trainable_state(model: object, state_store: dict[str, object], weights_store: dict[str, object]) -> None:
-    r"""Extract batch normalization statistics and non-trainable state.
+    """Extract batch normalization statistics and non-trainable state.
 
     Args:
-        model (object): The source model.
-        state_store (dict): Target dictionary for non-trainable variables.
-        weights_store (dict): Already extracted weights to avoid duplication.
-
-    Returns:
-        None: This function modifies state_store in place.
+        model (object): The model parameter.
+        state_store (dict): The state_store parameter.
+        weights_store (dict): The weights_store parameter.
     """
     if hasattr(model, "non_trainable_variables"):
         for i, w in enumerate(model.non_trainable_variables):
@@ -314,14 +309,11 @@ def _extract_non_trainable_state(model: object, state_store: dict[str, object], 
 
 
 def _extract_ema_state(model: object, state_store: dict[str, object]) -> None:
-    r"""Extract Exponential Moving Average (EMA) variables from the model.
+    """Extract Exponential Moving Average (EMA) variables from the model.
 
     Args:
-        model (object): The source model containing EMA state.
-        state_store (dict): Target dictionary for the extracted values.
-
-    Returns:
-        None: This function modifies state_store in place.
+        model (object): The model parameter.
+        state_store (dict): The state_store parameter.
     """
     if hasattr(model, "ema_variables"):
         for i, w in enumerate(model.ema_variables):
@@ -346,9 +338,7 @@ def _extract_model_state(model: object, weights_store: dict[str, object]) -> dic
     return state_store
 
 
-def _compile_model_metadata(
-    model: object,
-) -> tuple[dict[str, object], dict[str, object]]:
+def _compile_model_metadata(model: object) -> tuple[dict[str, object], dict[str, object]]:
     """Compile model configuration and metadata into dictionaries.
 
     Args:
@@ -368,12 +358,9 @@ def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: dict[str, object
     """Write HDF5 data from a dictionary store into a zip file.
 
     Args:
-        zf (zipfile.ZipFile): The zip file object to write to.
-        filename (str): The name of the file to create inside the zip.
-        store (dict[str, object]): The dictionary of weights/data to write.
-
-    Returns:
-        None: This function does not return a value.
+        zf (object): The zf parameter.
+        filename (str): The filename parameter.
+        store (dict): The store parameter.
     """
     zinfo = zipfile.ZipInfo(filename)
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=".h5")
@@ -386,7 +373,7 @@ def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: dict[str, object
 
 @dataclass
 class KerasSerializationContext:
-    """Context holding all stores and metadata for Keras serialization.
+    """Provide context holding all stores and metadata for Keras serialization.
 
     Attributes:
         filepath (str): The destination file path.
@@ -407,39 +394,26 @@ def _write_keras_zip(ctx: KerasSerializationContext) -> None:
     """Write the collected stores to a zipped keras file.
 
     Args:
-        ctx (KerasSerializationContext): The serialization context containing the data to write.
-
-    Returns:
-        None: This function does not return a value.
+        ctx (KerasSerializationContext): The ctx parameter.
     """
     with zipfile.ZipFile(ctx.filepath, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(zipfile.ZipInfo("config.json"), json.dumps(ctx.config_dict, indent=2))
         zf.writestr(zipfile.ZipInfo("metadata.json"), json.dumps(ctx.metadata, indent=2))
-
         if ctx.weights_store:
             _write_h5_to_zip(zf, "model.weights.h5", ctx.weights_store)
         if ctx.state_store:
             _write_h5_to_zip(zf, "optimizer.weights.h5", ctx.state_store)
 
 
-def save_model(
-    model: object,
-    filepath: str,
-    overwrite: bool = True,
-    zipped: object = None,
-    **kwargs: object,
-) -> None:
+def save_model(model: object, filepath: str, overwrite: bool = True, zipped: object = None, **kwargs: object) -> None:
     """Save the model to a .keras zip format, including state and weights.
 
     Args:
-        model (object): The model to save.
-        filepath (str): The destination file path.
-        overwrite (bool, optional): Whether to overwrite the file if it exists. Defaults to True.
-        zipped (object, optional): Whether to use a zipped format. Defaults to None.
-        **kwargs (object): Additional keyword arguments.
-
-    Returns:
-        None: This function does not return a value.
+        model (object): The model parameter.
+        filepath (str): The filepath parameter.
+        overwrite (bool): The overwrite parameter.
+        zipped (object): The zipped parameter.
+        **kwargs (object): Keyword args.
     """
     config_dict, metadata = _compile_model_metadata(model)
     weights_store = _extract_model_weights(model)
@@ -448,14 +422,19 @@ def save_model(
     _write_keras_zip(ctx)
 
 
-def load_model(
-    filepath: str,
-    custom_objects: object = None,
-    compile: bool = True,
-    safe_mode: bool = True,
-    **kwargs: object,
-) -> object:
-    """Load model."""
+def load_model(filepath: str, custom_objects: object = None, compile: bool = True, safe_mode: bool = True, **kwargs: object) -> object:
+    """Load model.
+
+    Args:
+        filepath (str): The filepath parameter.
+        custom_objects (object): The custom_objects parameter.
+        compile (bool): The compile parameter.
+        safe_mode (bool): The safe_mode parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     try:
         import json
         import zipfile
@@ -464,14 +443,24 @@ def load_model(
             config = json.loads(zf.read("config.json").decode("utf-8"))
 
         class LoadedModel:
+            """LoadedModel operation class."""
+
             def __init__(self, cfg: dict) -> None:
+                """__init__ method for LoadedModel.
+
+                Args:
+                    cfg (dict): The cfg parameter.
+                """
                 self.config = cfg
 
         return LoadedModel(config)
     except Exception:
 
         class FallbackModel:
+            """FallbackModel operation class."""
+
             def __init__(self) -> None:
+                """__init__ method for FallbackModel."""
                 self.config = {}
                 self.fallback = True
 
@@ -482,15 +471,15 @@ def register_keras_serializable(package: str = "Custom", name: Optional[str] = N
     """Register a custom object for Keras serialization.
 
     Args:
-        package (str, optional): The package name to use for registration. Defaults to "Custom".
-        name (Optional[str], optional): The name to register the object under. Defaults to None.
+        package (str): The package parameter.
+        name (Optional): The name parameter.
 
     Returns:
-        Callable[[T], T]: A decorator for registering the object.
+        Callable: Result.
     """
 
     def decorator(arg: T) -> T:
-        r"""Register the given class or function.
+        """Register the given class or function.
 
         Args:
             arg (T): The class or function being decorated.
@@ -510,31 +499,28 @@ class custom_object_scope:
     """
 
     def __init__(self, *args: object, **kwargs: object) -> None:
-        """Initialize the custom object scope.
+        """__init__ method for custom_object_scope.
 
         Args:
-            *args (object): Variable length argument list.
-            **kwargs (object): Arbitrary keyword arguments.
-
-        Returns:
-            None: This function does not return a value.
+            *args (object): Custom objects.
+            **kwargs (object): Custom objects.
         """
         self.custom_objects = args[0] if args else kwargs
 
     def __enter__(self) -> "custom_object_scope":
-        """Enter the custom object scope context.
+        """__enter__ method for custom_object_scope.
 
         Returns:
-            custom_object_scope: The entered scope instance.
+            custom_object_scope: The context manager instance.
         """
         return self
 
     def __exit__(self, *args: object, **kwargs: object) -> None:
-        """Exit the custom object scope context.
+        """__exit__ method for custom_object_scope.
 
         Args:
-            *args: args
-            **kwargs: kwargs
+            *args (object): Exiting arguments.
+            **kwargs (object): Exiting keyword arguments.
         """
 
 
@@ -542,13 +528,31 @@ class CustomObjectScope:
     """Alias for custom_object_scope to maintain compatibility."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
+        """__init__ method for CustomObjectScope.
+
+        Args:
+            *args (object): Custom objects.
+            **kwargs (object): Custom objects.
+        """
         self.args = args
         self.kwargs = kwargs
 
     def __enter__(self) -> "CustomObjectScope":
+        """__enter__ method for CustomObjectScope.
+
+        Returns:
+            CustomObjectScope: The context manager instance.
+        """
         return self
 
     def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        """__exit__ method for CustomObjectScope.
+
+        Args:
+            exc_type (object): The exc_type parameter.
+            exc_val (object): The exc_val parameter.
+            exc_tb (object): The exc_tb parameter.
+        """
         self.args = ()
         self.kwargs = {}
 
@@ -557,6 +561,11 @@ class KerasFileEditor:
     """Editor class for interacting with and modifying Keras save files."""
 
     def __init__(self, filepath: str) -> None:
+        """__init__ method for KerasFileEditor.
+
+        Args:
+            filepath (str): The filepath parameter.
+        """
         self.filepath = filepath
 
 
@@ -635,21 +644,14 @@ def serialize_keras_object(*args: object, **kwargs: object) -> object:
     return {}
 
 
-__all__ = [
-    "_extract_numpy_weights",
-    "concatenate_arrays",
-    "get_npz_bytes",
-    "is_numpy_array",
-    "load_npz",
-]
-
-from ml_switcheroo_compiler.core.tensor import Tensor
+__all__ = ["_extract_numpy_weights", "concatenate_arrays", "get_npz_bytes", "is_numpy_array", "load_npz"]
 
 
 class TrackableResource:
     """Trackable resource for asset extraction."""
 
     def __init__(self) -> None:
+        """__init__ method for TrackableResource."""
         self.resource_id: str | None = None
         self.tracked: bool = False
 
@@ -658,7 +660,7 @@ class PythonState:
     """Python state synchronization capabilities."""
 
     def __init__(self) -> None:
-        """Initialize."""
+        """__init__ method for PythonState."""
         self.state = {}
 
 
@@ -666,6 +668,11 @@ class MaxShardSizePolicy:
     """Sharded saving protocol by max size."""
 
     def __init__(self, max_shard_size: int) -> None:
+        """__init__ method for MaxShardSizePolicy.
+
+        Args:
+            max_shard_size (int): The max_shard_size parameter.
+        """
         self.max_shard_size = max_shard_size
 
 
@@ -673,7 +680,7 @@ class ShardByTaskPolicy:
     """Sharded saving protocol by task."""
 
     def __init__(self) -> None:
-        """Initialize."""
+        """__init__ method for ShardByTaskPolicy."""
         self.policy = "task"
 
 
@@ -681,11 +688,15 @@ class SavedModel:
     """SavedModel proto serialization/deserialization."""
 
     def __init__(self) -> None:
-        """Initialize."""
+        """__init__ method for SavedModel."""
         self.model = None
 
     def save(self, path: str) -> None:
-        """Save."""
+        """Save method for SavedModel.
+
+        Args:
+            path (str): The path parameter.
+        """
         import os
 
         os.makedirs(path, exist_ok=True)
@@ -694,11 +705,26 @@ class SavedModel:
 
     @classmethod
     def load(cls, path: str) -> "SavedModel":
+        """Load method for SavedModel.
+
+        Args:
+            path (str): The path parameter.
+
+        Returns:
+            object: Result.
+        """
         return cls()
 
 
 def read_fingerprint(path: str) -> str:
-    """Read fingerprint."""
+    """Read fingerprint.
+
+    Args:
+        path (str): The path parameter.
+
+    Returns:
+        str: Result.
+    """
     import os
 
     fp_path = os.path.join(path, "fingerprint.pb")
@@ -708,15 +734,22 @@ def read_fingerprint(path: str) -> str:
     return "fingerprint"
 
 
-def load_variable(path: str, name: str) -> Tensor:
-    """Load variable from V2 checkpoint."""
+def load_variable(path: str, name: str) -> "Tensor":
+    """Load variable from V2 checkpoint.
+
+    Args:
+        path (str): The path parameter.
+        name (str): The name parameter.
+
+    Returns:
+        str: Result.
+    """
     import os
 
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     backend_cls = BackendRegistry.get("numpy")
-
     var_path = os.path.join(path, f"{name}.npy")
     if os.path.exists(var_path):
         data = backend_cls.load(var_path)
@@ -726,7 +759,14 @@ def load_variable(path: str, name: str) -> Tensor:
 
 
 def run_restore_ops(path: str) -> None:
-    """Run restore ops for V2 checkpoint."""
+    """Run restore ops for V2 checkpoint.
+
+    Args:
+        path (str): The path parameter.
+
+    Raises:
+        FileNotFoundError: An exception.
+    """
     import os
 
     if not os.path.exists(path):

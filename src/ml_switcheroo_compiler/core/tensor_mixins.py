@@ -23,12 +23,20 @@ class TensorPropertiesMixin:
 
     @property
     def ndim(self) -> int:
-        """Get the number of dimensions of the tensor."""
+        """Get the number of dimensions of the tensor.
+
+        Returns:
+            int: The number of dimensions.
+        """
         return len(self._shape)
 
     @property
     def size(self) -> int:
-        """Get the number of elements in the tensor."""
+        """Get the number of elements in the tensor.
+
+        Returns:
+            int: The size of the tensor.
+        """
         # if there are strings in shape (unknown dims), return a ProxyTensor?
         # for eager evaluation, size should evaluate natively.
         prod = 1
@@ -43,9 +51,8 @@ class TensorPropertiesMixin:
     def shape(self) -> Sequence[int]:
         """Get the shape of the tensor.
 
-        Args:
         Returns:
-            Sequence[int]: The inferred shape or computed result
+            Sequence[int]: The shape tuple of the tensor.
         """
         return self._shape
 
@@ -81,7 +88,7 @@ class TensorPropertiesMixin:
         """Get the underlying data payload.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed result.
         """
         return self._data
 
@@ -90,7 +97,11 @@ class TensorConversionMixin:
     """Tensor conversion mixin."""
 
     def numpy(self) -> object:
-        """Numpy."""
+        """Convert the tensor to a NumPy array.
+
+        Returns:
+            object: The NumPy array representation.
+        """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         try:
@@ -122,10 +133,10 @@ class TensorConversionMixin:
             return backend.array(data.tolist() if hasattr(data, "tolist") else data, dtype=dtype)
 
     def item(self) -> float:
-        """Returns the value of this tensor as a standard Python number.
+        """Return the value of this tensor as a standard Python number.
 
         Returns:
-            float: The evaluated output resulting from this operation.
+            float: The computed result.
         """
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -136,7 +147,11 @@ class TensorConversionMixin:
         return backend.item(self.eval())
 
     def __int__(self) -> int:
-        """Int."""
+        """Convert the tensor scalar to an int.
+
+        Returns:
+            int: The integer value.
+        """
         return int(self.item())
 
     def __index__(self) -> int:
@@ -148,14 +163,21 @@ class TensorConversionMixin:
         return int(self.item())
 
     def __float__(self) -> float:
-        """Float."""
+        """Convert the tensor scalar to a float.
+
+        Returns:
+            float: The float value.
+        """
         return float(self.item())
 
     def __bool__(self) -> bool:
-        """Bool.
+        """Convert the tensor scalar to a boolean.
 
         Returns:
-            bool: A boolean indicating the result of the check.
+            bool: The boolean value.
+
+        Raises:
+            ValueError: If the tensor has more than one element.
         """
         arr = self.__array__()
         if getattr(arr, "size", 1) == 1:
@@ -169,15 +191,18 @@ class TensorConversionMixin:
         """Len.
 
         Returns:
-            int: The evaluated output resulting from this operation.
+            int: The computed result.
         """
         return self.shape[0] if self.shape else 0
 
     def __iter__(self) -> object:
-        """Iter.
+        """Iterate over the first dimension of the tensor.
 
-        Returns:
-            The computed shape or evaluation result.
+        Yields:
+            Tensor: A slice of the tensor along the first dimension.
+
+        Raises:
+            TypeError: If the tensor is 0-dimensional.
         """
         arr = self.__array__()
         shape = getattr(arr, "shape", [0])
@@ -193,13 +218,17 @@ class TensorIndexingMixin:
     """Tensor indexing mixin."""
 
     def __getitem__(self, key: object) -> "Tensor":
-        """Getitem.
+        """Retrieve elements from the tensor.
 
         Args:
-            key (object): The key to process.
+            key (object): The index or slice key.
 
         Returns:
-            Tensor: A new tensor with the selected element.
+            Tensor: A new tensor containing the selected elements.
+
+        Raises:
+            IndexError: If the index is out of bounds or invalid.
+            RuntimeError: If tracing but not in an active tracing context.
         """
         arr = self.__array__()
         if hasattr(key, "data"):
@@ -248,11 +277,14 @@ class TensorIndexingMixin:
         return Tensor(ProxyTensor(nid, (), self.dtype.value), TensorConfig((), self.dtype, self.device))
 
     def __setitem__(self, key: object, value: object) -> None:
-        """Setitem.
+        """Set elements in the tensor (only supported in eager mode).
 
         Args:
-            key (object): The key to process.
-            value (object): The value to set or add.
+            key (object): The index or slice key.
+            value (object): The value to set.
+
+        Raises:
+            TypeError: If attempted during tracing.
         """
         if config.eager_mode:
             val = getattr(value, "data", value)

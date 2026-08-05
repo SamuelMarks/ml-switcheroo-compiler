@@ -13,7 +13,13 @@ class TensorArray:
     """Represents a TensorArray."""
 
     def __init__(self, size: int, element_shape: tuple[int, ...], dtype: str) -> None:
-        """Init."""
+        """Init.
+
+        Args:
+            size (int): The size parameter.
+            element_shape (tuple): The element_shape parameter.
+            dtype (str): The dtype parameter.
+        """
         self.size = size
         self.element_shape = element_shape
         self.dtype = dtype
@@ -21,7 +27,14 @@ class TensorArray:
         self._data = [None] * size
 
     def read(self, index: Tensor) -> Tensor:
-        """Reads from the TensorArray."""
+        """Read from the TensorArray.
+
+        Args:
+            index (Tensor): The index parameter.
+
+        Returns:
+            Tensor: Result.
+        """
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -44,7 +57,15 @@ class TensorArray:
         return Tensor(proxy, TensorConfig(self.element_shape, self.dtype, None))
 
     def write(self, index: Tensor, value: Tensor) -> "TensorArray":
-        """Writes to the TensorArray."""
+        """Write to the TensorArray.
+
+        Args:
+            index (Tensor): The index parameter.
+            value (Tensor): The value parameter.
+
+        Returns:
+            object: Result.
+        """
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -64,7 +85,11 @@ class TensorArray:
         return self
 
     def stack(self) -> Tensor:
-        """Stacks the TensorArray."""
+        """Stack the TensorArray.
+
+        Returns:
+        Tensor: Result.
+        """
         out_shape = (self.size,) + self.element_shape
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend

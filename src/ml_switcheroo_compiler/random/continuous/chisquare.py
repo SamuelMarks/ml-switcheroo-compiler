@@ -6,5 +6,13 @@ from ml_switcheroo_compiler.random.state import _dispatch_random
 
 
 def chisquare(*args: object, **kwargs: object) -> object:
-    """Execute chisquare."""
+    """Evaluate chisquare operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     return _dispatch_random("chisquare", *args, **kwargs)

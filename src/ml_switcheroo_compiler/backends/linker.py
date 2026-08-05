@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Provides utility functions for inspecting the call stack and retrieving source code."""
+"""Provide utility functions for inspecting the call stack and retrieving source code."""
 
 from __future__ import annotations
 
@@ -7,24 +7,13 @@ import inspect
 
 
 def get_source_ast_ref(back_frames: int = 1) -> str | None:
-    """Retrieves the file path and line number of a caller frame at a specified depth in.
-
-    the call stack
-
-    This function traverses the call stack backward by the specified number of
-    frames
-    and returns a formatted string containing the filename and line number of the
-    resulting frame. It is useful for dynamically linking log messages or errors
-    back to their source origin
+    """Retrieve the file path and line number of a caller frame at a specified depth in.
 
     Args:
-        back_frames (int): The number of frames to traverse backward from the caller's
-        frame to locate the target caller. Defaults to 1
+        back_frames (int): The back_frames parameter.
 
     Returns:
-    str | None: A formatted string in the format "filepath:lineno" representing
-    the source location, or None if the frame cannot be retrieved or an error
-    occurs
+        object: Result.
     """
     try:
         frame = inspect.currentframe()

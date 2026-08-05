@@ -90,14 +90,14 @@ def _calculate_conv_transpose_padding(
 
 
 def _build_conv_config(kwargs: dict, dimension_numbers: tuple) -> object:
-    """Evaluate and process the build conv config operation.
+    """Evaluate _build_conv_config operation.
 
     Args:
-        kwargs (dict): Required parameter for kwargs.
-        dimension_numbers (tuple): Required parameter for dimension_numbers.
+        kwargs (dict): The kwargs parameter.
+        dimension_numbers (tuple): The dimension_numbers parameter.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     strides = kwargs.get("strides", 1)
     if isinstance(strides, int):
@@ -125,7 +125,19 @@ def _prepare_depthwise_conv(
     config_obj: typing.Optional[object] = None,
     **kwargs: object,
 ) -> tuple[Tensor, object]:
-    """Prepare configuration and reshape weights for depthwise convolution."""
+    """Prepare configuration and reshape weights for depthwise convolution.
+
+    Args:
+        lhs (Tensor): The lhs parameter.
+        rhs (Tensor): The rhs parameter.
+        spatial_dims (int): The spatial_dims parameter.
+        dimension_numbers (tuple): The dimension_numbers parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        tuple: Result.
+    """
     if config_obj is None:
         strides = kwargs.get("strides", 1)
         if isinstance(strides, int):
@@ -158,7 +170,18 @@ def _prepare_depthwise_conv(
 
 
 def atrous_conv2d(value: object, filters: object, rate: object, padding: object, name: object = None) -> object:
-    """Atrous convolution."""
+    """Atrous convolution.
+
+    Args:
+        value (object): The value parameter.
+        filters (object): The filters parameter.
+        rate (object): The rate parameter.
+        padding (object): The padding parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     conv2d = get_op("Conv2d")()
 
     return conv2d(value, filters, strides=1, padding=padding, dilation_rate=rate)
@@ -171,7 +194,18 @@ def atrous_conv2d_transpose(
     config: typing.Optional[GenericConvConfig] = None,
     name: object = None,
 ) -> object:
-    """Atrous convolution transpose."""
+    """Atrous convolution transpose.
+
+    Args:
+        value (object): The value parameter.
+        filters (object): The filters parameter.
+        output_shape (object): The output_shape parameter.
+        config (object): The config parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     conf = config if config is not None else GenericConvConfig()
 
     conv2d_transpose = get_op("Conv2dTranspose")()
@@ -180,12 +214,31 @@ def atrous_conv2d_transpose(
 
 
 def bias_add(value: object, bias: object, data_format: object = None, name: object = None) -> object:
-    """Adds `bias` to `value`."""
+    """Add `bias` to `value`.
+
+    Args:
+        value (object): The value parameter.
+        bias (object): The bias parameter.
+        data_format (object): The data_format parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     return add(value, bias)
 
 
 def collapse_repeated(labels: object, seq_length: object, name: object = None) -> object:
-    """Merge repeated labels into single labels."""
+    """Merge repeated labels into single labels.
+
+    Args:
+        labels (object): The labels parameter.
+        seq_length (object): The seq_length parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -200,7 +253,16 @@ def collapse_repeated(labels: object, seq_length: object, name: object = None) -
 
 
 def compute_average_loss(per_example_loss: object, sample_weight: object = None, global_batch_size: object = None) -> object:
-    """Computes the average loss."""
+    """Compute the average loss.
+
+    Args:
+        per_example_loss (object): The per_example_loss parameter.
+        sample_weight (object): The sample_weight parameter.
+        global_batch_size (object): The global_batch_size parameter.
+
+    Returns:
+        object: Result.
+    """
     if sample_weight is not None:
         per_example_loss = multiply(per_example_loss, sample_weight)
     return mean(per_example_loss)
@@ -212,7 +274,17 @@ def depthwise_conv2d(
     config: typing.Optional[GenericConvConfig] = None,
     name: typing.Optional[str] = None,
 ) -> object:
-    """Depthwise 2-D convolution."""
+    """Depthwise 2-D convolution.
+
+    Args:
+        input (Tensor): The input parameter.
+        filter (Tensor): The filter parameter.
+        config (object): The config parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     conf = config if config is not None else GenericConvConfig()
 
     conv2d = get_op("Conv2d")()
@@ -234,7 +306,18 @@ def depthwise_conv2d_backprop_filter(
     config: typing.Optional[GenericConvConfig] = None,
     name: object = None,
 ) -> object:
-    """Computes the gradients of depthwise convolution with respect to the filter."""
+    """Compute the gradients of depthwise convolution with respect to the filter.
+
+    Args:
+        input (object): The input parameter.
+        filter_sizes (object): The filter_sizes parameter.
+        out_backprop (object): The out_backprop parameter.
+        config (object): The config parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     return Tensor(None, TensorConfig(filter_sizes, "float32", "cpu"))
 
 
@@ -245,7 +328,18 @@ def depthwise_conv2d_backprop_input(
     config: typing.Optional[GenericConvConfig] = None,
     name: object = None,
 ) -> object:
-    """Computes the gradients of depthwise convolution with respect to the input."""
+    """Compute the gradients of depthwise convolution with respect to the input.
+
+    Args:
+        input_sizes (object): The input_sizes parameter.
+        filter (object): The filter parameter.
+        out_backprop (object): The out_backprop parameter.
+        config (object): The config parameter.
+        name (object): The name parameter.
+
+    Returns:
+        object: Result.
+    """
     return Tensor(None, TensorConfig(input_sizes, "float32", "cpu"))
 
 
@@ -266,7 +360,16 @@ def dilation2d(
     filter: object,
     args: typing.Optional[ConvSpatialArgs] = None,
 ) -> object:
-    """Computes the grayscale dilation of 4-D `input` and 3-D `filter` tensors."""
+    """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
+
+    Args:
+        input (object): The input parameter.
+        filter (object): The filter parameter.
+        args (object): The args parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -283,7 +386,16 @@ def erosion2d(
     kernel: object,
     args: typing.Optional[ConvSpatialArgs] = None,
 ) -> object:
-    """Computes the grayscale erosion of 4-D `value` and 3-D `kernel` tensors."""
+    """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
+
+    Args:
+        value (object): The value parameter.
+        kernel (object): The kernel parameter.
+        args (object): The args parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
@@ -300,7 +412,16 @@ def convolution(
     filters: object,
     args: typing.Optional[ConvSpatialArgs] = None,
 ) -> object:
-    """Computes sums of N-D convolutions (actually cross-correlation)."""
+    """Compute sums of N-D convolutions (actually cross-correlation).
+
+    Args:
+        input (object): The input parameter.
+        filters (object): The filters parameter.
+        args (object): The args parameter.
+
+    Returns:
+        object: Result.
+    """
     args = args or ConvSpatialArgs()
     _conv_nd = get_op("_ConvNd")()
 
@@ -322,7 +443,17 @@ def conv_transpose(
     output_shape: object,
     args: typing.Optional[ConvSpatialArgs] = None,
 ) -> object:
-    """The transpose of `convolution`."""
+    """Return the transpose of `convolution`.
+
+    Args:
+        input (object): The input parameter.
+        filters (object): The filters parameter.
+        output_shape (object): The output_shape parameter.
+        args (object): The args parameter.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:

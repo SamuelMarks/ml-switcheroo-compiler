@@ -7,13 +7,13 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 def _normalize_k(k: object) -> int | object:
-    """Evaluate and process the normalize k operation.
+    """Evaluate _normalize_k operation.
 
     Args:
-        k (object): The parameter k to be normalized, usually representing the number of top elements.
+        k (object): The k parameter.
 
     Returns:
-        int | object: The evaluated or processed output, typically casted to an integer.
+        object: Result.
     """
     if hasattr(k, "__array__") and not isinstance(k, tuple):
         k = k.__array__()
@@ -37,12 +37,12 @@ class TopK(OpDef):
         """Infer the output shape for the operation.
 
         Args:
-            x (object): The input tensor from which to compute the top elements.
-            k (object, optional): The number of top elements to select. Defaults to None.
-            **kwargs: Additional keyword arguments for shape inference.
+            x (object): The x parameter.
+            k (object): The k parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple replacing the last dimension with k.
+            object: Result.
         """
         if k is None:
             k = kwargs.get("k", 1)
@@ -71,13 +71,13 @@ class Argsort(OpDef):
         """Infer the output shape for sorting indices.
 
         Args:
-            x (object): The input tensor to be sorted.
-            dimension (object, optional): The dimension along which to sort. Defaults to -1.
-            is_stable (object, optional): Whether to use a stable sorting algorithm. Defaults to True.
-            **kwargs: Additional keyword arguments for shape inference.
+            x (object): The x parameter.
+            dimension (object): The dimension parameter.
+            is_stable (object): The is_stable parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple for the sorted indices, matching the input shape.
+            object: Result.
         """
         if isinstance(x, tuple) and hasattr(x, "shape"):
             return x.shape
@@ -100,13 +100,13 @@ class Sort(OpDef):
         """Infer the output shape for the sorting operation.
 
         Args:
-            x (object): The input tensor to sort.
-            dimension (object, optional): The dimension along which to sort. Defaults to -1.
-            is_stable (object, optional): Whether to use a stable sorting algorithm. Defaults to True.
-            **kwargs: Additional keyword arguments for shape inference.
+            x (object): The x parameter.
+            dimension (object): The dimension parameter.
+            is_stable (object): The is_stable parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple for the sorted tensor, matching the input shape.
+            object: Result.
         """
         return getattr(x, "shape", ())
 
@@ -381,13 +381,13 @@ class Argpartition(OpDef):
         """Infer the output shape for the partitioned indices.
 
         Args:
-            a (object): The array to partition.
-            kth (object): Element index to partition by.
-            axis (int, optional): The axis along which to sort. Defaults to -1.
-            **kwargs (object): Additional keyword arguments.
+            a (object): The a parameter.
+            kth (object): The kth parameter.
+            axis (int): The axis parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple matching the input array shape.
+            object: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -403,13 +403,13 @@ class Partition(OpDef):
         """Infer the output shape for the partitioned array.
 
         Args:
-            a (object): The array to partition.
-            kth (object): Element index to partition by.
-            axis (int, optional): The axis along which to sort. Defaults to -1.
-            **kwargs (object): Additional keyword arguments.
+            a (object): The a parameter.
+            kth (object): The kth parameter.
+            axis (int): The axis parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple matching the input array shape.
+            object: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -425,14 +425,14 @@ class Compress(OpDef):
         """Infer the output shape for the compressed array.
 
         Args:
-            condition (object): The boolean array that selects which entries to return.
-            a (object): The input array from which elements are selected.
-            axis (int, optional): The axis along which to take slices. Defaults to None.
-            out (object, optional): The output array to place the result. Defaults to None.
-            **kwargs (object): Additional keyword arguments.
+            condition (object): The condition parameter.
+            a (object): The a parameter.
+            axis (int): The axis parameter.
+            out (object): The out parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple with a single dynamic dimension.
+            object: Result.
         """
         return (None,)
 
@@ -448,14 +448,14 @@ class Diagonal(OpDef):
         """Infer the output shape for the diagonal extraction.
 
         Args:
-            a (object): The array from which the diagonals are taken.
-            offset (int, optional): Offset of the diagonal from the main diagonal. Defaults to 0.
-            axis1 (int, optional): Axis to be used as the first axis of the 2-D sub-arrays. Defaults to 0.
-            axis2 (int, optional): Axis to be used as the second axis of the 2-D sub-arrays. Defaults to 1.
-            **kwargs (object): Additional keyword arguments.
+            a (object): The a parameter.
+            offset (int): The offset parameter.
+            axis1 (int): The axis1 parameter.
+            axis2 (int): The axis2 parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple representing a dynamic 1D size.
+            object: Result.
         """
         return (None,)
 
@@ -471,12 +471,12 @@ class Diagflat(OpDef):
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
-            v (object): The input array data to be placed on the diagonal.
-            k (int, optional): The diagonal to set. Defaults to 0.
-            **kwargs (object): Additional keyword arguments.
+            v (object): The v parameter.
+            k (int): The k parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple representing a dynamic 2D size.
+            object: Result.
         """
         return (None, None)
 
@@ -492,12 +492,12 @@ class DiagIndices(OpDef):
         """Infer the output shape for the main diagonal indices.
 
         Args:
-            n (int): The size, along each dimension, of the arrays for which indices are returned.
-            ndim (int, optional): The number of dimensions. Defaults to 2.
-            **kwargs (object): Additional keyword arguments.
+            n (int): The n parameter.
+            ndim (int): The ndim parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple representing a dynamic 1D size.
+            object: Result.
         """
         return (None,)
 
@@ -532,13 +532,13 @@ class BooleanMask(OpDef):
         """Infer the output shape for the boolean masked array.
 
         Args:
-            tensor (object): The N-D tensor to mask.
-            mask (object): The K-D boolean mask.
-            axis (object, optional): A 0-D int Tensor representing the axis in tensor to mask from. Defaults to None.
-            **kwargs (object): Additional keyword arguments.
+            tensor (object): The tensor parameter.
+            mask (object): The mask parameter.
+            axis (object): The axis parameter.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The inferred shape tuple with a dynamic size dimension.
+            object: Result.
         """
         # Typically dynamic size
         return (None,)

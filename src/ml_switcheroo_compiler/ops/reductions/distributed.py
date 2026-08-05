@@ -13,16 +13,14 @@ class Psum(ReductionOp):
     op_name = "Psum"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape.
+        """Infer the output shape for the infer_shape operation.
 
         Args:
-            *args: Args.
-            x (object): The input x tensor.
-            axis_name (object): The axis_name parameter for the operation.
-            **kwargs: Additional keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+        object: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())
@@ -38,13 +36,11 @@ class Pmean(ReductionOp):
         """Infer shape.
 
         Args:
-            *args: Args.
-            x (object): The input x tensor.
-            axis_name (object): The axis_name parameter for the operation.
-            **kwargs: Additional keyword arguments.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
         return getattr(x, "shape", ())

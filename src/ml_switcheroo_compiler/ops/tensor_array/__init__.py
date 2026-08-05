@@ -10,7 +10,16 @@ class TensorArrayRead(OpDef):
     op_name = "TensorArrayRead"
 
     def infer_shape(self, handle: object, index: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            handle (object): The handle parameter.
+            index (object): The index parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Typically returns the shape of the elements in the TensorArray
         return getattr(handle, "element_shape", ())
 
@@ -22,7 +31,17 @@ class TensorArrayWrite(OpDef):
     op_name = "TensorArrayWrite"
 
     def infer_shape(self, handle: object, index: object, value: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            handle (object): The handle parameter.
+            index (object): The index parameter.
+            value (object): The value parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -33,7 +52,15 @@ class TensorArrayStack(OpDef):
     op_name = "TensorArrayStack"
 
     def infer_shape(self, handle: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            handle (object): The handle parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Adds a dimension
         elem_shape = getattr(handle, "element_shape", ())
         size = getattr(handle, "size", None)

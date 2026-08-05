@@ -3,7 +3,14 @@
 
 
 def _extract_audio_stft_attributes(node: object) -> tuple:
-    """Extract STFT attributes."""
+    """Extract STFT attributes.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        tuple: Result.
+    """
     frame_length = node.attributes.get("frame_length", 2048)
     frame_step = node.attributes.get("frame_step", 512)
     fft_length = node.attributes.get("fft_length", None)
@@ -13,7 +20,14 @@ def _extract_audio_stft_attributes(node: object) -> tuple:
 
 
 def _extract_resize_attributes(node: object) -> tuple:
-    """Extract resize attributes."""
+    """Extract resize attributes.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        tuple: Result.
+    """
     size = node.attributes.get("size")
     interpolation = node.attributes.get("interpolation", "bilinear")
     align_corners = node.attributes.get("align_corners", False)
@@ -23,7 +37,14 @@ def _extract_resize_attributes(node: object) -> tuple:
 
 
 def _extract_vision_transform_attributes(node: object) -> tuple:
-    """Extract vision transform attributes."""
+    """Extract vision transform attributes.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        tuple: Result.
+    """
     interpolation = node.attributes.get("interpolation", "bilinear")
     fill_value = node.attributes.get("fill_value", 0.0)
     data_format = node.attributes.get("data_format", None)
@@ -31,7 +52,14 @@ def _extract_vision_transform_attributes(node: object) -> tuple:
 
 
 def _extract_filter_attributes(node: object) -> tuple:
-    """Extract filter attributes."""
+    """Extract filter attributes.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        tuple: Result.
+    """
     kernel_size = node.attributes.get("kernel_size")
     sigma = node.attributes.get("sigma", None)
     padding = node.attributes.get("padding", "same")
@@ -40,7 +68,14 @@ def _extract_filter_attributes(node: object) -> tuple:
 
 
 def _extract_extract_boxes_attributes(node: object) -> tuple:
-    """Extract bounding box extraction attributes."""
+    """Extract bounding box extraction attributes.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        tuple: Result.
+    """
     crop_size = node.attributes.get("crop_size")
     interpolation = node.attributes.get("interpolation", "bilinear")
     extrapolation_value = node.attributes.get("extrapolation_value", 0.0)
@@ -49,7 +84,14 @@ def _extract_extract_boxes_attributes(node: object) -> tuple:
 
 
 def _extract_stft_attributes(node: object) -> tuple:
-    """Extract generic STFT attributes."""
+    """Extract generic STFT attributes.
+
+    Args:
+        node (object): The node parameter.
+
+    Returns:
+        tuple: Result.
+    """
     n_fft = node.attributes.get("n_fft", 2048)
     hop_length = node.attributes.get("hop_length", None)
     win_length = node.attributes.get("win_length", None)

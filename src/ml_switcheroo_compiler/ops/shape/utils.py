@@ -24,17 +24,17 @@ def _emit_shape_node(
     out_shape: tuple,
     out_dtype: DType,
 ) -> Tensor:
-    """Emits a logical shape node to the tracer and returns a new Tensor.
+    """Emit a logical shape node to the tracer and returns a new Tensor.
 
     Args:
-        op_type (str): The name of the operation to emit
-        inputs (Sequence[Tensor]): The input tensors for the operation
-        attrs (dict): Attributes associated with the operation
-        out_shape (tuple): The expected shape of the output tensor
-        out_dtype (DType): The data type of the output tensor
+        op_type (str): The op_type parameter.
+        inputs (Sequence): The inputs parameter.
+        attrs (dict): The attrs parameter.
+        out_shape (tuple): The out_shape parameter.
+        out_dtype (DType): The out_dtype parameter.
 
     Returns:
-    Tensor: A new Tensor representing the output of the emitted node
+        Tensor: Result.
     """
     out_id = str(uuid.uuid4())
 
@@ -57,7 +57,16 @@ def _emit_shape_node(
 
 
 def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], keepdims: bool) -> tuple[int, ...]:
-    """Reusable utility to compute the shape after a reduction operation."""
+    """Reusable utility to compute the shape after a reduction operation.
+
+    Args:
+        x_shape (object): The x_shape parameter.
+        axes (object): The axes parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        object: Result.
+    """
     if keepdims:
         return tuple(1 if i in axes else s for i, s in enumerate(x_shape))
     return tuple(s for i, s in enumerate(x_shape) if i not in axes)

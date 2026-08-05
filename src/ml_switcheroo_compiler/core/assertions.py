@@ -4,24 +4,38 @@ _ASSERTIONS_LIST: list[tuple[object, str]] = []
 
 
 def record_assertion(condition: object, message: str = "") -> None:
-    """Record an assertion for later evaluation."""
+    """Record an assertion for later evaluation.
+
+    Args:
+        condition (object): The condition to record.
+        message (str): The error message if it fails.
+    """
     _ASSERTIONS_LIST.append((condition, message))
 
 
 def _is_iterable_non_string(c: object) -> bool:
-    """Check if c is iterable but not string.
+    """Check if a value is an iterable but not a string or bytes.
 
     Args:
-        c: Arg.
+        c (object): The value to check.
+
+    Returns:
+        bool: True if iterable and not string/bytes.
     """
     return hasattr(c, "__iter__") and not isinstance(c, (str, bytes))
 
 
 def _evaluate_iterable(c: object) -> bool:
-    """Evaluate an iterable.
+    """Evaluate _evaluate_iterable operation.
 
     Args:
-        c: Arg.
+        c (object): The c parameter.
+
+    Returns:
+        bool: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     if _is_iterable_non_string(c):
         return all(bool(x) for x in c)
@@ -29,13 +43,13 @@ def _evaluate_iterable(c: object) -> bool:
 
 
 def _evaluate_single_condition(cond: object) -> bool:
-    """Evaluate and process the evaluate single condition operation.
+    """Evaluate _evaluate_single_condition operation.
 
     Args:
-        cond (object): Required parameter for cond.
+        cond (object): The cond parameter.
 
     Returns:
-        bool: The evaluated or processed output.
+        bool: Result.
     """
     c = cond.numpy() if hasattr(cond, "numpy") else cond
 
@@ -49,7 +63,11 @@ def _evaluate_single_condition(cond: object) -> bool:
 
 
 def evaluate_assertions() -> None:
-    """Evaluate all recorded assertions. Raises AssertionError if any fail."""
+    """Evaluate evaluate_assertions operation.
+
+    Raises:
+        AssertionError: An exception.
+    """
     errors = []
     for cond, msg in _ASSERTIONS_LIST:
         if not _evaluate_single_condition(cond):

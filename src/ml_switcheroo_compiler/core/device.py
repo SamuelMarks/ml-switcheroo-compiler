@@ -23,13 +23,13 @@ class Device:
         """Return the string representation of the Device.
 
         Returns:
-            str: The evaluated output resulting from this operation.
+            str: The device representation (e.g. Device(cpu:0)).
         """
         return f"Device({self.device_type.value}:{self.index})"
 
 
 class Stream:
-    """A stream for running operations on a given device."""
+    """Provide a stream for running operations on a given device."""
 
     def __init__(self, device: "Device | None" = None) -> None:
         """Initialize Stream.
@@ -41,7 +41,7 @@ class Stream:
 
 
 class StreamContext:
-    """A context manager for setting the current device and stream."""
+    """Provide a context manager for setting the current device and stream."""
 
     def __init__(self, stream: "Stream") -> None:
         """Initialize StreamContext.
@@ -52,10 +52,10 @@ class StreamContext:
         self.stream = stream
 
     def __enter__(self) -> "StreamContext":
-        """Enter context.
+        """Enter the context manager.
 
         Returns:
-            StreamContext: The evaluated output resulting from this operation.
+            StreamContext: The context manager instance.
         """
         return self
 
@@ -84,7 +84,7 @@ def clear_cache() -> None:
 
 
 class FunctionExporter:
-    """A context managing class for exporting multiple traces of the same function."""
+    """Provide a context managing class for exporting multiple traces of the same function."""
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         """Initialize FunctionExporter.
@@ -97,10 +97,10 @@ class FunctionExporter:
         self.kwargs = kwargs
 
     def __enter__(self) -> "FunctionExporter":
-        """Enter context.
+        """Enter the context manager.
 
         Returns:
-            FunctionExporter: The evaluated output resulting from this operation.
+            FunctionExporter: The context manager instance.
         """
         return self
 
@@ -120,8 +120,11 @@ def export_function(*args: object, **kwargs: object) -> None:
     """Export an MLX function.
 
     Args:
-        args (object): args
-        kwargs (object): kwargs
+        args (object): Positional arguments.
+        kwargs (object): Keyword arguments.
+
+    Raises:
+        BackendNotSupportedError: If the backend does not support exporting.
     """
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
@@ -147,7 +150,17 @@ def exporter(*args: object, **kwargs: object) -> FunctionExporter:
 
 
 def get_logical_devices(device_type: str = None) -> list[Device]:
-    """Get logical devices."""
+    """Get logical devices for the current backend.
+
+    Args:
+        device_type (str): The type of device to filter by.
+
+    Returns:
+        list[Device]: A list of logical devices.
+
+    Raises:
+        BackendNotSupportedError: If the backend does not support this.
+    """
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -158,7 +171,17 @@ def get_logical_devices(device_type: str = None) -> list[Device]:
 
 
 def get_physical_devices(device_type: str = None) -> list[Device]:
-    """Get physical devices."""
+    """Get physical devices for the current backend.
+
+    Args:
+        device_type (str): The type of device to filter by.
+
+    Returns:
+        list[Device]: A list of physical devices.
+
+    Raises:
+        BackendNotSupportedError: If the backend does not support this.
+    """
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -169,7 +192,17 @@ def get_physical_devices(device_type: str = None) -> list[Device]:
 
 
 def get_memory_info(device: str = None) -> dict[str, int]:
-    """Get memory statistics tracking (allocation bytes, peak usage)."""
+    """Get memory statistics tracking (allocation bytes, peak usage).
+
+    Args:
+        device (str): The device to get info for.
+
+    Returns:
+        dict[str, int]: Memory statistics dictionary.
+
+    Raises:
+        BackendNotSupportedError: If the backend does not support memory info.
+    """
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 

@@ -49,13 +49,13 @@ __all__ = [
 
 
 class CustomVJPFunction:
-    """Wrapper for custom_vjp functions."""
+    """Wrap for custom_vjp functions."""
 
     def __init__(self, fun: Callable[..., object]) -> None:
-        """Execute __init__.
+        """Initialize the custom VJP wrapper.
 
         Args:
-            fun (Callable[..., object]): The fun parameter for the operation.
+            fun (Callable[..., object]): The base function being wrapped for custom VJPs.
         """
         self.fun = fun
         self.fwd = None
@@ -73,24 +73,24 @@ class CustomVJPFunction:
         self.bwd = bwd
 
     def _extract_tensor_args(self, args: tuple[object, ...]) -> list[object]:
-        """Evaluate and process the extract tensor args operation.
+        """Extract all tensor instances from the provided arguments.
 
         Args:
-            args (tuple): Required parameter for args.
+            args (tuple): The positional arguments.
 
         Returns:
-            list: The evaluated or processed output.
+            list: A list containing only the tensor arguments.
         """
         return [a for a in args if isinstance(a, Tensor)]
 
     def _trace_fwd_graph(self, tensor_args: list[object]) -> object:
-        """Evaluate and process the trace fwd graph operation.
+        """Trace the forward pass of the custom VJP function to construct its logical graph.
 
         Args:
-            tensor_args (list): Required parameter for tensor_args.
+            tensor_args (list): The list of tensor arguments.
 
         Returns:
-            object: The evaluated or processed output.
+            object: The traced logical graph for the forward pass.
         """
         if self.fwd is None or self.bwd is None:
             return None
@@ -102,13 +102,13 @@ class CustomVJPFunction:
             self._tracing_fwd = False
 
     def _resolve_output_metadata(self, tensor_args: list[object]) -> tuple[tuple[int, ...], str, str]:
-        """Evaluate and process the resolve output metadata operation.
+        """Determine the shape, dtype, and device for the output based on the input tensors.
 
         Args:
-            tensor_args (list): Required parameter for tensor_args.
+            tensor_args (list): The list of tensor arguments.
 
         Returns:
-            tuple: The evaluated or processed output.
+            tuple: A tuple containing the output shape, dtype, and device string.
         """
         shape = ()
         dtype = "float32"
@@ -121,15 +121,15 @@ class CustomVJPFunction:
         return (shape, dtype, device)
 
     def _emit_vjp_node(self, tensor_args: list[object], fwd_graph: object, primal_graph: object) -> object:
-        """Emit a vjp node operation into the active computation graph.
+        """Emit a CustomVJP node into the active computation graph.
 
         Args:
-            tensor_args (list): Required parameter for tensor_args.
-            fwd_graph (object): Required parameter for fwd_graph.
-            primal_graph (object): Required parameter for primal_graph.
+            tensor_args (list): The tensor arguments.
+            fwd_graph (object): The traced forward graph.
+            primal_graph (object): The primal logical graph.
 
         Returns:
-            object: The evaluated or processed output.
+            object: The proxy tensor representing the custom VJP output.
         """
         out_id = str(uuid.uuid4())
         meta = self._resolve_output_metadata(tensor_args)
@@ -145,14 +145,14 @@ class CustomVJPFunction:
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))
 
     def __call__(self, *args: object, **kwargs: object) -> object:
-        """Evaluate the function.
+        """Execute the function, tracing the forward and primal graphs if tracing is active.
 
         Args:
-            *args (object): Additional arguments.
-            **kwargs (object): Additional keyword arguments.
+            *args (object): Positional arguments.
+            **kwargs (object): Keyword arguments.
 
         Returns:
-            object: The evaluated output resulting from this operation.
+            object: The computed primal output.
         """
         if config.eager_mode or not global_tracing_state.is_tracing or self._tracing_fwd:
             return self.fun(*args, **kwargs)
@@ -164,13 +164,13 @@ class CustomVJPFunction:
 
 
 def custom_vjp(fun: Callable[..., object]) -> Callable[..., object]:
-    """Ensure custom_vjp allows defining custom gradient functions natively.
+    """Wrap a function to allow defining custom vector-Jacobian product (VJP) rules.
 
     Args:
-        fun (Callable): The function
+        fun (Callable): The original function.
 
     Returns:
-        Callable: The function
+        Callable: The wrapped function that supports custom VJPs.
     """
     return CustomVJPFunction(fun)
 
@@ -178,24 +178,24 @@ def custom_vjp(fun: Callable[..., object]) -> Callable[..., object]:
 def value_and_grad_wrt_vars(
     fun: Callable[..., object],
 ) -> Callable[..., tuple[object, dict[str, object]]]:
-    """Creates a function that evaluates both the value and gradient of fun with respect to variables.
+    """Create a function that evaluates both the primal value and the gradient with respect to variables.
 
     Args:
-        fun (Callable[..., object]): The fun parameter for the operation.
+        fun (Callable[..., object]): The original function to wrap.
 
     Returns:
-        Callable[..., tuple[object, dict[str, object]]]: The wrapped function.
+        Callable[..., tuple[object, dict[str, object]]]: The wrapped function returning the primal value and gradients.
     """
 
     def wrapped(*args: object, **kwargs: object) -> tuple[object, dict[str, object]]:
-        """Evaluates the wrapped function, returning value and gradient dictionary.
+        """Evaluate wrapped operation.
 
         Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
         Returns:
-            tuple[object, dict[str, object]]: The evaluated output and gradient dictionary.
+        object: Result.
         """
         val = fun(*args, **kwargs)
         grads: dict[str, object] = {}
@@ -220,9 +220,9 @@ def _check_scalar(tensor: object) -> None:
     for s in shape:
         try:
             prod *= int(s)
-        except (ValueError, TypeError):  # pragma: no cover
+        except (ValueError, TypeError):
             # Assume symbolic dimensions might be non-scalar
-            prod = 2  # pragma: no cover
+            prod = 2
 
     if prod != 1:
         raise SwitcherooError("backward() can only be called on scalar tensors.")
@@ -265,22 +265,30 @@ def _get_concrete_val(t: object) -> object:
     """
     val = getattr(t.data, "concrete_value", None)
     if val is None:
-        val = getattr(t, "_data", None)  # pragma: no cover
-        if isinstance(val, ProxyTensor):  # pragma: no cover
-            val = getattr(val, "concrete_value", None)  # pragma: no cover
+        val = getattr(t, "_data", None)
+        if isinstance(val, ProxyTensor):
+            val = getattr(val, "concrete_value", None)
     return val
 
 
 def _generate_fallback_input(graph: object, inp_id: str) -> object:
-    """Generate dummy concrete arrays for any missing inputs."""
+    """Generate fallback dummy input for evaluation.
+
+    Args:
+        graph (object): The computation graph.
+        inp_id (str): The node ID of the input.
+
+    Returns:
+        object: The concrete dummy value.
+    """
     node = getattr(graph, "nodes", {}).get(inp_id)
     node_shape = getattr(node, "shape_metadata", ()) or ()
     numeric_shape = []
     for s in node_shape:
         try:
             numeric_shape.append(int(s))
-        except (ValueError, TypeError):  # pragma: no cover
-            numeric_shape.append(1)  # pragma: no cover
+        except (ValueError, TypeError):
+            numeric_shape.append(1)
 
     dtype_str = "float32"
     if node and hasattr(node, "attributes") and "dtype" in node.attributes:
@@ -314,7 +322,7 @@ def _get_inputs_dict(graph: object) -> dict[str, object]:
     # Generate dummy concrete arrays for any missing inputs to prevent errors
     for inp_id in getattr(graph, "inputs", []):
         if inp_id not in inputs_dict:
-            inputs_dict[inp_id] = _generate_fallback_input(graph, inp_id)  # pragma: no cover
+            inputs_dict[inp_id] = _generate_fallback_input(graph, inp_id)
 
     return inputs_dict
 
@@ -381,13 +389,13 @@ def backward(tensor: object, *args: object, **kwargs: object) -> None:
 
 
 def custom_jvp(fun: Callable[..., object]) -> Callable[..., object]:
-    """Ensure custom_jvp allows defining custom JVP functions natively.
+    """Wrap a function to allow defining custom Jacobian-vector product (JVP) rules.
 
     Args:
-        fun (Callable): The function
+        fun (Callable): The original function.
 
     Returns:
-        Callable: The function
+        Callable: The wrapped function that supports custom JVPs.
     """
     return fun
 
@@ -411,10 +419,10 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
     Args:
         f (Callable): The function to differentiate.
         args (tuple): The arguments to evaluate the function.
-        options (GradCheckOptions, optional): The configuration options for checking grads.
+        options (GradCheckOptions): The configuration options for checking grads.
 
     Raises:
-        ValueError: If analytical and numerical gradients do not match.
+        SwitcherooError: If analytical and numerical gradients do not match.
     """
     options = options or GradCheckOptions()
     from ml_switcheroo_compiler.core.config import ConfigContext
@@ -482,12 +490,19 @@ def check_numerical_grads(f: Callable[..., object], args: tuple[object, ...], op
 
 
 def RegisterGradient(op_type: str) -> typing.Callable:
-    """Register a custom gradient for an operation."""
+    """Register a custom gradient for an operation.
+
+    Args:
+        op_type (str): The name of the operation.
+
+    Returns:
+        Callable: The decorator function.
+    """
     return register_vjp(op_type)
 
 
 def overwrite_with_gradient(tensor: object, gradient: object) -> object:
-    """Overwrites the gradient of the tensor in the backward pass.
+    """Overwrite the gradient of the tensor in the backward pass.
 
     During the forward pass, this returns the `tensor` unchanged.
     During the backward pass, it replaces the propagated gradient with `gradient`.
@@ -502,15 +517,39 @@ def overwrite_with_gradient(tensor: object, gradient: object) -> object:
 
     @custom_vjp
     def _overwrite(t: object, g: object) -> object:
-        """Evaluate _overwrite."""
+        """Overwrite the gradient during the backward pass.
+
+        Args:
+            t (object): The primal tensor.
+            g (object): The gradient to overwrite with.
+
+        Returns:
+            object: The primal tensor unchanged.
+        """
         return t
 
     def _overwrite_fwd(t: object, g: object) -> tuple[object, object]:
-        """Evaluate _overwrite_fwd."""
+        """Forward pass for overwriting a gradient.
+
+        Args:
+            t (object): The primal tensor.
+            g (object): The gradient to overwrite with.
+
+        Returns:
+            tuple[object, object]: The primal tensor and the gradient to store for backward.
+        """
         return t, g
 
     def _overwrite_bwd(g: object, g_in: object) -> tuple[object, None]:
-        """Evaluate _overwrite_bwd."""
+        """Backward pass for overwriting a gradient.
+
+        Args:
+            g (object): The stored gradient to overwrite with.
+            g_in (object): The incoming upstream gradient.
+
+        Returns:
+            tuple[object, None]: The overwritten gradient and None for the second argument.
+        """
         return g, None
 
     _overwrite.defvjp(_overwrite_fwd, _overwrite_bwd)
@@ -518,10 +557,25 @@ def overwrite_with_gradient(tensor: object, gradient: object) -> object:
 
 
 def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
-    """Gradient checkpointing / rematerialization."""
+    """Gradient checkpointing / rematerialization.
+
+    Args:
+        fun (Callable[..., object]): The function to checkpoint.
+
+    Returns:
+        Callable[..., object]: The checkpointed function.
+    """
 
     def wrapper(*args: object, **kwargs: object) -> object:
-        """Evaluate the checkpointed function."""
+        """Evaluate wrapper operation.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         from ml_switcheroo_compiler.core.config import config
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -550,7 +604,7 @@ def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
         # Try to infer dtype. Proxy tensors typically just use float32 as default if not specified
         dtype = "float32"
         if hasattr(real_out_node, "attributes") and "dtype" in real_out_node.attributes:
-            dtype = real_out_node.attributes["dtype"]  # pragma: no cover
+            dtype = real_out_node.attributes["dtype"]
         elif tensor_args:
             dtype = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
 
@@ -575,12 +629,26 @@ def checkpoint(fun: Callable[..., object]) -> Callable[..., object]:
 
 
 def remat(fun: Callable[..., object]) -> Callable[..., object]:
-    """Gradient checkpointing / rematerialization alias."""
+    """Gradient checkpointing / rematerialization alias.
+
+    Args:
+        fun (Callable[..., object]): The function to rematerialize.
+
+    Returns:
+        Callable[..., object]: The rematerialized function.
+    """
     return checkpoint(fun)
 
 
 def recompute_grad(fun: Callable[..., object]) -> Callable[..., object]:
-    """Gradient checkpointing / rematerialization."""
+    """Gradient checkpointing / rematerialization.
+
+    Args:
+        fun (Callable[..., object]): The function to recompute gradients for.
+
+    Returns:
+        Callable[..., object]: The recomputing function.
+    """
     return checkpoint(fun)
 
 
@@ -629,15 +697,15 @@ def _to_original_type(val: object, orig: object) -> object:
         dt = DType.Float32
         if str(arr.dtype) == "float64":
             dt = DType.Float64
-        elif "int" in str(arr.dtype):  # pragma: no cover
-            dt = DType.Int32  # pragma: no cover
-        elif str(arr.dtype) == "bool":  # pragma: no cover
-            dt = DType.Bool  # pragma: no cover
+        elif "int" in str(arr.dtype):
+            dt = DType.Int32
+        elif str(arr.dtype) == "bool":
+            dt = DType.Bool
         return Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu")))
     elif isinstance(orig, (int, float, bool)):
         try:
             arr = get_active_backend().asarray(val)
-            if isinstance(orig, bool):  # pragma: no cover
+            if isinstance(orig, bool):
                 return bool(arr.item())
             if isinstance(orig, int):
                 return int(arr.item())
@@ -652,15 +720,15 @@ def _compute_grad_and_value(
     options: GradOptions,
     args: tuple[object, ...],
 ) -> tuple[object, object]:
-    """Helper to evaluate gradient and primal value.
+    """Evaluate _compute_grad_and_value operation.
 
     Args:
-        fun (Callable): The function to differentiate.
-        options (GradOptions): Options for gradient compilation.
-        args (tuple): The arguments passed to the function.
+        fun (Callable): The fun parameter.
+        options (GradOptions): The options parameter.
+        args (tuple): The args parameter.
 
     Returns:
-        tuple[object, object]: A tuple containing the primal value and computed gradients.
+        tuple: Result.
     """
     val, vjp_fn = vjp(fun, *args, has_aux=options.has_aux)
 
@@ -686,11 +754,11 @@ def _compute_grad_and_value(
 
 
 def ir_grad(fun: Callable[..., object], options: GradOptions = None) -> Callable[..., object]:
-    """Return a wrapper.
+    """Return a gradient wrapper.
 
     Args:
         fun (Callable): Function to differentiate.
-        options (GradOptions, optional): Differentiation options.
+        options (GradOptions): Differentiation options.
 
     Returns:
         Callable: The wrapper function.
@@ -698,7 +766,15 @@ def ir_grad(fun: Callable[..., object], options: GradOptions = None) -> Callable
     options = options or GradOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         _, grads = _compute_grad_and_value(fun, options, args)
         return grads
 
@@ -706,11 +782,11 @@ def ir_grad(fun: Callable[..., object], options: GradOptions = None) -> Callable
 
 
 def grad(fun: Callable[..., object], options: GradOptions = None) -> Callable[..., object]:
-    """Return a wrapper.
+    """Return a gradient wrapper.
 
     Args:
         fun (Callable): Function to differentiate.
-        options (GradOptions, optional): Differentiation options.
+        options (GradOptions): Differentiation options.
 
     Returns:
         Callable: The wrapper function.
@@ -718,7 +794,15 @@ def grad(fun: Callable[..., object], options: GradOptions = None) -> Callable[..
     options = options or GradOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux:
             return grads, val[1]
@@ -728,11 +812,11 @@ def grad(fun: Callable[..., object], options: GradOptions = None) -> Callable[..
 
 
 def value_and_grad(fun: Callable[..., object], options: GradOptions = None) -> Callable[..., object]:
-    """Return a wrapper.
+    """Return a gradient wrapper.
 
     Args:
         fun (Callable): Function to differentiate.
-        options (GradOptions, optional): Differentiation options.
+        options (GradOptions): Differentiation options.
 
     Returns:
         Callable: The wrapper function.
@@ -740,7 +824,15 @@ def value_and_grad(fun: Callable[..., object], options: GradOptions = None) -> C
     options = options or GradOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux:
             return val, grads
@@ -750,11 +842,27 @@ def value_and_grad(fun: Callable[..., object], options: GradOptions = None) -> C
 
 
 def jit(fun: Callable[..., object], options: JitOptions = None) -> Callable[..., object]:
-    """Return a wrapper."""
+    """Return a JIT wrapper.
+
+    Args:
+        fun (Callable[..., object]): The function to jit compile.
+        options (JitOptions): Configuration options.
+
+    Returns:
+        Callable[..., object]: The JIT wrapped function.
+    """
     options = options or JitOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return fun(*args, **kwargs)
 
     return wrapped
@@ -762,20 +870,24 @@ def jit(fun: Callable[..., object], options: JitOptions = None) -> Callable[...,
 
 @contextlib.contextmanager
 def disable_jit() -> typing.Iterator[None]:
-    """Context manager."""
+    """Provide context manager to disable JIT locally.
+
+    Yields:
+        None: Context manager yield.
+    """
     yield
 
 
 def eval_shape(fun: Callable[..., object], *args: object, **kwargs: object) -> object:
-    """Evaluate and process the eval shape operation.
+    """Evaluate eval_shape operation.
 
     Args:
-        fun (Callable): Required parameter for fun.
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        fun (object): The fun parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return fun(*args, **kwargs)
 
@@ -800,16 +912,16 @@ def _convert_to_tensors(primals: Sequence[object]) -> list[Tensor]:
             dt = DType.Float32
             if str(arr.dtype) == "float64":
                 dt = DType.Float64
-            elif "int" in str(arr.dtype):  # pragma: no cover
-                dt = DType.Int32  # pragma: no cover
-            elif str(arr.dtype) == "bool":  # pragma: no cover
-                dt = DType.Bool  # pragma: no cover
+            elif "int" in str(arr.dtype):
+                dt = DType.Int32
+            elif str(arr.dtype) == "bool":
+                dt = DType.Bool
             tensor_primals.append(Tensor(arr, TensorConfig(arr.shape, dt, Device("cpu"))))
     return tensor_primals
 
 
 def _get_fun_primal(fun: Callable[..., object], has_aux: bool) -> Callable[..., object]:
-    """Helper to return function for primal evaluation.
+    """Return function for primal evaluation.
 
     Args:
         fun (Callable): The original function.
@@ -821,7 +933,14 @@ def _get_fun_primal(fun: Callable[..., object], has_aux: bool) -> Callable[..., 
     if has_aux:
 
         def fun_primal(*args: object) -> object:
-            """Evaluate fun_primal."""
+            """Evaluate fun_primal operation.
+
+            Args:
+            *args (object): Positional args.
+
+            Returns:
+            object: Result.
+            """
             out_val = fun(*args)
             return out_val[0] if isinstance(out_val, tuple) else out_val
 
@@ -835,16 +954,16 @@ def jvp(
     tangents: object,
     has_aux: bool = False,
 ) -> tuple[object, object]:
-    """Compute the Jacobian-vector product of fun.
+    """Evaluate jvp operation.
 
     Args:
-        fun (Callable[..., object]): The function to differentiate.
-        primals (object): The primal input values as a tuple or list.
-        tangents (object): The tangent input values as a tuple or list.
-        has_aux (bool): Whether the function returns auxiliary output.
+        fun (object): The fun parameter.
+        primals (object): The primals parameter.
+        tangents (object): The tangents parameter.
+        has_aux (bool): The has_aux parameter.
 
     Returns:
-        tuple[object, object]: A tuple containing the primal output and the computed tangent output.
+        object: Result.
     """
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.interpreter import evaluate_graph
@@ -903,15 +1022,15 @@ def vjp(
     *primals: object,
     has_aux: bool = False,
 ) -> tuple[object, Callable]:
-    """Compute the vector-Jacobian product of fun.
+    """Evaluate vjp operation.
 
     Args:
-        fun (Callable[..., object]): The function to differentiate.
-        *primals (object): The primal input values.
-        has_aux (bool): Whether the function returns auxiliary output.
+        fun (Callable[..., object]): The fun parameter.
+        *primals (object): Positional args.
+        has_aux (bool): Aux.
 
     Returns:
-        tuple[object, Callable]: A tuple of the primal output and the vjp pull-back function.
+        tuple: Result.
     """
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.interpreter import evaluate_graph
@@ -923,7 +1042,14 @@ def vjp(
 
     # 2. Wrap function to unflatten inputs before execution
     def fun_flat(*flat_args: object) -> object:
-        """Evaluate fun_flat."""
+        """Evaluate fun_flat operation.
+
+        Args:
+        *flat_args (object): Positional args.
+
+        Returns:
+        object: Result.
+        """
         unflat_args = tree_unflatten(tree_def, list(flat_args))
         return fun(*unflat_args)
 
@@ -972,13 +1098,13 @@ def vjp(
     )
 
     def vjp_fn(cotangent: object) -> tuple[object, ...]:
-        """The pull-back function.
+        """Evaluate vjp_fn operation.
 
         Args:
-            cotangent (object): The seed gradient vector.
+        cotangent (object): The cotangent parameter.
 
         Returns:
-            tuple[object, ...]: Gradients with respect to each input parameter.
+        object: Result.
         """
         # Run the evaluator on grad_graph
         inputs_dict = {inp_id: get_active_backend().asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs[: len(tensor_primals)], tensor_primals)}
@@ -1010,16 +1136,16 @@ def hvp(
     tangents: object,
     has_aux: bool = False,
 ) -> tuple[object, object]:
-    """Compute the Hessian-vector product of fun.
+    """Evaluate hvp operation.
 
     Args:
-        fun (Callable[..., object]): The function to differentiate.
-        primals (object): The primal input values as a tuple or list.
-        tangents (object): The tangent input values as a tuple or list.
-        has_aux (bool): Whether the function returns auxiliary output.
+        fun (object): The fun parameter.
+        primals (object): The primals parameter.
+        tangents (object): The tangents parameter.
+        has_aux (bool): The has_aux parameter.
 
     Returns:
-        tuple[object, object]: A tuple containing the primal output and the computed Hessian-vector product.
+        object: Result.
     """
     from ml_switcheroo_compiler.interpreter import evaluate_graph
     from ml_switcheroo_compiler.transforms.autodiff import hvp as graph_hvp
@@ -1072,19 +1198,27 @@ def hvp(
 
 
 def jacfwd(fun: typing.Callable[..., object], options: GradOptions = None) -> typing.Callable[..., object]:
-    """Compute the Jacobian of fun using forward-mode autodiff.
+    """Evaluate jacfwd operation.
 
     Args:
-        fun (Callable[..., object]): The function to differentiate.
-        options (GradOptions, optional): The configuration options.
+        fun (object): The fun parameter.
+        options (GradOptions): The options parameter.
 
     Returns:
-        Callable[..., object]: A function that evaluates the Jacobian.
+        object: Result.
     """
     options = options or GradOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         # Evaluate fun to see input and output dimensions
         out = fun(*args, **kwargs)
         out_arr = get_active_backend().asarray(getattr(out, "data", out))
@@ -1121,19 +1255,27 @@ def jacfwd(fun: typing.Callable[..., object], options: GradOptions = None) -> ty
 
 
 def jacrev(fun: typing.Callable[..., object], options: GradOptions = None) -> typing.Callable[..., object]:
-    """Compute the Jacobian of fun using reverse-mode autodiff.
+    """Evaluate jacrev operation.
 
     Args:
-        fun (Callable[..., object]): The function to differentiate.
-        options (GradOptions, optional): The configuration options.
+        fun (object): The fun parameter.
+        options (GradOptions): The options parameter.
 
     Returns:
-        Callable[..., object]: A function that evaluates the Jacobian.
+        object: Result.
     """
     options = options or GradOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
         out, vjp_fn = vjp(fun, *args, has_aux=options.has_aux)
@@ -1187,19 +1329,27 @@ def jacrev(fun: typing.Callable[..., object], options: GradOptions = None) -> ty
 
 
 def hessian(fun: typing.Callable[..., object], options: GradOptions = None) -> typing.Callable[..., object]:
-    """Compute the Hessian of fun.
+    """Evaluate hessian operation.
 
     Args:
-        fun (Callable[..., object]): The function to differentiate.
-        options (GradOptions, optional): The configuration options.
+        fun (object): The fun parameter.
+        options (GradOptions): The options parameter.
 
     Returns:
-        Callable[..., object]: A function that evaluates the Hessian.
+        object: Result.
     """
     options = options or GradOptions()
 
     def wrapped(*args: object, **kwargs: object) -> object:
-        """Evaluate wrapped."""
+        """Evaluate wrapped operation.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
         flat_arg0 = arg0.flatten()
 

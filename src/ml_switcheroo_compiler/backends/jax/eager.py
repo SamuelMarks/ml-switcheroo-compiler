@@ -12,7 +12,15 @@ import jax.scipy.stats
 
 
 def _execute_adaptive_pool_mock(*args: object, **kwargs: object) -> object:
-    """Evaluate execute adaptive pool mock."""
+    """Evaluate _execute_adaptive_pool_mock operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import jax.numpy as jnp
 
     operand = args[0]
@@ -31,14 +39,17 @@ def _execute_adaptive_pool_mock(*args: object, **kwargs: object) -> object:
 
 
 def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute accumulate n operation.
+    """Evaluate _execute_accumulate_n operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
+
+    Raises:
+        ValueError: An exception.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -50,14 +61,14 @@ def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
 
 
 def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute binom cdf operation.
+    """Evaluate _execute_binom_cdf operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     k, n, p = args[0], args[1], args[2]
     loc = kwargs.get("loc", 0.0)
@@ -65,72 +76,80 @@ def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
 
 
 def _execute_bessel_jn(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute bessel jn operation.
+    """Evaluate _execute_bessel_jn operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return jax.scipy.special.bessel_jn(args[1], v=args[0])
 
 
 def _execute_unsorted_segment_sum(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute unsorted segment sum operation.
+    """Evaluate _execute_unsorted_segment_sum operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return jax.ops.segment_sum(*args, **kwargs)
 
 
 def _execute_unsorted_segment_max(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute unsorted segment max operation.
+    """Evaluate _execute_unsorted_segment_max operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return jax.ops.segment_max(*args, **kwargs)
 
 
 def _execute_unsorted_segment_min(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute unsorted segment min operation.
+    """Evaluate _execute_unsorted_segment_min operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return jax.ops.segment_min(*args, **kwargs)
 
 
 def _execute_unsorted_segment_prod(*args: object, **kwargs: object) -> object:
-    """Evaluate and process the execute unsorted segment prod operation.
+    """Evaluate _execute_unsorted_segment_prod operation.
 
     Args:
-        *args (Any): Variable positional arguments.
-        **kwargs (Any): Arbitrary keyword arguments.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return jax.ops.segment_prod(*args, **kwargs)
 
 
 def _execute_variance(*args: object, **kwargs: object) -> object:
-    """Evaluate execute variance."""
+    """Evaluate _execute_variance operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import jax.numpy as jnp
 
     kwargs.setdefault("ddof", 0)
@@ -138,7 +157,15 @@ def _execute_variance(*args: object, **kwargs: object) -> object:
 
 
 def _execute_cast(*args: object, **kwargs: object) -> object:
-    """Evaluate execute cast."""
+    """Evaluate _execute_cast operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     tensor = args[0]
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
     dt_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
@@ -158,7 +185,15 @@ def _execute_cast(*args: object, **kwargs: object) -> object:
 
 
 def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
-    """Evaluate execute ragged tensor to dense."""
+    """Evaluate _execute_ragged_tensor_to_dense operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     import jax.numpy as jnp
 
     rt = args[0]
@@ -268,20 +303,22 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
 
 
 def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
-    """Execute execute_op.
+    """Evaluate execute_op operation.
 
     Args:
-        cls (type): The cls parameter for the operation.
-        op_type (str): Argument op_type.
-        *args (object): Argument *args.
-        **kwargs (object): Argument **kwargs.
+        cls (type): The class.
+        op_type (str): The op_type parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The result.
+        object: Result.
+
+    Raises:
+        BackendNotSupportedError: An exception.
     """
     if op_type in _OP_DISPATCH:
         return _OP_DISPATCH[op_type](*args, **kwargs)
-
     import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -289,12 +326,10 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
     global_func = global_eager_registry.get(op_type)
     if global_func is not None:
         return global_func(jnp, *args, **kwargs)
-
     import re
 
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
     snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
     import jax.lax as lax
 
     # specific name mappings
@@ -304,16 +339,13 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         snake = "subtract"
     elif snake == "div":
         snake = "divide"
-
     func = None
     for mod in [jnp, lax, getattr(jnp, "linalg", None), getattr(jnp, "fft", None)]:
         if mod is not None and hasattr(mod, snake):
             func = getattr(mod, snake)
             break
-
     if func is not None:
         return func(*args, **kwargs)
-
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

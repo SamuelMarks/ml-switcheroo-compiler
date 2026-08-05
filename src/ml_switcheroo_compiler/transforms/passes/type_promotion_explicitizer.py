@@ -14,15 +14,15 @@ from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_infer
 
 
 def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
-    """Evaluate and process the inject cast node operation.
+    """Evaluate _inject_cast_node operation.
 
     Args:
-        graph (IRGraph): Required parameter for graph.
-        input_id (str): Required parameter for input_id.
-        target_dt (str): Required parameter for target_dt.
+        graph (IRGraph): The graph parameter.
+        input_id (str): The input_id parameter.
+        target_dt (str): The target_dt parameter.
 
     Returns:
-        str: The evaluated or processed output.
+        str: Result.
     """
     new_id = f"cast_{uuid.uuid4().hex[:6]}"
     new_node = LogicalNode(
@@ -37,14 +37,14 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
 
 
 def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
-    """Evaluate and process the needs cast operation.
+    """Evaluate _needs_cast operation.
 
     Args:
-        dt1 (Optional): Required parameter for dt1.
-        dt2 (Optional): Required parameter for dt2.
+        dt1 (object): The dt1 parameter.
+        dt2 (object): The dt2 parameter.
 
     Returns:
-        Optional: The evaluated or processed output.
+        object: Result.
     """
     if dt1 is None or dt2 is None or dt1 == dt2:
         return None

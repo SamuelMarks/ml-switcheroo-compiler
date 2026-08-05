@@ -15,14 +15,14 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
-    """Constructs a new tensor by repeating the input tensor the specified number of times.
+    """Construct a new tensor by repeating the input tensor the specified number of times.
 
     Args:
-        input (Tensor): The input tensor
-        reps (Sequence[int]): The number of repetitions along each dimension
+        input (Tensor): The input parameter.
+        reps (Sequence): The reps parameter.
 
     Returns:
-    Tensor: The tiled tensor
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -45,15 +45,15 @@ def repeat(
     repeats: int | Sequence[int],
     dim: int | None = None,
 ) -> Tensor:
-    """Repeats elements of the input tensor along a specified dimension.
+    """Repeat elements of the input tensor along a specified dimension.
 
     Args:
-        input (Tensor): The input tensor
-        repeats (int | Sequence[int]): The number of repetitions for each element
-        dim (int | None): The dimension along which to repeat. Defaults to None
+        input (Tensor): The input parameter.
+        repeats (object): The repeats parameter.
+        dim (object): The dim parameter.
 
     Returns:
-    Tensor: The tensor with repeated elements
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -72,15 +72,14 @@ def repeat(
 
 
 def triu(input: Tensor, diagonal: int = 0) -> Tensor:
-    """Returns the upper triangular part of a matrix or batch of matrices.
+    """Return the upper triangular part of a matrix or batch of matrices.
 
     Args:
-        input (Tensor): The input tensor
-        diagonal (int): The diagonal to consider. 0 is the main diagonal, positive
-        values are above, and negative values are below. Defaults to 0
+        input (Tensor): The input parameter.
+        diagonal (int): The diagonal parameter.
 
     Returns:
-    Tensor: The upper triangular tensor
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -99,15 +98,14 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
 
 
 def tril(input: Tensor, diagonal: int = 0) -> Tensor:
-    """Returns the lower triangular part of a matrix or batch of matrices.
+    """Return the lower triangular part of a matrix or batch of matrices.
 
     Args:
-        input (Tensor): The input tensor
-        diagonal (int): The diagonal to consider. 0 is the main diagonal, positive
-        values are above, and negative values are below. Defaults to 0
+        input (Tensor): The input parameter.
+        diagonal (int): The diagonal parameter.
 
     Returns:
-    Tensor: The lower triangular tensor
+        Tensor: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -126,7 +124,15 @@ def tril(input: Tensor, diagonal: int = 0) -> Tensor:
 
 
 def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, ...]:
-    """Computes the shape for a meshgrid."""
+    """Compute the shape for a meshgrid.
+
+    Args:
+        inputs (object): The inputs parameter.
+        indexing (str): The indexing parameter.
+
+    Returns:
+        object: Result.
+    """
     if not inputs:
         return ()
     out_shape = tuple(t.shape[0] if t.shape else 1 for t in inputs)
@@ -136,15 +142,16 @@ def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, .
 
 
 def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
-    """Creates coordinate grids from coordinate vectors.
+    """Create coordinate grids from coordinate vectors.
 
     Args:
-        *tensors (Tensor): Coordinate vectors
-        indexing (str): The indexing mode, either "ij" (matrix) or "xy" (Cartesian)
-        Defaults to "ij"
+        indexing (str): Indexing.
+
+    Args:
+        *tensors (Tensor): Positional args.
 
     Returns:
-    Sequence[Tensor]: A sequence of coordinate grid tensors
+        Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
@@ -153,11 +160,19 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     inputs = list(tensors)
     out_shape = _compute_meshgrid_shape(inputs, indexing)
     dtype = inputs[0].dtype if inputs else DType.Float32
-
     return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
 def _normalize_pad_width(pad_width: object, ndim: int) -> tuple:
+    """Normalize pad width representation.
+
+    Args:
+        pad_width (object): Pad width descriptor.
+        ndim (int): Number of dimensions.
+
+    Returns:
+        tuple: Normalized pad width.
+    """
     if isinstance(pad_width, int):
         return ((pad_width, pad_width),) * ndim
     if isinstance(pad_width, tuple) and len(pad_width) == 2 and isinstance(pad_width[0], int):
@@ -166,6 +181,15 @@ def _normalize_pad_width(pad_width: object, ndim: int) -> tuple:
 
 
 def _compute_pad_dim(dim: int, pw: object) -> int:
+    """Evaluate _compute_pad_dim operation.
+
+    Args:
+        dim (int): The dim parameter.
+        pw (object): The pw parameter.
+
+    Returns:
+        int: Result.
+    """
     if isinstance(pw, int):
         return dim + pw * 2
     if isinstance(pw, tuple) and len(pw) == 2:
@@ -180,13 +204,21 @@ class Pad(OpDef):
     op_name = "Pad"
 
     def infer_shape(self, array: object, pad_width: object, mode: str = "constant", **kwargs: object) -> tuple[int, ...]:
-        """Infer shape for pad."""
+        """Infer shape.
+
+        Args:
+            array (object): The array parameter.
+            pad_width (object): The pad_width parameter.
+            mode (str): The mode parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         in_shape = getattr(array, "shape", ())
         if not in_shape:
             return ()
-
         normalized_pw = _normalize_pad_width(pad_width, len(in_shape))
-
         out_shape = []
         for i, dim in enumerate(in_shape):
             if i < len(normalized_pw):
@@ -203,43 +235,39 @@ def pad(
     mode: str = "constant",
     **kwargs: object,
 ) -> object:
-    """Pads an array with specified widths and values.
+    """Pad an array with specified widths and values.
 
     Args:
-        array (object): The array to pad
-        pad_width (object): Number of values padded to the edges of each axis
-        mode (str): The padding mode (e.g., 'constant'). Defaults to "constant"
-        **kwargs (object): Additional keyword arguments for the padding mode
+        array (object): The array parameter.
+        pad_width (object): The pad_width parameter.
+        mode (str): The mode parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-    object: The padded array
+        object: Result.
     """
     op = Pad()
     out_shape = op.infer_shape(array, pad_width, mode, **kwargs)
-
     attributes = {"pad_width": pad_width, "mode": mode}
     attributes.update(kwargs)
-
     return _emit_shape_node("Pad", [array], attributes, out_shape, getattr(array, "dtype", None))
 
 
 @dispatch_eager("TopK")
 def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
-    """Returns the top k values and their indices along the last dimension.
+    """Return the top k values and their indices along the last dimension.
 
     Args:
-        operand (Tensor): The input tensor
-        k (int): Number of top elements to look for
+        operand (Tensor): The operand parameter.
+        k (int): The k parameter.
 
     Returns:
-    tuple[Tensor, Tensor]: Top k values and their indices
-
+        tuple: Result.
     """
     out_shape = list(operand.shape) if operand.shape else []
     if out_shape:
         out_shape[-1] = k
     out_shape = tuple(out_shape)
-
     inputs = [operand]
     # We cheat a bit by returning two tensors pointing to the same node for now,
     # as handling multi-output nodes properly requires more IR scaffolding
@@ -255,33 +283,29 @@ def argsort(
     axis: int | None = None,
     dim: int | None = None,
 ) -> Tensor:
-    """Returns the indices that would sort an array along a given dimension.
+    """Return the indices that would sort an array along a given dimension.
 
     Args:
-        operand (Tensor): The input tensor
-        dimension (int): The dimension to sort along
-        is_stable (bool): Whether to use a stable sorting algorithm
-        axis (int): Alias for dimension.
-        dim (int): Alias for dimension.
+        operand (Tensor): The operand parameter.
+        dimension (int): The dimension parameter.
+        is_stable (bool): The is_stable parameter.
+        axis (object): The axis parameter.
+        dim (object): The dim parameter.
 
     Returns:
-    Tensor: The indices that sort the tensor
+        Tensor: Result.
     """
     if axis is not None:
         dimension = axis
     if dim is not None:
         dimension = dim
-
     if config.eager_mode:
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
         data = backend.execute_op("ArgSort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=dimension, kind=kind)
-
         return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))
-
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}
-
     return _emit_shape_node("ArgSort", inputs, attributes, operand.shape, DType.Int32)
 
 
@@ -295,20 +319,19 @@ def sort(
     """Sorts the elements of an array along a given dimension.
 
     Args:
-        operand (Tensor): The input tensor
-        dimension (int): The dimension to sort along
-        is_stable (bool): Whether to use a stable sorting algorithm
-        axis (int): Alias for dimension.
-        dim (int): Alias for dimension.
+        operand (Tensor): The operand parameter.
+        dimension (int): The dimension parameter.
+        is_stable (bool): The is_stable parameter.
+        axis (object): The axis parameter.
+        dim (object): The dim parameter.
 
     Returns:
-    Tensor: The sorted tensor
+        Tensor: Result.
     """
     if axis is not None:
         dimension = axis
     if dim is not None:
         dimension = dim
-
     if config.eager_mode:
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
@@ -317,7 +340,6 @@ def sort(
             backend.array(data),
             TensorConfig(backend.array(data).shape, operand.dtype, operand.device),
         )
-
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}
     return _emit_shape_node("Sort", inputs, attributes, operand.shape, operand.dtype)
@@ -328,16 +350,15 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
     """Resizes an image to the given target shape using interpolation.
 
     Args:
-        image (Tensor): The input image tensor
-        shape (tuple[int, int]): The target height and width
-        method (str): The interpolation method (e.g. 'bilinear', 'nearest')
+        image (Tensor): The image parameter.
+        shape (tuple): The shape parameter.
+        method (str): The method parameter.
 
     Returns:
-    Tensor: The resized image tensor
+        Tensor: Result.
     """
     op = Resize()
     out_shape = op.infer_shape(image, shape, method)
-
     return _emit_shape_node(
         "Resize",
         [image],
@@ -352,7 +373,15 @@ class DynamicShape(OpDef):
     """DynamicShape op."""
 
     def infer_shape(self, x: object, **kwargs: object) -> tuple[int, ...]:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            x (object): The x parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            tuple: Result.
+        """
         return (len(getattr(x, "shape", ())),)
 
 
@@ -363,7 +392,15 @@ class Rank(OpDef):
     op_name = "Rank"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         args[0] if len(args) > 0 else None
         return ()
 
@@ -375,7 +412,16 @@ class Size(OpDef):
     op_name = "Size"
 
     def infer_shape(self, a: object, axis: object = None, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            a (object): The a parameter.
+            axis (object): The axis parameter.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return ()
 
 
@@ -443,7 +489,15 @@ class Flatnonzero(OpDef):
     op_name = "Flatnonzero"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         args[0] if len(args) > 0 else None
         return (None,)
 
@@ -455,7 +509,15 @@ class Lexsort(OpDef):
     op_name = "Lexsort"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         keys = args[0] if len(args) > 0 else None
         kwargs.get("axis", -1)
         if isinstance(keys, (list, tuple)):
@@ -473,34 +535,49 @@ class Nonzero(OpDef):
     op_name = "Nonzero"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a = args[0] if len(args) > 0 else None
         in_shape = getattr(a, "shape", ())
         return tuple((None,) for _ in in_shape)
 
 
 def _infer_shape_percentile_quantile(a: object, q: object, axis: object = None, keepdims: bool = False) -> tuple[int, ...]:
+    """Infer shape for percentile and quantile ops.
+
+    Args:
+        a (object): The a parameter.
+        q (object): The q parameter.
+        axis (object): The axis parameter.
+        keepdims (bool): The keepdims parameter.
+
+    Returns:
+        tuple: Result.
+    """
     in_shape = getattr(a, "shape", ())
     q_shape = getattr(q, "shape", ())
     if isinstance(q, (int, float)):
         q_shape = ()
     elif isinstance(q, (list, tuple)):
         q_shape = (len(q),)
-
     if axis is None:
         if keepdims:
             return q_shape + (1,) * len(in_shape)
         return q_shape
-
     axis_tup = (axis,) if isinstance(axis, int) else tuple(axis)  # type: ignore[arg-type]
-
     out_shape = list(in_shape)
     for ax in sorted(axis_tup, reverse=True):
         if keepdims:
             out_shape[ax] = 1
         else:
             out_shape.pop(ax)
-
     return q_shape + tuple(out_shape)
 
 
@@ -511,7 +588,15 @@ class Percentile(OpDef):
     op_name = "Percentile"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a = args[0] if len(args) > 0 else None
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
@@ -526,7 +611,15 @@ class Quantile(OpDef):
     op_name = "Quantile"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a = args[0] if len(args) > 0 else None
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
@@ -536,17 +629,48 @@ class Quantile(OpDef):
 
 @register_op("RavelMultiIndex")
 class RavelMultiIndex(OpDef):
-    """Converts a tuple of index arrays into an array of flat indices."""
+    """Convert a tuple of index arrays into an array of flat indices."""
 
     op_name = "RavelMultiIndex"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         multi_index = args[0] if len(args) > 0 else None
         args[1] if len(args) > 1 else None
         if isinstance(multi_index, (list, tuple)) and multi_index:
             return getattr(multi_index[0], "shape", ())
         return getattr(multi_index, "shape", ())
+
+
+def _repeat_infer_no_axis(in_shape: tuple, repeats: object) -> tuple:
+    """Infer shape for repeat without an axis.
+
+    Args:
+        in_shape (tuple): The input shape.
+        repeats (object): The repetitions.
+
+    Returns:
+        tuple: The inferred shape.
+    """
+    size: int | None = 1
+    for s in in_shape:
+        if s is None:
+            size = None
+            break
+        size *= s  # type: ignore[operator]
+    if isinstance(repeats, int) and size is not None:
+        return (size * repeats,)
+    if isinstance(repeats, (list, tuple)):
+        return (sum(repeats),)
+    return (None,)
 
 
 @register_op("Repeat")
@@ -556,24 +680,21 @@ class Repeat(OpDef):
     op_name = "Repeat"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a = args[0] if len(args) > 0 else None
         repeats = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         in_shape = getattr(a, "shape", ())
         if axis is None:
-            size: int | None = 1
-            for s in in_shape:
-                if s is None:
-                    size = None
-                    break
-                size *= s  # type: ignore[operator]
-            if isinstance(repeats, int) and size is not None:
-                return (size * repeats,)
-            if isinstance(repeats, (list, tuple)):
-                return (sum(repeats),)
-            return (None,)
-
+            return _repeat_infer_no_axis(in_shape, repeats)
         out_shape = list(in_shape)
         if isinstance(repeats, int):
             out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None
@@ -591,7 +712,15 @@ class Searchsorted(OpDef):
     op_name = "Searchsorted"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         args[0] if len(args) > 0 else None
         v = args[1] if len(args) > 1 else None
         return getattr(v, "shape", ())
@@ -604,9 +733,36 @@ class SortComplex(OpDef):
     op_name = "SortComplex"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         a = args[0] if len(args) > 0 else None
         return getattr(a, "shape", ())
+
+
+def _compute_tile_shape(in_shape: tuple, reps: tuple) -> tuple:
+    """Evaluate _compute_tile_shape operation.
+
+    Args:
+        in_shape (tuple): The in_shape parameter.
+        reps (tuple): The reps parameter.
+
+    Returns:
+        tuple: Result.
+    """
+    d = len(reps)
+    c = len(in_shape)
+    if c < d:
+        in_shape = (1,) * (d - c) + in_shape
+    elif c > d:
+        reps = (1,) * (c - d) + reps
+    return tuple(s * r if s is not None and r is not None else None for s, r in zip(in_shape, reps))
 
 
 @register_op("Tile")
@@ -616,7 +772,15 @@ class Tile(OpDef):
     op_name = "Tile"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         A = args[0] if len(args) > 0 else None
         reps = args[1] if len(args) > 1 else None
         if reps is None:
@@ -626,16 +790,28 @@ class Tile(OpDef):
             reps = (reps,)
         else:
             reps = tuple(reps)  # type: ignore[arg-type]
+        return _compute_tile_shape(in_shape, reps)
 
-        d = len(reps)
-        c = len(in_shape)
 
-        if c < d:
-            in_shape = (1,) * (d - c) + in_shape
-        elif c > d:
-            reps = (1,) * (c - d) + reps
+def _get_unique_inverse_shape(axis: int | None, in_shape: tuple) -> tuple:
+    """Get the inverse shape for the unique operation.
 
-        return tuple(s * r if s is not None and r is not None else None for s, r in zip(in_shape, reps))
+    Args:
+        axis (int | None): The axis along which unique operates.
+        in_shape (tuple): The input shape.
+
+    Returns:
+        tuple: The inverse shape.
+    """
+    if axis is not None:
+        return (in_shape[axis],)
+    size: int | None = 1
+    for s in in_shape:
+        if s is None:
+            size = None
+            break
+        size *= s  # type: ignore[operator]
+    return (size,)
 
 
 @register_op("Unique")
@@ -645,7 +821,15 @@ class Unique(OpDef):
     op_name = "Unique"
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         ar = args[0] if len(args) > 0 else None
         return_index = kwargs.get("return_index", False)
         return_inverse = kwargs.get("return_inverse", False)
@@ -658,87 +842,148 @@ class Unique(OpDef):
             ret_shape_list = list(in_shape)
             ret_shape_list[axis] = None
             ret_shape = tuple(ret_shape_list)
-
         ret = [ret_shape]
         if return_index:
             ret.append((None,) if axis is None else (in_shape[axis],))
         if return_inverse:
-            if axis is None:
-                size = 1
-                for s in in_shape:
-                    if s is None:
-                        size = None
-                        break
-                    size *= s
-                ret.append((size,))
-            else:
-                ret.append((in_shape[axis],))
+            ret.append(_get_unique_inverse_shape(axis, in_shape))
         if return_counts:
             ret.append((None,))
-
         if len(ret) == 1:
             return ret[0]
         return tuple(ret)
 
 
 def percentile(*args: object, **kwargs: object) -> object:
-    """Compute the q-th percentile of the data along the specified axis."""
+    """Evaluate percentile operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Percentile", *args, **kwargs)
 
 
 def quantile(*args: object, **kwargs: object) -> object:
-    """Compute the q-th quantile of the data along the specified axis."""
+    """Evaluate quantile operation.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Quantile", *args, **kwargs)
 
 
 def flatnonzero(*args: object, **kwargs: object) -> object:
-    """Return indices that are non-zero in the flattened version of a."""
+    """Return indices that are non-zero in the flattened version of a.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Flatnonzero", *args, **kwargs)
 
 
 def nonzero(*args: object, **kwargs: object) -> object:
-    """Return the indices of the elements that are non-zero."""
+    """Return the indices of the elements that are non-zero.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Nonzero", *args, **kwargs)
 
 
 def ravel_multi_index(*args: object, **kwargs: object) -> object:
-    """Converts a tuple of index arrays into an array of flat indices."""
+    """Convert a tuple of index arrays into an array of flat indices.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("RavelMultiIndex", *args, **kwargs)
 
 
 def lexsort(*args: object, **kwargs: object) -> object:
-    """Perform an indirect stable sort using a sequence of keys."""
+    """Perform an indirect stable sort using a sequence of keys.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Lexsort", *args, **kwargs)
 
 
 def searchsorted(*args: object, **kwargs: object) -> object:
-    """Find indices where elements should be inserted to maintain order."""
+    """Find indices where elements should be inserted to maintain order.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Searchsorted", *args, **kwargs)
 
 
 def sort_complex(*args: object, **kwargs: object) -> object:
-    """Sort a complex array using the real part first, then the imaginary part."""
+    """Sort a complex array using the real part first, then the imaginary part.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("SortComplex", *args, **kwargs)
 
 
 def unique(*args: object, **kwargs: object) -> object:
-    """Find the unique elements of an array."""
+    """Find the unique elements of an array.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns:
+        object: Result.
+    """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Unique", *args, **kwargs)

@@ -1,5 +1,5 @@
 # ruff: noqa
-"""Normalization operations package."""
+"""Apply normalization operations package."""
 
 from ml_switcheroo_compiler.ops.base import get_op
 

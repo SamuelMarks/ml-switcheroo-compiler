@@ -4,7 +4,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
 class RawOp(OpDef):
-    """Base class for all Raw operations.
+    """Define base class for all Raw operations.
 
     This provides a strategy to support raw TensorFlow operations dynamically
     by falling back to eager execution or mapping them to higher-level IR nodes
@@ -12,7 +12,15 @@ class RawOp(OpDef):
     """
 
     def infer_shape(self, *args: object, **kwargs: object) -> object:
-        """Infer shape dynamically or fallback to unknown."""
+        """Infer shape dynamically or fallback to unknown.
+
+        Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return ()
 
 

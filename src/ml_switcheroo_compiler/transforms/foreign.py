@@ -7,29 +7,23 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
 def _handle_fx_placeholder(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Evaluate and process the handle fx placeholder operation.
+    """Handle a Torch FX placeholder node.
 
     Args:
-        node (object): Required parameter for node.
-        graph (LogicalGraph): Required parameter for graph.
-        node_map (dict): Required parameter for node_map.
-
-    Returns:
-        Any: The evaluated or processed output.
+        node (object): The FX node.
+        graph (LogicalGraph): The logical graph.
+        node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
     """
     node_map[node.name] = node.name
 
 
 def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Evaluate and process the handle fx call function operation.
+    """Handle a Torch FX call_function node.
 
     Args:
-        node (object): Required parameter for node.
-        graph (LogicalGraph): Required parameter for graph.
-        node_map (dict): Required parameter for node_map.
-
-    Returns:
-        Any: The evaluated or processed output.
+        node (object): The FX node.
+        graph (LogicalGraph): The logical graph.
+        node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
     """
     target_name = getattr(node.target, "__name__", str(node.target))
 
@@ -64,15 +58,12 @@ def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[s
 
 
 def _handle_fx_output(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
-    """Evaluate and process the handle fx output operation.
+    """Handle a Torch FX output node.
 
     Args:
-        node (object): Required parameter for node.
-        graph (LogicalGraph): Required parameter for graph.
-        node_map (dict): Required parameter for node_map.
-
-    Returns:
-        Any: The evaluated or processed output.
+        node (object): The FX node.
+        graph (LogicalGraph): The logical graph.
+        node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
     """
     outputs = []
     args = node.args[0]
@@ -91,6 +82,9 @@ def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
 
     Returns:
         LogicalGraph: The converted LogicalGraph.
+
+    Raises:
+        ValueError: If fx_graph_module is None.
     """
     if fx_graph_module is None:
         raise ValueError("Torch FX GraphModule cannot be None")
@@ -177,6 +171,9 @@ def ingest_jaxpr(jaxpr: object) -> LogicalGraph:
 
     Returns:
         LogicalGraph: The converted LogicalGraph.
+
+    Raises:
+        ValueError: If fx_graph_module is None.
     """
     if jaxpr is None:
         raise ValueError("JAX jaxpr cannot be None")

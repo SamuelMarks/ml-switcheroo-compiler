@@ -28,19 +28,17 @@ def crop_and_resize(
     crop_size: tuple[int, int],
     **kwargs: object,
 ) -> Tensor:
-    """Extracts crops from the input image tensor and resizes them.
+    """Extract crops from the input image tensor and resizes them.
 
     Args:
-        images (Tensor): The input images.
-        padding (tuple[int, int, int, int]): The padding.
-        target_shape (tuple[int, int]): The target shape.
-        boxes (Tensor): Bounding boxes.
-        box_indices (Tensor): Box indices.
-        crop_size (tuple[int, int]): The crop size.
-        **kwargs (object): Interpolation method, extrapolation_value.
+        images (Tensor): The images parameter.
+        boxes (Tensor): The boxes parameter.
+        box_indices (Tensor): The box_indices parameter.
+        crop_size (tuple): The crop_size parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: The cropped and resized images.
+        Tensor: Result.
     """
     method = kwargs.get("method", "bilinear")
     extrapolation_value = kwargs.get("extrapolation_value", 0.0)
@@ -74,7 +72,17 @@ def _extract_bounding_boxes_eager(
     box_indices: Tensor,
     config_obj: object,
 ) -> Tensor:
-    """Evaluate extract_bounding_boxes eagerly."""
+    """Evaluate _extract_bounding_boxes_eager operation.
+
+    Args:
+        images (Tensor): The images parameter.
+        boxes (Tensor): The boxes parameter.
+        box_indices (Tensor): The box_indices parameter.
+        config_obj (object): The config_obj parameter.
+
+    Returns:
+        Tensor: Result.
+    """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
@@ -95,22 +103,17 @@ def extract_bounding_boxes(
     config_obj: object | None = None,
     **kwargs: object,
 ) -> Tensor:
-    """Extracts crops from the input image tensor and resizes them.
+    """Extract crops from the input image tensor and resizes them.
 
     Args:
-        images (Tensor): Input images.
-        boxes (Tensor): Bounding boxes.
-        **kwargs: Extra arguments.
-        strides (int | tuple[int, int] | list[int] | None): Strides.
-        dilation_rate (int | tuple[int, int] | list[int] | None): Dilation rate.
-        padding (str): Padding.
-        data_format (str | None): Data format.
-        boxes (Tensor): Bounding boxes [num_boxes, 4] with coords [y1, x1, y2, x2].
-        box_indices (Tensor): 1-D tensor of size [num_boxes] with indices to images.
-        config_obj (BBoxConfig | None): Configuration.
+        images (Tensor): The images parameter.
+        boxes (Tensor): The boxes parameter.
+        box_indices (Tensor): The box_indices parameter.
+        config_obj (object): The config_obj parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        Tensor: Cropped and resized images of shape [num_boxes, crop_height, crop_width, C].
+        Tensor: Result.
     """
     if config_obj is None:
         from ml_switcheroo_compiler.ops.configs import BBoxConfig
@@ -149,16 +152,14 @@ def crop(
     """Crops an image to a specified bounding box.
 
     Args:
-        images (Tensor): The input images.
-        padding (tuple[int, int, int, int]): The padding.
-        target_shape (tuple[int, int]): The target shape.
-        offset_height (int): Vertical coordinate of the top-left corner.
-        offset_width (int): Horizontal coordinate of the top-left corner.
-        target_height (int): Height of the result.
-        target_width (int): Width of the result.
+        images (Tensor): The images parameter.
+        offset_height (int): The offset_height parameter.
+        offset_width (int): The offset_width parameter.
+        target_height (int): The target_height parameter.
+        target_width (int): The target_width parameter.
 
     Returns:
-        Tensor: The cropped images.
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -197,19 +198,17 @@ def pad_to_bounding_box(
     target_height: int,
     target_width: int,
 ) -> Tensor:
-    """Pads an image with zeros to the specified height and width.
+    """Pad an image with zeros to the specified height and width.
 
     Args:
-        images (Tensor): The input images.
-        padding (tuple[int, int, int, int]): The padding.
-        target_shape (tuple[int, int]): The target shape.
-        offset_height (int): Number of rows of zeros to add on top.
-        offset_width (int): Number of columns of zeros to add on the left.
-        target_height (int): Height of the result.
-        target_width (int): Width of the result.
+        images (Tensor): The images parameter.
+        offset_height (int): The offset_height parameter.
+        offset_width (int): The offset_width parameter.
+        target_height (int): The target_height parameter.
+        target_width (int): The target_width parameter.
 
     Returns:
-        Tensor: The padded images.
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -250,20 +249,13 @@ def draw_bounding_boxes(
     """Draw bounding boxes on a batch of images.
 
     Args:
-        images (Tensor): The input images.
-        padding (tuple[int, int, int, int]): The padding.
-        target_shape (tuple[int, int]): The target shape.
-        boxes (Tensor): The bounding boxes.
-        **kwargs: Extra arguments.
-        strides (int | tuple[int, int] | list[int] | None): Strides.
-        dilation_rate (int | tuple[int, int] | list[int] | None): Dilation rate.
-        padding (str): Padding.
-        data_format (str | None): Data format.
-        colors (Tensor | None): The colors for the boxes.
-        texts (list[str] | None): The texts for the boxes.
+        images (Tensor): The images parameter.
+        boxes (Tensor): The boxes parameter.
+        colors (object): The colors parameter.
+        texts (object): The texts parameter.
 
     Returns:
-    Tensor: The images with bounding boxes drawn.
+        Tensor: Result.
     """
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -337,7 +329,7 @@ def extract_patches(
     options: ExtractPatchesOptions | None = None,
     **kwargs: object,
 ) -> Tensor:
-    """Extracts patches from images.
+    """Extract patches from images.
 
     Args:
         images (Tensor): Input images.
@@ -387,7 +379,7 @@ def pad_images(
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,
 ) -> Tensor:
-    """Pads images.
+    """Pad images.
 
     Args:
         images (Tensor): Input images.
@@ -441,7 +433,16 @@ class ExtractBoundingBoxes(OpDef):
     op_name = "ExtractBoundingBoxes"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+        inputs (object): The inputs parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+        Returns:
+        object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -452,7 +453,16 @@ class Iou(OpDef):
     op_name = "Iou"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())
 
 
@@ -463,5 +473,14 @@ class Nms(OpDef):
     op_name = "Nms"
 
     def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
-        """Infer shape."""
+        """Infer shape.
+
+        Args:
+            inputs (object): The inputs parameter.
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns:
+            object: Result.
+        """
         return getattr(inputs, "shape", ())

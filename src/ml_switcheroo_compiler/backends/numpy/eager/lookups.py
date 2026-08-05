@@ -8,47 +8,47 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 @numpy_eager_registry.register("Hashing")
 def _np_hashing(backend_module: object, inputs: object, num_bins: int, **kwargs: object) -> object:
-    """Evaluate the hashing logic eagerly backed by NumPy.
+    """Evaluate _np_hashing operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        inputs (object): Required parameter for inputs.
-        num_bins (int): Required parameter for num_bins.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        num_bins (int): The num_bins parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return inputs
 
 
 @numpy_eager_registry.register("IntegerLookup")
 def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
-    """Evaluate the integer lookup logic eagerly backed by NumPy.
+    """Evaluate _np_integer_lookup operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        inputs (object): Required parameter for inputs.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return inputs
 
 
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwargs: object) -> object:
-    """Evaluate the lookup logic eagerly backed by NumPy.
+    """Evaluate _np_lookup operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        inputs (object): Required parameter for inputs.
-        vocabulary (object): Required parameter for vocabulary.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        vocabulary (object): The vocabulary parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     inputs = np.asarray(inputs)
     vocab = np.asarray(vocabulary)
@@ -61,14 +61,14 @@ def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwa
 
 @numpy_eager_registry.register("StringLookup")
 def _np_string_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
-    """Evaluate the string lookup logic eagerly backed by NumPy.
+    """Evaluate _np_string_lookup operation.
 
     Args:
-        backend_module (object): Required parameter for backend_module.
-        inputs (object): Required parameter for inputs.
-        **kwargs (Any): Arbitrary keyword arguments.
+        backend_module (object): The backend_module parameter.
+        inputs (object): The inputs parameter.
+        **kwargs (object): Keyword args.
 
     Returns:
-        object: The evaluated or processed output.
+        object: Result.
     """
     return inputs

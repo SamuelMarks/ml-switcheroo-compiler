@@ -53,7 +53,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Tensor:
 
 
 def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
-    """Replaces matches of pattern in input_tensor with rewrite.
+    """Replace matches of pattern in input_tensor with rewrite.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -80,7 +80,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
 
 
 def regex_full_match(input_tensor: Tensor, pattern: str) -> Tensor:
-    """Checks if each string fully matches the regex pattern.
+    """Check if each string fully matches the regex pattern.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -106,7 +106,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> Tensor:
 
 
 def string_join(inputs: list[Tensor], separator: str = "") -> Tensor:
-    """Joins strings in a list of tensors.
+    """Join strings in a list of tensors.
 
     Args:
         inputs (list[Tensor]): List of string tensors.
@@ -132,7 +132,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> Tensor:
 
 
 def string_length(input_tensor: Tensor) -> Tensor:
-    """Computes the length of each string.
+    """Compute the length of each string.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -157,7 +157,7 @@ def string_length(input_tensor: Tensor) -> Tensor:
 
 
 def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
-    """Returns substrings.
+    """Return substrings.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -184,14 +184,14 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
 
 
 def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
-    """Evaluate and process the string split eager operation.
+    """Evaluate _string_split_eager operation.
 
     Args:
-        input_tensor (Tensor): Required parameter for input_tensor.
-        delimiter (str): Required parameter for delimiter.
+        input_tensor (Tensor): The input_tensor parameter.
+        delimiter (str): The delimiter parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
     """
     backend = get_active_backend()
     tokens, lengths = backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter)
@@ -208,14 +208,17 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
 
 
 def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
-    """Evaluate and process the string split trace operation.
+    """Evaluate _string_split_trace operation.
 
     Args:
-        input_tensor (Tensor): Required parameter for input_tensor.
-        delimiter (str): Required parameter for delimiter.
+        input_tensor (Tensor): The input_tensor parameter.
+        delimiter (str): The delimiter parameter.
 
     Returns:
-        tuple: The evaluated or processed output.
+        tuple: Result.
+
+    Raises:
+        RuntimeError: An exception.
     """
     if not global_tracing_state.is_tracing:
         raise RuntimeError("Cannot emit StringSplit node outside of a tracing context.")
@@ -244,7 +247,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
 
 
 def string_split(input_tensor: Tensor, delimiter: str = " ") -> tuple[Tensor, Tensor]:
-    """Splits string tensors into tokens.
+    """Split string tensors into tokens.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -259,7 +262,7 @@ def string_split(input_tensor: Tensor, delimiter: str = " ") -> tuple[Tensor, Te
 
 
 def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Tensor:
-    """Maps tensor values to integer indices using a vocabulary.
+    """Map tensor values to integer indices using a vocabulary.
 
     Args:
         input_tensor (Tensor): Input tensor (string or int).
@@ -311,7 +314,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
 
 
 def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tensor:
-    """Parses numeric values from string tensors.
+    """Parse numeric values from string tensors.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -337,7 +340,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
 
 
 def string_lower(input_tensor: Tensor) -> Tensor:
-    """Converts string tensors to lowercase.
+    """Convert string tensors to lowercase.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -362,7 +365,7 @@ def string_lower(input_tensor: Tensor) -> Tensor:
 
 
 def string_upper(input_tensor: Tensor) -> Tensor:
-    """Converts string tensors to uppercase.
+    """Convert string tensors to uppercase.
 
     Args:
         input_tensor (Tensor): Input string tensor.
@@ -387,7 +390,7 @@ def string_upper(input_tensor: Tensor) -> Tensor:
 
 
 def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Tensor:
-    """Computes the Levenshtein distance between sequences.
+    """Compute the Levenshtein distance between sequences.
 
     Args:
         hypothesis (Tensor): The hypothesis sequences.
@@ -414,7 +417,14 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
 
 
 def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, object]:
-    """Converts AsStringConfig to a dictionary."""
+    """Convert AsStringConfig to a dictionary.
+
+    Args:
+        conf (object): The conf parameter.
+
+    Returns:
+        object: Result.
+    """
     conf = conf if conf is not None else AsStringConfig()
     return {
         "precision": conf.precision,
@@ -429,7 +439,7 @@ def as_string(
     input_tensor: Tensor,
     config: Optional[AsStringConfig] = None,
 ) -> Tensor:
-    """Converts a numeric tensor to a string tensor.
+    """Convert a numeric tensor to a string tensor.
 
     Args:
         input_tensor (Tensor): A numeric tensor.
