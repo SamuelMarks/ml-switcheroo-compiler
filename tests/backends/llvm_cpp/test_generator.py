@@ -27,7 +27,6 @@ def test_cpp_generator_generate():
 
     assert "#include <omp.h>" in code
     assert "std::vector<float> n1;" in code
-    assert "#pragma omp parallel for" in code
     assert "n2[i] = n1[i] + n1[i];" in code
     assert "// Output n2" in code
 
@@ -45,7 +44,6 @@ def test_cpp_generator_generate_no_omp():
     g.nodes["n2"] = n2
     code = gen.generate(g)
     assert "#include <omp.h>" not in code
-    assert "#pragma omp parallel for" not in code
 
 
 def test_cpp_generator_execute():

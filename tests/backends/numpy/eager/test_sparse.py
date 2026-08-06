@@ -2,7 +2,7 @@ import numpy as np
 
 
 def test_sparse_ops_coverage():
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_raggeddot, _np_sparsemapvalues, _np_sparsereducemax, _np_sparsereshape, _np_sparsesampledadd, _np_sparsesegmentsum, _np_sparsetranspose
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_raggeddot, _np_sparsemapvalues, _np_sparsereducemax, _np_sparsereshape, _np_sparsesampledadd, _np_sparsesegmentsum, _np_sparsetranspose
 
     a = np.array([[1, 2], [3, 4]])
     b = np.array([[1, 0], [0, 1]])

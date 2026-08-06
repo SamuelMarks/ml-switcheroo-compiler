@@ -2,10 +2,10 @@ import inspect
 
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_special as ms
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as ms
 
 
-def test_math_special_coverage():
+def test_math_advanced_coverage():
     ops = [getattr(ms, name) for name in dir(ms) if name.startswith("_") and callable(getattr(ms, name))]
     arg = np.array([1.0, 2.0])
 

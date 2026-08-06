@@ -1,5 +1,5 @@
 def test_misc_infer_shapes_all():
-    from ml_switcheroo_compiler.ops.misc import (
+    from ml_switcheroo_compiler.ops.info_and_histograms import (
         I0,
         AxisIndex,
         Finfo,
@@ -89,7 +89,7 @@ def test_misc_infer_shapes_all():
 
 
 def test_misc_ops_edge_cases():
-    from ml_switcheroo_compiler.ops.misc import Histogram, Histogram2d, HistogramBinEdges, Ix, Median, Rot90, Trapezoid
+    from ml_switcheroo_compiler.ops.info_and_histograms import Histogram, Histogram2d, HistogramBinEdges, Ix, Median, Rot90, Trapezoid
 
     class DummyArray:
         def __init__(self, shape):

@@ -1,7 +1,7 @@
 # ruff: noqa: E501
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.shape_ops_extra import (
+from ml_switcheroo_compiler.backends.numpy.eager.array_manipulation import (
     _np_append,
     _np_atleast_1d,
     _np_atleast_2d,

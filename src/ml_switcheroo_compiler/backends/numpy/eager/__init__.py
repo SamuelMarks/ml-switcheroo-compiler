@@ -8,22 +8,23 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.activation_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.audio_extras  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.array_manipulation  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.audio_features  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.control_flow  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.conv  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.distributed  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.fft_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.indexing  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.io_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.linalg_extras  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.lookups  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.loss_ops  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_binary  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_extras  # noqa: F401  # noqa: F401  # noqa: F401
+import ml_switcheroo_compiler.backends.numpy.eager.math_extended  # noqa: F401  # noqa: F401  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_fft  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_logical  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_logical_reductions  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.math_misc  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_nan  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_reductions  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.math_scatter  # noqa: F401
@@ -38,7 +39,6 @@ import ml_switcheroo_compiler.backends.numpy.eager.optimizers_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.random_ops  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.reductions  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops  # noqa: F401
-import ml_switcheroo_compiler.backends.numpy.eager.shape_ops_extra  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.strings  # noqa: F401
 import ml_switcheroo_compiler.backends.numpy.eager.variable_ops  # noqa: F401

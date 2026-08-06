@@ -4,7 +4,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import block, delete, diag_indices, diag_indices_from, diagflat, fill_diagonal, insert
-from ml_switcheroo_compiler.ops.shape.misc import DynamicShape, Pad, Rank, Size, _compute_pad_dim, _normalize_pad_width, argsort, image_resize, meshgrid, pad, pad_circular, pad_constant, pad_reflect, pad_replicate, repeat, sort, tile, top_k, tril, triu
+from ml_switcheroo_compiler.ops.shape.pad_and_tile import DynamicShape, Pad, Rank, Size, _compute_pad_dim, _normalize_pad_width, argsort, image_resize, meshgrid, pad, pad_circular, pad_constant, pad_reflect, pad_replicate, repeat, sort, tile, top_k, tril, triu
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 "Tests for shape ops."
@@ -174,10 +174,10 @@ class MockTensor:
 def test_tile(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="tile")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="tile")
     assert tile(t, [2, 2]) == "tile"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((4, 6))
     mock_backend.array.side_effect = lambda x: x
     assert tile(t, [2, 2]).config.shape == (4, 6)
@@ -186,10 +186,10 @@ def test_tile(mocker):
 def test_repeat(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="repeat")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="repeat")
     assert repeat(t, 2) == "repeat"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((4, 3))
     mock_backend.array.side_effect = lambda x: x
     assert repeat(t, 2).config.shape == (4, 3)
@@ -198,10 +198,10 @@ def test_repeat(mocker):
 def test_triu(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="triu")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="triu")
     assert triu(t) == "triu"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2, 3))
     mock_backend.array.side_effect = lambda x: x
     assert triu(t).config.shape == (2, 3)
@@ -210,10 +210,10 @@ def test_triu(mocker):
 def test_tril(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="tril")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="tril")
     assert tril(t) == "tril"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2, 3))
     mock_backend.array.side_effect = lambda x: x
     assert tril(t).config.shape == (2, 3)
@@ -222,10 +222,10 @@ def test_tril(mocker):
 def test_meshgrid(mocker):
     t = Tensor(MockTensor((2,)).data, TensorConfig((2,), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value=["mesh1"])
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value=["mesh1"])
     assert meshgrid(t, t)[0] == ["mesh1"]
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = [MockTensor((2, 2)), MockTensor((2, 2))]
     mock_backend.array.side_effect = lambda x: x
     res = meshgrid(t, t)
@@ -249,10 +249,10 @@ def test_pad_class():
 def test_pad_func(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="pad")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="pad")
     assert pad(t, 1) == "pad"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((4, 5))
     mock_backend.array.side_effect = lambda x: x
     assert pad(t, 1).config.shape == (4, 5)
@@ -261,10 +261,10 @@ def test_pad_func(mocker):
 def test_top_k(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value=("val", "idx"))
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value=("val", "idx"))
     assert top_k(t, 2) == (("val", "idx"), ("val", "idx"))
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = [MockTensor((2, 2)), MockTensor((2, 2))]
     mock_backend.array.side_effect = lambda x: x
     res = top_k(t, 2)
@@ -275,10 +275,10 @@ def test_top_k(mocker):
 def test_argsort(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="argsort")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="argsort")
     assert argsort(t) == "argsort"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2, 3))
     mock_backend.array.side_effect = lambda x: x
     mock_backend.array.side_effect = lambda x: x
@@ -288,10 +288,10 @@ def test_argsort(mocker):
 def test_sort(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="sort")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="sort")
     assert sort(t) == "sort"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2, 3))
     mock_backend.array.side_effect = lambda x: x
     mock_backend.array.side_effect = lambda x: x
@@ -301,10 +301,10 @@ def test_sort(mocker):
 def test_image_resize(mocker):
     t = Tensor(MockTensor((2, 3, 4, 3)).data, TensorConfig((2, 3, 4, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="resize")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="resize")
     assert image_resize(t, (5, 6)) == "resize"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.misc.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2, 5, 6, 3))
     assert image_resize(t, (5, 6)).config.shape == (2, 5, 6, 3)
 
@@ -325,7 +325,7 @@ def test_size_infer_shape():
 
 
 def test_pad_modes(mocker):
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc.pad", return_value="padded")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.pad", return_value="padded")
     assert pad_constant("arr", "pw") == "padded"
     assert pad_reflect("arr", "pw") == "padded"
     assert pad_replicate("arr", "pw") == "padded"
@@ -333,7 +333,7 @@ def test_pad_modes(mocker):
 
 
 def test_compute_meshgrid_shape():
-    from ml_switcheroo_compiler.ops.shape.misc import _compute_meshgrid_shape
+    from ml_switcheroo_compiler.ops.shape.pad_and_tile import _compute_meshgrid_shape
 
     t1 = MockTensor((2,))
     t2 = MockTensor((3,))
@@ -355,19 +355,19 @@ def test_pad_infer_shape_short_pw():
 def test_top_k_scalar(mocker):
     t = Tensor(MockTensor(()).data, TensorConfig((), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value=("val", "idx"))
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value=("val", "idx"))
     assert top_k(t, 2) == (("val", "idx"), ("val", "idx"))
 
 
 def test_argsort_axis_dim(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="argsort")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="argsort")
     assert argsort(t, axis=0, dim=0) == "argsort"
 
 
 def test_sort_axis_dim(mocker):
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.shape.misc._emit_shape_node", return_value="sort")
+    mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="sort")
     assert sort(t, axis=0, dim=0) == "sort"

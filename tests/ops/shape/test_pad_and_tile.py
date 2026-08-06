@@ -1,6 +1,6 @@
 """Tests for ops shape misc functions."""
 
-import ml_switcheroo_compiler.ops.shape.misc as shape_misc
+import ml_switcheroo_compiler.ops.shape.pad_and_tile as shape_misc
 
 
 def test_shape_misc_functions() -> None:

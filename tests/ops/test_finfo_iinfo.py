@@ -2,14 +2,14 @@ from ml_switcheroo_compiler.core.dtype import DType
 
 
 def test_misc_finfo():
-    from ml_switcheroo_compiler.ops.misc import Finfo
+    from ml_switcheroo_compiler.ops.info_and_histograms import Finfo
 
     op = Finfo()
     assert op.infer_shape(DType.Float32) == ()
 
 
 def test_misc_iinfo():
-    from ml_switcheroo_compiler.ops.misc import Iinfo
+    from ml_switcheroo_compiler.ops.info_and_histograms import Iinfo
 
     op = Iinfo()
     assert op.infer_shape(DType.Int32) == ()
@@ -19,7 +19,7 @@ def test_misc_ops_shapes():
     import pytest
 
     with pytest.raises(Exception):
-        from ml_switcheroo_compiler.ops.misc import (
+        from ml_switcheroo_compiler.ops.info_and_histograms import (
             I0,
             AxisIndex,
             GetPrintoptions,

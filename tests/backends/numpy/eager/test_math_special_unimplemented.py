@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import (
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_debuginfs,
     _np_debugnans,
     _np_rawmerge,

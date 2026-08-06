@@ -9,6 +9,8 @@ myst_parser, and configures the Furo HTML theme.
 import os
 import sys
 
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from ml_playground_directive import setup as setup_directive
 
 # All target directories relative to the current conf.py
@@ -34,10 +36,11 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 if not fast_build:
     for p in projects:
-        sys.path.insert(
-            0,
-            os.path.abspath(os.path.join(os.path.dirname(__file__), "..", p)),
-        )
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", p))
+        sys.path.insert(0, project_root)
+        src_dir = os.path.join(project_root, "src")
+        if os.path.exists(src_dir):
+            sys.path.insert(0, src_dir)
 
 # -- Project information -----------------------------------------------------
 

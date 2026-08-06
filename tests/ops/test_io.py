@@ -113,43 +113,51 @@ def test_mlx_settings():
     core_config.backend = original_backend
 
 
-def test_gfile():
-    gfile_makedirs("test_dir")
-    assert os.path.exists("test_dir")
+def test_gfile(tmp_path):
+    test_dir = str(tmp_path / "test_dir")
+    gfile_makedirs(test_dir)
+    assert os.path.exists(test_dir)
 
-    with open("test_dir/test.txt", "w") as f:
+    test_file = str(tmp_path / "test_dir" / "test.txt")
+    test2_file = str(tmp_path / "test_dir" / "test2.txt")
+
+    with open(test_file, "w") as f:
         f.write("hello")
 
-    gfile_copy("test_dir/test.txt", "test_dir/test2.txt")
-    assert os.path.exists("test_dir/test2.txt")
+    gfile_copy(test_file, test2_file)
+    assert os.path.exists(test2_file)
 
     with pytest.raises(FileExistsError):
-        gfile_copy("test_dir/test.txt", "test_dir/test2.txt")
+        gfile_copy(test_file, test2_file)
 
-    gfile_copy("test_dir/test.txt", "test_dir/test2.txt", overwrite=True)
+    gfile_copy(test_file, test2_file, overwrite=True)
 
-    glob_res = gfile_glob("test_dir/*.txt")
-    assert "test_dir/test.txt" in glob_res
+    glob_pattern = str(tmp_path / "test_dir" / "*.txt")
+    glob_res = gfile_glob(glob_pattern)
+    assert test_file in glob_res
 
-    stat = gfile_stat("test_dir/test.txt")
+    stat = gfile_stat(test_file)
     assert stat["length"] == 5
     assert "mtime" in stat
 
-    shutil.rmtree("test_dir")
+    shutil.rmtree(test_dir)
 
 
-def test_tfrecord():
+def test_tfrecord(tmp_path):
     options = TFRecordOptions("GZIP")
     assert options.compression_type == "GZIP"
 
-    writer = TFRecordWriter("test.tfrecord", options)
-    assert writer.path == "test.tfrecord"
+    tfrecord1 = str(tmp_path / "dataset1.tfrecord")
+    tfrecord2 = str(tmp_path / "dataset2.tfrecord")
+
+    writer = TFRecordWriter(tfrecord1, options)
+    assert writer.path == tfrecord1
     assert writer.options == options
 
     writer.write("data")
     writer.close()
 
-    with TFRecordWriter("test2.tfrecord") as w:
+    with TFRecordWriter(tfrecord2) as w:
         w.write("data")
 
 

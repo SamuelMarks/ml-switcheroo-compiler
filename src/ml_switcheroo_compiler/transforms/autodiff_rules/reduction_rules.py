@@ -6,8 +6,8 @@ reduction operations
 import math
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
+from ml_switcheroo_compiler.transforms.autodiff_rules.cast_and_conj_rules import _zero_jvp, _zero_vjp
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
-from ml_switcheroo_compiler.transforms.autodiff_rules.unary_misc_rules import _zero_jvp, _zero_vjp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 

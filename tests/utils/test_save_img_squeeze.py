@@ -5,7 +5,7 @@ import numpy as np
 from ml_switcheroo_compiler.utils.vis_utils import save_img
 
 
-def test_save_img_squeeze() -> None:
+def test_save_img_squeeze(tmp_path) -> None:
     """Test coverage."""
     with patch("sys.modules"):
         import sys
@@ -19,4 +19,4 @@ def test_save_img_squeeze() -> None:
 
         PIL.Image.EXTENSION = {".png": "PNG"}
 
-        save_img("dummy.png", np.zeros((10, 10, 1)))
+        save_img(str(tmp_path / "dummy.png"), np.zeros((10, 10, 1)))

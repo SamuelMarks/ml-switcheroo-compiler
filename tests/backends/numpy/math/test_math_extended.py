@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_extras import (
+from ml_switcheroo_compiler.backends.numpy.eager.math_extended import (
     _clamp,
     _eager_BroadcastedIota,
     _eager_Gradient,
@@ -152,7 +152,7 @@ def test_rand_int4() -> None:
 def test_np_rand_dt_str():
     import numpy as np
 
-    from ml_switcheroo_compiler.backends.numpy.eager.math_extras import _np_rand
+    from ml_switcheroo_compiler.backends.numpy.eager.math_extended import _np_rand
 
     try:
         res = _np_rand(np, 2, 2, dtype="fake_dtype")

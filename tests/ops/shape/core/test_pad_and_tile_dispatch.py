@@ -7,7 +7,7 @@ import pytest
 from ml_switcheroo_compiler.ops.loss import CategoricalGeneralizedCrossEntropy, CircleLoss
 from ml_switcheroo_compiler.ops.nn.nlp import CtcLoss as NlpCtcLoss
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
-from ml_switcheroo_compiler.ops.shape.misc import (
+from ml_switcheroo_compiler.ops.shape.pad_and_tile import (
     Lexsort,
     Percentile,
     Quantile,
@@ -155,7 +155,7 @@ def test_misc_dispatch():
     safe_call(unique, Dummy((2,)))
 
 
-import ml_switcheroo_compiler.ops.shape.misc as sm
+import ml_switcheroo_compiler.ops.shape.pad_and_tile as sm
 
 
 def test_shape_misc_coverage():

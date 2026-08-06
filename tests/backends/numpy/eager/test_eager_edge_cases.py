@@ -3,7 +3,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
 from ml_switcheroo_compiler.backends.numpy.eager.window_reductions import _reduce_window
 from ml_switcheroo_compiler.backends.numpy.eager import execute_op
 import ml_switcheroo_compiler.backends.numpy.eager.reductions as red
-import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mod
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mod
 
 from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
 from ml_switcheroo_compiler.ops.configs import ConvConfig, WindowConfig
@@ -1182,7 +1182,7 @@ def test_np_polynomial_bessel_no_args():
 
 def test_np_polynomial_get_sc():
     """Test get sc."""
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _get_sc
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     sc = _get_sc()
 
@@ -1191,7 +1191,7 @@ def test_np_polynomial_get_sc_fallback():
     """Test fallback of _get_sc."""
     import sys
     import unittest.mock as mock
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _get_sc
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     with mock.patch.dict(sys.modules, {"scipy.special": None}):
         sc = _get_sc()
@@ -1202,7 +1202,7 @@ def test_np_polynomial_get_sc_branch():
     """Test get sc."""
     import sys
     import unittest.mock as mock
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _get_sc
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     with mock.patch.dict(sys.modules, {"scipy": None, "scipy.special": None}):
         sc = _get_sc()
@@ -1213,7 +1213,7 @@ def test_np_polynomial_get_sc_branch2():
     """Test get sc."""
     import sys
     import unittest.mock as mock
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _get_sc
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     with mock.patch.dict(sys.modules, {"scipy": None, "scipy.special": None}):
         sc = _get_sc()
@@ -1224,7 +1224,7 @@ def test_np_polynomial_get_sc_branch3():
     """Test get sc branch 3."""
     import sys
     import unittest.mock as mock
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _get_sc
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     with mock.patch.dict(sys.modules, {"scipy": None, "scipy.special": None}):
         with mock.patch("builtins.__import__", side_effect=ImportError):
@@ -1383,12 +1383,12 @@ def test_np_io_dummy_ops():
         out = backend.execute_op("DecodeImage", np.array(b"img"))
         out = backend.execute_op("ParseExample", np.array(b"example"))
         out = backend.execute_op("ParseTensor", np.array(b"tensor"))
-        out = backend.execute_op("ReadFile", "file.txt")
+        out = backend.execute_op("ReadFile", "/tmp/ml_switcheroo_test_file.txt")
         out = backend.execute_op("Rem", np.array([5.0]), np.array([2.0]))
         out = backend.execute_op("Rem")
         assert out is None
         out = backend.execute_op("SerializeTensor", np.array([1.0]))
-        out = backend.execute_op("WriteFile", "file.txt", np.array(b"content"))
+        out = backend.execute_op("WriteFile", "/tmp/ml_switcheroo_test_file.txt", np.array(b"content"))
         assert out is None
 
 
@@ -1400,7 +1400,7 @@ def test_io_fallbacks():
     pass
     pass
     pass
-    writer = TFRecordWriter("test.tfrecord")
+    writer = TFRecordWriter("/tmp/test.tfrecord")
     assert writer.write(b"") is None
     assert writer.close() is None
 
@@ -3077,6 +3077,8 @@ def test_math_misc_brute_coverage():
 
     dummy = DummyBackend()
     for k, op in list(numpy_eager_registry._registry.items()):
+        if k in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
+            continue
         func = getattr(op, "func", op)
         if getattr(func, "__module__", None) != "ml_switcheroo_compiler.backends.numpy.eager.math_misc":
             continue
@@ -3170,7 +3172,7 @@ def test_math_misc_specifics():
 
 def test_math_misc_direct_calls():
     import numpy as np
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
     math_misc._np_segment_sum(np, np.array([1.0, 2.0, 3.0]), np.array([0, 1, 0]))
     math_misc._np_append(np, np.array([1, 2, 3]), np.array([4]))
@@ -3189,7 +3191,7 @@ def test_math_misc_direct_calls():
 
 def test_math_misc_complex_calls():
     import numpy as np
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
     math_misc._np_rrelu(np, np.array([1.0, -1.0]), lower=0.1, upper=0.2)
     math_misc._np_frombuffer(np, b"hello", dtype=np.uint8)
@@ -3242,7 +3244,7 @@ def test_math_misc_complex_calls():
     except Exception:
         pass
     try:
-        math_misc._np_read_file(np, "file.txt")
+        math_misc._np_read_file(np, "/tmp/ml_switcheroo_test_file.txt")
     except Exception:
         pass
     try:
@@ -3254,7 +3256,7 @@ def test_math_misc_complex_calls():
     except Exception:
         pass
     try:
-        math_misc._np_write_file(np, "file.txt", b"content")
+        math_misc._np_write_file(np, "/tmp/ml_switcheroo_test_file.txt", b"content")
     except Exception:
         pass
     try:
@@ -3281,7 +3283,7 @@ def test_math_misc_complex_calls():
 
 def test_math_misc_exceptions():
     import numpy as np
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
     class ThrowingBackend:
         def __getattr__(self, name):
@@ -3309,7 +3311,7 @@ def test_math_misc_exceptions():
     except Exception:
         pass
     try:
-        math_misc._np_read_file(tb, "file.txt")
+        math_misc._np_read_file(tb, "/tmp/ml_switcheroo_test_file.txt")
     except Exception:
         pass
     try:
@@ -3321,7 +3323,7 @@ def test_math_misc_exceptions():
     except Exception:
         pass
     try:
-        math_misc._np_write_file(tb, "file.txt", b"content")
+        math_misc._np_write_file(tb, "/tmp/ml_switcheroo_test_file.txt", b"content")
     except Exception:
         pass
     try:
@@ -3379,7 +3381,7 @@ def test_math_misc_type_calls():
 
     with pytest.raises(Exception):
         import numpy as np
-        import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+        import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
         class FakeOpType:
             def __init__(self, *args, **kwargs):
@@ -3403,10 +3405,10 @@ def test_math_misc_type_calls():
         numpy_eager_registry.get("decode_image")(b, b"img")
         numpy_eager_registry.get("parse_example")(b, b"example")
         numpy_eager_registry.get("parse_tensor")(b, b"tensor")
-        numpy_eager_registry.get("read_file")(b, "file.txt")
+        numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
         numpy_eager_registry.get("rem")(b, np.array([5]), np.array([2]))
         numpy_eager_registry.get("serialize_tensor")(b, np.array([1]))
-        numpy_eager_registry.get("write_file")(b, "file.txt", b"content")
+        numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
         numpy_eager_registry.get("confusion_matrix")(b, np.array([0]), np.array([0]))
         numpy_eager_registry.get("decode_csv")(b, ["1,2"])
         numpy_eager_registry.get("descriptive")(b, np.array([1.0, 2.0]))
@@ -3432,7 +3434,7 @@ def test_math_misc_type_calls():
         except Exception:
             pass
         try:
-            math_misc._np_read_file(bt, "file.txt")
+            math_misc._np_read_file(bt, "/tmp/ml_switcheroo_test_file.txt")
         except Exception:
             pass
         try:
@@ -3444,7 +3446,7 @@ def test_math_misc_type_calls():
         except Exception:
             pass
         try:
-            math_misc._np_write_file(bt, "file.txt", b"content")
+            math_misc._np_write_file(bt, "/tmp/ml_switcheroo_test_file.txt", b"content")
         except Exception:
             pass
         try:
@@ -3463,7 +3465,7 @@ def test_math_misc_type_calls():
 
 def test_math_misc_mock_ops():
     import numpy as np
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
     import ml_switcheroo_compiler.ops as ops
 
     class FakeThrowingClass:
@@ -3508,7 +3510,7 @@ def test_math_misc_mock_ops():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("read_file")(b, "file.txt")
+        numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
     except Exception:
         pass
     try:
@@ -3520,7 +3522,7 @@ def test_math_misc_mock_ops():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("write_file")(b, "file.txt", b"content")
+        numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
     except Exception:
         pass
     try:
@@ -3563,7 +3565,7 @@ def test_math_misc_mock_ops():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("read_file")(b, "file.txt")
+        numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
     except Exception:
         pass
     try:
@@ -3575,7 +3577,7 @@ def test_math_misc_mock_ops():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("write_file")(b, "file.txt", b"content")
+        numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
     except Exception:
         pass
     try:
@@ -3592,7 +3594,7 @@ def test_math_misc_mock_ops():
 
 def test_math_misc_mock_ops_lower():
     import numpy as np
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
     import ml_switcheroo_compiler.ops as ops
 
     class FakeThrowingClass:
@@ -3627,7 +3629,7 @@ def test_math_misc_mock_ops_lower():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("read_file")(b, "file.txt")
+        numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
     except Exception:
         pass
     try:
@@ -3639,7 +3641,7 @@ def test_math_misc_mock_ops_lower():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("write_file")(b, "file.txt", b"content")
+        numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
     except Exception:
         pass
     try:
@@ -3672,7 +3674,7 @@ def test_math_misc_mock_ops_lower():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("read_file")(b, "file.txt")
+        numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
     except Exception:
         pass
     try:
@@ -3684,7 +3686,7 @@ def test_math_misc_mock_ops_lower():
     except Exception:
         pass
     try:
-        numpy_eager_registry.get("write_file")(b, "file.txt", b"content")
+        numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
     except Exception:
         pass
     try:

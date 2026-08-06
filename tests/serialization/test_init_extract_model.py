@@ -258,42 +258,34 @@ def test_serialize_keras_object():
     assert serialize_keras_object(1) == {}
 
 
-def test_fingerprint():
-    import os
+def test_read_fingerprint(tmp_path):
 
     from ml_switcheroo_compiler.serialization import read_fingerprint
 
     assert read_fingerprint("nonexistent_path") == "fingerprint"
 
-    os.makedirs("test_fp", exist_ok=True)
-    with open("test_fp/fingerprint.pb", "w") as f:
+    fp_dir = tmp_path / "test_fp"
+    fp_dir.mkdir(exist_ok=True)
+    with open(fp_dir / "fingerprint.pb", "w") as f:
         f.write("fp_data")
-    assert read_fingerprint("test_fp") == "fp_data"
-
-    import shutil
-
-    shutil.rmtree("test_fp")
+    assert read_fingerprint(str(fp_dir)) == "fp_data"
 
 
-def test_load_variable():
-    import os
+def test_load_variable(tmp_path):
 
     import numpy as np
 
     from ml_switcheroo_compiler.serialization import load_variable
 
-    os.makedirs("test_var", exist_ok=True)
-    np.save("test_var/my_var.npy", np.array([1, 2, 3]))
+    var_dir = tmp_path / "test_var"
+    var_dir.mkdir(exist_ok=True)
+    np.save(str(var_dir / "my_var.npy"), np.array([1, 2, 3]))
 
-    t = load_variable("test_var", "my_var")
+    t = load_variable(str(var_dir), "my_var")
     assert t.shape == (3,)
 
-    t2 = load_variable("test_var", "missing_var")
+    t2 = load_variable(str(var_dir), "missing_var")
     assert t2.shape == (1,)
-
-    import shutil
-
-    shutil.rmtree("test_var")
 
 
 def test_run_restore_ops():

@@ -2,8 +2,8 @@
 from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import make_zero_jvp, make_zero_vjp
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp
-from ml_switcheroo_compiler.transforms.autodiff_rules.nn_extra_rules import time_distributed_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.signal_rules import dct_jvp, frame_jvp, idct_jvp, inverse_mdct_jvp, mdct_jvp, overlap_and_add_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.time_distributed_rules import time_distributed_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
 "Extra tests for extra rules."
@@ -48,8 +48,8 @@ def test_extra_rules_jvps_none() -> None:
     assert overlap_and_add_jvp(graph, node, ("t",)) is not None
     assert mdct_jvp(graph, node, ("t",)) is not None
     assert inverse_mdct_jvp(graph, node, ("t",)) is not None
-    from ml_switcheroo_compiler.transforms.autodiff_rules.nn_extra_rules import time_distributed_vjp
     from ml_switcheroo_compiler.transforms.autodiff_rules.signal_rules import dct_vjp, frame_vjp, idct_vjp, inverse_mdct_vjp, mdct_vjp, overlap_and_add_vjp
+    from ml_switcheroo_compiler.transforms.autodiff_rules.time_distributed_rules import time_distributed_vjp
 
     assert dct_vjp(graph, node, "t") is not None
     assert idct_vjp(graph, node, "t") is not None

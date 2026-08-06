@@ -43,7 +43,7 @@ def test_solvers_tracing(mock_emit):
 
     mod.lu_solve(a, b, c)
 
-    with patch("ml_switcheroo_compiler.ops.linalg.decompositions.misc.TriangularSolve.infer_shape", return_value=(2, 2)):
+    with patch("ml_switcheroo_compiler.ops.linalg.decompositions.solvers.TriangularSolve.infer_shape", return_value=(2, 2)):
         mod.triangular_solve(a, b)
 
     mod.tridiagonal_solve(a, b)

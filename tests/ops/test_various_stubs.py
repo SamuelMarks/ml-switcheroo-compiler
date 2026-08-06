@@ -1,5 +1,5 @@
 def test_shape_misc_stubs():
-    from ml_switcheroo_compiler.ops.shape.misc import Flatnonzero, Lexsort, Nonzero, Percentile, Quantile, RavelMultiIndex, Repeat, Searchsorted, SortComplex, Tile, Unique
+    from ml_switcheroo_compiler.ops.shape.pad_and_tile import Flatnonzero, Lexsort, Nonzero, Percentile, Quantile, RavelMultiIndex, Repeat, Searchsorted, SortComplex, Tile, Unique
 
     class Dummy:
         shape = (2, 2)

@@ -2,7 +2,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops import _pmean, _psum
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_mock_distributed_context
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_psum
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_psum
 
 
 def test_math_misc_distributed():

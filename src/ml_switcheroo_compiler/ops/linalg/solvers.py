@@ -8,7 +8,7 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
-from .decompositions.misc import TriangularSolve
+from .decompositions.solvers import TriangularSolve
 from .utils import _emit_linalg_node
 
 

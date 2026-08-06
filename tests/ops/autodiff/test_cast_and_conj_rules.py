@@ -1,7 +1,7 @@
 # ruff: noqa: E501
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.unary_misc_rules import _zero_jvp, _zero_vjp, cast_jvp, cast_vjp, conj_jvp, conj_vjp
+from ml_switcheroo_compiler.transforms.autodiff_rules.cast_and_conj_rules import _zero_jvp, _zero_vjp, cast_jvp, cast_vjp, conj_jvp, conj_vjp
 
 
 def create_mock_graph():
@@ -14,7 +14,7 @@ def create_mock_graph():
 
 
 def test_unary_misc_rules(mocker):
-    mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.unary_misc_rules.emit_ir_node", return_value="node")
+    mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.cast_and_conj_rules.emit_ir_node", return_value="node")
     (graph, node) = create_mock_graph()
     assert _zero_vjp(graph, node, "cot") == ("node",)
     assert _zero_jvp(graph, node, ("t",)) == "node"

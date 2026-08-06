@@ -64,12 +64,14 @@ def test_tensorflow_generator_coverage() -> object:
 "Tests for TensorFlow code generator."
 
 
-def test_tensorflow_generator_methods() -> None:
+def test_tensorflow_generator_methods(tmp_path) -> None:
     """Test coverage."""
     pass
-    TensorFlowCodeGenerator.save("file.path", "arr")
-    TensorFlowCodeGenerator.savez("file.path", "arr")
-    TensorFlowCodeGenerator.savez_compressed("file.path", "arr")
+
+    file_path = str(tmp_path / "dummy_tensor_data.path")
+    TensorFlowCodeGenerator.save(file_path, "arr")
+    TensorFlowCodeGenerator.savez(file_path, "arr")
+    TensorFlowCodeGenerator.savez_compressed(file_path, "arr")
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
     assert gen._get_backend_prefix() == "tf"

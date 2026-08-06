@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.linalg_extras import (
+from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _build_einsum_equation,
     _dot_general,
     _get_uncontracted_dims,

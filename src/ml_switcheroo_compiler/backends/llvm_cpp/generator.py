@@ -64,8 +64,6 @@ class CppGenerator(BaseGenerator):
         assert len(node.inputs) >= 2
         in1, in2 = node.inputs[:2]
         self.lines.append(f"    std::vector<float> {node.id}({in1}.size());")
-        if self.use_openmp:
-            self.lines.append("    #pragma omp parallel for")
         self.lines.append(f"    for(size_t i=0; i<{in1}.size(); ++i) {{")
         self.lines.append(f"        {node.id}[i] = {in1}[i] {op_sym} {in2}[i];")
         self.lines.append("    }")
@@ -80,8 +78,6 @@ class CppGenerator(BaseGenerator):
         assert len(node.inputs) >= 1
         in1 = node.inputs[0]
         self.lines.append(f"    std::vector<float> {node.id}({in1}.size());")
-        if self.use_openmp:
-            self.lines.append("    #pragma omp parallel for")
         self.lines.append(f"    for(size_t i=0; i<{in1}.size(); ++i) {{")
         if func == "-":
             self.lines.append(f"        {node.id}[i] = -{in1}[i];")

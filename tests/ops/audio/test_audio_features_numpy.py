@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.numpy.eager.audio_extras import (
+from ml_switcheroo_compiler.backends.numpy.eager.audio_features import (
     _np_dct,
     _np_frame,
     _np_idct,

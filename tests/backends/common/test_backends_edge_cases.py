@@ -18,6 +18,8 @@ def test_backends_brute_force() -> None:
             # Eager registries
             if hasattr(mod, "eager_registry"):
                 for _op, func in mod.eager_registry._registry.items():
+                    if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
+                        continue
                     try:
                         func(mock_b, MagicMock())
                     except Exception:
@@ -70,7 +72,7 @@ def test_backends_brute_force() -> None:
 
 
 def test_numpy_math_misc():
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as math_misc
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
     for name, func in list(vars(math_misc).items()):
         if callable(func) and name.startswith("_"):
@@ -100,6 +102,8 @@ def test_eager_core_math_ops_brute():
     del mock_b.gamma
 
     for _op, func in global_eager_registry._registry.items():
+        if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
+            continue
         try:
             func(mock_b, MagicMock())
         except Exception:

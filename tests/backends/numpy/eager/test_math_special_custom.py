@@ -1,6 +1,6 @@
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mod
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mod
 
 
 def test_custom_coverage():

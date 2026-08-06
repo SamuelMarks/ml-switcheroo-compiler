@@ -306,15 +306,15 @@ def test_opdef_infer_shapes() -> object:
         from ml_switcheroo_compiler.ops.linalg.decompositions.eig import Eigh, Eigvalsh
         from ml_switcheroo_compiler.ops.linalg.decompositions.inv import Inv, TriInv
         from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuFactor
-        from ml_switcheroo_compiler.ops.linalg.decompositions.misc import (
+        from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Qr
+        from ml_switcheroo_compiler.ops.linalg.decompositions.solve import Solve
+        from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import (
             Lu,
             LuSolve,
             MatrixExponential,
             Norm,
             TriangularSolve,
         )
-        from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Qr
-        from ml_switcheroo_compiler.ops.linalg.decompositions.solve import Solve
         from ml_switcheroo_compiler.ops.linalg.decompositions.svd import Svd
 
         ops = [
@@ -588,8 +588,8 @@ def test_matrix_exp() -> object:
 
 def test_opdef_infer_shapes_extra() -> object:
     try:
-        from ml_switcheroo_compiler.ops.linalg.decompositions.misc import Polar, PowerIteration, TridiagonalSolve
         from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Hessenberg, HouseholderProduct, Schur, Tridiagonal
+        from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Polar, PowerIteration, TridiagonalSolve
         from ml_switcheroo_compiler.ops.linalg.decompositions.svd import Svd
 
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
@@ -622,9 +622,9 @@ def test_opdef_infer_shapes_extra() -> object:
         from ml_switcheroo_compiler.ops.linalg.decompositions.eig import Eig, Eigvals
         from ml_switcheroo_compiler.ops.linalg.decompositions.inv import InvEx
         from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuPivotsToPermutation
-        from ml_switcheroo_compiler.ops.linalg.decompositions.misc import Cross, MatrixExponential, Norm, TridiagonalMatmul
         from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Qdwh
         from ml_switcheroo_compiler.ops.linalg.decompositions.solve import SolveEx
+        from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Cross, MatrixExponential, Norm, TridiagonalMatmul
 
         assert Eig().infer_shape() == ()
         assert CholeskyEx().infer_shape() == ()

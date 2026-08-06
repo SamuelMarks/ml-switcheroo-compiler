@@ -1,7 +1,7 @@
 # ruff: noqa: E501
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
 
 def test_pmean():
@@ -423,7 +423,7 @@ def test_all_numpy_math_misc_fallbacks_3():
 def test_more_math_misc_stuff():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
     mm._np_rem(np)
     mm._np_logsumexp(np, np.ones((2, 2)), keepdims=True)
@@ -563,7 +563,7 @@ def test_mock_remaining_math_misc_3():
 def test_remaining_math_misc_stuff():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -613,7 +613,7 @@ def test_remaining_math_misc_stuff():
 def test_final_math_misc_mocking():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -663,7 +663,7 @@ def test_final_math_misc_mocking():
 def test_final_math_misc_mocking_again():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -713,7 +713,7 @@ def test_final_math_misc_mocking_again():
 def test_final_math_misc_mocking_once_more():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFuncWithInit:
@@ -770,7 +770,7 @@ def test_final_math_misc_mocking_once_more():
 def test_final_math_misc_mocking_once_more_2():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType:
@@ -817,7 +817,7 @@ def test_final_math_misc_mocking_once_more_2():
 def test_final_math_misc_mocking_again_and_again():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -864,7 +864,7 @@ def test_final_math_misc_mocking_again_and_again():
 def test_final_math_misc_mocking_again_and_again_again():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -911,7 +911,7 @@ def test_final_math_misc_mocking_again_and_again_again():
 def test_final_math_misc_mocking_again_and_again_again_2():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -938,7 +938,7 @@ def test_final_math_misc_mocking_again_and_again_again_2():
 def test_final_math_misc_mocking_again_and_again_again_3():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -965,7 +965,7 @@ def test_final_math_misc_mocking_again_and_again_again_3():
 def test_final_math_misc_mocking_again_and_again_again_4():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
@@ -980,7 +980,7 @@ def test_final_math_misc_mocking_again_and_again_again_4():
 def test_final_math_misc_mocking_again_and_again_again_5():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1007,7 +1007,7 @@ def test_final_math_misc_mocking_again_and_again_again_5():
 def test_final_math_misc_mocking_camel():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1034,7 +1034,7 @@ def test_final_math_misc_mocking_camel():
 def test_final_math_misc_mocking_again_and_again_again_6():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1061,7 +1061,7 @@ def test_final_math_misc_mocking_again_and_again_again_6():
 def test_final_math_misc_mocking_again_and_again_again_7():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
@@ -1076,7 +1076,7 @@ def test_final_math_misc_mocking_again_and_again_again_7():
 def test_final_math_misc_mocking_again_and_again_again_8():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
     mm._np_decode_csv_camel(np)
     mm._np_decode_image_camel(np)
@@ -1090,7 +1090,7 @@ def test_final_math_misc_mocking_again_and_again_again_8():
 def test_final_math_misc_mocking_for_remaining():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1117,7 +1117,7 @@ def test_final_math_misc_mocking_for_remaining():
 def test_final_math_misc_mocking_again_and_again_again_8_fixed():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1144,7 +1144,7 @@ def test_final_math_misc_mocking_again_and_again_again_8_fixed():
 def test_final_math_misc_mocking_again_and_again_again_9():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1171,7 +1171,7 @@ def test_final_math_misc_mocking_again_and_again_again_9():
 def test_final_math_misc_mocking_again_and_again_again_10():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1198,7 +1198,7 @@ def test_final_math_misc_mocking_again_and_again_again_10():
 def test_final_math_misc_mocking_again_and_again_again_11():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1225,7 +1225,7 @@ def test_final_math_misc_mocking_again_and_again_again_11():
 def test_final_math_misc_mocking_again_and_again_again_12():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1252,7 +1252,7 @@ def test_final_math_misc_mocking_again_and_again_again_12():
 def test_final_math_misc_mocking_again_and_again_again_13():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1279,7 +1279,7 @@ def test_final_math_misc_mocking_again_and_again_again_13():
 def test_final_math_misc_mocking_again_and_again_again_14():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1306,7 +1306,7 @@ def test_final_math_misc_mocking_again_and_again_again_14():
 def test_final_math_misc_mocking_again_and_again_again_15():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1333,7 +1333,7 @@ def test_final_math_misc_mocking_again_and_again_again_15():
 def test_final_math_misc_mocking_again_and_again_again_16():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
     import ml_switcheroo_compiler.ops as ops
 
     class RealMockType2:
@@ -1360,7 +1360,7 @@ def test_final_math_misc_mocking_again_and_again_again_16():
 def test_final_math_misc_mocking_again_and_again_again_17():
     import numpy as np
 
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
     x = np.array([0.5, 0.2])
     n = np.array([2, 3])
@@ -1371,7 +1371,7 @@ def test_final_math_misc_mocking_again_and_again_again_17():
 
 
 import ml_switcheroo_compiler.ops as _ops
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import (
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_confusion_matrix,
     _np_decode_csv,
     _np_decode_image,
@@ -1433,11 +1433,11 @@ def test_mock_ops_subclass():
             _np_parse_example(np, b"")
             # For _np_parse_tensor we need a valid arg if using astype fallback
             _np_parse_tensor(np, [1, 2], out_type=np.float32)
-            _np_read_file(np, "test.txt")
+            _np_read_file(np, "/tmp/ml_switcheroo_test_file2.txt")
             print("HASATTR REM:", hasattr(_ops, "rem"))
             _np_rem(np, np.array([5]), np.array([2]))
             _np_serialize_tensor(np, np.ones((2, 2)))
-            _np_write_file(np, "test.txt", "hello")
+            _np_write_file(np, "/tmp/ml_switcheroo_test_file2.txt", "hello")
             _np_confusion_matrix(np, np.array([1]), np.array([1]))
             _np_descriptive(np, np.array([1]))
             _np_distributions(np, np.array([1]))
@@ -1508,7 +1508,7 @@ def test_mock_ops_missing():
         except:
             pass
         try:
-            _np_read_file(np, "test.txt")
+            _np_read_file(np, "/tmp/ml_switcheroo_test_file2.txt")
         except:
             pass
 
@@ -1517,7 +1517,7 @@ def test_mock_ops_missing():
         _np_serialize_tensor(np, np.ones((2, 2)))
 
         try:
-            _np_write_file(np, "test.txt", "hello")
+            _np_write_file(np, "/tmp/ml_switcheroo_test_file2.txt", "hello")
         except:
             pass
 

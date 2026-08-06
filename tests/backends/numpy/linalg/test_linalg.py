@@ -1,4 +1,4 @@
-from ml_switcheroo_compiler.backends.numpy.eager.linalg_extras import _build_einsum_equation
+from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import _build_einsum_equation
 
 
 def test_build_einsum_equation_loop() -> None:

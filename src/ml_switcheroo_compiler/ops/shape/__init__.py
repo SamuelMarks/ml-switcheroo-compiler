@@ -6,7 +6,7 @@ from . import frontend as frontend
 from . import indexing as indexing
 from . import indexing_advanced as indexing_advanced
 from . import joining as joining
-from . import misc as misc
+from . import pad_and_tile as misc
 from . import reshape as reshape
 from . import scatter as scatter
 from . import slicing as slicing

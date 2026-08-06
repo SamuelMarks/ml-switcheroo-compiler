@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import (
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_rawmatmul,
     _np_rawmerge,
     _np_rem,
@@ -155,7 +155,7 @@ def test_fallback_snippets_importerror(monkeypatch):
 def test_custom_root_coverage():
     import numpy as np
 
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_customroot
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customroot
 
     # solve is None
     res = _np_customroot(np, lambda x: x, 42.0)
@@ -165,7 +165,7 @@ def test_custom_root_coverage():
 def test_custom_root_coverage_solve():
     import numpy as np
 
-    from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_customroot
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customroot
 
     # solve is provided
     res = _np_customroot(np, lambda x: x, 42.0, solve=lambda f, x: f(x) + 1.0)

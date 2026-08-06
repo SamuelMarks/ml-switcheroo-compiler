@@ -3,7 +3,7 @@ import pytest
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 
 
-def test_numpy_generator_coverage():
+def test_numpy_generator_coverage(tmp_path):
     class DummyNode:
         def __init__(self, op_type, id="test_id"):
             self.op_type = op_type
@@ -47,6 +47,11 @@ def test_numpy_generator_coverage():
 
     with pytest.raises(Exception):
         NumpyGenerator.load("")
-    NumpyGenerator.save("dummy.npy", None)
-    NumpyGenerator.savez("dummy.npz")
-    NumpyGenerator.savez_compressed("dummy2.npz")
+
+    dummy_npy = str(tmp_path / "dummy.npy")
+    dummy_npz = str(tmp_path / "dummy.npz")
+    dummy2_npz = str(tmp_path / "dummy2.npz")
+
+    NumpyGenerator.save(dummy_npy, None)
+    NumpyGenerator.savez(dummy_npz)
+    NumpyGenerator.savez_compressed(dummy2_npz)

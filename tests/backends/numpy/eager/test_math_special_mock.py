@@ -1,6 +1,6 @@
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_rawmatmul
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_rawmatmul
 
 
 def test_mock(monkeypatch):

@@ -1,6 +1,6 @@
 import ml_switcheroo_compiler.ops as _ops
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import (
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_frombuffer,
     _np_shifted_chebyshev_polynomial_t,
     _np_shifted_chebyshev_polynomial_u,

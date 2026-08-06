@@ -1,6 +1,6 @@
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_customlinearsolve
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customlinearsolve
 
 
 def test_custom_linear_solve_fallback():

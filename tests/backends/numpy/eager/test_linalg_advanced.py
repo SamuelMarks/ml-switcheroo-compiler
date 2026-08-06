@@ -1,7 +1,7 @@
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-from ml_switcheroo_compiler.backends.numpy.eager.linalg_extras import (
+from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _dot_general,
     _get_uncontracted_dims,
     _np_adjoint,

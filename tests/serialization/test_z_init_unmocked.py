@@ -1,4 +1,4 @@
-def test_missing_init_unmocked():
+def test_missing_init_unmocked(tmp_path):
     from ml_switcheroo_compiler.serialization import (
         CustomObjectScope,
         KerasFileEditor,
@@ -35,29 +35,36 @@ def test_missing_init_unmocked():
         serialize_keras_object,
     )
 
+    h5_path = str(tmp_path / "model_weights.h5")
+    st_path = str(tmp_path / "model_weights.safetensors")
+    npz_path = str(tmp_path / "model_weights.npz")
+    pk_path = str(tmp_path / "model_weights.pk")
+    model_path = str(tmp_path / "saved_model_dir")
+    dummy_zip = str(tmp_path / "model.zip")
+
     # Call them to ensure execution
     try:
-        _save_as_h5({}, "test.h5")
+        _save_as_h5({"test_data": 1.0}, h5_path)
     except Exception:
         pass
     try:
-        _save_as_safetensors({}, "test.st")
+        _save_as_safetensors({"test_data": 1.0}, st_path)
     except Exception:
         pass
     try:
-        _load_h5_weights("test.h5")
+        _load_h5_weights(h5_path)
     except Exception:
         pass
     try:
-        _load_safetensors_weights("test.st")
+        _load_safetensors_weights(st_path)
     except Exception:
         pass
     try:
-        _load_npz_weights("test.npz")
+        _load_npz_weights(npz_path)
     except Exception:
         pass
     try:
-        _load_pickle_weights("test.pk")
+        _load_pickle_weights(pk_path)
     except Exception:
         pass
 
@@ -92,7 +99,7 @@ def test_missing_init_unmocked():
         pass
 
     try:
-        _write_h5_to_zip(None, "dummy", {})
+        _write_h5_to_zip(None, dummy_zip, {})
     except Exception:
         pass
 
@@ -102,12 +109,12 @@ def test_missing_init_unmocked():
         pass
 
     try:
-        save_model(None, "dummy")
+        save_model(None, model_path)
     except Exception:
         pass
 
     try:
-        load_model("dummy")
+        load_model(model_path)
     except Exception:
         pass
 
@@ -127,7 +134,7 @@ def test_missing_init_unmocked():
         pass
 
     try:
-        KerasFileEditor("dummy")
+        KerasFileEditor(model_path)
     except Exception:
         pass
 
@@ -182,16 +189,16 @@ def test_missing_init_unmocked():
         pass
 
     try:
-        read_fingerprint("dummy")
+        read_fingerprint(model_path)
     except Exception:
         pass
 
     try:
-        load_variable("dummy", "dummy")
+        load_variable(model_path, "target_var")
     except Exception:
         pass
 
     try:
-        run_restore_ops("dummy")
+        run_restore_ops(model_path)
     except Exception:
         pass

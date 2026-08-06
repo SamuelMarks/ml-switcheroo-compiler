@@ -6,7 +6,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.linalg.decompositions.misc import Polar, PowerIteration, TridiagonalMatmul, TridiagonalSolve, lu, lu_solve, polar, tridiagonal_solve
+from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Polar, PowerIteration, TridiagonalMatmul, TridiagonalSolve, lu, lu_solve, polar, tridiagonal_solve
 
 
 def test_misc_infer_shapes() -> None:
@@ -40,7 +40,7 @@ def test_misc_eager_and_trace() -> None:
         res = tridiagonal_solve(t, t, t, t)
         assert isinstance(res, Tensor)
     config.eager_mode = False
-    misc_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.misc"]
+    misc_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.solvers"]
     with patch.object(misc_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_l", "mock_u", "mock_p")
         lu(t)
@@ -53,7 +53,7 @@ def test_misc_eager_and_trace() -> None:
 
 
 def test_misc_dummy_infer_shapes() -> None:
-    from ml_switcheroo_compiler.ops.linalg.decompositions.misc import Cross, Lu, LuSolve, MatrixExponential, Norm, TriangularSolve
+    from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Cross, Lu, LuSolve, MatrixExponential, Norm, TriangularSolve
 
     assert TriangularSolve().infer_shape() == ()
     assert Lu().infer_shape() == ()

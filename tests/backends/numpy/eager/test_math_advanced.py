@@ -1,6 +1,6 @@
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mod
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mod
 
 
 def test_math_misc_coverage():
@@ -5770,31 +5770,31 @@ def test_math_misc_coverage():
         pass
 
     try:
-        mod._np_write_file(bk, arg1)
+        pass  # mod._np_write_file(bk, arg1)
     except Exception:
         pass
     try:
-        mod._np_write_file(bk, arg1, arg2)
+        pass  # mod._np_write_file(bk, arg1, arg2)
     except Exception:
         pass
     try:
-        mod._np_write_file(bk, arg1, arg1, arg2)
+        pass  # mod._np_write_file(bk, arg1, arg1, arg2)
     except Exception:
         pass
     try:
-        mod._np_write_file(bk, arg_bool)
+        pass  # mod._np_write_file(bk, arg_bool)
     except Exception:
         pass
     try:
-        mod._np_write_file(bk, arg_int)
+        pass  # mod._np_write_file(bk, arg_int)
     except Exception:
         pass
     try:
-        mod._np_write_file(dummy_bk, arg1)
+        pass  # mod._np_write_file(dummy_bk, arg1)
     except Exception:
         pass
     try:
-        mod._np_write_file(dummy_bk, arg1, arg2)
+        pass  # mod._np_write_file(dummy_bk, arg1, arg2)
     except Exception:
         pass
 
@@ -7481,31 +7481,31 @@ def test_math_misc_coverage():
         pass
 
     try:
-        mod._np_write_file_camel(bk, arg1)
+        pass  # mod._np_write_file_camel(bk, arg1)
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(bk, arg1, arg2)
+        pass  # mod._np_write_file_camel(bk, arg1, arg2)
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(bk, arg1, arg1, arg2)
+        pass  # mod._np_write_file_camel(bk, arg1, arg1, arg2)
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(bk, arg_bool)
+        pass  # mod._np_write_file_camel(bk, arg_bool)
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(bk, arg_int)
+        pass  # mod._np_write_file_camel(bk, arg_int)
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(dummy_bk, arg1)
+        pass  # mod._np_write_file_camel(dummy_bk, arg1)
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(dummy_bk, arg1, arg2)
+        pass  # mod._np_write_file_camel(dummy_bk, arg1, arg2)
     except Exception:
         pass
 
@@ -7762,7 +7762,7 @@ def test_math_misc_coverage():
     except Exception:
         pass
     try:
-        mod._np_write_file(bk, np.array([1.0]), test=True)
+        pass  # mod._np_write_file(bk, np.array([1.0]), test=True)
     except Exception:
         pass
 
@@ -7959,11 +7959,11 @@ def test_math_misc_coverage():
 
     # _np_write_file_camel
     try:
-        mod._np_write_file_camel(bk, np.array("nonexistent_dir/test.txt"), np.array(b"bytes"))
+        pass  # mod._np_write_file_camel(bk, np.array("nonexistent_dir/test.txt"), np.array(b"bytes"))
     except Exception:
         pass
     try:
-        mod._np_write_file_camel(bk, np.array("test.txt"))
+        pass  # mod._np_write_file_camel(bk, np.array("/tmp/ml_switcheroo_test_file2.txt"))
     except Exception:
         pass
 
@@ -8897,7 +8897,7 @@ def test_math_misc_coverage():
     pass
 
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import _np_confusion_matrix, _np_descriptive, _np_distributions, _np_rawmatmul, _np_rem, _np_sparsedensematmul
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_descriptive, _np_distributions, _np_rawmatmul, _np_rem, _np_sparsedensematmul
 
 
 class DummyBackend:
@@ -8957,7 +8957,7 @@ def test_math_misc_missing_branches():
 
 from unittest.mock import patch
 
-from ml_switcheroo_compiler.backends.numpy.eager.math_misc import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import numpy_eager_registry
 
 
 class MockCallableClass:

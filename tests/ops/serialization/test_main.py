@@ -251,12 +251,14 @@ def test_compile_model_metadata():
     assert "keras_version" in meta
 
 
-def test_write_h5_to_zip(mocker):
+def test_write_h5_to_zip(mocker, tmp_path):
     mocker.patch("ml_switcheroo_compiler.serialization._save_as_h5")
     with tempfile.NamedTemporaryFile() as f:
         with zipfile.ZipFile(f.name, "w") as zf:
             _write_h5_to_zip(zf, "test.h5", {})
-    ctx = KerasSerializationContext("test2.keras", {}, {}, {}, {})
+
+    keras_path = str(tmp_path / "model_bundle.keras")
+    ctx = KerasSerializationContext(keras_path, {}, {}, {}, {})
     _write_keras_zip(ctx)
 
 

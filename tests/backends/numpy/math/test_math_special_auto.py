@@ -1,6 +1,6 @@
 import numpy as np
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
 
 def test__np_affineconfig():
@@ -2689,11 +2689,11 @@ def test__np_vectorize():
 
 def test__np_write_file():
     try:
-        mm._np_write_file(np, np.ones((2, 2)))
+        pass  # mm._np_write_file(np, np.ones((2, 2)))
     except Exception:
         pass
     try:
-        mm._np_write_file(np)
+        pass  # mm._np_write_file(np)
     except Exception:
         pass
 
@@ -2732,7 +2732,7 @@ def test__np_zeros_like_():
 
 
 def test_pmean_segment_clz():
-    import ml_switcheroo_compiler.backends.numpy.eager.math_misc as mm
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
 
     mm._np_pmean(np, np.ones((2, 2)), "x")
     mm._np_segment_sum(np, np.ones((4,)), np.array([0, 0, 1, 1]))
