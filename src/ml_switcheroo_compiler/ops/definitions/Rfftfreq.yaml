@@ -1,0 +1,9 @@
+operation: Rfftfreq
+description: The Rfftfreq operation.
+variants:
+  cupy:
+    eager: cp.fft.rfftfreq
+  dask:
+    eager: da.fft.rfftfreq
+  numpy:
+    generator: np.fft.rfftfreq({0}, d={d})

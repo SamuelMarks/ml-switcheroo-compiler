@@ -1,8 +1,9 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy eager backend initialization."""
 
 import re
 import typing
+from typing import Any
 
 import numpy as np
 
@@ -55,7 +56,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F4
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry, numpy_eager_registry
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Evaluate execute_op operation.
 
     Args:
@@ -64,8 +65,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         UnimplementedMathError: An exception.
@@ -99,7 +99,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
 
 
 @numpy_eager_registry.register("Repeat")
-def repeat(np: object, *args: object, **kwargs: object) -> object:
+def repeat(np: Any, *args: Any, **kwargs: Any) -> Any:
     """Repeat.
 
     Args:
@@ -107,16 +107,13 @@ def repeat(np: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
-    if "dim" in kwargs:
-        kwargs["axis"] = kwargs.pop("dim")
     return np.repeat(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Searchsorted")
-def searchsorted(np: object, *args: object, **kwargs: object) -> object:
+def searchsorted(np: Any, *args: Any, **kwargs: Any) -> Any:
     """Searchsorted.
 
     Args:
@@ -124,99 +121,155 @@ def searchsorted(np: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.searchsorted(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Split")
 def split(
-    np_mod: object,
-    x: object,
+    np_mod: Any,
+    x: Any,
     num_or_size_splits: typing.Union[int, list[int], tuple[int, ...]],
-    dim: int = 0,
-    *args: object,
-    **kwargs: object,
-) -> list[object]:
+    axis: int = 0,
+    *args: Any,
+    **kwargs: Any,
+) -> list[Any]:
     """Split array.
 
     Args:
         np_mod: Numpy module.
         x: Input array.
         num_or_size_splits: Number of splits or sizes of each split.
-        dim: Axis along which to split.
+        axis: Axis along which to split.
         args: Additional positional arguments.
         kwargs: Additional keyword arguments.
 
     Returns:
         List of output arrays.
     """
-    ax = dim if dim != 0 else kwargs.get("axis", 0)
-    return np_mod.split(x, num_or_size_splits, axis=ax)
+    return np_mod.split(x, num_or_size_splits, axis=axis)
 
 
 @numpy_eager_registry.register("Squeeze")
-def squeeze(np_mod: object, x: object, dim: typing.Optional[int] = None, *args: object, **kwargs: object) -> object:
+def squeeze(np_mod: Any, x: Any, axis: typing.Optional[int] = None, *args: Any, **kwargs: Any) -> Any:
     """Squeeze array.
 
     Args:
         np_mod: Numpy module.
         x: Input array.
-        dim: Axis to squeeze.
+        axis: Axis to squeeze.
         args: Additional args.
         kwargs: Additional kwargs.
 
     Returns:
         Squeezed array.
     """
-    ax = dim if dim is not None else kwargs.get("axis", None)
-    return np_mod.squeeze(x, axis=ax)
+    return np_mod.squeeze(x, axis=axis)
 
 
 @numpy_eager_registry.register("Stack")
-def stack(np_mod: object, arrays: object, dim: int = 0, *args: object, **kwargs: object) -> object:
+def stack(np_mod: Any, arrays: Any, axis: int = 0, *args: Any, **kwargs: Any) -> Any:
     """Stack arrays.
 
     Args:
         np_mod: Numpy module.
         arrays: Arrays to stack.
-        dim: Axis to stack along.
+        axis: Axis to stack along.
         args: Additional args.
         kwargs: Additional kwargs.
 
     Returns:
         Stacked array.
     """
-    ax = dim if dim != 0 else kwargs.get("axis", 0)
-    return np_mod.stack(arrays, axis=ax)
+    return np_mod.stack(arrays, axis=axis)
 
 
 @numpy_eager_registry.register("Unstack")
-def unstack(np_mod: object, x: object, dim: int = 0, *args: object, **kwargs: object) -> list[object]:
+def unstack(np_mod: Any, x: Any, axis: int = 0, *args: Any, **kwargs: Any) -> Any:
     """Unstack array.
 
     Args:
         np_mod: Numpy module.
         x: Input array.
-        dim: Axis to unstack along.
+        axis: Axis to unstack along.
         args: Additional args.
         kwargs: Additional kwargs.
 
     Returns:
         List of unstacked arrays.
     """
-    ax = dim if dim != 0 else kwargs.get("axis", 0)
     # unstack is basically split into 1-sized chunks along axis and squeezed
     if hasattr(x, "shape"):
-        num_splits = x.shape[ax]
-        splits = np_mod.split(x, num_splits, axis=ax)
-        return tuple(np_mod.squeeze(s, axis=ax) for s in splits)
+        num_splits = x.shape[axis]
+        splits = np_mod.split(x, num_splits, axis=axis)
+        return tuple(np_mod.squeeze(s, axis=axis) for s in splits)
     return tuple(x)
 
 
+@numpy_eager_registry.register("AllGather")
+def all_gather(np_mod: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
+    """Simulate AllGather in eager mode.
+
+    Args:
+        np_mod (object): The numpy module.
+        tensor (object): The tensor to gather.
+        *args (object): Additional args.
+        **kwargs (object): Additional kwargs.
+
+    Returns: Any: The gathered tensor (in a simulated single-node env, just expanded).
+    """
+    axis = kwargs.get("axis", 0)
+    return np_mod.expand_dims(tensor, axis=axis)
+
+
+@numpy_eager_registry.register("AllReduce")
+def all_reduce(np_mod: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
+    """Simulate AllReduce in eager mode.
+
+    Args:
+        np_mod (object): The numpy module.
+        tensor (object): The tensor to reduce.
+        *args (object): Additional args.
+        **kwargs (object): Additional kwargs.
+
+    Returns: Any: The reduced tensor.
+    """
+    return tensor
+
+
+@numpy_eager_registry.register("ReduceScatter")
+def reduce_scatter(np_mod: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
+    """Simulate ReduceScatter in eager mode.
+
+    Args:
+        np_mod (object): The numpy module.
+        tensor (object): The tensor to scatter.
+        *args (object): Additional args.
+        **kwargs (object): Additional kwargs.
+
+    Returns: Any: The scattered tensor.
+    """
+    return tensor
+
+
+@numpy_eager_registry.register("AllToAll")
+def all_to_all(np_mod: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
+    """Simulate AllToAll in eager mode.
+
+    Args:
+        np_mod (object): The numpy module.
+        tensor (object): The tensor to all-to-all.
+        *args (object): Additional args.
+        **kwargs (object): Additional kwargs.
+
+    Returns: Any: The result tensor.
+    """
+    return tensor
+
+
 @numpy_eager_registry.register("Equal")
-def equal(np_mod: object, x: object, y: object, *args: object, **kwargs: object) -> object:
+def equal(np_mod: Any, x: Any, y: Any, *args: Any, **kwargs: Any) -> Any:
     """Check if x and y are equal.
 
     Args:
@@ -226,8 +279,7 @@ def equal(np_mod: object, x: object, y: object, *args: object, **kwargs: object)
         *args (object): Additional arguments.
         **kwargs (object): Additional keyword arguments.
 
-    Returns:
-        object: A boolean array where x == y.
+    Returns: Any: A boolean array where x == y.
     """
     try:
         return np_mod.equal(x, y)

@@ -1,0 +1,5 @@
+operation: int16
+description: The int16 operation.
+variants:
+  edge_stablehlo:
+    generator: i16

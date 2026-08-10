@@ -1,0 +1,9 @@
+operation: Logaddexp
+description: The Logaddexp operation.
+variants:
+  cupy:
+    eager: cp.logaddexp
+  dask:
+    eager: da.logaddexp
+  keras:
+    eager: keras_ops.logaddexp

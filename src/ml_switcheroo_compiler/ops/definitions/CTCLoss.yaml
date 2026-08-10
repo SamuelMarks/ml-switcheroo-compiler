@@ -1,0 +1,7 @@
+operation: CtcLoss
+description: The CtcLoss operation.
+variants:
+  keras:
+    eager: keras_ops.ctc_loss
+  tensorflow:
+    eager: tf.nn.ctc_loss

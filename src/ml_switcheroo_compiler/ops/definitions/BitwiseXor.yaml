@@ -1,0 +1,9 @@
+operation: BitwiseXor
+description: The BitwiseXor operation.
+variants:
+  cupy:
+    eager: cp.bitwise_xor
+  dask:
+    eager: da.bitwise_xor
+  keras:
+    eager: keras_ops.bitwise_xor

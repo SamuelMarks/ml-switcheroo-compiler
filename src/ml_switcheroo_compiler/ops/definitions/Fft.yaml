@@ -1,0 +1,11 @@
+operation: Fft
+description: The Fft operation.
+variants:
+  cupy:
+    eager: cp.fft
+  dask:
+    eager: da.fft
+  keras:
+    eager: keras_ops.fft
+  numpy:
+    generator: np.fft.fft

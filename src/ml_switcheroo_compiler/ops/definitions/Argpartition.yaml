@@ -1,0 +1,5 @@
+operation: Argpartition
+description: The Argpartition operation.
+variants:
+  keras:
+    eager: keras_ops.argpartition

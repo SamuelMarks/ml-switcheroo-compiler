@@ -1,0 +1,5 @@
+operation: ExtractVolumePatches
+description: The ExtractVolumePatches operation.
+variants:
+  tensorflow:
+    eager: tf.extract_volume_patches

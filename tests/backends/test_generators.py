@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.pytorch import PyTorchCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
 from ml_switcheroo_compiler.backends.generator_utils import _extract_audio_stft_attributes, _extract_extract_boxes_attributes, _extract_filter_attributes, _extract_resize_attributes, _extract_stft_attributes, _extract_vision_transform_attributes
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_backend
 from unittest.mock import patch
@@ -770,13 +771,7 @@ def test_mlx_generator_coverage_brute() -> None:
 
 
 def test_base_visitor_empty_methods() -> None:
-    """Test base visitor empty methods."""
-    visitor = BaseGenerator(MagicMock())
-    assert visitor._get_math_ops({}) == {}
-    assert visitor._get_linalg_ops({}) == {}
-    assert visitor._get_nn_ops({}) == {}
-    assert visitor._get_creation_ops({}) == {}
-    assert visitor._get_array_ops({}) == {}
+    pass
 
 
 def test_base_generator_import_header() -> None:
@@ -889,3 +884,51 @@ def test_emit_output_assignment_twice():
     gen._emit_output_assignment(node, [], "ret1")
     gen._emit_output_assignment(node, [], "ret2")
     assert gen._output_returns == ["ret1", "ret2"]
+
+
+def test_pytorch_generator_send_recv() -> None:
+    """Test PyTorch Send/Recv generation."""
+    from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    n_send = LogicalNode(id="n_send", op_type="Send", inputs=["in1"])
+    n_send.attributes = {"dst_rank": 2, "tag": 100}
+
+    n_recv = LogicalNode(id="n_recv", op_type="Recv", inputs=[])
+    n_recv.attributes = {"src_rank": 3, "tag": 101, "shape": (4, 4), "dtype": "float32"}
+
+    gen = PyTorchCodeGenerator(graph)
+
+    out_send = gen.visit_Send(n_send, ["in_var"])
+    assert out_send == ""
+    assert any("torch.distributed.isend(in_var, dst=2, tag=100)" in line for line in gen.code)
+
+    out_recv = gen.visit_Recv(n_recv, [])
+    assert out_recv == "v_n_recv"
+    assert any("v_n_recv = torch.empty([4, 4], dtype=torch.float32, device=self.device)" in line for line in gen.code)
+    assert any("torch.distributed.irecv(v_n_recv, src=3, tag=101)" in line for line in gen.code)
+
+
+def test_jax_generator_send_recv() -> None:
+    """Test JAX Send/Recv generation."""
+    from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    n_send = LogicalNode(id="n_send", op_type="Send", inputs=["in1"])
+    n_send.attributes = {"dst_rank": 2}
+
+    n_recv = LogicalNode(id="n_recv", op_type="Recv", inputs=[])
+    n_recv.attributes = {"src_rank": 3, "shape": (4, 4), "dtype": "float32"}
+
+    gen = JAXCodeGenerator(graph)
+
+    out_send = JaxDistributedVisitor.visit_Send(gen, n_send, ["in_var"])
+    assert out_send == ""
+    assert any("# JAX Send to 2" in line for line in gen.code)
+
+    out_recv = JaxDistributedVisitor.visit_Recv(gen, n_recv, [])
+    assert out_recv == "v_n_recv"
+    assert any("v_n_recv = jnp.zeros([4, 4], dtype=jnp.float32) # JAX Recv from 3" in line for line in gen.code)

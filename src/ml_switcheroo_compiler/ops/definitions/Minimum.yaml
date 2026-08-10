@@ -1,0 +1,11 @@
+operation: Minimum
+description: The Minimum operation.
+variants:
+  cupy:
+    eager: cp.minimum
+  dask:
+    eager: da.minimum
+  keras:
+    eager: keras_ops.minimum
+  tensorflow:
+    eager: tf.minimum

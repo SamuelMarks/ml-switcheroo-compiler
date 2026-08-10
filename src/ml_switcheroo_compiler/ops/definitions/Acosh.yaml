@@ -1,0 +1,11 @@
+operation: Acosh
+description: The Acosh operation.
+variants:
+  cupy:
+    generator: cp.arccosh
+  dask:
+    generator: da.arccosh
+  numpy:
+    generator: np.arccosh
+  tensorflow:
+    eager: tf.acosh

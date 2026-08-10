@@ -1,0 +1,5 @@
+operation: bool
+description: The bool operation.
+variants:
+  edge_stablehlo:
+    generator: i1

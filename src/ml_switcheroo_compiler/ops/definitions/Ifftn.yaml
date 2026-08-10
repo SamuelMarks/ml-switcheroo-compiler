@@ -1,0 +1,9 @@
+operation: Ifftn
+description: The Ifftn operation.
+variants:
+  cupy:
+    eager: cp.fft.ifftn
+  dask:
+    eager: da.fft.ifftn
+  numpy:
+    generator: np.fft.ifftn

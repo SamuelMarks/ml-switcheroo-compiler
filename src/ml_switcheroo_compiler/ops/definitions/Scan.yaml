@@ -1,0 +1,7 @@
+operation: Scan
+description: The Scan operation.
+variants:
+  keras:
+    eager: keras_ops.scan
+  tensorflow:
+    eager: tf.scan

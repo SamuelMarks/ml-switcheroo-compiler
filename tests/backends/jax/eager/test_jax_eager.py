@@ -127,8 +127,12 @@ def test_jax_eager_execute_op_lambdas():
     _OP_DISPATCH["AdaptiveMaxPool3D_Indices"](jnp.ones((2, 2)), 1)
     _OP_DISPATCH["AdaptiveLogSoftmaxWithLoss"](jnp.ones((2,)), jnp.ones((2,)))
     _OP_DISPATCH["Adjoint"](jnp.ones((2, 2)))
-    _OP_DISPATCH["AllGather"](jnp.ones((2,)))
-    _OP_DISPATCH["AllToAll"](jnp.ones((2,)))
+    from unittest import mock
+
+    with mock.patch("jax.lax.all_gather", lambda x, **kw: x), mock.patch("jax.lax.all_to_all", lambda x, *args, **kw: x):
+        _OP_DISPATCH["AllGather"](jnp.ones((2,)))
+        _OP_DISPATCH["AllToAll"](jnp.ones((2,)))
+
     _OP_DISPATCH["AlphaDropout"](jnp.ones((2,)))
     _OP_DISPATCH["AsString"](jnp.ones((2,)))
     _OP_DISPATCH["Assert"](True, jnp.ones((2,)))

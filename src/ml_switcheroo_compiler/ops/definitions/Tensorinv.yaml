@@ -1,0 +1,5 @@
+operation: Tensorinv
+description: The Tensorinv operation.
+variants:
+  numpy:
+    generator: np.linalg.tensorinv({0}, ind={ind})

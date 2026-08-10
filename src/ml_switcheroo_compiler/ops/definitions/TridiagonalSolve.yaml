@@ -1,0 +1,8 @@
+operation: TridiagonalSolve
+description: The TridiagonalSolve operation.
+variants:
+  numpy:
+    generator: scipy.linalg.solve_banded((1, 1), np.stack([{2}, {1}, {0}], axis=-2),
+      {3})
+  tensorflow:
+    eager: tf.linalg.tridiagonal_solve

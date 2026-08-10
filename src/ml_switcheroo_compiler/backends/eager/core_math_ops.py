@@ -1,13 +1,14 @@
-# ruff: noqa: E501
-"""Core utilities."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Core utilities."""
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
 @global_eager_registry.register("TrueDivide")
-def _true_divide(backend_module: object, *args: object, **kwargs: object) -> object:
+def _true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _true_divide operation.
 
     Args:
@@ -15,15 +16,14 @@ def _true_divide(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Fft")
-def _fft(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fft operation.
 
     Args:
@@ -31,15 +31,14 @@ def _fft(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     fft_mod = getattr(backend_module, "fft", None)
     return fft_mod.fft(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Rfft")
-def _rfft(backend_module: object, *args: object, **kwargs: object) -> object:
+def _rfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _rfft operation.
 
     Args:
@@ -47,15 +46,14 @@ def _rfft(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     fft_mod = getattr(backend_module, "fft", None)
     return fft_mod.rfft(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Fftn")
-def _fftn(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fftn operation.
 
     Args:
@@ -63,15 +61,14 @@ def _fftn(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     fft_mod = getattr(backend_module, "fft", None)
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Erf")
-def _erf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _erf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _erf operation.
 
     Args:
@@ -79,8 +76,7 @@ def _erf(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     if hasattr(backend_module, "erf"):
@@ -102,7 +98,7 @@ def _erf(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Erfc")
-def _erfc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _erfc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _erfc operation.
 
     Args:
@@ -110,8 +106,7 @@ def _erfc(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     if hasattr(backend_module, "erfc"):
@@ -120,7 +115,7 @@ def _erfc(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Expm1")
-def _expm1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _expm1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _expm1 operation.
 
     Args:
@@ -128,8 +123,7 @@ def _expm1(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     if hasattr(backend_module, "expm1"):
@@ -138,7 +132,7 @@ def _expm1(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Erfinv")
-def _erfinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _erfinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _erfinv operation.
 
     Args:
@@ -146,8 +140,7 @@ def _erfinv(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     if hasattr(backend_module, "erfinv"):
@@ -163,7 +156,7 @@ def _erfinv(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("NanToNum")
-def _nan_to_num(backend_module: object, *args: object, **kwargs: object) -> object:
+def _nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _nan_to_num operation.
 
     Args:
@@ -171,8 +164,7 @@ def _nan_to_num(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     kwargs.pop("copy", None)
@@ -185,7 +177,7 @@ def _nan_to_num(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("Einsum")
-def _einsum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _einsum operation.
 
     Args:
@@ -193,8 +185,7 @@ def _einsum(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     eq = kwargs.pop("equation", "") if "equation" in kwargs else args[0] if len(args) > 0 and isinstance(args[0], str) else ""
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
@@ -204,7 +195,7 @@ def _einsum(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Allclose")
-def _allclose(backend_module: object, *args: object, **kwargs: object) -> object:
+def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _allclose operation.
 
     Args:
@@ -212,8 +203,7 @@ def _allclose(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     a = args[0]
     b = args[1]
@@ -221,14 +211,13 @@ def _allclose(backend_module: object, *args: object, **kwargs: object) -> object
     atol = kwargs.get("atol", 1e-08)
     equal_nan = kwargs.get("equal_nan", False)
 
-    def _val(x: object) -> object:
+    def _val(x: Any) -> Any:
         """Evaluate _val operation.
 
         Args:
         x (object): The x parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         x_data = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(x_data.item):
@@ -243,7 +232,7 @@ def _allclose(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Psum")
-def _psum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _psum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _psum operation.
 
     Args:
@@ -251,14 +240,13 @@ def _psum(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.array(args[0])
 
 
 @global_eager_registry.register("Pmean")
-def _pmean(backend_module: object, *args: object, **kwargs: object) -> object:
+def _pmean(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pmean operation.
 
     Args:
@@ -266,14 +254,13 @@ def _pmean(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.array(args[0])
 
 
 @global_eager_registry.register("SegmentSum")
-def _segment_sum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _segment_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _segment_sum operation.
 
     Args:
@@ -281,8 +268,7 @@ def _segment_sum(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if len(args) < 2:
         return backend_module.asarray(args[0]) if args else None
@@ -318,15 +304,14 @@ __all__ = [
 ]
 
 
-def _apply_causal_mask(backend_module: object, scores: object) -> object:
+def _apply_causal_mask(backend_module: Any, scores: Any) -> Any:
     """Apply a causal mask to attention scores.
 
     Args:
         backend_module (object): The backend_module parameter.
         scores (object): The scores parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "triu") and hasattr(backend_module, "ones") and hasattr(backend_module, "where"):
         causal_mask = backend_module.triu(backend_module.ones(scores.shape[-2:]), 1)
@@ -334,15 +319,14 @@ def _apply_causal_mask(backend_module: object, scores: object) -> object:
     return scores
 
 
-def _apply_softmax(backend_module: object, scores: object) -> object:
+def _apply_softmax(backend_module: Any, scores: Any) -> Any:
     """Apply softmax to attention scores.
 
     Args:
         backend_module (object): The backend_module parameter.
         scores (object): The scores parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "softmax"):
         return backend_module.softmax(scores, axis=-1)
@@ -355,7 +339,7 @@ def _apply_softmax(backend_module: object, scores: object) -> object:
 
 
 @global_eager_registry.register("ScaledDotProductAttention")
-def _scaled_dot_product_attention_eager(backend_module: object, query: object, key: object, value: object, *args: object, **kwargs: object) -> object:
+def _scaled_dot_product_attention_eager(backend_module: Any, query: Any, key: Any, value: Any, *args: Any, **kwargs: Any) -> Any:
     """Fallback eager execution for ScaledDotProductAttention.
 
     Args:
@@ -366,8 +350,7 @@ def _scaled_dot_product_attention_eager(backend_module: object, query: object, k
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import math
 
@@ -401,7 +384,7 @@ def _scaled_dot_product_attention_eager(backend_module: object, query: object, k
 
 
 @global_eager_registry.register("Acos")
-def _acos(backend_module: object, *args: object, **kwargs: object) -> object:
+def _acos(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _acos operation.
 
     Args:
@@ -409,15 +392,14 @@ def _acos(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arccos", getattr(backend_module, "acos", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Acosh")
-def _acosh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _acosh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _acosh operation.
 
     Args:
@@ -425,15 +407,14 @@ def _acosh(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arccosh", getattr(backend_module, "acosh", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Asin")
-def _asin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _asin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _asin operation.
 
     Args:
@@ -441,15 +422,14 @@ def _asin(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arcsin", getattr(backend_module, "asin", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Asinh")
-def _asinh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _asinh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _asinh operation.
 
     Args:
@@ -457,15 +437,14 @@ def _asinh(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arcsinh", getattr(backend_module, "asinh", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Atan")
-def _atan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _atan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _atan operation.
 
     Args:
@@ -473,15 +452,14 @@ def _atan(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arctan", getattr(backend_module, "atan", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Atanh")
-def _atanh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _atanh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _atanh operation.
 
     Args:
@@ -489,15 +467,14 @@ def _atanh(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arctanh", getattr(backend_module, "atanh", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Atan2")
-def _atan2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _atan2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _atan2 operation.
 
     Args:
@@ -505,15 +482,14 @@ def _atan2(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "arctan2", getattr(backend_module, "atan2", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Deg2Rad")
-def _deg2rad(backend_module: object, *args: object, **kwargs: object) -> object:
+def _deg2rad(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _deg2rad operation.
 
     Args:
@@ -521,15 +497,14 @@ def _deg2rad(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "deg2rad", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Degrees")
-def _degrees(backend_module: object, *args: object, **kwargs: object) -> object:
+def _degrees(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _degrees operation.
 
     Args:
@@ -537,15 +512,14 @@ def _degrees(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "degrees", getattr(backend_module, "rad2deg", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Rad2Deg")
-def _rad2deg(backend_module: object, *args: object, **kwargs: object) -> object:
+def _rad2deg(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _rad2deg operation.
 
     Args:
@@ -553,15 +527,14 @@ def _rad2deg(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "rad2deg", getattr(backend_module, "degrees", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Radians")
-def _radians(backend_module: object, *args: object, **kwargs: object) -> object:
+def _radians(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _radians operation.
 
     Args:
@@ -569,15 +542,14 @@ def _radians(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "radians", getattr(backend_module, "deg2rad", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Cbrt")
-def _cbrt(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cbrt(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cbrt operation.
 
     Args:
@@ -585,8 +557,7 @@ def _cbrt(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "cbrt", None)
     if func:
@@ -596,7 +567,7 @@ def _cbrt(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fix")
-def _fix(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fix operation.
 
     Args:
@@ -604,8 +575,7 @@ def _fix(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fix", getattr(backend_module, "trunc", None))
     if func:
@@ -615,7 +585,7 @@ def _fix(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Copysign")
-def _copysign(backend_module: object, *args: object, **kwargs: object) -> object:
+def _copysign(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _copysign operation.
 
     Args:
@@ -623,8 +593,7 @@ def _copysign(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "copysign", None)
     if func:
@@ -634,7 +603,7 @@ def _copysign(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("FloatPower")
-def _float_power(backend_module: object, *args: object, **kwargs: object) -> object:
+def _float_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _float_power operation.
 
     Args:
@@ -642,15 +611,14 @@ def _float_power(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Fmax")
-def _fmax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fmax operation.
 
     Args:
@@ -658,15 +626,14 @@ def _fmax(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fmax", getattr(backend_module, "maximum", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Fmin")
-def _fmin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fmin operation.
 
     Args:
@@ -674,15 +641,14 @@ def _fmin(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fmin", getattr(backend_module, "minimum", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Fmod")
-def _fmod(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fmod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fmod operation.
 
     Args:
@@ -690,15 +656,14 @@ def _fmod(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fmod", getattr(backend_module, "remainder", getattr(backend_module, "mod", None)))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Frexp")
-def _frexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _frexp operation.
 
     Args:
@@ -706,8 +671,7 @@ def _frexp(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import math
 
@@ -716,7 +680,7 @@ def _frexp(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Hypot")
-def _hypot(backend_module: object, *args: object, **kwargs: object) -> object:
+def _hypot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _hypot operation.
 
     Args:
@@ -724,8 +688,7 @@ def _hypot(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "hypot", None)
     if func:
@@ -735,7 +698,7 @@ def _hypot(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("I0")
-def _i0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _i0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _i0 operation.
 
     Args:
@@ -743,15 +706,14 @@ def _i0(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "i0", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Imag")
-def _imag(backend_module: object, *args: object, **kwargs: object) -> object:
+def _imag(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _imag operation.
 
     Args:
@@ -759,15 +721,14 @@ def _imag(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "imag", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Isclose")
-def _isclose(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isclose operation.
 
     Args:
@@ -775,15 +736,14 @@ def _isclose(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "isclose", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("IsComplex")
-def _iscomplex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _iscomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iscomplex operation.
 
     Args:
@@ -791,15 +751,14 @@ def _iscomplex(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "iscomplex", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("IsReal")
-def _isreal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isreal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isreal operation.
 
     Args:
@@ -807,15 +766,14 @@ def _isreal(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "isreal", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Kaiser")
-def _kaiser(backend_module: object, *args: object, **kwargs: object) -> object:
+def _kaiser(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _kaiser operation.
 
     Args:
@@ -823,15 +781,14 @@ def _kaiser(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "kaiser", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Lcm")
-def _lcm(backend_module: object, *args: object, **kwargs: object) -> object:
+def _lcm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _lcm operation.
 
     Args:
@@ -839,15 +796,14 @@ def _lcm(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "lcm", getattr(backend_module, "least_common_multiple", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Ldexp")
-def _ldexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ldexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ldexp operation.
 
     Args:
@@ -855,8 +811,7 @@ def _ldexp(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import math
 
@@ -865,7 +820,7 @@ def _ldexp(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Nextafter")
-def _nextafter(backend_module: object, *args: object, **kwargs: object) -> object:
+def _nextafter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _nextafter operation.
 
     Args:
@@ -873,8 +828,7 @@ def _nextafter(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import math
 
@@ -883,7 +837,7 @@ def _nextafter(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Polyval")
-def _polyval(backend_module: object, *args: object, **kwargs: object) -> object:
+def _polyval(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _polyval operation.
 
     Args:
@@ -891,15 +845,14 @@ def _polyval(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "polyval", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Real")
-def _real(backend_module: object, *args: object, **kwargs: object) -> object:
+def _real(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _real operation.
 
     Args:
@@ -907,15 +860,14 @@ def _real(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "real", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Signbit")
-def _signbit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _signbit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _signbit operation.
 
     Args:
@@ -923,8 +875,7 @@ def _signbit(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "signbit", None)
     if func:
@@ -934,7 +885,7 @@ def _signbit(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Sinc")
-def _sinc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _sinc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _sinc operation.
 
     Args:
@@ -942,15 +893,14 @@ def _sinc(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "sinc", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Spacing")
-def _spacing(backend_module: object, *args: object, **kwargs: object) -> object:
+def _spacing(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _spacing operation.
 
     Args:
@@ -958,15 +908,14 @@ def _spacing(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "spacing", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Unwrap")
-def _unwrap(backend_module: object, *args: object, **kwargs: object) -> object:
+def _unwrap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _unwrap operation.
 
     Args:
@@ -974,15 +923,14 @@ def _unwrap(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "unwrap", None)
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("Zeta")
-def _zeta(backend_module: object, *args: object, **kwargs: object) -> object:
+def _zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _zeta operation.
 
     Args:
@@ -990,8 +938,7 @@ def _zeta(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "zeta", None)
     if func:
@@ -1005,7 +952,7 @@ def _zeta(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("BesselI0")
-def _bessel_i0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_i0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i0 operation.
 
     Args:
@@ -1013,8 +960,7 @@ def _bessel_i0(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "i0", None)
     if func:
@@ -1028,7 +974,7 @@ def _bessel_i0(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselI0e")
-def _bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_i0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i0e operation.
 
     Args:
@@ -1036,8 +982,7 @@ def _bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "i0e", None)
     if func:
@@ -1051,7 +996,7 @@ def _bessel_i0e(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("BesselI1")
-def _bessel_i1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_i1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i1 operation.
 
     Args:
@@ -1059,8 +1004,7 @@ def _bessel_i1(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "i1", None)
     if func:
@@ -1074,7 +1018,7 @@ def _bessel_i1(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselI1e")
-def _bessel_i1e(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_i1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_i1e operation.
 
     Args:
@@ -1082,8 +1026,7 @@ def _bessel_i1e(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "i1e", None)
     if func:
@@ -1097,7 +1040,7 @@ def _bessel_i1e(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("BesselJ0")
-def _bessel_j0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_j0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_j0 operation.
 
     Args:
@@ -1105,8 +1048,7 @@ def _bessel_j0(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "j0", None)
     if func:
@@ -1120,7 +1062,7 @@ def _bessel_j0(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselJ1")
-def _bessel_j1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_j1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_j1 operation.
 
     Args:
@@ -1128,8 +1070,7 @@ def _bessel_j1(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "j1", None)
     if func:
@@ -1143,7 +1084,7 @@ def _bessel_j1(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselJn")
-def _bessel_jn(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_jn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_jn operation.
 
     Args:
@@ -1151,8 +1092,7 @@ def _bessel_jn(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "jv", getattr(backend_module, "jn", None))
     if func:
@@ -1166,7 +1106,7 @@ def _bessel_jn(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselK0")
-def _bessel_k0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k0 operation.
 
     Args:
@@ -1174,8 +1114,7 @@ def _bessel_k0(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "k0", None)
     if func:
@@ -1189,7 +1128,7 @@ def _bessel_k0(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselK0e")
-def _bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_k0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k0e operation.
 
     Args:
@@ -1197,8 +1136,7 @@ def _bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "k0e", None)
     if func:
@@ -1212,7 +1150,7 @@ def _bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("BesselK1")
-def _bessel_k1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k1 operation.
 
     Args:
@@ -1220,8 +1158,7 @@ def _bessel_k1(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "k1", None)
     if func:
@@ -1235,7 +1172,7 @@ def _bessel_k1(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselK1e")
-def _bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_k1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_k1e operation.
 
     Args:
@@ -1243,8 +1180,7 @@ def _bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "k1e", None)
     if func:
@@ -1258,7 +1194,7 @@ def _bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("BesselY0")
-def _bessel_y0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_y0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_y0 operation.
 
     Args:
@@ -1266,8 +1202,7 @@ def _bessel_y0(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "y0", None)
     if func:
@@ -1281,7 +1216,7 @@ def _bessel_y0(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BesselY1")
-def _bessel_y1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bessel_y1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bessel_y1 operation.
 
     Args:
@@ -1289,8 +1224,7 @@ def _bessel_y1(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "y1", None)
     if func:
@@ -1304,7 +1238,7 @@ def _bessel_y1(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Beta")
-def _beta(backend_module: object, *args: object, **kwargs: object) -> object:
+def _beta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _beta operation.
 
     Args:
@@ -1312,8 +1246,7 @@ def _beta(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     kwargs.pop("shape", None)
     kwargs.pop("dtype", None)
@@ -1333,7 +1266,7 @@ def _beta(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Betainc")
-def _betainc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _betainc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _betainc operation.
 
     Args:
@@ -1341,8 +1274,7 @@ def _betainc(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "betainc", None)
     if func:
@@ -1356,7 +1288,7 @@ def _betainc(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Digamma")
-def _digamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _digamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _digamma operation.
 
     Args:
@@ -1364,8 +1296,7 @@ def _digamma(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "digamma", getattr(backend_module, "psi", None))
     if func:
@@ -1379,7 +1310,7 @@ def _digamma(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Igammac")
-def _igammac(backend_module: object, *args: object, **kwargs: object) -> object:
+def _igammac(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _igammac operation.
 
     Args:
@@ -1387,8 +1318,7 @@ def _igammac(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "igammac", getattr(backend_module, "gammaincc", None))
     if func:
@@ -1402,7 +1332,7 @@ def _igammac(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Polygamma")
-def _polygamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _polygamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _polygamma operation.
 
     Args:
@@ -1410,8 +1340,7 @@ def _polygamma(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "polygamma", None)
     if func:
@@ -1425,7 +1354,7 @@ def _polygamma(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Heaviside")
-def _heaviside(backend_module: object, *args: object, **kwargs: object) -> object:
+def _heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _heaviside operation.
 
     Args:
@@ -1433,8 +1362,7 @@ def _heaviside(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "heaviside", getattr(backend_module, "step", None))
     if func:
@@ -1444,7 +1372,7 @@ def _heaviside(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("AccumulateN")
-def _accumulate_n(backend_module: object, *args: object, **kwargs: object) -> object:
+def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _accumulate_n operation.
 
     Args:
@@ -1452,8 +1380,7 @@ def _accumulate_n(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -1465,7 +1392,7 @@ def _accumulate_n(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("ActivityRegularization")
-def _activity_regularization(backend_module: object, x: object, **kwargs: object) -> object:
+def _activity_regularization(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _activity_regularization operation.
 
     Args:
@@ -1473,13 +1400,12 @@ def _activity_regularization(backend_module: object, x: object, **kwargs: object
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return x
 
 
-def _global_adaptive_pool_mock(backend_module: object, operand: object, output_size: object, **kwargs: object) -> object:
+def _global_adaptive_pool_mock(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _global_adaptive_pool_mock operation.
 
     Args:
@@ -1488,8 +1414,7 @@ def _global_adaptive_pool_mock(backend_module: object, operand: object, output_s
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(operand, "shape") and hasattr(backend_module, "zeros"):
         s = list(operand.shape)
@@ -1510,7 +1435,7 @@ def _global_adaptive_pool_mock(backend_module: object, operand: object, output_s
 
 
 @global_eager_registry.register("AdaptiveAvgPool2D")
-def _adaptive_avg_pool2d(backend_module: object, operand: object, output_size: object, **kwargs: object) -> object:
+def _adaptive_avg_pool2d(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _adaptive_avg_pool2d operation.
 
     Args:
@@ -1519,14 +1444,13 @@ def _adaptive_avg_pool2d(backend_module: object, operand: object, output_size: o
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveAvgPool3D")
-def _adaptive_avg_pool3d(backend_module: object, operand: object, output_size: object, **kwargs: object) -> object:
+def _adaptive_avg_pool3d(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _adaptive_avg_pool3d operation.
 
     Args:
@@ -1535,14 +1459,13 @@ def _adaptive_avg_pool3d(backend_module: object, operand: object, output_size: o
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool2D")
-def _adaptive_max_pool2d(backend_module: object, operand: object, output_size: object, **kwargs: object) -> object:
+def _adaptive_max_pool2d(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _adaptive_max_pool2d operation.
 
     Args:
@@ -1551,14 +1474,13 @@ def _adaptive_max_pool2d(backend_module: object, operand: object, output_size: o
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D")
-def _adaptive_max_pool3d(backend_module: object, operand: object, output_size: object, **kwargs: object) -> object:
+def _adaptive_max_pool3d(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _adaptive_max_pool3d operation.
 
     Args:
@@ -1567,14 +1489,13 @@ def _adaptive_max_pool3d(backend_module: object, operand: object, output_size: o
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D_Indices")
-def _adaptive_max_pool3d_indices(backend_module: object, operand: object, output_size: object, **kwargs: object) -> object:
+def _adaptive_max_pool3d_indices(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _adaptive_max_pool3d_indices operation.
 
     Args:
@@ -1583,15 +1504,14 @@ def _adaptive_max_pool3d_indices(backend_module: object, operand: object, output
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     res = _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
     return (res, res)
 
 
 @global_eager_registry.register("AdaptiveLogSoftmaxWithLoss")
-def _adaptive_log_softmax_with_loss(backend_module: object, input: object, target: object, *args: object, **kwargs: object) -> object:
+def _adaptive_log_softmax_with_loss(backend_module: Any, input: Any, target: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _adaptive_log_softmax_with_loss operation.
 
     Args:
@@ -1601,15 +1521,14 @@ def _adaptive_log_softmax_with_loss(backend_module: object, input: object, targe
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     loss = backend_module.zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
     return (target, loss)
 
 
 @global_eager_registry.register("AllGather")
-def _all_gather(backend_module: object, tensor: object, *args: object, **kwargs: object) -> object:
+def _all_gather(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _all_gather operation.
 
     Args:
@@ -1618,8 +1537,7 @@ def _all_gather(backend_module: object, tensor: object, *args: object, **kwargs:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "stack"):
         return backend_module.stack([tensor])
@@ -1629,7 +1547,7 @@ def _all_gather(backend_module: object, tensor: object, *args: object, **kwargs:
 
 
 @global_eager_registry.register("AllToAll")
-def _all_to_all(backend_module: object, tensor: object, *args: object, **kwargs: object) -> object:
+def _all_to_all(backend_module: Any, tensor: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _all_to_all operation.
 
     Args:
@@ -1638,14 +1556,13 @@ def _all_to_all(backend_module: object, tensor: object, *args: object, **kwargs:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return tensor
 
 
 @global_eager_registry.register("AlphaDropout")
-def _alpha_dropout(backend_module: object, x: object, **kwargs: object) -> object:
+def _alpha_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _alpha_dropout operation.
 
     Args:
@@ -1653,14 +1570,13 @@ def _alpha_dropout(backend_module: object, x: object, **kwargs: object) -> objec
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return x
 
 
 @global_eager_registry.register("ApplyOverAxes")
-def _apply_over_axes(backend_module: object, *args: object, **kwargs: object) -> object:
+def _apply_over_axes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _apply_over_axes operation.
 
     Args:
@@ -1668,14 +1584,13 @@ def _apply_over_axes(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return args[1] if len(args) > 1 else None
 
 
 @global_eager_registry.register("Argpartition")
-def _argpartition(backend_module: object, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
+def _argpartition(backend_module: Any, a: Any, kth: Any, axis: int = -1, **kwargs: Any) -> Any:
     """Evaluate _argpartition operation.
 
     Args:
@@ -1685,14 +1600,13 @@ def _argpartition(backend_module: object, a: object, kth: object, axis: int = -1
         axis (int): The axis parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.argsort(a, axis=axis) if hasattr(backend_module, "argsort") else a
 
 
 @global_eager_registry.register("Argsort")
-def _argsort(backend_module: object, a: object, axis: int = -1, **kwargs: object) -> object:
+def _argsort(backend_module: Any, a: Any, axis: int = -1, **kwargs: Any) -> Any:
     """Evaluate _argsort operation.
 
     Args:
@@ -1701,14 +1615,13 @@ def _argsort(backend_module: object, a: object, axis: int = -1, **kwargs: object
         axis (int): The axis parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.argsort(a, axis=axis)
 
 
 @global_eager_registry.register("Argwhere")
-def _argwhere(backend_module: object, a: object, **kwargs: object) -> object:
+def _argwhere(backend_module: Any, a: Any, **kwargs: Any) -> Any:
     """Evaluate _argwhere operation.
 
     Args:
@@ -1716,14 +1629,13 @@ def _argwhere(backend_module: object, a: object, **kwargs: object) -> object:
         a (object): The a parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.argwhere(a)
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: object, a1: object, a2: object, **kwargs: object) -> object:
+def _array_equiv(backend_module: Any, a1: Any, a2: Any, **kwargs: Any) -> Any:
     """Evaluate _array_equiv operation.
 
     Args:
@@ -1732,14 +1644,13 @@ def _array_equiv(backend_module: object, a1: object, a2: object, **kwargs: objec
         a2 (object): The a2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.allclose(a1, a2) if hasattr(backend_module, "allclose") else True
 
 
 @global_eager_registry.register("ArrayRepr")
-def _array_repr(backend_module: object, arr: object, **kwargs: object) -> object:
+def _array_repr(backend_module: Any, arr: Any, **kwargs: Any) -> Any:
     """Evaluate _array_repr operation.
 
     Args:
@@ -1747,14 +1658,13 @@ def _array_repr(backend_module: object, arr: object, **kwargs: object) -> object
         arr (object): The arr parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return repr(arr)
 
 
 @global_eager_registry.register("ArrayStr")
-def _array_str(backend_module: object, arr: object, **kwargs: object) -> object:
+def _array_str(backend_module: Any, arr: Any, **kwargs: Any) -> Any:
     """Evaluate _array_str operation.
 
     Args:
@@ -1762,14 +1672,13 @@ def _array_str(backend_module: object, arr: object, **kwargs: object) -> object:
         arr (object): The arr parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return str(arr)
 
 
 @global_eager_registry.register("AsString")
-def _as_string(backend_module: object, arr: object, **kwargs: object) -> object:
+def _as_string(backend_module: Any, arr: Any, **kwargs: Any) -> Any:
     """Evaluate _as_string operation.
 
     Args:
@@ -1777,14 +1686,13 @@ def _as_string(backend_module: object, arr: object, **kwargs: object) -> object:
         arr (object): The arr parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return str(arr)
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: object, condition: object, data: object, summarize: int = 3, **kwargs: object) -> object:
+def _assert(backend_module: Any, condition: Any, data: Any, summarize: int = 3, **kwargs: Any) -> Any:
     """Evaluate _assert operation.
 
     Args:
@@ -1794,14 +1702,13 @@ def _assert(backend_module: object, condition: object, data: object, summarize: 
         summarize (int): The summarize parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return None
 
 
 @global_eager_registry.register("Assign")
-def _assign(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
+def _assign(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
     """Evaluate _assign operation.
 
     Args:
@@ -1810,14 +1717,13 @@ def _assign(backend_module: object, ref: object, value: object, **kwargs: object
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return value
 
 
 @global_eager_registry.register("AssignAdd")
-def _assign_add(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
+def _assign_add(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
     """Evaluate _assign_add operation.
 
     Args:
@@ -1826,14 +1732,13 @@ def _assign_add(backend_module: object, ref: object, value: object, **kwargs: ob
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return ref + value
 
 
 @global_eager_registry.register("AssignSub")
-def _assign_sub(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
+def _assign_sub(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
     """Evaluate _assign_sub operation.
 
     Args:
@@ -1842,14 +1747,13 @@ def _assign_sub(backend_module: object, ref: object, value: object, **kwargs: ob
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return ref - value
 
 
 @global_eager_registry.register("AssignVariable")
-def _assign_variable(backend_module: object, ref: object, value: object, **kwargs: object) -> object:
+def _assign_variable(backend_module: Any, ref: Any, value: Any, **kwargs: Any) -> Any:
     """Evaluate _assign_variable operation.
 
     Args:
@@ -1858,14 +1762,13 @@ def _assign_variable(backend_module: object, ref: object, value: object, **kwarg
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return value
 
 
 @global_eager_registry.register("AssociativeScan")
-def _associative_scan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _associative_scan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _associative_scan operation.
 
     Args:
@@ -1873,8 +1776,7 @@ def _associative_scan(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     fn = args[0]
     elems = args[1]
@@ -1897,7 +1799,7 @@ def _associative_scan(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("Atleast1d")
-def _atleast_1d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _atleast_1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _atleast_1d operation.
 
     Args:
@@ -1905,14 +1807,13 @@ def _atleast_1d(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.atleast_1d(*args) if hasattr(backend_module, "atleast_1d") else args[0]
 
 
 @global_eager_registry.register("Atleast2d")
-def _atleast_2d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _atleast_2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _atleast_2d operation.
 
     Args:
@@ -1920,14 +1821,13 @@ def _atleast_2d(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.atleast_2d(*args) if hasattr(backend_module, "atleast_2d") else args[0]
 
 
 @global_eager_registry.register("Atleast3d")
-def _atleast_3d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _atleast_3d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _atleast_3d operation.
 
     Args:
@@ -1935,14 +1835,13 @@ def _atleast_3d(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.atleast_3d(*args) if hasattr(backend_module, "atleast_3d") else args[0]
 
 
 @global_eager_registry.register("AxisIndex")
-def _axis_index(backend_module: object, *args: object, **kwargs: object) -> object:
+def _axis_index(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _axis_index operation.
 
     Args:
@@ -1950,14 +1849,13 @@ def _axis_index(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.array(0) if hasattr(backend_module, "array") else 0
 
 
 @global_eager_registry.register("AddN")
-def _add_n(backend_module: object, *args: object, **kwargs: object) -> object:
+def _add_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _add_n operation.
 
     Args:
@@ -1965,8 +1863,7 @@ def _add_n(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
@@ -1978,7 +1875,7 @@ def _add_n(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Adjoint")
-def _adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _adjoint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _adjoint operation.
 
     Args:
@@ -1986,8 +1883,7 @@ def _adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "adjoint", None)
     if func:
@@ -2003,7 +1899,7 @@ def _adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Det")
-def _det(backend_module: object, *args: object, **kwargs: object) -> object:
+def _det(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _det operation.
 
     Args:
@@ -2011,8 +1907,7 @@ def _det(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "det"):
@@ -2025,7 +1920,7 @@ def _det(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Eig")
-def _eig(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eig(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eig operation.
 
     Args:
@@ -2033,8 +1928,7 @@ def _eig(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eig"):
@@ -2047,7 +1941,7 @@ def _eig(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Eigh")
-def _eigh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eigh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eigh operation.
 
     Args:
@@ -2055,8 +1949,7 @@ def _eigh(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigh"):
@@ -2069,7 +1962,7 @@ def _eigh(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Eigvals")
-def _eigvals(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eigvals(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eigvals operation.
 
     Args:
@@ -2077,8 +1970,7 @@ def _eigvals(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigvals"):
@@ -2091,7 +1983,7 @@ def _eigvals(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Eigvalsh")
-def _eigvalsh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eigvalsh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eigvalsh operation.
 
     Args:
@@ -2099,8 +1991,7 @@ def _eigvalsh(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigvalsh"):
@@ -2113,7 +2004,7 @@ def _eigvalsh(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Cholesky")
-def _cholesky(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cholesky(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky operation.
 
     Args:
@@ -2121,8 +2012,7 @@ def _cholesky(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "cholesky"):
@@ -2135,7 +2025,7 @@ def _cholesky(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("CholeskyEx")
-def _cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cholesky_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky_ex operation.
 
     Args:
@@ -2143,8 +2033,7 @@ def _cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     # Simply fall back to cholesky and return 0 as info status
     chol = _cholesky(backend_module, *args, **kwargs)
@@ -2156,7 +2045,7 @@ def _cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("CholeskySolve")
-def _cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cholesky_solve operation.
 
     Args:
@@ -2164,8 +2053,7 @@ def _cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -2181,7 +2069,7 @@ def _cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("BandedTriangularSolve")
-def _banded_triangular_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _banded_triangular_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _banded_triangular_solve operation.
 
     Args:
@@ -2189,8 +2077,7 @@ def _banded_triangular_solve(backend_module: object, *args: object, **kwargs: ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve_banded"):
@@ -2205,7 +2092,7 @@ def _banded_triangular_solve(backend_module: object, *args: object, **kwargs: ob
 
 
 @global_eager_registry.register("HouseholderProduct")
-def _householder_product(backend_module: object, *args: object, **kwargs: object) -> object:
+def _householder_product(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _householder_product operation.
 
     Args:
@@ -2213,8 +2100,7 @@ def _householder_product(backend_module: object, *args: object, **kwargs: object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "householder_product"):
@@ -2249,7 +2135,7 @@ def _householder_product(backend_module: object, *args: object, **kwargs: object
 @global_eager_registry.register("Igammac")
 @global_eager_registry.register("Polygamma")
 @global_eager_registry.register("MatrixPower")
-def _matrix_power(backend_module: object, *args: object, **kwargs: object) -> object:
+def _matrix_power(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _matrix_power operation.
 
     Args:
@@ -2257,8 +2143,7 @@ def _matrix_power(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_power"):
@@ -2271,7 +2156,7 @@ def _matrix_power(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("MatrixRank")
-def _matrix_rank(backend_module: object, *args: object, **kwargs: object) -> object:
+def _matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _matrix_rank operation.
 
     Args:
@@ -2279,8 +2164,7 @@ def _matrix_rank(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_rank"):
@@ -2293,7 +2177,7 @@ def _matrix_rank(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Norm")
-def _norm(backend_module: object, *args: object, **kwargs: object) -> object:
+def _norm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _norm operation.
 
     Args:
@@ -2301,8 +2185,7 @@ def _norm(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "norm"):
@@ -2315,7 +2198,7 @@ def _norm(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Pinv")
-def _pinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _pinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pinv operation.
 
     Args:
@@ -2323,8 +2206,7 @@ def _pinv(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "pinv"):
@@ -2337,7 +2219,7 @@ def _pinv(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Qr")
-def _qr(backend_module: object, *args: object, **kwargs: object) -> object:
+def _qr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _qr operation.
 
     Args:
@@ -2345,8 +2227,7 @@ def _qr(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "qr"):
@@ -2359,7 +2240,7 @@ def _qr(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Slogdet")
-def _slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
+def _slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _slogdet operation.
 
     Args:
@@ -2367,8 +2248,7 @@ def _slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "slogdet"):
@@ -2381,7 +2261,7 @@ def _slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Solve")
-def _solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _solve operation.
 
     Args:
@@ -2389,8 +2269,7 @@ def _solve(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve"):
@@ -2403,7 +2282,7 @@ def _solve(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Svd")
-def _svd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _svd operation.
 
     Args:
@@ -2411,8 +2290,7 @@ def _svd(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "svd"):
@@ -2425,7 +2303,7 @@ def _svd(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Tensorinv")
-def _tensorinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _tensorinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tensorinv operation.
 
     Args:
@@ -2433,8 +2311,7 @@ def _tensorinv(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorinv"):
@@ -2447,7 +2324,7 @@ def _tensorinv(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Tensorsolve")
-def _tensorsolve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tensorsolve operation.
 
     Args:
@@ -2455,8 +2332,7 @@ def _tensorsolve(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorsolve"):
@@ -2469,7 +2345,7 @@ def _tensorsolve(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Bincount")
-def _bincount(backend_module: object, *args: object, **kwargs: object) -> object:
+def _bincount(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _bincount operation.
 
     Args:
@@ -2477,8 +2353,7 @@ def _bincount(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "bincount", None)
     if func:
@@ -2491,7 +2366,7 @@ def _bincount(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Correlate")
-def _correlate(backend_module: object, *args: object, **kwargs: object) -> object:
+def _correlate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _correlate operation.
 
     Args:
@@ -2499,8 +2374,7 @@ def _correlate(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "correlate", None)
     if func:
@@ -2512,7 +2386,7 @@ def _correlate(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Cross")
-def _cross(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cross(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cross operation.
 
     Args:
@@ -2520,8 +2394,7 @@ def _cross(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "cross", None)
     if func:
@@ -2531,7 +2404,7 @@ def _cross(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Cummax")
-def _cummax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cummax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cummax operation.
 
     Args:
@@ -2539,8 +2412,7 @@ def _cummax(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "maximum", None)
     if func and hasattr(func, "accumulate"):
@@ -2550,7 +2422,7 @@ def _cummax(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Cummin")
-def _cummin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cummin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cummin operation.
 
     Args:
@@ -2558,8 +2430,7 @@ def _cummin(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "minimum", None)
     if func and hasattr(func, "accumulate"):
@@ -2569,7 +2440,7 @@ def _cummin(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Cumlogsumexp")
-def _cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cumlogsumexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cumlogsumexp operation.
 
     Args:
@@ -2577,8 +2448,7 @@ def _cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "cumlogsumexp", None)
     if func:
@@ -2591,7 +2461,7 @@ def _cumlogsumexp(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("CumulativeLogsumexp")
-def _cumulative_logsumexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _cumulative_logsumexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _cumulative_logsumexp operation.
 
     Args:
@@ -2599,14 +2469,13 @@ def _cumulative_logsumexp(backend_module: object, *args: object, **kwargs: objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _cumlogsumexp(backend_module, *args, **kwargs)
 
 
 @global_eager_registry.register("DivideNoNan")
-def _divide_no_nan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _divide_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _divide_no_nan operation.
 
     Args:
@@ -2614,8 +2483,7 @@ def _divide_no_nan(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "divide_no_nan", None)
     if func:
@@ -2626,7 +2494,7 @@ def _divide_no_nan(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("MultiplyNoNan")
-def _multiply_no_nan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _multiply_no_nan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _multiply_no_nan operation.
 
     Args:
@@ -2634,8 +2502,7 @@ def _multiply_no_nan(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "multiply_no_nan", None)
     if func:
@@ -2646,7 +2513,7 @@ def _multiply_no_nan(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("Extract")
-def _extract(backend_module: object, *args: object, **kwargs: object) -> object:
+def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _extract operation.
 
     Args:
@@ -2654,8 +2521,7 @@ def _extract(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "extract", None)
     if func:
@@ -2666,7 +2532,7 @@ def _extract(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fft2")
-def _fft2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fft2 operation.
 
     Args:
@@ -2674,8 +2540,7 @@ def _fft2(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fft2"):
@@ -2686,7 +2551,7 @@ def _fft2(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fftfreq")
-def _fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fftfreq(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fftfreq operation.
 
     Args:
@@ -2694,8 +2559,7 @@ def _fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftfreq"):
@@ -2707,7 +2571,7 @@ def _fftfreq(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fftnd")
-def _fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fftnd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fftnd operation.
 
     Args:
@@ -2715,8 +2579,7 @@ def _fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftn"):
@@ -2727,7 +2590,7 @@ def _fftnd(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fftshift")
-def _fftshift(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fftshift operation.
 
     Args:
@@ -2735,8 +2598,7 @@ def _fftshift(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "fftshift"):
@@ -2747,7 +2609,7 @@ def _fftshift(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Ifft")
-def _ifft(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ifft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ifft operation.
 
     Args:
@@ -2755,8 +2617,7 @@ def _ifft(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifft"):
@@ -2767,7 +2628,7 @@ def _ifft(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Ifft2")
-def _ifft2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ifft2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ifft2 operation.
 
     Args:
@@ -2775,8 +2636,7 @@ def _ifft2(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifft2"):
@@ -2787,7 +2647,7 @@ def _ifft2(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Ifftn")
-def _ifftn(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ifftn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ifftn operation.
 
     Args:
@@ -2795,8 +2655,7 @@ def _ifftn(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifftn"):
@@ -2807,7 +2666,7 @@ def _ifftn(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Ifftshift")
-def _ifftshift(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ifftshift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ifftshift operation.
 
     Args:
@@ -2815,8 +2674,7 @@ def _ifftshift(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fft", None)
     if func and hasattr(func, "ifftshift"):
@@ -2827,7 +2685,7 @@ def _ifftshift(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Igamma")
-def _igamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _igamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _igamma operation.
 
     Args:
@@ -2835,8 +2693,7 @@ def _igamma(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "igamma", getattr(backend_module, "gammainc", None))
     if func:
@@ -2850,7 +2707,7 @@ def _igamma(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Inner")
-def _inner(backend_module: object, *args: object, **kwargs: object) -> object:
+def _inner(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _inner operation.
 
     Args:
@@ -2858,8 +2715,7 @@ def _inner(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "inner", None)
     if func:
@@ -2870,7 +2726,7 @@ def _inner(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Inv")
-def _inv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _inv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _inv operation.
 
     Args:
@@ -2878,8 +2734,7 @@ def _inv(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "inv"):
@@ -2892,7 +2747,7 @@ def _inv(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Iscomplexobj")
-def _iscomplexobj(backend_module: object, *args: object, **kwargs: object) -> object:
+def _iscomplexobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iscomplexobj operation.
 
     Args:
@@ -2900,14 +2755,13 @@ def _iscomplexobj(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.iscomplexobj(*args, **kwargs)
 
 
 @global_eager_registry.register("Isrealobj")
-def _isrealobj(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isrealobj(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isrealobj operation.
 
     Args:
@@ -2915,14 +2769,13 @@ def _isrealobj(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.isrealobj(*args, **kwargs)
 
 
 @global_eager_registry.register("Issubdtype")
-def _issubdtype(backend_module: object, *args: object, **kwargs: object) -> object:
+def _issubdtype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _issubdtype operation.
 
     Args:
@@ -2930,14 +2783,13 @@ def _issubdtype(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.issubdtype(*args, **kwargs)
 
 
 @global_eager_registry.register("Isin")
-def _isin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isin operation.
 
     Args:
@@ -2945,14 +2797,13 @@ def _isin(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.isin(*args, **kwargs)
 
 
 @global_eager_registry.register("Ediff1d")
-def _ediff1d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ediff1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ediff1d operation.
 
     Args:
@@ -2960,14 +2811,13 @@ def _ediff1d(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.ediff1d(*args, **kwargs)
 
 
 @global_eager_registry.register("Finfo")
-def _finfo(backend_module: object, *args: object, **kwargs: object) -> object:
+def _finfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _finfo operation.
 
     Args:
@@ -2975,14 +2825,13 @@ def _finfo(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.finfo(*args, **kwargs)
 
 
 @global_eager_registry.register("Iinfo")
-def _iinfo(backend_module: object, *args: object, **kwargs: object) -> object:
+def _iinfo(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iinfo operation.
 
     Args:
@@ -2990,14 +2839,13 @@ def _iinfo(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.iinfo(*args, **kwargs)
 
 
 @global_eager_registry.register("Fromfile")
-def _fromfile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fromfile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fromfile operation.
 
     Args:
@@ -3005,14 +2853,13 @@ def _fromfile(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.fromfile(*args, **kwargs)
 
 
 @global_eager_registry.register("Fromfunction")
-def _fromfunction(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fromfunction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fromfunction operation.
 
     Args:
@@ -3020,14 +2867,13 @@ def _fromfunction(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.fromfunction(*args, **kwargs)
 
 
 @global_eager_registry.register("FromDlpack")
-def _from_dlpack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _from_dlpack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _from_dlpack operation.
 
     Args:
@@ -3035,14 +2881,13 @@ def _from_dlpack(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.from_dlpack(*args, **kwargs)
 
 
 @global_eager_registry.register("Frompyfunc")
-def _frompyfunc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _frompyfunc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _frompyfunc operation.
 
     Args:
@@ -3050,14 +2895,13 @@ def _frompyfunc(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.frompyfunc(*args, **kwargs)
 
 
 @global_eager_registry.register("Geomspace")
-def _geomspace(backend_module: object, *args: object, **kwargs: object) -> object:
+def _geomspace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _geomspace operation.
 
     Args:
@@ -3065,14 +2909,13 @@ def _geomspace(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.geomspace(*args, **kwargs)
 
 
 @global_eager_registry.register("Geometric")
-def _geometric(backend_module: object, *args: object, **kwargs: object) -> object:
+def _geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _geometric operation.
 
     Args:
@@ -3080,14 +2923,13 @@ def _geometric(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return getattr(backend_module, "random", backend_module).geometric(*args, **kwargs)
 
 
 @global_eager_registry.register("GetPrintoptions")
-def _getprintoptions(backend_module: object, *args: object, **kwargs: object) -> object:
+def _getprintoptions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _getprintoptions operation.
 
     Args:
@@ -3095,14 +2937,13 @@ def _getprintoptions(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.get_printoptions(*args, **kwargs)
 
 
 @global_eager_registry.register("Gradient")
-def _gradient(backend_module: object, *args: object, **kwargs: object) -> object:
+def _gradient(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _gradient operation.
 
     Args:
@@ -3110,14 +2951,13 @@ def _gradient(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.gradient(*args, **kwargs)
 
 
 @global_eager_registry.register("HardSilu")
-def _hardsilu(backend_module: object, *args: object, **kwargs: object) -> object:
+def _hardsilu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _hardsilu operation.
 
     Args:
@@ -3125,15 +2965,14 @@ def _hardsilu(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     return x * backend_module.clip(x + 3, 0, 6) / 6
 
 
 @global_eager_registry.register("HardSwish")
-def _hardswish(backend_module: object, *args: object, **kwargs: object) -> object:
+def _hardswish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _hardswish operation.
 
     Args:
@@ -3141,15 +2980,14 @@ def _hardswish(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     return x * backend_module.clip(x + 3, 0, 6) / 6
 
 
 @global_eager_registry.register("Histogram")
-def _histogram(backend_module: object, *args: object, **kwargs: object) -> object:
+def _histogram(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogram operation.
 
     Args:
@@ -3157,14 +2995,13 @@ def _histogram(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.histogram(*args, **kwargs)
 
 
 @global_eager_registry.register("Histogram2d")
-def _histogram2d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _histogram2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogram2d operation.
 
     Args:
@@ -3172,14 +3009,13 @@ def _histogram2d(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.histogram2d(*args, **kwargs)
 
 
 @global_eager_registry.register("HistogramBinEdges")
-def _histogrambinedges(backend_module: object, *args: object, **kwargs: object) -> object:
+def _histogrambinedges(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogrambinedges operation.
 
     Args:
@@ -3187,14 +3023,13 @@ def _histogrambinedges(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.histogram_bin_edges(*args, **kwargs)
 
 
 @global_eager_registry.register("Histogramdd")
-def _histogramdd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _histogramdd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _histogramdd operation.
 
     Args:
@@ -3202,14 +3037,13 @@ def _histogramdd(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.histogramdd(*args, **kwargs)
 
 
 @global_eager_registry.register("Indices")
-def _indices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _indices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _indices operation.
 
     Args:
@@ -3217,14 +3051,13 @@ def _indices(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.indices(*args, **kwargs)
 
 
 @global_eager_registry.register("Infeed")
-def _infeed(backend_module: object, *args: object, **kwargs: object) -> object:
+def _infeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _infeed operation.
 
     Args:
@@ -3232,8 +3065,7 @@ def _infeed(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "infeed"):
         return backend_module.lax.infeed(*args, **kwargs)
@@ -3241,7 +3073,7 @@ def _infeed(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Interp")
-def _interp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _interp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _interp operation.
 
     Args:
@@ -3249,14 +3081,13 @@ def _interp(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.interp(*args, **kwargs)
 
 
 @global_eager_registry.register("Intersect1d")
-def _intersect1d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _intersect1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _intersect1d operation.
 
     Args:
@@ -3264,14 +3095,13 @@ def _intersect1d(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.intersect1d(*args, **kwargs)
 
 
 @global_eager_registry.register("Isscalar")
-def _isscalar(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isscalar(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isscalar operation.
 
     Args:
@@ -3279,14 +3109,13 @@ def _isscalar(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.isscalar(*args, **kwargs)
 
 
 @global_eager_registry.register("Iterable")
-def _iterable(backend_module: object, *args: object, **kwargs: object) -> object:
+def _iterable(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _iterable operation.
 
     Args:
@@ -3294,14 +3123,13 @@ def _iterable(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.iterable(*args, **kwargs)
 
 
 @global_eager_registry.register("Ix")
-def _ix(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ix operation.
 
     Args:
@@ -3309,14 +3137,13 @@ def _ix(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.ix_(*args, **kwargs)
 
 
 @global_eager_registry.register("Kron")
-def _kron(backend_module: object, *args: object, **kwargs: object) -> object:
+def _kron(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _kron operation.
 
     Args:
@@ -3324,14 +3151,13 @@ def _kron(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.kron(*args, **kwargs)
 
 
 @global_eager_registry.register("MaskIndices")
-def _maskindices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _maskindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _maskindices operation.
 
     Args:
@@ -3339,14 +3165,13 @@ def _maskindices(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.mask_indices(*args, **kwargs)
 
 
 @global_eager_registry.register("Median")
-def _median(backend_module: object, *args: object, **kwargs: object) -> object:
+def _median(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _median operation.
 
     Args:
@@ -3354,14 +3179,13 @@ def _median(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.median(*args, **kwargs)
 
 
 @global_eager_registry.register("Mgrid")
-def _mgrid(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mgrid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mgrid operation.
 
     Args:
@@ -3369,14 +3193,13 @@ def _mgrid(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.mgrid(*args, **kwargs)
 
 
 @global_eager_registry.register("Mish")
-def _mish(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mish(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mish operation.
 
     Args:
@@ -3384,15 +3207,14 @@ def _mish(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     return x * backend_module.tanh(backend_module.log1p(backend_module.exp(x)))
 
 
 @global_eager_registry.register("Modf")
-def _modf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _modf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _modf operation.
 
     Args:
@@ -3400,14 +3222,13 @@ def _modf(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.modf(*args, **kwargs)
 
 
 @global_eager_registry.register("Ogrid")
-def _ogrid(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ogrid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ogrid operation.
 
     Args:
@@ -3415,14 +3236,13 @@ def _ogrid(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.ogrid(*args, **kwargs)
 
 
 @global_eager_registry.register("Outfeed")
-def _outfeed(backend_module: object, *args: object, **kwargs: object) -> object:
+def _outfeed(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _outfeed operation.
 
     Args:
@@ -3430,8 +3250,7 @@ def _outfeed(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "outfeed"):
         return backend_module.lax.outfeed(*args, **kwargs)
@@ -3439,7 +3258,7 @@ def _outfeed(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Piecewise")
-def _piecewise(backend_module: object, *args: object, **kwargs: object) -> object:
+def _piecewise(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _piecewise operation.
 
     Args:
@@ -3447,14 +3266,13 @@ def _piecewise(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.piecewise(*args, **kwargs)
 
 
 @global_eager_registry.register("PromoteTypes")
-def _promotetypes(backend_module: object, *args: object, **kwargs: object) -> object:
+def _promotetypes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _promotetypes operation.
 
     Args:
@@ -3462,14 +3280,13 @@ def _promotetypes(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.promote_types(*args, **kwargs)
 
 
 @global_eager_registry.register("Pshuffle")
-def _pshuffle(backend_module: object, *args: object, **kwargs: object) -> object:
+def _pshuffle(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pshuffle operation.
 
     Args:
@@ -3477,8 +3294,7 @@ def _pshuffle(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "pshuffle"):
         return backend_module.lax.pshuffle(*args, **kwargs)
@@ -3486,7 +3302,7 @@ def _pshuffle(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Pswapaxes")
-def _pswapaxes(backend_module: object, *args: object, **kwargs: object) -> object:
+def _pswapaxes(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _pswapaxes operation.
 
     Args:
@@ -3494,8 +3310,7 @@ def _pswapaxes(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "pswapaxes"):
         return backend_module.lax.pswapaxes(*args, **kwargs)
@@ -3503,7 +3318,7 @@ def _pswapaxes(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("R")
-def _r(backend_module: object, *args: object, **kwargs: object) -> object:
+def _r(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _r operation.
 
     Args:
@@ -3511,14 +3326,13 @@ def _r(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.r_(*args, **kwargs)
 
 
 @global_eager_registry.register("Rademacher")
-def _rademacher(backend_module: object, *args: object, **kwargs: object) -> object:
+def _rademacher(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _rademacher operation.
 
     Args:
@@ -3526,15 +3340,14 @@ def _rademacher(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     shape = kwargs.get("shape", ())
     return backend_module.random.choice([-1, 1], size=shape)
 
 
 @global_eager_registry.register("ResultType")
-def _resulttype(backend_module: object, *args: object, **kwargs: object) -> object:
+def _resulttype(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _resulttype operation.
 
     Args:
@@ -3542,14 +3355,13 @@ def _resulttype(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.result_type(*args, **kwargs)
 
 
 @global_eager_registry.register("Rot90")
-def _rot90(backend_module: object, *args: object, **kwargs: object) -> object:
+def _rot90(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _rot90 operation.
 
     Args:
@@ -3557,14 +3369,13 @@ def _rot90(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.rot90(*args, **kwargs)
 
 
 @global_eager_registry.register("Squareplus")
-def _squareplus(backend_module: object, *args: object, **kwargs: object) -> object:
+def _squareplus(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _squareplus operation.
 
     Args:
@@ -3572,8 +3383,7 @@ def _squareplus(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     x = args[0]
     b = kwargs.get("b", 4.0)
@@ -3581,7 +3391,7 @@ def _squareplus(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("Trapezoid")
-def _trapezoid(backend_module: object, *args: object, **kwargs: object) -> object:
+def _trapezoid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _trapezoid operation.
 
     Args:
@@ -3589,8 +3399,7 @@ def _trapezoid(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "trapezoid"):
         return backend_module.trapezoid(*args, **kwargs)
@@ -3598,7 +3407,7 @@ def _trapezoid(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Tri")
-def _tri(backend_module: object, *args: object, **kwargs: object) -> object:
+def _tri(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tri operation.
 
     Args:
@@ -3606,14 +3415,13 @@ def _tri(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.tri(*args, **kwargs)
 
 
 @global_eager_registry.register("Tril")
-def _tril(backend_module: object, *args: object, **kwargs: object) -> object:
+def _tril(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tril operation.
 
     Args:
@@ -3621,14 +3429,13 @@ def _tril(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.tril(*args, **kwargs)
 
 
 @global_eager_registry.register("TrimZeros")
-def _trimzeros(backend_module: object, *args: object, **kwargs: object) -> object:
+def _trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _trimzeros operation.
 
     Args:
@@ -3636,14 +3443,13 @@ def _trimzeros(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.trim_zeros(*args, **kwargs)
 
 
 @global_eager_registry.register("Triu")
-def _triu(backend_module: object, *args: object, **kwargs: object) -> object:
+def _triu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _triu operation.
 
     Args:
@@ -3651,14 +3457,13 @@ def _triu(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.triu(*args, **kwargs)
 
 
 @global_eager_registry.register("Vander")
-def _vander(backend_module: object, *args: object, **kwargs: object) -> object:
+def _vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _vander operation.
 
     Args:
@@ -3666,14 +3471,13 @@ def _vander(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.vander(*args, **kwargs)
 
 
 @global_eager_registry.register("Vectorize")
-def _vectorize(backend_module: object, *args: object, **kwargs: object) -> object:
+def _vectorize(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _vectorize operation.
 
     Args:
@@ -3681,14 +3485,13 @@ def _vectorize(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.vectorize(*args, **kwargs)
 
 
 @global_eager_registry.register("IndexInDim")
-def _indexindim(backend_module: object, *args: object, **kwargs: object) -> object:
+def _indexindim(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _indexindim operation.
 
     Args:
@@ -3696,8 +3499,7 @@ def _indexindim(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -3713,12 +3515,12 @@ def _indexindim(backend_module: object, *args: object, **kwargs: object) -> obje
     if keepdims and isinstance(index, int):
         slices[axis] = slice(index, index + 1)
     else:
-        slices[axis] = index
+        slices[axis] = index  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     return x[tuple(slices)]
 
 
 @global_eager_registry.register("Lexsort")
-def _lexsort(backend_module: object, *args: object, **kwargs: object) -> object:
+def _lexsort(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _lexsort operation.
 
     Args:
@@ -3726,14 +3528,13 @@ def _lexsort(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.lexsort(*args, **kwargs)
 
 
 @global_eager_registry.register("Nonzero")
-def _nonzero(backend_module: object, *args: object, **kwargs: object) -> object:
+def _nonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _nonzero operation.
 
     Args:
@@ -3741,14 +3542,13 @@ def _nonzero(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.nonzero(*args, **kwargs)
 
 
 @global_eager_registry.register("Percentile")
-def _percentile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _percentile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _percentile operation.
 
     Args:
@@ -3756,14 +3556,13 @@ def _percentile(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.percentile(*args, **kwargs)
 
 
 @global_eager_registry.register("Ppermute")
-def _ppermute(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ppermute(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ppermute operation.
 
     Args:
@@ -3771,8 +3570,7 @@ def _ppermute(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "ppermute"):
         return backend_module.lax.ppermute(*args, **kwargs)
@@ -3780,7 +3578,7 @@ def _ppermute(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("PsumScatter")
-def _psumscatter(backend_module: object, *args: object, **kwargs: object) -> object:
+def _psumscatter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _psumscatter operation.
 
     Args:
@@ -3788,8 +3586,7 @@ def _psumscatter(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(backend_module.lax, "psum_scatter"):
         return backend_module.lax.psum_scatter(*args, **kwargs)
@@ -3797,7 +3594,7 @@ def _psumscatter(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Quantile")
-def _quantile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _quantile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _quantile operation.
 
     Args:
@@ -3805,14 +3602,13 @@ def _quantile(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.quantile(*args, **kwargs)
 
 
 @global_eager_registry.register("RavelMultiIndex")
-def _ravelmultiindex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _ravelmultiindex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _ravelmultiindex operation.
 
     Args:
@@ -3820,14 +3616,13 @@ def _ravelmultiindex(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.ravel_multi_index(*args, **kwargs)
 
 
 @global_eager_registry.register("Repeat")
-def _repeat(backend_module: object, *args: object, **kwargs: object) -> object:
+def _repeat(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _repeat operation.
 
     Args:
@@ -3835,14 +3630,13 @@ def _repeat(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.repeat(*args, **kwargs)
 
 
 @global_eager_registry.register("Searchsorted")
-def _searchsorted(backend_module: object, *args: object, **kwargs: object) -> object:
+def _searchsorted(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _searchsorted operation.
 
     Args:
@@ -3850,14 +3644,13 @@ def _searchsorted(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.searchsorted(*args, **kwargs)
 
 
 @global_eager_registry.register("SortComplex")
-def _sortcomplex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _sortcomplex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _sortcomplex operation.
 
     Args:
@@ -3865,14 +3658,13 @@ def _sortcomplex(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.sort_complex(*args, **kwargs)
 
 
 @global_eager_registry.register("Tile")
-def _tile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _tile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _tile operation.
 
     Args:
@@ -3880,14 +3672,13 @@ def _tile(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.tile(*args, **kwargs)
 
 
 @global_eager_registry.register("Unique")
-def _unique(backend_module: object, *args: object, **kwargs: object) -> object:
+def _unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _unique operation.
 
     Args:
@@ -3895,14 +3686,13 @@ def _unique(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.unique(*args, **kwargs)
 
 
 @global_eager_registry.register("UpdateSlice")
-def _updateslice(backend_module: object, *args: object, **kwargs: object) -> object:
+def _updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _updateslice operation.
 
     Args:
@@ -3910,8 +3700,7 @@ def _updateslice(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -3923,13 +3712,13 @@ def _updateslice(backend_module: object, *args: object, **kwargs: object) -> obj
     start_indices = args[2] if len(args) > 2 else kwargs.get("start_indices")
 
     out = backend_module.array(x).copy()
-    slices = tuple(slice(s, s + getattr(update, "shape", ())[i]) for i, s in enumerate(start_indices))
+    slices = tuple(slice(s, s + getattr(update, "shape", ())[i]) for i, s in enumerate(start_indices))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     out[slices] = update
     return out
 
 
 @global_eager_registry.register("Isinf")
-def _isinf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isinf operation.
 
     Args:
@@ -3937,8 +3726,7 @@ def _isinf(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "isinf", None)
     if func:
@@ -3948,7 +3736,7 @@ def _isinf(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Isnan")
-def _isnan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isnan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isnan operation.
 
     Args:
@@ -3956,8 +3744,7 @@ def _isnan(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "isnan", None)
     if func:
@@ -3967,7 +3754,7 @@ def _isnan(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Isneginf")
-def _isneginf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isneginf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isneginf operation.
 
     Args:
@@ -3975,8 +3762,7 @@ def _isneginf(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "isneginf", None)
     if func:
@@ -3986,7 +3772,7 @@ def _isneginf(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Isposinf")
-def _isposinf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _isposinf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _isposinf operation.
 
     Args:
@@ -3994,8 +3780,7 @@ def _isposinf(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "isposinf", None)
     if func:
@@ -4005,7 +3790,7 @@ def _isposinf(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Kronecker")
-def _kronecker(backend_module: object, *args: object, **kwargs: object) -> object:
+def _kronecker(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _kronecker operation.
 
     Args:
@@ -4013,8 +3798,7 @@ def _kronecker(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "kron", getattr(backend_module, "kronecker", None))
     if func:
@@ -4024,7 +3808,7 @@ def _kronecker(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Outer")
-def _outer(backend_module: object, *args: object, **kwargs: object) -> object:
+def _outer(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _outer operation.
 
     Args:
@@ -4032,8 +3816,7 @@ def _outer(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "outer", None)
     if func:
@@ -4043,7 +3826,7 @@ def _outer(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fabs")
-def _fabs(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fabs(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fabs operation.
 
     Args:
@@ -4051,15 +3834,14 @@ def _fabs(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fabs", getattr(backend_module, "abs", None))
     return func(*args, **kwargs) if func else None
 
 
 @global_eager_registry.register("FillDiagonal")
-def _fill_diagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fill_diagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fill_diagonal operation.
 
     Args:
@@ -4067,8 +3849,7 @@ def _fill_diagonal(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fill_diagonal", None)
     if func:
@@ -4084,7 +3865,7 @@ def _fill_diagonal(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("Fftconvolve")
-def _fftconvolve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fftconvolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fftconvolve operation.
 
     Args:
@@ -4092,8 +3873,7 @@ def _fftconvolve(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.signal
 
@@ -4106,7 +3886,7 @@ def _fftconvolve(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Flatnonzero")
-def _flatnonzero(backend_module: object, *args: object, **kwargs: object) -> object:
+def _flatnonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _flatnonzero operation.
 
     Args:
@@ -4114,8 +3894,7 @@ def _flatnonzero(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "flatnonzero", None)
     if func:
@@ -4125,7 +3904,7 @@ def _flatnonzero(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Fliplr")
-def _fliplr(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fliplr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fliplr operation.
 
     Args:
@@ -4133,8 +3912,7 @@ def _fliplr(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fliplr", None)
     if func:
@@ -4144,7 +3922,7 @@ def _fliplr(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Flipud")
-def _flipud(backend_module: object, *args: object, **kwargs: object) -> object:
+def _flipud(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _flipud operation.
 
     Args:
@@ -4152,8 +3930,7 @@ def _flipud(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "flipud", None)
     if func:
@@ -4163,7 +3940,7 @@ def _flipud(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Fromiter")
-def _fromiter(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fromiter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fromiter operation.
 
     Args:
@@ -4171,8 +3948,7 @@ def _fromiter(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fromiter", None)
     if "dtype" not in kwargs and len(args) < 2:
@@ -4186,7 +3962,7 @@ def _fromiter(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Fromstring")
-def _fromstring(backend_module: object, *args: object, **kwargs: object) -> object:
+def _fromstring(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _fromstring operation.
 
     Args:
@@ -4194,8 +3970,7 @@ def _fromstring(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fromstring", None)
     if func:
@@ -4206,7 +3981,7 @@ def _fromstring(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("Gamma")
-def _gamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _gamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _gamma operation.
 
     Args:
@@ -4214,8 +3989,7 @@ def _gamma(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import math
 
@@ -4224,7 +3998,7 @@ def _gamma(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Gcd")
-def _gcd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _gcd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _gcd operation.
 
     Args:
@@ -4232,8 +4006,7 @@ def _gcd(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "gcd", getattr(backend_module, "greatest_common_divisor", None))
     if func:
@@ -4244,7 +4017,7 @@ def _gcd(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("Ball")
-def _mock_ball(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_ball(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_ball operation.
 
     Args:
@@ -4252,8 +4025,7 @@ def _mock_ball(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "ball", None)
     if func:
@@ -4273,7 +4045,7 @@ def _mock_ball(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("BandPart")
-def _mock_bandpart(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_bandpart operation.
 
     Args:
@@ -4281,8 +4053,7 @@ def _mock_bandpart(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -4320,7 +4091,7 @@ def _mock_bandpart(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("BetaPdf")
-def _mock_betapdf(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_betapdf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_betapdf operation.
 
     Args:
@@ -4328,8 +4099,7 @@ def _mock_betapdf(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "betapdf", None)
     if func:
@@ -4344,7 +4114,7 @@ def _mock_betapdf(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("DecodeImage")
-def _mock_decodeimage(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_decodeimage(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_decodeimage operation.
 
     Args:
@@ -4352,8 +4122,7 @@ def _mock_decodeimage(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "decodeimage", None)
     if func:
@@ -4366,7 +4135,7 @@ def _mock_decodeimage(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("Deg2Rad")
-def _mock_deg2rad(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_deg2rad(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_deg2rad operation.
 
     Args:
@@ -4374,8 +4143,7 @@ def _mock_deg2rad(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "deg2rad", None)
     if func:
@@ -4387,7 +4155,7 @@ def _mock_deg2rad(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("Fmax")
-def _mock_fmax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_fmax operation.
 
     Args:
@@ -4395,8 +4163,7 @@ def _mock_fmax(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fmax", None)
     if func:
@@ -4410,7 +4177,7 @@ def _mock_fmax(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("FractionalAvgPool")
-def _mock_fractionalavgpool(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_fractionalavgpool(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_fractionalavgpool operation.
 
     Args:
@@ -4418,8 +4185,7 @@ def _mock_fractionalavgpool(backend_module: object, *args: object, **kwargs: obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fractionalavgpool", None)
     if func:
@@ -4431,7 +4197,7 @@ def _mock_fractionalavgpool(backend_module: object, *args: object, **kwargs: obj
 
 
 @global_eager_registry.register("Fromfile")
-def _mock_fromfile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_fromfile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_fromfile operation.
 
     Args:
@@ -4439,8 +4205,7 @@ def _mock_fromfile(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fromfile", None)
     if func:
@@ -4450,7 +4215,7 @@ def _mock_fromfile(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("Fromfunction")
-def _mock_fromfunction(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_fromfunction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_fromfunction operation.
 
     Args:
@@ -4458,8 +4223,7 @@ def _mock_fromfunction(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fromfunction", None)
     if func:
@@ -4469,7 +4233,7 @@ def _mock_fromfunction(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("Fromiter")
-def _mock_fromiter(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_fromiter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_fromiter operation.
 
     Args:
@@ -4477,8 +4241,7 @@ def _mock_fromiter(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fromiter", None)
     if func:
@@ -4488,7 +4251,7 @@ def _mock_fromiter(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("Frompyfunc")
-def _mock_frompyfunc(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_frompyfunc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_frompyfunc operation.
 
     Args:
@@ -4496,8 +4259,7 @@ def _mock_frompyfunc(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "frompyfunc", None)
     if func:
@@ -4507,7 +4269,7 @@ def _mock_frompyfunc(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("Fromstring")
-def _mock_fromstring(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_fromstring(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_fromstring operation.
 
     Args:
@@ -4515,8 +4277,7 @@ def _mock_fromstring(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "fromstring", None)
     if func:
@@ -4526,7 +4287,7 @@ def _mock_fromstring(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("Gamma")
-def _mock_gamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_gamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_gamma operation.
 
     Args:
@@ -4534,8 +4295,7 @@ def _mock_gamma(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "gamma", None)
     if func:
@@ -4549,7 +4309,7 @@ def _mock_gamma(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("Gcd")
-def _mock_gcd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_gcd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_gcd operation.
 
     Args:
@@ -4557,8 +4317,7 @@ def _mock_gcd(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "gcd", None)
     if func:
@@ -4578,7 +4337,7 @@ def _mock_gcd(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Geometric")
-def _mock_geometric(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_geometric operation.
 
     Args:
@@ -4586,8 +4345,7 @@ def _mock_geometric(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "geometric", None)
     if func:
@@ -4599,7 +4357,7 @@ def _mock_geometric(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Gumbel")
-def _mock_gumbel(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_gumbel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_gumbel operation.
 
     Args:
@@ -4607,8 +4365,7 @@ def _mock_gumbel(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "gumbel", None)
     if func:
@@ -4621,7 +4378,7 @@ def _mock_gumbel(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Heaviside")
-def _mock_heaviside(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_heaviside operation.
 
     Args:
@@ -4629,8 +4386,7 @@ def _mock_heaviside(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "heaviside", None)
     if func:
@@ -4644,7 +4400,7 @@ def _mock_heaviside(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Hfft")
-def _mock_hfft(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_hfft(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_hfft operation.
 
     Args:
@@ -4652,8 +4408,7 @@ def _mock_hfft(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "hfft", None)
     if func:
@@ -4663,7 +4418,7 @@ def _mock_hfft(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Hsplit")
-def _mock_hsplit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_hsplit operation.
 
     Args:
@@ -4671,8 +4426,7 @@ def _mock_hsplit(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "hsplit", None)
     if func:
@@ -4682,7 +4436,7 @@ def _mock_hsplit(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Inner")
-def _mock_inner(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_inner(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_inner operation.
 
     Args:
@@ -4690,8 +4444,7 @@ def _mock_inner(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "inner", None)
     if func:
@@ -4701,7 +4454,7 @@ def _mock_inner(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("ModifiedBesselI1")
-def _mock_modifiedbesseli1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_modifiedbesseli1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_modifiedbesseli1 operation.
 
     Args:
@@ -4709,8 +4462,7 @@ def _mock_modifiedbesseli1(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "modifiedbesseli1", None)
     if func:
@@ -4724,7 +4476,7 @@ def _mock_modifiedbesseli1(backend_module: object, *args: object, **kwargs: obje
 
 
 @global_eager_registry.register("Packbits")
-def _mock_packbits(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_packbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_packbits operation.
 
     Args:
@@ -4732,8 +4484,7 @@ def _mock_packbits(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "packbits", None)
     if func:
@@ -4746,7 +4497,7 @@ def _mock_packbits(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("ParseTensor")
-def _mock_parsetensor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_parsetensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_parsetensor operation.
 
     Args:
@@ -4754,8 +4505,7 @@ def _mock_parsetensor(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "parsetensor", None)
     if func:
@@ -4764,7 +4514,7 @@ def _mock_parsetensor(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("Partition")
-def _mock_partition(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_partition(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_partition operation.
 
     Args:
@@ -4772,8 +4522,7 @@ def _mock_partition(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "partition", None)
     if func:
@@ -4787,7 +4536,7 @@ def _mock_partition(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Polyint")
-def _mock_polyint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_polyint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_polyint operation.
 
     Args:
@@ -4795,8 +4544,7 @@ def _mock_polyint(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "polyint", None)
     if func:
@@ -4817,7 +4565,7 @@ def _mock_polyint(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("R")
-def _mock_r(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_r(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_r operation.
 
     Args:
@@ -4825,8 +4573,7 @@ def _mock_r(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "r", None)
     if func:
@@ -4836,7 +4583,7 @@ def _mock_r(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("RngUniform")
-def _mock_rnguniform(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_rnguniform(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_rnguniform operation.
 
     Args:
@@ -4844,8 +4591,7 @@ def _mock_rnguniform(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "rnguniform", None)
     if func:
@@ -4858,7 +4604,7 @@ def _mock_rnguniform(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("ScatterApply")
-def _mock_scatterapply(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_scatterapply operation.
 
     Args:
@@ -4866,8 +4612,7 @@ def _mock_scatterapply(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -4899,7 +4644,7 @@ def _mock_scatterapply(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("ScatterMax")
-def _mock_scattermax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_scattermax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_scattermax operation.
 
     Args:
@@ -4907,8 +4652,7 @@ def _mock_scattermax(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "scattermax", getattr(backend_module, "scatter_max", None))
     if func:
@@ -4927,7 +4671,7 @@ def _mock_scattermax(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("ScatterMin")
-def _mock_scattermin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_scattermin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_scattermin operation.
 
     Args:
@@ -4935,8 +4679,7 @@ def _mock_scattermin(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "scattermin", getattr(backend_module, "scatter_min", None))
     if func:
@@ -4955,7 +4698,7 @@ def _mock_scattermin(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("ScatterMul")
-def _mock_scattermul(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_scattermul operation.
 
     Args:
@@ -4963,8 +4706,7 @@ def _mock_scattermul(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "scattermul", getattr(backend_module, "scatter_mul", None))
     if func:
@@ -4983,7 +4725,7 @@ def _mock_scattermul(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("ScatterNd")
-def _mock_scatternd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_scatternd operation.
 
     Args:
@@ -4991,8 +4733,7 @@ def _mock_scatternd(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "scatter_nd", None)
     if func:
@@ -5011,7 +4752,7 @@ def _mock_scatternd(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Schur")
-def _mock_schur(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_schur(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_schur operation.
 
     Args:
@@ -5019,8 +4760,7 @@ def _mock_schur(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "schur", None)
     if func:
@@ -5033,7 +4773,7 @@ def _mock_schur(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("StringLower")
-def _mock_stringlower(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_stringlower(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_stringlower operation.
 
     Args:
@@ -5041,8 +4781,7 @@ def _mock_stringlower(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "stringlower", None)
     if func:
@@ -5051,7 +4790,7 @@ def _mock_stringlower(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("StringSplit")
-def _mock_stringsplit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_stringsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_stringsplit operation.
 
     Args:
@@ -5059,8 +4798,7 @@ def _mock_stringsplit(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "stringsplit", None)
     if func:
@@ -5069,7 +4807,7 @@ def _mock_stringsplit(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("StringSubstr")
-def _mock_stringsubstr(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_stringsubstr operation.
 
     Args:
@@ -5077,8 +4815,7 @@ def _mock_stringsubstr(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "stringsubstr", None)
     if func:
@@ -5097,7 +4834,7 @@ def _mock_stringsubstr(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("StringToHash")
-def _mock_stringtohash(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_stringtohash(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_stringtohash operation.
 
     Args:
@@ -5105,8 +4842,7 @@ def _mock_stringtohash(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "stringtohash", None)
     if func:
@@ -5121,7 +4857,7 @@ def _mock_stringtohash(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("StringToNumber")
-def _mock_stringtonumber(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_stringtonumber(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_stringtonumber operation.
 
     Args:
@@ -5129,8 +4865,7 @@ def _mock_stringtonumber(backend_module: object, *args: object, **kwargs: object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "stringtonumber", None)
     if func:
@@ -5148,7 +4883,7 @@ def _mock_stringtonumber(backend_module: object, *args: object, **kwargs: object
 
 
 @global_eager_registry.register("StringUpper")
-def _mock_stringupper(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_stringupper(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_stringupper operation.
 
     Args:
@@ -5156,8 +4891,7 @@ def _mock_stringupper(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "stringupper", None)
     if func:
@@ -5166,7 +4900,7 @@ def _mock_stringupper(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("Svd")
-def _mock_svd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_svd operation.
 
     Args:
@@ -5174,8 +4908,7 @@ def _mock_svd(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "svd", None)
     if func:
@@ -5185,7 +4918,7 @@ def _mock_svd(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @global_eager_registry.register("Svdvals")
-def _mock_svdvals(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_svdvals(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_svdvals operation.
 
     Args:
@@ -5193,8 +4926,7 @@ def _mock_svdvals(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "svdvals", None)
     if func:
@@ -5208,7 +4940,7 @@ def _mock_svdvals(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("Switch")
-def _mock_switch(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_switch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_switch operation.
 
     Args:
@@ -5216,8 +4948,7 @@ def _mock_switch(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "switch", None)
     if func:
@@ -5231,7 +4962,7 @@ def _mock_switch(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("T")
-def _mock_t(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_t(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_t operation.
 
     Args:
@@ -5239,8 +4970,7 @@ def _mock_t(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "t", None)
     if func:
@@ -5254,7 +4984,7 @@ def _mock_t(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @global_eager_registry.register("TakeAlongAxis")
-def _mock_takealongaxis(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_takealongaxis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_takealongaxis operation.
 
     Args:
@@ -5262,8 +4992,7 @@ def _mock_takealongaxis(backend_module: object, *args: object, **kwargs: object)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "takealongaxis", None)
     if func:
@@ -5281,7 +5010,7 @@ def _mock_takealongaxis(backend_module: object, *args: object, **kwargs: object)
 
 
 @global_eager_registry.register("TensorArrayRead")
-def _mock_tensorarrayread(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorarrayread(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorarrayread operation.
 
     Args:
@@ -5289,8 +5018,7 @@ def _mock_tensorarrayread(backend_module: object, *args: object, **kwargs: objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorarrayread", None)
     if func:
@@ -5304,7 +5032,7 @@ def _mock_tensorarrayread(backend_module: object, *args: object, **kwargs: objec
 
 
 @global_eager_registry.register("TensorArrayStack")
-def _mock_tensorarraystack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorarraystack operation.
 
     Args:
@@ -5312,8 +5040,7 @@ def _mock_tensorarraystack(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorarraystack", None)
     if func:
@@ -5327,7 +5054,7 @@ def _mock_tensorarraystack(backend_module: object, *args: object, **kwargs: obje
 
 
 @global_eager_registry.register("TensorArrayWrite")
-def _mock_tensorarraywrite(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorarraywrite(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorarraywrite operation.
 
     Args:
@@ -5335,8 +5062,7 @@ def _mock_tensorarraywrite(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorarraywrite", None)
     if func:
@@ -5368,7 +5094,7 @@ def _mock_tensorarraywrite(backend_module: object, *args: object, **kwargs: obje
 
 
 @global_eager_registry.register("TensorScatterSub")
-def _mock_tensorscattersub(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorscattersub operation.
 
     Args:
@@ -5376,8 +5102,7 @@ def _mock_tensorscattersub(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorscattersub", None)
     if func:
@@ -5391,7 +5116,7 @@ def _mock_tensorscattersub(backend_module: object, *args: object, **kwargs: obje
 
 
 @global_eager_registry.register("TensorScatterUpdate")
-def _mock_tensorscatterupdate(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorscatterupdate operation.
 
     Args:
@@ -5399,8 +5124,7 @@ def _mock_tensorscatterupdate(backend_module: object, *args: object, **kwargs: o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorscatterupdate", None)
     if func:
@@ -5414,7 +5138,7 @@ def _mock_tensorscatterupdate(backend_module: object, *args: object, **kwargs: o
 
 
 @global_eager_registry.register("Tensorinv")
-def _mock_tensorinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorinv operation.
 
     Args:
@@ -5422,8 +5146,7 @@ def _mock_tensorinv(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorinv", None)
     if func:
@@ -5433,7 +5156,7 @@ def _mock_tensorinv(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Tensorsolve")
-def _mock_tensorsolve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tensorsolve operation.
 
     Args:
@@ -5441,8 +5164,7 @@ def _mock_tensorsolve(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tensorsolve", None)
     if func:
@@ -5452,7 +5174,7 @@ def _mock_tensorsolve(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("TextVectorization")
-def _mock_textvectorization(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_textvectorization(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_textvectorization operation.
 
     Args:
@@ -5460,8 +5182,7 @@ def _mock_textvectorization(backend_module: object, *args: object, **kwargs: obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "textvectorization", None)
     if func:
@@ -5479,7 +5200,7 @@ def _mock_textvectorization(backend_module: object, *args: object, **kwargs: obj
 
 
 @global_eager_registry.register("TopK")
-def _mock_topk(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_topk(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_topk operation.
 
     Args:
@@ -5487,8 +5208,7 @@ def _mock_topk(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "topk", None)
     if func:
@@ -5502,7 +5222,7 @@ def _mock_topk(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("Trapezoid")
-def _mock_trapezoid(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_trapezoid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_trapezoid operation.
 
     Args:
@@ -5510,8 +5230,7 @@ def _mock_trapezoid(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "trapezoid", None)
     if func:
@@ -5521,7 +5240,7 @@ def _mock_trapezoid(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("TrapezoidalIntegral")
-def _mock_trapezoidalintegral(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_trapezoidalintegral(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_trapezoidalintegral operation.
 
     Args:
@@ -5529,8 +5248,7 @@ def _mock_trapezoidalintegral(backend_module: object, *args: object, **kwargs: o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "trapezoidalintegral", None)
     if func:
@@ -5544,7 +5262,7 @@ def _mock_trapezoidalintegral(backend_module: object, *args: object, **kwargs: o
 
 
 @global_eager_registry.register("TriInv")
-def _mock_triinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_triinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_triinv operation.
 
     Args:
@@ -5552,8 +5270,7 @@ def _mock_triinv(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "triinv", None)
     if func:
@@ -5567,7 +5284,7 @@ def _mock_triinv(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Triangular")
-def _mock_triangular(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_triangular operation.
 
     Args:
@@ -5575,8 +5292,7 @@ def _mock_triangular(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "triangular", None)
     if func:
@@ -5592,7 +5308,7 @@ def _mock_triangular(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("TriangularSolve")
-def _mock_triangularsolve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_triangularsolve operation.
 
     Args:
@@ -5600,8 +5316,7 @@ def _mock_triangularsolve(backend_module: object, *args: object, **kwargs: objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "triangularsolve", None)
     if func:
@@ -5615,7 +5330,7 @@ def _mock_triangularsolve(backend_module: object, *args: object, **kwargs: objec
 
 
 @global_eager_registry.register("Tridiagonal")
-def _mock_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tridiagonal operation.
 
     Args:
@@ -5623,8 +5338,7 @@ def _mock_tridiagonal(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tridiagonal", None)
     if func:
@@ -5638,7 +5352,7 @@ def _mock_tridiagonal(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("TridiagonalMatmul")
-def _mock_tridiagonalmatmul(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tridiagonalmatmul operation.
 
     Args:
@@ -5646,8 +5360,7 @@ def _mock_tridiagonalmatmul(backend_module: object, *args: object, **kwargs: obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tridiagonalmatmul", None)
     if func:
@@ -5661,7 +5374,7 @@ def _mock_tridiagonalmatmul(backend_module: object, *args: object, **kwargs: obj
 
 
 @global_eager_registry.register("TridiagonalSolve")
-def _mock_tridiagonalsolve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_tridiagonalsolve operation.
 
     Args:
@@ -5669,8 +5382,7 @@ def _mock_tridiagonalsolve(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "tridiagonalsolve", None)
     if func:
@@ -5684,7 +5396,7 @@ def _mock_tridiagonalsolve(backend_module: object, *args: object, **kwargs: obje
 
 
 @global_eager_registry.register("TrilIndices")
-def _mock_trilindices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_trilindices operation.
 
     Args:
@@ -5692,8 +5404,7 @@ def _mock_trilindices(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "trilindices", None)
     if func:
@@ -5703,7 +5414,7 @@ def _mock_trilindices(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("TrilIndicesFrom")
-def _mock_trilindicesfrom(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_trilindicesfrom operation.
 
     Args:
@@ -5711,8 +5422,7 @@ def _mock_trilindicesfrom(backend_module: object, *args: object, **kwargs: objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "trilindicesfrom", None)
     if func:
@@ -5722,7 +5432,7 @@ def _mock_trilindicesfrom(backend_module: object, *args: object, **kwargs: objec
 
 
 @global_eager_registry.register("TrimZeros")
-def _mock_trimzeros(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_trimzeros operation.
 
     Args:
@@ -5730,8 +5440,7 @@ def _mock_trimzeros(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "trimzeros", None)
     if func:
@@ -5741,7 +5450,7 @@ def _mock_trimzeros(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("TriuIndices")
-def _mock_triuindices(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_triuindices operation.
 
     Args:
@@ -5749,8 +5458,7 @@ def _mock_triuindices(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "triuindices", None)
     if func:
@@ -5760,7 +5468,7 @@ def _mock_triuindices(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("TriuIndicesFrom")
-def _mock_triuindicesfrom(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_triuindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_triuindicesfrom operation.
 
     Args:
@@ -5768,8 +5476,7 @@ def _mock_triuindicesfrom(backend_module: object, *args: object, **kwargs: objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "triuindicesfrom", None)
     if func:
@@ -5779,7 +5486,7 @@ def _mock_triuindicesfrom(backend_module: object, *args: object, **kwargs: objec
 
 
 @global_eager_registry.register("TruncateDiv")
-def _mock_truncatediv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_truncatediv operation.
 
     Args:
@@ -5787,8 +5494,7 @@ def _mock_truncatediv(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "truncatediv", None)
     if func:
@@ -5798,7 +5504,7 @@ def _mock_truncatediv(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("TruncateMod")
-def _mock_truncatemod(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_truncatemod operation.
 
     Args:
@@ -5806,8 +5512,7 @@ def _mock_truncatemod(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "truncatemod", None)
     if func:
@@ -5816,7 +5521,7 @@ def _mock_truncatemod(backend_module: object, *args: object, **kwargs: object) -
     return backend_module.fmod(*args, **kwargs)
 
 
-def _unfold_numpy_fallback(backend_module: object, t_np: object, kernel_size: tuple, stride: tuple) -> object:
+def _unfold_numpy_fallback(backend_module: Any, t_np: Any, kernel_size: tuple, stride: tuple) -> Any:
     """Fallback NumPy implementation for Unfold operation.
 
     Args:
@@ -5825,8 +5530,7 @@ def _unfold_numpy_fallback(backend_module: object, t_np: object, kernel_size: tu
         kernel_size (tuple): The kernel size.
         stride (tuple): The stride.
 
-    Returns:
-        object: The unfolded array.
+    Returns: Any: The unfolded array.
     """
     import numpy as np
 
@@ -5854,7 +5558,7 @@ def _unfold_numpy_fallback(backend_module: object, t_np: object, kernel_size: tu
 
 
 @global_eager_registry.register("Unfold")
-def _mock_unfold(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_unfold operation.
 
     Args:
@@ -5862,8 +5566,7 @@ def _mock_unfold(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "unfold", None)
     if func:
@@ -5890,7 +5593,7 @@ def _mock_unfold(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Union1d")
-def _mock_union1d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_union1d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_union1d operation.
 
     Args:
@@ -5898,8 +5601,7 @@ def _mock_union1d(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "union1d", None)
     if func:
@@ -5909,7 +5611,7 @@ def _mock_union1d(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("Unique")
-def _mock_unique(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_unique(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_unique operation.
 
     Args:
@@ -5917,8 +5619,7 @@ def _mock_unique(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "unique", None)
     if func:
@@ -5928,7 +5629,7 @@ def _mock_unique(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("UniqueAll")
-def _mock_uniqueall(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_uniqueall(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_uniqueall operation.
 
     Args:
@@ -5936,8 +5637,7 @@ def _mock_uniqueall(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "uniqueall", None)
     if func:
@@ -5951,7 +5651,7 @@ def _mock_uniqueall(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("UniqueCounts")
-def _mock_uniquecounts(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_uniquecounts(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_uniquecounts operation.
 
     Args:
@@ -5959,8 +5659,7 @@ def _mock_uniquecounts(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "uniquecounts", None)
     if func:
@@ -5974,7 +5673,7 @@ def _mock_uniquecounts(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("UniqueInverse")
-def _mock_uniqueinverse(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_uniqueinverse(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_uniqueinverse operation.
 
     Args:
@@ -5982,8 +5681,7 @@ def _mock_uniqueinverse(backend_module: object, *args: object, **kwargs: object)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "uniqueinverse", None)
     if func:
@@ -5997,7 +5695,7 @@ def _mock_uniqueinverse(backend_module: object, *args: object, **kwargs: object)
 
 
 @global_eager_registry.register("UniqueValues")
-def _mock_uniquevalues(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_uniquevalues(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_uniquevalues operation.
 
     Args:
@@ -6005,8 +5703,7 @@ def _mock_uniquevalues(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "uniquevalues", None)
     if func:
@@ -6020,7 +5717,7 @@ def _mock_uniquevalues(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("Unpackbits")
-def _mock_unpackbits(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_unpackbits(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_unpackbits operation.
 
     Args:
@@ -6028,8 +5725,7 @@ def _mock_unpackbits(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "unpackbits", None)
     if func:
@@ -6039,7 +5735,7 @@ def _mock_unpackbits(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("Unstack")
-def _mock_unstack(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_unstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_unstack operation.
 
     Args:
@@ -6047,8 +5743,7 @@ def _mock_unstack(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "unstack", None)
     if func:
@@ -6062,7 +5757,7 @@ def _mock_unstack(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("Unwrap")
-def _mock_unwrap(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_unwrap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_unwrap operation.
 
     Args:
@@ -6070,8 +5765,7 @@ def _mock_unwrap(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "unwrap", None)
     if func:
@@ -6081,7 +5775,7 @@ def _mock_unwrap(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("UpdateSlice")
-def _mock_updateslice(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_updateslice operation.
 
     Args:
@@ -6089,8 +5783,7 @@ def _mock_updateslice(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         RuntimeError: An exception.
@@ -6115,7 +5808,7 @@ def _mock_updateslice(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("Vander")
-def _mock_vander(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_vander operation.
 
     Args:
@@ -6123,8 +5816,7 @@ def _mock_vander(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "vander", None)
     if func:
@@ -6134,7 +5826,7 @@ def _mock_vander(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Variance")
-def _mock_variance(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_variance operation.
 
     Args:
@@ -6142,8 +5834,7 @@ def _mock_variance(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "variance", None)
     if func:
@@ -6157,7 +5848,7 @@ def _mock_variance(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @global_eager_registry.register("Vecdot")
-def _mock_vecdot(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_vecdot operation.
 
     Args:
@@ -6165,8 +5856,7 @@ def _mock_vecdot(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "vecdot", None)
     if func:
@@ -6180,7 +5870,7 @@ def _mock_vecdot(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("VectorNorm")
-def _mock_vectornorm(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_vectornorm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_vectornorm operation.
 
     Args:
@@ -6188,8 +5878,7 @@ def _mock_vectornorm(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "vectornorm", None)
     if func:
@@ -6203,7 +5892,7 @@ def _mock_vectornorm(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("Vectorize")
-def _mock_vectorize(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_vectorize(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_vectorize operation.
 
     Args:
@@ -6211,8 +5900,7 @@ def _mock_vectorize(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "vectorize", None)
     if func:
@@ -6222,7 +5910,7 @@ def _mock_vectorize(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Vsplit")
-def _mock_vsplit(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_vsplit operation.
 
     Args:
@@ -6230,8 +5918,7 @@ def _mock_vsplit(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "vsplit", None)
     if func:
@@ -6241,7 +5928,7 @@ def _mock_vsplit(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @global_eager_registry.register("Wald")
-def _mock_wald(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_wald(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_wald operation.
 
     Args:
@@ -6249,8 +5936,7 @@ def _mock_wald(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "wald", None)
     if func:
@@ -6260,7 +5946,7 @@ def _mock_wald(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @global_eager_registry.register("WeibullMin")
-def _mock_weibullmin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_weibullmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_weibullmin operation.
 
     Args:
@@ -6268,8 +5954,7 @@ def _mock_weibullmin(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "weibullmin", None)
     if func:
@@ -6280,7 +5965,7 @@ def _mock_weibullmin(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("Welch")
-def _mock_welch(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_welch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_welch operation.
 
     Args:
@@ -6288,8 +5973,7 @@ def _mock_welch(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "welch", None)
     if func:
@@ -6303,7 +5987,7 @@ def _mock_welch(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("WindowHamming")
-def _mock_windowhamming(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_windowhamming(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_windowhamming operation.
 
     Args:
@@ -6311,8 +5995,7 @@ def _mock_windowhamming(backend_module: object, *args: object, **kwargs: object)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "windowhamming", None)
     if func:
@@ -6326,7 +6009,7 @@ def _mock_windowhamming(backend_module: object, *args: object, **kwargs: object)
 
 
 @global_eager_registry.register("WindowHann")
-def _mock_windowhann(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_windowhann(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_windowhann operation.
 
     Args:
@@ -6334,8 +6017,7 @@ def _mock_windowhann(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "windowhann", None)
     if func:
@@ -6349,7 +6031,7 @@ def _mock_windowhann(backend_module: object, *args: object, **kwargs: object) ->
 
 
 @global_eager_registry.register("WrapKeyData")
-def _mock_wrapkeydata(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_wrapkeydata(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_wrapkeydata operation.
 
     Args:
@@ -6357,8 +6039,7 @@ def _mock_wrapkeydata(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "wrapkeydata", None)
     if func:
@@ -6372,7 +6053,7 @@ def _mock_wrapkeydata(backend_module: object, *args: object, **kwargs: object) -
 
 
 @global_eager_registry.register("WriteFile")
-def _mock_writefile(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_writefile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_writefile operation.
 
     Args:
@@ -6380,8 +6061,7 @@ def _mock_writefile(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "writefile", None)
     if func:
@@ -6395,7 +6075,7 @@ def _mock_writefile(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @global_eager_registry.register("Xdivy")
-def _mock_xdivy(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_xdivy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_xdivy operation.
 
     Args:
@@ -6403,8 +6083,7 @@ def _mock_xdivy(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "xdivy", None)
     if func:
@@ -6418,7 +6097,7 @@ def _mock_xdivy(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("Xlog1py")
-def _mock_xlog1py(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_xlog1py(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_xlog1py operation.
 
     Args:
@@ -6426,8 +6105,7 @@ def _mock_xlog1py(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "xlog1py", None)
     if func:
@@ -6442,7 +6120,7 @@ def _mock_xlog1py(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @global_eager_registry.register("Xlogy")
-def _mock_xlogy(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_xlogy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_xlogy operation.
 
     Args:
@@ -6450,8 +6128,7 @@ def _mock_xlogy(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "xlogy", None)
     if func:
@@ -6466,7 +6143,7 @@ def _mock_xlogy(backend_module: object, *args: object, **kwargs: object) -> obje
 
 
 @global_eager_registry.register("ZeroFraction")
-def _mock_zerofraction(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_zerofraction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_zerofraction operation.
 
     Args:
@@ -6474,8 +6151,7 @@ def _mock_zerofraction(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "zerofraction", None)
     if func:
@@ -6489,7 +6165,7 @@ def _mock_zerofraction(backend_module: object, *args: object, **kwargs: object) 
 
 
 @global_eager_registry.register("Zeta")
-def _mock_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
+def _mock_zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _mock_zeta operation.
 
     Args:
@@ -6497,8 +6173,7 @@ def _mock_zeta(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(backend_module, "zeta", None)
     if func:

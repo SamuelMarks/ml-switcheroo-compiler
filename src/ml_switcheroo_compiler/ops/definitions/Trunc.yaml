@@ -1,0 +1,9 @@
+operation: Trunc
+description: The Trunc operation.
+variants:
+  cupy:
+    eager: cp.trunc
+  dask:
+    eager: da.trunc
+  keras:
+    eager: keras_ops.trunc

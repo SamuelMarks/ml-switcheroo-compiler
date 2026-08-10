@@ -1,0 +1,5 @@
+operation: SpaceToBatchND
+description: The SpaceToBatchND operation.
+variants:
+  tensorflow:
+    eager: tf.space_to_batch_nd

@@ -1,0 +1,19 @@
+operation: Negative
+description: The Negative operation.
+variants:
+  cupy:
+    eager: cp.negative
+    generator: cp.negative
+  dask:
+    eager: da.negative
+    generator: da.negative
+  edge_onnx:
+    generator: Neg
+  edge_stablehlo:
+    generator: stablehlo.negate
+  keras:
+    eager: keras_ops.negative
+  numpy:
+    generator: np.negative
+  tensorflow:
+    eager: tf.negative

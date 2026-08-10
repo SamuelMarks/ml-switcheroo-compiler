@@ -1,0 +1,5 @@
+operation: Tensorsolve
+description: The Tensorsolve operation.
+variants:
+  numpy:
+    generator: np.linalg.tensorsolve({0}, {1}, axes={axes})

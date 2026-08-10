@@ -1,0 +1,7 @@
+operation: Insert
+description: The Insert operation.
+variants:
+  cupy:
+    eager: cp.insert
+  dask:
+    eager: da.insert

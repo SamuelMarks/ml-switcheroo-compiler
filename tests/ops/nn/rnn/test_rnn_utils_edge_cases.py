@@ -3,6 +3,7 @@ from unittest.mock import patch
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.rnn_cell import simple_rnn_cell
 from ml_switcheroo_compiler.ops.nn.rnn_utils import BidirectionalConfig, BidirectionalInputs, DropoutWrapperConfig, RNNCellDeviceWrapper, RNNCellDropoutWrapper, RNNCellResidualWrapper, RNNConfig, ScanConfig, _permute_time_major, bidirectional, rnn, scan
@@ -13,11 +14,11 @@ def test_rnn_brute():
     config.backend = "numpy"
     config.eager_mode = True
 
-    t_in = Tensor(np.random.rand(2, 3, 4).astype(np.float32), TensorConfig((2, 3, 4), "float32", "cpu"))
-    h0 = Tensor(np.zeros((2, 8)).astype(np.float32), TensorConfig((2, 8), "float32", "cpu"))
-    kernel = Tensor(np.random.rand(4, 8).astype(np.float32), TensorConfig((4, 8), "float32", "cpu"))
-    rec_kernel = Tensor(np.random.rand(8, 8).astype(np.float32), TensorConfig((8, 8), "float32", "cpu"))
-    bias = Tensor(np.random.rand(8).astype(np.float32), TensorConfig((8,), "float32", "cpu"))
+    t_in = Tensor(np.random.rand(2, 3, 4).astype(np.float32), TensorConfig((2, 3, 4), DType("float32"), "cpu"))
+    h0 = Tensor(np.zeros((2, 8)).astype(np.float32), TensorConfig((2, 8), DType("float32"), "cpu"))
+    kernel = Tensor(np.random.rand(4, 8).astype(np.float32), TensorConfig((4, 8), DType("float32"), "cpu"))
+    rec_kernel = Tensor(np.random.rand(8, 8).astype(np.float32), TensorConfig((8, 8), DType("float32"), "cpu"))
+    bias = Tensor(np.random.rand(8).astype(np.float32), TensorConfig((8,), DType("float32"), "cpu"))
 
     def my_cell(x, state):
         return simple_rnn_cell(x, state, kernel, rec_kernel, bias)
@@ -26,7 +27,7 @@ def test_rnn_brute():
 
     rnn(t_in, (h0,), my_cell)
 
-    t_in_time_major = Tensor(np.random.rand(3, 2, 4).astype(np.float32), TensorConfig((3, 2, 4), "float32", "cpu"))
+    t_in_time_major = Tensor(np.random.rand(3, 2, 4).astype(np.float32), TensorConfig((3, 2, 4), DType("float32"), "cpu"))
     rnn(t_in_time_major, (h0,), my_cell, config=RNNConfig(time_major=True, return_all_outputs=False))
     rnn(t_in, (h0,), my_cell, config=RNNConfig(time_major=False, return_all_outputs=False, go_backwards=True))
 
@@ -39,23 +40,23 @@ def test_rnn_brute():
     bidirectional(bidir_inputs, my_cell, config=BidirectionalConfig(merge_mode="none"))
 
     dev_wrapper = RNNCellDeviceWrapper(my_cell, "cpu")
-    dev_wrapper(Tensor(np.random.rand(2, 4).astype(np.float32), TensorConfig((2, 4), "float32", "cpu")), (h0,))
+    dev_wrapper(Tensor(np.random.rand(2, 4).astype(np.float32), TensorConfig((2, 4), DType("float32"), "cpu")), (h0,))
 
     drop_wrapper = RNNCellDropoutWrapper(my_cell, config=DropoutWrapperConfig(input_keep_prob=0.5, output_keep_prob=0.5))
-    drop_wrapper(Tensor(np.random.rand(2, 4).astype(np.float32), TensorConfig((2, 4), "float32", "cpu")), (h0,))
+    drop_wrapper(Tensor(np.random.rand(2, 4).astype(np.float32), TensorConfig((2, 4), DType("float32"), "cpu")), (h0,))
 
     # for residual to work, the input size must match output size of cell, which is 8
     def my_cell_res(x, state):
-        return simple_rnn_cell(x, state, Tensor(np.random.rand(8, 8).astype(np.float32), TensorConfig((8, 8), "float32", "cpu")), rec_kernel, bias)
+        return simple_rnn_cell(x, state, Tensor(np.random.rand(8, 8).astype(np.float32), TensorConfig((8, 8), DType("float32"), "cpu")), rec_kernel, bias)
 
     res_wrapper = RNNCellResidualWrapper(my_cell_res)
-    res_wrapper(Tensor(np.random.rand(2, 8).astype(np.float32), TensorConfig((2, 8), "float32", "cpu")), (h0,))
+    res_wrapper(Tensor(np.random.rand(2, 8).astype(np.float32), TensorConfig((2, 8), DType("float32"), "cpu")), (h0,))
 
     def my_res_fn(x, y):
         return y
 
     res_wrapper2 = RNNCellResidualWrapper(my_cell_res, residual_fn=my_res_fn)
-    res_wrapper2(Tensor(np.random.rand(2, 8).astype(np.float32), TensorConfig((2, 8), "float32", "cpu")), (h0,))
+    res_wrapper2(Tensor(np.random.rand(2, 8).astype(np.float32), TensorConfig((2, 8), DType("float32"), "cpu")), (h0,))
 
     time_distributed(t_in, wrapped_op_name="Relu")
     TimeDistributed().infer_shape(t_in)

@@ -1,0 +1,9 @@
+operation: OneHot
+description: The OneHot operation.
+variants:
+  keras:
+    eager: keras_ops.one_hot
+  numpy:
+    generator: np.eye({depth})[{0}]
+  tensorflow:
+    eager: tf.one_hot

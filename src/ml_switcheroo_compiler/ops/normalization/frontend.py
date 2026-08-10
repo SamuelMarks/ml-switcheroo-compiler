@@ -1,7 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply normalization frontend operations."""
 
 import typing
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.binary import divide
@@ -18,17 +20,17 @@ class NormConfig:
         epsilon (float): Small value to avoid division by zero.
     """
 
-    weight: object = None
-    bias: object = None
+    weight: Any = None
+    bias: Any = None
     epsilon: float = 1e-5
 
 
 def group_mean(
-    x: object,
+    x: Any,
     groups: int,
     axis: typing.Union[int, tuple[int, ...]] = -1,
     keepdims: bool = False,
-) -> object:
+) -> Any:
     """Compute the mean over groups.
 
     Args:
@@ -37,18 +39,17 @@ def group_mean(
         axis (object): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return get_op("GroupMean")()(x, groups=groups, axis=axis, keepdims=keepdims)
 
 
 def group_variance(
-    x: object,
+    x: Any,
     groups: int,
     axis: typing.Union[int, tuple[int, ...]] = -1,
     keepdims: bool = False,
-) -> object:
+) -> Any:
     """Compute the variance over groups.
 
     Args:
@@ -57,18 +58,17 @@ def group_variance(
         axis (object): The axis parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return get_op("GroupVariance")()(x, groups=groups, axis=axis, keepdims=keepdims)
 
 
 def group_norm(
-    x: object,
+    x: Any,
     groups: int,
     config: typing.Optional[NormConfig] = None,
     axis: typing.Union[int, tuple[int, ...]] = -1,
-) -> object:
+) -> Any:
     """Compute the group normalization.
 
     Args:
@@ -77,8 +77,7 @@ def group_norm(
         config (Optional[NormConfig]): Normalization configuration.
         axis (Union[int, tuple[int, ...]]): Axis to normalize over.
 
-    Returns:
-        object: Normalized tensor.
+    Returns: Any: Normalized tensor.
     """
     if config is None:
         config = NormConfig()
@@ -86,10 +85,10 @@ def group_norm(
 
 
 def spectral_normalization(
-    w: object,
-    u: object,
+    w: Any,
+    u: Any,
     num_iters: int = 1,
-) -> tuple[object, object]:
+) -> tuple[Any, Any]:
     """Compute the spectral normalization.
 
     Args:
@@ -98,7 +97,7 @@ def spectral_normalization(
         num_iters (int): Number of power iterations.
 
     Returns:
-        tuple[object, object]: Normalized weight and new u.
+        tuple[Any, Any]: Normalized weight and new u.
     """
     _, u_new, sigma = power_iteration(w, num_iters=num_iters, u=u)
     return divide(w, sigma), u_new

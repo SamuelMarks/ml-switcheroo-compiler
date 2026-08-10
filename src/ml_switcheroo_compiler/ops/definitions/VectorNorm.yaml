@@ -1,0 +1,5 @@
+operation: VectorNorm
+description: The VectorNorm operation.
+variants:
+  numpy:
+    generator: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})

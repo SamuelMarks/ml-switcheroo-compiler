@@ -1,0 +1,5 @@
+operation: Fromiter
+description: The Fromiter operation.
+variants:
+  numpy:
+    generator: np.fromiter

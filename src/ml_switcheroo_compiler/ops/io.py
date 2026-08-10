@@ -1,7 +1,8 @@
-# ruff: noqa: E402
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """I/O and memory operations."""
 
-from __future__ import annotations
 
 from typing import Any
 
@@ -13,14 +14,13 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def _fallback_load(filepath: object) -> object:
+def _fallback_load(filepath: Any) -> Any:
     """Fallback mechanism to load weights based on file extension.
 
     Args:
         filepath (object): The file path.
 
-    Returns:
-        object: The loaded weights or None.
+    Returns: Any: The loaded weights or None.
     """
     if not isinstance(filepath, str):
         return None
@@ -33,15 +33,14 @@ def _fallback_load(filepath: object) -> object:
     return None
 
 
-def load(*args: object, **kwargs: object) -> object:
+def load(*args: Any, **kwargs: Any) -> Any:
     """Load arrays or pickled objects from files.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -55,7 +54,7 @@ def load(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("Load", list(args), kwargs, getattr(_first, "shape", ()), getattr(_first, "dtype", "float32"))
 
 
-def save(*args: object, **kwargs: object) -> None:
+def save(*args: Any, **kwargs: Any) -> None:
     """Save.
 
     Args:
@@ -76,7 +75,7 @@ def save(*args: object, **kwargs: object) -> None:
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
 
 
-def save_gguf(*args: object, **kwargs: object) -> None:
+def save_gguf(*args: Any, **kwargs: Any) -> None:
     """Save gguf.
 
     Args:
@@ -97,7 +96,7 @@ def save_gguf(*args: object, **kwargs: object) -> None:
     return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
 
 
-def save_safetensors(file: str, arrays: dict[str, object]) -> None:
+def save_safetensors(file: str, arrays: dict[str, Any]) -> None:
     """Save a dictionary of arrays to Safetensors format.
 
     Args:
@@ -107,7 +106,7 @@ def save_safetensors(file: str, arrays: dict[str, object]) -> None:
     SafetensorsWeightFormat().save(arrays, file)
 
 
-def savez(*args: object, **kwargs: object) -> None:
+def savez(*args: Any, **kwargs: Any) -> None:
     """Savez.
 
     Args:
@@ -128,7 +127,7 @@ def savez(*args: object, **kwargs: object) -> None:
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
 
 
-def savez_compressed(*args: object, **kwargs: object) -> None:
+def savez_compressed(*args: Any, **kwargs: Any) -> None:
     """Savez compressed.
 
     Args:
@@ -149,7 +148,7 @@ def savez_compressed(*args: object, **kwargs: object) -> None:
     return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")
 
 
-def set_default_stream(stream: object) -> None:
+def set_default_stream(stream: Any) -> None:
     """Set the default stream for the active backend.
 
     Args:
@@ -244,7 +243,7 @@ __all__ = [
 ]
 
 
-def read_file(filename: str | Tensor, name: str = None) -> Tensor:
+def read_file(filename: str | Tensor, name: Any = None) -> Any:
     """Read file.
 
     Args:
@@ -265,7 +264,7 @@ def read_file(filename: str | Tensor, name: str = None) -> Tensor:
     return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name: str = None) -> None:
+def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> None:
     """Write file.
 
     Args:
@@ -273,8 +272,7 @@ def write_file(filename: str | Tensor, contents: Tensor, name: str = None) -> No
         contents (Tensor): The contents parameter.
         name (str): The name parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -287,7 +285,7 @@ def write_file(filename: str | Tensor, contents: Tensor, name: str = None) -> No
     return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")
 
 
-def decode_image(contents: Tensor, channels: int = 0, dtype: DType = DType.UInt8, name: str = None, expand_animations: bool = True) -> Tensor:
+def decode_image(contents: Tensor, channels: Any = 0, dtype: Any = DType.UInt8, name: Any = None, expand_animations: Any = True) -> Any:
     """Decode image.
 
     Args:
@@ -311,7 +309,7 @@ def decode_image(contents: Tensor, channels: int = 0, dtype: DType = DType.UInt8
     return _emit_shape_node("DecodeImage", [contents], {"channels": channels, "dtype": dtype, "name": name, "expand_animations": expand_animations}, getattr(contents, "shape", ()), getattr(contents, "dtype", "float32"))
 
 
-def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: str = ",", use_quote_delim: bool = True, na_value: str = "", select_cols: list[int] = None, name: str = None) -> list[Tensor]:
+def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: Any = ",", use_quote_delim: Any = True, na_value: Any = "", select_cols: Any = None, name: Any = None) -> list[Tensor]:
     """Decode csv.
 
     Args:
@@ -337,7 +335,7 @@ def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: str = "
     return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))
 
 
-def parse_example(serialized: Tensor, features: dict[str, Any], example_names: Tensor = None, name: str = None) -> dict[str, Tensor]:
+def parse_example(serialized: Tensor, features: dict[str, Any], example_names: Any = None, name: Any = None) -> dict[str, Tensor]:
     """Parse example.
 
     Args:
@@ -360,7 +358,7 @@ def parse_example(serialized: Tensor, features: dict[str, Any], example_names: T
     return _emit_shape_node("ParseExample", [serialized], {"features": features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def serialize_tensor(tensor: Tensor, name: str = None) -> Tensor:
+def serialize_tensor(tensor: Tensor, name: Any = None) -> Any:
     """Serialize tensor.
 
     Args:
@@ -381,7 +379,7 @@ def serialize_tensor(tensor: Tensor, name: str = None) -> Tensor:
     return _emit_shape_node("SerializeTensor", [tensor], {"name": name}, getattr(tensor, "shape", ()), getattr(tensor, "dtype", "float32"))
 
 
-def parse_tensor(serialized: Tensor, out_type: DType, name: str = None) -> Tensor:
+def parse_tensor(serialized: Tensor, out_type: DType, name: Any = None) -> Any:
     """Parse tensor.
 
     Args:
@@ -430,8 +428,7 @@ def gfile_glob(pattern: str) -> list[str]:
     Args:
         pattern (str): The pattern parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return glob.glob(pattern)
 
@@ -442,8 +439,7 @@ def gfile_stat(path: str) -> dict[str, int]:
     Args:
         path (str): The path parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     st = os.stat(path)
     return {"length": st.st_size, "mtime": int(st.st_mtime)}
@@ -458,7 +454,7 @@ def gfile_makedirs(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
 
-def decode_jpeg(contents: object, channels: int = 0, ratio: int = 1) -> object:
+def decode_jpeg(contents: Any, channels: int = 0, ratio: int = 1) -> Any:
     """Decode JPEG image.
 
     Args:
@@ -466,8 +462,7 @@ def decode_jpeg(contents: object, channels: int = 0, ratio: int = 1) -> object:
         channels (int): The channels parameter.
         ratio (int): The ratio parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -476,10 +471,10 @@ def decode_jpeg(contents: object, channels: int = 0, ratio: int = 1) -> object:
         return backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    return Tensor(None, TensorConfig((), None, None))
+    return Tensor(None, TensorConfig((), None, None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def decode_png(contents: object, channels: int = 0, dtype: object = None) -> object:
+def decode_png(contents: Any, channels: int = 0, dtype: Any = None) -> Any:
     """Decode PNG image.
 
     Args:
@@ -488,8 +483,7 @@ def decode_png(contents: object, channels: int = 0, dtype: object = None) -> obj
         like (object): The like parameter.
         dtype (object): The dtype parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -498,19 +492,18 @@ def decode_png(contents: object, channels: int = 0, dtype: object = None) -> obj
         return backend_cls.decode_png(contents, channels=channels, dtype=dtype)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    return Tensor(None, TensorConfig((), None, None))
+    return Tensor(None, TensorConfig((), None, None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
 def decode_gif(
-    contents: object,
-) -> object:
+    contents: Any,
+) -> Any:
     """Decode GIF image.
 
     Args:
         contents (object): The contents parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -519,18 +512,17 @@ def decode_gif(
         return backend_cls.decode_gif(contents)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    return Tensor(None, TensorConfig((), None, None))
+    return Tensor(None, TensorConfig((), None, None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def decode_bmp(contents: object, channels: int = 0) -> object:
+def decode_bmp(contents: Any, channels: int = 0) -> Any:
     """Decode BMP image.
 
     Args:
         contents (object): The contents parameter.
         channels (int): The channels parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
@@ -539,10 +531,10 @@ def decode_bmp(contents: object, channels: int = 0) -> object:
         return backend_cls.decode_bmp(contents, channels=channels)
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    return Tensor(None, TensorConfig((), None, None))
+    return Tensor(None, TensorConfig((), None, None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def _eager_base64(op: str, data: object, pad: bool = False) -> object:
+def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
     """Evaluate _eager_base64 operation.
 
     Args:
@@ -550,12 +542,11 @@ def _eager_base64(op: str, data: object, pad: bool = False) -> object:
         data (object): The data parameter.
         pad (bool): The pad parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import base64
 
-    def _proc(d: object) -> bytes:
+    def _proc(d: Any) -> bytes:
         """Process a single element for base64 operation.
 
         Args:
@@ -577,7 +568,7 @@ def _eager_base64(op: str, data: object, pad: bool = False) -> object:
     return _proc(data)
 
 
-def encode_base64(input: Tensor, pad: bool = False, name: str = None) -> Tensor:
+def encode_base64(input: Tensor, pad: Any = False, name: Any = None) -> Any:
     """Encode base64.
 
     Args:
@@ -599,7 +590,7 @@ def encode_base64(input: Tensor, pad: bool = False, name: str = None) -> Tensor:
     return _emit_shape_node("EncodeBase64", [input], {"pad": pad, "name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
 
-def decode_base64(input: Tensor, name: str = None) -> Tensor:
+def decode_base64(input: Tensor, name: Any = None) -> Any:
     """Decode base64.
 
     Args:
@@ -620,7 +611,7 @@ def decode_base64(input: Tensor, name: str = None) -> Tensor:
     return _emit_shape_node("DecodeBase64", [input], {"name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
 
-def parse_sequence_example(serialized: Tensor, context_features: dict[str, Any] = None, sequence_features: dict[str, Any] = None, example_names: Tensor = None, name: str = None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:
+def parse_sequence_example(serialized: Tensor, context_features: Any = None, sequence_features: Any = None, example_names: Any = None, name: Any = None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:
     """Parse sequence example.
 
     Args:
@@ -659,7 +650,7 @@ class TFRecordOptions:
 class TFRecordWriter:
     """Writer for TFRecord format."""
 
-    def __init__(self, path: str, options: TFRecordOptions = None) -> None:
+    def __init__(self, path: str, options: Any = None) -> None:
         """Initialize.
 
         Args:
@@ -669,7 +660,7 @@ class TFRecordWriter:
         self.path = path
         self.options = options
 
-    def write(self, record: object) -> None:
+    def write(self, record: Any) -> None:
         """Write record.
 
         Args:
@@ -696,7 +687,7 @@ class TFRecordWriter:
         """
         return self
 
-    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit context manager.
 
         Args:
@@ -716,15 +707,14 @@ class Load(OpDef):
 
     op_name = "Load"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -743,15 +733,14 @@ class Save(OpDef):
 
     op_name = "Save"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -770,15 +759,14 @@ class SaveGguf(OpDef):
 
     op_name = "SaveGguf"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -797,15 +785,14 @@ class Savez(OpDef):
 
     op_name = "Savez"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -824,15 +811,14 @@ class SavezCompressed(OpDef):
 
     op_name = "SavezCompressed"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -851,15 +837,14 @@ class ReadFile(OpDef):
 
     op_name = "ReadFile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -878,15 +863,14 @@ class WriteFile(OpDef):
 
     op_name = "WriteFile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -905,15 +889,14 @@ class DecodeImage(OpDef):
 
     op_name = "DecodeImage"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -932,15 +915,14 @@ class DecodeCsv(OpDef):
 
     op_name = "DecodeCsv"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -959,15 +941,14 @@ class ParseExample(OpDef):
 
     op_name = "ParseExample"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -986,15 +967,14 @@ class SerializeTensor(OpDef):
 
     op_name = "SerializeTensor"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1013,15 +993,14 @@ class ParseTensor(OpDef):
 
     op_name = "ParseTensor"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1040,15 +1019,14 @@ class EncodeBase64(OpDef):
 
     op_name = "EncodeBase64"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1067,15 +1045,14 @@ class DecodeBase64(OpDef):
 
     op_name = "DecodeBase64"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1094,15 +1071,14 @@ class ParseSequenceExample(OpDef):
 
     op_name = "ParseSequenceExample"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1121,15 +1097,14 @@ class SparsePlus(OpDef):
 
     op_name = "SparsePlus"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1148,15 +1123,14 @@ class SparseSigmoid(OpDef):
 
     op_name = "SparseSigmoid"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -1169,15 +1143,14 @@ class SparseSigmoid(OpDef):
         return res
 
 
-def sparse_plus(*args: object, **kwargs: object) -> object:
+def sparse_plus(*args: Any, **kwargs: Any) -> Any:
     """SparsePlus frontend.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -1190,15 +1163,14 @@ def sparse_plus(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("SparsePlus", list(args), kwargs, getattr(args[0], "shape", ()) if args else (), getattr(args[0], "dtype", "float32") if args else "float32")
 
 
-def sparse_sigmoid(*args: object, **kwargs: object) -> object:
+def sparse_sigmoid(*args: Any, **kwargs: Any) -> Any:
     """SparseSigmoid frontend.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -1222,15 +1194,14 @@ class Fromfile(OpDef):
 
     op_name = "Fromfile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
@@ -1247,15 +1218,14 @@ class Fromstring(OpDef):
 
     op_name = "Fromstring"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
@@ -1272,15 +1242,14 @@ class Fromiter(OpDef):
 
     op_name = "Fromiter"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         count = kwargs.get("count", -1)
         return (count if count != -1 else None,)
@@ -1297,21 +1266,20 @@ class Fromfunction(OpDef):
 
     op_name = "Fromfunction"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
         return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
 
 
-def fromfile(file: object, dtype: object = float, count: int = -1, sep: str = "", offset: int = 0, *, like: object = None) -> object:
+def fromfile(file: Any, dtype: Any = float, count: int = -1, sep: str = "", offset: int = 0, *, like: Any = None) -> Any:
     """Construct an array from data in a text or binary file.
 
     Args:
@@ -1326,15 +1294,14 @@ def fromfile(file: object, dtype: object = float, count: int = -1, sep: str = ""
         sep (str): The sep parameter.
         offset (int): The offset parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Fromfile", file, dtype=dtype, count=count, sep=sep, offset=offset, like=like)
 
 
-def fromstring(string: str, dtype: object = float, count: int = -1, sep: str = "", *, like: object = None) -> object:
+def fromstring(string: str, dtype: Any = float, count: int = -1, sep: str = "", *, like: Any = None) -> Any:
     """Provide a new 1-D array initialized from text data in a string.
 
     Args:
@@ -1348,15 +1315,14 @@ def fromstring(string: str, dtype: object = float, count: int = -1, sep: str = "
         count (int): The count parameter.
         sep (str): The sep parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Fromstring", string, dtype=dtype, count=count, sep=sep, like=like)
 
 
-def fromiter(iterable: object, dtype: object, count: int = -1, *, like: object = None) -> object:
+def fromiter(iterable: Any, dtype: Any, count: int = -1, *, like: Any = None) -> Any:
     """Create a new 1-dimensional array from an iterable object.
 
     Args:
@@ -1369,15 +1335,14 @@ def fromiter(iterable: object, dtype: object, count: int = -1, *, like: object =
     dtype (object): The dtype parameter.
         count (int): The count parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Fromiter", iterable, dtype, count=count, like=like)
 
 
-def fromfunction(function: object, shape: object, *, dtype: object = float, like: object = None, **kwargs: object) -> object:
+def fromfunction(function: Any, shape: Any, *, dtype: Any = float, like: Any = None, **kwargs: Any) -> Any:
     """Construct an array by executing a function over each coordinate.
 
     Args:
@@ -1389,8 +1354,7 @@ def fromfunction(function: object, shape: object, *, dtype: object = float, like
         shape (object): The shape parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

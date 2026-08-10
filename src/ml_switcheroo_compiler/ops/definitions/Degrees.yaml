@@ -1,0 +1,7 @@
+operation: Degrees
+description: The Degrees operation.
+variants:
+  cupy:
+    eager: cp.degrees
+  dask:
+    eager: da.degrees

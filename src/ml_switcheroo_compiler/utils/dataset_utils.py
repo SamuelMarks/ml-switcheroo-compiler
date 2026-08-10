@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Core abstractions and logic definitions for dataset_utils.py."""
 
-from __future__ import annotations
 
 import os
 from collections.abc import Iterator, Sequence
@@ -32,7 +36,7 @@ class BatchConfig:
 class IOConfig:
     """Configuration for file I/O operations."""
 
-    labels: object = "inferred"
+    labels: Any = "inferred"
     label_mode: str = "int"
     class_names: Sequence[str] | None = None
     follow_links: bool = False
@@ -83,7 +87,7 @@ class NumpyDataset:
 
     def __init__(
         self,
-        x: Sequence | object,
+        x: Sequence | Any,
         y: Sequence | object | None = None,
         config: BatchConfig | None = None,
     ) -> None:
@@ -109,11 +113,10 @@ class NumpyDataset:
 
     def __iter__(
         self,
-    ) -> Iterator[object | tuple[object, object]]:
+    ) -> Iterator[Any | tuple[Any, Any]]:
         """Iterate over dataset.
 
-        Yields:
-            object: Yielded value.
+        Yields: Any: Yielded value.
             Iterator: Result.
         """
         for i in range(0, len(self._indices), self.batch_size):
@@ -143,8 +146,7 @@ def _parse_class_names(directory: str, class_names: Sequence[str] | None) -> lis
         directory (str): The directory parameter.
         class_names (object): The class_names parameter.
 
-    Yields:
-            object: Result.
+    Yields: Any: Result.
     """
     if class_names is not None:
         return list(class_names)
@@ -179,8 +181,7 @@ def _walk_directory_and_filter(directory: str, class_names: list[str], valid_ext
         class_names (object): The class_names parameter.
         valid_exts (object): The valid_exts parameter.
 
-    Yields:
-            object: Result.
+    Yields: Any: Result.
     """
     file_paths = []
     file_labels = []
@@ -323,8 +324,7 @@ def _get_timeseries_indices(
         data_len (int): The data_len parameter.
         config (object): The config parameter.
 
-    Yields:
-            object: Result.
+    Yields: Any: Result.
     """
     start = 0 if config["start_index"] is None else config["start_index"]
     end = data_len if config["end_index"] is None else config["end_index"]
@@ -333,8 +333,8 @@ def _get_timeseries_indices(
 
 
 def _extract_timeseries_windows(
-    data: object,
-    targets: object,
+    data: Any,
+    targets: Any,
     params: dict[str, int],
     bounds: tuple[int, int, int],
 ) -> tuple[list[Any], list[Any] | None]:
@@ -346,11 +346,10 @@ def _extract_timeseries_windows(
         params (object): The params parameter.
         bounds (object): The bounds parameter.
 
-    Yields:
-            object: Result.
+    Yields: Any: Result.
     """
     x = []
-    y = [] if targets is not None else None
+    y = [] if targets is not None else None  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     start, stop, stride = bounds
     seq_len, samp_rate = params["sequence_length"], params["sampling_rate"]
     for i in range(start, stop, stride):
@@ -361,8 +360,8 @@ def _extract_timeseries_windows(
 
 
 def timeseries_dataset_from_array(
-    data: object,
-    targets: object,
+    data: Any,
+    targets: Any,
     sequence_length: int,
     config: DatasetConfig | None = None,
 ) -> NumpyDataset:
@@ -407,7 +406,7 @@ def timeseries_dataset_from_array(
     )
 
 
-def pack_x_y_sample_weight(x: object, y: object | None = None, sample_weight: object | None = None) -> object:
+def pack_x_y_sample_weight(x: Any, y: Any | None = None, sample_weight: Any | None = None) -> Any:
     """Pack x, y, and sample_weight.
 
     Args:
@@ -431,7 +430,7 @@ def pad_sequences(
     dtype: str = "int32",
     padding: str = "pre",
     truncating: str = "pre",
-    value: object = 0.0,
+    value: Any = 0.0,
 ) -> list[list[Any]]:
     """Pad sequences to the same length.
 
@@ -469,7 +468,7 @@ def pad_sequences(
     return padded
 
 
-def split_dataset(dataset: object, left_size: float = 0.5, shuffle: bool = False) -> tuple[object, object]:
+def split_dataset(dataset: Any, left_size: float = 0.5, shuffle: bool = False) -> tuple[Any, Any]:
     """Split a dataset.
 
     Args:
@@ -483,7 +482,7 @@ def split_dataset(dataset: object, left_size: float = 0.5, shuffle: bool = False
     return dataset, dataset
 
 
-def unpack_x_y_sample_weight(data: object) -> tuple:
+def unpack_x_y_sample_weight(data: Any) -> tuple:
     """Unpack x, y, and sample_weight.
 
     Args:

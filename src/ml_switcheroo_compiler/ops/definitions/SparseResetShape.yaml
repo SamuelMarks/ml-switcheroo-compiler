@@ -1,0 +1,5 @@
+operation: SparseResetShape
+description: The SparseResetShape operation.
+variants:
+  numpy:
+    generator: tf.sparse.reset_shape

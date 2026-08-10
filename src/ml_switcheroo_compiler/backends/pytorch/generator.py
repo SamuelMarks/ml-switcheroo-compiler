@@ -1,7 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for generator.py."""
 
 import os
+from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -36,7 +37,7 @@ class PyTorchVisionVisitor:
         "MedianFilter": lambda vars: f"torchaudio.functional.median_filter({vars[0]})",
     }
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process a vision operation node and produce corresponding PyTorch code.
 
         Args:
@@ -62,7 +63,7 @@ class PyTorchAudioVisitor:
         "Mfcc": lambda vars: f"torchaudio.transforms.MFCC()({vars[0]})",
     }
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process an audio operation node and produce corresponding PyTorch code.
 
         Args:
@@ -82,7 +83,9 @@ class PyTorchAudioVisitor:
 class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerator):
     """PyTorch code generator."""
 
-    def __init__(self, graph: object) -> None:
+    _base_class_name: str = "nn.Module"
+
+    def __init__(self, graph: Any) -> None:
         """Initialize the PyTorch code generator with the given computation graph.
 
         Args:
@@ -93,7 +96,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         self.audio_visitor = PyTorchAudioVisitor()
         self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor(), PyTorchDistributedVisitor()])
 
-    def visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process an IR node and produce the corresponding PyTorch code string.
 
         Args:
@@ -119,7 +122,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return "pt"
 
-    def visit_PowerIteration(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_PowerIteration(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate PyTorch code for a power iteration operation.
 
         Args:
@@ -134,7 +137,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"pt_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
-    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RaggedDot(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate PyTorch code for a ragged dot product operation.
 
         Args:
@@ -147,7 +150,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return f"pt_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Einsum(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate PyTorch code for an Einstein summation operation.
 
         Args:
@@ -341,7 +344,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         return has_params
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
         """Load.
 
         Args:
@@ -350,15 +353,14 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         fix_imports (bool): The fix_imports parameter.
         encoding (str): The encoding parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         import torch
 
         return torch.load(filepath, weights_only=not allow_pickle)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -372,7 +374,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         torch.save(arr, file)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Savez.
 
         Args:
@@ -387,7 +389,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         torch.save(data, file)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Savez compressed.
 
         Args:

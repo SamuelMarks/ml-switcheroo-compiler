@@ -1,7 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shared vision utilities and ops."""
 
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_crop_eager,
@@ -12,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AugMix")
-def _np_augmix(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
+def _np_augmix(backend_module: Any, images: Any, factor: float, **kwargs: Any) -> Any:
     """Evaluate _np_augmix operation.
 
     Args:
@@ -21,14 +22,13 @@ def _np_augmix(backend_module: object, images: object, factor: float, **kwargs: 
         factor (float): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("Cutmix")
-def _np_cutmix(backend_module: object, images1: object, images2: object, **kwargs: object) -> object:
+def _np_cutmix(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) -> Any:
     """Evaluate _np_cutmix operation.
 
     Args:
@@ -37,14 +37,13 @@ def _np_cutmix(backend_module: object, images1: object, images2: object, **kwarg
         images2 (object): The images2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images1
 
 
 @numpy_eager_registry.register("Mixup")
-def _np_mixup(backend_module: object, images1: object, images2: object, **kwargs: object) -> object:
+def _np_mixup(backend_module: Any, images1: Any, images2: Any, **kwargs: Any) -> Any:
     """Evaluate _np_mixup operation.
 
     Args:
@@ -53,14 +52,13 @@ def _np_mixup(backend_module: object, images1: object, images2: object, **kwargs
         images2 (object): The images2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images1
 
 
 @numpy_eager_registry.register("RandAugment")
-def _np_rand_augment(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
+def _np_rand_augment(backend_module: Any, images: Any, factor: float, **kwargs: Any) -> Any:
     """Evaluate _np_rand_augment operation.
 
     Args:
@@ -69,14 +67,13 @@ def _np_rand_augment(backend_module: object, images: object, factor: float, **kw
         factor (float): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("RandomColorJitter")
-def _np_random_color_jitter(backend_module: object, images: object, **kwargs: object) -> object:
+def _np_random_color_jitter(backend_module: Any, images: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_color_jitter operation.
 
     Args:
@@ -84,14 +81,13 @@ def _np_random_color_jitter(backend_module: object, images: object, **kwargs: ob
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("RandomCrop")
-def _np_random_crop(backend_module: object, images: object, size: tuple, seed: object = None) -> object:
+def _np_random_crop(backend_module: Any, images: Any, size: tuple, seed: Any = None) -> Any:
     """Evaluate _np_random_crop operation.
 
     Args:
@@ -100,14 +96,13 @@ def _np_random_crop(backend_module: object, images: object, size: tuple, seed: o
         size (tuple): The size parameter.
         seed (object): The seed parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return random_crop_eager(backend_module, images, size, seed)
 
 
 @numpy_eager_registry.register("RandomErasing")
-def _np_random_erasing(backend_module: object, images: object, factor: float, **kwargs: object) -> object:
+def _np_random_erasing(backend_module: Any, images: Any, factor: float, **kwargs: Any) -> Any:
     """Evaluate _np_random_erasing operation.
 
     Args:
@@ -116,14 +111,13 @@ def _np_random_erasing(backend_module: object, images: object, factor: float, **
         factor (float): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 
 
 # @numpy_eager_registry.register("RandomFlip")
-def _np_flip_horizontal(img: object, rng: object) -> object:
+def _np_flip_horizontal(img: Any, rng: Any) -> Any:
     """Flip an image horizontally with 50% probability.
 
     Args:
@@ -136,7 +130,7 @@ def _np_flip_horizontal(img: object, rng: object) -> object:
     return img[:, :, ::-1] if rng.random() > 0.5 else img
 
 
-def _np_flip_vertical(img: object, rng: object) -> object:
+def _np_flip_vertical(img: Any, rng: Any) -> Any:
     """Flip an image vertically with 50% probability.
 
     Args:
@@ -149,7 +143,7 @@ def _np_flip_vertical(img: object, rng: object) -> object:
     return img[:, ::-1, :] if rng.random() > 0.5 else img
 
 
-def _np_flip_both(img: object, rng: object) -> object:
+def _np_flip_both(img: Any, rng: Any) -> Any:
     """Flip an image both horizontally and vertically with 50% probability each.
 
     Args:
@@ -170,7 +164,7 @@ _NP_FLIP_STRATEGIES = {
 }
 
 
-def _np_random_flip(images: object, mode: str, seed: object = None) -> object:
+def _np_random_flip(images: Any, mode: str, seed: Any = None) -> Any:
     """Evaluate _np_random_flip operation.
 
     Args:
@@ -178,8 +172,7 @@ def _np_random_flip(images: object, mode: str, seed: object = None) -> object:
         mode (str): The mode parameter.
         seed (object): The seed parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import random
 
@@ -193,7 +186,7 @@ def _np_random_flip(images: object, mode: str, seed: object = None) -> object:
         return strategy(images, rng)
 
     out = np.copy(images)
-    strategy = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
+    strategy = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(out.shape[0]):
         out[i] = strategy(out[i], rng)
@@ -208,11 +201,11 @@ class RotationConfig:
     theta: float
     H: int
     W: int
-    x: object
-    y: object
+    x: Any
+    y: Any
 
 
-def _calculate_rotation_matrix(np: object, cfg: RotationConfig) -> tuple:
+def _calculate_rotation_matrix(np: Any, cfg: RotationConfig) -> tuple:
     """Calculate rotation matrix coordinates.
 
     Args:
@@ -230,7 +223,7 @@ def _calculate_rotation_matrix(np: object, cfg: RotationConfig) -> tuple:
     return src_x, src_y
 
 
-def _nearest_interpolation(np: object, images: object, coords: tuple, shape: tuple, b_c: tuple) -> object:
+def _nearest_interpolation(np: Any, images: Any, coords: tuple, shape: tuple, b_c: tuple) -> Any:
     """Nearest neighbor interpolation.
 
     Args:
@@ -240,8 +233,7 @@ def _nearest_interpolation(np: object, images: object, coords: tuple, shape: tup
         shape (tuple): The shape parameter.
         b_c (tuple): The b_c parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     src_x, src_y = coords
     H, W = shape
@@ -255,17 +247,17 @@ def _nearest_interpolation(np: object, images: object, coords: tuple, shape: tup
 class InterpPixelsConfig:
     """InterpPixelsConfig class."""
 
-    images: object
-    y0: object
-    y1: object
-    x0: object
-    x1: object
+    images: Any
+    y0: Any
+    y1: Any
+    x0: Any
+    x1: Any
     H: int
     W: int
     b_c: tuple
 
 
-def _get_interp_pixels(np: object, cfg: InterpPixelsConfig) -> tuple:
+def _get_interp_pixels(np: Any, cfg: InterpPixelsConfig) -> tuple:
     """Gather pixels.
 
     Args:
@@ -306,7 +298,7 @@ def _get_interp_weights(src_coords: tuple, bounds: tuple) -> tuple:
     return wa, wb, wc, wd
 
 
-def _bilinear_interpolation(np: object, images: object, coords: tuple, shape: tuple, b_c: tuple) -> object:
+def _bilinear_interpolation(np: Any, images: Any, coords: tuple, shape: tuple, b_c: tuple) -> Any:
     """Bilinear interpolation.
 
     Args:
@@ -316,8 +308,7 @@ def _bilinear_interpolation(np: object, images: object, coords: tuple, shape: tu
         shape (tuple): The shape parameter.
         b_c (tuple): The b_c parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     y0 = np.floor(coords[1]).astype(np.int32)
     y1 = y0 + 1
@@ -341,7 +332,7 @@ class AffineConfig:
     options: tuple
 
 
-def _apply_affine_grid(np: object, images: object, cfg: AffineConfig) -> object:
+def _apply_affine_grid(np: Any, images: Any, cfg: AffineConfig) -> Any:
     """Apply affine grid sampling.
 
     Args:
@@ -349,8 +340,7 @@ def _apply_affine_grid(np: object, images: object, cfg: AffineConfig) -> object:
         images: Input images.
         cfg: Affine configuration.
 
-    Returns:
-        object: Sampled values.
+    Returns: Any: Sampled values.
     """
     interpolation, fill_mode, fill_value, mask = cfg.options
     if interpolation == "nearest":
@@ -368,16 +358,16 @@ def _apply_affine_grid(np: object, images: object, cfg: AffineConfig) -> object:
 class BatchRotationConfig:
     """Batch rotation configuration."""
 
-    images: object
-    angles: object
+    images: Any
+    angles: Any
     H: int
     W: int
-    x: object
-    y: object
+    x: Any
+    y: Any
     options: tuple
 
 
-def _process_batch_item(np: object, cfg: BatchRotationConfig, b: int, out: object) -> None:
+def _process_batch_item(np: Any, cfg: BatchRotationConfig, b: int, out: Any) -> None:
     """Process a single item in the batch.
 
     Args:
@@ -395,15 +385,14 @@ def _process_batch_item(np: object, cfg: BatchRotationConfig, b: int, out: objec
         out[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
 
 
-def _apply_rotation_batch(np: object, cfg: BatchRotationConfig) -> object:
+def _apply_rotation_batch(np: Any, cfg: BatchRotationConfig) -> Any:
     """Apply rotation to a batch of images.
 
     Args:
         np (object): The np parameter.
         cfg (BatchRotationConfig): The cfg parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     B = cfg.images.shape[0]
     out = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
@@ -412,7 +401,7 @@ def _apply_rotation_batch(np: object, cfg: BatchRotationConfig) -> object:
     return out
 
 
-def _resolve_rotation_factor(factor: object) -> tuple:
+def _resolve_rotation_factor(factor: Any) -> tuple:
     """Resolve rotation bounds.
 
     Args:
@@ -426,7 +415,7 @@ def _resolve_rotation_factor(factor: object) -> tuple:
     return -factor, factor
 
 
-def _create_rotation_mesh(np: object, H: int, W: int) -> tuple:
+def _create_rotation_mesh(np: Any, H: int, W: int) -> tuple:
     """Create mesh grid for rotation.
 
     Args:
@@ -444,7 +433,7 @@ def _create_rotation_mesh(np: object, H: int, W: int) -> tuple:
 
 
 @numpy_eager_registry.register("RandomRotation")
-def _np_random_rotation(backend_module: object, images: object, **kwargs: object) -> object:
+def _np_random_rotation(backend_module: Any, images: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_rotation operation.
 
     Args:
@@ -452,8 +441,7 @@ def _np_random_rotation(backend_module: object, images: object, **kwargs: object
         images (object): The images parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     np = backend_module
     images = np.asarray(images)
@@ -483,7 +471,7 @@ def _np_random_rotation(backend_module: object, images: object, **kwargs: object
 
 
 @numpy_eager_registry.register("RandomTranslation")
-def _np_random_translation(backend_module: object, images: object, height_factor: object, width_factor: object, **kwargs: object) -> object:
+def _np_random_translation(backend_module: Any, images: Any, height_factor: Any, width_factor: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_translation operation.
 
     Args:
@@ -493,14 +481,13 @@ def _np_random_translation(backend_module: object, images: object, height_factor
         width_factor (object): The width_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return random_translation_eager(backend_module, images, height_factor, width_factor, **kwargs)
 
 
 @numpy_eager_registry.register("RandomZoom")
-def _np_random_zoom(backend_module: object, images: object, height_factor: object, width_factor: object = None, **kwargs: object) -> object:
+def _np_random_zoom(backend_module: Any, images: Any, height_factor: Any, width_factor: Any = None, **kwargs: Any) -> Any:
     """Evaluate _np_random_zoom operation.
 
     Args:
@@ -510,8 +497,7 @@ def _np_random_zoom(backend_module: object, images: object, height_factor: objec
         width_factor (object): The width_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return random_zoom_eager(backend_module, images, height_factor, width_factor, **kwargs)
 

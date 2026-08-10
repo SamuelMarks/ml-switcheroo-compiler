@@ -1,0 +1,5 @@
+operation: Cummax
+description: The Cummax operation.
+variants:
+  numpy:
+    generator: np.maximum.accumulate

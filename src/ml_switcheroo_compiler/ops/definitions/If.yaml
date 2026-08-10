@@ -1,0 +1,7 @@
+operation: If
+description: The If operation.
+variants:
+  edge_onnx:
+    generator: If
+  edge_stablehlo:
+    generator: stablehlo.if

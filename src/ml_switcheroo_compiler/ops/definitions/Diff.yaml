@@ -1,0 +1,9 @@
+operation: Diff
+description: The Diff operation.
+variants:
+  cupy:
+    eager: cp.diff
+  dask:
+    eager: da.diff
+  keras:
+    eager: keras_ops.diff

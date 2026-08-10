@@ -1,0 +1,5 @@
+operation: Digamma
+description: The Digamma operation.
+variants:
+  tensorflow:
+    eager: tf.math.digamma

@@ -1,0 +1,5 @@
+operation: HardSilu
+description: The HardSilu operation.
+variants:
+  keras:
+    eager: keras_ops.hard_silu

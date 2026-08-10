@@ -1,0 +1,5 @@
+operation: Eigvals
+description: The Eigvals operation.
+variants:
+  tensorflow:
+    eager: tf.eigvals

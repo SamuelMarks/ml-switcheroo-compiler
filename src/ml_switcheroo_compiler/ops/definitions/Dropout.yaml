@@ -1,0 +1,5 @@
+operation: Dropout
+description: The Dropout operation.
+variants:
+  tensorflow:
+    eager: tf.nn.dropout

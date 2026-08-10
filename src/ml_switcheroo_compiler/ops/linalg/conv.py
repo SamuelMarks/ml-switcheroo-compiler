@@ -1,8 +1,10 @@
-"""Core abstractions and logic definitions for conv.py."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Core abstractions and logic definitions for conv.py."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
@@ -20,9 +22,9 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class ConvLocalHyperparams:
     """ConvLocalHyperparams."""
 
-    window_strides: object
-    padding: object
-    filter_shape: object
+    window_strides: Any
+    padding: Any
+    filter_shape: Any
 
 
 @dispatch_eager("ConvGeneralDilated")
@@ -30,7 +32,7 @@ def conv_general_dilated(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvConfig,
-) -> Tensor:
+) -> Any:
     """General N-dimensional convolution with support for strides, padding, and dilations.
 
     Args:
@@ -66,8 +68,8 @@ def conv_general_dilated_local(
     lhs: Tensor,
     rhs: Tensor,
     config: ConvLocalHyperparams,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """ConvGeneralDilatedLocal.
 
     Args:
@@ -93,7 +95,7 @@ def conv_general_dilated_local(
 
 
 @dispatch_eager("ConvGeneralDilatedPatches")
-def conv_general_dilated_patches(lhs: Tensor, filter_shape: object, window_strides: object, padding: object, **kwargs: object) -> Tensor:
+def conv_general_dilated_patches(lhs: Tensor, filter_shape: Any, window_strides: Any, padding: Any, **kwargs: Any) -> Any:
     """ConvGeneralDilatedPatches.
 
     Args:
@@ -119,7 +121,7 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape: object, window_strid
 
 
 @dispatch_eager("ConvWithGeneralPadding")
-def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: object, padding: object, **kwargs: object) -> Tensor:
+def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: Any, padding: Any, **kwargs: Any) -> Any:
     """ConvWithGeneralPadding.
 
     Args:

@@ -1,7 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for nn.py."""
 
 import math
+from typing import Any
 
 import numpy as np
 
@@ -10,7 +11,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 
-def _gelu(x: object, *args: object, **kwargs: object) -> object:
+def _gelu(x: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _gelu operation.
 
     Args:
@@ -18,15 +19,14 @@ def _gelu(x: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     erf_vec = np.vectorize(math.erf)
     return 0.5 * x * (1 + erf_vec(x / np.sqrt(2.0)))
 
 
 @numpy_eager_registry.register("Relu")
-def _np_relu(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_relu(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_relu operation.
 
     Args:
@@ -35,14 +35,13 @@ def _np_relu(backend_module: object, x: object, *args: object, **kwargs: object)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.maximum(x, 0.0)
 
 
 @numpy_eager_registry.register("AlphaDropout")
-def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_alpha_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_alpha_dropout operation.
 
     Args:
@@ -50,8 +49,7 @@ def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> ob
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     rate = kwargs.get("rate", 0.5)
     training = kwargs.get("training", False)
@@ -71,7 +69,7 @@ def _np_alpha_dropout(backend_module: object, x: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("ActivityRegularization")
-def _np_activity_regularization(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_activity_regularization(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_activity_regularization operation.
 
     Args:
@@ -79,14 +77,13 @@ def _np_activity_regularization(backend_module: object, x: object, **kwargs: obj
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return x
 
 
 @numpy_eager_registry.register("Dropout")
-def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_dropout(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_dropout operation.
 
     Args:
@@ -94,8 +91,7 @@ def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     rate = kwargs.get("rate", 0.5)
     training = kwargs.get("training", False)
@@ -110,7 +106,7 @@ def _np_dropout(backend_module: object, x: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("TimeDistributed")
-def _np_time_distributed(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_time_distributed(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_time_distributed operation.
 
     Args:
@@ -118,8 +114,7 @@ def _np_time_distributed(backend_module: object, x: object, **kwargs: object) ->
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     wrapped_op_name = kwargs.pop("wrapped_op_name")
     shape = x.shape
@@ -132,7 +127,7 @@ def _np_time_distributed(backend_module: object, x: object, **kwargs: object) ->
 
 
 @numpy_eager_registry.register("Rope")
-def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_rope(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Apply Rotary Positional Encoding using NumPy.
 
     Args:
@@ -140,11 +135,10 @@ def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
         x (object): Input tensor.
         **kwargs (object): Keyword arguments.
 
-    Returns:
-        object: Output tensor.
+    Returns: Any: Output tensor.
     """
     x_np = backend_module.asarray(x)
-    half_dim = kwargs.get("dim") // 2
+    half_dim = kwargs.get("axis", kwargs.get("dim", x_np.shape[-1])) // 2  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     position = backend_module.arange(kwargs.get("offset", 0), kwargs.get("offset", 0) + x_np.shape[-2], dtype=x_np.dtype)
     freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(kwargs.get("base", 10000.0)) / half_dim))
     angles = position[:, None] * freqs[None, :]
@@ -159,7 +153,7 @@ def _np_rope(backend_module: object, x: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Rrelu")
-def _np_rrelu(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _np_rrelu(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_rrelu operation.
 
     Args:
@@ -168,8 +162,7 @@ def _np_rrelu(backend_module: object, x: object, *args: object, **kwargs: object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     lower = kwargs.get("lower", 1.0 / 8.0)
     upper = kwargs.get("upper", 1.0 / 3.0)

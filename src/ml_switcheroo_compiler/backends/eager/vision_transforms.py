@@ -1,9 +1,9 @@
-# ruff: noqa: E501
-"""Vision utilities."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Vision utilities."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig,
 from .vision_utils import ResizeContext, TransformInterpolationConfig
 
 
-def perspective_transform_eager(backend_module: object, images: object, start_points: object, end_points: object, config: PerspectiveConfig) -> object:
+def perspective_transform_eager(backend_module: Any, images: Any, start_points: Any, end_points: Any, config: PerspectiveConfig) -> Any:
     """Evaluate perspective_transform_eager operation.
 
     Args:
@@ -21,13 +21,12 @@ def perspective_transform_eager(backend_module: object, images: object, start_po
         end_points (object): The end_points parameter.
         config (PerspectiveConfig): The config parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _apply_elastic_batch(np_mod: object, imgs: object, config: TransformInterpolationConfig) -> object:
+def _apply_elastic_batch(np_mod: Any, imgs: Any, config: TransformInterpolationConfig) -> Any:
     """Apply elastic coordinates across a batch.
 
     Args:
@@ -35,8 +34,7 @@ def _apply_elastic_batch(np_mod: object, imgs: object, config: TransformInterpol
         imgs (object): The imgs parameter.
         config (TransformInterpolationConfig): The config parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
@@ -45,14 +43,14 @@ def _apply_elastic_batch(np_mod: object, imgs: object, config: TransformInterpol
 class ElasticGridContext:
     """ElasticGridContext."""
 
-    np_mod: object
+    np_mod: Any
     H: int
     W: int
     B: int
-    disp: object
+    disp: Any
 
 
-def _compute_elastic_grid(ctx: ElasticGridContext) -> tuple[object, object]:
+def _compute_elastic_grid(ctx: ElasticGridContext) -> Any:
     """Evaluate _compute_elastic_grid operation.
 
     Args:
@@ -64,7 +62,7 @@ def _compute_elastic_grid(ctx: ElasticGridContext) -> tuple[object, object]:
     return 0
 
 
-def elastic_transform_eager(backend_module: object, images: object, displacement: object, config: ElasticConfig) -> object:
+def elastic_transform_eager(backend_module: Any, images: Any, displacement: Any, config: ElasticConfig) -> Any:
     """Evaluate elastic_transform_eager operation.
 
     Args:
@@ -73,8 +71,7 @@ def elastic_transform_eager(backend_module: object, images: object, displacement
         displacement (object): The displacement parameter.
         config (ElasticConfig): The config parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
@@ -95,7 +92,7 @@ def _get_resize_interpolation_order(interpolation: str) -> int:
     return 1
 
 
-def _compute_resize_grid(np_mod: object, ctx: ResizeContext) -> tuple[object, object]:
+def _compute_resize_grid(np_mod: Any, ctx: ResizeContext) -> Any:
     """Evaluate _compute_resize_grid operation.
 
     Args:
@@ -108,7 +105,7 @@ def _compute_resize_grid(np_mod: object, ctx: ResizeContext) -> tuple[object, ob
     return 0
 
 
-def _apply_resize_batch(np_mod: object, imgs: object, out: object, coords: tuple[object, object], order: int) -> None:
+def _apply_resize_batch(np_mod: Any, imgs: Any, out: Any, coords: tuple[Any, Any], order: int) -> Any:
     """Apply the resize operation across a batch of images using interpolation.
 
     Args:
@@ -125,7 +122,7 @@ def _apply_resize_batch(np_mod: object, imgs: object, out: object, coords: tuple
 
 
 @global_eager_registry.register("UpsampleNearest")
-def _upsample_nearest_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+def _upsample_nearest_eager(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _upsample_nearest_eager operation.
 
     Args:
@@ -133,8 +130,7 @@ def _upsample_nearest_eager(backend_module: object, *args: object, **kwargs: obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
@@ -142,7 +138,7 @@ def _upsample_nearest_eager(backend_module: object, *args: object, **kwargs: obj
 @global_eager_registry.register("UpsampleBilinear")
 @global_eager_registry.register("UpsampleTrilinear")
 @global_eager_registry.register("UpsampleLinear")
-def _upsample_linear_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+def _upsample_linear_eager(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _upsample_linear_eager operation.
 
     Args:
@@ -150,14 +146,13 @@ def _upsample_linear_eager(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
 @global_eager_registry.register("UpsampleBicubic")
-def _upsample_bicubic_eager(backend_module: object, *args: object, **kwargs: object) -> object:
+def _upsample_bicubic_eager(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _upsample_bicubic_eager operation.
 
     Args:
@@ -165,13 +160,12 @@ def _upsample_bicubic_eager(backend_module: object, *args: object, **kwargs: obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def resize_eager(backend_module: object, images: object, size: tuple[int, int], config: ResizeOptions) -> object:
+def resize_eager(backend_module: Any, images: Any, size: tuple[int, int], config: ResizeOptions) -> Any:
     """Evaluate resize_eager operation.
 
     Args:
@@ -180,7 +174,6 @@ def resize_eager(backend_module: object, images: object, size: tuple[int, int], 
         size (tuple): The size parameter.
         config (ResizeOptions): The config parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0

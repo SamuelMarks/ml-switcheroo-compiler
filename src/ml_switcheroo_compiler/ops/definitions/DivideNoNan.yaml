@@ -1,0 +1,7 @@
+operation: DivideNoNan
+description: The DivideNoNan operation.
+variants:
+  keras:
+    eager: keras_ops.divide_no_nan
+  tensorflow:
+    eager: tf.math.divide_no_nan

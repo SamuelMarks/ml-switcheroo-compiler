@@ -1,0 +1,11 @@
+operation: Searchsorted
+description: The Searchsorted operation.
+variants:
+  cupy:
+    eager: cp.searchsorted
+  dask:
+    eager: da.searchsorted
+  keras:
+    eager: keras_ops.searchsorted
+  tensorflow:
+    eager: tf.searchsorted

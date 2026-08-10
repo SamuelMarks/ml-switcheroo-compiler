@@ -1,0 +1,7 @@
+operation: Softsign
+description: The Softsign operation.
+variants:
+  keras:
+    eager: keras_ops.softsign
+  tensorflow:
+    eager: tf.math.softsign

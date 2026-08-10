@@ -1,0 +1,9 @@
+operation: Flip
+description: The Flip operation.
+variants:
+  cupy:
+    eager: cp.flip
+  dask:
+    eager: da.flip
+  keras:
+    eager: keras_ops.flip

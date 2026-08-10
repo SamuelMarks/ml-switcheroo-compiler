@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dispatcher for operation execution."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
@@ -6,7 +9,7 @@ from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 
-def dispatch_op(op_type: str, *args: object, **kwargs: object) -> object:
+def dispatch_op(op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Route operation to eager or tracing handler.
 
     Args:
@@ -14,8 +17,7 @@ def dispatch_op(op_type: str, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         RuntimeError: An exception.

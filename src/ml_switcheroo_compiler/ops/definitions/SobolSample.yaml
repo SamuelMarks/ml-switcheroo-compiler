@@ -1,0 +1,5 @@
+operation: SobolSample
+description: The SobolSample operation.
+variants:
+  tensorflow:
+    eager: tf.math.sobol_sample

@@ -1,0 +1,5 @@
+operation: BooleanMask
+description: The BooleanMask operation.
+variants:
+  tensorflow:
+    eager: tf.boolean_mask

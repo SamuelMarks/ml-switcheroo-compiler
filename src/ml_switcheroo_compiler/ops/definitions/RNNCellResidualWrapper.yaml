@@ -1,0 +1,5 @@
+operation: RNNCellResidualWrapper
+description: The RNNCellResidualWrapper operation.
+variants:
+  numpy:
+    generator: tf.nn.rnn_cell.ResidualWrapper

@@ -1,0 +1,7 @@
+operation: Isreal
+description: The Isreal operation.
+variants:
+  cupy:
+    eager: cp.isreal
+  dask:
+    eager: da.isreal

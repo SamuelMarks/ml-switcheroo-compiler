@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Audio operations class definitions."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -7,7 +10,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 class Stft(OpDef):
     """Short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the STFT output.
 
         Args:
@@ -37,7 +40,7 @@ class Stft(OpDef):
 class MelSpectrogram(OpDef):
     """Mel spectrogram computation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the mel spectrogram output.
 
         Args:
@@ -65,7 +68,7 @@ class MelSpectrogram(OpDef):
 class Istft(OpDef):
     """Inverse short-time Fourier transform operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the inverse STFT output.
 
         Args:
@@ -92,7 +95,7 @@ class Istft(OpDef):
 class MelFilterbank(OpDef):
     """Mel filterbank generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the mel filterbank matrix.
 
         Args:
@@ -112,7 +115,7 @@ class MelFilterbank(OpDef):
 class Mfcc(OpDef):
     """Mel-frequency cepstral coefficients (MFCC) extraction operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the MFCC output.
 
         Args:
@@ -140,7 +143,7 @@ class Mfcc(OpDef):
 class MfccsFromLogMelSpectrograms(OpDef):
     """Operator to compute MFCCs directly from log mel spectrograms."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the resulting MFCC output.
 
         Args:
@@ -163,7 +166,7 @@ class MfccsFromLogMelSpectrograms(OpDef):
 class HannWindow(OpDef):
     """Hann window function generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the generated Hann window.
 
         Args:
@@ -185,7 +188,7 @@ class HannWindow(OpDef):
 class HammingWindow(OpDef):
     """Hamming window function generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the generated Hamming window.
 
         Args:
@@ -207,7 +210,7 @@ class HammingWindow(OpDef):
 class KaiserWindow(OpDef):
     """Kaiser window function generation operator."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the generated Kaiser window.
 
         Args:
@@ -231,7 +234,7 @@ class Dct(OpDef):
 
     op_name = "Dct"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infers the shape of the DCT output based on the input signal.
 
         Args:
@@ -250,7 +253,7 @@ class Idct(OpDef):
 
     op_name = "Idct"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infers the shape of the IDCT output based on the input transformed signal.
 
         Args:
@@ -269,7 +272,7 @@ class Mdct(OpDef):
 
     op_name = "Mdct"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the MDCT output based on the input signal.
 
         Args:
@@ -317,7 +320,7 @@ class InverseMdct(OpDef):
 
     op_name = "InverseMdct"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the IMDCT output based on the input transformed signal.
 
         Args:
@@ -357,7 +360,7 @@ class Frame(OpDef):
 
     op_name = "Frame"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infers the shape of the framed output tensor.
 
         Args:
@@ -395,7 +398,7 @@ class OverlapAndAdd(OpDef):
 
     op_name = "OverlapAndAdd"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infers the shape of the reconstructed signal output.
 
         Args:

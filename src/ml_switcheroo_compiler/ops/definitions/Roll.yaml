@@ -1,0 +1,11 @@
+operation: Roll
+description: The Roll operation.
+variants:
+  cupy:
+    eager: cp.roll
+  dask:
+    eager: da.roll
+  keras:
+    eager: keras_ops.roll
+  tensorflow:
+    eager: tf.roll

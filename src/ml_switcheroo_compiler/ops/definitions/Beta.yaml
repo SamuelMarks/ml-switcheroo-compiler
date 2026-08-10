@@ -1,0 +1,5 @@
+operation: Beta
+description: The Beta operation.
+variants:
+  numpy:
+    generator: np.random.beta({1}, {2}, size={shape})

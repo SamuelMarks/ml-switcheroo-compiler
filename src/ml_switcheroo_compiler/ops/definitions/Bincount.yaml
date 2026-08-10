@@ -1,0 +1,13 @@
+operation: Bincount
+description: The Bincount operation.
+variants:
+  cupy:
+    eager: cp.bincount
+  dask:
+    eager: da.bincount
+  keras:
+    eager: keras_ops.bincount
+  numpy:
+    generator: np.bincount
+  tensorflow:
+    eager: tf.math.bincount

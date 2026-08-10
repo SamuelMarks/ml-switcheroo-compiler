@@ -1,0 +1,5 @@
+operation: Reverse
+description: The Reverse operation.
+variants:
+  numpy:
+    generator: np.flip

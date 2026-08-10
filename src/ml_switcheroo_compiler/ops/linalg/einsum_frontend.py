@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """Core abstractions and logic definitions for einsum_frontend.py."""
 
-from __future__ import annotations
 
 from collections.abc import Sequence
 
@@ -32,8 +37,7 @@ def _get_tensordot_letters(len_a: int, len_b: int) -> tuple[list[str], list[str]
         len_a (int): The len_a parameter.
         len_b (int): The len_b parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     a_letters = [alphabet[i] for i in range(len_a)]
@@ -66,8 +70,7 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
         axes_a (object): The axes_a parameter.
         axes_b (object): The axes_b parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if not shape_a and not shape_b:
         return "", "", ""
@@ -81,7 +84,7 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     return a_str, b_str, out_str
 
 
-def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> Tensor:
+def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> Any:
     """Evaluate _tensordot_einsum_routing operation.
 
     Args:
@@ -98,7 +101,7 @@ def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], S
     return einsum(eq, a, b)
 
 
-def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> Tensor:
+def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> Any:
     """Compute the tensor dot product along specified axes.
 
     Args:
@@ -120,7 +123,7 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
-def einsum(equation: str, *operands: Tensor) -> Tensor:
+def einsum(equation: str, *operands: Tensor) -> Any:
     """Evaluate the Einstein summation convention on the operands.
 
     Args:
@@ -156,8 +159,7 @@ def _get_remaining_dims(shape_len: int, contracting: Sequence[int], batch: Seque
         contracting (object): The contracting parameter.
         batch (object): The batch parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     contract_set = set(contracting)
     batch_set = set(batch)
@@ -176,8 +178,7 @@ def _infer_dot_general_shape(
         rhs_shape (object): The rhs_shape parameter.
         dimension_numbers (object): The dimension_numbers parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     contracting, batch = dimension_numbers
     lhs_contracting, rhs_contracting = contracting

@@ -1,0 +1,7 @@
+operation: MatrixRank
+description: The MatrixRank operation.
+variants:
+  numpy:
+    generator: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
+  tensorflow:
+    eager: tf.linalg.matrix_rank

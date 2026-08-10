@@ -1,0 +1,7 @@
+operation: Eigvalsh
+description: The Eigvalsh operation.
+variants:
+  numpy:
+    generator: np.linalg.eigvalsh
+  tensorflow:
+    eager: tf.linalg.eigvalsh

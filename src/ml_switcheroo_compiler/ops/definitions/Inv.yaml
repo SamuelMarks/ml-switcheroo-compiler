@@ -1,0 +1,13 @@
+operation: Inv
+description: The Inv operation.
+variants:
+  cupy:
+    eager: cp.linalg.inv
+  dask:
+    eager: da.linalg.inv
+  keras:
+    eager: keras_ops.inv
+  numpy:
+    generator: np.linalg.inv
+  tensorflow:
+    eager: tf.linalg.inv

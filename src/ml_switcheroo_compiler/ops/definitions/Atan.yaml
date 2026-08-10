@@ -1,0 +1,11 @@
+operation: Atan
+description: The Atan operation.
+variants:
+  cupy:
+    generator: cp.arctan
+  dask:
+    generator: da.arctan
+  numpy:
+    generator: np.arctan
+  tensorflow:
+    eager: tf.atan

@@ -1,0 +1,5 @@
+operation: TakeAlongAxis
+description: The TakeAlongAxis operation.
+variants:
+  keras:
+    eager: keras_ops.take_along_axis

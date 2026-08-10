@@ -1,0 +1,5 @@
+operation: Erfc
+description: The Erfc operation.
+variants:
+  tensorflow:
+    eager: tf.math.erfc

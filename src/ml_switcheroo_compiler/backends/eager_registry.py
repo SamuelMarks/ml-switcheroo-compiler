@@ -1,8 +1,9 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Eager backend registry."""
 
 import typing
 from collections.abc import Callable
+from typing import Any
 
 
 class EagerOpRegistry:
@@ -36,18 +37,18 @@ class EagerOpRegistry:
 
         return decorator
 
-    def get(self, op_type: str) -> typing.Optional[typing.Callable[..., object]]:
+    def get(self, op_type: str) -> typing.Optional[typing.Callable[..., Any]]:
         """Get an eager operation.
 
         Args:
             op_type (str): The name of the operation.
 
         Returns:
-            typing.Optional[typing.Callable[..., object]]: The eager function or None.
+            typing.Optional[typing.Callable[..., Any]]: The eager function or None.
         """
         return self._registry.get(op_type)
 
-    def dispatch(self, op_type: str, *args: object, **kwargs: object) -> object:
+    def dispatch(self, op_type: str, *args: Any, **kwargs: Any) -> Any:
         """Dispatch an eager operation.
 
         Args:
@@ -55,8 +56,7 @@ class EagerOpRegistry:
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: The result.
+        Returns: Any: The result.
 
         Raises:
             ValueError: If the operation is not found in the registry.

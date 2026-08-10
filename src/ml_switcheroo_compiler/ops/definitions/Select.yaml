@@ -1,0 +1,9 @@
+operation: Select
+description: The Select operation.
+variants:
+  cupy:
+    eager: cp.select
+  dask:
+    eager: da.select
+  keras:
+    eager: keras_ops.select

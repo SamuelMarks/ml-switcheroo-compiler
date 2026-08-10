@@ -1,0 +1,7 @@
+operation: Remainder
+description: The Remainder operation.
+variants:
+  cupy:
+    eager: cp.remainder
+  dask:
+    eager: da.remainder

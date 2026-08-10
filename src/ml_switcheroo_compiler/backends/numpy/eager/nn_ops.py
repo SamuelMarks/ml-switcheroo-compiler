@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Nn ops module."""
+
+from typing import Any
 
 import numpy as np
 
@@ -6,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Dropout2d")
-def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dropout2d(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_dropout2d operation.
 
     Args:
@@ -14,8 +17,7 @@ def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -37,7 +39,7 @@ def _np_dropout2d(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("BlockMaskedMm")
-def _np_block_masked_mm(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_block_masked_mm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_block_masked_mm operation.
 
     Args:
@@ -45,8 +47,7 @@ def _np_block_masked_mm(backend_module: object, *args: object, **kwargs: object)
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 

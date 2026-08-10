@@ -1,0 +1,7 @@
+operation: Nancumsum
+description: The Nancumsum operation.
+variants:
+  cupy:
+    eager: cp.nancumsum
+  dask:
+    eager: da.nancumsum

@@ -1,0 +1,5 @@
+operation: SparseReshape
+description: The SparseReshape operation.
+variants:
+  numpy:
+    generator: tf.sparse.reshape

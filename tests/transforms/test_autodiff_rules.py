@@ -69,3 +69,14 @@ def test_unary_math_rules() -> None:
                 func(MockGraph(), MockNode(), "cotangent")
             except Exception:
                 pass
+
+
+def test_edge_rules_already_registered():
+    import sys
+
+    # First import will register them if not already
+
+    if "ml_switcheroo_compiler.transforms.autodiff_rules.edge_rules" in sys.modules:
+        del sys.modules["ml_switcheroo_compiler.transforms.autodiff_rules.edge_rules"]
+
+    # Second import will hit the ValueError because they are already in the registry dicts

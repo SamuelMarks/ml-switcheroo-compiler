@@ -1,0 +1,7 @@
+operation: Polyval
+description: The Polyval operation.
+variants:
+  numpy:
+    generator: np.polyval
+  tensorflow:
+    eager: tf.math.polyval

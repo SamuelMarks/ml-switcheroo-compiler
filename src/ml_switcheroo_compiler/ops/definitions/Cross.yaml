@@ -1,0 +1,9 @@
+operation: Cross
+description: The Cross operation.
+variants:
+  keras:
+    eager: keras_ops.cross
+  numpy:
+    generator: np.cross
+  tensorflow:
+    eager: tf.linalg.cross

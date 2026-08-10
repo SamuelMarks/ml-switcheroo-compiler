@@ -1,0 +1,5 @@
+operation: SparsePlus
+description: The SparsePlus operation.
+variants:
+  keras:
+    eager: keras_ops.sparse_plus

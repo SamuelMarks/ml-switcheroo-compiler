@@ -1,0 +1,11 @@
+operation: Slice
+description: The Slice operation.
+variants:
+  edge_onnx:
+    generator: Slice
+  edge_stablehlo:
+    generator: stablehlo.slice
+  keras:
+    eager: keras_ops.slice
+  tensorflow:
+    eager: tf.slice

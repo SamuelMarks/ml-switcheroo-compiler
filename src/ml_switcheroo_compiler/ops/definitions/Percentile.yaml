@@ -1,0 +1,7 @@
+operation: Percentile
+description: The Percentile operation.
+variants:
+  cupy:
+    eager: cp.percentile
+  dask:
+    eager: da.percentile

@@ -1,0 +1,5 @@
+operation: uint16
+description: The uint16 operation.
+variants:
+  edge_stablehlo:
+    generator: ui16

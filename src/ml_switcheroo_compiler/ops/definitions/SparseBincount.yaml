@@ -1,0 +1,5 @@
+operation: SparseBincount
+description: The SparseBincount operation.
+variants:
+  numpy:
+    generator: tf.sparse.bincount

@@ -1,0 +1,9 @@
+operation: LogSoftmax
+description: The LogSoftmax operation.
+variants:
+  keras:
+    eager: keras_ops.log_softmax
+  numpy:
+    generator: scipy.special.log_softmax({0}, axis={axis})
+  tensorflow:
+    eager: tf.math.log_softmax

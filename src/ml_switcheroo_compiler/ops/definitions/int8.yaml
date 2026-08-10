@@ -1,0 +1,5 @@
+operation: int8
+description: The int8 operation.
+variants:
+  edge_stablehlo:
+    generator: i8

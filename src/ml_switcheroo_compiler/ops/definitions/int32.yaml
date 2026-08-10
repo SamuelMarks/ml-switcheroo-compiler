@@ -1,0 +1,5 @@
+operation: int32
+description: The int32 operation.
+variants:
+  edge_stablehlo:
+    generator: i32

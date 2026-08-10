@@ -1,0 +1,5 @@
+operation: Lookup
+description: The Lookup operation.
+variants:
+  tensorflow:
+    eager: tf.lookup

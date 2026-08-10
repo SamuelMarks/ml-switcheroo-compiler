@@ -42,7 +42,10 @@ def test_vision_transforms_funcs_kwargs(mocker):
 
 
 def test_transforms_opdef_infer_shape():
+    import ml_switcheroo_compiler.ops.vision.frontend as frontend
     from ml_switcheroo_compiler.ops.vision.transforms import ElasticTransform
+
+    assert frontend is not None
 
     class DummyTensor:
         shape = (1, 2, 3)

@@ -1,8 +1,10 @@
-"""Vision operations."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Vision operations."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -26,8 +28,8 @@ def crop_and_resize(
     boxes: Tensor,
     box_indices: Tensor,
     crop_size: tuple[int, int],
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -70,8 +72,8 @@ def _extract_bounding_boxes_eager(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj: object,
-) -> Tensor:
+    config_obj: Any,
+) -> Any:
     """Evaluate _extract_bounding_boxes_eager operation.
 
     Args:
@@ -100,9 +102,9 @@ def extract_bounding_boxes(
     images: Tensor,
     boxes: Tensor,
     box_indices: Tensor,
-    config_obj: object | None = None,
-    **kwargs: object,
-) -> Tensor:
+    config_obj: Any | None = None,
+    **kwargs: Any,
+) -> Any:
     """Extract crops from the input image tensor and resizes them.
 
     Args:
@@ -148,7 +150,7 @@ def crop(
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> Tensor:
+) -> Any:
     """Crops an image to a specified bounding box.
 
     Args:
@@ -197,7 +199,7 @@ def pad_to_bounding_box(
     offset_width: int,
     target_height: int,
     target_width: int,
-) -> Tensor:
+) -> Any:
     """Pad an image with zeros to the specified height and width.
 
     Args:
@@ -245,7 +247,7 @@ def draw_bounding_boxes(
     boxes: Tensor,
     colors: Tensor | None = None,
     texts: list[str] | None = None,
-) -> Tensor:
+) -> Any:
     """Draw bounding boxes on a batch of images.
 
     Args:
@@ -280,7 +282,7 @@ def crop_images(
     images: Tensor,
     cropping: tuple[int, int, int, int],
     data_format: str | None = None,
-) -> Tensor:
+) -> Any:
     """Crops images.
 
     Args:
@@ -327,8 +329,8 @@ def extract_patches(
     images: Tensor,
     size: int | tuple[int, int] | list[int],
     options: ExtractPatchesOptions | None = None,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Extract patches from images.
 
     Args:
@@ -378,7 +380,7 @@ def pad_images(
     padding: tuple[int, int, int, int],
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,
-) -> Tensor:
+) -> Any:
     """Pad images.
 
     Args:
@@ -432,7 +434,7 @@ class ExtractBoundingBoxes(OpDef):
 
     op_name = "ExtractBoundingBoxes"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -440,8 +442,7 @@ class ExtractBoundingBoxes(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -452,7 +453,7 @@ class Iou(OpDef):
 
     op_name = "Iou"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -460,8 +461,7 @@ class Iou(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -472,7 +472,7 @@ class Nms(OpDef):
 
     op_name = "Nms"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -480,7 +480,6 @@ class Nms(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())

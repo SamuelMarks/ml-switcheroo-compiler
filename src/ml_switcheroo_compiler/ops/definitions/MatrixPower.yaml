@@ -1,0 +1,5 @@
+operation: MatrixPower
+description: The MatrixPower operation.
+variants:
+  numpy:
+    generator: np.linalg.matrix_power

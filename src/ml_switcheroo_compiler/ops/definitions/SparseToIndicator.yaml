@@ -1,0 +1,5 @@
+operation: SparseToIndicator
+description: The SparseToIndicator operation.
+variants:
+  numpy:
+    generator: tf.sparse.to_indicator

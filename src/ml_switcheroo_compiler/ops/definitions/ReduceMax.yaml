@@ -1,0 +1,7 @@
+operation: ReduceMax
+description: The ReduceMax operation.
+variants:
+  edge_onnx:
+    generator: ReduceMax
+  edge_stablehlo:
+    generator: stablehlo.reduce

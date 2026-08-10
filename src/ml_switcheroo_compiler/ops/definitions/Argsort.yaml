@@ -1,0 +1,7 @@
+operation: ArgSort
+description: The ArgSort operation.
+variants:
+  numpy:
+    generator: np.argsort
+  pytorch:
+    generator: torch.argsort({0}, dim={dimension})

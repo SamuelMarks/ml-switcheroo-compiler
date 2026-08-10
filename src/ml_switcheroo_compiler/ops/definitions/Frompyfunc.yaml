@@ -1,0 +1,9 @@
+operation: Frompyfunc
+description: The Frompyfunc operation.
+variants:
+  cupy:
+    eager: cp.frompyfunc
+  dask:
+    eager: da.frompyfunc
+  numpy:
+    generator: np.frompyfunc

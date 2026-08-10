@@ -1,0 +1,9 @@
+operation: Take
+description: The Take operation.
+variants:
+  cupy:
+    eager: cp.take
+  dask:
+    eager: da.take
+  keras:
+    eager: keras_ops.take

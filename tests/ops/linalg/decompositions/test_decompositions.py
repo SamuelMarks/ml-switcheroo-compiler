@@ -1,3 +1,5 @@
+from ml_switcheroo_compiler.core.dtype import DType
+
 # ruff: noqa: E501
 """Core abstractions and logic definitions for test_linalg_decompositions.py."""
 
@@ -597,7 +599,7 @@ def test_opdef_infer_shapes_extra() -> object:
         assert HouseholderProduct().infer_shape() == ()
         assert Schur().infer_shape(a) == ((2, 2), (2, 2))
         assert Tridiagonal().infer_shape(a) == ((2,), (1,), (2, 2))
-        assert PowerIteration().infer_shape(a) == (((2,), (2,), ()), ("float32", "float32", "float32"))
+        assert PowerIteration().infer_shape(a) == (((2,), (2,), ()), (DType.Float32, DType.Float32, DType.Float32))
         assert Polar().infer_shape(a) == ((2, 2), (2, 2))
 
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))

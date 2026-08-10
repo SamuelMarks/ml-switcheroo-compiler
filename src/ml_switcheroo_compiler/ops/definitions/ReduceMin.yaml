@@ -1,0 +1,7 @@
+operation: ReduceMin
+description: The ReduceMin operation.
+variants:
+  edge_onnx:
+    generator: ReduceMin
+  edge_stablehlo:
+    generator: stablehlo.reduce

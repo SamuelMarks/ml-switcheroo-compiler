@@ -1,0 +1,5 @@
+operation: SparseSegmentMean
+description: The SparseSegmentMean operation.
+variants:
+  numpy:
+    generator: tf.sparse.segment_mean

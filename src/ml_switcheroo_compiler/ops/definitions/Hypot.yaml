@@ -1,0 +1,7 @@
+operation: Hypot
+description: The Hypot operation.
+variants:
+  cupy:
+    eager: cp.hypot
+  dask:
+    eager: da.hypot

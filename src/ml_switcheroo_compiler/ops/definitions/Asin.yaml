@@ -1,0 +1,11 @@
+operation: Asin
+description: The Asin operation.
+variants:
+  cupy:
+    generator: cp.arcsin
+  dask:
+    generator: da.arcsin
+  numpy:
+    generator: np.arcsin
+  tensorflow:
+    eager: tf.asin

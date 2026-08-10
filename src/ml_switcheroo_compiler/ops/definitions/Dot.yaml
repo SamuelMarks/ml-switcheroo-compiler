@@ -1,0 +1,9 @@
+operation: Dot
+description: The Dot operation.
+variants:
+  cupy:
+    eager: cp.dot
+  dask:
+    eager: da.dot
+  keras:
+    eager: keras_ops.dot

@@ -1,0 +1,7 @@
+operation: ApplyOverAxes
+description: The ApplyOverAxes operation.
+variants:
+  cupy:
+    eager: cp.apply_over_axes
+  dask:
+    eager: da.apply_over_axes

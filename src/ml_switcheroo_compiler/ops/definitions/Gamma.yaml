@@ -1,0 +1,5 @@
+operation: Gamma
+description: The Gamma operation.
+variants:
+  numpy:
+    generator: np.random.gamma({1}, size={shape})

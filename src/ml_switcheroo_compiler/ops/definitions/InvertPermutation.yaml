@@ -1,0 +1,5 @@
+operation: InvertPermutation
+description: The InvertPermutation operation.
+variants:
+  tensorflow:
+    eager: tf.math.invert_permutation

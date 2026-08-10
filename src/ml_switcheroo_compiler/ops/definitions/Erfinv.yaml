@@ -1,0 +1,11 @@
+operation: Erfinv
+description: The Erfinv operation.
+variants:
+  keras:
+    eager: keras_ops.erfinv
+  numpy:
+    generator: scipy.special.erfinv
+  pytorch:
+    generator: torch.erfinv({0})
+  tensorflow:
+    eager: tf.math.erfinv

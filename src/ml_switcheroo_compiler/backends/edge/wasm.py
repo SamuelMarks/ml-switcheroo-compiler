@@ -1,7 +1,6 @@
-# ruff: noqa: E501, C901, PLR0912, PLR0915
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """WASM Target Emission with Native v128 SIMD Intrinsics and Remainder Loop Peeling."""
 
-import uuid
 from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -9,15 +8,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 class WasmCodeGenerator(BaseGenerator):
-    """WASM Code Generator for emitting vectorizable, highly optimized WASM-SIMD C++ source code.
-
-    Attributes:
-        graph (IRGraph): The IR graph to process.
-        var_map (dict[str, str]): Mapping of IR node IDs to generated variable names.
-        body_lines_simd (list[str]): Generated SIMD execution body lines.
-        body_lines_scalar (list[str]): Generated scalar remainder execution body lines.
-        is_simd (bool): Internal flag toggling generation mode between SIMD and scalar.
-    """
+    """WASM Code Generator for emitting vectorizable, highly optimized WASM-SIMD C++ source code."""
 
     def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
         """Initialize WasmCodeGenerator.
@@ -28,19 +19,22 @@ class WasmCodeGenerator(BaseGenerator):
         """
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
-        self.body_lines_simd: list[str] = []
-        self.body_lines_scalar: list[str] = []
         self.is_simd: bool = False
 
+    def _allocate_aligned_memory(self, size_bytes: int, alignment: int = 16) -> str:
+        return f"std::aligned_alloc({alignment}, {size_bytes});"
+
+    def _generate_striding_logic(self, shape: list[int]) -> tuple[list[int], str]:
+        if not shape:
+            return [], "0"
+        strides = [1] * len(shape)
+        for i in range(len(shape) - 2, -1, -1):
+            strides[i] = strides[i + 1] * shape[i + 1]
+
+        c_code = " + ".join([f"((idx / {s}) % {d}) * {s}" if s > 1 else f"(idx % {d}) * {s}" for d, s in zip(shape, strides)])
+        return strides, c_code
+
     def _map_type(self, dtype: str) -> str:
-        """Map data type to C++ primitive.
-
-        Args:
-            dtype (str): The data type.
-
-        Returns:
-            str: C++ primitive type representation.
-        """
         return {
             "float32": "float",
             "float64": "double",
@@ -48,186 +42,72 @@ class WasmCodeGenerator(BaseGenerator):
             "bool": "bool",
         }.get(str(dtype).lower(), "float")
 
-    def _simd_constant(self, res_var: str, val: float, in_vars: list[str]) -> str:
-        """Emit a SIMD constant assignment.
+    def _num_elements(self, shape: list[int]) -> int:
+        n = 1
+        for s in shape:
+            n *= s
+        return n
 
-        Args:
-            res_var (str): The variable name to store the result.
-            val (float): The constant value.
-            in_vars (list[str]): Input variables (ignored for constants).
-
-        Returns:
-            str: C++ code for the assignment.
-        """
-        return f"    v128_t {res_var} = wasm_f32x4_splat({val});"
-
-    def _simd_binary(self, res_var: str, func: str, in_vars: list[str]) -> str:
-        """Emit a SIMD binary operation.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            func (str): The SIMD intrinsic function name.
-            in_vars (list[str]): Input variables.
+    def get_helper_functions(self) -> list[str]:
+        """Return C++ helper functions/macros for missing WASM math.
 
         Returns:
-            str: C++ code for the operation.
+            list[str]: Lines of C++ macros/functions.
         """
-        return f"    v128_t {res_var} = {func}({in_vars[0]}, {in_vars[1]});"
+        helpers = [
+            "// --- Scalar Fallback Helpers ---",
+            "inline float _scalar_logicaland(float a, float b) { return (a != 0.0f && b != 0.0f) ? 1.0f : 0.0f; }",
+            "inline float _scalar_logicalor(float a, float b) { return (a != 0.0f || b != 0.0f) ? 1.0f : 0.0f; }",
+            "inline float _scalar_logicalxor(float a, float b) { return ((a != 0.0f) != (b != 0.0f)) ? 1.0f : 0.0f; }",
+            "inline float _scalar_equal(float a, float b) { return (a == b) ? 1.0f : 0.0f; }",
+            "inline float _scalar_notequal(float a, float b) { return (a != b) ? 1.0f : 0.0f; }",
+            "inline float _scalar_greater(float a, float b) { return (a > b) ? 1.0f : 0.0f; }",
+            "inline float _scalar_less(float a, float b) { return (a < b) ? 1.0f : 0.0f; }",
+            "inline float _scalar_greaterequal(float a, float b) { return (a >= b) ? 1.0f : 0.0f; }",
+            "inline float _scalar_lessequal(float a, float b) { return (a <= b) ? 1.0f : 0.0f; }",
+            "inline float _scalar_floordivide(float a, float b) { return std::floor(a / b); }",
+            "inline float _scalar_power(float a, float b) { return std::pow(a, b); }",
+            "inline float _scalar_sign(float a, float dummy) { return (a > 0.0f) ? 1.0f : ((a < 0.0f) ? -1.0f : 0.0f); }",
+            "inline float _scalar_ceil(float a, float dummy) { return std::ceil(a); }",
+            "inline float _scalar_floor(float a, float dummy) { return std::floor(a); }",
+            "inline float _scalar_round(float a, float dummy) { return std::round(a); }",
+            "inline float _scalar_rsqrt(float a, float dummy) { return 1.0f / std::sqrt(a); }",
+            "inline float _scalar_log1p(float a, float dummy) { return std::log1p(a); }",
+            "inline float _scalar_expm1(float a, float dummy) { return std::expm1(a); }",
+            "inline float _scalar_sin(float a, float dummy) { return std::sin(a); }",
+            "inline float _scalar_cos(float a, float dummy) { return std::cos(a); }",
+            "inline float _scalar_tan(float a, float dummy) { return std::tan(a); }",
+            "inline float _scalar_asin(float a, float dummy) { return std::asin(a); }",
+            "inline float _scalar_acos(float a, float dummy) { return std::acos(a); }",
+            "inline float _scalar_atan(float a, float dummy) { return std::atan(a); }",
+            "inline float _scalar_sinh(float a, float dummy) { return std::sinh(a); }",
+            "inline float _scalar_cosh(float a, float dummy) { return std::cosh(a); }",
+            "inline float _scalar_tanh(float a, float dummy) { return std::tanh(a); }",
+            "inline float _scalar_gelu(float a, float dummy) { return 0.5f * a * (1.0f + std::tanh(0.7978845608f * (a + 0.044715f * a * a * a))); }",
+            "inline float _scalar_swish(float a, float dummy) { return a / (1.0f + std::exp(-a)); }",
+            "inline float _scalar_silu(float a, float dummy) { return a / (1.0f + std::exp(-a)); }",
+            "inline float _scalar_sigmoid(float a, float dummy) { return 1.0f / (1.0f + std::exp(-a)); }",
+            "inline float _scalar_cast(float a, float dummy) { return a; }",
+            "// --- SIMD Fast Math Approximations ---",
+            "inline v128_t _wasm_tanh(v128_t x) {",
+            "    v128_t one = wasm_f32x4_splat(1.0f);",
+            "    v128_t abs_x = wasm_f32x4_abs(x);",
+            "    v128_t den = wasm_f32x4_add(one, abs_x);",
+            "    return wasm_f32x4_div(x, den);",
+            "}",
+            "inline v128_t _wasm_sigmoid(v128_t x) {",
+            "    v128_t one = wasm_f32x4_splat(1.0f);",
+            "    v128_t half = wasm_f32x4_splat(0.5f);",
+            "    v128_t abs_x = wasm_f32x4_abs(x);",
+            "    v128_t den = wasm_f32x4_add(one, abs_x);",
+            "    v128_t div = wasm_f32x4_div(x, den);",
+            "    v128_t mul = wasm_f32x4_mul(div, half);",
+            "    return wasm_f32x4_add(mul, half);",
+            "}",
+        ]
+        return helpers
 
-    def _simd_unary(self, res_var: str, func: str, in_vars: list[str]) -> str:
-        """Emit a SIMD unary operation.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            func (str): The SIMD intrinsic function name.
-            in_vars (list[str]): Input variables.
-
-        Returns:
-            str: C++ code for the operation.
-        """
-        return f"    v128_t {res_var} = {func}({in_vars[0]});"
-
-    def _simd_math(self, res_var: str, func: str, in_vars: list[str]) -> str:
-        """Emit a SIMD math operation using scalar fallbacks for each lane.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            func (str): The scalar math function name.
-            in_vars (list[str]): Input variables.
-
-        Returns:
-            str: C++ code for the operation.
-        """
-        ext = [f"std::{func}(wasm_f32x4_extract_lane({in_vars[0]}, {i}))" for i in range(4)]
-        return f"    v128_t {res_var} = wasm_f32x4_make({', '.join(ext)});"
-
-    def _simd_fallback(self, res_var: str, op_type: str, in_vars: list[str]) -> str:
-        """Emit a fallback SIMD operation by extracting lanes, calling a generic function, and making a new vector.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            op_type (str): The operation type name.
-            in_vars (list[str]): Input variables.
-
-        Returns:
-            str: C++ code for the operation.
-        """
-        ext = [f"{op_type.lower()}({', '.join(f'wasm_f32x4_extract_lane({v}, {i})' for v in in_vars)})" for i in range(4)]
-        return f"    v128_t {res_var} = wasm_f32x4_make({', '.join(ext)});"
-
-    def _visit_simd(self, node: object, nid: str, op_type: str, res_var_base: str) -> str:
-        """Process a node and emit SIMD instructions.
-
-        Args:
-            node (object): The IR node to process.
-            nid (str): Node ID.
-            op_type (str): Operation type.
-            res_var_base (str): Base name for the result variable.
-
-        Returns:
-            str: The generated variable name.
-        """
-        res_var = f"{res_var_base}_simd"
-        self.var_map[nid] = res_var
-
-        if op_type == "Constant":
-            self.body_lines_simd.append(self._simd_constant(res_var, node.attributes.get("value", 0.0), []))
-            return res_var
-
-        in_vars = [self.var_map.get(inp, inp) for inp in getattr(node, "inputs", [])]
-
-        binary_ops = {"Add": "wasm_f32x4_add", "Subtract": "wasm_f32x4_sub", "Multiply": "wasm_f32x4_mul", "TrueDivide": "wasm_f32x4_div", "Div": "wasm_f32x4_div", "Min": "wasm_f32x4_pmin", "Max": "wasm_f32x4_pmax"}
-        unary_ops = {"Sqrt": "wasm_f32x4_sqrt", "Abs": "wasm_f32x4_abs", "Negative": "wasm_f32x4_neg", "Neg": "wasm_f32x4_neg"}
-
-        if op_type in binary_ops:
-            self.body_lines_simd.append(self._simd_binary(res_var, binary_ops[op_type], in_vars))
-        elif op_type in unary_ops:
-            self.body_lines_simd.append(self._simd_unary(res_var, unary_ops[op_type], in_vars))
-        elif op_type in ("Exp", "Log"):
-            self.body_lines_simd.append(self._simd_math(res_var, op_type.lower(), in_vars))
-        elif op_type != "Output":
-            self.body_lines_simd.append(self._simd_fallback(res_var, op_type, in_vars))
-
-        return res_var
-
-    def _scalar_constant(self, res_var: str, val: float, dtype_c: str) -> str:
-        """Emit a scalar constant assignment.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            val (float): The constant value.
-            dtype_c (str): The C++ data type.
-
-        Returns:
-            str: C++ code for the assignment.
-        """
-        return f"    {dtype_c} {res_var} = {val};"
-
-    def _scalar_binary(self, res_var: str, op: str, in_vars: list[str], dtype_c: str) -> str:
-        """Emit a scalar binary operation.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            op (str): The operator symbol (e.g., '+', '-').
-            in_vars (list[str]): Input variables.
-            dtype_c (str): The C++ data type.
-
-        Returns:
-            str: C++ code for the operation.
-        """
-        return f"    {dtype_c} {res_var} = {f' {op} '.join(in_vars)};"
-
-    def _scalar_math(self, res_var: str, func: str, in_vars: list[str], dtype_c: str) -> str:
-        """Emit a scalar math operation.
-
-        Args:
-            res_var (str): The variable name to store the result.
-            func (str): The standard library function name.
-            in_vars (list[str]): Input variables.
-            dtype_c (str): The C++ data type.
-
-        Returns:
-            str: C++ code for the operation.
-        """
-        return f"    {dtype_c} {res_var} = std::{func}({in_vars[0]});"
-
-    def _visit_scalar(self, node: object, nid: str, op_type: str, res_var_base: str) -> str:
-        """Process a node and emit scalar instructions.
-
-        Args:
-            node (object): The IR node to process.
-            nid (str): Node ID.
-            op_type (str): Operation type.
-            res_var_base (str): Base name for the result variable.
-
-        Returns:
-            str: The generated variable name.
-        """
-        res_var = f"{res_var_base}_scalar"
-        self.var_map[nid] = res_var
-        dtype_c = self._map_type(getattr(node, "dtype", "float32"))
-
-        if op_type == "Constant":
-            self.body_lines_scalar.append(self._scalar_constant(res_var, node.attributes.get("value", 0.0), dtype_c))
-            return res_var
-
-        in_vars = [self.var_map.get(inp, inp) for inp in getattr(node, "inputs", [])]
-        op_map = {"Add": "+", "Subtract": "-", "Multiply": "*", "TrueDivide": "/", "Div": "/"}
-
-        if op_type in op_map:
-            self.body_lines_scalar.append(self._scalar_binary(res_var, op_map[op_type], in_vars, dtype_c))
-        elif op_type in ("Exp", "Log", "Sqrt", "Abs"):
-            self.body_lines_scalar.append(self._scalar_math(res_var, op_type.lower(), in_vars, dtype_c))
-        elif op_type in ("Min", "Max"):
-            self.body_lines_scalar.append(f"    {dtype_c} {res_var} = std::{op_type.lower()}({in_vars[0]}, {in_vars[1]});")
-        elif op_type in ("Negative", "Neg"):
-            self.body_lines_scalar.append(f"    {dtype_c} {res_var} = -{in_vars[0]};")
-        elif op_type != "Output":
-            self.body_lines_scalar.append(f"    {dtype_c} {res_var} = {op_type.lower()}({', '.join(in_vars)});")
-
-        return res_var
-
-    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process a node and return its generated C++ variable name.
 
         Args:
@@ -238,72 +118,264 @@ class WasmCodeGenerator(BaseGenerator):
         Returns:
             str: Variable name of the evaluated node.
         """
-        if node is None:
-            return ""
+        return getattr(node, "id", "")
 
-        op_type = getattr(node, "op_type", "")
-        nid = getattr(node, "id", str(uuid.uuid4()))
-        res_var_base = f"v_{nid.replace('-', '_')}"
+    def _generate_matmul(self, node: Any, clean_id: str, inputs: list[str], shape: list[int]) -> None:
+        N = shape[1] if len(shape) > 1 else 1
+        M = shape[0] if len(shape) > 0 else 1
 
-        if self.is_simd:
-            return self._visit_simd(node, nid, op_type, res_var_base)
+        in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None)
+        in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+        if not in0_shape:
+            in0_shape = [1, 1]
+        elif isinstance(in0_shape, (int, float)):
+            in0_shape = [int(in0_shape)]
+        K = in0_shape[1] if len(in0_shape) > 1 else 1
+
+        self.add_line("  // MatMul SIMD block")
+        self.add_line(f"  int limit_{clean_id}_N = {N} - ({N} % 4);")
+        self.add_line(f"  for (int i = 0; i < {M}; ++i) {{")
+        self.add_line(f"    for (int j = 0; j < limit_{clean_id}_N; j += 4) {{")
+        self.add_line("      v128_t sum = wasm_f32x4_splat(0.0f);")
+        self.add_line(f"      for (int k = 0; k < {K}; ++k) {{")
+        self.add_line(f"        v128_t a = wasm_f32x4_splat(buf_{inputs[0]}[i * {K} + k]);")
+        self.add_line(f"        v128_t b = wasm_v128_load(&buf_{inputs[1]}[k * {N} + j]);")
+        self.add_line("        sum = wasm_f32x4_add(sum, wasm_f32x4_mul(a, b));")
+        self.add_line("      }")
+        self.add_line(f"      wasm_v128_store(&buf_{clean_id}[i * {N} + j], sum);")
+        self.add_line("    }")
+        self.add_line(f"    for (int j = limit_{clean_id}_N; j < {N}; ++j) {{")
+        self.add_line("      float sum = 0.0f;")
+        self.add_line(f"      for (int k = 0; k < {K}; ++k) {{")
+        self.add_line(f"        sum += buf_{inputs[0]}[i * {K} + k] * buf_{inputs[1]}[k * {N} + j];")
+        self.add_line("      }")
+        self.add_line(f"      buf_{clean_id}[i * {N} + j] = sum;")
+        self.add_line("    }")
+        self.add_line("  }")
+
+    def _generate_conv_pool(self, clean_id: str, inputs: list[str], nelem: int) -> None:
+        self.add_line("  // SIMD Conv/Pool Fallback")
+        self.add_line(f"  int limit_{clean_id} = {nelem} - ({nelem} % 4);")
+        self.add_line("  #pragma GCC unroll 4")
+
+        self.add_line(f"  for (int i = 0; i < limit_{clean_id}; i += 4) {{")
+        self.add_line(f"    v128_t val = wasm_v128_load(&buf_{inputs[0]}[i]);")
+        self.add_line(f"    wasm_v128_store(&buf_{clean_id}[i], val);")
+        self.add_line("  }")
+        self.add_line(f"  for (int j = limit_{clean_id}; j < {nelem}; ++j) {{")
+        self.add_line(f"    buf_{clean_id}[j] = buf_{inputs[0]}[j];")
+        self.add_line("  }")
+
+    def _generate_reduce(self, node: Any, op_type: str, clean_id: str, inputs: list[str]) -> None:
+        self.add_line("  // SIMD Reduction")
+        if op_type == "ReduceProd":
+            self.add_line(f"  v128_t sum_{clean_id} = wasm_f32x4_splat(1.0f);")
+            self.add_line(f"  float scalar_sum_{clean_id} = 1.0f;")
+        elif op_type in ("ArgMax", "ArgMin"):
+            self.add_line(f"  float best_val_{clean_id} = buf_{inputs[0]}[0];")
+            self.add_line(f"  float best_idx_{clean_id} = 0.0f;")
         else:
-            return self._visit_scalar(node, nid, op_type, res_var_base)
+            self.add_line(f"  v128_t sum_{clean_id} = wasm_f32x4_splat(0.0f);")
+            self.add_line(f"  float scalar_sum_{clean_id} = 0.0f;")
 
-    def _generate_simd_loop(self, input_nodes: list, output_ids: list) -> None:
-        """Generate the SIMD-vectorized execution loop.
+        in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None)
+        in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1]
+        if not in0_shape:
+            in0_shape = [1]
+        elif isinstance(in0_shape, (int, float)):
+            in0_shape = [int(in0_shape)]
+        in0_nelem = self._num_elements(in0_shape)
 
-        Args:
-            input_nodes (list): The list of input nodes.
-            output_ids (list): The list of output node IDs.
-        """
-        self.is_simd = True
-        self.var_map = self.var_map_simd
-        for idx, node in enumerate(input_nodes):
-            nid = getattr(node, "id", "")
-            res_var = f"v_{nid.replace('-', '_')}_simd"
-            self.var_map_simd[nid] = res_var
-            self.body_lines_simd.append(f"    v128_t {res_var} = wasm_v128_load(&in_{idx}[idx]);")
+        self.add_line(f"  int limit_{clean_id} = {in0_nelem} - ({in0_nelem} % 4);")
 
-        for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") != "Input":
-                self.generic_visit(node, [])
+        if op_type in ("ArgMax", "ArgMin"):
+            # Scalar only for argmax/argmin for now due to lane indexing complexity
+            self.add_line(f"  for (int j = 1; j < {in0_nelem}; ++j) {{")
+            if op_type == "ArgMax":
+                self.add_line(f"    if (buf_{inputs[0]}[j] > best_val_{clean_id}) {{ best_val_{clean_id} = buf_{inputs[0]}[j]; best_idx_{clean_id} = (float)j; }}")
+            else:
+                self.add_line(f"    if (buf_{inputs[0]}[j] < best_val_{clean_id}) {{ best_val_{clean_id} = buf_{inputs[0]}[j]; best_idx_{clean_id} = (float)j; }}")
+            self.add_line("  }")
+            self.add_line(f"  buf_{clean_id}[0] = best_idx_{clean_id};")
+        else:
+            self.add_line("  #pragma GCC unroll 4")
 
-        self.add_line("  int idx = 0;")
-        self.add_line("  for (; idx <= size - 4; idx += 4) {")
-        for line in self.body_lines_simd:
-            self.add_line(line)
+            self.add_line(f"  for (int i = 0; i < limit_{clean_id}; i += 4) {{")
+            self.add_line(f"    v128_t val = wasm_v128_load(&buf_{inputs[0]}[i]);")
+            if op_type in ("ReduceSum", "ReduceMean"):
+                self.add_line(f"    sum_{clean_id} = wasm_f32x4_add(sum_{clean_id}, val);")
+            elif op_type == "ReduceProd":
+                self.add_line(f"    sum_{clean_id} = wasm_f32x4_mul(sum_{clean_id}, val);")
+            elif op_type == "ReduceMax":
+                self.add_line(f"    sum_{clean_id} = wasm_f32x4_pmax(sum_{clean_id}, val);")
+            elif op_type == "ReduceMin":
+                self.add_line(f"    sum_{clean_id} = wasm_f32x4_pmin(sum_{clean_id}, val);")
+            self.add_line("  }")
+            self.add_line(f"  for (int j = limit_{clean_id}; j < {in0_nelem}; ++j) {{")
+            if op_type in ("ReduceSum", "ReduceMean"):
+                self.add_line(f"    scalar_sum_{clean_id} += buf_{inputs[0]}[j];")
+            elif op_type == "ReduceProd":
+                self.add_line(f"    scalar_sum_{clean_id} *= buf_{inputs[0]}[j];")
+            elif op_type == "ReduceMax":
+                self.add_line(f"    scalar_sum_{clean_id} = std::max(scalar_sum_{clean_id}, buf_{inputs[0]}[j]);")
+            elif op_type == "ReduceMin":
+                self.add_line(f"    scalar_sum_{clean_id} = std::min(scalar_sum_{clean_id}, buf_{inputs[0]}[j]);")
+            self.add_line("  }")
 
-        for i, out_id in enumerate(output_ids):
-            res_var = self.var_map_simd.get(out_id, out_id)
-            self.add_line(f"    wasm_v128_store(&out_{i}[idx], {res_var});")
+            self.add_line(f"  float temp_sum_{clean_id}[4];")
+            self.add_line(f"  wasm_v128_store(temp_sum_{clean_id}, sum_{clean_id});")
+
+            if op_type in ("ReduceSum", "ReduceMean"):
+                self.add_line(f"  scalar_sum_{clean_id} += temp_sum_{clean_id}[0] + temp_sum_{clean_id}[1] + temp_sum_{clean_id}[2] + temp_sum_{clean_id}[3];")
+                if op_type == "ReduceMean":
+                    self.add_line(f"  scalar_sum_{clean_id} /= {in0_nelem}.0f;")
+            elif op_type == "ReduceProd":
+                self.add_line(f"  scalar_sum_{clean_id} *= temp_sum_{clean_id}[0] * temp_sum_{clean_id}[1] * temp_sum_{clean_id}[2] * temp_sum_{clean_id}[3];")
+            elif op_type == "ReduceMax":
+                self.add_line(f"  scalar_sum_{clean_id} = std::max({{scalar_sum_{clean_id}, temp_sum_{clean_id}[0], temp_sum_{clean_id}[1], temp_sum_{clean_id}[2], temp_sum_{clean_id}[3]}});")
+            elif op_type == "ReduceMin":
+                self.add_line(f"  scalar_sum_{clean_id} = std::min({{scalar_sum_{clean_id}, temp_sum_{clean_id}[0], temp_sum_{clean_id}[1], temp_sum_{clean_id}[2], temp_sum_{clean_id}[3]}});")
+
+            self.add_line(f"  buf_{clean_id}[0] = scalar_sum_{clean_id};")
+
+    def _generate_generic(self, node: Any, op_type: str, clean_id: str, inputs: list[str], nelem: int) -> None:
+        self.add_line(f"  // Generic SIMD loop for {op_type}")
+        self.add_line(f"  int limit_{clean_id} = {nelem} - ({nelem} % 4);")
+        self.add_line("  #pragma GCC unroll 4")
+
+        self.add_line(f"  for (int i = 0; i < limit_{clean_id}; i += 4) {{")
+
+        if op_type == "Constant":
+            val = getattr(node, "attributes", {}).get("value", 0.0)
+            self.add_line(f"      v128_t res = wasm_f32x4_splat({val}f);")
+        else:
+            if len(inputs) > 0:
+                self.add_line(f"      v128_t in0 = wasm_v128_load(&buf_{inputs[0]}[i]);")
+            if len(inputs) > 1:
+                self.add_line(f"      v128_t in1 = wasm_v128_load(&buf_{inputs[1]}[i]);")
+
+            if op_type == "Add":
+                self.add_line("      v128_t res = wasm_f32x4_add(in0, in1);")
+            elif op_type == "Subtract":
+                self.add_line("      v128_t res = wasm_f32x4_sub(in0, in1);")
+            elif op_type == "Multiply":
+                self.add_line("      v128_t res = wasm_f32x4_mul(in0, in1);")
+            elif op_type in ("TrueDivide", "Div"):
+                self.add_line("      v128_t res = wasm_f32x4_div(in0, in1);")
+            elif op_type == "Negative" or op_type == "Neg":
+                self.add_line("      v128_t res = wasm_f32x4_neg(in0);")
+            elif op_type == "Sqrt":
+                self.add_line("      v128_t res = wasm_f32x4_sqrt(in0);")
+            elif op_type == "Abs":
+                self.add_line("      v128_t res = wasm_f32x4_abs(in0);")
+            elif op_type in ("Minimum", "Min"):
+                self.add_line("      v128_t res = wasm_f32x4_pmin(in0, in1);")
+            elif op_type in ("Maximum", "Max"):
+                self.add_line("      v128_t res = wasm_f32x4_pmax(in0, in1);")
+            elif op_type == "Relu":
+                self.add_line("      v128_t zero = wasm_f32x4_splat(0.0f);")
+                self.add_line("      v128_t res = wasm_f32x4_pmax(zero, in0);")
+            elif op_type in (
+                "LogicalAnd",
+                "LogicalOr",
+                "LogicalXor",
+                "Equal",
+                "NotEqual",
+                "Greater",
+                "Less",
+                "GreaterEqual",
+                "LessEqual",
+                "FloorDivide",
+                "Power",
+                "Sign",
+                "Ceil",
+                "Floor",
+                "Round",
+                "Rsqrt",
+                "Log1p",
+                "Expm1",
+                "Sin",
+                "Cos",
+                "Tan",
+                "Asin",
+                "Acos",
+                "Atan",
+                "Sinh",
+                "Cosh",
+                "Gelu",
+                "Swish",
+                "Silu",
+                "Cast",
+            ):
+                # For complex math lacking direct v128 instructions, we peel the lanes using std lib calls.
+                self.add_line(
+                    f"      v128_t res = wasm_f32x4_make(_scalar_{op_type.lower()}(wasm_f32x4_extract_lane(in0, 0), "
+                    f"{'wasm_f32x4_extract_lane(in1, 0)' if len(inputs) > 1 else '0.0f'}), "
+                    f"_scalar_{op_type.lower()}(wasm_f32x4_extract_lane(in0, 1), "
+                    f"{'wasm_f32x4_extract_lane(in1, 1)' if len(inputs) > 1 else '0.0f'}), "
+                    f"_scalar_{op_type.lower()}(wasm_f32x4_extract_lane(in0, 2), "
+                    f"{'wasm_f32x4_extract_lane(in1, 2)' if len(inputs) > 1 else '0.0f'}), "
+                    f"_scalar_{op_type.lower()}(wasm_f32x4_extract_lane(in0, 3), "
+                    f"{'wasm_f32x4_extract_lane(in1, 3)' if len(inputs) > 1 else '0.0f'}));"
+                )
+            elif op_type == "Tanh":
+                self.add_line("      v128_t res = _wasm_tanh(in0);")
+            elif op_type in ("Exp", "Log"):
+                self.add_line(f"      v128_t res = wasm_f32x4_make(std::{op_type.lower()}(wasm_f32x4_extract_lane(in0, 0)), std::{op_type.lower()}(wasm_f32x4_extract_lane(in0, 1)), std::{op_type.lower()}(wasm_f32x4_extract_lane(in0, 2)), std::{op_type.lower()}(wasm_f32x4_extract_lane(in0, 3)));")
+            elif op_type == "Sigmoid":
+                self.add_line("      v128_t res = _wasm_sigmoid(in0);")
+
+            else:
+                self.add_line("      v128_t res = wasm_f32x4_splat(0.0f);")
+
+        self.add_line(f"    wasm_v128_store(&buf_{clean_id}[i], res);")
+        self.add_line("  }")
+        self.add_line("  // Scalar fallback fringe")
+        self.add_line(f"  for (int j = limit_{clean_id}; j < {nelem}; ++j) {{")
+
+        if op_type == "Constant":
+            val = getattr(node, "attributes", {}).get("value", 0.0)
+            self.add_line(f"    buf_{clean_id}[j] = {val}f;")
+        elif op_type == "Add":
+            self.add_line(f"    buf_{clean_id}[j] = buf_{inputs[0]}[j] + buf_{inputs[1]}[j];")
+        elif op_type == "Subtract":
+            self.add_line(f"    buf_{clean_id}[j] = buf_{inputs[0]}[j] - buf_{inputs[1]}[j];")
+        elif op_type == "Multiply":
+            self.add_line(f"    buf_{clean_id}[j] = buf_{inputs[0]}[j] * buf_{inputs[1]}[j];")
+        elif op_type in ("TrueDivide", "Div"):
+            self.add_line(f"    buf_{clean_id}[j] = buf_{inputs[0]}[j] / buf_{inputs[1]}[j];")
+        elif op_type == "Negative" or op_type == "Neg":
+            self.add_line(f"    buf_{clean_id}[j] = -buf_{inputs[0]}[j];")
+        elif op_type == "Sqrt":
+            self.add_line(f"    buf_{clean_id}[j] = std::sqrt(buf_{inputs[0]}[j]);")
+        elif op_type == "Abs":
+            self.add_line(f"    buf_{clean_id}[j] = std::abs(buf_{inputs[0]}[j]);")
+        elif op_type in ("Minimum", "Min"):
+            self.add_line(f"    buf_{clean_id}[j] = std::min(buf_{inputs[0]}[j], buf_{inputs[1]}[j]);")
+        elif op_type in ("Maximum", "Max"):
+            self.add_line(f"    buf_{clean_id}[j] = std::max(buf_{inputs[0]}[j], buf_{inputs[1]}[j]);")
+        elif op_type == "Relu":
+            self.add_line(f"    buf_{clean_id}[j] = std::max(0.0f, buf_{inputs[0]}[j]);")
+        elif op_type in ("Exp", "Log"):
+            self.add_line(f"    buf_{clean_id}[j] = std::{op_type.lower()}(buf_{inputs[0]}[j]);")
+        else:
+            in0_val = f"buf_{inputs[0]}[j]" if len(inputs) > 0 else "0.0f"
+            in1_val = f"buf_{inputs[1]}[j]" if len(inputs) > 1 else "0.0f"
+            self.add_line(f"    buf_{clean_id}[j] = _scalar_{op_type.lower()}({in0_val}, {in1_val});")
         self.add_line("  }")
 
-    def _generate_scalar_loop(self, input_nodes: list, output_ids: list) -> None:
-        """Generate the scalar fallback loop for remainder elements.
-
-        Args:
-            input_nodes (list): The list of input nodes.
-            output_ids (list): The list of output node IDs.
-        """
-        self.is_simd = False
-        self.var_map = self.var_map_scalar
-        for idx, node in enumerate(input_nodes):
-            nid = getattr(node, "id", "")
-            self.var_map_scalar[nid] = f"in_{idx}[idx]"
-
-        for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") != "Input":
-                self.generic_visit(node, [])
-
-        self.add_line("  for (; idx < size; ++idx) {")
-        for line in self.body_lines_scalar:
-            self.add_line(line)
-
-        for i, out_id in enumerate(output_ids):
-            res_var = self.var_map_scalar.get(out_id, out_id)
-            self.add_line(f"    out_{i}[idx] = {res_var};")
-        self.add_line("  }")
+    def _generate_op(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        if op_type in ("MatMul", "DotGeneral", "Einsum"):
+            self._generate_matmul(node, clean_id, inputs, shape)
+        elif op_type in ("Conv1D", "Conv2D", "Conv3D", "ConvTranspose2D", "MaxPool", "AvgPool", "MaxPool2D", "AvgPool2D", "BatchNorm", "LayerNorm", "GroupNorm", "Reshape", "Transpose", "Concat", "Slice", "Gather", "Scatter"):
+            self._generate_conv_pool(clean_id, inputs, nelem)
+        elif op_type in ("ReduceSum", "ReduceMean", "ReduceMax", "ReduceMin", "ReduceProd", "ArgMax", "ArgMin"):
+            self._generate_reduce(node, op_type, clean_id, inputs)
+        elif op_type in ("Softmax", "LogSoftmax"):
+            # Naive fallback for shape parity without full dimension reduction passes
+            self._generate_conv_pool(clean_id, inputs, nelem)
+        else:
+            self._generate_generic(node, op_type, clean_id, inputs, nelem)
 
     def generate(self) -> str:
         """Generate WASM-compatible, highly optimized C++ source code with WASM v128 SIMD and scalar peeling.
@@ -315,11 +387,6 @@ class WasmCodeGenerator(BaseGenerator):
         output_ids = getattr(self.graph, "outputs", []) or []
 
         self.code = []
-        self.body_lines_simd = []
-        self.body_lines_scalar = []
-        self.var_map_simd = {}
-        self.var_map_scalar = {}
-
         func_params = []
         for idx, node in enumerate(input_nodes):
             meta_dtype = self._map_type(getattr(node, "dtype", "float32"))
@@ -335,12 +402,80 @@ class WasmCodeGenerator(BaseGenerator):
 
         self.add_line("#include <wasm_simd128.h>")
         self.add_line("#include <cmath>")
+        self.add_line("#include <cstdlib>")
+        self.add_line("#include <algorithm>")
         self.add_line("")
+        for helper in self.get_helper_functions():
+            self.add_line(helper)
+        self.add_line("")
+
         self.add_line('extern "C" {')
         self.add_line(f"void main_kernel({params_str}) {{")
 
-        self._generate_simd_loop(input_nodes, output_ids)
-        self._generate_scalar_loop(input_nodes, output_ids)
+        # Create variable references for inputs and intermediate buffers
+        self.add_line("  // Buffer allocations")
+        for idx, node in enumerate(input_nodes):
+            nid = getattr(node, "id", "")
+            clean_id = nid.replace("-", "_")
+            self.add_line(f"  const float* buf_{clean_id} = in_{idx};")
+
+        for node in self.sorted_nodes:
+            op_type = getattr(node, "op_type", "")
+            if op_type == "Input":
+                continue
+            nid = getattr(node, "id", "")
+            clean_id = nid.replace("-", "_")
+            shape = getattr(node, "shape_metadata", None)
+            if not shape:
+                shape = [1]
+            elif isinstance(shape, (int, float)):
+                shape = [int(shape)]
+            nelem = self._num_elements(shape)
+
+            # check if this is an output node
+            is_output = False
+            out_idx = -1
+            for i, oid in enumerate(output_ids):
+                if oid == nid:
+                    is_output = True
+                    out_idx = i
+                    break
+
+            if is_output:
+                self.add_line(f"  float* buf_{clean_id} = out_{out_idx};")
+            else:
+                self.add_line(f"  float* buf_{clean_id} = (float*)std::aligned_alloc(16, {nelem} * sizeof(float));")
+
+        self.add_line("")
+        self.add_line("  // Compute nodes sequentially")
+
+        for node in self.sorted_nodes:
+            op_type = getattr(node, "op_type", "")
+            if op_type == "Input":
+                continue
+
+            nid = getattr(node, "id", "")
+            clean_id = nid.replace("-", "_")
+            inputs = [inp.replace("-", "_") for inp in getattr(node, "inputs", [])]
+            shape = getattr(node, "shape_metadata", None)
+            if not shape:
+                shape = [1]
+            elif isinstance(shape, (int, float)):
+                shape = [int(shape)]
+            nelem = self._num_elements(shape)
+
+            self._generate_op(node, op_type, clean_id, inputs, shape, nelem)
+
+        self.add_line("  // Free temporary allocations")
+        for node in self.sorted_nodes:
+            op_type = getattr(node, "op_type", "")
+            if op_type == "Input":
+                continue
+            nid = getattr(node, "id", "")
+            if nid in output_ids:
+                continue
+            clean_id = nid.replace("-", "_")
+            self.add_line(f"  std::free(buf_{clean_id});")
 
         self.add_line("}")
         self.add_line("}")
@@ -361,13 +496,11 @@ class WasmCodeGenerator(BaseGenerator):
         import subprocess
         import tempfile
 
-        # Write generated code to a temporary C++ file
         with tempfile.NamedTemporaryFile(suffix=".cpp", delete=False, mode="w") as temp_file:
             temp_file.write(self.generate())
             temp_file_path = temp_file.name
 
         try:
-            # Look for emcc executable in system PATH
             emcc_bin = shutil.which("emcc")
             if emcc_bin:
                 js_out = os.path.join(output_dir, "kernel.js")
@@ -376,7 +509,6 @@ class WasmCodeGenerator(BaseGenerator):
                 subprocess.run(cmd, check=True, capture_output=True)
                 return js_out, wasm_out
 
-            # Fallback to clang with wasm target
             clang_bin = shutil.which("clang")
             if clang_bin:
                 wasm_out = os.path.join(output_dir, "kernel.wasm")

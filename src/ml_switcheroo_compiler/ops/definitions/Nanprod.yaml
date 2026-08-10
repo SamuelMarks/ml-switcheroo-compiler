@@ -1,0 +1,7 @@
+operation: Nanprod
+description: The Nanprod operation.
+variants:
+  cupy:
+    eager: cp.nanprod
+  dask:
+    eager: da.nanprod

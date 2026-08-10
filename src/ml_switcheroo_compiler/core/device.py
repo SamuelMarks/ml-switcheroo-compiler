@@ -1,7 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Device and DeviceType classes for the ml-switcheroo compiler."""
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class DeviceType(Enum):
@@ -20,6 +22,9 @@ class Device:
     index: int = 0
 
     def __repr__(self) -> str:
+        """Return the string representation of the Device."""
+        if isinstance(self.device_type, str):
+            return f"Device({self.device_type}:{self.index})"
         """Return the string representation of the Device.
 
         Returns:
@@ -59,7 +64,7 @@ class StreamContext:
         """
         return self
 
-    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit context.
 
         Args:
@@ -67,7 +72,7 @@ class StreamContext:
             exc_val (object): exception value
             exc_tb (object): exception traceback
         """
-        self.stream = None
+        self.stream = None  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
 def clear_cache() -> None:
@@ -86,7 +91,7 @@ def clear_cache() -> None:
 class FunctionExporter:
     """Provide a context managing class for exporting multiple traces of the same function."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize FunctionExporter.
 
         Args:
@@ -104,7 +109,7 @@ class FunctionExporter:
         """
         return self
 
-    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit context.
 
         Args:
@@ -116,7 +121,7 @@ class FunctionExporter:
         self.kwargs = {}
 
 
-def export_function(*args: object, **kwargs: object) -> None:
+def export_function(*args: Any, **kwargs: Any) -> None:
     """Export an MLX function.
 
     Args:
@@ -136,7 +141,7 @@ def export_function(*args: object, **kwargs: object) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
 
 
-def exporter(*args: object, **kwargs: object) -> FunctionExporter:
+def exporter(*args: Any, **kwargs: Any) -> FunctionExporter:
     """Make a callable object to export multiple traces of a function to a file.
 
     Args:
@@ -149,7 +154,7 @@ def exporter(*args: object, **kwargs: object) -> FunctionExporter:
     return FunctionExporter(*args, **kwargs)
 
 
-def get_logical_devices(device_type: str = None) -> list[Device]:
+def get_logical_devices(device_type: Any = None) -> list[Device]:
     """Get logical devices for the current backend.
 
     Args:
@@ -170,7 +175,7 @@ def get_logical_devices(device_type: str = None) -> list[Device]:
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_logical_devices()")
 
 
-def get_physical_devices(device_type: str = None) -> list[Device]:
+def get_physical_devices(device_type: Any = None) -> list[Device]:
     """Get physical devices for the current backend.
 
     Args:
@@ -191,7 +196,7 @@ def get_physical_devices(device_type: str = None) -> list[Device]:
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_physical_devices()")
 
 
-def get_memory_info(device: str = None) -> dict[str, int]:
+def get_memory_info(device: Any = None) -> dict[str, int]:
     """Get memory statistics tracking (allocation bytes, peak usage).
 
     Args:

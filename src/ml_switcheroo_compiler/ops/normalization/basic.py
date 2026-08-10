@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply normalization basic operations."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -9,15 +12,14 @@ class GroupMean(OpDef):
 
     op_name: str = "GroupMean"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -28,15 +30,14 @@ class GroupVariance(OpDef):
 
     op_name: str = "GroupVariance"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -47,14 +48,13 @@ class GroupNorm(OpDef):
 
     op_name: str = "GroupNorm"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()

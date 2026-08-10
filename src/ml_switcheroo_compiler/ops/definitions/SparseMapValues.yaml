@@ -1,0 +1,5 @@
+operation: SparseMapValues
+description: The SparseMapValues operation.
+variants:
+  numpy:
+    generator: tf.sparse.map_values

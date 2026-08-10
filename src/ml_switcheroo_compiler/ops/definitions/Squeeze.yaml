@@ -1,0 +1,13 @@
+operation: Squeeze
+description: The Squeeze operation.
+variants:
+  cupy:
+    eager: cp.squeeze
+  dask:
+    eager: da.squeeze
+  edge_onnx:
+    generator: Squeeze
+  keras:
+    eager: keras_ops.squeeze
+  tensorflow:
+    eager: tf.squeeze

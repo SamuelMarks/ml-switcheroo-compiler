@@ -1,0 +1,11 @@
+operation: LessEqual
+description: The LessEqual operation.
+variants:
+  cupy:
+    eager: cp.less_equal
+  dask:
+    eager: da.less_equal
+  keras:
+    eager: keras_ops.less_equal
+  tensorflow:
+    eager: tf.less_equal

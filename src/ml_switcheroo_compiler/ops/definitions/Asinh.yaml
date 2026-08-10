@@ -1,0 +1,11 @@
+operation: Asinh
+description: The Asinh operation.
+variants:
+  cupy:
+    generator: cp.arcsinh
+  dask:
+    generator: da.arcsinh
+  numpy:
+    generator: np.arcsinh
+  tensorflow:
+    eager: tf.asinh

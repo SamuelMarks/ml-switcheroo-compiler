@@ -1,11 +1,13 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy eager binary math ops."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Add")
-def _np_add(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_add(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_add operation.
 
     Args:
@@ -13,14 +15,13 @@ def _np_add(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.add(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Subtract")
-def _np_subtract(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_subtract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_subtract operation.
 
     Args:
@@ -28,14 +29,13 @@ def _np_subtract(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.subtract(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Multiply")
-def _np_multiply(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_multiply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_multiply operation.
 
     Args:
@@ -43,14 +43,13 @@ def _np_multiply(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.multiply(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TrueDivide")
-def _np_true_divide(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_true_divide(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_true_divide operation.
 
     Args:
@@ -58,14 +57,13 @@ def _np_true_divide(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.divide(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Maximum")
-def _np_maximum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_maximum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_maximum operation.
 
     Args:
@@ -73,14 +71,13 @@ def _np_maximum(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.maximum(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Minimum")
-def _np_minimum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_minimum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_minimum operation.
 
     Args:
@@ -88,14 +85,13 @@ def _np_minimum(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.minimum(*args, **kwargs)
 
 
 @numpy_eager_registry.register("BitwiseAnd")
-def _np_bitwise_and(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_and(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bitwise_and operation.
 
     Args:
@@ -103,14 +99,13 @@ def _np_bitwise_and(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.bitwise_and(*args, **kwargs)
 
 
 @numpy_eager_registry.register("BitwiseOr")
-def _np_bitwise_or(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_or(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bitwise_or operation.
 
     Args:
@@ -118,14 +113,13 @@ def _np_bitwise_or(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.bitwise_or(*args, **kwargs)
 
 
 @numpy_eager_registry.register("BitwiseXor")
-def _np_bitwise_xor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bitwise_xor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bitwise_xor operation.
 
     Args:
@@ -133,14 +127,13 @@ def _np_bitwise_xor(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.bitwise_xor(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LeftShift")
-def _np_left_shift(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_left_shift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_left_shift operation.
 
     Args:
@@ -148,14 +141,13 @@ def _np_left_shift(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.left_shift(*args, **kwargs)
 
 
 @numpy_eager_registry.register("RightShift")
-def _np_right_shift(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_right_shift(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_right_shift operation.
 
     Args:
@@ -163,14 +155,13 @@ def _np_right_shift(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.right_shift(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Logaddexp")
-def _np_logaddexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_logaddexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_logaddexp operation.
 
     Args:
@@ -178,14 +169,13 @@ def _np_logaddexp(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.logaddexp(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Logaddexp2")
-def _np_logaddexp2(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_logaddexp2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_logaddexp2 operation.
 
     Args:
@@ -193,14 +183,13 @@ def _np_logaddexp2(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.logaddexp2(*args, **kwargs)
 
 
 @numpy_eager_registry.register("NanToNum")
-def _np_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_nan_to_num operation.
 
     Args:
@@ -208,14 +197,13 @@ def _np_nan_to_num(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.nan_to_num(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Frexp")
-def _np_frexp(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_frexp(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_frexp operation.
 
     Args:
@@ -223,14 +211,13 @@ def _np_frexp(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.frexp(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Clip")
-def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_clip(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_clip operation.
 
     Args:
@@ -238,14 +225,13 @@ def _np_clip(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.clip(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Amax")
-def _np_amax(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_amax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_amax operation.
 
     Args:
@@ -253,14 +239,13 @@ def _np_amax(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.amax(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Amin")
-def _np_amin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_amin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_amin operation.
 
     Args:
@@ -268,14 +253,13 @@ def _np_amin(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.amin(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Logit")
-def _np_logit(backend_module: object, x: object, eps: object = None, *args: object, **kwargs: object) -> object:
+def _np_logit(backend_module: Any, x: Any, eps: Any = None, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_logit operation.
 
     Args:
@@ -285,14 +269,13 @@ def _np_logit(backend_module: object, x: object, eps: object = None, *args: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.log(x / (1.0 - x))
 
 
 @numpy_eager_registry.register("Polygamma")
-def _np_polygamma(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_polygamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_polygamma operation.
 
     Args:
@@ -300,8 +283,7 @@ def _np_polygamma(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -316,7 +298,7 @@ def _np_polygamma(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("Zeta")
-def _np_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_zeta operation.
 
     Args:
@@ -324,8 +306,7 @@ def _np_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -340,7 +321,7 @@ def _np_zeta(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Remainder")
-def _eager_remainder(backend_module: object, *args: object, **kwargs: object) -> object:
+def _eager_remainder(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _eager_remainder operation.
 
     Args:
@@ -348,7 +329,6 @@ def _eager_remainder(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.remainder(*args, **kwargs)

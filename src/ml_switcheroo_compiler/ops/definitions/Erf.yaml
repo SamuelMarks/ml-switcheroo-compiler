@@ -1,0 +1,7 @@
+operation: Erf
+description: The Erf operation.
+variants:
+  keras:
+    eager: keras_ops.erf
+  tensorflow:
+    eager: tf.math.erf

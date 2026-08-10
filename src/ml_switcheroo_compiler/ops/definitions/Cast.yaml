@@ -1,0 +1,13 @@
+operation: Cast
+description: The Cast operation.
+variants:
+  edge_onnx:
+    generator: Cast
+  edge_stablehlo:
+    generator: stablehlo.convert
+  keras:
+    eager: keras_ops.cast
+  pytorch:
+    generator: getattr({0}, str('{dtype}'))()
+  tensorflow:
+    eager: tf.cast

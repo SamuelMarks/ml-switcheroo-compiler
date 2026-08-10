@@ -1,0 +1,5 @@
+operation: SparseTranspose
+description: The SparseTranspose operation.
+variants:
+  numpy:
+    generator: tf.sparse.transpose

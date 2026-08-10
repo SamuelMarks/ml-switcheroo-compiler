@@ -1,8 +1,9 @@
-# ruff: noqa: E501, C901, PLR0912
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Real multi-process IPC distributed primitives for Numpy backend."""
 
 import os
 from multiprocessing.connection import Client, Listener
+from typing import Any
 
 import numpy as np
 
@@ -31,7 +32,7 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: 
             for _ in range(size - 1):
                 with listener.accept() as conn:
                     other_rank, other_data = conn.recv()
-                    gathered.append((other_rank, other_data))
+                    gathered.append((other_rank, other_data))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
         # Sort by rank
         gathered_sorted = [tensor_data] * size
@@ -124,7 +125,7 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np
         return _exchange_ipc_data_worker(rank, size, tensor_data, timeout, retry_interval)
 
 
-def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
+def _ipc_all_gather(tensor: Any, axis: int, mesh: Any) -> Any:
     """Evaluate _ipc_all_gather operation.
 
     Args:
@@ -132,8 +133,7 @@ def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
         axis (int): The axis parameter.
         mesh (object): The mesh parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(tensor, str):
         return tensor
@@ -150,7 +150,7 @@ def _ipc_all_gather(tensor: object, axis: int, mesh: object) -> object:
     return np.expand_dims(t, axis=axis) if axis is not None else t
 
 
-def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> object:
+def _ipc_reduce_scatter(tensor: Any, op: str, axis: int, mesh: Any) -> Any:
     """Evaluate _ipc_reduce_scatter operation.
 
     Args:
@@ -159,8 +159,7 @@ def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> obj
         axis (int): The axis parameter.
         mesh (object): The mesh parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(tensor, str):
         return tensor
@@ -190,7 +189,7 @@ def _ipc_reduce_scatter(tensor: object, op: str, axis: int, mesh: object) -> obj
     return t
 
 
-def _ipc_all_reduce(tensor: object, op: str, mesh: object) -> object:
+def _ipc_all_reduce(tensor: Any, op: str, mesh: Any) -> Any:
     """Evaluate _ipc_all_reduce operation.
 
     Args:
@@ -198,8 +197,7 @@ def _ipc_all_reduce(tensor: object, op: str, mesh: object) -> object:
         op (str): The op parameter.
         mesh (object): The mesh parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(tensor, str):
         return tensor

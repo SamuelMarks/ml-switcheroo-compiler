@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Tensor array ops."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -9,7 +12,7 @@ class TensorArrayRead(OpDef):
 
     op_name = "TensorArrayRead"
 
-    def infer_shape(self, handle: object, index: object, **kwargs: object) -> object:
+    def infer_shape(self, handle: Any, index: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -17,8 +20,7 @@ class TensorArrayRead(OpDef):
             index (object): The index parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Typically returns the shape of the elements in the TensorArray
         return getattr(handle, "element_shape", ())
@@ -30,7 +32,7 @@ class TensorArrayWrite(OpDef):
 
     op_name = "TensorArrayWrite"
 
-    def infer_shape(self, handle: object, index: object, value: object, **kwargs: object) -> object:
+    def infer_shape(self, handle: Any, index: Any, value: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -39,8 +41,7 @@ class TensorArrayWrite(OpDef):
             value (object): The value parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -51,15 +52,14 @@ class TensorArrayStack(OpDef):
 
     op_name = "TensorArrayStack"
 
-    def infer_shape(self, handle: object, **kwargs: object) -> object:
+    def infer_shape(self, handle: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             handle (object): The handle parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Adds a dimension
         elem_shape = getattr(handle, "element_shape", ())

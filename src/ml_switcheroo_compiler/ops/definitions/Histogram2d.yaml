@@ -1,0 +1,5 @@
+operation: Histogram2d
+description: The Histogram2d operation.
+variants:
+  numpy:
+    generator: np.histogram2d

@@ -1,0 +1,13 @@
+operation: Svd
+description: The Svd operation.
+variants:
+  cupy:
+    eager: cp.linalg.svd
+  dask:
+    eager: da.linalg.svd
+  keras:
+    eager: keras_ops.svd
+  numpy:
+    generator: np.linalg.svd
+  tensorflow:
+    eager: tf.linalg.svd

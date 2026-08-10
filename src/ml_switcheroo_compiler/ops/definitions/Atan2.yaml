@@ -1,0 +1,11 @@
+operation: Atan2
+description: The Atan2 operation.
+variants:
+  cupy:
+    generator: cp.arctan2
+  dask:
+    generator: da.arctan2
+  numpy:
+    generator: np.arctan2
+  tensorflow:
+    eager: tf.atan2

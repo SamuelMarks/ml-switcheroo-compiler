@@ -1,0 +1,9 @@
+operation: BitwiseAnd
+description: The BitwiseAnd operation.
+variants:
+  cupy:
+    eager: cp.bitwise_and
+  dask:
+    eager: da.bitwise_and
+  keras:
+    eager: keras_ops.bitwise_and

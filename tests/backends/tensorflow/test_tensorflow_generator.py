@@ -161,7 +161,7 @@ def test_tf_generator_methods():
 
     # ops map
     ops = gen.get_ops_map({})
-    assert "Zeros" in ops
+    assert "Beta" in ops
 
     # const assignment
     gen.code = []

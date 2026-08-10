@@ -1,0 +1,15 @@
+operation: Sum
+description: The Sum operation.
+variants:
+  cupy:
+    eager: cp.sum
+    generator: cp.sum
+  dask:
+    eager: da.sum
+    generator: da.sum
+  keras:
+    eager: keras_ops.sum
+  numpy:
+    generator: np.sum
+  pytorch:
+    generator: torch.sum({0}, dim={axis}, keepdim={keepdims})

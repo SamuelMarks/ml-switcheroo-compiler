@@ -1,8 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision operations for the numpy backend."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
@@ -38,14 +38,14 @@ class InterpolationConfig:
         W: Original width.
     """
 
-    images: object
-    src_y: object
-    src_x: object
+    images: Any
+    src_y: Any
+    src_x: Any
     H: int
     W: int
 
 
-def _calculate_bilinear_coords(np: object, cfg: ResizeConfig) -> tuple:
+def _calculate_bilinear_coords(np: Any, cfg: ResizeConfig) -> tuple:
     """Calculate coords for bilinear resize.
 
     Args:
@@ -76,13 +76,13 @@ def _calculate_bilinear_coords(np: object, cfg: ResizeConfig) -> tuple:
 class BilinearCoords:
     """Coordinates for bilinear interpolation."""
 
-    y0: object
-    y1: object
-    x0: object
-    x1: object
+    y0: Any
+    y1: Any
+    x0: Any
+    x1: Any
 
 
-def _compute_bilinear_pixels(np: object, images: object, coords: BilinearCoords) -> tuple:
+def _compute_bilinear_pixels(np: Any, images: Any, coords: BilinearCoords) -> tuple:
     """Fetch pixels for bilinear interpolation.
 
     Args:
@@ -101,7 +101,7 @@ def _compute_bilinear_pixels(np: object, images: object, coords: BilinearCoords)
     return Ia, Ib, Ic, Id
 
 
-def _compute_bilinear_weights(dy: object, dx: object) -> tuple:
+def _compute_bilinear_weights(dy: Any, dx: Any) -> tuple:
     """Evaluate _compute_bilinear_weights operation.
 
     Args:
@@ -118,15 +118,14 @@ def _compute_bilinear_weights(dy: object, dx: object) -> tuple:
     return wa, wb, wc, wd
 
 
-def _apply_bilinear_interpolation(np: object, cfg: InterpolationConfig) -> object:
+def _apply_bilinear_interpolation(np: Any, cfg: InterpolationConfig) -> Any:
     """Apply bilinear interpolation.
 
     Args:
         np (object): The np parameter.
         cfg (InterpolationConfig): The cfg parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     y0 = np.floor(cfg.src_y).astype(np.int32)
     y1 = np.clip(y0 + 1, 0, cfg.H - 1)
@@ -143,7 +142,7 @@ def _apply_bilinear_interpolation(np: object, cfg: InterpolationConfig) -> objec
 
 
 @numpy_eager_registry.register("ResizeBilinear")
-def resize_bilinear(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_bilinear(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images using bilinear interpolation.
 
     Args:
@@ -152,8 +151,7 @@ def resize_bilinear(np_mod: object, images: object, size: tuple[int, int], align
         size (tuple): The size parameter.
         align_corners (bool): The align_corners parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     images = np_mod.asarray(images)
     rank = len(images.shape)
@@ -172,7 +170,7 @@ def resize_bilinear(np_mod: object, images: object, size: tuple[int, int], align
     return out[0] if rank == 3 else out
 
 
-def _calculate_nearest_coords(np: object, cfg: ResizeConfig) -> tuple:
+def _calculate_nearest_coords(np: Any, cfg: ResizeConfig) -> tuple:
     """Calculate coords for nearest resize.
 
     Args:
@@ -200,7 +198,7 @@ def _calculate_nearest_coords(np: object, cfg: ResizeConfig) -> tuple:
 
 
 @numpy_eager_registry.register("ResizeNearest")
-def resize_nearest(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_nearest(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images using nearest-neighbor interpolation.
 
     Args:
@@ -209,8 +207,7 @@ def resize_nearest(np_mod: object, images: object, size: tuple[int, int], align_
         size (tuple): The size parameter.
         align_corners (bool): The align_corners parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     images = np_mod.asarray(images)
     rank = len(images.shape)
@@ -229,7 +226,7 @@ def resize_nearest(np_mod: object, images: object, size: tuple[int, int], align_
 
 
 @numpy_eager_registry.register("ResizeBicubic")
-def resize_bicubic(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_bicubic(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images using bicubic interpolation.
 
     Args:
@@ -238,14 +235,13 @@ def resize_bicubic(np_mod: object, images: object, size: tuple[int, int], align_
         size (tuple): The size parameter.
         align_corners (bool): The align_corners parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return resize_bilinear(np_mod, images, size, align_corners)
 
 
 @numpy_eager_registry.register("ResizeLanczos3")
-def resize_lanczos3(np_mod: object, images: object, size: tuple[int, int], align_corners: bool = False) -> object:
+def resize_lanczos3(np_mod: Any, images: Any, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images using Lanczos3 interpolation.
 
     Args:
@@ -254,14 +250,13 @@ def resize_lanczos3(np_mod: object, images: object, size: tuple[int, int], align
         size (tuple): The size parameter.
         align_corners (bool): The align_corners parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return resize_bilinear(np_mod, images, size, align_corners)
 
 
 @numpy_eager_registry.register("RandomFlip")
-def random_flip_numpy(np_mod: object, images: object, mode: str = "horizontal_and_vertical", seed: int = None, **kwargs: object) -> object:
+def random_flip_numpy(np_mod: Any, images: Any, mode: Any = "horizontal_and_vertical", seed: Any = None, **kwargs: Any) -> Any:
     """Generate random flip.
 
     Args:
@@ -271,8 +266,7 @@ def random_flip_numpy(np_mod: object, images: object, mode: str = "horizontal_an
         seed (int): The seed parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     np = np_mod
     x = np.asarray(images)
@@ -298,7 +292,7 @@ def random_flip_numpy(np_mod: object, images: object, mode: str = "horizontal_an
     return out
 
 
-def _compute_rotation_coords(np: object, H: int, W: int, angle: float) -> tuple:
+def _compute_rotation_coords(np: Any, H: int, W: int, angle: float) -> tuple:
     """Evaluate _compute_rotation_coords operation.
 
     Args:
@@ -333,14 +327,14 @@ class RotationInterpolationConfig:
         fill_value: Fill value.
     """
 
-    img: object
-    src_x: object
-    src_y: object
+    img: Any
+    src_x: Any
+    src_y: Any
     fill_mode: str
     fill_value: float
 
 
-def _get_rotation_coords(np: object, src_x_clip: object, src_y_clip: object, W: int, H: int) -> tuple:
+def _get_rotation_coords(np: Any, src_x_clip: Any, src_y_clip: Any, W: int, H: int) -> tuple:
     """Get the bounding coordinates for rotation interpolation.
 
     Args:
@@ -360,7 +354,7 @@ def _get_rotation_coords(np: object, src_x_clip: object, src_y_clip: object, W: 
     return x0, x1, y0, y1
 
 
-def _gather_rotation_pixels(img: object, coords: tuple) -> tuple:
+def _gather_rotation_pixels(img: Any, coords: tuple) -> tuple:
     """Gather pixels for rotation.
 
     Args:
@@ -376,7 +370,7 @@ def _gather_rotation_pixels(img: object, coords: tuple) -> tuple:
     return Ia, Ib, Ic, Id
 
 
-def _compute_rotation_weights(dx: object, dy: object) -> tuple:
+def _compute_rotation_weights(dx: Any, dy: Any) -> tuple:
     """Evaluate _compute_rotation_weights operation.
 
     Args:
@@ -393,15 +387,14 @@ def _compute_rotation_weights(dx: object, dy: object) -> tuple:
     return wa, wb, wc, wd
 
 
-def _interpolate_rotation(np: object, cfg: RotationInterpolationConfig) -> object:
+def _interpolate_rotation(np: Any, cfg: RotationInterpolationConfig) -> Any:
     """Interpolate rotated image.
 
     Args:
         np (object): The np parameter.
         cfg (RotationInterpolationConfig): The cfg parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     H, W, _ = cfg.img.shape
     src_x_clip = np.clip(cfg.src_x, 0, W - 1)
@@ -421,7 +414,7 @@ def _interpolate_rotation(np: object, cfg: RotationInterpolationConfig) -> objec
     return interp.astype(cfg.img.dtype)
 
 
-def _apply_random_rotation_single(np: object, img: object, angle: float, fill_mode: str, fill_value: float) -> object:
+def _apply_random_rotation_single(np: Any, img: Any, angle: float, fill_mode: str, fill_value: float) -> Any:
     """Apply random rotation to a single image.
 
     Args:
@@ -431,8 +424,7 @@ def _apply_random_rotation_single(np: object, img: object, angle: float, fill_mo
         fill_mode (str): The fill_mode parameter.
         fill_value (float): The fill_value parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     H, W, _ = img.shape
     src_x, src_y = _compute_rotation_coords(np, H, W, angle)
@@ -450,7 +442,7 @@ class TransformOptions:
     fill_value: float = 0.0
 
 
-def _apply_rotation_to_batch(np: object, x: object, rng: object, angles: tuple[float, float], options: TransformOptions) -> object:
+def _apply_rotation_to_batch(np: Any, x: Any, rng: Any, angles: tuple[float, float], options: TransformOptions) -> Any:
     """Apply rotation to batch of images.
 
     Args:
@@ -460,8 +452,7 @@ def _apply_rotation_to_batch(np: object, x: object, rng: object, angles: tuple[f
         angles (tuple): The angles parameter.
         options (TransformOptions): The options parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     B = x.shape[0]
     out = np.zeros_like(x)
@@ -472,7 +463,7 @@ def _apply_rotation_to_batch(np: object, x: object, rng: object, angles: tuple[f
 
 
 @numpy_eager_registry.register("RandomRotation")
-def random_rotation_numpy(np_mod: object, images: object, factor: float, options: Optional[TransformOptions] = None, **kwargs: object) -> object:
+def random_rotation_numpy(np_mod: Any, images: Any, factor: float, options: Optional[TransformOptions] = None, **kwargs: Any) -> Any:
     """Generate random rotation.
 
     Args:
@@ -482,8 +473,7 @@ def random_rotation_numpy(np_mod: object, images: object, factor: float, options
         options (Optional): The options parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     options = options or TransformOptions()
     np = np_mod

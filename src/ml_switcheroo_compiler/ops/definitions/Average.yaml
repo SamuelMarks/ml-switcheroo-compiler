@@ -1,0 +1,9 @@
+operation: Average
+description: The Average operation.
+variants:
+  cupy:
+    eager: cp.average
+  dask:
+    eager: da.average
+  keras:
+    eager: keras_ops.average

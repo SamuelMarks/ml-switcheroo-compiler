@@ -1,0 +1,11 @@
+operation: Acos
+description: The Acos operation.
+variants:
+  cupy:
+    generator: cp.arccos
+  dask:
+    generator: da.arccos
+  numpy:
+    generator: np.arccos
+  tensorflow:
+    eager: tf.acos

@@ -1,0 +1,9 @@
+operation: Nextafter
+description: The Nextafter operation.
+variants:
+  cupy:
+    eager: cp.nextafter
+  dask:
+    eager: da.nextafter
+  tensorflow:
+    eager: tf.math.nextafter

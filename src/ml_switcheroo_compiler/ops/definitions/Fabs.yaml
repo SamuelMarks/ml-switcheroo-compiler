@@ -1,0 +1,7 @@
+operation: Fabs
+description: The Fabs operation.
+variants:
+  cupy:
+    eager: cp.fabs
+  dask:
+    eager: da.fabs

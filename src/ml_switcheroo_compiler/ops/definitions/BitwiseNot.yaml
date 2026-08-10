@@ -1,0 +1,9 @@
+operation: BitwiseNot
+description: The BitwiseNot operation.
+variants:
+  cupy:
+    eager: cp.bitwise_not
+  dask:
+    eager: da.bitwise_not
+  keras:
+    eager: keras_ops.bitwise_not

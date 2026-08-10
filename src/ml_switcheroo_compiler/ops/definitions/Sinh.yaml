@@ -1,0 +1,11 @@
+operation: Sinh
+description: The Sinh operation.
+variants:
+  cupy:
+    eager: cp.sinh
+  dask:
+    eager: da.sinh
+  keras:
+    eager: keras_ops.sinh
+  tensorflow:
+    eager: tf.sinh

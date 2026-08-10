@@ -1,0 +1,9 @@
+operation: Rfft2
+description: The Rfft2 operation.
+variants:
+  cupy:
+    eager: cp.fft.rfft2
+  dask:
+    eager: da.fft.rfft2
+  numpy:
+    generator: np.fft.rfft2

@@ -1,0 +1,5 @@
+operation: Pmax
+description: The Pmax operation.
+variants:
+  numpy:
+    generator: '{0}'

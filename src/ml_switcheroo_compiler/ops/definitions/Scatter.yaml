@@ -1,0 +1,7 @@
+operation: Scatter
+description: The Scatter operation.
+variants:
+  edge_stablehlo:
+    generator: stablehlo.scatter
+  keras:
+    eager: keras_ops.scatter

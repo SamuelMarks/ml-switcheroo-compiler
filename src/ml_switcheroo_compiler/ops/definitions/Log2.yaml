@@ -1,0 +1,9 @@
+operation: Log2
+description: The Log2 operation.
+variants:
+  cupy:
+    eager: cp.log2
+  dask:
+    eager: da.log2
+  keras:
+    eager: keras_ops.log2

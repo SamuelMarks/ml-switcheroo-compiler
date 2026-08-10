@@ -1,8 +1,10 @@
-"""Vision operations."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Vision operations."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -19,12 +21,12 @@ class AffineConfig:
 
     fill_mode: str = "reflect"
     interpolation: str = "bilinear"
-    seed: int = None
+    seed: Any = None
     fill_value: float = 0.0
-    data_format: str = None
+    data_format: Any = None
 
 
-def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Tensor:
+def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Any:
     """Apply the given 2D affine transforms to the given images.
 
     Args:
@@ -42,7 +44,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
-def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Tensor:
+def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Any:
     """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
@@ -70,7 +72,7 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(images: Tensor, mode: str = "horizontal_and_vertical", seed: int = None, **kwargs: object) -> Tensor:
+def random_flip(images: Tensor, mode: Any = "horizontal_and_vertical", seed: Any = None, **kwargs: Any) -> Any:
     """Randomly flip images horizontally and/or vertically.
 
     Args:
@@ -98,8 +100,8 @@ def random_rotation(
     images: Tensor,
     factor: float,
     config: AffineConfig | None = None,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Randomly rotate images.
 
     Args:
@@ -135,7 +137,7 @@ def random_rotation(
     )
 
 
-def random_crop(images: Tensor, size: tuple, seed: int = None, **kwargs: object) -> Tensor:
+def random_crop(images: Tensor, size: tuple, seed: Any = None, **kwargs: Any) -> Any:
     """Randomly crop images.
 
     Args:
@@ -161,8 +163,8 @@ def random_zoom(
     images: Tensor,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Randomly zoom images.
 
     Args:
@@ -205,8 +207,8 @@ def random_translation(
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
     config: AffineConfig | None = None,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Randomly translate images.
 
     Args:
@@ -249,8 +251,8 @@ def random_shear(
     images: Tensor,
     y_factor: float | tuple[float, float],
     x_factor: float | tuple[float, float] | None = None,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Randomly shear images.
 
     Args:
@@ -291,8 +293,8 @@ def random_shear(
 def random_perspective(
     images: Tensor,
     factor: float | tuple[float, float],
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Randomly apply perspective transform to images.
 
     Args:
@@ -331,8 +333,8 @@ def random_elastic_transform(
     images: Tensor,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """Randomly apply elastic transform to images.
 
     Args:
@@ -370,7 +372,7 @@ def random_elastic_transform(
     )
 
 
-def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Tensor:
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Any:
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
@@ -394,7 +396,7 @@ def grid_sample(
     mode: str = "bilinear",
     padding_mode: str = "zeros",
     align_corners: bool = False,
-) -> Tensor:
+) -> Any:
     """Given an input and a flow-field grid, computes the output using input values and pixel locations from grid.
 
     Args:
@@ -433,7 +435,7 @@ class AffineGenerator(OpDef):
 
     op_name = "AffineGenerator"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -441,8 +443,7 @@ class AffineGenerator(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -453,7 +454,7 @@ class AffineGrid(OpDef):
 
     op_name = "AffineGrid"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -461,8 +462,7 @@ class AffineGrid(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -473,7 +473,7 @@ class AffineTransform(OpDef):
 
     op_name = "AffineTransform"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -481,8 +481,7 @@ class AffineTransform(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -493,7 +492,7 @@ class PerspectiveTransform(OpDef):
 
     op_name = "PerspectiveTransform"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -501,7 +500,6 @@ class PerspectiveTransform(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())

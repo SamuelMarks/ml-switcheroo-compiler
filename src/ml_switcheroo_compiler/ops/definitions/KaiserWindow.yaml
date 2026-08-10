@@ -1,0 +1,5 @@
+operation: KaiserWindow
+description: The KaiserWindow operation.
+variants:
+  pytorch:
+    generator: torch.kaiser_window({window_length}, periodic={periodic}, beta={beta})

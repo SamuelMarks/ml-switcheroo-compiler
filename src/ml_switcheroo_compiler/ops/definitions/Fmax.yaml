@@ -1,0 +1,7 @@
+operation: Fmax
+description: The Fmax operation.
+variants:
+  cupy:
+    eager: cp.fmax
+  dask:
+    eager: da.fmax

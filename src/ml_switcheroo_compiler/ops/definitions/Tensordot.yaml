@@ -1,0 +1,13 @@
+operation: Tensordot
+description: The Tensordot operation.
+variants:
+  cupy:
+    eager: cp.tensordot
+  dask:
+    eager: da.tensordot
+  keras:
+    eager: keras_ops.tensordot
+  numpy:
+    generator: np.tensordot({0}, {1}, axes={axes})
+  tensorflow:
+    eager: tf.tensordot

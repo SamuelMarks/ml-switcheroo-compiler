@@ -22,7 +22,7 @@ def test_ragged_tensor():
     assert rt.values == v
     assert rt.row_splits == r
 
-    assert rt.shape == (2, "None", 2)
+    assert rt.shape == (2, -1, 2)
     assert rt.dtype == "float32"
     assert rt.device == "cpu"
     assert rt.requires_grad is True

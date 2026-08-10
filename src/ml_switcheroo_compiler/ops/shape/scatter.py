@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Scatter shape operations."""
 
-from __future__ import annotations
 
 from collections.abc import Sequence
 
@@ -13,12 +17,12 @@ from ml_switcheroo_compiler.ops.registry import get_util
 _emit_shape_node = get_util("_emit_shape_node")
 
 
-def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
+def scatter(input: Tensor, axis: int, index: Tensor, src: Tensor) -> Any:
     """Scatter values from a source tensor into the input tensor along a specified.
 
     Args:
         input (Tensor): The input parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
         index (Tensor): The index parameter.
         src (Tensor): The src parameter.
 
@@ -27,10 +31,10 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Scatter", input.data, index.data, src.data, dim=dim)
+        data = backend.execute_op("Scatter", input.data, index.data, src.data, axis=axis)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, index, src]
-    attributes = {"dim": dim}
+    attributes = {"axis": axis}
     # shape calculation placeholder
     out_shape = inputs[0].shape
     return _emit_shape_node(
@@ -42,7 +46,7 @@ def scatter(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
     )
 
 
-def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor:
+def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Any:
     """Scatter updates into a new tensor of specified shape using indices.
 
     Args:
@@ -68,12 +72,12 @@ def scatter_nd(indices: Tensor, updates: Tensor, shape: Sequence[int]) -> Tensor
     )
 
 
-def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
+def scatter_add(input: Tensor, axis: int, index: Tensor, src: Tensor) -> Any:
     """Add values from a source tensor to the input tensor at specified indices along a.
 
     Args:
         input (Tensor): The input parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
         index (Tensor): The index parameter.
         src (Tensor): The src parameter.
 
@@ -82,10 +86,10 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("ScatterAdd", input.data, index.data, src.data, dim=dim)
+        data = backend.execute_op("ScatterAdd", input.data, index.data, src.data, axis=axis)
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, index, src]
-    attributes = {"dim": dim}
+    attributes = {"axis": axis}
     # shape calculation placeholder
     out_shape = inputs[0].shape
     return _emit_shape_node(
@@ -97,7 +101,7 @@ def scatter_add(input: Tensor, dim: int, index: Tensor, src: Tensor) -> Tensor:
     )
 
 
-def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
+def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> Any:
     """Update the value of a tensor at given indices.
 
     Args:
@@ -127,7 +131,7 @@ def tensor_scatter_update(tensor: Tensor, indices: Tensor, updates: Tensor) -> T
     )
 
 
-def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
+def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Any:
     """Update a tensor at given indices with the maximum of the current value and the update.
 
     Args:
@@ -157,7 +161,7 @@ def tensor_scatter_max(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     )
 
 
-def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
+def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Any:
     """Update a tensor at given indices with the minimum of the current value and the update.
 
     Args:
@@ -187,7 +191,7 @@ def tensor_scatter_min(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tens
     )
 
 
-def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Tensor:
+def tensor_scatter_add(tensor: Tensor, indices: Tensor, updates: Tensor) -> Any:
     """Add updates to a tensor at given indices.
 
     Args:

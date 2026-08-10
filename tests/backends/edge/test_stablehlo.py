@@ -98,3 +98,29 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         self.gen.graph.outputs = None
         code = self.gen.generate()
         self.assertIn("return", code)
+
+    def test_stablehlo_types_and_ops(self) -> None:
+        """Test generation of extended neural network and tensor types for StableHLO."""
+        gen = StableHLOCodeGenerator(IRGraph())
+
+        # Test types
+        assert "f16" in gen._map_type((), "float16")
+        assert "bf16" in gen._map_type((), "bfloat16")
+        assert "i64" in gen._map_type((), "int64")
+        assert "i8" in gen._map_type((), "int8")
+        assert "ui32" in gen._map_type((), "uint32")
+        assert "ui8" in gen._map_type((), "uint8")
+
+        ops = ["MatMul", "Conv2D", "Reshape", "Transpose", "Broadcast", "Concat", "Slice", "Gather", "ReduceSum", "ReduceMean", "Relu", "Sigmoid"]
+
+        for op in ops:
+            n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
+            gen.sorted_nodes.append(n)
+
+        gen.generate()
+
+        output = "\n".join(gen.code)
+        assert "stablehlo.dot_general" in output
+        assert "stablehlo.convolution" in output
+        assert "stablehlo.reduce" in output
+        assert "stablehlo.maximum" in output

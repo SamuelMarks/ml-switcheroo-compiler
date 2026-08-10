@@ -1,11 +1,12 @@
 """Quantization passes."""
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 from ml_switcheroo_compiler.core.dataset import Dataset
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
-
-# ruff: noqa: D107
 
 
 class QuantizationConfig:

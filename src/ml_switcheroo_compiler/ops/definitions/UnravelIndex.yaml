@@ -1,0 +1,11 @@
+operation: UnravelIndex
+description: The UnravelIndex operation.
+variants:
+  cupy:
+    eager: cp.unravel_index
+  dask:
+    eager: da.unravel_index
+  keras:
+    eager: keras_ops.unravel_index
+  tensorflow:
+    eager: tf.unravel_index

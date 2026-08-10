@@ -1,0 +1,5 @@
+operation: Polydiv
+description: The Polydiv operation.
+variants:
+  numpy:
+    generator: np.polydiv

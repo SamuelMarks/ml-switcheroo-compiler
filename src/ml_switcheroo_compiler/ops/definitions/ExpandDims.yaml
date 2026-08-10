@@ -1,0 +1,11 @@
+operation: ExpandDims
+description: The ExpandDims operation.
+variants:
+  cupy:
+    eager: cp.expand_dims
+  dask:
+    eager: da.expand_dims
+  keras:
+    eager: keras_ops.expand_dims
+  tensorflow:
+    eager: tf.expand_dims

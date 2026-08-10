@@ -1,11 +1,12 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy-related utilities."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler import ops
 
 
-def to_categorical(x: object, num_classes: Optional[int] = None, dtype: str = "float32") -> object:
+def to_categorical(x: Any, num_classes: Optional[int] = None, dtype: str = "float32") -> Any:
     """Convert a class vector (integers) to binary class matrix.
 
     Args:
@@ -13,8 +14,7 @@ def to_categorical(x: object, num_classes: Optional[int] = None, dtype: str = "f
         num_classes (object): The num_classes parameter.
         dtype (str): The dtype parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if num_classes is None:
         num_classes = int(ops.max(x).item() if hasattr(ops.max(x), "item") else ops.max(x)) + 1
@@ -26,7 +26,7 @@ def to_categorical(x: object, num_classes: Optional[int] = None, dtype: str = "f
     return ops.cast(one_hot, dtype)
 
 
-def normalize(x: object, axis: int = -1, order: int = 2) -> object:
+def normalize(x: Any, axis: int = -1, order: int = 2) -> Any:
     """Normalize a tensor/array.
 
     Args:
@@ -34,8 +34,7 @@ def normalize(x: object, axis: int = -1, order: int = 2) -> object:
         axis (int): The axis parameter.
         order (int): The order parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     l2 = ops.sum(ops.square(x), axis=axis, keepdims=True)
     l2 = ops.maximum(ops.sqrt(l2), 1e-12)

@@ -1,0 +1,5 @@
+operation: EditDistance
+description: The EditDistance operation.
+variants:
+  tensorflow:
+    eager: tf.edit_distance

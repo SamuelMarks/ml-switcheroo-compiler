@@ -1,0 +1,11 @@
+operation: Prod
+description: The Prod operation.
+variants:
+  cupy:
+    eager: cp.prod
+  dask:
+    eager: da.prod
+  keras:
+    eager: keras_ops.prod
+  pytorch:
+    generator: torch.prod({0}, dim={axis}, keepdim={keepdims})

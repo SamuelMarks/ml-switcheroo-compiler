@@ -1,0 +1,5 @@
+operation: R_
+description: The R_ operation.
+variants:
+  numpy:
+    generator: np.r_

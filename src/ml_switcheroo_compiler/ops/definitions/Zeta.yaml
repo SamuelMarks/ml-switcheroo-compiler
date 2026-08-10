@@ -1,0 +1,7 @@
+operation: Zeta
+description: The Zeta operation.
+variants:
+  numpy:
+    generator: scipy.special.zeta
+  tensorflow:
+    eager: tf.math.zeta

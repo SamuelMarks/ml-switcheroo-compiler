@@ -1,0 +1,5 @@
+operation: RNNCellDeviceWrapper
+description: The RNNCellDeviceWrapper operation.
+variants:
+  numpy:
+    generator: tf.nn.rnn_cell.DeviceWrapper

@@ -1,0 +1,7 @@
+operation: Fix
+description: The Fix operation.
+variants:
+  cupy:
+    eager: cp.fix
+  dask:
+    eager: da.fix

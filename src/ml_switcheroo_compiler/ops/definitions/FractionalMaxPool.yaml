@@ -1,0 +1,5 @@
+operation: FractionalMaxPool
+description: The FractionalMaxPool operation.
+variants:
+  tensorflow:
+    eager: tf.nn.fractional_max_pool

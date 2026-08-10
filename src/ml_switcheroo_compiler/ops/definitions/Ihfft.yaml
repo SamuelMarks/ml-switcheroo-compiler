@@ -1,0 +1,7 @@
+operation: Ihfft
+description: The Ihfft operation.
+variants:
+  cupy:
+    eager: cp.fft.ihfft
+  dask:
+    eager: da.fft.ihfft

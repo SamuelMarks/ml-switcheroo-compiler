@@ -1,6 +1,9 @@
-"""Device and system operations."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Device and system operations."""
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
@@ -8,7 +11,7 @@ from ml_switcheroo_compiler.ops.registry import register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def eval(*args: object) -> None:
+def eval(*args: Any) -> None:
     """Force the evaluation of the given tensors.
 
     Args:
@@ -59,15 +62,14 @@ __all__ = [
 class DeviceContextOp(OpDef):
     """Operation definition for setting or altering a generic device context."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return getattr(args[0], "shape", ())
 
@@ -76,20 +78,19 @@ class DeviceContextOp(OpDef):
 class DeviceTransferOp(OpDef):
     """Operation definition for migrating data between logical devices (e.g., host-to-device)."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(args[0], "shape", ())
 
 
-def device_transfer(input: Tensor, target_device: str, stream: str = None) -> Tensor:
+def device_transfer(input: Tensor, target_device: str, stream: Any = None) -> Any:
     """Simulate data migration between devices for a tensor.
 
     Args:

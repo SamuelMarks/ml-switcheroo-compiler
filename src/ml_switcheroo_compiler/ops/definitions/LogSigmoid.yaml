@@ -1,0 +1,7 @@
+operation: LogSigmoid
+description: The LogSigmoid operation.
+variants:
+  keras:
+    eager: keras_ops.log_sigmoid
+  tensorflow:
+    eager: tf.math.log_sigmoid

@@ -1,0 +1,9 @@
+operation: Istft
+description: The Istft operation.
+variants:
+  keras:
+    eager: keras_ops.istft
+  pytorch:
+    generator: torch.istft({0}, n_fft={n_fft}, hop_length={hop_length}, win_length={win_length},
+      window={window}, center={center}, normalized={normalized}, onesided={onesided},
+      length={length}, return_complex={return_complex})

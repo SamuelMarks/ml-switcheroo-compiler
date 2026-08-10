@@ -1,0 +1,5 @@
+operation: Switch
+description: The Switch operation.
+variants:
+  keras:
+    eager: keras_ops.switch

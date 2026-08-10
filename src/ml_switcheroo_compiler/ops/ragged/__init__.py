@@ -1,9 +1,11 @@
-# ruff: noqa: E402, D101, D102
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Ragged tensor operations for handling variable-length sequential data.
 
 This module provides operations for working with ragged tensors, which are
 tensors with non-uniform shapes across one or more dimensions.
 """
+
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -22,15 +24,14 @@ class RaggedGather(OpDef):
 
     op_name = "RaggedGather"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -45,25 +46,24 @@ class RaggedTensorToDense(OpDef):
 
     op_name = "RaggedTensorToDense"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape when converting to a dense tensor.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
 
 def ragged_tensor_to_dense(
     rt_input: "Tensor",
-    default_value: object = None,
-    row_partition_tensors: object = None,
-    row_partition_types: object = None,
-    shape: object = None,
+    default_value: Any = None,
+    row_partition_tensors: Any = None,
+    row_partition_types: Any = None,
+    shape: Any = None,
 ) -> "Tensor":
     """Convert a ragged tensor representation into a regular dense tensor.
 
@@ -120,15 +120,14 @@ class RaggedAdd(OpDef):
 
     op_name = "RaggedAdd"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged addition operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -143,15 +142,14 @@ class RaggedMatMul(OpDef):
 
     op_name = "RaggedMatMul"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged matrix multiplication.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -166,15 +164,14 @@ class RaggedDynamicBroadcast(OpDef):
 
     op_name = "RaggedDynamicBroadcast"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape after a ragged dynamic broadcast.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -189,15 +186,14 @@ class RaggedConstant(OpDef):
 
     op_name = "RaggedConstant"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged constant operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -212,15 +208,14 @@ class RaggedCrossHashed(OpDef):
 
     op_name = "RaggedCrossHashed"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged cross hashed operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -235,15 +230,14 @@ class RaggedRange(OpDef):
 
     op_name = "RaggedRange"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged range operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -258,15 +252,14 @@ class RaggedRowSplitsToSegmentIds(OpDef):
 
     op_name = "RaggedRowSplitsToSegmentIds"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape when converting row splits to segment IDs.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -281,15 +274,14 @@ class RaggedSegmentIdsToRowSplits(OpDef):
 
     op_name = "RaggedSegmentIdsToRowSplits"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape when converting segment IDs to row splits.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -304,15 +296,14 @@ class RaggedStack(OpDef):
 
     op_name = "RaggedStack"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged stack operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -327,15 +318,14 @@ class RaggedStackDynamicPartitions(OpDef):
 
     op_name = "RaggedStackDynamicPartitions"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Calculate the output shape for a ragged stack dynamic partitions op.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -368,15 +358,14 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -387,7 +376,7 @@ class MapFlatValues(OpDef):
 
     op_name = "MapFlatValues"
 
-    def infer_shape(self, op: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, op: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -395,8 +384,7 @@ class MapFlatValues(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 

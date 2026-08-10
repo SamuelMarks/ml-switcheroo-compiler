@@ -1,0 +1,15 @@
+operation: Round
+description: The Round operation.
+variants:
+  cupy:
+    eager: cp.round
+  dask:
+    eager: da.round
+  edge_onnx:
+    generator: Round
+  edge_stablehlo:
+    generator: stablehlo.round_nearest_afz
+  keras:
+    eager: keras_ops.round
+  tensorflow:
+    eager: tf.round

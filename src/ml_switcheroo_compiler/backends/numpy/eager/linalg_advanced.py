@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Linalg extras module."""
+
+from typing import Any
 
 import numpy as np
 
@@ -14,14 +16,13 @@ def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[
         batch (object): The batch parameter.
         contracting (object): The contracting parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     skip_set = set(batch) | set(contracting)
     return [dims[i] for i in range(len(dims)) if i not in skip_set]
 
 
-def _parse_dot_dimension_numbers(dimension_numbers: object) -> tuple:
+def _parse_dot_dimension_numbers(dimension_numbers: Any) -> tuple:
     """Evaluate _parse_dot_dimension_numbers operation.
 
     Args:
@@ -36,7 +37,7 @@ def _parse_dot_dimension_numbers(dimension_numbers: object) -> tuple:
     return (a_contracting, b_contracting, a_batch, b_batch)
 
 
-def _dot_general(a: object, b: object, dimension_numbers: object) -> object:
+def _dot_general(a: Any, b: Any, dimension_numbers: Any) -> Any:
     """Evaluate _dot_general operation.
 
     Args:
@@ -44,14 +45,13 @@ def _dot_general(a: object, b: object, dimension_numbers: object) -> object:
         b (object): The b parameter.
         dimension_numbers (object): The dimension_numbers parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     (a_dims, b_dims, out_dims) = _build_einsum_equation(a.ndim, b.ndim, dimension_numbers)
     return np.einsum(a, a_dims, b, b_dims, out_dims)
 
 
-def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: object) -> tuple[list[int], list[int], list[int]]:
+def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: Any) -> tuple[list[int], list[int], list[int]]:
     """Evaluate _build_einsum_equation operation.
 
     Args:
@@ -59,8 +59,7 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: object) 
         b_ndim (int): The b_ndim parameter.
         dimension_numbers (object): The dimension_numbers parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(dimension_numbers)
     a_dims = list(range(a_ndim))
@@ -76,7 +75,7 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: object) 
 
 
 @numpy_eager_registry.register("Trace")
-def _np_trace(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_trace(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_trace operation.
 
     Args:
@@ -84,14 +83,13 @@ def _np_trace(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.trace(args[0], **kwargs)
 
 
 @numpy_eager_registry.register("MatrixRank")
-def _np_matrix_rank(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_matrix_rank(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_matrix_rank operation.
 
     Args:
@@ -99,14 +97,13 @@ def _np_matrix_rank(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.linalg.matrix_rank(args[0], **kwargs)
 
 
 @numpy_eager_registry.register("MatrixTranspose")
-def _np_matrix_transpose(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_matrix_transpose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_matrix_transpose operation.
 
     Args:
@@ -114,27 +111,25 @@ def _np_matrix_transpose(backend_module: object, *args: object, **kwargs: object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.swapaxes(args[0], -1, -2)
 
 
 @numpy_eager_registry.register("Sqrtm")
-def _np_sqrtm(a: object) -> object:
+def _np_sqrtm(a: Any) -> Any:
     """Sqrtm.
 
     Args:
         a (object): The a parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return a
 
 
 @numpy_eager_registry.register("Adjoint")
-def _np_adjoint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_adjoint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_adjoint operation.
 
     Args:
@@ -142,14 +137,13 @@ def _np_adjoint(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.conj(np.swapaxes(args[0], -1, -2))
 
 
 @numpy_eager_registry.register("CholeskySolve")
-def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cholesky_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_cholesky_solve operation.
 
     Args:
@@ -157,8 +151,7 @@ def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -172,7 +165,7 @@ def _np_cholesky_solve(backend_module: object, *args: object, **kwargs: object) 
 
 
 @numpy_eager_registry.register("EighTridiagonal")
-def _np_eigh_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_eigh_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_eigh_tridiagonal operation.
 
     Args:
@@ -180,8 +173,7 @@ def _np_eigh_tridiagonal(backend_module: object, *args: object, **kwargs: object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -195,7 +187,7 @@ def _np_eigh_tridiagonal(backend_module: object, *args: object, **kwargs: object
 
 
 @numpy_eager_registry.register("Qr")
-def _np_qr(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_qr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_qr operation.
 
     Args:
@@ -203,14 +195,13 @@ def _np_qr(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.linalg.qr(args[0], mode=kwargs.get("mode", "reduced"))
 
 
 @numpy_eager_registry.register("Cross")
-def _np_cross(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cross(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_cross operation.
 
     Args:
@@ -218,8 +209,7 @@ def _np_cross(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     axes = kwargs.pop("axes", None)
     if axes:
@@ -230,7 +220,7 @@ def _np_cross(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Slogdet")
-def _np_slogdet(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_slogdet(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_slogdet operation.
 
     Args:
@@ -238,8 +228,7 @@ def _np_slogdet(backend_module: object, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -260,17 +249,16 @@ for op_name in [
     "MultiDot",
 ]:
 
-    def make_linalg_wrapper(name: str) -> object:
+    def make_linalg_wrapper(name: str) -> Any:
         """Create a wrapper for linalg operations.
 
         Args:
         name (str): The name parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
 
-        def _wrapper(backend_module: object, *args: object, **kwargs: object) -> object:
+        def _wrapper(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             """Evaluate _wrapper operation.
 
             Args:
@@ -278,8 +266,7 @@ for op_name in [
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-            Returns:
-            object: Result.
+            Returns: Any: Result.
             """
             import numpy as np
 
@@ -292,7 +279,7 @@ for op_name in [
 
 
 @numpy_eager_registry.register("Lu")
-def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_lu operation.
 
     Args:
@@ -300,8 +287,7 @@ def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -309,7 +295,7 @@ def _np_lu(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("LuFactor")
-def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu_factor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_lu_factor operation.
 
     Args:
@@ -317,8 +303,7 @@ def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -326,7 +311,7 @@ def _np_lu_factor(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("LuSolve")
-def _np_lu_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_lu_solve operation.
 
     Args:
@@ -334,8 +319,7 @@ def _np_lu_solve(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -343,7 +327,7 @@ def _np_lu_solve(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("LuPivotsToPermutation")
-def _np_lu_pivots(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_lu_pivots(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_lu_pivots operation.
 
     Args:
@@ -351,8 +335,7 @@ def _np_lu_pivots(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -365,7 +348,7 @@ def _np_lu_pivots(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("MatrixExponential")
-def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_matrix_exponential(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_matrix_exponential operation.
 
     Args:
@@ -373,8 +356,7 @@ def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -382,7 +364,7 @@ def _np_matrix_exponential(backend_module: object, *args: object, **kwargs: obje
 
 
 @numpy_eager_registry.register("Hessenberg")
-def _np_hessenberg(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_hessenberg(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_hessenberg operation.
 
     Args:
@@ -390,8 +372,7 @@ def _np_hessenberg(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -399,7 +380,7 @@ def _np_hessenberg(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("Tridiagonal")
-def _np_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tridiagonal operation.
 
     Args:
@@ -407,8 +388,7 @@ def _np_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -420,7 +400,7 @@ def _np_tridiagonal(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("TridiagonalSolve")
-def _np_tridiagonal_solve(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_tridiagonal_solve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_tridiagonal_solve operation.
 
     Args:
@@ -428,8 +408,7 @@ def _np_tridiagonal_solve(backend_module: object, *args: object, **kwargs: objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -438,7 +417,7 @@ def _np_tridiagonal_solve(backend_module: object, *args: object, **kwargs: objec
 
 
 @numpy_eager_registry.register("CholeskyEx")
-def _np_cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_cholesky_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_cholesky_ex operation.
 
     Args:
@@ -446,8 +425,7 @@ def _np_cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -458,7 +436,7 @@ def _np_cholesky_ex(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("InvEx")
-def _np_inv_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_inv_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_inv_ex operation.
 
     Args:
@@ -466,8 +444,7 @@ def _np_inv_ex(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -478,7 +455,7 @@ def _np_inv_ex(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("Pinv")
-def _np_pinv(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_pinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_pinv operation.
 
     Args:
@@ -486,8 +463,7 @@ def _np_pinv(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -495,7 +471,7 @@ def _np_pinv(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("Polar")
-def _np_polar(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_polar(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_polar operation.
 
     Args:
@@ -503,8 +479,7 @@ def _np_polar(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.linalg
 
@@ -512,7 +487,7 @@ def _np_polar(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Qdwh")
-def _np_qdwh(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_qdwh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_qdwh operation.
 
     Args:
@@ -520,8 +495,7 @@ def _np_qdwh(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
     import scipy.linalg
@@ -532,7 +506,7 @@ def _np_qdwh(backend_module: object, *args: object, **kwargs: object) -> object:
 
 
 @numpy_eager_registry.register("SolveEx")
-def _np_solve_ex(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_solve_ex(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_solve_ex operation.
 
     Args:
@@ -540,8 +514,7 @@ def _np_solve_ex(backend_module: object, *args: object, **kwargs: object) -> obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -552,7 +525,7 @@ def _np_solve_ex(backend_module: object, *args: object, **kwargs: object) -> obj
 
 
 @numpy_eager_registry.register("Svd")
-def _np_svd(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_svd operation.
 
     Args:
@@ -560,8 +533,7 @@ def _np_svd(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 

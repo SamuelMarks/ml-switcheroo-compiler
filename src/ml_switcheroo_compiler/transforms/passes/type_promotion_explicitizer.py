@@ -1,3 +1,6 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Type Promotion Explicitizer Pass."""
 
 import uuid
@@ -40,11 +43,10 @@ def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
     """Evaluate _needs_cast operation.
 
     Args:
-        dt1 (object): The dt1 parameter.
-        dt2 (object): The dt2 parameter.
+        dt1 (Any): The dt1 parameter.
+        dt2 (Any): The dt2 parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if dt1 is None or dt2 is None or dt1 == dt2:
         return None

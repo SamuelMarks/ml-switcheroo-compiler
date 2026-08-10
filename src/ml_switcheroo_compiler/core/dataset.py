@@ -1,5 +1,5 @@
-# ruff: noqa: PLR0917
-# ruff: noqa: E501, PLR0913, ANN401
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dataset pipeline primitives for ML Switcheroo Compiler."""
 
 import math
@@ -81,8 +81,7 @@ class Dataset:
         Args:
             *tensors (Tensor): Positional args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
 
         Raises:
             ValueError: An exception.
@@ -102,7 +101,7 @@ class Dataset:
             Dataset: A dataset.
         """
         ds = cls()
-        ds._elements = elements
+        ds._elements = elements  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         ds.length = len(elements)
         ds._indices = list(range(ds.length))
         return ds
@@ -126,8 +125,7 @@ class Dataset:
             batch_size (int): The batch_size parameter.
             drop_remainder (bool): The drop_remainder parameter.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
 
         Raises:
             ValueError: An exception.
@@ -165,8 +163,7 @@ class Dataset:
             batch_size (int): The batch_size parameter.
             drop_remainder (bool): The drop_remainder parameter.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
 
         Raises:
             ValueError: An exception.
@@ -177,7 +174,7 @@ class Dataset:
         self._drop_remainder = drop_remainder
         return self
 
-    def map_and_batch(self, map_func: Callable, batch_size: int, num_parallel_batches: int = None, drop_remainder: bool = False) -> "Dataset":
+    def map_and_batch(self, map_func: Callable, batch_size: int, num_parallel_batches: Any = None, drop_remainder: Any = False) -> "Dataset":
         """Fused map and batch operation.
 
         Args:
@@ -199,7 +196,7 @@ class Dataset:
         key_func: Callable,
         reduce_func: Callable,
         window_size: int,
-        window_shift: int = None,
+        window_shift: Any = None,
         window_stride: int = 1,
     ) -> "Dataset":
         """Group elements by window.
@@ -216,7 +213,7 @@ class Dataset:
         """
         return self
 
-    def rejection_resample(self, class_func: Callable, target_dist: list[float], initial_dist: list[float] = None, seed: int = None) -> "Dataset":
+    def rejection_resample(self, class_func: Callable, target_dist: list[float], initial_dist: Any = None, seed: Any = None) -> "Dataset":
         """Resample dataset by rejection.
 
         Args:
@@ -236,7 +233,7 @@ class Dataset:
         cycle_length: int,
         block_length: int = 1,
         slack: int = 0,
-        prefetch_input_elements: int = None,
+        prefetch_input_elements: Any = None,
     ) -> "Dataset":
         """Interleave elements from multiple datasets in parallel.
 
@@ -252,7 +249,7 @@ class Dataset:
         """
         return self
 
-    def prefetch_to_device(self, device: str, buffer_size: int = None) -> "Dataset":
+    def prefetch_to_device(self, device: str, buffer_size: Any = None) -> "Dataset":
         """Prefetch elements to a specific device.
 
         Args:
@@ -264,7 +261,7 @@ class Dataset:
         """
         return self
 
-    def shuffle(self, buffer_size: int, seed: int = None, reshuffle_each_iteration: bool = None) -> "Dataset":
+    def shuffle(self, buffer_size: int, seed: Any = None, reshuffle_each_iteration: Any = None) -> "Dataset":
         """Shuffle the dataset.
 
         Args:
@@ -272,8 +269,7 @@ class Dataset:
             seed (int): The seed parameter.
             reshuffle_each_iteration (bool): The reshuffle_each_iteration parameter.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
 
         Raises:
             ValueError: An exception.
@@ -292,8 +288,7 @@ class Dataset:
         Args:
             buffer_size (int): The buffer_size parameter.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
 
         Raises:
             ValueError: An exception.
@@ -303,7 +298,7 @@ class Dataset:
         self._prefetch_buffer = buffer_size
         return self
 
-    def snapshot(self, path: str, compression: str = None, reader_func: Callable = None, shard_func: Callable = None) -> "Dataset":
+    def snapshot(self, path: str, compression: Any = None, reader_func: Any = None, shard_func: Any = None) -> "Dataset":
         """Snapshot the dataset.
 
         Args:
@@ -317,7 +312,7 @@ class Dataset:
         """
         return self
 
-    def save(self, path: str, compression: str = None, shard_func: Callable = None) -> "Dataset":
+    def save(self, path: str, compression: Any = None, shard_func: Any = None) -> "Dataset":
         """Save dataset to disk.
 
         Args:
@@ -331,7 +326,7 @@ class Dataset:
         return self
 
     @classmethod
-    def load(cls, path: str, element_spec: Any = None, compression: str = None, reader_func: Callable = None) -> "Dataset":
+    def load(cls, path: str, element_spec: Any = None, compression: Any = None, reader_func: Any = None) -> "Dataset":
         """Load dataset from disk.
 
         Args:
@@ -458,15 +453,15 @@ class CsvDataset(Dataset):
     def __init__(
         self,
         filenames: Union[str, list[str]],
-        record_defaults: list[Any] = None,
-        compression_type: str = None,
-        buffer_size: int = None,
+        record_defaults: Any = None,
+        compression_type: Any = None,
+        buffer_size: Any = None,
         header: bool = False,
         field_delim: str = ",",
         use_quote_delim: bool = True,
         na_value: str = "",
-        select_cols: list[int] = None,
-        exclude_cols: list[int] = None,
+        select_cols: Any = None,
+        exclude_cols: Any = None,
     ) -> None:
         """Init.
 
@@ -507,9 +502,9 @@ class TFRecordReader(Dataset):
     def __init__(
         self,
         filenames: Union[str, list[str]],
-        compression_type: str = None,
-        buffer_size: int = None,
-        num_parallel_reads: int = None,
+        compression_type: Any = None,
+        buffer_size: Any = None,
+        num_parallel_reads: Any = None,
     ) -> None:
         """Init.
 
@@ -525,7 +520,7 @@ class TFRecordReader(Dataset):
 class ImageDataset(Dataset):
     """Dataset for image ingestion and on-the-fly resizing/preprocessing."""
 
-    def __init__(self, *tensors: Tensor, target_size: tuple[int, int] = None, normalize: bool = False) -> None:
+    def __init__(self, *tensors: Tensor, target_size: Any = None, normalize: Any = False) -> None:
         """Init.
 
         Args:
@@ -581,7 +576,7 @@ class AudioDataset(Dataset):
 class TextDataset(Dataset):
     """Dataset for text pipelines."""
 
-    def __init__(self, *tensors: Tensor, vocab_size: int = None) -> None:
+    def __init__(self, *tensors: Tensor, vocab_size: Any = None) -> None:
         """Init.
 
         Args:

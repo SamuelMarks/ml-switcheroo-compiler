@@ -1,0 +1,5 @@
+operation: SparseSegmentSum
+description: The SparseSegmentSum operation.
+variants:
+  numpy:
+    generator: tf.sparse.segment_sum

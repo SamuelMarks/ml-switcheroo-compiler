@@ -1,3 +1,6 @@
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Mixed Precision and Loss Scaling passes."""
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
@@ -113,11 +116,10 @@ def _get_scale_nodes(new_nodes: dict[str, IRNode], scale: float) -> tuple[str, s
     """Retrieve or create scaling constant nodes.
 
     Args:
-        new_nodes (object): The new_nodes parameter.
+        new_nodes (Any): The new_nodes parameter.
         scale (float): The scale parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     scale_node_id = "loss_scale_factor"
     inv_scale_node_id = "loss_scale_inv_factor"

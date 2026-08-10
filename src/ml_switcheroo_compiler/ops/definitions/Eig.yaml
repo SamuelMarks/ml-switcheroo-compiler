@@ -1,0 +1,9 @@
+operation: Eig
+description: The Eig operation.
+variants:
+  keras:
+    eager: keras_ops.eig
+  numpy:
+    generator: np.linalg.eig
+  tensorflow:
+    eager: tf.eig

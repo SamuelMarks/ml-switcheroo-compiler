@@ -1,0 +1,7 @@
+operation: TopK
+description: The TopK operation.
+variants:
+  keras:
+    eager: keras_ops.top_k
+  tensorflow:
+    eager: tf.math.top_k

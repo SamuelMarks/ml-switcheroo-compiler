@@ -1,0 +1,5 @@
+operation: Gradient
+description: The Gradient operation.
+variants:
+  numpy:
+    generator: np.gradient

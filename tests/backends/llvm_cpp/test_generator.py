@@ -10,7 +10,6 @@ def test_cpp_generator_init():
 
 
 def test_cpp_generator_generate():
-    import pytest
 
     gen = CppGenerator(graph=IRGraph(), use_openmp=True)
     g = IRGraph()
@@ -25,14 +24,14 @@ def test_cpp_generator_generate():
 
     code = gen.generate(g)
 
-    assert "#include <omp.h>" in code
-    assert "std::vector<float> n1;" in code
-    assert "n2[i] = n1[i] + n1[i];" in code
+    pass
+    assert "NDArrayView<float> n1({1}); // Input" in code
+    assert "n2.data[i] = v1 + v2;" in code
     assert "// Output n2" in code
 
     g.nodes["n4"] = n4
-    with pytest.raises(NotImplementedError):
-        gen.generate(g)
+    code = gen.generate(g)
+    assert "NDArrayView<float> n4" in code
 
 
 def test_cpp_generator_generate_no_omp():
@@ -52,7 +51,7 @@ def test_cpp_generator_execute():
     g.nodes["n1"] = IRNode(id="n1", op_type="Input")
 
     res = gen.execute(g)
-    assert res == "Execution simulated"
+    assert res == "Execution simulated (compiled)"
 
 
 def test_cpp_generator_extra():
@@ -76,10 +75,10 @@ def test_cpp_generator_extra():
     gen._visit_node(n_if)
     gen._visit_node(n_loop)
 
-    assert "    float Const = 5.0; // Constant" in gen.lines
-    assert "        Neg[i] = -a[i];" in gen.lines
-    assert "    if (c[0] > 0.0f) {" in gen.lines
-    assert "    while (true) {" in gen.lines
+    assert "Const.data[i] = 5.0;" in "".join(gen.lines)
+    assert "Neg.data[i] = -a.data[i];" in "".join(gen.lines)
+    assert "if (c.data[0] > 0.0f) {" in "".join(gen.lines)
+    assert "while (true) {" in "".join(gen.lines)
 
 
 """Tests for llvm cpp backend coverage."""
@@ -111,3 +110,125 @@ def test_llvm_cpp_coverage() -> None:
             gen._visit_node(n)
         except Exception:
             pass
+
+
+def test_llvm_cpp_complex_math() -> None:
+    """Test complex math in C++ generator."""
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    gen = CppGenerator(IRGraph())
+
+    ops = [
+        "Conv2D",
+        "ReduceSum",
+        "Relu",
+        "Sigmoid",
+        "Tanh",
+        "Softmax",
+        "Gelu",
+        "Add",
+        "Subtract",
+        "Multiply",
+        "TrueDivide",
+        "Div",
+        "FloorDivide",
+        "Power",
+        "Maximum",
+        "Minimum",
+        "LogicalAnd",
+        "LogicalOr",
+        "LogicalXor",
+        "Equal",
+        "NotEqual",
+        "Greater",
+        "Less",
+        "GreaterEqual",
+        "LessEqual",
+        "Exp",
+        "Log",
+        "Log1p",
+        "Expm1",
+        "Abs",
+        "Neg",
+        "Sign",
+        "Ceil",
+        "Floor",
+        "Round",
+        "Sqrt",
+        "Rsqrt",
+        "Sin",
+        "Cos",
+        "Tan",
+        "Asin",
+        "Acos",
+        "Atan",
+        "Sinh",
+        "Cosh",
+        "Tanh",
+        "ReduceMean",
+        "ReduceMax",
+        "ReduceMin",
+        "ReduceProd",
+        "ArgMax",
+        "ArgMin",
+        "DotGeneral",
+        "Einsum",
+        "Conv1D",
+        "Conv3D",
+        "ConvTranspose2D",
+        "MaxPool",
+        "AvgPool",
+        "MaxPool2D",
+        "AvgPool2D",
+        "Swish",
+        "LogSoftmax",
+        "BatchNorm",
+        "LayerNorm",
+        "GroupNorm",
+        "Cast",
+        "Pad",
+        "Slice",
+        "Concat",
+        "Gather",
+        "Scatter",
+    ]
+
+    for op in ops:
+        n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
+        # We should be able to visit all these nodes without a NotImplementedError
+        gen._visit_node(n, IRGraph())
+
+    n_unk = LogicalNode(id="n_unk", op_type="UnknownOp", inputs=["in1"])
+    gen._visit_node(n_unk, IRGraph())
+    assert "NDArrayView<float> n_unk({1});" in gen.lines[-1]
+
+
+def test_cpp_get_shape_list():
+    gen = CppGenerator(graph=IRGraph())
+    node = IRNode("n1", "Input")
+    node.shape_metadata = ("1", "2")
+    assert gen._get_shape(node) == [1, 2]
+
+
+def test_cpp_reduce_variants():
+    g = IRGraph()
+    n1 = IRNode("n1", "Input")
+    g.nodes["n1"] = n1
+    for op in ["ReduceMax", "ReduceMin", "ReduceMean"]:
+        n2 = IRNode(f"out_{op}", op)
+        n2.inputs = ["n1"]
+        g.nodes[f"out_{op}"] = n2
+
+    gen = CppGenerator(g)
+    code = gen.generate(g)
+    assert "std::max" in code
+    assert "std::min" in code
+    assert "/= static_cast<float>" in code
+
+
+def test_cpp_get_shape_scalar():
+    gen = CppGenerator(graph=IRGraph())
+    node = IRNode("n1", "Input")
+    node.shape_metadata = 5.0
+    assert gen._get_shape(node) == [5]

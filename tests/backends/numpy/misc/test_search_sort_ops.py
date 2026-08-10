@@ -58,7 +58,7 @@ def test_argsort() -> None:
 
 def test_sort() -> None:
     a = np.array([3, 1, 2])
-    res = _np_sort(np, a, is_stable=True, dimension=0, dim=0)
+    res = _np_sort(np, a, is_stable=True, axis=0)
     np.testing.assert_allclose(res, [1, 2, 3])
 
     res2 = _np_sort(np, a, is_stable=False)

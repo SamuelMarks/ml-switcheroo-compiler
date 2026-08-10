@@ -1,0 +1,5 @@
+operation: Rank
+description: The Rank operation.
+variants:
+  tensorflow:
+    eager: tf.rank

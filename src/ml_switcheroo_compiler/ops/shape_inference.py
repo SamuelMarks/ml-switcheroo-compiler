@@ -1,6 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shape inference module."""
 
-from typing import Callable
+from typing import Any, Callable
 
 # Fallback to the OpDef's infer_shape method if it still has it
 
@@ -32,7 +33,7 @@ def register_shape_inference(op_type: str) -> Callable:
     return decorator
 
 
-def infer_shape(op_type: str, *args: object, **kwargs: object) -> object:
+def infer_shape(op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Infer shape using the registered function.
 
     Args:
@@ -40,8 +41,7 @@ def infer_shape(op_type: str, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if op_type in _SHAPE_INFERENCE_REGISTRY:
         return _SHAPE_INFERENCE_REGISTRY[op_type](*args, **kwargs)

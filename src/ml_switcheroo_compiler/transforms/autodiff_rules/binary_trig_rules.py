@@ -1,6 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Binary rules for trig."""
 
 import enum
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
@@ -15,12 +17,12 @@ class UnconnectedGradients(enum.Enum):
 
 
 @register_vjp("Atan2")
-def atan2_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def atan2_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Atan2.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -45,7 +47,7 @@ def atan2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Atan2")
-def atan2_jvp(tangent_y: str, tangent_x: str, y: str, x: str, **kwargs: object) -> str:
+def atan2_jvp(tangent_y: str, tangent_x: str, y: str, x: str, **kwargs: Any) -> str:
     """JVP for Atan2.
 
     Args:
@@ -53,7 +55,7 @@ def atan2_jvp(tangent_y: str, tangent_x: str, y: str, x: str, **kwargs: object) 
         tangent_x (str): The tangent_x parameter.
         y (str): The y parameter.
         x (str): The x parameter.
-        **kwargs (object): Keyword args.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.

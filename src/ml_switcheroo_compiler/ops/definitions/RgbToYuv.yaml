@@ -1,0 +1,5 @@
+operation: RgbToYuv
+description: The RgbToYuv operation.
+variants:
+  pytorch:
+    generator: '{0}'

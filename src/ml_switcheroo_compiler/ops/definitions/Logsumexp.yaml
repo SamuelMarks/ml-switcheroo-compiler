@@ -1,0 +1,5 @@
+operation: Logsumexp
+description: The Logsumexp operation.
+variants:
+  keras:
+    eager: keras_ops.logsumexp

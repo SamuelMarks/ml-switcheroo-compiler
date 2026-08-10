@@ -1,0 +1,5 @@
+operation: L2Normalize
+description: The L2Normalize operation.
+variants:
+  tensorflow:
+    eager: tf.linalg.l2_normalize

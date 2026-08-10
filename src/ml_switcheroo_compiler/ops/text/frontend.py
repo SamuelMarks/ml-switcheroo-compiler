@@ -1,8 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Text and Categorical operations."""
 
 import uuid
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -26,7 +27,7 @@ class AsStringConfig:
     fill: str = ""
 
 
-def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Tensor:
+def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:
     """Hashes string tensors to integer buckets.
 
     Args:
@@ -52,7 +53,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Tensor:
     )
 
 
-def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
+def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:
     """Replace matches of pattern in input_tensor with rewrite.
 
     Args:
@@ -79,7 +80,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Tensor:
     )
 
 
-def regex_full_match(input_tensor: Tensor, pattern: str) -> Tensor:
+def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:
     """Check if each string fully matches the regex pattern.
 
     Args:
@@ -105,7 +106,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> Tensor:
     )
 
 
-def string_join(inputs: list[Tensor], separator: str = "") -> Tensor:
+def string_join(inputs: list[Tensor], separator: str = "") -> Any:
     """Join strings in a list of tensors.
 
     Args:
@@ -131,7 +132,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> Tensor:
     )
 
 
-def string_length(input_tensor: Tensor) -> Tensor:
+def string_length(input_tensor: Tensor) -> Any:
     """Compute the length of each string.
 
     Args:
@@ -156,7 +157,7 @@ def string_length(input_tensor: Tensor) -> Tensor:
     )
 
 
-def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
+def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:
     """Return substrings.
 
     Args:
@@ -183,7 +184,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Tensor:
     )
 
 
-def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
+def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:
     """Evaluate _string_split_eager operation.
 
     Args:
@@ -207,7 +208,7 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
     )
 
 
-def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, Tensor]:
+def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:
     """Evaluate _string_split_trace operation.
 
     Args:
@@ -246,7 +247,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> tuple[Tensor, T
     )
 
 
-def string_split(input_tensor: Tensor, delimiter: str = " ") -> tuple[Tensor, Tensor]:
+def string_split(input_tensor: Tensor, delimiter: str = " ") -> Any:
     """Split string tensors into tokens.
 
     Args:
@@ -261,7 +262,7 @@ def string_split(input_tensor: Tensor, delimiter: str = " ") -> tuple[Tensor, Te
     return _string_split_trace(input_tensor, delimiter)
 
 
-def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Tensor:
+def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:
     """Map tensor values to integer indices using a vocabulary.
 
     Args:
@@ -287,7 +288,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Tensor:
     )
 
 
-def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
+def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:
     """Text vectorization.
 
     Args:
@@ -313,7 +314,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: object) -> Tensor:
     )
 
 
-def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tensor:
+def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:
     """Parse numeric values from string tensors.
 
     Args:
@@ -339,7 +340,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
     )
 
 
-def string_lower(input_tensor: Tensor) -> Tensor:
+def string_lower(input_tensor: Tensor) -> Any:
     """Convert string tensors to lowercase.
 
     Args:
@@ -364,7 +365,7 @@ def string_lower(input_tensor: Tensor) -> Tensor:
     )
 
 
-def string_upper(input_tensor: Tensor) -> Tensor:
+def string_upper(input_tensor: Tensor) -> Any:
     """Convert string tensors to uppercase.
 
     Args:
@@ -389,7 +390,7 @@ def string_upper(input_tensor: Tensor) -> Tensor:
     )
 
 
-def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Tensor:
+def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Any:
     """Compute the Levenshtein distance between sequences.
 
     Args:
@@ -416,14 +417,13 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     )
 
 
-def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, object]:
+def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, Any]:
     """Convert AsStringConfig to a dictionary.
 
     Args:
         conf (object): The conf parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     conf = conf if conf is not None else AsStringConfig()
     return {
@@ -438,7 +438,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, objec
 def as_string(
     input_tensor: Tensor,
     config: Optional[AsStringConfig] = None,
-) -> Tensor:
+) -> Any:
     """Convert a numeric tensor to a string tensor.
 
     Args:

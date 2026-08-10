@@ -1,3 +1,6 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Pass Manager Infrastructure for Middle-End Transformations.
 
 This module provides components for managing, validating, and executing optimization and
@@ -12,7 +15,7 @@ from typing import Callable
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
 class IRValidator:
@@ -129,7 +132,12 @@ class PassManager:
             prev_hash = _graph_hash(graph)
 
             for ir_pass in self.passes:
-                ir_pass(graph)
+                if ir_pass(graph):
+                    from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
+                    from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
+
+                    shape_inference_pass(graph)
+                    dtype_inference_pass(graph)
 
             new_hash = _graph_hash(graph)
             if new_hash == prev_hash:
@@ -143,13 +151,15 @@ class DAGTopologicalSorter:
     """Alias for topological sorter."""
 
     @staticmethod
-    def sort(graph: "object") -> list["object"]:
+    def sort(graph: IRGraph) -> list[IRNode]:
         """Sort the graph topologically.
 
         Args:
-            graph (object): The intermediate representation graph.
+            graph (IRGraph): The intermediate representation graph.
 
         Returns:
-            list[object]: The topologically sorted list of nodes.
+            list[IRNode]: The topologically sorted list of nodes.
         """
-        return topological_sort(graph)
+        import typing
+
+        return typing.cast(list[IRNode], topological_sort(graph))

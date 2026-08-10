@@ -1,0 +1,6 @@
+operation: HammingWindow
+description: The HammingWindow operation.
+variants:
+  pytorch:
+    generator: torch.hamming_window({window_length}, periodic={periodic}, alpha={alpha},
+      beta={beta})

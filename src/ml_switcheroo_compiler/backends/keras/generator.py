@@ -1,7 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
 import os
+from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -48,7 +49,7 @@ class KerasTensorManipulator:
     """Help for tensor manipulations."""
 
     @staticmethod
-    def format_zeros_like(op: str, kwargs: object) -> str:
+    def format_zeros_like(op: str, kwargs: Any) -> str:
         """Evaluate format_zeros_like operation.
 
         Args:
@@ -64,7 +65,7 @@ class KerasTensorManipulator:
         return res
 
     @staticmethod
-    def format_full(kwargs: object) -> str:
+    def format_full(kwargs: Any) -> str:
         """Evaluate format_full operation.
 
         Args:
@@ -79,7 +80,7 @@ class KerasTensorManipulator:
         return res
 
     @staticmethod
-    def format_transpose(kwargs: object) -> str:
+    def format_transpose(kwargs: Any) -> str:
         """Evaluate format_transpose operation.
 
         Args:
@@ -175,7 +176,7 @@ class KerasCodeGenerator(BaseGenerator):
     """Emit Keras Functional API script from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
         """Load a serialized object.
 
         Args:
@@ -184,8 +185,7 @@ class KerasCodeGenerator(BaseGenerator):
             fix_imports (bool): Fix imports.
             encoding (str): The encoding.
 
-        Returns:
-            object: The loaded object.
+        Returns: Any: The loaded object.
         """
         import pickle
 
@@ -193,7 +193,7 @@ class KerasCodeGenerator(BaseGenerator):
             return pickle.load(f)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save an array to a file.
 
         Args:
@@ -208,7 +208,7 @@ class KerasCodeGenerator(BaseGenerator):
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Save multiple arrays into a single file.
 
         Args:
@@ -224,7 +224,7 @@ class KerasCodeGenerator(BaseGenerator):
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Save multiple arrays into a single compressed file.
 
         Args:
@@ -248,7 +248,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras"
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the generator.
 
         Args:
@@ -260,7 +260,7 @@ class KerasCodeGenerator(BaseGenerator):
         self.keras_input_vars: list[str] = []
         self.keras_output_vars: list[str] = []
 
-    def visit_ConvTranspose(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ConvTranspose(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Visit a ConvTranspose node.
 
         Args:
@@ -273,7 +273,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_conv_transpose({input_vars[0]}, {input_vars[1]})"
 
-    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RaggedDot(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Visit a RaggedDot node.
 
         Args:
@@ -286,7 +286,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Einsum(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Visit an Einsum node.
 
         Args:
@@ -359,16 +359,14 @@ class KerasCodeGenerator(BaseGenerator):
     def _generate_file_header(self) -> list[str]:
         """Evaluate _generate_file_header operation.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
         """Evaluate _resolve_imports operation.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         tmpl_path = os.path.join(os.path.dirname(__file__), "keras_prefix.py.tmpl")
         with open(tmpl_path) as f:

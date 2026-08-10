@@ -1,0 +1,19 @@
+operation: TrueDivide
+description: The TrueDivide operation.
+variants:
+  cupy:
+    eager: cp.true_divide
+    generator: cp.divide
+  dask:
+    eager: da.true_divide
+    generator: da.divide
+  edge_onnx:
+    generator: Div
+  edge_stablehlo:
+    generator: stablehlo.divide
+  keras:
+    eager: keras_ops.true_divide
+  numpy:
+    generator: np.divide
+  pytorch:
+    generator: torch.true_divide({0}, {1})

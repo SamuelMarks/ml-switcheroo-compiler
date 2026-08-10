@@ -142,3 +142,131 @@ class TestONNXCodeGenerator(unittest.TestCase):
         self.gen.sorted_nodes = []
         res = self.gen._generate_text_fallback()
         self.assertIn("ir_version: 7", res)
+
+    def test_onnx_proto_types(self) -> None:
+        """Test exhaustive proto types mapping."""
+
+        class DummyTensorProto:
+            DOUBLE = 11
+            FLOAT = 1
+            FLOAT16 = 10
+            BFLOAT16 = 16
+            INT64 = 7
+            INT32 = 6
+            INT16 = 5
+            INT8 = 3
+            UINT64 = 8
+            UINT32 = 13
+            UINT16 = 4
+            UINT8 = 2
+            BOOL = 9
+
+        gen = ONNXCodeGenerator(IRGraph())
+        assert gen._get_proto_type("float64", DummyTensorProto) == DummyTensorProto.DOUBLE
+        assert gen._get_proto_type("float16", DummyTensorProto) == DummyTensorProto.FLOAT16
+        assert gen._get_proto_type("bfloat16", DummyTensorProto) == DummyTensorProto.BFLOAT16
+        assert gen._get_proto_type("int64", DummyTensorProto) == DummyTensorProto.INT64
+        assert gen._get_proto_type("int8", DummyTensorProto) == DummyTensorProto.INT8
+        assert gen._get_proto_type("uint32", DummyTensorProto) == DummyTensorProto.UINT32
+        assert gen._get_proto_type("uint8", DummyTensorProto) == DummyTensorProto.UINT8
+        assert gen._get_proto_type("unknown", DummyTensorProto) == DummyTensorProto.FLOAT
+        assert gen._get_proto_type("int16", DummyTensorProto) == DummyTensorProto.INT16
+        assert gen._get_proto_type("uint64", DummyTensorProto) == DummyTensorProto.UINT64
+        assert gen._get_proto_type("uint16", DummyTensorProto) == DummyTensorProto.UINT16
+
+    def test_onnx_extended_ops(self) -> None:
+        """Test generation of extended neural network and tensor operations."""
+        graph = IRGraph()
+        graph.outputs = ["out"]
+        gen = ONNXCodeGenerator(graph)
+
+        ops = ["MatMul", "Conv2D", "MaxPool", "AvgPool2D", "BatchNorm", "Reshape", "Transpose", "Squeeze", "Concat", "Slice", "Gather", "ScatterND", "ReduceSum", "ReduceMean"]
+
+        for op in ops:
+            n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
+            gen.sorted_nodes.append(n)
+
+        try:
+            import onnx  # noqa: F401
+
+            has_onnx = True
+        except ImportError:
+            has_onnx = False
+
+        if has_onnx:
+            from onnx import TensorProto
+
+            nodes = gen._build_onnx_nodes(TensorProto)
+            # 14 ops were added
+            assert len(nodes) == 14
+            # ops generated successfully
+            # Onnx ops don't expose op_type like our nodes directly here if it's a NodeProto,
+            # we should check string representation or just accept it generated 14 nodes.
+
+    def test_printer_to_text(self) -> None:
+        """Test the printer.to_text execution path if available."""
+        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
+            mock_build.return_value = "GraphDef"
+            res = self.gen.generate()
+            self.assertEqual(res, "PrintableGraph")
+
+    def test_printer_to_text_string(self) -> None:
+        """Test the printer.to_text execution path returning a string."""
+        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
+            mock_build.return_value = "GraphDef"
+
+            class MockPrinter:
+                def to_text(self, graph):
+                    return "RealPrintableGraph"
+
+            with patch("onnx.printer", new=MockPrinter()):
+                res = self.gen.generate()
+                self.assertEqual(res, "RealPrintableGraph")
+
+    def test_printer_to_text_mock_fallback(self) -> None:
+        """Test the printer.to_text execution path falling back to mock logic."""
+        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
+            mock_build.return_value = "GraphDef"
+
+            class MockPrinter:
+                def to_text(self, graph):
+                    return MagicMock()
+
+            with patch("onnx.printer", new=MockPrinter()):
+                res = self.gen.generate()
+                self.assertEqual(res, "PrintableGraph")
+
+    def test_printer_to_text_import_error(self) -> None:
+        """Test the printer.to_text execution path throwing ImportError."""
+        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
+            mock_build.return_value = "GraphDef"
+
+            orig_import = __import__
+            with patch("builtins.__import__") as mock_import:
+
+                def side_effect(name, *args, **kwargs):
+                    if name == "onnx":
+                        raise ImportError()
+                    return orig_import(name, *args, **kwargs)
+
+                mock_import.side_effect = side_effect
+
+                with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._generate_text_fallback") as mock_fallback:
+                    mock_fallback.return_value = "Fallback"
+                    res = self.gen.generate()
+                    self.assertEqual(res, "Fallback")
+
+    def test_printer_to_text_inner_import_error(self) -> None:
+        """Test the printer.to_text execution path throwing an inner ImportError on onnx.printer."""
+        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
+            mock_build.return_value = "GraphDef"
+
+            class MockPrinter:
+                def to_text(self, g):
+                    raise ImportError("Mocked")
+
+            with patch("onnx.printer", new=MockPrinter()):
+                with patch("onnx.helper.printable_graph") as mock_printable_graph:
+                    mock_printable_graph.return_value = "MockedPrintableGraph"
+                    res = self.gen.generate()
+                    self.assertEqual(res, "MockedPrintableGraph")

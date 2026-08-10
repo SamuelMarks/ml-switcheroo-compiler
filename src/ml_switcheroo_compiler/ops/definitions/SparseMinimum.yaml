@@ -1,0 +1,5 @@
+operation: SparseMinimum
+description: The SparseMinimum operation.
+variants:
+  numpy:
+    generator: tf.sparse.minimum

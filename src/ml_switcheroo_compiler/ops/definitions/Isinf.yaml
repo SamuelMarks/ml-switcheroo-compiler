@@ -1,0 +1,9 @@
+operation: Isinf
+description: The Isinf operation.
+variants:
+  cupy:
+    eager: cp.isinf
+  dask:
+    eager: da.isinf
+  keras:
+    eager: keras_ops.isinf

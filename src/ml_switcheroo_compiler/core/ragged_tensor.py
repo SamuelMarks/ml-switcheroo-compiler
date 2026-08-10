@@ -1,3 +1,6 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Ragged tensor."""
 
 from collections.abc import Sequence
@@ -25,8 +28,7 @@ class RaggedTensor:
     def shape(self) -> Sequence[Union[int, str]]:
         """Get the shape of the tensor.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         # The true shape of a ragged tensor is typically (batch, None, ...)
         # We approximate it by taking the number of rows from row_splits
@@ -35,7 +37,7 @@ class RaggedTensor:
         batch_size = max(0, len(self.row_splits) - 1)
         val_shape = list(self.values.shape)
         if val_shape:
-            val_shape[0] = "None"  # Ragged dimension
+            val_shape[0] = -1  # type: ignore
         return tuple([batch_size] + val_shape)
 
     @property

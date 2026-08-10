@@ -1,0 +1,5 @@
+operation: AssignVariable
+description: The AssignVariable operation.
+variants:
+  pytorch:
+    generator: '{0}'

@@ -1,0 +1,5 @@
+operation: Xdivy
+description: The Xdivy operation.
+variants:
+  tensorflow:
+    eager: tf.math.xdivy

@@ -1,0 +1,5 @@
+operation: uint64
+description: The uint64 operation.
+variants:
+  edge_stablehlo:
+    generator: ui64

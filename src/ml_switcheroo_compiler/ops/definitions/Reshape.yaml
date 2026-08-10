@@ -1,0 +1,21 @@
+operation: Reshape
+description: The Reshape operation.
+variants:
+  cupy:
+    eager: cp.reshape
+    generator: cp.reshape
+  dask:
+    eager: da.reshape
+    generator: da.reshape
+  edge_onnx:
+    generator: Reshape
+  edge_stablehlo:
+    generator: stablehlo.reshape
+  keras:
+    eager: keras_ops.reshape
+  numpy:
+    generator: np.reshape
+  pytorch:
+    generator: torch.reshape({0}, {shape})
+  tensorflow:
+    eager: tf.reshape

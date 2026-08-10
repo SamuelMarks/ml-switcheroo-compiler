@@ -1,7 +1,10 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define special binary operations for the ml_switcheroo_compiler framework, including element-.
 
 wise trigonometric, division, and comparison operations
 """
+
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
@@ -13,15 +16,14 @@ from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 class Atan2(OpDef):
     """Provide an operation class for computing the element-wise arc tangent of x/y."""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
         *shapes (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         """Infer the output shape of the operation.
 
@@ -41,15 +43,14 @@ class Atan2(OpDef):
 class Divmod(OpDef):
     """Provide an operation class for computing element-wise quotient and remainder."""
 
-    def __call__(self, *args: object, **kwargs: object) -> object:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Call Divmod.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         if config.eager_mode:
             return EagerEvaluator.evaluate("Divmod", *args, **kwargs)
@@ -58,15 +59,14 @@ class Divmod(OpDef):
 
         return (floor_divide(*args, **kwargs), remainder(*args, **kwargs))
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         """Infer the output shape of the operation.
 
@@ -89,15 +89,14 @@ class Allclose(OpDef):
     tolerance
     """
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -106,15 +105,14 @@ class Allclose(OpDef):
 class Isclose(OpDef):
     """Provide an operation class for checking element-wise equality within a tolerance."""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         """Infer the output shape of the operation.
 

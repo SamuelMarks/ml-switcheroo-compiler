@@ -1,0 +1,15 @@
+operation: Tanh
+description: The Tanh operation.
+variants:
+  cupy:
+    eager: cp.tanh
+  dask:
+    eager: da.tanh
+  edge_onnx:
+    generator: Tanh
+  edge_stablehlo:
+    generator: stablehlo.tanh
+  keras:
+    eager: keras_ops.tanh
+  tensorflow:
+    eager: tf.tanh

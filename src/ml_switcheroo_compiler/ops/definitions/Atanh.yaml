@@ -1,0 +1,11 @@
+operation: Atanh
+description: The Atanh operation.
+variants:
+  cupy:
+    generator: cp.arctanh
+  dask:
+    generator: da.arctanh
+  numpy:
+    generator: np.arctanh
+  tensorflow:
+    eager: tf.atanh

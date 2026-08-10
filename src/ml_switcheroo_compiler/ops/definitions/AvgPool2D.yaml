@@ -1,0 +1,5 @@
+operation: AvgPool2D
+description: The AvgPool2D operation.
+variants:
+  edge_onnx:
+    generator: AveragePool

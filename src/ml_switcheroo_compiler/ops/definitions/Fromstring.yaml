@@ -1,0 +1,5 @@
+operation: Fromstring
+description: The Fromstring operation.
+variants:
+  numpy:
+    generator: np.fromstring

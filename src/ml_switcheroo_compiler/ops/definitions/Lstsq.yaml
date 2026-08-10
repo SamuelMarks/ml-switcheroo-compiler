@@ -1,0 +1,13 @@
+operation: Lstsq
+description: The Lstsq operation.
+variants:
+  cupy:
+    eager: cp.linalg.lstsq
+  dask:
+    eager: da.linalg.lstsq
+  keras:
+    eager: keras_ops.lstsq
+  numpy:
+    generator: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
+  tensorflow:
+    eager: tf.linalg.lstsq

@@ -1,0 +1,9 @@
+operation: Signbit
+description: The Signbit operation.
+variants:
+  cupy:
+    eager: cp.signbit
+  dask:
+    eager: da.signbit
+  keras:
+    eager: keras_ops.signbit

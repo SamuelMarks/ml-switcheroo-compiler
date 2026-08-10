@@ -1,0 +1,5 @@
+operation: Dirichlet
+description: The Dirichlet operation.
+variants:
+  numpy:
+    generator: np.random.dirichlet({1}, size={shape})

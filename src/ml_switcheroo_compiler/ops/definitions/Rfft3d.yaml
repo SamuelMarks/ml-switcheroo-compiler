@@ -1,0 +1,5 @@
+operation: Rfft3d
+description: The Rfft3d operation.
+variants:
+  pytorch:
+    generator: torch.fft.rfftn({0}, s={s}, dim={axes})

@@ -1,0 +1,13 @@
+operation: Argmax
+description: The Argmax operation.
+variants:
+  cupy:
+    eager: cp.argmax
+  dask:
+    eager: da.argmax
+  keras:
+    eager: keras_ops.argmax
+  pytorch:
+    generator: torch.argmax({0}, dim={axis}, keepdim={keepdims})
+  tensorflow:
+    eager: tf.argmax

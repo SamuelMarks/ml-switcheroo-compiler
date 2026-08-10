@@ -1,0 +1,11 @@
+operation: Diagonal
+description: The Diagonal operation.
+variants:
+  cupy:
+    eager: cp.diagonal
+  dask:
+    eager: da.diagonal
+  keras:
+    eager: keras_ops.diagonal
+  numpy:
+    generator: np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})

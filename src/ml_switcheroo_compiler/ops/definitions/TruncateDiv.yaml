@@ -1,0 +1,5 @@
+operation: TruncateDiv
+description: The TruncateDiv operation.
+variants:
+  pytorch:
+    generator: torch.trunc({0} / {1})

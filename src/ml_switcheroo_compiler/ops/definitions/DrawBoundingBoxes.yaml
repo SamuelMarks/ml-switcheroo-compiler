@@ -1,0 +1,5 @@
+operation: DrawBoundingBoxes
+description: The DrawBoundingBoxes operation.
+variants:
+  pytorch:
+    generator: torchvision.utils.draw_bounding_boxes({0}, {1}, colors={colors}, labels={texts})

@@ -1,0 +1,5 @@
+operation: IndexInDim
+description: The IndexInDim operation.
+variants:
+  numpy:
+    generator: np.take({0}, {1}, axis={2})

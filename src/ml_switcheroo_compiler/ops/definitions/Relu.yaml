@@ -1,0 +1,7 @@
+operation: Relu
+description: The Relu operation.
+variants:
+  edge_onnx:
+    generator: Relu
+  edge_stablehlo:
+    generator: stablehlo.maximum

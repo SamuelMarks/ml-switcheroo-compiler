@@ -1,0 +1,7 @@
+operation: BesselI0e
+description: The BesselI0e operation.
+variants:
+  numpy:
+    generator: scipy.special.i0e
+  tensorflow:
+    eager: tf.math.bessel_i0e

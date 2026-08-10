@@ -1,0 +1,9 @@
+operation: Det
+description: The Det operation.
+variants:
+  keras:
+    eager: keras_ops.det
+  numpy:
+    generator: np.linalg.det
+  tensorflow:
+    eager: tf.linalg.det

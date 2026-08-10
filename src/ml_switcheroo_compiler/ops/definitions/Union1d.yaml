@@ -1,0 +1,7 @@
+operation: Union1d
+description: The Union1d operation.
+variants:
+  cupy:
+    eager: cp.union1d
+  dask:
+    eager: da.union1d

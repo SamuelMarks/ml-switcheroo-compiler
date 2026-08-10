@@ -1,0 +1,7 @@
+operation: InTopK
+description: The InTopK operation.
+variants:
+  keras:
+    eager: keras_ops.in_top_k
+  tensorflow:
+    eager: tf.math.in_top_k

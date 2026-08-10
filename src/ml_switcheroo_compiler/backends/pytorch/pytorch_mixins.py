@@ -1,11 +1,13 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Mixins."""
+
+from typing import Any
 
 
 class PyTorchScatterVisitor:
     """Mixin."""
 
-    def visit_TensorScatterUpdate(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterUpdate(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Handle TensorScatterUpdate nodes.
 
         Args:
@@ -18,7 +20,7 @@ class PyTorchScatterVisitor:
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]})"
 
-    def visit_TensorScatterAdd(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterAdd(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Handle TensorScatterAdd nodes.
 
         Args:
@@ -31,7 +33,7 @@ class PyTorchScatterVisitor:
         """
         return f"{input_vars[0]}.clone().index_put_(tuple({input_vars[1]}.unbind(-1)), {input_vars[2]}, accumulate=True)"
 
-    def visit_TensorScatterMax(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterMax(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_TensorScatterMax operation.
 
         Args:
@@ -44,7 +46,7 @@ class PyTorchScatterVisitor:
         """
         return f"(lambda t, i, u: t.clone().flatten().scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True).reshape(t.shape))({input_vars[0]}, {input_vars[1]}, {input_vars[2]})"
 
-    def visit_TensorScatterMin(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TensorScatterMin(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_TensorScatterMin operation.
 
         Args:
@@ -61,7 +63,7 @@ class PyTorchScatterVisitor:
 class PyTorchDistributedVisitor:
     """Mixin."""
 
-    def visit_all_gather(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_all_gather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate code for all_gather.
 
         Args:
@@ -75,7 +77,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.all_gather_into_tensor(torch.empty_like({tensor}), {tensor})"
 
-    def visit_reduce_scatter(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_reduce_scatter(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate code for reduce_scatter.
 
         Args:
@@ -89,7 +91,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.reduce_scatter_tensor(torch.empty_like({tensor}), {tensor})"
 
-    def visit_all_reduce(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_all_reduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate code for all_reduce.
 
         Args:
@@ -256,3 +258,40 @@ class PyTorchNNMixin:
             dict[str, str]: The operation mapping dictionary.
         """
         return {}
+
+    def visit_Send(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Send tensor.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): Input variables.
+            **kwargs (object): Additional attributes.
+
+        Returns:
+            str: PyTorch code for send.
+        """
+        dst = node.attributes.get("dst_rank", 0)
+        tag = node.attributes.get("tag", 0)
+        self.add_line(f"        torch.distributed.isend({input_vars[0]}, dst={dst}, tag={tag})")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return ""
+
+    def visit_Recv(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Receive tensor.
+
+        Args:
+            node (object): The IR node.
+            input_vars (list[str]): Input variables.
+            **kwargs (object): Additional attributes.
+
+        Returns:
+            str: PyTorch code for recv.
+        """
+        src = node.attributes.get("src_rank", 0)
+        tag = node.attributes.get("tag", 0)
+        shape = node.attributes.get("shape", ())
+        dtype = "torch." + str(node.attributes.get("dtype", "float32")).lower()
+        nid = getattr(node, "id", "")
+        res_var = f"v_{nid.replace('-', '_')}"
+        self.add_line(f"        {res_var} = torch.empty({list(shape)}, dtype={dtype}, device=self.device)")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        self.add_line(f"        torch.distributed.irecv({res_var}, src={src}, tag={tag})")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return res_var

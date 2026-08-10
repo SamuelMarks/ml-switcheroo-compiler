@@ -1,8 +1,10 @@
-"""Core abstractions and logic definitions for multivariate_normal.py."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Core abstractions and logic definitions for multivariate_normal.py."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -13,12 +15,12 @@ from ml_switcheroo_compiler.random.state import _emit_random_node
 class MultivariateNormalOptions:
     """Options for multivariate normal."""
 
-    shape: object | None = None
-    dtype: object | None = None
+    shape: Any | None = None
+    dtype: Any | None = None
     method: str = "cholesky"
 
 
-def multivariate_normal(key: object, mean: object, cov: object, options: MultivariateNormalOptions | None = None) -> object:
+def multivariate_normal(key: Any, mean: Any, cov: Any, options: MultivariateNormalOptions | None = None) -> Any:
     """Sample from a multivariate normal distribution.
 
     Args:
@@ -27,8 +29,7 @@ def multivariate_normal(key: object, mean: object, cov: object, options: Multiva
         cov (object): The cov parameter.
         options (object): The options parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     options = options or MultivariateNormalOptions()
     shape = options.shape

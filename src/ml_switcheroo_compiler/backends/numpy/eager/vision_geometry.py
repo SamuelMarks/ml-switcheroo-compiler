@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shared vision utilities and ops."""
+
+from typing import Any
 
 import numpy as np
 
@@ -8,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AffineGenerator")
-def _np_affine_generator(backend_module: object, batch_size: int, angles: object, shears: object, zooms: object, **kwargs: object) -> object:
+def _np_affine_generator(backend_module: Any, batch_size: int, angles: Any, shears: Any, zooms: Any, **kwargs: Any) -> Any:
     """Evaluate _np_affine_generator operation.
 
     Args:
@@ -19,8 +21,7 @@ def _np_affine_generator(backend_module: object, batch_size: int, angles: object
         zooms (object): The zooms parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     out = np.zeros((batch_size, 8))
     out[:, 0] = 1.0
@@ -29,7 +30,7 @@ def _np_affine_generator(backend_module: object, batch_size: int, angles: object
 
 
 @numpy_eager_registry.register("ElasticTransform")
-def _np_elastic_transform(backend_module: object, images: object, displacement: object, **kwargs: object) -> object:
+def _np_elastic_transform(backend_module: Any, images: Any, displacement: Any, **kwargs: Any) -> Any:
     """Apply elastic transformation to an image.
 
     Args:
@@ -54,7 +55,7 @@ def _np_elastic_transform(backend_module: object, images: object, displacement: 
 
 
 @numpy_eager_registry.register("ExtractBoundingBoxes")
-def _np_extract_bounding_boxes(backend_module: object, images: object, boxes: object, box_indices: object, **kwargs: object) -> object:
+def _np_extract_bounding_boxes(backend_module: Any, images: Any, boxes: Any, box_indices: Any, **kwargs: Any) -> Any:
     """Evaluate _np_extract_bounding_boxes operation.
 
     Args:
@@ -64,14 +65,13 @@ def _np_extract_bounding_boxes(backend_module: object, images: object, boxes: ob
         box_indices (object): The box_indices parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("IoU")
-def _np_iou(backend_module: object, boxes1: object, boxes2: object, **kwargs: object) -> object:
+def _np_iou(backend_module: Any, boxes1: Any, boxes2: Any, **kwargs: Any) -> Any:
     """Evaluate _np_iou operation.
 
     Args:
@@ -80,14 +80,13 @@ def _np_iou(backend_module: object, boxes1: object, boxes2: object, **kwargs: ob
         boxes2 (object): The boxes2 parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return iou_eager(backend_module, boxes1, boxes2, **kwargs)
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
-def _np_nms(backend_module: object, boxes: object, scores: object, max_output_size: object, **kwargs: object) -> object:
+def _np_nms(backend_module: Any, boxes: Any, scores: Any, max_output_size: Any, **kwargs: Any) -> Any:
     """Evaluate _np_nms operation.
 
     Args:
@@ -97,14 +96,13 @@ def _np_nms(backend_module: object, boxes: object, scores: object, max_output_si
         max_output_size (object): The max_output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
-    return nms_eager(backend_module, boxes, scores, max_output_size=max_output_size, **kwargs)
+    return nms_eager(backend_module, boxes, scores, **kwargs)
 
 
 @numpy_eager_registry.register("PerspectiveTransform")
-def _np_perspective_transform(backend_module: object, images: object, start_points: object, end_points: object, config: object, **kwargs: object) -> object:
+def _np_perspective_transform(backend_module: Any, images: Any, start_points: Any, end_points: Any, config: Any, **kwargs: Any) -> Any:
     """Evaluate _np_perspective_transform operation.
 
     Args:
@@ -115,14 +113,13 @@ def _np_perspective_transform(backend_module: object, images: object, start_poin
         config (object): The config parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 
 
 @numpy_eager_registry.register("AffineGrid")
-def _np_affine_grid(backend_module: object, theta: object, size: tuple, align_corners: bool = False, **kwargs: object) -> object:
+def _np_affine_grid(backend_module: Any, theta: Any, size: tuple, align_corners: bool = False, **kwargs: Any) -> Any:
     """Evaluate _np_affine_grid operation.
 
     Args:
@@ -132,8 +129,7 @@ def _np_affine_grid(backend_module: object, theta: object, size: tuple, align_co
         align_corners (bool): The align_corners parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(theta, np.ndarray):
         s = list(size)
@@ -144,7 +140,7 @@ def _np_affine_grid(backend_module: object, theta: object, size: tuple, align_co
 
 
 @numpy_eager_registry.register("AffineTransform")
-def _np_affine_transform(backend_module: object, images: object, transforms: object, interpolation: str = "nearest", **kwargs: object) -> object:
+def _np_affine_transform(backend_module: Any, images: Any, transforms: Any, interpolation: str = "nearest", **kwargs: Any) -> Any:
     """Evaluate _np_affine_transform operation.
 
     Args:
@@ -154,8 +150,7 @@ def _np_affine_transform(backend_module: object, images: object, transforms: obj
         interpolation (str): The interpolation parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return images
 

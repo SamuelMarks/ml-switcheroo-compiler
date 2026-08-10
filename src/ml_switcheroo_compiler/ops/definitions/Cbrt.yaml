@@ -1,0 +1,9 @@
+operation: Cbrt
+description: The Cbrt operation.
+variants:
+  cupy:
+    eager: cp.cbrt
+  dask:
+    eager: da.cbrt
+  edge_stablehlo:
+    generator: stablehlo.cbrt

@@ -1,0 +1,5 @@
+operation: SparseReorder
+description: The SparseReorder operation.
+variants:
+  numpy:
+    generator: tf.sparse.reorder

@@ -1,0 +1,5 @@
+operation: AssociativeScan
+description: The AssociativeScan operation.
+variants:
+  keras:
+    eager: keras_ops.associative_scan

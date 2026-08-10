@@ -1,0 +1,19 @@
+operation: Less
+description: The Less operation.
+variants:
+  cupy:
+    eager: cp.less
+    generator: cp.less
+  dask:
+    eager: da.less
+    generator: da.less
+  edge_onnx:
+    generator: Less
+  edge_stablehlo:
+    generator: stablehlo.compare
+  keras:
+    eager: keras_ops.less
+  numpy:
+    generator: np.less
+  tensorflow:
+    eager: tf.less

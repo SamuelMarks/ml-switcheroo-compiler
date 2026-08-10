@@ -588,3 +588,26 @@ def test_eager_base64_2():
             assert decode_base64(t_enc) is not None
     finally:
         config.eager_mode = old_eager
+
+
+def test_missing_io_functions_from():
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.io import fromfile, fromfunction, fromiter, fromstring
+
+    config.eager_mode = True
+    try:
+        fromfile("foo")
+    except Exception:
+        pass
+    try:
+        fromstring("1 2")
+    except Exception:
+        pass
+    try:
+        fromiter([1, 2], float)
+    except Exception:
+        pass
+    try:
+        fromfunction(lambda i, j: i == j, (3, 3), dtype=int)
+    except Exception:
+        pass

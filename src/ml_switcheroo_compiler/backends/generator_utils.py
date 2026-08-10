@@ -1,8 +1,10 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for generator_utils.py."""
 
+from typing import Any
 
-def _extract_audio_stft_attributes(node: object) -> tuple:
+
+def _extract_audio_stft_attributes(node: Any) -> tuple:
     """Extract STFT attributes.
 
     Args:
@@ -19,7 +21,7 @@ def _extract_audio_stft_attributes(node: object) -> tuple:
     return frame_length, frame_step, fft_length, window_fn, pad_end
 
 
-def _extract_resize_attributes(node: object) -> tuple:
+def _extract_resize_attributes(node: Any) -> tuple:
     """Extract resize attributes.
 
     Args:
@@ -36,7 +38,7 @@ def _extract_resize_attributes(node: object) -> tuple:
     return size, interpolation, align_corners, antialias, data_format
 
 
-def _extract_vision_transform_attributes(node: object) -> tuple:
+def _extract_vision_transform_attributes(node: Any) -> tuple:
     """Extract vision transform attributes.
 
     Args:
@@ -51,7 +53,7 @@ def _extract_vision_transform_attributes(node: object) -> tuple:
     return interpolation, fill_value, data_format
 
 
-def _extract_filter_attributes(node: object) -> tuple:
+def _extract_filter_attributes(node: Any) -> tuple:
     """Extract filter attributes.
 
     Args:
@@ -67,7 +69,7 @@ def _extract_filter_attributes(node: object) -> tuple:
     return kernel_size, sigma, padding, data_format
 
 
-def _extract_extract_boxes_attributes(node: object) -> tuple:
+def _extract_extract_boxes_attributes(node: Any) -> tuple:
     """Extract bounding box extraction attributes.
 
     Args:
@@ -83,7 +85,7 @@ def _extract_extract_boxes_attributes(node: object) -> tuple:
     return crop_size, interpolation, extrapolation_value, data_format
 
 
-def _extract_stft_attributes(node: object) -> tuple:
+def _extract_stft_attributes(node: Any) -> tuple:
     """Extract generic STFT attributes.
 
     Args:

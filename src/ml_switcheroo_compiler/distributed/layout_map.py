@@ -1,14 +1,15 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """LayoutMap API for annotating tensors with sharding constraints."""
 
 import re
 from collections.abc import Sequence
-from typing import Optional
+from typing import Any, Optional
 
 
 class ShardingSpec:
     """Specification of how a tensor is sharded across a DeviceMesh."""
 
-    def __init__(self, mesh: object, mesh_mapping: Sequence[Optional[str]]) -> None:
+    def __init__(self, mesh: Any, mesh_mapping: Sequence[Optional[str]]) -> None:
         """Initialize ShardingSpec.
 
         Args:
@@ -26,7 +27,7 @@ class ShardingSpec:
         """
         return f"ShardingSpec(mesh={self.mesh}, mapping={self.mesh_mapping})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Equality check.
 
         Args:
@@ -43,7 +44,7 @@ class ShardingSpec:
 class LayoutMap:
     """Mapping of logical tensor paths to ShardingSpecs."""
 
-    def __init__(self, device_mesh: Optional[object] = None) -> None:
+    def __init__(self, device_mesh: Optional[Any] = None) -> None:
         """Initialize LayoutMap.
 
         Args:

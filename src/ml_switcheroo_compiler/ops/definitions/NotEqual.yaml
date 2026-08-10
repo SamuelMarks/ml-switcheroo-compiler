@@ -1,0 +1,15 @@
+operation: NotEqual
+description: The NotEqual operation.
+variants:
+  cupy:
+    eager: cp.not_equal
+    generator: cp.not_equal
+  dask:
+    eager: da.not_equal
+    generator: da.not_equal
+  keras:
+    eager: keras_ops.not_equal
+  numpy:
+    generator: np.not_equal
+  tensorflow:
+    eager: tf.not_equal

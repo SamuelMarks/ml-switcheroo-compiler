@@ -1,0 +1,11 @@
+operation: Expm1
+description: The Expm1 operation.
+variants:
+  cupy:
+    eager: cp.expm1
+  dask:
+    eager: da.expm1
+  keras:
+    eager: keras_ops.expm1
+  tensorflow:
+    eager: tf.math.expm1

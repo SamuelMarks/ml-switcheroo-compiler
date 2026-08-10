@@ -1,0 +1,11 @@
+operation: Repeat
+description: The Repeat operation.
+variants:
+  cupy:
+    eager: cp.repeat
+  dask:
+    eager: da.repeat
+  keras:
+    eager: keras_ops.repeat
+  tensorflow:
+    eager: tf.repeat

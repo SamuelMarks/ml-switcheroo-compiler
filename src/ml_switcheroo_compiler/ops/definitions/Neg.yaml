@@ -1,0 +1,7 @@
+operation: Neg
+description: The Neg operation.
+variants:
+  edge_onnx:
+    generator: Neg
+  edge_stablehlo:
+    generator: stablehlo.negate

@@ -1,0 +1,5 @@
+operation: ConvTransposeShapeTuple
+description: The ConvTransposeShapeTuple operation.
+variants:
+  numpy:
+    generator: ()

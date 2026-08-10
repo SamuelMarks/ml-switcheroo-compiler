@@ -1,0 +1,5 @@
+operation: Ifft2d
+description: The Ifft2d operation.
+variants:
+  pytorch:
+    generator: torch.fft.ifft2({0}, s={s}, dim={axes})

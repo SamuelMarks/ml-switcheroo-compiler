@@ -1,0 +1,5 @@
+operation: AsString
+description: The AsString operation.
+variants:
+  tensorflow:
+    eager: tf.as_string

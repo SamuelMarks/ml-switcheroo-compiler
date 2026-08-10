@@ -1,0 +1,9 @@
+operation: LeftShift
+description: The LeftShift operation.
+variants:
+  cupy:
+    eager: cp.left_shift
+  dask:
+    eager: da.left_shift
+  keras:
+    eager: keras_ops.left_shift

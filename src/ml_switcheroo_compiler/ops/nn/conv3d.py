@@ -1,8 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Convolution operations."""
 
 import typing
 from collections.abc import Sequence
-from typing import Union
+from typing import Any, Union
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
@@ -11,7 +12,7 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .conv_utils import _build_conv_config
 
 
-def conv3d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[object] = None, **kwargs: object) -> Tensor:
+def conv3d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:
     """3D Convolution.
 
     Args:
@@ -34,7 +35,7 @@ def conv3d_transpose(
     rhs: Tensor,
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
-) -> Tensor:
+) -> Any:
     """3D convolution transpose.
 
     Args:

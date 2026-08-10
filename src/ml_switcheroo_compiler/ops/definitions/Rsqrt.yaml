@@ -1,0 +1,7 @@
+operation: Rsqrt
+description: The Rsqrt operation.
+variants:
+  keras:
+    eager: keras_ops.rsqrt
+  tensorflow:
+    eager: tf.math.rsqrt

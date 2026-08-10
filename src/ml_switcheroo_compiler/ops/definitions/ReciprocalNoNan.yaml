@@ -1,0 +1,5 @@
+operation: ReciprocalNoNan
+description: The ReciprocalNoNan operation.
+variants:
+  tensorflow:
+    eager: tf.math.reciprocal_no_nan

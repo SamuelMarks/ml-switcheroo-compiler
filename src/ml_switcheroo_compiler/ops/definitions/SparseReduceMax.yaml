@@ -1,0 +1,5 @@
+operation: SparseReduceMax
+description: The SparseReduceMax operation.
+variants:
+  numpy:
+    generator: tf.sparse.reduce_max

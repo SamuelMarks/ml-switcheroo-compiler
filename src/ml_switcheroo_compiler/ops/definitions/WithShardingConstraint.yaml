@@ -1,0 +1,5 @@
+operation: WithShardingConstraint
+description: The WithShardingConstraint operation.
+variants:
+  numpy:
+    generator: '{0}'

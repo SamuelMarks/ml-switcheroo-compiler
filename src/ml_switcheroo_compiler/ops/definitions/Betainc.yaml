@@ -1,0 +1,7 @@
+operation: Betainc
+description: The Betainc operation.
+variants:
+  numpy:
+    generator: scipy.special.betainc
+  tensorflow:
+    eager: tf.math.betainc

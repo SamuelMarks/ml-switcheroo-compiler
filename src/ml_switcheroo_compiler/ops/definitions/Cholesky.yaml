@@ -1,0 +1,13 @@
+operation: Cholesky
+description: The Cholesky operation.
+variants:
+  cupy:
+    eager: cp.linalg.cholesky
+  dask:
+    eager: da.linalg.cholesky
+  keras:
+    eager: keras_ops.cholesky
+  numpy:
+    generator: np.linalg.cholesky
+  tensorflow:
+    eager: tf.linalg.cholesky

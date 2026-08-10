@@ -1,0 +1,5 @@
+operation: FractionalAvgPool
+description: The FractionalAvgPool operation.
+variants:
+  tensorflow:
+    eager: tf.nn.fractional_avg_pool

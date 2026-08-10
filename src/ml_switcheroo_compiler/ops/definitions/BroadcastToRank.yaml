@@ -1,0 +1,6 @@
+operation: BroadcastToRank
+description: The BroadcastToRank operation.
+variants:
+  numpy:
+    generator: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
+      'ndim') else {0}

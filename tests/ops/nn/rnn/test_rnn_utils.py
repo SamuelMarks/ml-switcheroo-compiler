@@ -76,7 +76,7 @@ from ml_switcheroo_compiler.ops.nn.rnn_utils import DropoutWrapperConfig, RNNCel
 
 
 def create_eager_tensor(data):
-    return Tensor(data, TensorConfig(data.shape, DType.Float32, Device("cpu")))
+    return Tensor(data, TensorConfig(data.shape, DType("float32"), Device("cpu")))
 
 
 def test_rnn_utils_missing_branches():

@@ -1,0 +1,7 @@
+operation: Adjoint
+description: The Adjoint operation.
+variants:
+  numpy:
+    generator: tf.linalg.adjoint
+  tensorflow:
+    eager: tf.linalg.adjoint

@@ -1,0 +1,7 @@
+operation: Ones
+description: The Ones operation.
+variants:
+  numpy:
+    generator: np.ones
+  pytorch:
+    generator: torch.ones({shape})

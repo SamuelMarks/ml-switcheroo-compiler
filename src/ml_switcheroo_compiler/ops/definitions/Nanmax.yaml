@@ -1,0 +1,7 @@
+operation: Nanmax
+description: The Nanmax operation.
+variants:
+  cupy:
+    eager: cp.nanmax
+  dask:
+    eager: da.nanmax

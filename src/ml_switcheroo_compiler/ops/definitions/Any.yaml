@@ -1,0 +1,9 @@
+operation: Any
+description: The Any operation.
+variants:
+  cupy:
+    eager: cp.any
+  dask:
+    eager: da.any
+  keras:
+    eager: keras_ops.any

@@ -37,7 +37,7 @@ def test_repeat() -> None:
         None
     """
     arr = np.array([1, 2])
-    res = repeat(np, arr, 2, dim=0)
+    res = repeat(np, arr, 2, axis=0)
     assert res.tolist() == [1, 1, 2, 2]
 
 
@@ -59,7 +59,7 @@ def test_split() -> None:
         None
     """
     arr = np.array([1, 2, 3, 4])
-    res = split(np, arr, 2, dim=0)
+    res = split(np, arr, 2, axis=0)
     assert len(res) == 2
     assert res[0].tolist() == [1, 2]
     res2 = split(np, arr, 2, axis=0)
@@ -73,7 +73,7 @@ def test_squeeze() -> None:
         None
     """
     arr = np.array([[1], [2]])
-    res = squeeze(np, arr, dim=1)
+    res = squeeze(np, arr, axis=1)
     assert res.tolist() == [1, 2]
     res2 = squeeze(np, arr, axis=1)
     assert res2.tolist() == [1, 2]
@@ -87,7 +87,7 @@ def test_stack() -> None:
     """
     arr1 = np.array([1, 2])
     arr2 = np.array([3, 4])
-    res = stack(np, [arr1, arr2], dim=1)
+    res = stack(np, [arr1, arr2], axis=1)
     assert res.shape == (2, 2)
     res2 = stack(np, [arr1, arr2], axis=1)
     assert res2.shape == (2, 2)
@@ -100,7 +100,7 @@ def test_unstack() -> None:
         None
     """
     arr = np.array([[1, 2], [3, 4]])
-    res = unstack(np, arr, dim=1)
+    res = unstack(np, arr, axis=1)
     assert len(res) == 2
     assert res[0].tolist() == [1, 3]
     res2 = unstack(np, [1, 2, 3], axis=0)

@@ -1,0 +1,5 @@
+operation: BesselI0
+description: The BesselI0 operation.
+variants:
+  tensorflow:
+    eager: tf.math.bessel_i0

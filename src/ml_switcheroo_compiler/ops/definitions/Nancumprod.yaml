@@ -1,0 +1,7 @@
+operation: Nancumprod
+description: The Nancumprod operation.
+variants:
+  cupy:
+    eager: cp.nancumprod
+  dask:
+    eager: da.nancumprod

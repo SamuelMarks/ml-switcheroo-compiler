@@ -1,0 +1,7 @@
+operation: Nanstd
+description: The Nanstd operation.
+variants:
+  cupy:
+    eager: cp.nanstd
+  dask:
+    eager: da.nanstd

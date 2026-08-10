@@ -1,0 +1,9 @@
+operation: LuMatrixInverse
+description: The LuMatrixInverse operation.
+variants:
+  numpy:
+    generator: np.linalg.inv(np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
+      dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
+      axis=-1), -1), {0}.shape), axis=-2))
+  tensorflow:
+    eager: tf.linalg.lu_matrix_inverse

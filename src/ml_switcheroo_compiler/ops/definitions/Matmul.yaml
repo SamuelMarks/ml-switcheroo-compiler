@@ -1,0 +1,7 @@
+operation: MatMul
+description: The MatMul operation.
+variants:
+  edge_onnx:
+    generator: MatMul
+  edge_stablehlo:
+    generator: stablehlo.dot_general

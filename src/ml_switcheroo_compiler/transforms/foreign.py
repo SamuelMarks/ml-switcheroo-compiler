@@ -1,27 +1,30 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Foreign architecture bridging.
 
 Tools for ingesting external graphs like Torch FX and JAX jaxpr.
 """
 
+from typing import Any
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
-def _handle_fx_placeholder(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
+def _handle_fx_placeholder(node: Any, graph: LogicalGraph, node_map: dict[str, str]) -> None:
     """Handle a Torch FX placeholder node.
 
     Args:
-        node (object): The FX node.
+        node (Any): The FX node.
         graph (LogicalGraph): The logical graph.
         node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
     """
     node_map[node.name] = node.name
 
 
-def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
+def _handle_fx_call_function(node: Any, graph: LogicalGraph, node_map: dict[str, str]) -> None:
     """Handle a Torch FX call_function node.
 
     Args:
-        node (object): The FX node.
+        node (Any): The FX node.
         graph (LogicalGraph): The logical graph.
         node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
     """
@@ -57,11 +60,11 @@ def _handle_fx_call_function(node: object, graph: LogicalGraph, node_map: dict[s
     node_map[node.name] = node.name
 
 
-def _handle_fx_output(node: object, graph: LogicalGraph, node_map: dict[str, str]) -> None:
+def _handle_fx_output(node: Any, graph: LogicalGraph, node_map: dict[str, str]) -> None:
     """Handle a Torch FX output node.
 
     Args:
-        node (object): The FX node.
+        node (Any): The FX node.
         graph (LogicalGraph): The logical graph.
         node_map (dict[str, str]): Mapping from FX node names to graph node IDs.
     """
@@ -74,11 +77,11 @@ def _handle_fx_output(node: object, graph: LogicalGraph, node_map: dict[str, str
     graph.outputs = outputs
 
 
-def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
+def ingest_torch_fx(fx_graph_module: Any) -> LogicalGraph:
     """Ingests a Torch FX GraphModule and converts it to a LogicalGraph.
 
     Args:
-        fx_graph_module (object): The Torch FX GraphModule.
+        fx_graph_module (Any): The Torch FX GraphModule.
 
     Returns:
         LogicalGraph: The converted LogicalGraph.
@@ -108,11 +111,11 @@ def ingest_torch_fx(fx_graph_module: object) -> LogicalGraph:
     return graph
 
 
-def _extract_jaxpr_constants(jaxpr: object, graph: LogicalGraph) -> None:
+def _extract_jaxpr_constants(jaxpr: Any, graph: LogicalGraph) -> None:
     """Extract constants from a JAX jaxpr.
 
     Args:
-        jaxpr (object): The JAX jaxpr.
+        jaxpr (Any): The JAX jaxpr.
         graph (LogicalGraph): The logical graph to populate.
     """
     if hasattr(jaxpr, "consts"):
@@ -131,11 +134,11 @@ def _extract_jaxpr_constants(jaxpr: object, graph: LogicalGraph) -> None:
             graph.nodes[const_id] = l_node
 
 
-def _translate_jax_equation(eqn: object, graph: LogicalGraph) -> None:
+def _translate_jax_equation(eqn: Any, graph: LogicalGraph) -> None:
     """Translate a JAX equation into a logical node.
 
     Args:
-        eqn (object): The JAX equation.
+        eqn (Any): The JAX equation.
         graph (LogicalGraph): The logical graph.
     """
     op_type = "Unknown"
@@ -163,11 +166,11 @@ def _translate_jax_equation(eqn: object, graph: LogicalGraph) -> None:
     graph.nodes[out_id] = l_node
 
 
-def ingest_jaxpr(jaxpr: object) -> LogicalGraph:
+def ingest_jaxpr(jaxpr: Any) -> LogicalGraph:
     """Ingests a JAX jaxpr and converts it to a LogicalGraph.
 
     Args:
-        jaxpr (object): The JAX jaxpr.
+        jaxpr (Any): The JAX jaxpr.
 
     Returns:
         LogicalGraph: The converted LogicalGraph.

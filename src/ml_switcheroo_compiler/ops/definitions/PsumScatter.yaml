@@ -1,0 +1,5 @@
+operation: PsumScatter
+description: The PsumScatter operation.
+variants:
+  numpy:
+    generator: '{0}'

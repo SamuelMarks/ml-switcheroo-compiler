@@ -1,0 +1,7 @@
+operation: RavelMultiIndex
+description: The RavelMultiIndex operation.
+variants:
+  cupy:
+    eager: cp.ravel_multi_index
+  dask:
+    eager: da.ravel_multi_index

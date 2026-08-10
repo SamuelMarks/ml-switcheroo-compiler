@@ -1,0 +1,9 @@
+operation: Rint
+description: The Rint operation.
+variants:
+  cupy:
+    eager: cp.rint
+  dask:
+    eager: da.rint
+  tensorflow:
+    eager: tf.math.rint

@@ -1,0 +1,9 @@
+operation: Isnan
+description: The Isnan operation.
+variants:
+  cupy:
+    eager: cp.isnan
+  dask:
+    eager: da.isnan
+  keras:
+    eager: keras_ops.isnan

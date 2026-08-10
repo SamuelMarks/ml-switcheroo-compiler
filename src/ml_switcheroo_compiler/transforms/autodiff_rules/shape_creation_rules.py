@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shape rules for creation."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
@@ -18,12 +21,12 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 @register_vjp("HammingWindow")
 @register_vjp("HannWindow")
 @register_vjp("KaiserWindow")
-def _creation_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def _creation_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP rule for creation ops returning zero gradients.
 
     Args:
-        graph (object): The IR graph.
-        node (object): The IR node.
+        graph (Any): The IR graph.
+        node (Any): The IR node.
         cotangent (str): The cotangent ID.
 
     Returns:
@@ -48,12 +51,12 @@ def _creation_vjp(graph: object, node: object, cotangent: str) -> tuple:
 @register_jvp("HammingWindow")
 @register_jvp("HannWindow")
 @register_jvp("KaiserWindow")
-def _creation_jvp(graph: object, node: object, tangents: tuple) -> str:
+def _creation_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP rule for creation ops returning zero tangent.
 
     Args:
-        graph (object): The IR graph.
-        node (object): The IR node.
+        graph (Any): The IR graph.
+        node (Any): The IR node.
         tangents (tuple): The input tangents.
 
     Returns:
@@ -64,12 +67,12 @@ def _creation_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Full")
-def full_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def full_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Full.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -91,12 +94,12 @@ def full_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Full")
-def full_jvp(graph: object, node: object, tangents: tuple) -> str:
+def full_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Full.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:

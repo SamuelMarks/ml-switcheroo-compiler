@@ -1,0 +1,5 @@
+operation: SparseMask
+description: The SparseMask operation.
+variants:
+  numpy:
+    generator: tf.sparse.mask

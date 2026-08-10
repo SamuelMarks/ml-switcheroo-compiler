@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for kernels.py."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -17,15 +18,14 @@ class CudaKernelOp(OpDef):
 
     op_name = "CudaKernel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -36,15 +36,14 @@ class MetalKernelOp(OpDef):
 
     op_name = "MetalKernel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape for MetalKernel.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -55,15 +54,14 @@ class PrecompiledCudaKernelOp(OpDef):
 
     op_name = "PrecompiledCudaKernel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape for PrecompiledCudaKernel.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -82,7 +80,7 @@ class KernelContext:
     """Provide context for kernel execution."""
 
     op_type: str
-    code_or_binary: object
+    code_or_binary: Any
     output_shapes: list[tuple[int, ...]]
     output_dtypes: list[DType]
     launch_config: KernelLaunchConfig

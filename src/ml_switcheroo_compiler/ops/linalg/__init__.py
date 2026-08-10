@@ -1,8 +1,10 @@
-# ruff: noqa
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 # auto-generate-all
 # exclude_exports: OpDef, register_op
 
 """Linear algebra operations package."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
@@ -15,17 +17,14 @@ from ml_switcheroo_compiler.ops.linalg.einsum import (
 )
 from ml_switcheroo_compiler.ops.linalg.products import Matmul
 
-from .decompositions.norms import power_iteration as power_iteration
 from .conv import conv_general_dilated as conv_general_dilated
-from .decompositions.norms import power_iteration as power_iteration
 from .conv import conv_general_dilated_local as conv_general_dilated_local
-from .decompositions.norms import power_iteration as power_iteration
 from .conv import conv_general_dilated_patches as conv_general_dilated_patches
-from .decompositions.norms import power_iteration as power_iteration
 from .conv import conv_with_general_padding as conv_with_general_padding
 from .conv_ops import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal
 from .conv_ops import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches
 from .conv_ops import ConvWithGeneralPadding as ConvWithGeneralPadding
+from .decompositions.norms import power_iteration as power_iteration
 from .einsum_frontend import einsum as einsum
 from .einsum_frontend import tensordot as tensordot
 from .linear_operator import LinearOperator as LinearOperator
@@ -113,15 +112,14 @@ class Vecdot(OpDef):
 
     op_name = "Vecdot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
@@ -132,15 +130,14 @@ class CustomLinearSolve(OpDef):
 
     op_name = "CustomLinearSolve"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
@@ -151,15 +148,14 @@ class CustomRoot(OpDef):
 
     op_name = "CustomRoot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
@@ -290,6 +286,7 @@ class CustomRoot(OpDef):
 from .dot import Pdot as Pdot
 
 __all__ = [
+    "Any",
     "ConvGeneralDilated",
     "ConvGeneralDilatedLocal",
     "ConvGeneralDilatedPatches",

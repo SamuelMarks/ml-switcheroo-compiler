@@ -1,0 +1,5 @@
+operation: HistogramBinEdges
+description: The HistogramBinEdges operation.
+variants:
+  numpy:
+    generator: np.histogram_bin_edges

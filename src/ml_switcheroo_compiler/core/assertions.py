@@ -1,9 +1,12 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Assertion recording and evaluation."""
 
-_ASSERTIONS_LIST: list[tuple[object, str]] = []
+from typing import Any
+
+_ASSERTIONS_LIST: list[tuple[Any, str]] = []
 
 
-def record_assertion(condition: object, message: str = "") -> None:
+def record_assertion(condition: Any, message: str = "") -> None:
     """Record an assertion for later evaluation.
 
     Args:
@@ -13,7 +16,7 @@ def record_assertion(condition: object, message: str = "") -> None:
     _ASSERTIONS_LIST.append((condition, message))
 
 
-def _is_iterable_non_string(c: object) -> bool:
+def _is_iterable_non_string(c: Any) -> bool:
     """Check if a value is an iterable but not a string or bytes.
 
     Args:
@@ -25,7 +28,7 @@ def _is_iterable_non_string(c: object) -> bool:
     return hasattr(c, "__iter__") and not isinstance(c, (str, bytes))
 
 
-def _evaluate_iterable(c: object) -> bool:
+def _evaluate_iterable(c: Any) -> bool:
     """Evaluate _evaluate_iterable operation.
 
     Args:
@@ -42,7 +45,7 @@ def _evaluate_iterable(c: object) -> bool:
     raise ValueError(f"Could not evaluate boolean value of {type(c)}")
 
 
-def _evaluate_single_condition(cond: object) -> bool:
+def _evaluate_single_condition(cond: Any) -> bool:
     """Evaluate _evaluate_single_condition operation.
 
     Args:

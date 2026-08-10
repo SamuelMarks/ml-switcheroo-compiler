@@ -1,9 +1,9 @@
-# ruff: noqa: E501
-"""Vision utilities."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Vision utilities."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array
 from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
@@ -19,7 +19,7 @@ class RandomCropConfig:
     c: int
     H: int
     W: int
-    rng: object
+    rng: Any
 
 
 @dataclass
@@ -28,18 +28,18 @@ class GeometricGridConfig:
 
     H: int
     W: int
-    rng: object
-    factor1: object
-    factor2: object
+    rng: Any
+    factor1: Any
+    factor2: Any
 
 
 @dataclass
 class EagerTransformContext:
     """Configuration class for eager transform context."""
 
-    np_mod: object
-    rng: object
-    imgs: object
+    np_mod: Any
+    rng: Any
+    imgs: Any
     B: int
     H: int
     W: int
@@ -47,7 +47,7 @@ class EagerTransformContext:
     name: str
 
 
-def _prepare_eager_transform(backend_module: object, images: object, seed: object, data_format: object) -> EagerTransformContext:
+def _prepare_eager_transform(backend_module: Any, images: Any, seed: Any, data_format: Any) -> Any:
     """Evaluate _prepare_eager_transform operation.
 
     Args:
@@ -66,8 +66,8 @@ def _prepare_eager_transform(backend_module: object, images: object, seed: objec
 class TransformInterpolationConfig:
     """Configuration class for transform interpolation config."""
 
-    new_y: object
-    new_x: object
+    new_y: Any
+    new_x: Any
     order: int
     fill_value: float
 
@@ -87,38 +87,36 @@ class ResizeContext:
 class MapCoordsContext:
     """MapCoordsContext."""
 
-    np_mod: object
-    image: object
-    y: object
-    x: object
-    valid: object
+    np_mod: Any
+    image: Any
+    y: Any
+    x: Any
+    valid: Any
 
 
-def _map_coords_nearest(ctx: MapCoordsContext) -> object:
+def _map_coords_nearest(ctx: MapCoordsContext) -> Any:
     """Evaluate _map_coords_nearest operation.
 
     Args:
         ctx (MapCoordsContext): The ctx parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _map_coords_bilinear(ctx: MapCoordsContext) -> object:
+def _map_coords_bilinear(ctx: MapCoordsContext) -> Any:
     """Evaluate _map_coords_bilinear operation.
 
     Args:
         ctx (MapCoordsContext): The ctx parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _np_map_coordinates(np_mod: object, image: object, coords: object, order: int = 1, fill_value: float = 0.0) -> object:
+def _np_map_coordinates(np_mod: Any, image: Any, coords: Any, order: int = 1, fill_value: float = 0.0) -> Any:
     """Evaluate _np_map_coordinates operation.
 
     Args:
@@ -128,13 +126,12 @@ def _np_map_coordinates(np_mod: object, image: object, coords: object, order: in
         order (int): The order parameter.
         fill_value (float): The fill_value parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _compute_perspective_matrix(np_mod: object, src: object, dst: object) -> object:
+def _compute_perspective_matrix(np_mod: Any, src: Any, dst: Any) -> Any:
     """Evaluate _compute_perspective_matrix operation.
 
     Args:
@@ -142,13 +139,12 @@ def _compute_perspective_matrix(np_mod: object, src: object, dst: object) -> obj
         src (object): The src parameter.
         dst (object): The dst parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _generate_perspective_coords(np_mod: object, h_batch: object, coords: object) -> tuple[object, object]:
+def _generate_perspective_coords(np_mod: Any, h_batch: Any, coords: Any) -> Any:
     """Generate source x and y coordinates for a given batch from homography matrix.
 
     Args:
@@ -156,13 +152,12 @@ def _generate_perspective_coords(np_mod: object, h_batch: object, coords: object
         h_batch (object): The h_batch parameter.
         coords (object): The coords parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _generate_perspective_grid(np_mod: object, H: int, W: int) -> object:
+def _generate_perspective_grid(np_mod: Any, H: int, W: int) -> Any:
     """Evaluate _generate_perspective_grid operation.
 
     Args:
@@ -170,8 +165,7 @@ def _generate_perspective_grid(np_mod: object, H: int, W: int) -> object:
         H (int): The H parameter.
         W (int): The W parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
@@ -180,8 +174,8 @@ def _generate_perspective_grid(np_mod: object, H: int, W: int) -> object:
 class PerspectiveContext:
     """Configuration class for perspective context."""
 
-    coords: object
-    h: object
+    coords: Any
+    h: Any
     b: int
 
 
@@ -189,26 +183,25 @@ class PerspectiveContext:
 class PerspectiveChannelContext:
     """PerspectiveChannelContext."""
 
-    np_mod: object
-    imgs: object
-    out: object
+    np_mod: Any
+    imgs: Any
+    out: Any
     ctx: PerspectiveContext
     config: PerspectiveConfig
 
 
-def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> None:
+def _apply_perspective_channel(pctx: PerspectiveChannelContext) -> Any:
     """Evaluate _apply_perspective_channel operation.
 
     Args:
         pctx (PerspectiveChannelContext): The pctx parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 
 
-def _apply_perspective_batch(np_mod: object, imgs: object, h: object, config: PerspectiveConfig) -> object:
+def _apply_perspective_batch(np_mod: Any, imgs: Any, h: Any, config: PerspectiveConfig) -> Any:
     """Apply perspective transform to a batched image array.
 
     Args:
@@ -217,8 +210,7 @@ def _apply_perspective_batch(np_mod: object, imgs: object, h: object, config: Pe
         h (object): The h parameter.
         config (PerspectiveConfig): The config parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return 0
 

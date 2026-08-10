@@ -1,0 +1,9 @@
+operation: Concatenate
+description: The Concatenate operation.
+variants:
+  cupy:
+    eager: cp.concatenate
+  dask:
+    eager: da.concatenate
+  keras:
+    eager: keras_ops.concatenate

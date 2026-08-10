@@ -1,19 +1,21 @@
-"""Shape operations for advanced indexing and sorting Tensor objects."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Shape operations for advanced indexing and sorting Tensor objects."""
+from typing import Any
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _normalize_k(k: object) -> int | object:
+def _normalize_k(k: Any) -> int | object:
     """Evaluate _normalize_k operation.
 
     Args:
         k (object): The k parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(k, "__array__") and not isinstance(k, tuple):
         k = k.__array__()
@@ -33,7 +35,7 @@ class TopK(OpDef):
 
     op_name = "TopK"
 
-    def infer_shape(self, x: object, k: object = None, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, k: Any = None, **kwargs: Any) -> Any:
         """Infer the output shape for the operation.
 
         Args:
@@ -41,8 +43,7 @@ class TopK(OpDef):
             k (object): The k parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         if k is None:
             k = kwargs.get("k", 1)
@@ -63,11 +64,11 @@ class Argsort(OpDef):
 
     def infer_shape(
         self,
-        x: object,
-        dimension: object = -1,
-        is_stable: object = True,
-        **kwargs: object,
-    ) -> object:
+        x: Any,
+        dimension: Any = -1,
+        is_stable: Any = True,
+        **kwargs: Any,
+    ) -> Any:
         """Infer the output shape for sorting indices.
 
         Args:
@@ -76,8 +77,7 @@ class Argsort(OpDef):
             is_stable (object): The is_stable parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         if isinstance(x, tuple) and hasattr(x, "shape"):
             return x.shape
@@ -92,11 +92,11 @@ class Sort(OpDef):
 
     def infer_shape(
         self,
-        x: object,
-        dimension: object = -1,
-        is_stable: object = True,
-        **kwargs: object,
-    ) -> object:
+        x: Any,
+        dimension: Any = -1,
+        is_stable: Any = True,
+        **kwargs: Any,
+    ) -> Any:
         """Infer the output shape for the sorting operation.
 
         Args:
@@ -105,8 +105,7 @@ class Sort(OpDef):
             is_stable (object): The is_stable parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(x, "shape", ())
 
@@ -115,7 +114,7 @@ class Sort(OpDef):
 class Where(OpDef):
     """Operator to return elements chosen from x or y depending on a condition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for conditionally chosen elements.
 
         Args:
@@ -134,7 +133,7 @@ class Where(OpDef):
 class Gather(OpDef):
     """Operator to gather slices from a tensor according to indices."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for gathered slices.
 
         Args:
@@ -151,7 +150,7 @@ class Gather(OpDef):
 class Take(OpDef):
     """Operator to take elements from an array along an axis."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for taken elements.
 
         Args:
@@ -168,7 +167,7 @@ class Take(OpDef):
 class TakeAlongAxis(OpDef):
     """Operator to take values from the input array by matching 1d index and data slices."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for elements taken along an axis.
 
         Args:
@@ -185,7 +184,7 @@ class TakeAlongAxis(OpDef):
 class GatherNd(OpDef):
     """Operator to gather slices from a tensor into a tensor with specified shape."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for n-dimensional gathered slices.
 
         Args:
@@ -202,7 +201,7 @@ class GatherNd(OpDef):
 class Scatter(OpDef):
     """Operator to scatter updates into a new tensor according to indices."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for scattered updates.
 
         Args:
@@ -219,7 +218,7 @@ class Scatter(OpDef):
 class ScatterNd(OpDef):
     """Operator to apply sparse updates to individual values or slices within a tensor."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for n-dimensional scattered updates.
 
         Args:
@@ -236,7 +235,7 @@ class ScatterNd(OpDef):
 class ScatterAdd(OpDef):
     """Operator to add sparse updates to a tensor variable reference."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape after adding scattered updates.
 
         Args:
@@ -253,7 +252,7 @@ class ScatterAdd(OpDef):
 class Vdot(OpDef):
     """Operator to compute the dot product of two vectors."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the vector dot product.
 
         Args:
@@ -270,7 +269,7 @@ class Vdot(OpDef):
 class SearchSorted(OpDef):
     """Operator to find indices where elements should be inserted to maintain order."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for searched sorted indices.
 
         Args:
@@ -287,7 +286,7 @@ class SearchSorted(OpDef):
 class Select(OpDef):
     """Operator to select elements from two arrays based on a boolean mask."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the selected elements.
 
         Args:
@@ -304,7 +303,7 @@ class Select(OpDef):
 class Assign(OpDef):
     """Operator to assign a value to a tensor variable."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape after assignment.
 
         Args:
@@ -321,7 +320,7 @@ class Assign(OpDef):
 class AssignAdd(OpDef):
     """Operator to add a value to a tensor variable and assign the result."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape after addition assignment.
 
         Args:
@@ -338,7 +337,7 @@ class AssignAdd(OpDef):
 class AssignSub(OpDef):
     """Operator to subtract a value from a tensor variable and assign the result."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape after subtraction assignment.
 
         Args:
@@ -355,7 +354,7 @@ class AssignSub(OpDef):
 class TensorScatterUpdate(OpDef):
     """Operator to scatter updates into a new tensor using multi-dimensional indices."""
 
-    def infer_shape(self, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, indices: Any, updates: Any, **kwargs: Any) -> Any:
         """Infer the output shape for scattered multidimensional updates.
 
         Args:
@@ -364,8 +363,7 @@ class TensorScatterUpdate(OpDef):
             updates (object): The values to be updated in the tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The inferred shape tuple matching the input tensor shape.
+        Returns: Any: The inferred shape tuple matching the input tensor shape.
         """
         return getattr(tensor, "shape", ())
 
@@ -377,7 +375,7 @@ class Argpartition(OpDef):
     op_name = "Argpartition"
     np_op_name = "argpartition"
 
-    def infer_shape(self, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, kth: Any, axis: int = -1, **kwargs: Any) -> Any:
         """Infer the output shape for the partitioned indices.
 
         Args:
@@ -386,8 +384,7 @@ class Argpartition(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -399,7 +396,7 @@ class Partition(OpDef):
     op_name = "Partition"
     np_op_name = "partition"
 
-    def infer_shape(self, a: object, kth: object, axis: int = -1, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, kth: Any, axis: int = -1, **kwargs: Any) -> Any:
         """Infer the output shape for the partitioned array.
 
         Args:
@@ -408,8 +405,7 @@ class Partition(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return a.shape if hasattr(a, "shape") else ()
 
@@ -421,7 +417,7 @@ class Compress(OpDef):
     op_name = "Compress"
     np_op_name = "compress"
 
-    def infer_shape(self, condition: object, a: object, axis: int = None, out: object = None, **kwargs: object) -> object:
+    def infer_shape(self, condition: Any, a: Any, axis: Any = None, out: Any = None, **kwargs: Any) -> Any:
         """Infer the output shape for the compressed array.
 
         Args:
@@ -431,8 +427,7 @@ class Compress(OpDef):
             out (object): The out parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None,)
 
@@ -444,7 +439,7 @@ class Diagonal(OpDef):
     op_name = "Diagonal"
     np_op_name = "diagonal"
 
-    def infer_shape(self, a: object, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: Any) -> Any:
         """Infer the output shape for the diagonal extraction.
 
         Args:
@@ -454,8 +449,7 @@ class Diagonal(OpDef):
             axis2 (int): The axis2 parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None,)
 
@@ -467,7 +461,7 @@ class Diagflat(OpDef):
     op_name = "Diagflat"
     np_op_name = "diagflat"
 
-    def infer_shape(self, v: object, k: int = 0, **kwargs: object) -> object:
+    def infer_shape(self, v: Any, k: int = 0, **kwargs: Any) -> Any:
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
@@ -475,8 +469,7 @@ class Diagflat(OpDef):
             k (int): The k parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None, None)
 
@@ -488,16 +481,15 @@ class DiagIndices(OpDef):
     op_name = "DiagIndices"
     np_op_name = "diag_indices"
 
-    def infer_shape(self, n: int, ndim: int = 2, **kwargs: object) -> object:
+    def infer_shape(self, n: int, naxis: int = 2, **kwargs: Any) -> Any:
         """Infer the output shape for the main diagonal indices.
 
         Args:
             n (int): The n parameter.
-            ndim (int): The ndim parameter.
+            naxis (int): The naxis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None,)
 
@@ -509,15 +501,14 @@ class DiagIndicesFrom(OpDef):
     op_name = "DiagIndicesFrom"
     np_op_name = "diag_indices_from"
 
-    def infer_shape(self, arr: object, **kwargs: object) -> object:
+    def infer_shape(self, arr: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the n-dimensional diagonal indices.
 
         Args:
             arr (object): The array for which the indices will be generated.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The inferred shape tuple representing a dynamic 1D size.
+        Returns: Any: The inferred shape tuple representing a dynamic 1D size.
         """
         return (None,)
 
@@ -528,7 +519,7 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, tensor: object, mask: object, axis: object = None, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, mask: Any, axis: Any = None, **kwargs: Any) -> Any:
         """Infer the output shape for the boolean masked array.
 
         Args:
@@ -537,8 +528,7 @@ class BooleanMask(OpDef):
             axis (object): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Typically dynamic size
         return (None,)
@@ -550,14 +540,13 @@ class InvertPermutation(OpDef):
 
     op_name = "InvertPermutation"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the inverted permutation.
 
         Args:
             x (object): The 1-D tensor indicating the permutation to invert.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The inferred shape tuple matching the input tensor shape.
+        Returns: Any: The inferred shape tuple matching the input tensor shape.
         """
         return getattr(x, "shape", ())

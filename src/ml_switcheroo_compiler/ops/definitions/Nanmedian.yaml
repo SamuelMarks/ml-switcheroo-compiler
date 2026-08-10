@@ -1,0 +1,7 @@
+operation: Nanmedian
+description: The Nanmedian operation.
+variants:
+  cupy:
+    eager: cp.nanmedian
+  dask:
+    eager: da.nanmedian

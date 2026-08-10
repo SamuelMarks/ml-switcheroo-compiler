@@ -1,0 +1,7 @@
+operation: Zeros
+description: The Zeros operation.
+variants:
+  numpy:
+    generator: np.zeros
+  pytorch:
+    generator: torch.zeros({shape})

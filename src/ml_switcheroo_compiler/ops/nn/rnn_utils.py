@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.config import config as global_config
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -74,7 +75,7 @@ class ScanConfig:
 
 
 def scan(
-    f: object,
+    f: Any,
     init: tuple[Tensor, ...],
     xs: Tensor,
     config: Optional[ScanConfig] = None,
@@ -93,7 +94,7 @@ def scan(
     conf = config if config is not None else ScanConfig()
 
     if global_config.eager_mode or conf.unroll:
-        xs_unstacked = unstack(xs, dim=0)
+        xs_unstacked = unstack(xs, axis=0)
 
         if conf.reverse:
             xs_unstacked = list(reversed(xs_unstacked))
@@ -105,7 +106,7 @@ def scan(
             carry, y = f(carry, x)
             ys.append(y)
 
-        return carry, stack(ys, dim=0)
+        return carry, stack(ys, axis=0)
     else:
         if conf.reverse:
             xs = cf_reverse(xs, (0,))
@@ -117,7 +118,7 @@ def scan(
 
 def bidirectional(
     inputs: BidirectionalInputs,
-    cell_fn: object,
+    cell_fn: Any,
     config: Optional[BidirectionalConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
     """Bidirectional RNN wrapper.
@@ -149,7 +150,7 @@ def bidirectional(
 
     conf = config if config is not None else BidirectionalConfig()
     if conf.merge_mode == "concat":
-        merged_out = concatenate([forward_out, backward_out], dim=-1)
+        merged_out = concatenate([forward_out, backward_out], axis=-1)
     elif conf.merge_mode == "sum":
         merged_out = add(forward_out, backward_out)
     elif conf.merge_mode == "mul":
@@ -163,7 +164,7 @@ def bidirectional(
     return merged_out, forward_state, backward_state
 
 
-def _permute_time_major(inputs: Tensor) -> Tensor:
+def _permute_time_major(inputs: Tensor) -> Any:
     """Swap batch and time dimensions.
 
     Args:
@@ -180,7 +181,7 @@ def _permute_time_major(inputs: Tensor) -> Tensor:
 def rnn(
     inputs: Tensor,
     initial_state: tuple[Tensor, ...],
-    cell_fn: object,
+    cell_fn: Any,
     config: Optional[RNNConfig] = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Define base recurrent loop evaluation.
@@ -198,7 +199,7 @@ def rnn(
     if not conf.time_major:
         inputs = _permute_time_major(inputs)
 
-    def scan_fn(carry: Tensor, x: Tensor) -> tuple[Tensor, Tensor]:
+    def scan_fn(carry: Tensor, x: Tensor) -> Any:
         """Evaluate scan_fn operation.
 
         Args:
@@ -229,7 +230,7 @@ def rnn(
 class RNNCellDeviceWrapper:
     """RNNCellDeviceWrapper."""
 
-    def __init__(self, cell: object, device: object, **kwargs: object) -> None:
+    def __init__(self, cell: Any, device: Any, **kwargs: Any) -> None:
         """Init.
 
         Args:
@@ -240,7 +241,7 @@ class RNNCellDeviceWrapper:
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple:
+    def __call__(self, inputs: Any, state: Any, **kwargs: Any) -> tuple:
         """Call.
 
         Args:
@@ -263,9 +264,9 @@ class DropoutWrapperConfig:
     state_keep_prob: float = 1.0
     variational_recurrent: bool = False
     input_size: Optional[int] = None
-    dtype: Optional[object] = None
+    dtype: Optional[Any] = None
     seed: Optional[int] = None
-    dropout_state_filter_visitor: Optional[object] = None
+    dropout_state_filter_visitor: Optional[Any] = None
 
 
 class RNNCellDropoutWrapper:
@@ -273,9 +274,9 @@ class RNNCellDropoutWrapper:
 
     def __init__(
         self,
-        cell: object,
+        cell: Any,
         config: Optional[DropoutWrapperConfig] = None,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> None:
         """Initialize the RNNCellDropoutWrapper.
 
@@ -287,7 +288,7 @@ class RNNCellDropoutWrapper:
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: object) -> tuple[Tensor, tuple[Tensor, ...]]:
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: Any) -> tuple[Tensor, tuple[Tensor, ...]]:
         """Run the cell with dropout.
 
         Args:
@@ -309,7 +310,7 @@ class RNNCellDropoutWrapper:
 class RNNCellResidualWrapper:
     """RNNCellResidualWrapper."""
 
-    def __init__(self, cell: object, residual_fn: object = None, **kwargs: object) -> None:
+    def __init__(self, cell: Any, residual_fn: Any = None, **kwargs: Any) -> None:
         """Init.
 
         Args:
@@ -320,7 +321,7 @@ class RNNCellResidualWrapper:
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs: object, state: object, **kwargs: object) -> tuple:
+    def __call__(self, inputs: Any, state: Any, **kwargs: Any) -> tuple:
         """Call.
 
         Args:

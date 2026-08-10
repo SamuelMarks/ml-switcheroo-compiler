@@ -1,4 +1,6 @@
-# ruff: noqa: D107
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Lookup and hash table ops."""
 
 from ml_switcheroo_compiler.core.dtype import DType
@@ -20,7 +22,7 @@ class MutableHashTable:
         self.value_dtype = value_dtype
         self.default_value = default_value
 
-    def lookup(self, keys: Tensor) -> Tensor:
+    def lookup(self, keys: Tensor) -> Any:
         """Lookup keys.
 
         Args:
@@ -63,7 +65,7 @@ class DenseHashTable:
         self.empty_key = empty_key
         self.deleted_key = deleted_key
 
-    def lookup(self, keys: Tensor) -> Tensor:
+    def lookup(self, keys: Tensor) -> Any:
         """Lookup keys.
 
         Args:

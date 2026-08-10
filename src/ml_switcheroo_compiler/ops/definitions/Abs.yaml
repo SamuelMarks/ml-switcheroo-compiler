@@ -1,0 +1,15 @@
+operation: Abs
+description: The Abs operation.
+variants:
+  cupy:
+    eager: cp.abs
+  dask:
+    eager: da.abs
+  edge_onnx:
+    generator: Abs
+  edge_stablehlo:
+    generator: stablehlo.abs
+  keras:
+    eager: keras_ops.abs
+  tensorflow:
+    eager: tf.abs

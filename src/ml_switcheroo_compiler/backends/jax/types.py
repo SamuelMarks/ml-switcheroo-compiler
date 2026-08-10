@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
+
+from typing import Any
 
 import jax.numpy as jnp
 
@@ -11,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]) -> Any:
     """Evaluate zeros operation.
 
     Args:
@@ -26,13 +28,12 @@ def zeros(cls: type, shape: tuple[int, ...]) -> object:
         cls (type): The class.
     shape (tuple): The shape parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return generic_zeros(jnp, shape)
 
 
-def array(cls: type, data: object, dtype: object = None) -> object:
+def array(cls: type, data: Any, dtype: Any = None) -> Any:
     """Evaluate array operation.
 
     Args:
@@ -50,13 +51,12 @@ def array(cls: type, data: object, dtype: object = None) -> object:
     data (object): The data parameter.
         dtype (object): The dtype parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return generic_array(jnp, data, dtype)
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data: Any) -> Any:
     """Evaluate asarray operation.
 
     Args:
@@ -71,13 +71,12 @@ def asarray(cls: type, data: object) -> object:
         cls (type): The class.
     data (object): The data parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return generic_asarray(jnp, data)
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data: Any) -> float:
     """Evaluate item operation.
 
     Args:

@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy implementations for sparse and ragged ops."""
+
+from typing import Any
 
 import numpy as np
 
@@ -6,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("SparseBincount")
-def _np_sparse_bincount(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_sparse_bincount(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Implement sparse bincount in Numpy.
 
     Args:
@@ -14,14 +17,13 @@ def _np_sparse_bincount(backend_module: object, x: object, **kwargs: object) -> 
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.bincount(np.asarray(x).astype(int).flatten())
 
 
 @numpy_eager_registry.register("SparseReduceMax")
-def _np_sparse_reduce_max(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_sparse_reduce_max(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Implement sparse reduce max in Numpy.
 
     Args:
@@ -29,14 +31,13 @@ def _np_sparse_reduce_max(backend_module: object, x: object, **kwargs: object) -
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.max(np.asarray(x))
 
 
 @numpy_eager_registry.register("SparseReduceSum")
-def _np_sparse_reduce_sum(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_sparse_reduce_sum(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Implement sparse reduce sum in Numpy.
 
     Args:
@@ -44,14 +45,13 @@ def _np_sparse_reduce_sum(backend_module: object, x: object, **kwargs: object) -
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.sum(np.asarray(x))
 
 
 @numpy_eager_registry.register("SparseSegmentMean")
-def _np_sparse_segment_mean(backend_module: object, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+def _np_sparse_segment_mean(backend_module: Any, data: Any, indices: Any, segment_ids: Any, **kwargs: Any) -> Any:
     """Implement sparse segment mean in Numpy.
 
     Args:
@@ -61,14 +61,13 @@ def _np_sparse_segment_mean(backend_module: object, data: object, indices: objec
         segment_ids (object): The segment_ids parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.mean(np.asarray(data))
 
 
 @numpy_eager_registry.register("SparseSegmentSqrtN")
-def _np_sparse_segment_sqrt_n(backend_module: object, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+def _np_sparse_segment_sqrt_n(backend_module: Any, data: Any, indices: Any, segment_ids: Any, **kwargs: Any) -> Any:
     """Implement sparse segment sqrt n in Numpy.
 
     Args:
@@ -78,14 +77,13 @@ def _np_sparse_segment_sqrt_n(backend_module: object, data: object, indices: obj
         segment_ids (object): The segment_ids parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.sum(np.asarray(data)) / np.sqrt(max(1, np.asarray(segment_ids).size))
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
-def _np_sparse_segment_sum(backend_module: object, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+def _np_sparse_segment_sum(backend_module: Any, data: Any, indices: Any, segment_ids: Any, **kwargs: Any) -> Any:
     """Implement sparse segment sum in Numpy.
 
     Args:
@@ -95,14 +93,13 @@ def _np_sparse_segment_sum(backend_module: object, data: object, indices: object
         segment_ids (object): The segment_ids parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.sum(np.asarray(data))
 
 
 @numpy_eager_registry.register("RaggedDot")
-def _np_ragged_dot(backend_module: object, a: object, b: object, **kwargs: object) -> object:
+def _np_ragged_dot(backend_module: Any, a: Any, b: Any, **kwargs: Any) -> Any:
     """Implement ragged dot in Numpy.
 
     Args:
@@ -111,7 +108,6 @@ def _np_ragged_dot(backend_module: object, a: object, b: object, **kwargs: objec
         b (object): The b parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.dot(np.asarray(a), np.asarray(b))

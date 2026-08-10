@@ -1,7 +1,8 @@
-# ruff: noqa: E501
-"""Provide mixin module."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Provide mixin module."""
+from typing import Any
 
 from .common import CommonASTVisitor
 
@@ -10,7 +11,7 @@ class ArrayASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Convert to array and shape manipulation AST generator mixin."""
 
-    def visit_ApproxMaxK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ApproxMaxK(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for an approximate maximum k-elements operation.
 
         Args:
@@ -26,7 +27,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
 
-    def visit_ApproxMaxKIndices(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ApproxMaxKIndices(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for retrieving the indices of an approximate maximum k-elements operation.
 
         Args:
@@ -42,7 +43,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
 
-    def visit_ApproxMinK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ApproxMinK(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for an approximate minimum k-elements operation.
 
         Args:
@@ -58,7 +59,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
 
-    def visit_ApproxMinKIndices(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ApproxMinKIndices(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for retrieving the indices of an approximate minimum k-elements operation.
 
         Args:
@@ -74,7 +75,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
 
-    def visit_ArgSort(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_ArgSort(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for computing the indices that would sort an array.
 
         Args:
@@ -89,7 +90,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         dimension = kwargs.get("dimension", -1)
         return f"{pfx}_argsort({input_vars[0]}, dimension={dimension})"
 
-    def visit_Argwhere(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Argwhere(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for finding the indices of array elements that are non-zero.
 
         Args:
@@ -103,7 +104,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         pfx = self.generator._get_backend_prefix()
         return f"{pfx}_argwhere({input_vars[0]})"
 
-    def visit_Argpartition(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Argpartition(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for performing an indirect partition along the given axis.
 
         Args:
@@ -119,7 +120,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         axis = kwargs.get("axis", -1)
         return f"{pfx}_argpartition({input_vars[0]}, kth={kth}, axis={axis})"
 
-    def visit_AsString(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AsString(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for converting a tensor to its string representation.
 
         Args:
@@ -133,7 +134,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         pfx = self.generator._get_backend_prefix()
         return f"{pfx}_as_string({input_vars[0]})"
 
-    def visit_AxisIndex(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AxisIndex(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for returning the index along a mapped axis.
 
         Args:
@@ -148,7 +149,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         axis_name = kwargs.get("axis_name", "")
         return f"{pfx}_axis_index(axis_name='{axis_name}')"
 
-    def visit_TopK(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_TopK(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for finding the k largest entries for the given dimensions.
 
         Args:
@@ -212,7 +213,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         op_fn = f"{op_pfx}.argsort" if is_idx else f"{op_pfx}.sort"
         return f"{op_fn}({var}, axis=-1)[..., -({k_val}):][..., ::-1]"
 
-    def visit_Meshgrid(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Meshgrid(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for creating coordinate matrices from coordinate vectors.
 
         Args:
@@ -237,7 +238,7 @@ class ArrayASTVisitor(CommonASTVisitor):
             fallback = getattr(self, "get_fallback_prefix", lambda: "numpy")()
             return f"{fallback}.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
-    def visit_Slice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Slice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for a tensor slicing operation.
 
         Args:
@@ -262,7 +263,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         else:
             return f"{input_vars[0]}[(slice(None),) * ({dim}) + (slice({start_str}, {end_str}, {step_str}),) + (...,)]"
 
-    def visit_DynamicSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_DynamicSlice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for dynamically slicing a tensor.
 
         Args:
@@ -288,7 +289,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         else:
             return f"{operand}[tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {list(slice_sizes)}))]"
 
-    def visit_DynamicUpdateSlice(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_DynamicUpdateSlice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for dynamically updating a slice of a tensor.
 
         Args:
@@ -313,7 +314,7 @@ class ArrayASTVisitor(CommonASTVisitor):
             copy_meth = "clone()" if pfx in ("torch", "pt") else "copy()"
             return f"(lambda out: [out.__setitem__(tuple(slice(s, s + sz) for s, sz in zip([{starts_str}], {update}.shape)), {update}), out][1])({operand}.{copy_meth})"
 
-    def visit_GetItem(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_GetItem(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for fetching an item from an array via an index or slice.
 
         Args:
@@ -327,7 +328,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         key = node.attributes.get("key", "")
         return f"{input_vars[0]}[{key}]"
 
-    def visit_PutAlongAxis(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_PutAlongAxis(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate the AST string for placing values into a destination array along a specified axis.
 
         Args:

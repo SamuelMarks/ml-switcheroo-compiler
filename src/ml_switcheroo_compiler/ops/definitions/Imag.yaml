@@ -1,0 +1,11 @@
+operation: Imag
+description: The Imag operation.
+variants:
+  cupy:
+    eager: cp.imag
+  dask:
+    eager: da.imag
+  keras:
+    eager: keras_ops.imag
+  tensorflow:
+    eager: tf.math.imag

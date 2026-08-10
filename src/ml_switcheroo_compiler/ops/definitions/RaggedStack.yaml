@@ -1,0 +1,5 @@
+operation: RaggedStack
+description: The RaggedStack operation.
+variants:
+  numpy:
+    generator: tf.ragged.stack

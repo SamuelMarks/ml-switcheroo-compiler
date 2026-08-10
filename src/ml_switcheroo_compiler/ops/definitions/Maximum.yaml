@@ -1,0 +1,11 @@
+operation: Maximum
+description: The Maximum operation.
+variants:
+  cupy:
+    eager: cp.maximum
+  dask:
+    eager: da.maximum
+  keras:
+    eager: keras_ops.maximum
+  tensorflow:
+    eager: tf.maximum

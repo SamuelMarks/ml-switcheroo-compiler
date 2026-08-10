@@ -1,0 +1,5 @@
+operation: Geomspace
+description: The Geomspace operation.
+variants:
+  numpy:
+    generator: np.geomspace

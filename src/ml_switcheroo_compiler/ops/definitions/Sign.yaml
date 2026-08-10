@@ -1,0 +1,11 @@
+operation: Sign
+description: The Sign operation.
+variants:
+  cupy:
+    eager: cp.sign
+  dask:
+    eager: da.sign
+  keras:
+    eager: keras_ops.sign
+  tensorflow:
+    eager: tf.sign

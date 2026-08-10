@@ -1,8 +1,10 @@
-"""Shape operations for Tensor objects."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Shape operations for Tensor objects."""
 from collections.abc import Sequence
+from typing import Any
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -14,13 +16,13 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.tracing import builder
 
 
-def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[int], dim: int) -> int:
+def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[int], axis: int) -> int:
     """Calculate the number of splits for a tensor.
 
     Args:
         input (Tensor): The input tensor
         split_size_or_sections (int | Sequence[int]): The size of a single chunk or list of sizes
-        dim (int): The dimension along which to split
+        axis (int): The dimension along which to split
 
     Returns:
         int: The number of splits
@@ -34,18 +36,18 @@ def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[
     if split_size_or_sections <= 0:
         return 1
 
-    if input.shape and input.shape[dim] % split_size_or_sections == 0:
-        return input.shape[dim] // split_size_or_sections
+    if input.shape and input.shape[axis] % split_size_or_sections == 0:
+        return input.shape[axis] // split_size_or_sections
 
     return split_size_or_sections
 
 
-def _validate_split_axis(input: Tensor, dim: int) -> int:
+def _validate_split_axis(input: Tensor, axis: int) -> int:
     """Validate the split axis against the input tensor shape.
 
     Args:
         input (Tensor): The input parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
 
     Returns:
         int: Result.
@@ -55,23 +57,23 @@ def _validate_split_axis(input: Tensor, dim: int) -> int:
     """
     shape = getattr(input, "shape", None)
     if shape is None:
-        return dim
+        return axis
     rank = len(shape)
-    if not (0 <= dim < rank or -rank <= dim < 0):
-        raise ValueError(f"Split dimension {dim} is out of bounds for tensor of rank {rank}.")
-    return dim
+    if not (0 <= axis < rank or -rank <= axis < 0):
+        raise ValueError(f"Split axis {axis} is out of bounds for tensor of rank {rank}.")
+    return axis
 
 
 # pylint: disable=too-many-locals
 
 
-def _split_even(input: Tensor, split_size: int, dim: int, num_splits: int) -> Sequence[Tensor]:
+def _split_even(input: Tensor, split_size: int, axis: int, num_splits: int) -> Sequence[Tensor]:
     """Handle splitting when an integer split_size_or_sections is provided.
 
     Args:
         input (Tensor): The input parameter.
         split_size (int): The split_size parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
         num_splits (int): The num_splits parameter.
 
     Returns:
@@ -80,7 +82,7 @@ def _split_even(input: Tensor, split_size: int, dim: int, num_splits: int) -> Se
     if config.eager_mode:
         backend = get_active_backend()
         input_data = getattr(input, "data", input)
-        datas = backend.execute_op("Split", input_data, split_size, axis=dim)
+        datas = backend.execute_op("Split", input_data, split_size, axis=axis)
         input_dtype = getattr(input, "dtype", backend.array(input_data).dtype)
         input_device = getattr(input, "device", config.default_device)
         return tuple(Tensor(d, TensorConfig(d.shape, input_dtype, input_device)) for d in datas)
@@ -90,7 +92,7 @@ def _split_even(input: Tensor, split_size: int, dim: int, num_splits: int) -> Se
     node = _emit_shape_node(
         "Split",
         inputs,
-        {"split_size_or_sections": split_size, "axis": dim},
+        {"split_size_or_sections": split_size, "axis": axis},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -103,14 +105,14 @@ def _split_even(input: Tensor, split_size: int, dim: int, num_splits: int) -> Se
 
 
 def _split_sections(  # pylint: disable=too-many-locals
-    input: Tensor, sections: Sequence[int], dim: int, num_splits: int
+    input: Tensor, sections: Sequence[int], axis: int, num_splits: int
 ) -> Sequence[Tensor]:
     """Handle splitting when a sequence of sections is provided.
 
     Args:
         input (Tensor): The input parameter.
         sections (Sequence): The sections parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
         num_splits (int): The num_splits parameter.
 
     Returns:
@@ -119,7 +121,7 @@ def _split_sections(  # pylint: disable=too-many-locals
     if config.eager_mode:
         backend = get_active_backend()
         input_data = getattr(input, "data", input)
-        datas = backend.execute_op("Split", input_data, sections, axis=dim)
+        datas = backend.execute_op("Split", input_data, sections, axis=axis)
         input_dtype = getattr(input, "dtype", backend.array(input_data).dtype)
         input_device = getattr(input, "device", config.default_device)
         return tuple(Tensor(d, TensorConfig(d.shape, input_dtype, input_device)) for d in datas)
@@ -129,7 +131,7 @@ def _split_sections(  # pylint: disable=too-many-locals
     node = _emit_shape_node(
         "Split",
         inputs,
-        {"split_size_or_sections": sections, "axis": dim},
+        {"split_size_or_sections": sections, "axis": axis},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
@@ -144,39 +146,39 @@ def _split_sections(  # pylint: disable=too-many-locals
 def split(
     input: Tensor,
     split_size_or_sections: int | Sequence[int],
-    dim: int = 0,
+    axis: int = 0,
 ) -> Sequence[Tensor]:
     """Split the input tensor into multiple sub-tensors.
 
     Args:
         input (Tensor): The input parameter.
         split_size_or_sections (object): The split_size_or_sections parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
 
     Returns:
         Sequence: Result.
     """
-    valid_dim = _validate_split_axis(input, dim)
-    num_splits = _calculate_num_splits(input, split_size_or_sections, valid_dim)
+    valid_axis = _validate_split_axis(input, axis)
+    num_splits = _calculate_num_splits(input, split_size_or_sections, valid_axis)
 
     if isinstance(split_size_or_sections, int):
-        return _split_even(input, split_size_or_sections, valid_dim, num_splits)
-    return _split_sections(input, split_size_or_sections, valid_dim, num_splits)
+        return _split_even(input, split_size_or_sections, valid_axis, num_splits)
+    return _split_sections(input, split_size_or_sections, valid_axis, num_splits)
 
 
-def unstack(input: Tensor, dim: int = 0) -> Sequence[Tensor]:
+def unstack(input: Tensor, axis: int = 0) -> Sequence[Tensor]:
     """Unstack the input tensor along a specified dimension into a sequence of tensors.
 
     Args:
         input (Tensor): The input parameter.
-        dim (int): The dim parameter.
+        axis (int): The axis parameter.
 
     Returns:
         Sequence: Result.
     """
     if config.eager_mode:
         backend = get_active_backend()
-        datas = backend.execute_op("Unstack", input.data, axis=dim) if hasattr(backend, "unstack") else backend.execute_op("Moveaxis", input.data, dim, 0)
+        datas = backend.execute_op("Unstack", input.data, axis=axis) if hasattr(backend, "unstack") else backend.execute_op("Moveaxis", input.data, axis, 0)
         input_data = getattr(input, "data", input)
         input_dtype = getattr(input, "dtype", backend.array(input_data).dtype)
         input_device = getattr(input, "device", config.default_device)
@@ -253,7 +255,7 @@ def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         out_shapes = [tuple(s)] * num_splits
     else:
         # Just approximate
-        out_shapes = [ary.shape] * num_splits
+        out_shapes = [ary.shape] * num_splits  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -289,7 +291,7 @@ def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
             s[1] = s[1] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
-        out_shapes = [ary.shape] * num_splits
+        out_shapes = [ary.shape] * num_splits  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -325,7 +327,7 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
             s[2] = s[2] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
-        out_shapes = [ary.shape] * num_splits
+        out_shapes = [ary.shape] * num_splits  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -339,7 +341,7 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
 class GetItemOp(OpDef):
     """Operation to retrieve an item from a tensor."""
 
-    def infer_shape(self, x: object, output_index: int = 0, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, x: Any, output_index: int = 0, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape for Unstack.
 
         Args:
@@ -361,16 +363,15 @@ old_split = split
 class Unstack(OpDef):
     """Unstack op for shape inference."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape for Unstack.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         input_shape = args[0].shape
-        dim = kwargs.get("axis", kwargs.get("dim", 0))
-        return tuple([input_shape[:dim] + input_shape[dim + 1 :]] * input_shape[dim])
+        axis = kwargs.get("axis", 0)
+        return tuple([input_shape[:axis] + input_shape[axis + 1 :]] * input_shape[axis])

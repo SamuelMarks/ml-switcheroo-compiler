@@ -1,0 +1,19 @@
+operation: Exp
+description: The Exp operation.
+variants:
+  cupy:
+    eager: cp.exp
+    generator: cp.exp
+  dask:
+    eager: da.exp
+    generator: da.exp
+  edge_onnx:
+    generator: Exp
+  edge_stablehlo:
+    generator: stablehlo.exponential
+  keras:
+    eager: keras_ops.exp
+  numpy:
+    generator: np.exp
+  tensorflow:
+    eager: tf.exp

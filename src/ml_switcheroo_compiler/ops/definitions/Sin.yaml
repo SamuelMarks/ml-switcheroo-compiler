@@ -1,0 +1,19 @@
+operation: Sin
+description: The Sin operation.
+variants:
+  cupy:
+    eager: cp.sin
+    generator: cp.sin
+  dask:
+    eager: da.sin
+    generator: da.sin
+  edge_onnx:
+    generator: Sin
+  edge_stablehlo:
+    generator: stablehlo.sine
+  keras:
+    eager: keras_ops.sin
+  numpy:
+    generator: np.sin
+  tensorflow:
+    eager: tf.sin

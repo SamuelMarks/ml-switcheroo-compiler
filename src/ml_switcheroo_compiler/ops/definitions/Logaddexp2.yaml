@@ -1,0 +1,7 @@
+operation: Logaddexp2
+description: The Logaddexp2 operation.
+variants:
+  cupy:
+    eager: cp.logaddexp2
+  dask:
+    eager: da.logaddexp2

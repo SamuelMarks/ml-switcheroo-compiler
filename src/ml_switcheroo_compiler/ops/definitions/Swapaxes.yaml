@@ -1,0 +1,9 @@
+operation: Swapaxes
+description: The Swapaxes operation.
+variants:
+  cupy:
+    eager: cp.swapaxes
+  dask:
+    eager: da.swapaxes
+  keras:
+    eager: keras_ops.swapaxes

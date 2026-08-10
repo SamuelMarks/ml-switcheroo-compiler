@@ -1,0 +1,7 @@
+operation: Rfftnd
+description: The Rfftnd operation.
+variants:
+  numpy:
+    generator: np.fft.rfftn({0})
+  tensorflow:
+    eager: tf.rfftnd

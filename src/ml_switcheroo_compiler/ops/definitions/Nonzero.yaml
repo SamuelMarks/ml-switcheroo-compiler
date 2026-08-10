@@ -1,0 +1,9 @@
+operation: Nonzero
+description: The Nonzero operation.
+variants:
+  cupy:
+    eager: cp.nonzero
+  dask:
+    eager: da.nonzero
+  keras:
+    eager: keras_ops.nonzero

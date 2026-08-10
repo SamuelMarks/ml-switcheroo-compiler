@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """PyTree utilities for structural manipulations."""
 
-from __future__ import annotations
 
 import builtins
 import functools
@@ -44,7 +47,7 @@ class TreeDef:
         """
         return hash(str(self.node_type) + str(self.children_defs))
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check equality with another TreeDef.
 
         Args:
@@ -58,14 +61,14 @@ class TreeDef:
         return self.node_type == other.node_type and self.children_defs == other.children_defs and self.keys == other.keys
 
 
-def tree_flatten(tree: object) -> tuple[list[object], TreeDef]:
+def tree_flatten(tree: Any) -> tuple[list[Any], TreeDef]:
     """Flatten a PyTree into a list of leaves and an auxiliary treedef.
 
     Args:
         tree (object): The tree to flatten.
 
     Returns:
-        tuple[list[object], TreeDef]: The flattened leaves and the tree definition.
+        tuple[list[Any], TreeDef]: The flattened leaves and the tree definition.
     """
     if isinstance(tree, dict):
         keys = sorted(tree.keys())
@@ -87,14 +90,13 @@ def tree_flatten(tree: object) -> tuple[list[object], TreeDef]:
     return [tree], TreeDef(type(None))
 
 
-def _unflatten_leaf(leaves_it: Iterator[object]) -> object:
+def _unflatten_leaf(leaves_it: Iterator[Any]) -> Any:
     """Unflatten a leaf node.
 
     Args:
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[Any]): Iterator of leaves.
 
-    Returns:
-        object: The leaf.
+    Returns: Any: The leaf.
 
     Raises:
         ValueError: If there are too few leaves.
@@ -106,15 +108,14 @@ def _unflatten_leaf(leaves_it: Iterator[object]) -> object:
         raise ValueError(msg) from None
 
 
-def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
+def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[Any]) -> Any:
     """Unflatten a dict node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[Any]): Iterator of leaves.
 
-    Returns:
-        object: The unflattened dict.
+    Returns: Any: The unflattened dict.
 
     Raises:
         ValueError: If the dictionary TreeDef has no keys.
@@ -125,29 +126,27 @@ def _unflatten_dict(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
     return {k: _unflatten_node(c_def, leaves_it) for k, c_def in zip(t_def.keys, t_def.children_defs)}
 
 
-def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
+def _unflatten_sequence(t_def: TreeDef, leaves_it: Iterator[Any]) -> Any:
     """Unflatten a list or tuple node.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[Any]): Iterator of leaves.
 
-    Returns:
-        object: The unflattened sequence.
+    Returns: Any: The unflattened sequence.
     """
     children = [_unflatten_node(c_def, leaves_it) for c_def in t_def.children_defs]
     return t_def.node_type(children)
 
 
-def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
+def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[Any]) -> Any:
     """Unflatten a single node based on its TreeDef.
 
     Args:
         t_def (TreeDef): The TreeDef for this node.
-        leaves_it (Iterator[object]): Iterator of leaves.
+        leaves_it (Iterator[Any]): Iterator of leaves.
 
-    Returns:
-        object: The unflattened node.
+    Returns: Any: The unflattened node.
 
     Raises:
         ValueError: If the node_type is unsupported.
@@ -163,15 +162,14 @@ def _unflatten_node(t_def: TreeDef, leaves_it: Iterator[object]) -> object:
     raise ValueError(msg)
 
 
-def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
+def tree_unflatten(treedef: TreeDef, leaves: list[Any]) -> Any:
     """Reconstruct a PyTree from a treedef and a list of leaves.
 
     Args:
         treedef (TreeDef): The TreeDef to use for reconstruction.
-        leaves (list[object]): The list of leaves to unflatten.
+        leaves (list[Any]): The list of leaves to unflatten.
 
-    Returns:
-        object: The reconstructed PyTree.
+    Returns: Any: The reconstructed PyTree.
 
     Raises:
         ValueError: If there are too many leaves.
@@ -189,7 +187,7 @@ def tree_unflatten(treedef: TreeDef, leaves: list[object]) -> object:
     return res
 
 
-def tree_map(f: Callable, tree: object, *rest: object) -> object:
+def tree_map(f: Callable, tree: Any, *rest: Any) -> Any:
     """Map a function over the leaves of a PyTree.
 
     Args:
@@ -197,8 +195,7 @@ def tree_map(f: Callable, tree: object, *rest: object) -> object:
         tree (object): The primary PyTree.
         *rest (object): Additional PyTrees of the same structure.
 
-    Returns:
-        object: A new PyTree with the function applied to its leaves.
+    Returns: Any: A new PyTree with the function applied to its leaves.
 
     Raises:
         ValueError: If the trees do not have the same structure.
@@ -216,21 +213,21 @@ def tree_map(f: Callable, tree: object, *rest: object) -> object:
     return tree_unflatten(treedef, mapped_leaves)
 
 
-def tree_leaves(tree: object) -> list[object]:
+def tree_leaves(tree: Any) -> list[Any]:
     """Get the leaves of a PyTree.
 
     Args:
         tree (object): The tree to extract leaves from.
 
     Returns:
-        list[object]: A list of leaves.
+        list[Any]: A list of leaves.
     """
     leaves, _ = tree_flatten(tree)
 
     return leaves
 
 
-def tree_structure(tree: object) -> TreeDef:
+def tree_structure(tree: Any) -> TreeDef:
     """Get the structure of a PyTree.
 
     Args:
@@ -244,7 +241,7 @@ def tree_structure(tree: object) -> TreeDef:
     return treedef
 
 
-def tree_all(tree: object) -> bool:
+def tree_all(tree: Any) -> bool:
     """Check if all leaves of a PyTree are truthy.
 
     Args:
@@ -256,7 +253,7 @@ def tree_all(tree: object) -> bool:
     return builtins.all(tree_leaves(tree))
 
 
-def tree_reduce(f: Callable, tree: object, initializer: object = None) -> object:
+def tree_reduce(f: Callable, tree: Any, initializer: Any = None) -> Any:
     """Reduce a PyTree by applying a function over its leaves.
 
     Args:
@@ -264,8 +261,7 @@ def tree_reduce(f: Callable, tree: object, initializer: object = None) -> object
         tree (object): The tree to reduce.
         initializer (object): Optional initial value.
 
-    Returns:
-        object: The reduced value.
+    Returns: Any: The reduced value.
     """
     leaves = tree_leaves(tree)
 
@@ -292,8 +288,8 @@ def _count_leaves(t_def: TreeDef) -> int:
 def tree_transpose(
     outer_treedef: TreeDef,
     inner_treedef: TreeDef,
-    pytree_to_transpose: object,
-) -> object:
+    pytree_to_transpose: Any,
+) -> Any:
     """Transpose a PyTree of PyTrees.
 
     Args:
@@ -301,8 +297,7 @@ def tree_transpose(
         inner_treedef (TreeDef): The expected structure of the inner trees.
         pytree_to_transpose (object): The tree to transpose.
 
-    Returns:
-        object: The transposed tree.
+    Returns: Any: The transposed tree.
 
     Raises:
         ValueError: If there is a tree size mismatch.

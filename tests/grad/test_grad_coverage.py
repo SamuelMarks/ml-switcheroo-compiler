@@ -186,7 +186,7 @@ def test_checkpoint_no_tensor_args():
     try:
         with mock.patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", side_effect=mock_trace):
             out = f_cp()
-            assert str(out.config.device) == "cpu"
+            assert out.config.device.device_type == "cpu"
             assert out.config.dtype.value == "float32"
     finally:
         global_tracing_state.is_tracing = False
@@ -219,3 +219,42 @@ def test_value_and_grad_default_dtype():
             vg(mock.Mock())
         except Exception:
             pass
+
+
+def test_grad_missing_tensor_no_id():
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.grad import _get_inputs_dict
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    class DummyData:
+        pass
+
+    t = Tensor(1.0, config=TensorConfig(shape=(), dtype="float32", device=Device("cpu")))
+    t._data = DummyData()
+
+    g = IRGraph()
+    res = _get_inputs_dict(g)
+    assert isinstance(res, dict)
+
+
+def test_grad_tensor_id_not_in_graph():
+    from ml_switcheroo_compiler.core.device import Device
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.grad import _find_wrt_tensors, _get_inputs_dict
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    class DummyData:
+        id = "not_in_graph"
+
+    t = Tensor(1.0, config=TensorConfig(shape=(), dtype="float32", device=Device("cpu")))
+    t._data = DummyData()
+
+    g = IRGraph()
+    # Ensure it's not in the graph nodes
+
+    res_inputs = _get_inputs_dict(g)
+    assert isinstance(res_inputs, dict)
+
+    res_wrt = _find_wrt_tensors(g)
+    assert isinstance(res_wrt, tuple)

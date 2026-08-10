@@ -1,0 +1,7 @@
+operation: ReduceMean
+description: The ReduceMean operation.
+variants:
+  edge_onnx:
+    generator: ReduceMean
+  edge_stablehlo:
+    generator: stablehlo.reduce

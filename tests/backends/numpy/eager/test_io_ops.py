@@ -52,7 +52,7 @@ def test_read_write_file(tmp_path):
 
 def test_decode_image():
     res = _np_decode_image(np, None, dtype="uint8")
-    assert res.config.dtype == "uint8"
+    assert res.config.dtype.value == "uint8"
 
 
 def test_decode_csv():
@@ -72,7 +72,7 @@ def test_serialize_tensor():
 
 def test_parse_tensor():
     res = _np_parse_tensor(np, None, out_type="float32")
-    assert res.config.dtype == "float32"
+    assert res.config.dtype.value == "float32"
 
 
 def test_base64():

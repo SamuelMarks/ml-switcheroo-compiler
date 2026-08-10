@@ -1,0 +1,5 @@
+operation: Xlogy
+description: The Xlogy operation.
+variants:
+  tensorflow:
+    eager: tf.math.xlogy

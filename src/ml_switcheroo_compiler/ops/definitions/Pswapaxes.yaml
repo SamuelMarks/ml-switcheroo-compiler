@@ -1,0 +1,5 @@
+operation: Pswapaxes
+description: The Pswapaxes operation.
+variants:
+  numpy:
+    generator: '{0}'

@@ -1,0 +1,15 @@
+operation: Where
+description: The Where operation.
+variants:
+  cupy:
+    eager: cp.where
+  dask:
+    eager: da.where
+  edge_onnx:
+    generator: Where
+  edge_stablehlo:
+    generator: stablehlo.select
+  keras:
+    eager: keras_ops.where
+  tensorflow:
+    eager: tf.where

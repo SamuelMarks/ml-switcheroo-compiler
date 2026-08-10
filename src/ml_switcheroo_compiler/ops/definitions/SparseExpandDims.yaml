@@ -1,0 +1,5 @@
+operation: SparseExpandDims
+description: The SparseExpandDims operation.
+variants:
+  numpy:
+    generator: tf.sparse.expand_dims

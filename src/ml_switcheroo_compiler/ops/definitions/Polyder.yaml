@@ -1,0 +1,5 @@
+operation: Polyder
+description: The Polyder operation.
+variants:
+  numpy:
+    generator: np.polyder

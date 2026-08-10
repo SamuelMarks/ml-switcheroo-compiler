@@ -1,0 +1,7 @@
+operation: Arange
+description: The Arange operation.
+variants:
+  numpy:
+    generator: np.arange
+  pytorch:
+    generator: torch.arange({0})

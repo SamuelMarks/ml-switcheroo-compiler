@@ -1,0 +1,9 @@
+operation: Power
+description: The Power operation.
+variants:
+  cupy:
+    eager: cp.power
+  dask:
+    eager: da.power
+  keras:
+    eager: keras_ops.power

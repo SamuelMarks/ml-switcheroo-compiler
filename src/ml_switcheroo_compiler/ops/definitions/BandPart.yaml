@@ -1,0 +1,7 @@
+operation: BandPart
+description: The BandPart operation.
+variants:
+  numpy:
+    generator: tf.linalg.band_part
+  tensorflow:
+    eager: tf.linalg.band_part

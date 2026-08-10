@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy eager NaN-safe operations."""
+
+from typing import Any
 
 import numpy as np
 
@@ -7,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("DivideNoNan")
-def _np_divide_no_nan(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_divide_no_nan(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
     """DivideNoNan.
 
     Args:
@@ -16,14 +18,13 @@ def _np_divide_no_nan(backend_module: object, x: object, y: object, **kwargs: ob
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.divide(x, y, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)), where=y != 0)
 
 
 @numpy_eager_registry.register("MultiplyNoNan")
-def _np_multiply_no_nan(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_multiply_no_nan(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
     """MultiplyNoNan.
 
     Args:
@@ -32,14 +33,13 @@ def _np_multiply_no_nan(backend_module: object, x: object, y: object, **kwargs: 
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.multiply(x, y, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)), where=y != 0)
 
 
 @numpy_eager_registry.register("SquaredDifference")
-def _np_squared_difference(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_squared_difference(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
     """SquaredDifference.
 
     Args:
@@ -48,15 +48,14 @@ def _np_squared_difference(backend_module: object, x: object, y: object, **kwarg
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     diff = backend_module.subtract(x, y)
     return backend_module.square(diff)
 
 
 @numpy_eager_registry.register("Xdivy")
-def _np_xdivy(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_xdivy(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
     """Xdivy.
 
     Args:
@@ -65,14 +64,13 @@ def _np_xdivy(backend_module: object, x: object, y: object, **kwargs: object) ->
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.divide(x, y, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, y)), where=x != 0)
 
 
 @numpy_eager_registry.register("Xlog1py")
-def _np_xlog1py(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_xlog1py(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
     """Xlog1py.
 
     Args:
@@ -81,8 +79,7 @@ def _np_xlog1py(backend_module: object, x: object, y: object, **kwargs: object) 
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.multiply(
         x,
@@ -93,7 +90,7 @@ def _np_xlog1py(backend_module: object, x: object, y: object, **kwargs: object) 
 
 
 @numpy_eager_registry.register("ReciprocalNoNan")
-def _np_reciprocal_no_nan(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_reciprocal_no_nan(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """ReciprocalNoNan.
 
     Args:
@@ -101,14 +98,13 @@ def _np_reciprocal_no_nan(backend_module: object, x: object, **kwargs: object) -
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.divide(1.0, x, out=backend_module.zeros_like(x, dtype=backend_module.result_type(x, 1.0)), where=x != 0)
 
 
 @numpy_eager_registry.register("ZeroFraction")
-def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_zero_fraction(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """ZeroFraction.
 
     Args:
@@ -116,8 +112,7 @@ def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> ob
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     num_zeros = backend_module.sum(backend_module.equal(x, 0))
     total_elements = backend_module.size(x)
@@ -126,22 +121,21 @@ def _np_zero_fraction(backend_module: object, x: object, **kwargs: object) -> ob
     return backend_module.array(backend_module.divide(num_zeros, total_elements).astype(float))
 
 
-def _xlogy(x: object, y: object) -> object:
+def _xlogy(x: Any, y: Any) -> Any:
     """Evaluate _xlogy operation.
 
     Args:
         x (object): The x parameter.
         y (object): The y parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     res = np.where(x == 0.0, 0.0, x * np.log(y))
     return res
 
 
 @numpy_eager_registry.register("Nanmean")
-def _np_nanmean(backend_module: object, a: object, axis: object = None, keepdims: object = False, *args: object, **kwargs: object) -> object:
+def _np_nanmean(backend_module: Any, a: Any, axis: Any = None, keepdims: Any = False, *args: Any, **kwargs: Any) -> Any:
     """Nanmean.
 
     Args:
@@ -152,14 +146,13 @@ def _np_nanmean(backend_module: object, a: object, axis: object = None, keepdims
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.nanmean(a, axis=axis, keepdims=keepdims)
 
 
 @numpy_eager_registry.register("Nanmedian")
-def _np_nanmedian(backend_module: object, a: object, axis: object = None, keepdims: object = False, *args: object, **kwargs: object) -> object:
+def _np_nanmedian(backend_module: Any, a: Any, axis: Any = None, keepdims: Any = False, *args: Any, **kwargs: Any) -> Any:
     """Nanmedian.
 
     Args:
@@ -170,7 +163,6 @@ def _np_nanmedian(backend_module: object, a: object, axis: object = None, keepdi
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.nanmedian(a, axis=axis, keepdims=keepdims)

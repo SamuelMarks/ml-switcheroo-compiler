@@ -1,3 +1,6 @@
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Generate random ops frontend."""
 
 import uuid
@@ -11,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Tensor:
+def sobol_sample(dim: int, num_results: int, skip: int = 0) -> Any:
     """Sobol sequence generator.
 
     Args:

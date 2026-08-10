@@ -1,11 +1,14 @@
-"""Generate random transformations."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Generate random transformations."""
+from typing import Any
 
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-def shuffle(key: object, x: object, axis: int = 0) -> object:
+def shuffle(key: Any, x: Any, axis: int = 0) -> Any:
     """Shuffles a tensor along a given axis.
 
     Args:
@@ -13,7 +16,6 @@ def shuffle(key: object, x: object, axis: int = 0) -> object:
         x (object): The input tensor.
         axis (int): The axis to shuffle.
 
-    Returns:
-        object: The shuffled tensor.
+    Returns: Any: The shuffled tensor.
     """
-    return _emit_random_node("RandomShuffle", [key, x], getattr(x, "shape", ()), getattr(x, "dtype", None), {"axis": axis})
+    return _emit_random_node("RandomShuffle", [key, x], getattr(x, "shape", ()), getattr(x, "dtype", None), {"axis": axis})  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism

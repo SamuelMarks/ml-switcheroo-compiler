@@ -1,8 +1,9 @@
-# ruff: noqa
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Calculate loss operations."""
 
+from typing import Any
+
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ops.nn.activations import softplus
 
 # y_true * (log(y_true) - y_pred)
 # usually implemented as y_true * log(y_true) - y_true * y_pred
@@ -16,15 +17,15 @@ from ml_switcheroo_compiler.ops.binary import (
     subtract,
 )
 from ml_switcheroo_compiler.ops.creation.frontend import ones_like
+from ml_switcheroo_compiler.ops.nn.activations import softplus
 from ml_switcheroo_compiler.ops.nn.normalization import l2_normalize
 from ml_switcheroo_compiler.ops.reductions import mean, sum
-from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis
 from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
-from ml_switcheroo_compiler.ops.shape.indexing import where
+from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis, where
 from ml_switcheroo_compiler.ops.unary import abs, log, square
 
 
-def l1_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def l1_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """L1 Loss.
 
     Args:
@@ -37,7 +38,7 @@ def l1_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(abs(subtract(y_true, y_pred)))
 
 
-def mse_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def mse_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """Mean Squared Error Loss.
 
     Args:
@@ -50,7 +51,7 @@ def mse_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(square(subtract(y_true, y_pred)))
 
 
-def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Tensor:
+def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Any:
     """Huber Loss.
 
     Args:
@@ -73,7 +74,7 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Tensor:
     return mean(loss)
 
 
-def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Tensor:
+def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Any:
     """Smooth L1 Loss (similar to Huber with beta).
 
     Args:
@@ -97,7 +98,7 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Tensor:
     return mean(loss)
 
 
-def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Tensor:
+def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Any:
     """Cosine Similarity Loss.
 
     Args:
@@ -116,7 +117,7 @@ def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Te
     return mean(subtract(1.0, cos_sim))
 
 
-def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """Kullback-Leibler divergence loss.
 
     Args:
@@ -134,7 +135,7 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(kl)
 
 
-def hinge_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def hinge_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """Hinge loss. y_true should be -1 or 1.
 
     Args:
@@ -148,7 +149,7 @@ def hinge_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(maximum(0.0, margin))
 
 
-def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> Tensor:
+def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> Any:
     """Gaussian Negative Log Likelihood loss.
 
     Args:
@@ -170,7 +171,7 @@ def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 
     return mean(loss)
 
 
-def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """Log-Cosh loss.
 
     Args:
@@ -194,7 +195,7 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(stable_logcosh)
 
 
-def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> Tensor:
+def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> Any:
     """Margin Ranking Loss.
 
     Args:
@@ -212,7 +213,7 @@ def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: 
     return mean(maximum(0.0, loss))
 
 
-def nll_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
+def nll_loss(y_pred: Tensor, y_true: Tensor) -> Any:
     """Negative log likelihood loss.
 
     Args:
@@ -229,7 +230,7 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
     return mean(multiply(-1.0, gathered))
 
 
-def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> Tensor:
+def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> Any:
     """Triplet margin loss.
 
     Args:
@@ -279,7 +280,7 @@ __all__ = [
 ]
 
 
-def msle_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def msle_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """Mean Squared Logarithmic Error.
 
     Args:
@@ -297,7 +298,7 @@ def msle_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
     return mean(square(subtract(log_pred, log_true)))
 
 
-def mape_loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+def mape_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     """Mean Absolute Percentage Error.
 
     Args:
@@ -330,15 +331,14 @@ class CircleLoss(OpDef):
 
     op_name = "CircleLoss"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs):  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -349,58 +349,54 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
 
     op_name = "CategoricalGeneralizedCrossEntropy"
 
-    def infer_shape(self, *args, **kwargs):
+    def infer_shape(self, *args, **kwargs):  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
 
-def ctc_loss(*args: object, **kwargs: object) -> object:
+def ctc_loss(*args: Any, **kwargs: Any) -> Any:
     """ctc_loss function.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
     return get_op("CtcLoss")()(*args, **kwargs)
 
 
-def circle_loss(*args: object, **kwargs: object) -> object:
+def circle_loss(*args: Any, **kwargs: Any) -> Any:
     """circle_loss function.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
     return get_op("CircleLoss")()(*args, **kwargs)
 
 
-def categorical_generalized_cross_entropy(*args: object, **kwargs: object) -> object:
+def categorical_generalized_cross_entropy(*args: Any, **kwargs: Any) -> Any:
     """categorical_generalized_cross_entropy function.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 

@@ -1,0 +1,5 @@
+operation: RngBitGenerator
+description: The RngBitGenerator operation.
+variants:
+  numpy:
+    generator: np.random.randint(0, 255, size={shape})

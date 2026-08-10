@@ -1,0 +1,11 @@
+operation: Ifft2
+description: The Ifft2 operation.
+variants:
+  cupy:
+    eager: cp.fft.ifft2
+  dask:
+    eager: da.fft.ifft2
+  keras:
+    eager: keras_ops.ifft2
+  numpy:
+    generator: np.fft.ifft2

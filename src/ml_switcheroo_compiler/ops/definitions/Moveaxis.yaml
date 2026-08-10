@@ -1,0 +1,9 @@
+operation: Moveaxis
+description: The Moveaxis operation.
+variants:
+  cupy:
+    eager: cp.moveaxis
+  dask:
+    eager: da.moveaxis
+  keras:
+    eager: keras_ops.moveaxis

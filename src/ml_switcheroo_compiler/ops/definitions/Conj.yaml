@@ -1,0 +1,11 @@
+operation: Conj
+description: The Conj operation.
+variants:
+  cupy:
+    eager: cp.conj
+  dask:
+    eager: da.conj
+  keras:
+    eager: keras_ops.conj
+  tensorflow:
+    eager: tf.math.conj

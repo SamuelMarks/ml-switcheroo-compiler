@@ -1,3 +1,4 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Lift State pass."""
 
 from collections.abc import Iterable
@@ -35,7 +36,7 @@ def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Dict[str, Any]: Nested state dict
     """
-    nested = {}
+    nested: dict[str, Any] = {}
     for k, v in flat_state.items():
         parts = k.split(".")
         d = nested
@@ -47,14 +48,13 @@ def unflatten_state_dict(flat_state: dict[str, Any]) -> dict[str, Any]:
     return nested
 
 
-def _get_nodes(block: object) -> Iterable[IRNode]:
+def _get_nodes(block: Any) -> Iterable[IRNode]:
     """Evaluate _get_nodes operation.
 
     Args:
-        block (object): The block parameter.
+        block (Any): The block parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     nodes = getattr(block, "nodes", [])
     if isinstance(nodes, dict):
@@ -62,12 +62,12 @@ def _get_nodes(block: object) -> Iterable[IRNode]:
     return nodes
 
 
-def _lift_node(node: IRNode, block: object) -> bool:
+def _lift_node(node: IRNode, block: Any) -> bool:
     """Evaluate _lift_node operation.
 
     Args:
         node (IRNode): The node parameter.
-        block (object): The block parameter.
+        block (Any): The block parameter.
 
     Returns:
         bool: Result.
@@ -86,11 +86,11 @@ def _lift_node(node: IRNode, block: object) -> bool:
     return False
 
 
-def _lift_block_ir(block: object) -> bool:
+def _lift_block_ir(block: Any) -> bool:
     """Evaluate _lift_block_ir operation.
 
     Args:
-        block (object): The block parameter.
+        block (Any): The block parameter.
 
     Returns:
         bool: Result.

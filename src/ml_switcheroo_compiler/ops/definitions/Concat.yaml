@@ -1,0 +1,7 @@
+operation: Concat
+description: The Concat operation.
+variants:
+  edge_onnx:
+    generator: Concat
+  edge_stablehlo:
+    generator: stablehlo.concatenate

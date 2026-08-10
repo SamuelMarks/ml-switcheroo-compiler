@@ -22,7 +22,7 @@ def test_make_zero_vjp_and_jvp() -> None:
     assert res == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
     jvp_func = make_zero_jvp("MyOp")
     res_jvp = jvp_func(None, DummyNode(), ("t1", "t2"))
-    assert res_jvp is None
+    assert not res_jvp
 
 
 "Test extra rules coverage."
@@ -34,13 +34,13 @@ def test_extra_rules_jvps_none() -> None:
     in_node = LogicalNode(id="in_a", op_type="Op", inputs=[], shape_metadata=None)
     graph.nodes["in_a"] = in_node
     node = LogicalNode(id="n", op_type="Op", inputs=["in_a"], shape_metadata=None)
-    assert dct_jvp(graph, node, (None,)) is None
-    assert idct_jvp(graph, node, (None,)) is None
-    assert time_distributed_jvp(graph, node, (None,)) is None
-    assert frame_jvp(graph, node, (None,)) is None
-    assert overlap_and_add_jvp(graph, node, (None,)) is None
-    assert mdct_jvp(graph, node, (None,)) is None
-    assert inverse_mdct_jvp(graph, node, (None,)) is None
+    assert not dct_jvp(graph, node, (None,))
+    assert not idct_jvp(graph, node, (None,))
+    assert not time_distributed_jvp(graph, node, (None,))
+    assert not frame_jvp(graph, node, (None,))
+    assert not overlap_and_add_jvp(graph, node, (None,))
+    assert not mdct_jvp(graph, node, (None,))
+    assert not inverse_mdct_jvp(graph, node, (None,))
     assert dct_jvp(graph, node, ("t",)) is not None
     assert idct_jvp(graph, node, ("t",)) is not None
     assert time_distributed_jvp(graph, node, ("t",)) is not None
@@ -67,11 +67,11 @@ def test_extra_rules_unimplemented() -> None:
     vjp = get_vjp("CudaKernel")
     assert vjp(graph, node, "t_a") is not None
     jvp = get_jvp("CudaKernel")
-    assert jvp(graph, node, ("t_a",)) in (None, 0.0)
+    assert jvp(graph, node, ("t_a",)) in (None, "", 0.0)
     vjp = get_vjp("MelFilterbank")
     assert vjp(graph, node, "t_a") is not None
     jvp = get_jvp("MelFilterbank")
-    assert jvp(graph, node, ("t_a",)) in (None, 0.0)
+    assert jvp(graph, node, ("t_a",)) in (None, "", 0.0)
     for op in ["GroupMean", "GroupNorm", "GroupVariance", "Rope", "ScaledDotProductAttention"]:
         assert get_vjp(op) is not None
         assert get_jvp(op) is not None

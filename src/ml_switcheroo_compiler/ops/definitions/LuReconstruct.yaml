@@ -1,0 +1,9 @@
+operation: LuReconstruct
+description: The LuReconstruct operation.
+variants:
+  numpy:
+    generator: np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
+      dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
+      axis=-1), -1), {0}.shape), axis=-2)
+  tensorflow:
+    eager: tf.linalg.lu_reconstruct

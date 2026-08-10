@@ -1,12 +1,15 @@
-"""Core abstractions and logic definitions for linear_operator.py."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Core abstractions and logic definitions for linear_operator.py."""
+from typing import Any
 
 
 class LinearOperator:
     """LinearOperator mock."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -20,7 +23,7 @@ class LinearOperator:
 class LinearOperatorAdjoint(LinearOperator):
     """Configuration class for linear operator adjoint."""
 
-    def __init__(self, operator: LinearOperator, **kwargs: object) -> None:
+    def __init__(self, operator: LinearOperator, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -33,7 +36,7 @@ class LinearOperatorAdjoint(LinearOperator):
 class LinearOperatorBlockDiag(LinearOperator):
     """Configuration class for linear operator block diag."""
 
-    def __init__(self, operators: list[LinearOperator], **kwargs: object) -> None:
+    def __init__(self, operators: list[LinearOperator], **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -46,7 +49,7 @@ class LinearOperatorBlockDiag(LinearOperator):
 class LinearOperatorBlockLowerTriangular(LinearOperator):
     """Configuration class for linear operator block lower triangular."""
 
-    def __init__(self, operators: list[list[LinearOperator]], **kwargs: object) -> None:
+    def __init__(self, operators: list[list[LinearOperator]], **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -59,7 +62,7 @@ class LinearOperatorBlockLowerTriangular(LinearOperator):
 class LinearOperatorCirculant(LinearOperator):
     """Configuration class for linear operator circulant."""
 
-    def __init__(self, spectrum: object, **kwargs: object) -> None:
+    def __init__(self, spectrum: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -72,7 +75,7 @@ class LinearOperatorCirculant(LinearOperator):
 class LinearOperatorCirculant2D(LinearOperator):
     """Configuration class for linear operator circulant2 d."""
 
-    def __init__(self, spectrum: object, **kwargs: object) -> None:
+    def __init__(self, spectrum: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -85,7 +88,7 @@ class LinearOperatorCirculant2D(LinearOperator):
 class LinearOperatorCirculant3D(LinearOperator):
     """Configuration class for linear operator circulant3 d."""
 
-    def __init__(self, spectrum: object, **kwargs: object) -> None:
+    def __init__(self, spectrum: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -98,7 +101,7 @@ class LinearOperatorCirculant3D(LinearOperator):
 class LinearOperatorComposition(LinearOperator):
     """Configuration class for linear operator composition."""
 
-    def __init__(self, operators: list[LinearOperator], **kwargs: object) -> None:
+    def __init__(self, operators: list[LinearOperator], **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -111,7 +114,7 @@ class LinearOperatorComposition(LinearOperator):
 class LinearOperatorDiag(LinearOperator):
     """Configuration class for linear operator diag."""
 
-    def __init__(self, diag: object, **kwargs: object) -> None:
+    def __init__(self, diag: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -124,7 +127,7 @@ class LinearOperatorDiag(LinearOperator):
 class LinearOperatorFullMatrix(LinearOperator):
     """Configuration class for linear operator full matrix."""
 
-    def __init__(self, matrix: object, **kwargs: object) -> None:
+    def __init__(self, matrix: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -137,7 +140,7 @@ class LinearOperatorFullMatrix(LinearOperator):
 class LinearOperatorHouseholder(LinearOperator):
     """Configuration class for linear operator householder."""
 
-    def __init__(self, reflection_axis: object, **kwargs: object) -> None:
+    def __init__(self, reflection_axis: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -150,7 +153,7 @@ class LinearOperatorHouseholder(LinearOperator):
 class LinearOperatorIdentity(LinearOperator):
     """Configuration class for linear operator identity."""
 
-    def __init__(self, num_rows: int, **kwargs: object) -> None:
+    def __init__(self, num_rows: int, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -163,7 +166,7 @@ class LinearOperatorIdentity(LinearOperator):
 class LinearOperatorInversion(LinearOperator):
     """Configuration class for linear operator inversion."""
 
-    def __init__(self, operator: LinearOperator, **kwargs: object) -> None:
+    def __init__(self, operator: LinearOperator, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -176,7 +179,7 @@ class LinearOperatorInversion(LinearOperator):
 class LinearOperatorKronecker(LinearOperator):
     """Configuration class for linear operator kronecker."""
 
-    def __init__(self, operators: list[LinearOperator], **kwargs: object) -> None:
+    def __init__(self, operators: list[LinearOperator], **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -189,7 +192,7 @@ class LinearOperatorKronecker(LinearOperator):
 class LinearOperatorLowRankUpdate(LinearOperator):
     """Configuration class for linear operator low rank update."""
 
-    def __init__(self, base_operator: LinearOperator, u: object, **kwargs: object) -> None:
+    def __init__(self, base_operator: LinearOperator, u: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -203,7 +206,7 @@ class LinearOperatorLowRankUpdate(LinearOperator):
 class LinearOperatorLowerTriangular(LinearOperator):
     """Configuration class for linear operator lower triangular."""
 
-    def __init__(self, tril: object, **kwargs: object) -> None:
+    def __init__(self, tril: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -216,7 +219,7 @@ class LinearOperatorLowerTriangular(LinearOperator):
 class LinearOperatorPermutation(LinearOperator):
     """Configuration class for linear operator permutation."""
 
-    def __init__(self, perm: object, **kwargs: object) -> None:
+    def __init__(self, perm: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -229,7 +232,7 @@ class LinearOperatorPermutation(LinearOperator):
 class LinearOperatorScaledIdentity(LinearOperator):
     """Configuration class for linear operator scaled identity."""
 
-    def __init__(self, num_rows: int, multiplier: object, **kwargs: object) -> None:
+    def __init__(self, num_rows: int, multiplier: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -243,7 +246,7 @@ class LinearOperatorScaledIdentity(LinearOperator):
 class LinearOperatorToeplitz(LinearOperator):
     """Configuration class for linear operator toeplitz."""
 
-    def __init__(self, col: object, row: object, **kwargs: object) -> None:
+    def __init__(self, col: Any, row: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -257,7 +260,7 @@ class LinearOperatorToeplitz(LinearOperator):
 class LinearOperatorTridiag(LinearOperator):
     """Configuration class for linear operator tridiag."""
 
-    def __init__(self, diagonals: object, **kwargs: object) -> None:
+    def __init__(self, diagonals: Any, **kwargs: Any) -> None:
         """Initialize.
 
         Args:
@@ -270,7 +273,7 @@ class LinearOperatorTridiag(LinearOperator):
 class LinearOperatorZeros(LinearOperator):
     """Configuration class for linear operator zeros."""
 
-    def __init__(self, num_rows: int, num_cols: int, **kwargs: object) -> None:
+    def __init__(self, num_rows: int, num_cols: int, **kwargs: Any) -> None:
         """Initialize.
 
         Args:

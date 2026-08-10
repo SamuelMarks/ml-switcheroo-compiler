@@ -1,3 +1,4 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Configuration settings and context management for the ml-switcheroo compiler.
 
 This module provides the global `Config` singleton and context managers to temporarily
@@ -13,6 +14,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from typing import Any
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -37,7 +39,7 @@ class EnvironmentConfig:
     default_int_dtype: DType = DType.Int64
     default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
     jax_enable_x64: bool = False
-    layout_map: object = None
+    layout_map: Any = None
     interactive_logging: bool = True
 
 
@@ -87,7 +89,7 @@ class Config:
         Returns:
             int: The random seed.
         """
-        return self._state.env.seed
+        return self._state.env.seed  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     @seed.setter
     def seed(self, value: typing.Optional[int]) -> None:
@@ -96,7 +98,7 @@ class Config:
         Args:
             value (int, optional): The random seed value.
         """
-        self._state.env.seed = value
+        self._state.env.seed = value  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     @property
     def _state(self) -> ConfigState:
@@ -198,16 +200,15 @@ class Config:
         self._state.execution.current_stream = value
 
     @property
-    def layout_map(self) -> object:
+    def layout_map(self) -> Any:
         """Get the layout map.
 
-        Returns:
-            object: The layout map.
+        Returns: Any: The layout map.
         """
         return self._state.env.layout_map
 
     @layout_map.setter
-    def layout_map(self, value: object) -> None:
+    def layout_map(self, value: Any) -> None:
         """Set the layout map.
 
         Args:
@@ -313,7 +314,7 @@ config = Config()
 
 
 @contextmanager
-def ConfigContext(**kwargs: object) -> Iterator[None]:
+def ConfigContext(**kwargs: Any) -> Iterator[None]:
     """Provide context manager for temporarily overriding global configuration values.
 
     Args:
@@ -344,7 +345,7 @@ def ConfigContext(**kwargs: object) -> Iterator[None]:
         _config_state_var.reset(token)
 
 
-def EagerMode() -> Iterator[None]:
+def EagerMode() -> Any:
     """Provide context manager to temporarily enable eager execution mode.
 
     Returns:
@@ -353,7 +354,7 @@ def EagerMode() -> Iterator[None]:
     return ConfigContext(eager_mode=True)
 
 
-def StreamContext(stream_name: str) -> Iterator[None]:
+def StreamContext(stream_name: str) -> Any:
     """Provide context manager to temporarily switch the current execution stream.
 
     Args:

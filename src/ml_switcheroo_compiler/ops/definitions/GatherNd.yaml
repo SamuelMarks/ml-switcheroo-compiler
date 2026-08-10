@@ -1,0 +1,5 @@
+operation: GatherNd
+description: The GatherNd operation.
+variants:
+  tensorflow:
+    eager: tf.gather_nd

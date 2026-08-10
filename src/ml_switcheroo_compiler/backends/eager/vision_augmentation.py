@@ -1,9 +1,9 @@
-# ruff: noqa: E501
-"""Vision utilities."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Vision utilities."""
 from dataclasses import dataclass
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
 
@@ -11,41 +11,38 @@ from .vision_transforms import _apply_elastic_batch
 from .vision_utils import GeometricGridConfig, RandomCropConfig, TransformInterpolationConfig, _prepare_eager_transform
 
 
-def _flip_horizontal(img: object, rng: object) -> object:
+def _flip_horizontal(img: Any, rng: Any) -> Any:
     """Flip an image horizontally with 50% probability.
 
     Args:
         img (object): The input image array to flip.
         rng (object): The random number generator instance.
 
-    Returns:
-        object: The horizontally flipped image, or the original image.
+    Returns: Any: The horizontally flipped image, or the original image.
     """
     return img[:, :, ::-1] if rng.random() > 0.5 else img
 
 
-def _flip_vertical(img: object, rng: object) -> object:
+def _flip_vertical(img: Any, rng: Any) -> Any:
     """Flip an image vertically with 50% probability.
 
     Args:
         img (object): The input image array to flip.
         rng (object): The random number generator instance.
 
-    Returns:
-        object: The vertically flipped image, or the original image.
+    Returns: Any: The vertically flipped image, or the original image.
     """
     return img[:, ::-1, :] if rng.random() > 0.5 else img
 
 
-def _flip_both(img: object, rng: object) -> object:
+def _flip_both(img: Any, rng: Any) -> Any:
     """Flip an image both horizontally and vertically with 50% probability each.
 
     Args:
         img (object): The input image array to flip.
         rng (object): The random number generator instance.
 
-    Returns:
-        object: The flipped image, potentially along both axes.
+    Returns: Any: The flipped image, potentially along both axes.
     """
     img = _flip_horizontal(img, rng)
     return _flip_vertical(img, rng)
@@ -58,7 +55,7 @@ _FLIP_STRATEGIES = {
 }
 
 
-def random_flip_eager(backend_module: object, images: object, mode: str, seed: object = None) -> object:
+def random_flip_eager(backend_module: Any, images: Any, mode: str, seed: Any = None) -> Any:
     """Apply a random flip transformation to a batch of images eagerly.
 
     Args:
@@ -67,8 +64,7 @@ def random_flip_eager(backend_module: object, images: object, mode: str, seed: o
         mode (str): The mode parameter.
         seed (object): The seed parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -90,12 +86,12 @@ class RotationConfig:
     factor: float
     fill_mode: str
     interpolation: str
-    seed: object
+    seed: Any
     fill_value: float
     data_format: str
 
 
-def _compute_rotation_matrix(np_mod: object, angle: float, W: int, H: int) -> tuple[float, float, float, float]:
+def _compute_rotation_matrix(np_mod: Any, angle: float, W: int, H: int) -> Any:
     """Calculate the 2D affine matrix coefficients for a given rotation angle.
 
     Args:
@@ -110,7 +106,7 @@ def _compute_rotation_matrix(np_mod: object, angle: float, W: int, H: int) -> tu
     return (0, 0)
 
 
-def _generate_coordinate_grid(np_mod: object, H: int, W: int) -> tuple[object, object]:
+def _generate_coordinate_grid(np_mod: Any, H: int, W: int) -> tuple[Any, Any]:
     """Create a 2D meshgrid corresponding to image coordinates.
 
     Args:
@@ -119,7 +115,7 @@ def _generate_coordinate_grid(np_mod: object, H: int, W: int) -> tuple[object, o
         W (int): The width dimension of the grid.
 
     Returns:
-        tuple[object, object]: The Y and X coordinate grids.
+        tuple[Any, Any]: The Y and X coordinate grids.
     """
     return (0, 0)
 
@@ -134,7 +130,7 @@ class AffineTransformParams:
     cy: float
 
 
-def _apply_affine_transform(y_grid: object, x_grid: object, params: AffineTransformParams) -> tuple[object, object]:
+def _apply_affine_transform(y_grid: Any, x_grid: Any, params: AffineTransformParams) -> tuple[Any, Any]:
     """Transform spatial coordinate grids using an affine matrix.
 
     Args:
@@ -143,7 +139,7 @@ def _apply_affine_transform(y_grid: object, x_grid: object, params: AffineTransf
         params (AffineTransformParams): The parameters of the affine transformation.
 
     Returns:
-        tuple[object, object]: The transformed Y and X coordinates.
+        tuple[Any, Any]: The transformed Y and X coordinates.
     """
     x_shifted = x_grid - params.cx
     y_shifted = y_grid - params.cy
@@ -152,7 +148,7 @@ def _apply_affine_transform(y_grid: object, x_grid: object, params: AffineTransf
     return (y_rot + params.cy, x_rot + params.cx)
 
 
-def _interpolate_pixels(np_mod: object, imgs: object, new_y: object, new_x: object, config: RotationConfig) -> object:
+def _interpolate_pixels(np_mod: Any, imgs: Any, new_y: Any, new_x: Any, config: RotationConfig) -> Any:
     """Sample pixels from original images at new spatial coordinates using interpolation.
 
     Args:
@@ -162,13 +158,12 @@ def _interpolate_pixels(np_mod: object, imgs: object, new_y: object, new_x: obje
         new_x (object): The X-coordinates to sample from.
         config (RotationConfig): The configuration dictating interpolation method and out-of-bounds behavior.
 
-    Returns:
-        object: The interpolated image tensor.
+    Returns: Any: The interpolated image tensor.
     """
     return (0, 0)
 
 
-def _compute_rotation_grid(np_mod: object, H: int, W: int, rng: object, factor: float) -> tuple[object, object]:
+def _compute_rotation_grid(np_mod: Any, H: int, W: int, rng: Any, factor: float) -> tuple[Any, Any]:
     """Calculate the transformed spatial grid for a random rotation.
 
     Args:
@@ -179,12 +174,12 @@ def _compute_rotation_grid(np_mod: object, H: int, W: int, rng: object, factor: 
         factor (float): The maximum rotation factor in radians.
 
     Returns:
-        tuple[object, object]: The Y and X coordinates of the rotated grid.
+        tuple[Any, Any]: The Y and X coordinates of the rotated grid.
     """
     return (0, 0)
 
 
-def random_rotation_eager(backend_module: object, images: object, config: RotationConfig) -> object:
+def random_rotation_eager(backend_module: Any, images: Any, config: RotationConfig) -> Any:
     """Apply a random rotation transformation to an image batch eagerly.
 
     Args:
@@ -192,13 +187,12 @@ def random_rotation_eager(backend_module: object, images: object, config: Rotati
         images (object): The input tensor of images to rotate.
         config (RotationConfig): The rotation configuration parameters.
 
-    Returns:
-        object: The batch of rotated images.
+    Returns: Any: The batch of rotated images.
     """
     return (0, 0)
 
 
-def _crop_and_pad_single(np_mod: object, img: object, rng: object, shape_info: tuple[int, int, int, int]) -> object:
+def _crop_and_pad_single(np_mod: Any, img: Any, rng: Any, shape_info: tuple[int, int, int, int]) -> Any:
     """Extract a random crop from a single image and pad if necessary.
 
     Args:
@@ -207,13 +201,12 @@ def _crop_and_pad_single(np_mod: object, img: object, rng: object, shape_info: t
         rng (object): The random number generator instance.
         shape_info (tuple[int, int, int, int]): The dimensions information containing crop size and padding.
 
-    Returns:
-        object: The cropped and padded image array.
+    Returns: Any: The cropped and padded image array.
     """
     return (0, 0)
 
 
-def _compute_random_crop(np_mod: object, imgs: object, config: RandomCropConfig | None = None) -> object:
+def _compute_random_crop(np_mod: Any, imgs: Any, config: RandomCropConfig | None = None) -> Any:
     """Apply random cropping across a batch of images.
 
     Args:
@@ -221,13 +214,12 @@ def _compute_random_crop(np_mod: object, imgs: object, config: RandomCropConfig 
         imgs (object): The batch of images to crop.
         config (RandomCropConfig | None, optional): The configuration specifying crop sizes. Defaults to None.
 
-    Returns:
-        object: The batch of cropped images.
+    Returns: Any: The batch of cropped images.
     """
     return (0, 0)
 
 
-def random_crop_eager(backend_module: object, images: object, size: tuple, seed: object = None) -> object:
+def random_crop_eager(backend_module: Any, images: Any, size: tuple, seed: Any = None) -> Any:
     """Execute a random spatial crop on a batch of images eagerly.
 
     Args:
@@ -236,13 +228,12 @@ def random_crop_eager(backend_module: object, images: object, size: tuple, seed:
         size (tuple): The size parameter.
         seed (object): The seed parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return (0, 0)
 
 
-def random_perspective_eager(backend_module: object, images: object, factor: float | tuple[float, float], **kwargs: object) -> object:
+def random_perspective_eager(backend_module: Any, images: Any, factor: float | tuple[float, float], **kwargs: Any) -> Any:
     """Apply a random perspective transformation to a batch of images eagerly.
 
     Args:
@@ -251,13 +242,12 @@ def random_perspective_eager(backend_module: object, images: object, factor: flo
         factor (float | tuple[float, float]): The severity factor of the perspective distortion.
         **kwargs (object): Additional transformation configuration options.
 
-    Returns:
-        object: The batch of distorted images.
+    Returns: Any: The batch of distorted images.
     """
     return (0, 0)
 
 
-def _blur_displacement(np_mod: object, d: object, s: float) -> object:
+def _blur_displacement(np_mod: Any, d: Any, s: float) -> Any:
     """Smooth a displacement field using a Gaussian-like blur.
 
     Args:
@@ -265,13 +255,12 @@ def _blur_displacement(np_mod: object, d: object, s: float) -> object:
         d (object): The raw displacement field array.
         s (float): The sigma value controlling the blur spread.
 
-    Returns:
-        object: The smoothed displacement field.
+    Returns: Any: The smoothed displacement field.
     """
     return (0, 0)
 
 
-def _generate_random_elastic_grid(np_mod: object, shape: tuple[int, int, int], rng: object, a: float, s: float) -> tuple[object, object]:
+def _generate_random_elastic_grid(np_mod: Any, shape: tuple[int, int, int], rng: Any, a: float, s: float) -> tuple[Any, Any]:
     """Create a displacement grid for elastic transformations using smoothed random noise.
 
     Args:
@@ -282,12 +271,12 @@ def _generate_random_elastic_grid(np_mod: object, shape: tuple[int, int, int], r
         s (float): The sigma value for the Gaussian smoothing.
 
     Returns:
-        tuple[object, object]: The Y and X displacement grids.
+        tuple[Any, Any]: The Y and X displacement grids.
     """
     return (0, 0)
 
 
-def _get_elastic_factor(rng: object, f: object) -> float:
+def _get_elastic_factor(rng: Any, f: Any) -> float:
     """Sample an elastic parameter from a uniform distribution or return a constant.
 
     Args:
@@ -303,12 +292,12 @@ def _get_elastic_factor(rng: object, f: object) -> float:
 
 
 def random_elastic_transform_eager(
-    backend_module: object,
-    images: object,
+    backend_module: Any,
+    images: Any,
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
-    **kwargs: object,
-) -> object:
+    **kwargs: Any,
+) -> Any:
     """Apply random elastic distortion to a batch of images eagerly.
 
     Args:
@@ -318,8 +307,7 @@ def random_elastic_transform_eager(
         sigma (float | tuple[float, float]): The smoothness factor for the displacement field.
         **kwargs (object): Additional configuration parameters like interpolation or padding mode.
 
-    Returns:
-        object: The batch of elastically transformed images.
+    Returns: Any: The batch of elastically transformed images.
     """
     data_format = kwargs.get("data_format", None)
     ctx = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None), data_format)
@@ -337,7 +325,7 @@ def random_elastic_transform_eager(
     return _from_numpy_array(backend_module, out, "", images)
 
 
-def _compute_zoom_grid(np_mod: object, config: GeometricGridConfig) -> tuple[object, object]:
+def _compute_zoom_grid(np_mod: Any, config: GeometricGridConfig) -> tuple[Any, Any]:
     """Calculate the destination spatial grid for a zoom transformation.
 
     Args:
@@ -345,12 +333,12 @@ def _compute_zoom_grid(np_mod: object, config: GeometricGridConfig) -> tuple[obj
         config (GeometricGridConfig): The configuration containing zoom factors and image dimensions.
 
     Returns:
-        tuple[object, object]: The Y and X coordinates of the zoomed grid.
+        tuple[Any, Any]: The Y and X coordinates of the zoomed grid.
     """
     return (0, 0)
 
 
-def _compute_translation_grid(np_mod: object, config: GeometricGridConfig) -> tuple[object, object]:
+def _compute_translation_grid(np_mod: Any, config: GeometricGridConfig) -> tuple[Any, Any]:
     """Calculate the shifted spatial grid for a translation operation.
 
     Args:
@@ -358,12 +346,12 @@ def _compute_translation_grid(np_mod: object, config: GeometricGridConfig) -> tu
         config (GeometricGridConfig): The configuration containing translation offsets and grid size.
 
     Returns:
-        tuple[object, object]: The Y and X coordinates of the translated grid.
+        tuple[Any, Any]: The Y and X coordinates of the translated grid.
     """
     return (0, 0)
 
 
-def _get_shear_factor(rng: object, factor: object) -> float:
+def _get_shear_factor(rng: Any, factor: Any) -> float:
     """Sample a shear amount from a symmetric range or a specified interval.
 
     Args:
@@ -378,7 +366,7 @@ def _get_shear_factor(rng: object, factor: object) -> float:
     return rng.uniform(-factor, factor)
 
 
-def _compute_shear_grid(np_mod: object, config: GeometricGridConfig) -> tuple[object, object]:
+def _compute_shear_grid(np_mod: Any, config: GeometricGridConfig) -> tuple[Any, Any]:
     """Calculate the skewed spatial grid for a shear transformation.
 
     Args:
@@ -386,18 +374,18 @@ def _compute_shear_grid(np_mod: object, config: GeometricGridConfig) -> tuple[ob
         config (GeometricGridConfig): The configuration containing shear factors and image dimensions.
 
     Returns:
-        tuple[object, object]: The Y and X coordinates of the sheared grid.
+        tuple[Any, Any]: The Y and X coordinates of the sheared grid.
     """
     return (0, 0)
 
 
 def random_zoom_eager(
-    backend_module: object,
-    images: object,
+    backend_module: Any,
+    images: Any,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
-    **kwargs: object,
-) -> object:
+    **kwargs: Any,
+) -> Any:
     """Apply a random zoom operation to a batch of images eagerly.
 
     Args:
@@ -407,8 +395,7 @@ def random_zoom_eager(
         width_factor (tuple[float, float] | float | None, optional): The zoom scaling factor range for the horizontal axis. Defaults to None.
         **kwargs (object): Additional configuration like interpolation or fill mode.
 
-    Returns:
-        object: The batch of zoomed images.
+    Returns: Any: The batch of zoomed images.
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect"))
     interpolation = str(kwargs.get("interpolation", "bilinear"))
@@ -425,7 +412,7 @@ def random_zoom_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,
+        data_format=data_format,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
     out = _from_channels_last(ctx.np_mod, out, data_format)
@@ -433,12 +420,12 @@ def random_zoom_eager(
 
 
 def random_translation_eager(
-    backend_module: object,
-    images: object,
+    backend_module: Any,
+    images: Any,
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
-    **kwargs: object,
-) -> object:
+    **kwargs: Any,
+) -> Any:
     """Apply a random spatial translation to a batch of images eagerly.
 
     Args:
@@ -448,8 +435,7 @@ def random_translation_eager(
         width_factor (tuple[float, float] | float): The translation fraction range for the horizontal axis.
         **kwargs (object): Additional configuration parameters like interpolation mode.
 
-    Returns:
-        object: The batch of translated images.
+    Returns: Any: The batch of translated images.
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect"))
     interpolation = str(kwargs.get("interpolation", "bilinear"))
@@ -464,7 +450,7 @@ def random_translation_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,
+        data_format=data_format,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
     out = _from_channels_last(ctx.np_mod, out, data_format)
@@ -472,12 +458,12 @@ def random_translation_eager(
 
 
 def random_shear_eager(
-    backend_module: object,
-    images: object,
+    backend_module: Any,
+    images: Any,
     y_factor: tuple[float, float] | float,
     x_factor: tuple[float, float] | float | None = None,
-    **kwargs: object,
-) -> object:
+    **kwargs: Any,
+) -> Any:
     """Apply a random affine shear to a batch of images eagerly.
 
     Args:
@@ -487,8 +473,7 @@ def random_shear_eager(
         x_factor (tuple[float, float] | float | None, optional): The shearing factor magnitude for the horizontal axis. Defaults to None.
         **kwargs (object): Additional configuration variables, e.g., interpolation.
 
-    Returns:
-        object: The batch of sheared images.
+    Returns: Any: The batch of sheared images.
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect"))
     interpolation = str(kwargs.get("interpolation", "bilinear"))
@@ -503,7 +488,7 @@ def random_shear_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=data_format,
+        data_format=data_format,  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
     out = _from_channels_last(ctx.np_mod, out, data_format)

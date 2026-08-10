@@ -1,0 +1,5 @@
+operation: SparseCrossHashed
+description: The SparseCrossHashed operation.
+variants:
+  numpy:
+    generator: tf.sparse.cross_hashed

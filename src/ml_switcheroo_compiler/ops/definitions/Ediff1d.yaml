@@ -1,0 +1,7 @@
+operation: Ediff1d
+description: The Ediff1d operation.
+variants:
+  cupy:
+    eager: cp.ediff1d
+  dask:
+    eager: da.ediff1d

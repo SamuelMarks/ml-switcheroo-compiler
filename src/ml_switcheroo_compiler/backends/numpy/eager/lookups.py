@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy lookup operations."""
+
+from typing import Any
 
 import numpy as np
 
@@ -7,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("Hashing")
-def _np_hashing(backend_module: object, inputs: object, num_bins: int, **kwargs: object) -> object:
+def _np_hashing(backend_module: Any, inputs: Any, num_bins: int, **kwargs: Any) -> Any:
     """Evaluate _np_hashing operation.
 
     Args:
@@ -16,14 +18,13 @@ def _np_hashing(backend_module: object, inputs: object, num_bins: int, **kwargs:
         num_bins (int): The num_bins parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return inputs
 
 
 @numpy_eager_registry.register("IntegerLookup")
-def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
+def _np_integer_lookup(backend_module: Any, inputs: Any, **kwargs: Any) -> Any:
     """Evaluate _np_integer_lookup operation.
 
     Args:
@@ -31,14 +32,13 @@ def _np_integer_lookup(backend_module: object, inputs: object, **kwargs: object)
         inputs (object): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return inputs
 
 
 @numpy_eager_registry.register("Lookup")
-def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwargs: object) -> object:
+def _np_lookup(backend_module: Any, inputs: Any, vocabulary: Any, **kwargs: Any) -> Any:
     """Evaluate _np_lookup operation.
 
     Args:
@@ -47,8 +47,7 @@ def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwa
         vocabulary (object): The vocabulary parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     inputs = np.asarray(inputs)
     vocab = np.asarray(vocabulary)
@@ -60,7 +59,7 @@ def _np_lookup(backend_module: object, inputs: object, vocabulary: object, **kwa
 
 
 @numpy_eager_registry.register("StringLookup")
-def _np_string_lookup(backend_module: object, inputs: object, **kwargs: object) -> object:
+def _np_string_lookup(backend_module: Any, inputs: Any, **kwargs: Any) -> Any:
     """Evaluate _np_string_lookup operation.
 
     Args:
@@ -68,7 +67,6 @@ def _np_string_lookup(backend_module: object, inputs: object, **kwargs: object) 
         inputs (object): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return inputs

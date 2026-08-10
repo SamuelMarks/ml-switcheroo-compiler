@@ -1,0 +1,15 @@
+operation: Sqrt
+description: The Sqrt operation.
+variants:
+  cupy:
+    eager: cp.sqrt
+  dask:
+    eager: da.sqrt
+  edge_onnx:
+    generator: Sqrt
+  edge_stablehlo:
+    generator: stablehlo.sqrt
+  keras:
+    eager: keras_ops.sqrt
+  tensorflow:
+    eager: tf.sqrt

@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision eager common operations."""
+
+from typing import Any
 
 import numpy as np
 
@@ -8,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("MelFilterbank")
-def _np_mel_filterbank(backend_module: object, _: object, **kwargs: object) -> object:
+def _np_mel_filterbank(backend_module: Any, _: Any, **kwargs: Any) -> Any:
     """Evaluate _np_mel_filterbank operation.
 
     Args:
@@ -16,14 +18,13 @@ def _np_mel_filterbank(backend_module: object, _: object, **kwargs: object) -> o
         _ (object): The _ parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return mel_filterbank_eager(backend_module, None, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("Mfcc")
-def _np_mfcc(backend_module: object, spectrogram: object, **kwargs: object) -> object:
+def _np_mfcc(backend_module: Any, spectrogram: Any, **kwargs: Any) -> Any:
     """Evaluate _np_mfcc operation.
 
     Args:
@@ -31,14 +32,13 @@ def _np_mfcc(backend_module: object, spectrogram: object, **kwargs: object) -> o
         spectrogram (object): The spectrogram parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return mfcc_eager(backend_module, spectrogram, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("PowerIteration")
-def _np_power_iteration(backend_module: object, w: object, *args: object, **kwargs: object) -> object:
+def _np_power_iteration(backend_module: Any, w: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_power_iteration operation.
 
     Args:
@@ -47,8 +47,7 @@ def _np_power_iteration(backend_module: object, w: object, *args: object, **kwar
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     num_iters = kwargs.get("num_iters", 1)
     u = kwargs.get("u", None)

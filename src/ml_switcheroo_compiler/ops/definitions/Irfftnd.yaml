@@ -1,0 +1,7 @@
+operation: Irfftnd
+description: The Irfftnd operation.
+variants:
+  numpy:
+    generator: np.fft.irfftn({0})
+  tensorflow:
+    eager: tf.irfftnd

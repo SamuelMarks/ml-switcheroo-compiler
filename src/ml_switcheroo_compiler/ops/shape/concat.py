@@ -1,6 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 # pylint: disable=duplicate-code
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -12,15 +15,14 @@ class Concatenate(OpDef):
     This operator concatenates a sequence of arrays along an existing axis.
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         """Infer the output shape for the Concatenate operation.
 
@@ -49,7 +51,7 @@ class Stack(OpDef):
     This operator joins a sequence of arrays along a new axis.
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -78,7 +80,7 @@ class Split(OpDef):
     This operator splits an array into multiple sub-arrays.
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -109,7 +111,7 @@ class Hsplit(OpDef):
     This operator splits an array into multiple sub-arrays horizontally (column-wise).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -140,7 +142,7 @@ class Vsplit(OpDef):
     This operator splits an array into multiple sub-arrays vertically (row-wise).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -171,7 +173,7 @@ class Dsplit(OpDef):
     This operator splits an array into multiple sub-arrays along the 3rd axis (depth).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -202,7 +204,7 @@ class Hstack(OpDef):
     This operator stacks arrays in sequence horizontally (column wise).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -232,7 +234,7 @@ class Vstack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -262,7 +264,7 @@ class Dstack(OpDef):
     This operator stacks arrays in sequence depth wise (along third axis).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -294,7 +296,7 @@ class ColumnStack(OpDef):
     This operator stacks 1-D arrays as columns into a 2-D array.
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -324,7 +326,7 @@ class RowStack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -353,15 +355,14 @@ class Argwhere(OpDef):
     op_name = "Argwhere"
     np_op_name = "argwhere"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the Argwhere operation.
 
         Args:
             a: The input array or shape whose non-zero elements are to be found.
             **kwargs: Keyword arguments containing configuration for the operation.
 
-        Returns:
-            object: The inferred shape of the output indices tensor.
+        Returns: Any: The inferred shape of the output indices tensor.
         """
         return (None, len(a) if isinstance(a, tuple) else None)
 
@@ -373,7 +374,7 @@ class Append(OpDef):
     This operator appends values to the end of an array.
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:

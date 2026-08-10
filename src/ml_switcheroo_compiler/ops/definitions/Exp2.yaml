@@ -1,0 +1,9 @@
+operation: Exp2
+description: The Exp2 operation.
+variants:
+  cupy:
+    eager: cp.exp2
+  dask:
+    eager: da.exp2
+  keras:
+    eager: keras_ops.exp2

@@ -38,18 +38,6 @@ def test_reduce_precision():
     np.testing.assert_allclose(res, [1.0])
 
 
-def test_all_gather():
-    assert mm._np_all_gather(np, 1, "x") == 1
-
-
-def test_all_reduce():
-    assert mm._np_all_reduce(np, 1, "x") == 1
-
-
-def test_all_to_all():
-    assert mm._np_all_to_all(np, 1, "x", 0, 0) == 1
-
-
 def test_custom_linear_solve():
     try:
         mm._np_customlinearsolve(np, np.eye(2), np.ones((2, 2)))

@@ -1,0 +1,7 @@
+operation: Split
+description: The Split operation.
+variants:
+  keras:
+    eager: keras_ops.split
+  tensorflow:
+    eager: tf.split

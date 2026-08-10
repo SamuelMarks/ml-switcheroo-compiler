@@ -1,0 +1,7 @@
+operation: Delete
+description: The Delete operation.
+variants:
+  cupy:
+    eager: cp.delete
+  dask:
+    eager: da.delete

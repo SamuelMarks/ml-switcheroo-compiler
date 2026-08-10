@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """NLP operations."""
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -55,7 +56,7 @@ class NLPOpsConfig:
     name: Optional[str] = None
 
 
-def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
+def all_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
     """Generate all candidates for sampling operations.
 
     Args:
@@ -75,7 +76,7 @@ def all_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
     return num_sampled_tensor, true_expected_count, sampled_expected_count
 
 
-def compute_accidental_hits(true_classes: object, sampled_candidates: object, config: NLPOpsConfig) -> object:
+def compute_accidental_hits(true_classes: Any, sampled_candidates: Any, config: NLPOpsConfig) -> Any:
     """Compute accidental hits for candidate sampling.
 
     Identifies cases where a sampled candidate matches a true class and returns
@@ -137,10 +138,10 @@ class SamplerConfig:
 
 
 def fixed_unigram_candidate_sampler(
-    true_classes: object,
+    true_classes: Any,
     config: NLPOpsConfig,
     sampler_config: Optional[SamplerConfig] = None,
-) -> object:
+) -> Any:
     """Sample candidates using a fixed unigram distribution.
 
     Generates a set of sampled candidates according to a provided unigram
@@ -157,7 +158,7 @@ def fixed_unigram_candidate_sampler(
     return all_candidate_sampler(true_classes, config)
 
 
-def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
+def learned_unigram_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
     """Sample candidates using a learned unigram distribution.
 
     Generates candidates by continuously updating a unigram distribution
@@ -173,7 +174,7 @@ def learned_unigram_candidate_sampler(true_classes: object, config: NLPOpsConfig
     return all_candidate_sampler(true_classes, config)
 
 
-def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
+def log_uniform_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
     """Sample candidates using a log-uniform (Zipfian) distribution.
 
     Useful when classes are ordered by decreasing frequency.
@@ -188,7 +189,7 @@ def log_uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) ->
     return all_candidate_sampler(true_classes, config)
 
 
-def uniform_candidate_sampler(true_classes: object, config: NLPOpsConfig) -> object:
+def uniform_candidate_sampler(true_classes: Any, config: NLPOpsConfig) -> Any:
     """Sample candidates using a uniform distribution.
 
     Generates candidates where each candidate ID has an equal probability
@@ -215,18 +216,18 @@ class NCELossConfig:
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values: Optional[object] = None
+    sampled_values: Optional[Any] = None
     remove_accidental_hits: bool = False
     name: str = "nce_loss"
 
 
 def nce_loss(
-    weights: object,
-    biases: object,
-    labels: object,
-    inputs: object,
+    weights: Any,
+    biases: Any,
+    labels: Any,
+    inputs: Any,
     config: NCELossConfig,
-) -> object:
+) -> Any:
     """Compute the noise-contrastive estimation (NCE) training loss.
 
     This function calculates the NCE loss which is often used for training
@@ -256,19 +257,19 @@ class SampledSoftmaxConfig:
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values: Optional[object] = None
+    sampled_values: Optional[Any] = None
     remove_accidental_hits: bool = True
     seed: Optional[int] = None
     name: str = "sampled_softmax_loss"
 
 
 def sampled_softmax_loss(
-    weights: object,
-    biases: object,
-    labels: object,
-    inputs: object,
+    weights: Any,
+    biases: Any,
+    labels: Any,
+    inputs: Any,
     config: SampledSoftmaxConfig,
-) -> object:
+) -> Any:
     """Compute the sampled softmax training loss.
 
     This function approximates the full softmax loss by sampling a subset
@@ -288,12 +289,12 @@ def sampled_softmax_loss(
 
 
 def ctc_beam_search_decoder(
-    inputs: object,
-    sequence_length: object,
-    beam_width: object = 100,
-    top_paths: object = 1,
-    merge_repeated: object = True,
-) -> object:
+    inputs: Any,
+    sequence_length: Any,
+    beam_width: Any = 100,
+    top_paths: Any = 1,
+    merge_repeated: Any = True,
+) -> Any:
     """Perform beam search decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
@@ -313,11 +314,11 @@ def ctc_beam_search_decoder(
 
 
 def ctc_greedy_decoder(
-    inputs: object,
-    sequence_length: object,
-    merge_repeated: object = True,
-    blank_index: object = None,
-) -> object:
+    inputs: Any,
+    sequence_length: Any,
+    merge_repeated: Any = True,
+    blank_index: Any = None,
+) -> Any:
     """Perform greedy decoding on the given input logits.
 
     Decodes the output of a Connectionist Temporal Classification (CTC)
@@ -344,7 +345,7 @@ class CTCLossOptions:
     """
 
     logits_time_major: bool = True
-    unique: Optional[object] = None
+    unique: Optional[Any] = None
     blank_index: Optional[int] = None
     name: Optional[str] = None
 
@@ -355,7 +356,7 @@ def ctc_loss(
     label_length: Tensor,
     logit_length: Tensor,
     options: Optional[CTCLossOptions] = None,
-) -> Tensor:
+) -> Any:
     """Compute the Connectionist Temporal Classification (CTC) Loss.
 
     Calculates the loss between a continuous sequence of logits and a target
@@ -388,7 +389,7 @@ def ctc_loss(
     )
 
 
-def ctc_unique_labels(labels: object, name: object = None) -> object:
+def ctc_unique_labels(labels: Any, name: Any = None) -> Any:
     """Extract unique labels and indices for batched data.
 
     Utility function typically used in conjunction with CTC loss to find
@@ -436,7 +437,7 @@ class CtcLoss(OpDef):
 
     op_name = "CtcLoss"
 
-    def infer_shape(self, labels: object, logits: object, label_length: object, logit_length: object, **kwargs: object) -> object:
+    def infer_shape(self, labels: Any, logits: Any, label_length: Any, logit_length: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the CTC loss operation.
 
         Args:

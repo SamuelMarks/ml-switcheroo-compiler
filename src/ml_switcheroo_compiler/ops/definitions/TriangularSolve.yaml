@@ -1,0 +1,8 @@
+operation: TriangularSolve
+description: The TriangularSolve operation.
+variants:
+  numpy:
+    generator: scipy.linalg.solve_triangular({0}, {1}, lower={lower}, unit_diagonal={unit_diagonal},
+      trans=1 if {adjoint} else 0, check_finite=False)
+  tensorflow:
+    eager: tf.linalg.triangular_solve

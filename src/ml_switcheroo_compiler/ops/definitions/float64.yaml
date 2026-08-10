@@ -1,0 +1,5 @@
+operation: float64
+description: The float64 operation.
+variants:
+  edge_stablehlo:
+    generator: f64

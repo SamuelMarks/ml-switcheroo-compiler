@@ -1,0 +1,5 @@
+operation: Quantile
+description: The Quantile operation.
+variants:
+  keras:
+    eager: keras_ops.quantile

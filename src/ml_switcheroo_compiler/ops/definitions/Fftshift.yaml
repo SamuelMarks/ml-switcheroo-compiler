@@ -1,0 +1,9 @@
+operation: Fftshift
+description: The Fftshift operation.
+variants:
+  cupy:
+    eager: cp.fft.fftshift
+  dask:
+    eager: da.fft.fftshift
+  numpy:
+    generator: np.fft.fftshift({0})

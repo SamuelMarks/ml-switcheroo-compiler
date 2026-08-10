@@ -1,0 +1,15 @@
+operation: Pad
+description: The Pad operation.
+variants:
+  cupy:
+    eager: cp.pad
+  dask:
+    eager: da.pad
+  edge_onnx:
+    generator: Pad
+  edge_stablehlo:
+    generator: stablehlo.pad
+  keras:
+    eager: keras_ops.pad
+  tensorflow:
+    eager: tf.pad

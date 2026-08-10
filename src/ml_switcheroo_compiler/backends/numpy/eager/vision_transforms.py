@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy vision transforms."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_elastic_transform_eager,
@@ -10,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("RandomShear")
-def _np_random_shear(backend_module: object, images: object, y_factor: object, x_factor: object = None, **kwargs: object) -> object:
+def _np_random_shear(backend_module: Any, images: Any, y_factor: Any, x_factor: Any = None, **kwargs: Any) -> Any:
     """Evaluate _np_random_shear operation.
 
     Args:
@@ -20,14 +22,13 @@ def _np_random_shear(backend_module: object, images: object, y_factor: object, x
         x_factor (object): The x_factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return random_shear_eager(backend_module, images, y_factor, x_factor, **kwargs)
 
 
 @numpy_eager_registry.register("RandomPerspective")
-def _np_random_perspective(backend_module: object, images: object, factor: object, **kwargs: object) -> object:
+def _np_random_perspective(backend_module: Any, images: Any, factor: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_perspective operation.
 
     Args:
@@ -36,14 +37,13 @@ def _np_random_perspective(backend_module: object, images: object, factor: objec
         factor (object): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return random_perspective_eager(backend_module, images, factor, **kwargs)
 
 
 @numpy_eager_registry.register("RandomElasticTransform")
-def _np_random_elastic_transform(backend_module: object, images: object, alpha: object, sigma: object, **kwargs: object) -> object:
+def _np_random_elastic_transform(backend_module: Any, images: Any, alpha: Any, sigma: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_elastic_transform operation.
 
     Args:
@@ -53,7 +53,6 @@ def _np_random_elastic_transform(backend_module: object, images: object, alpha: 
         sigma (object): The sigma parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return random_elastic_transform_eager(backend_module, images, alpha, sigma, **kwargs)

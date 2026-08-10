@@ -1,0 +1,5 @@
+operation: StridedSlice
+description: The StridedSlice operation.
+variants:
+  tensorflow:
+    eager: tf.strided_slice

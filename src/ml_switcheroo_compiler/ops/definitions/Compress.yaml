@@ -1,0 +1,7 @@
+operation: Compress
+description: The Compress operation.
+variants:
+  cupy:
+    eager: cp.compress
+  dask:
+    eager: da.compress

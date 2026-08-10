@@ -1,0 +1,5 @@
+operation: CumulativeLogsumexp
+description: The CumulativeLogsumexp operation.
+variants:
+  tensorflow:
+    eager: tf.math.cumulative_logsumexp

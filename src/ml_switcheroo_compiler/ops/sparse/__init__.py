@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Sparse ops."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -39,7 +42,7 @@ class SparseDenseMatMul(OpDef):
 
     op_name = "SparseDenseMatMul"
 
-    def infer_shape(self, sp_a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse to dense operation.
 
         Args:
@@ -47,8 +50,7 @@ class SparseDenseMatMul(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape_a = getattr(sp_a, "shape", getattr(sp_a, "dense_shape", ()))
         shape_b = getattr(b, "shape", ())
@@ -63,7 +65,7 @@ class SparseAdd(OpDef):
 
     op_name = "SparseAdd"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse add operation.
 
         Args:
@@ -71,8 +73,7 @@ class SparseAdd(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(a, "dense_shape", getattr(a, "shape", ()))
 
@@ -83,7 +84,7 @@ class SparseSampledAdd(OpDef):
 
     op_name = "SparseSampledAdd"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse sampled add operation.
 
         Args:
@@ -91,8 +92,7 @@ class SparseSampledAdd(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(a, "dense_shape", getattr(a, "shape", ()))
 
@@ -103,7 +103,7 @@ class Smm(OpDef):
 
     op_name = "Smm"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the smm operation.
 
         Args:
@@ -111,8 +111,7 @@ class Smm(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape_a = getattr(a, "shape", getattr(a, "dense_shape", ()))
         shape_b = getattr(b, "shape", ())
@@ -127,15 +126,14 @@ class SparseReduceSum(OpDef):
 
     op_name = "SparseReduceSum"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse reduce sum operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -146,15 +144,14 @@ class SparseSoftmax(OpDef):
 
     op_name = "SparseSoftmax"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse softmax operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -165,15 +162,14 @@ class SparseReduceMax(OpDef):
 
     op_name = "SparseReduceMax"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse reduce max operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -184,15 +180,14 @@ class SparseBincount(OpDef):
 
     op_name = "SparseBincount"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse bincount operation.
 
         Args:
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -203,15 +198,14 @@ class SparseCrossHashed(OpDef):
 
     op_name = "SparseCrossHashed"
 
-    def infer_shape(self, inputs: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse cross hashed operation.
 
         Args:
             inputs (object): The inputs parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -222,15 +216,14 @@ class SparseExpandDims(OpDef):
 
     op_name = "SparseExpandDims"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse expand dims operation.
 
         Args:
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -241,15 +234,14 @@ class SparseEye(OpDef):
 
     op_name = "SparseEye"
 
-    def infer_shape(self, num_rows: object, **kwargs: object) -> object:
+    def infer_shape(self, num_rows: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse eye operation.
 
         Args:
             num_rows (object): The num_rows parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -260,7 +252,7 @@ class SparseFillEmptyRows(OpDef):
 
     op_name = "SparseFillEmptyRows"
 
-    def infer_shape(self, sp_input: object, default_value: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, default_value: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse fill empty rows operation.
 
         Args:
@@ -268,8 +260,7 @@ class SparseFillEmptyRows(OpDef):
             default_value (object): The default_value parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -280,15 +271,14 @@ class SparseMapValues(OpDef):
 
     op_name = "SparseMapValues"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse map values operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -299,7 +289,7 @@ class SparseMask(OpDef):
 
     op_name = "SparseMask"
 
-    def infer_shape(self, a: object, mask: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, mask: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse mask operation.
 
         Args:
@@ -307,8 +297,7 @@ class SparseMask(OpDef):
             mask (object): The mask parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(a, "dense_shape", ())
 
@@ -319,7 +308,7 @@ class SparseMaximum(OpDef):
 
     op_name = "SparseMaximum"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse maximum operation.
 
         Args:
@@ -327,8 +316,7 @@ class SparseMaximum(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(a, "dense_shape", ())
 
@@ -339,7 +327,7 @@ class SparseMinimum(OpDef):
 
     op_name = "SparseMinimum"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse minimum operation.
 
         Args:
@@ -347,8 +335,7 @@ class SparseMinimum(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(a, "dense_shape", ())
 
@@ -359,15 +346,14 @@ class SparseReorder(OpDef):
 
     op_name = "SparseReorder"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse reorder operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -378,15 +364,14 @@ class SparseResetShape(OpDef):
 
     op_name = "SparseResetShape"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse reset shape operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -397,7 +382,7 @@ class SparseReshape(OpDef):
 
     op_name = "SparseReshape"
 
-    def infer_shape(self, sp_input: object, shape: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, shape: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse reshape operation.
 
         Args:
@@ -405,8 +390,7 @@ class SparseReshape(OpDef):
             shape (object): The shape parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -417,7 +401,7 @@ class SparseRetain(OpDef):
 
     op_name = "SparseRetain"
 
-    def infer_shape(self, sp_input: object, to_retain: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, to_retain: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse retain operation.
 
         Args:
@@ -425,8 +409,7 @@ class SparseRetain(OpDef):
             to_retain (object): The to_retain parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(sp_input, "dense_shape", ())
 
@@ -437,7 +420,7 @@ class SparseSegmentMean(OpDef):
 
     op_name = "SparseSegmentMean"
 
-    def infer_shape(self, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+    def infer_shape(self, data: Any, indices: Any, segment_ids: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse segment mean operation.
 
         Args:
@@ -446,8 +429,7 @@ class SparseSegmentMean(OpDef):
             segment_ids (object): The segment_ids parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -458,7 +440,7 @@ class SparseSegmentSqrtN(OpDef):
 
     op_name = "SparseSegmentSqrtN"
 
-    def infer_shape(self, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+    def infer_shape(self, data: Any, indices: Any, segment_ids: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse segment sqrt n operation.
 
         Args:
@@ -467,8 +449,7 @@ class SparseSegmentSqrtN(OpDef):
             segment_ids (object): The segment_ids parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -479,7 +460,7 @@ class SparseSegmentSum(OpDef):
 
     op_name = "SparseSegmentSum"
 
-    def infer_shape(self, data: object, indices: object, segment_ids: object, **kwargs: object) -> object:
+    def infer_shape(self, data: Any, indices: Any, segment_ids: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse segment sum operation.
 
         Args:
@@ -488,8 +469,7 @@ class SparseSegmentSum(OpDef):
             segment_ids (object): The segment_ids parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -500,7 +480,7 @@ class SparseSlice(OpDef):
 
     op_name = "SparseSlice"
 
-    def infer_shape(self, sp_input: object, start: object, size: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, start: Any, size: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse slice operation.
 
         Args:
@@ -509,8 +489,7 @@ class SparseSlice(OpDef):
             size (object): The size parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -521,7 +500,7 @@ class SparseToIndicator(OpDef):
 
     op_name = "SparseToIndicator"
 
-    def infer_shape(self, sp_input: object, vocab_size: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, vocab_size: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse to indicator operation.
 
         Args:
@@ -529,8 +508,7 @@ class SparseToIndicator(OpDef):
             vocab_size (object): The vocab_size parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -541,15 +519,14 @@ class SparseTranspose(OpDef):
 
     op_name = "SparseTranspose"
 
-    def infer_shape(self, sp_input: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse transpose operation.
 
         Args:
             sp_input (object): The sp_input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -583,7 +560,7 @@ class RaggedDot(OpDef):
 
     op_name = "RaggedDot"
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the ragged dot operation.
 
         Args:
@@ -591,8 +568,7 @@ class RaggedDot(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return a.shape
 
@@ -603,15 +579,14 @@ class SparseConcat(OpDef):
 
     op_name = "SparseConcat"
 
-    def infer_shape(self, sp_inputs: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_inputs: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse concat operation.
 
         Args:
             sp_inputs (object): The sp_inputs parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -622,7 +597,7 @@ class SparseSplit(OpDef):
 
     op_name = "SparseSplit"
 
-    def infer_shape(self, sp_input: object, num_split: object, **kwargs: object) -> object:
+    def infer_shape(self, sp_input: Any, num_split: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse split operation.
 
         Args:
@@ -630,8 +605,7 @@ class SparseSplit(OpDef):
             num_split (object): The num_split parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -642,7 +616,7 @@ class SparseToDense(OpDef):
 
     op_name = "SparseToDense"
 
-    def infer_shape(self, sparse_indices: object, output_shape: object, sparse_values: object, default_value: object, **kwargs: object) -> object:
+    def infer_shape(self, sparse_indices: Any, output_shape: Any, sparse_values: Any, default_value: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the sparse to dense operation.
 
         Args:
@@ -652,7 +626,6 @@ class SparseToDense(OpDef):
             default_value (object): The default_value parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()

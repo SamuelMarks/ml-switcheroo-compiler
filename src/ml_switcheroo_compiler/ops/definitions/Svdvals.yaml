@@ -1,0 +1,5 @@
+operation: Svdvals
+description: The Svdvals operation.
+variants:
+  numpy:
+    generator: np.linalg.svd({0}, compute_uv=False)

@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
-[![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
+[![Doc Coverage](https://img.shields.io/badge/doc_coverage-94.6%25-green.svg)](#)
 
 The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution. Crucially, this architecture empowers developers to run precise forward and backward passes directly in the browser for exact shape learning, and to empirically benchmark any ML syntax across different execution backends.
 
@@ -30,7 +30,7 @@ Please refer to [`ARCHITECTURE.md`](ARCHITECTURE.md) for an in-depth dive into t
 ## Compilation Pipeline
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph Frontends ["zero-* Frontends (API Shells)"]
         PT[PyTorch API]
         JX[JAX API]
@@ -101,7 +101,7 @@ graph TD
         JAX_B[jax]
         MLX_B[mlx]
         CUPY[cupy]
-        DUSK[dusk]
+        DASK[dask]
         TORCH_B[torch]
     end
 
@@ -125,7 +125,7 @@ graph TD
     COMP --> JAX_B
     COMP --> MLX_B
     COMP --> CUPY
-    COMP --> DUSK
+    COMP --> DASK
     COMP --> TORCH_B
 ```
 
@@ -137,7 +137,7 @@ The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecos
 - **`jax`**: High-performance compiler and array library backend.
 - **`mlx`**: Apple Silicon optimized array framework backend.
 - **`cupy`**: GPU-accelerated array computing backend.
-- **`dusk`**: Specialized distributed or alternative backend.
+- **`dask`**: Specialized distributed or alternative backend.
 - **`torch`**: Native PyTorch execution backend.
 - **`keras`**: Keras execution backend.
 

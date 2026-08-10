@@ -1,0 +1,5 @@
+operation: ReadVariable
+description: The ReadVariable operation.
+variants:
+  pytorch:
+    generator: '{0}'

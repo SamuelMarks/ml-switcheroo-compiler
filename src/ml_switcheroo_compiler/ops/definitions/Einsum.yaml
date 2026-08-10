@@ -1,0 +1,11 @@
+operation: Einsum
+description: The Einsum operation.
+variants:
+  cupy:
+    eager: cp.einsum
+  dask:
+    eager: da.einsum
+  keras:
+    eager: keras_ops.einsum
+  tensorflow:
+    eager: tf.einsum

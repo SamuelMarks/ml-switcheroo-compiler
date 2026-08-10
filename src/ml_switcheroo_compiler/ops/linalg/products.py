@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for products.py."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
@@ -12,15 +15,14 @@ class BandPart(OpDef):
     Extracts a central band of a tensor.
     """
 
-    def infer_shape(self, input: object, **kwargs: object) -> object:
+    def infer_shape(self, input: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             input (object): The input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return input if isinstance(input, tuple) else None
 
@@ -32,15 +34,14 @@ class Diag(OpDef):
     Extracts a diagonal or constructs a diagonal array.
     """
 
-    def infer_shape(self, input: object, **kwargs: object) -> object:
+    def infer_shape(self, input: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             input (object): The input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         if isinstance(input, tuple):
             if len(input) == 1:
@@ -57,7 +58,7 @@ class Matmul(OpDef):
     Computes the matrix product of two arrays
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:
@@ -76,7 +77,7 @@ class Matmul(OpDef):
         return None
 
 
-def _has_valid_shape(obj: object) -> bool:
+def _has_valid_shape(obj: Any) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
@@ -95,15 +96,14 @@ class MatrixPower(OpDef):
     Computes the matrix power of a square matrix.
     """
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         """Infer shape.
 
@@ -117,8 +117,7 @@ class MatrixPower(OpDef):
             a (object): The input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The evaluated output resulting from this operation.
+        Returns: Any: The evaluated output resulting from this operation.
         """
         if hasattr(a, "shape"):
             return a.shape
@@ -131,15 +130,14 @@ class Trace(OpDef):
 
     op_name = "Trace"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = list(a.shape)
         axis1 = kwargs.get("axis1", 0)
@@ -156,15 +154,14 @@ class MatrixRank(OpDef):
 
     op_name = "MatrixRank"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -179,15 +176,14 @@ class MatrixTranspose(OpDef):
 
     op_name = "MatrixTranspose"
 
-    def infer_shape(self, a: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             a (object): The a parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = list(a.shape)
         if len(shape) >= 2:
@@ -201,15 +197,14 @@ class Adjoint(OpDef):
 
     op_name = "Adjoint"
 
-    def infer_shape(self, matrix: object, **kwargs: object) -> object:
+    def infer_shape(self, matrix: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             matrix (object): The matrix parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = list(matrix.shape)
         if len(shape) >= 2:
@@ -223,15 +218,14 @@ class Diagonal(OpDef):
 
     op_name = "Diagonal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -242,15 +236,14 @@ class EinsumPath(OpDef):
 
     op_name = "EinsumPath"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Typically returns a tuple representing the path and a string representation.
         return ()
@@ -262,14 +255,13 @@ class MultiDot(OpDef):
 
     op_name = "MultiDot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()

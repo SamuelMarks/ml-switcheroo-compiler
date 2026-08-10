@@ -1,0 +1,11 @@
+operation: Cosh
+description: The Cosh operation.
+variants:
+  cupy:
+    eager: cp.cosh
+  dask:
+    eager: da.cosh
+  keras:
+    eager: keras_ops.cosh
+  tensorflow:
+    eager: tf.cosh

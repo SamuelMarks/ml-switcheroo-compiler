@@ -1,0 +1,5 @@
+operation: Poly
+description: The Poly operation.
+variants:
+  numpy:
+    generator: np.poly

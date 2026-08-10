@@ -1,0 +1,5 @@
+operation: Diagflat
+description: The Diagflat operation.
+variants:
+  keras:
+    eager: keras_ops.diagflat

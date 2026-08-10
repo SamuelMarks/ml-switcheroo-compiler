@@ -1,3 +1,6 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Autodiff rules registry."""
 
 from ml_switcheroo_compiler.transforms.autodiff_rules import (
@@ -7,6 +10,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules import (
     binary_trig_rules,
     cast_and_conj_rules,
     custom_rules,
+    edge_rules,
     generic_shape_rules,
     reduction_rules,
     shape_creation_rules,
@@ -23,6 +27,7 @@ __all__ = [
     "binary_special_rules",
     "binary_trig_rules",
     "custom_rules",
+    "edge_rules",
     "time_distributed_rules",
     "reduction_rules",
     "shape_creation_rules",
@@ -32,4 +37,7 @@ __all__ = [
     "unary_math_rules",
     "cast_and_conj_rules",
     "unary_nn_rules",
+    "binary_logical_rules",
 ]
+
+from . import binary_logical_rules

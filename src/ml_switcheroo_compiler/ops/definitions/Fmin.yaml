@@ -1,0 +1,7 @@
+operation: Fmin
+description: The Fmin operation.
+variants:
+  cupy:
+    eager: cp.fmin
+  dask:
+    eager: da.fmin

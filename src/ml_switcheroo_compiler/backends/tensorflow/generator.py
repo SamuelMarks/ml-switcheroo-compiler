@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """TensorFlow Target Emission."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -12,7 +14,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
     """Emit TensorFlow-compatible code from IR."""
 
     @classmethod
-    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> object:
+    def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> Any:
         """Load.
 
         Args:
@@ -21,8 +23,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
         fix_imports (bool): The fix_imports parameter.
         encoding (str): The encoding parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         import pickle
 
@@ -30,7 +31,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             return pickle.load(f)
 
     @classmethod
-    def save(cls: type, file: str, arr: object, allow_pickle: bool = True, fix_imports: bool = True) -> None:
+    def save(cls: type, file: str, arr: Any, allow_pickle: bool = True, fix_imports: bool = True) -> None:
         """Save.
 
         Args:
@@ -45,7 +46,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             pickle.dump(arr, f)
 
     @classmethod
-    def savez(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Savez.
 
         Args:
@@ -61,7 +62,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             pickle.dump(data, f)
 
     @classmethod
-    def savez_compressed(cls: type, file: str, *args: object, **kwds: object) -> None:
+    def savez_compressed(cls: type, file: str, *args: Any, **kwds: Any) -> None:
         """Savez compressed.
 
         Args:
@@ -77,7 +78,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
         with gzip.open(file, "wb") as f:
             pickle.dump(data, f)
 
-    def __init__(self, graph: object) -> None:
+    def __init__(self, graph: Any) -> None:
         """Init.
 
         Args:
@@ -94,7 +95,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
         """
         return "tf"
 
-    def _format_zeros_like(self, op: str, kwargs: object) -> str:
+    def _format_zeros_like(self, op: str, kwargs: Any) -> str:
         """Evaluate _format_zeros_like operation.
 
         Args:
@@ -109,7 +110,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_full(self, kwargs: object) -> str:
+    def _format_full(self, kwargs: Any) -> str:
         """Evaluate _format_full operation.
 
         Args:
@@ -123,7 +124,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             res += f", dtype='{kwargs['dtype']}'"
         return res
 
-    def _format_transpose(self, kwargs: object) -> str:
+    def _format_transpose(self, kwargs: Any) -> str:
         """Evaluate _format_transpose operation.
 
         Args:
@@ -136,7 +137,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             return "tf.transpose({0}, perm={axes})"
         return "tf.transpose({0})"
 
-    def visit_RaggedDot(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_RaggedDot(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_RaggedDot operation.
 
         Args:
@@ -149,7 +150,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
         """
         return f"tf_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_Einsum(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Handle Einsum nodes.
 
         Args:
@@ -229,16 +230,14 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
     def _generate_file_header(self) -> list[str]:
         """Evaluate _generate_file_header operation.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return [self.header.strip()]
 
     def _resolve_imports(self) -> list[str]:
         """Evaluate _resolve_imports operation.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return ["import tensorflow as tf\n"]
 

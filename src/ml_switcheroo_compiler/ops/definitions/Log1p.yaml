@@ -1,0 +1,5 @@
+operation: Log1p
+description: The Log1p operation.
+variants:
+  edge_stablehlo:
+    generator: stablehlo.log1p

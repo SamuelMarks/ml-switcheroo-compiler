@@ -1,0 +1,5 @@
+operation: StopGradient
+description: The StopGradient operation.
+variants:
+  pytorch:
+    generator: '{0}.detach()'

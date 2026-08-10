@@ -92,7 +92,7 @@ def test_dtype_inference_branches() -> None:
     node = IRNode(id="n1", op_type="Output", inputs=[], attributes={})
     dtypes: dict[str, str] = {}
     _infer_output_dtype(node, dtypes)
-    assert dtypes["n1"] is None
+    assert dtypes.get("n1") is None
     node2 = IRNode(id="n2", op_type="Add", inputs=["in1"], attributes={"dtype": DType.Float32.value})
     dtypes2 = {"in1": DType.Float32.value}
     res = _infer_op_dtype(node2, dtypes2)

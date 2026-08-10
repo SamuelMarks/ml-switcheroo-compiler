@@ -1,0 +1,9 @@
+operation: Digitize
+description: The Digitize operation.
+variants:
+  cupy:
+    eager: cp.digitize
+  dask:
+    eager: da.digitize
+  keras:
+    eager: keras_ops.digitize

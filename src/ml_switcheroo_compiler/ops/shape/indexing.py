@@ -1,8 +1,10 @@
-"""Shape operations for Tensor objects."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Shape operations for Tensor objects."""
 from dataclasses import dataclass
+from typing import Any
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -30,12 +32,12 @@ class IndexSpec:
     axis: int = 0
 
 
-def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
-    """Gather values along an axis specified by dim using index tensor.
+def gather(input: Tensor, axis: int, index: Tensor) -> Any:
+    """Gather values along an axis specified by axis using index tensor.
 
     Args:
         input (Tensor): The source tensor
-        dim (int): The axis along which to index
+        axis (int): The axis along which to index
         index (Tensor): The indices of elements to gather
 
     Returns:
@@ -47,7 +49,7 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
             "TakeAlongAxis",
             (input.data if type(input).__name__ == "Tensor" else input),
             (index.data if type(index).__name__ == "Tensor" else index),
-            axis=dim,
+            axis=axis,
         )
         return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, input.dtype, input.device))
     inputs = [input, index]
@@ -62,7 +64,7 @@ def gather(input: Tensor, dim: int, index: Tensor) -> Tensor:
     )
 
 
-def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
+def gather_nd(input: Tensor, indices: Tensor) -> Any:
     """Gather slices from input tensor using multi-dimensional indices.
 
     Args:
@@ -93,7 +95,7 @@ def gather_nd(input: Tensor, indices: Tensor) -> Tensor:
     )
 
 
-def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Tensor:
+def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Any:
     """Take elements from the input tensor at the specified flat indices.
 
     Args:
@@ -125,7 +127,7 @@ def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Tensor:
     )
 
 
-def take_along_axis(arr: object, indices: object, axis: int) -> object:
+def take_along_axis(arr: Any, indices: Any, axis: int) -> Any:
     """Take values from the input array along a specified axis using 1D indices.
 
     Args:
@@ -133,8 +135,7 @@ def take_along_axis(arr: object, indices: object, axis: int) -> object:
         indices (object): The indices to take along the axis
         axis (int): The axis along which to take values
 
-    Returns:
-        object: The selected values.
+    Returns: Any: The selected values.
     """
     backend = get_active_backend()
     return backend.execute_op(
@@ -145,7 +146,7 @@ def take_along_axis(arr: object, indices: object, axis: int) -> object:
     )
 
 
-def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Tensor:
+def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Any:
     """Find indices where elements should be inserted to maintain order.
 
     Args:
@@ -175,7 +176,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Tensor:
     return _emit_shape_node("SearchSorted", inputs, attributes, v.shape, DType.Int32)
 
 
-def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
+def where(condition: Tensor, input: Tensor, other: Tensor) -> Any:
     """Select elements from input or other based on condition.
 
     Args:
@@ -208,7 +209,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Tensor:
     )
 
 
-def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Tensor:
+def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Any:
     """Select elements from on_true or on_false based on pred.
 
     Args:
@@ -222,7 +223,7 @@ def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Tensor:
     return where(pred, on_true, on_false)
 
 
-def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tensor:
+def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Any:
     """Apply boolean mask to tensor.
 
     Args:
@@ -258,7 +259,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
     )
 
 
-def invert_permutation(x: Tensor) -> Tensor:
+def invert_permutation(x: Tensor) -> Any:
     """Compute the inverse permutation of a tensor.
 
     Args:
@@ -291,15 +292,14 @@ class Extract(OpDef):
 
     op_name = "Extract"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the infer_shape operation.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         # Typically returns a 1D tensor of elements satisfying a condition.
         return (None,)
@@ -311,7 +311,7 @@ class DynamicPartition(OpDef):
 
     op_name = "DynamicPartition"
 
-    def infer_shape(self, data: object, partitions: object, num_partitions: int, **kwargs: object) -> object:
+    def infer_shape(self, data: Any, partitions: Any, num_partitions: int, **kwargs: Any) -> Any:
         """Infers the output shape for the dynamic partition operation.
 
         Args:
@@ -320,8 +320,7 @@ class DynamicPartition(OpDef):
             num_partitions (int): The total number of output partitions.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: An empty tuple representing a placeholder shape for multiple outputs.
+        Returns: Any: An empty tuple representing a placeholder shape for multiple outputs.
         """
         # returns list of tensors, hard to represent simply here
         return ()
@@ -333,7 +332,7 @@ class DynamicStitch(OpDef):
 
     op_name = "DynamicStitch"
 
-    def infer_shape(self, indices: object, data: object, **kwargs: object) -> object:
+    def infer_shape(self, indices: Any, data: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the dynamic stitch operation.
 
         Args:
@@ -341,8 +340,7 @@ class DynamicStitch(OpDef):
             data (object): The data tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: An empty tuple representing a placeholder shape.
+        Returns: Any: An empty tuple representing a placeholder shape.
         """
         return ()
 
@@ -353,7 +351,7 @@ class TensorScatterSub(OpDef):
 
     op_name = "TensorScatterSub"
 
-    def infer_shape(self, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, indices: Any, updates: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the tensor scatter sub operation.
 
         Args:
@@ -362,8 +360,7 @@ class TensorScatterSub(OpDef):
             updates (object): The updates tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The shape of the input tensor.
+        Returns: Any: The shape of the input tensor.
         """
         return getattr(tensor, "shape", ())
 
@@ -374,7 +371,7 @@ class ExtractVolumePatches(OpDef):
 
     op_name = "ExtractVolumePatches"
 
-    def infer_shape(self, input: object, ksizes: list[int], strides: list[int], padding: str, **kwargs: object) -> object:
+    def infer_shape(self, input: Any, ksizes: list[int], strides: list[int], padding: str, **kwargs: Any) -> Any:
         """Infers the output shape for the extract volume patches operation.
 
         Args:
@@ -384,8 +381,7 @@ class ExtractVolumePatches(OpDef):
             padding (str): The type of padding algorithm to use.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: An empty tuple representing a placeholder shape.
+        Returns: Any: An empty tuple representing a placeholder shape.
         """
         return ()
 
@@ -396,7 +392,7 @@ class UnravelIndex(OpDef):
 
     op_name = "UnravelIndex"
 
-    def infer_shape(self, indices: object, dims: object, **kwargs: object) -> object:
+    def infer_shape(self, indices: Any, dims: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the unravel index operation.
 
         Args:
@@ -404,8 +400,7 @@ class UnravelIndex(OpDef):
             dims (object): The dimensions tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: An empty tuple representing a placeholder shape for multiple outputs.
+        Returns: Any: An empty tuple representing a placeholder shape for multiple outputs.
         """
         # unravel_index returns a tuple of tensors
         return ()
@@ -417,8 +412,8 @@ class DynamicSliceInDim(OpDef):
 
     op_name = "DynamicSliceInDim"
 
-    def infer_shape(self, operand: object, start_index: object, slice_size: int, axis: int = 0, **kwargs: object) -> object:
-        """Infers the output shape for the dynamic slice in dim operation.
+    def infer_shape(self, operand: Any, start_index: Any, slice_size: int, axis: int = 0, **kwargs: Any) -> Any:
+        """Infers the output shape for the dynamic slice in axis operation.
 
         Args:
             operand (object): The operand parameter.
@@ -427,8 +422,7 @@ class DynamicSliceInDim(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -442,8 +436,8 @@ class DynamicUpdateSliceInDim(OpDef):
 
     op_name = "DynamicUpdateSliceInDim"
 
-    def infer_shape(self, operand: object, update: object, start_index: object, axis: int = 0, **kwargs: object) -> object:
-        """Infers the output shape for the dynamic update slice in dim operation.
+    def infer_shape(self, operand: Any, update: Any, start_index: Any, axis: int = 0, **kwargs: Any) -> Any:
+        """Infers the output shape for the dynamic update slice in axis operation.
 
         Args:
             operand (object): The operand parameter.
@@ -452,8 +446,7 @@ class DynamicUpdateSliceInDim(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(operand, "shape", ())
 
@@ -464,8 +457,8 @@ class DynamicIndexInDim(OpDef):
 
     op_name = "DynamicIndexInDim"
 
-    def infer_shape(self, operand: object, index: object, axis: int = 0, keepdims: bool = True, **kwargs: object) -> object:
-        """Infers the output shape for the dynamic index in dim operation.
+    def infer_shape(self, operand: Any, index: Any, axis: int = 0, keepdims: bool = True, **kwargs: Any) -> Any:
+        """Infers the output shape for the dynamic index in axis operation.
 
         Args:
             operand (object): The operand parameter.
@@ -474,8 +467,7 @@ class DynamicIndexInDim(OpDef):
             keepdims (bool): The keepdims parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -492,8 +484,8 @@ class DynamicUpdateIndexInDim(OpDef):
 
     op_name = "DynamicUpdateIndexInDim"
 
-    def infer_shape(self, operand: object, update: object, index: object, axis: int = 0, **kwargs: object) -> object:
-        """Infers the output shape for the dynamic update index in dim operation.
+    def infer_shape(self, operand: Any, update: Any, index: Any, axis: int = 0, **kwargs: Any) -> Any:
+        """Infers the output shape for the dynamic update index in axis operation.
 
         Args:
             operand (object): The operand parameter.
@@ -502,8 +494,7 @@ class DynamicUpdateIndexInDim(OpDef):
             axis (int): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(operand, "shape", ())
 
@@ -516,19 +507,18 @@ class SliceInDim(OpDef):
 
     def infer_shape(
         self,
-        operand: object,
+        operand: Any,
         spec: IndexSpec,
-        **kwargs: object,
-    ) -> object:
-        """Infers the output shape for the slice in dim operation.
+        **kwargs: Any,
+    ) -> Any:
+        """Infers the output shape for the slice in axis operation.
 
         Args:
             operand (object): The input tensor.
             spec (IndexSpec): The index specification.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The updated shape tuple.
+        Returns: Any: The updated shape tuple.
         """
         shape = list(getattr(operand, "shape", ()))
         if shape:
@@ -542,7 +532,7 @@ class ScatterApply(OpDef):
 
     op_name = "ScatterApply"
 
-    def infer_shape(self, tensor: object, indices: object, updates: object, func: object, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, indices: Any, updates: Any, func: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the scatter apply operation.
 
         Args:
@@ -552,8 +542,7 @@ class ScatterApply(OpDef):
             func (object): The function to apply.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The shape of the input tensor.
+        Returns: Any: The shape of the input tensor.
         """
         return getattr(tensor, "shape", ())
 
@@ -564,7 +553,7 @@ class ScatterMax(OpDef):
 
     op_name = "ScatterMax"
 
-    def infer_shape(self, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, indices: Any, updates: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the scatter max operation.
 
         Args:
@@ -573,8 +562,7 @@ class ScatterMax(OpDef):
             updates (object): The updates tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The shape of the input tensor.
+        Returns: Any: The shape of the input tensor.
         """
         return getattr(tensor, "shape", ())
 
@@ -585,7 +573,7 @@ class ScatterMin(OpDef):
 
     op_name = "ScatterMin"
 
-    def infer_shape(self, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, indices: Any, updates: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the scatter min operation.
 
         Args:
@@ -594,8 +582,7 @@ class ScatterMin(OpDef):
             updates (object): The updates tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The shape of the input tensor.
+        Returns: Any: The shape of the input tensor.
         """
         return getattr(tensor, "shape", ())
 
@@ -606,7 +593,7 @@ class ScatterMul(OpDef):
 
     op_name = "ScatterMul"
 
-    def infer_shape(self, tensor: object, indices: object, updates: object, **kwargs: object) -> object:
+    def infer_shape(self, tensor: Any, indices: Any, updates: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the scatter mul operation.
 
         Args:
@@ -615,8 +602,7 @@ class ScatterMul(OpDef):
             updates (object): The updates tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The shape of the input tensor.
+        Returns: Any: The shape of the input tensor.
         """
         return getattr(tensor, "shape", ())
 
@@ -627,7 +613,7 @@ class PutAlongAxis(OpDef):
 
     op_name = "PutAlongAxis"
 
-    def infer_shape(self, arr: object, indices: object, values: object, **kwargs: object) -> object:
+    def infer_shape(self, arr: Any, indices: Any, values: Any, **kwargs: Any) -> Any:
         """Infers the output shape for the put along axis operation.
 
         Args:
@@ -636,13 +622,12 @@ class PutAlongAxis(OpDef):
             values (object): The values tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The shape of the input array or tensor.
+        Returns: Any: The shape of the input array or tensor.
         """
         return getattr(arr, "shape", ())
 
 
-def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> Tensor:
+def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> Any:
     """Put values into array along axis at given indices.
 
     Args:

@@ -1,0 +1,11 @@
+operation: Angle
+description: The Angle operation.
+variants:
+  cupy:
+    eager: cp.angle
+  dask:
+    eager: da.angle
+  keras:
+    eager: keras_ops.angle
+  tensorflow:
+    eager: tf.math.angle

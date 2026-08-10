@@ -1,0 +1,5 @@
+operation: Polyadd
+description: The Polyadd operation.
+variants:
+  numpy:
+    generator: np.polyadd

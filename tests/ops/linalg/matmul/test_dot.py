@@ -41,3 +41,29 @@ def test_pdot_infer_shape():
         shape = (1, 2)
 
     assert Pdot().infer_shape(DummyShape(), DummyShape(), None) == (1, 2)
+
+
+def test_tensordot_compute_out_shape():
+    from ml_switcheroo_compiler.ops.linalg.dot import _compute_pdot_shape
+
+    assert _compute_pdot_shape((), ()) == ()
+    assert _compute_pdot_shape((2,), (2,)) == ()
+    assert _compute_pdot_shape((2, 3), (3, 4)) == (2, 4)
+    assert _compute_pdot_shape((2,), ()) == (2,)
+    assert _compute_pdot_shape((), (2,)) == (2,)
+    assert _compute_pdot_shape((2, 3), (3,)) == (2,)
+    assert _compute_pdot_shape((2, 3, 4), (4, 5)) == (2, 3, 5)
+
+
+def test_pdot_frontend():
+    import numpy as np
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.linalg.dot import pdot
+
+    config.eager_mode = True
+    try:
+        # Fallback will trigger backend not implemented, but we just need to hit the function
+        pdot(np.array([1]), np.array([2]))
+    except Exception:
+        pass

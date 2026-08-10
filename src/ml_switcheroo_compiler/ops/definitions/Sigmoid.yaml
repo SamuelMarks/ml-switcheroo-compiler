@@ -1,0 +1,13 @@
+operation: Sigmoid
+description: The Sigmoid operation.
+variants:
+  edge_onnx:
+    generator: Sigmoid
+  edge_stablehlo:
+    generator: stablehlo.logistic
+  keras:
+    eager: keras_ops.sigmoid
+  numpy:
+    generator: scipy.special.expit({0})
+  tensorflow:
+    eager: tf.sigmoid

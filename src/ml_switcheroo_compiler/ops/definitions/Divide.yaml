@@ -1,0 +1,11 @@
+operation: Divide
+description: The Divide operation.
+variants:
+  cupy:
+    eager: cp.divide
+  dask:
+    eager: da.divide
+  keras:
+    eager: keras_ops.divide
+  tensorflow:
+    eager: tf.divide

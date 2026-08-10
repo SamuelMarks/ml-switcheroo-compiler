@@ -1,0 +1,19 @@
+operation: Cos
+description: The Cos operation.
+variants:
+  cupy:
+    eager: cp.cos
+    generator: cp.cos
+  dask:
+    eager: da.cos
+    generator: da.cos
+  edge_onnx:
+    generator: Cos
+  edge_stablehlo:
+    generator: stablehlo.cosine
+  keras:
+    eager: keras_ops.cos
+  numpy:
+    generator: np.cos
+  tensorflow:
+    eager: tf.cos

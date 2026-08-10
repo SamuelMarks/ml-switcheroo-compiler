@@ -1,0 +1,5 @@
+operation: C_
+description: The C_ operation.
+variants:
+  numpy:
+    generator: np.c_

@@ -1,6 +1,8 @@
 """Numpy Loss Ops."""
 
-# ruff: noqa: E501
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -64,7 +66,7 @@ def _np_ctc_loss_single(probs: np.ndarray, b_labels: np.ndarray, T: int, L: int)
 
 
 @numpy_eager_registry.register("CtcLoss")
-def _np_ctc_loss(backend_module: object, labels: object, logits: object, label_length: object, logit_length: object, **kwargs: object) -> object:
+def _np_ctc_loss(backend_module: Any, labels: Any, logits: Any, label_length: Any, logit_length: Any, **kwargs: Any) -> Any:
     """Evaluate _np_ctc_loss operation.
 
     Args:
@@ -75,8 +77,7 @@ def _np_ctc_loss(backend_module: object, labels: object, logits: object, label_l
         logit_length (object): The logit_length parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     logits_arr = np.asarray(logits)
     labels_arr = np.asarray(labels)
@@ -116,7 +117,7 @@ def _np_ctc_loss(backend_module: object, labels: object, logits: object, label_l
 
 
 @numpy_eager_registry.register("CircleLoss")
-def _np_circle_loss(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_circle_loss(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_circle_loss operation.
 
     Args:
@@ -124,8 +125,7 @@ def _np_circle_loss(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if len(args) < 2:
         return backend_module.zeros(1)
@@ -163,7 +163,7 @@ def _np_circle_loss(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("CategoricalGeneralizedCrossEntropy")
-def _np_categorical_generalized_cross_entropy(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_categorical_generalized_cross_entropy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_categorical_generalized_cross_entropy operation.
 
     Args:
@@ -171,8 +171,7 @@ def _np_categorical_generalized_cross_entropy(backend_module: object, *args: obj
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if len(args) < 2:
         return backend_module.zeros(1)

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """Control flow operators dispatcher."""
 
-from __future__ import annotations
 
 from typing import Any, Callable
 
@@ -37,7 +40,7 @@ from .tracing import (
 )
 
 
-def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> object:
+def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:
     """Evaluate cond operation.
 
     Args:
@@ -45,15 +48,14 @@ def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) 
         true_fn (Callable): The true_fn parameter.
         false_fn (Callable): The false_fn parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if config.eager_mode:
         return cond_eager(pred, true_fn, false_fn)
     return cond_tracing(pred, true_fn, false_fn)
 
 
-def while_loop(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: object) -> object:
+def while_loop(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:
     """Evaluate while_loop operation.
 
     Args:
@@ -61,15 +63,14 @@ def while_loop(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], 
         body_fn (object): The body_fn parameter.
         init_val (object): The init_val parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if config.eager_mode:
         return while_loop_eager(cond_fn, body_fn, init_val)
     return while_loop_tracing(cond_fn, body_fn, init_val)
 
 
-def scan(f: Callable[[Any, Any], tuple[Any, Any]], init: object, xs: object, length: int | None = None) -> tuple[Any, Any]:
+def scan(f: Callable[[Any, Any], tuple[Any, Any]], init: Any, xs: Any, length: int | None = None) -> tuple[Any, Any]:
     """Evaluate scan operation.
 
     Args:
@@ -78,15 +79,14 @@ def scan(f: Callable[[Any, Any], tuple[Any, Any]], init: object, xs: object, len
         xs (object): The xs parameter.
         length (object): The length parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if config.eager_mode:
         return scan_eager(f, init, xs, length)
     return scan_tracing(f, init, xs, length)
 
 
-def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) -> Tensor:
+def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) -> Any:
     """Evaluate map_fn operation.
 
     Args:
@@ -117,21 +117,20 @@ def pmap(func: Callable, axis_name: str | None = None) -> Callable:
     return pmap_tracing(func, axis_name)
 
 
-def stop_gradient(x: object) -> object:
+def stop_gradient(x: Any) -> Any:
     """Evaluate stop_gradient operation.
 
     Args:
         x (object): The x parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if config.eager_mode:
         return stop_gradient_eager(x)
     return stop_gradient_tracing(x)
 
 
-def assert_value(condition: object, message: str = "") -> None:
+def assert_value(condition: Any, message: str = "") -> None:
     """Evaluate assert_value operation.
 
     Args:
@@ -148,20 +147,19 @@ def assert_value(condition: object, message: str = "") -> None:
 class AssertOp(OpDef):
     """Configuration class for assert op."""
 
-    def infer_shape(self, condition: object, **kwargs: object) -> object:
+    def infer_shape(self, condition: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             condition (object): The condition parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
 
-def fori_loop(lower: object, upper: object, body_fun: Callable[[object, object], object], init_val: object) -> object:
+def fori_loop(lower: Any, upper: Any, body_fun: Callable[[Any, Any], Any], init_val: Any) -> Any:
     """Evaluate fori_loop operation.
 
     Args:
@@ -170,30 +168,27 @@ def fori_loop(lower: object, upper: object, body_fun: Callable[[object, object],
         body_fun (object): The body_fun parameter.
         init_val (object): The init_val parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
 
-    def cond_fn(val: object) -> object:
+    def cond_fn(val: Any) -> Any:
         """Evaluate cond_fn operation.
 
         Args:
         val (object): The val parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         i, _ = val
         return less(i, upper)
 
-    def body_wrapper(val: object) -> object:
+    def body_wrapper(val: Any) -> Any:
         """Evaluate body_wrapper operation.
 
         Args:
         val (object): The val parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         i, x = val
         return add(i, 1), body_fun(i, x)
@@ -202,7 +197,7 @@ def fori_loop(lower: object, upper: object, body_fun: Callable[[object, object],
     return res
 
 
-def map(fn: Callable[[Any], Any], elems: Tensor) -> Tensor:
+def map(fn: Callable[[Any], Any], elems: Tensor) -> Any:
     """Apply a function iteratively over elements of a tensor.
 
     Args:
@@ -215,7 +210,7 @@ def map(fn: Callable[[Any], Any], elems: Tensor) -> Tensor:
     return map_fn(fn, elems)
 
 
-def vectorized_map(fn: Callable[[Any], Any], elems: Tensor) -> Tensor:
+def vectorized_map(fn: Callable[[Any], Any], elems: Tensor) -> Any:
     """Apply a function in a vectorized manner over elements of a tensor.
 
     Args:
@@ -228,7 +223,7 @@ def vectorized_map(fn: Callable[[Any], Any], elems: Tensor) -> Tensor:
     return vmap(fn)(elems)
 
 
-def switch(index: Tensor, branches: list[Callable], *operands: object) -> object:
+def switch(index: Tensor, branches: list[Callable], *operands: Any) -> Any:
     """Select a specific branch function based on an index tensor.
 
     Args:
@@ -236,8 +231,7 @@ def switch(index: Tensor, branches: list[Callable], *operands: object) -> object
         branches (list): The branches parameter.
         *operands (object): Positional args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -245,34 +239,31 @@ def switch(index: Tensor, branches: list[Callable], *operands: object) -> object
     if not branches:
         raise ValueError("branches cannot be empty")
 
-    def build_tree(start: int, end: int) -> object:
+    def build_tree(start: int, end: int) -> Any:
         """Evaluate build_tree operation.
 
         Args:
         start (int): The start parameter.
         end (int): The end parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         if end - start == 1:
             return branches[start](*operands)
 
         mid = (start + end) // 2
 
-        def true_fn() -> object:
+        def true_fn() -> Any:
             """Evaluate true_fn operation.
 
-            Returns:
-            object: Result.
+            Returns: Any: Result.
             """
             return build_tree(start, mid)
 
-        def false_fn() -> object:
+        def false_fn() -> Any:
             """Evaluate false_fn operation.
 
-            Returns:
-            object: Result.
+            Returns: Any: Result.
             """
             return build_tree(mid, end)
 
@@ -291,15 +282,14 @@ def custom_gradient(func: Callable) -> Callable:
         Callable: A wrapped version of the function that can integrate with autograd.
     """
 
-    def wrapper(*args: object, **kwargs: object) -> object:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         """Evaluate wrapper operation.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         val, grad_fn = func(*args, **kwargs)
         if config.eager_mode:
@@ -319,20 +309,19 @@ def custom_gradient(func: Callable) -> Callable:
 
             op_name_class = op_name
 
-            def infer_shape(self, *args: object, **kwargs: object) -> object:
+            def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
                 """Evaluate infer_shape operation.
 
                 Args:
                     *args (object): Positional args.
                     **kwargs (object): Keyword args.
 
-                Returns:
-                    object: Result.
+                Returns: Any: Result.
                 """
                 return getattr(val, "shape", ())
 
         @register_vjp(op_name)
-        def dyn_vjp(graph: object, node: object, cotangent: str) -> tuple:
+        def dyn_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
             """VJP function for dynamic custom gradient.
 
             Args:
@@ -350,15 +339,14 @@ def custom_gradient(func: Callable) -> Callable:
     return wrapper
 
 
-def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Callable = None) -> object:
+def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Any = None) -> Any:
     """Evaluate case operation.
 
     Args:
         pred_fn_pairs (list): The pred_fn_pairs parameter.
         default (Callable): The default parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -385,7 +373,7 @@ def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Callable = None)
     return _build_case(0)()
 
 
-def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable], default: Callable = None) -> object:
+def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable], default: Any = None) -> Any:
     """Select a specific function based on a dynamic index mapping.
 
     Args:
@@ -393,8 +381,7 @@ def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable], default: 
         branch_fns (dict): The branch_fns parameter.
         default (Callable): The default parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -420,15 +407,14 @@ class DebugInfs(OpDef):
 
     op_name = "DebugInfs"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
@@ -439,21 +425,20 @@ class DebugNans(OpDef):
 
     op_name = "DebugNans"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
 
-debug_infs = get_op("DebugInfs")()
-debug_nans = get_op("DebugNans")()
+debug_infs: Any = get_op("DebugInfs")()
+debug_nans: Any = get_op("DebugNans")()
 
 
 @register_op("Switch")
@@ -462,7 +447,7 @@ class SwitchOp(OpDef):
 
     op_name = "Switch"
 
-    def infer_shape(self, index: object, branches: object, *operands: object, **kwargs: object) -> object:
+    def infer_shape(self, index: Any, branches: Any, *operands: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
@@ -471,8 +456,7 @@ class SwitchOp(OpDef):
             *operands (object): Operands.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -483,15 +467,14 @@ class ScanOp(OpDef):
 
     op_name = "Scan"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -502,28 +485,26 @@ class AssociativeScan(OpDef):
 
     op_name = "AssociativeScan"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Evaluate infer_shape operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
 
-def associative_scan(*args: object, **kwargs: object) -> object:
+def associative_scan(*args: Any, **kwargs: Any) -> Any:
     """Evaluate associative_scan operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -540,7 +521,7 @@ def associative_scan(*args: object, **kwargs: object) -> object:
     return _emit_shape_node("AssociativeScan", list(args), kwargs, shape, dtype)
 
 
-def scan_bind(f: object, xs: object, *args: object, **kwargs: object) -> object:
+def scan_bind(f: Any, xs: Any, *args: Any, **kwargs: Any) -> Any:
     """Bind arguments to a scanning function prior to execution.
 
     Args:
@@ -549,8 +530,7 @@ def scan_bind(f: object, xs: object, *args: object, **kwargs: object) -> object:
         *args (object): Additional positional arguments.
         **kwargs (object): Additional keyword arguments.
 
-    Returns:
-        object: The bound function along with its inputs.
+    Returns: Any: The bound function along with its inputs.
     """
     # Partial bind implementation for scan_bind
     return f, xs

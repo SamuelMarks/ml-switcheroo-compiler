@@ -1,0 +1,7 @@
+operation: Fftfreq
+description: The Fftfreq operation.
+variants:
+  cupy:
+    eager: cp.fft.fftfreq
+  dask:
+    eager: da.fft.fftfreq

@@ -1,0 +1,5 @@
+operation: IsNonDecreasing
+description: The IsNonDecreasing operation.
+variants:
+  tensorflow:
+    eager: tf.math.is_non_decreasing

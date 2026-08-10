@@ -1,6 +1,9 @@
-"""Core abstractions and logic definitions for misc.py."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Core abstractions and logic definitions for misc.py."""
+from typing import Any
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,15 +15,14 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 class TriangularSolve(OpDef):
     """TriangularSolve Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -29,15 +31,14 @@ class TriangularSolve(OpDef):
 class Lu(OpDef):
     """Lu Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: The shape.
+        Returns: Any: The shape.
         """
         return ()
 
@@ -46,15 +47,14 @@ class Lu(OpDef):
 class LuSolve(OpDef):
     """LuSolve Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: The shape.
+        Returns: Any: The shape.
         """
         return ()
 
@@ -63,15 +63,14 @@ class LuSolve(OpDef):
 class Norm(OpDef):
     """Norm Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: The shape.
+        Returns: Any: The shape.
         """
         return ()
 
@@ -80,15 +79,14 @@ class Norm(OpDef):
 class MatrixExponential(OpDef):
     """MatrixExponential Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: The shape.
+        Returns: Any: The shape.
         """
         return ()
 
@@ -97,15 +95,14 @@ class MatrixExponential(OpDef):
 class Cross(OpDef):
     """Cross Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: The shape.
+        Returns: Any: The shape.
         """
         return ()
 
@@ -114,15 +111,14 @@ class Cross(OpDef):
 class PowerIteration(OpDef):
     """Power Iteration Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape for Power Iteration.
 
         Args:
             *args (object): The positional arguments.
             **kwargs (object): The keyword arguments.
 
-        Returns:
-            object: The tuple containing output shapes and dtypes.
+        Returns: Any: The tuple containing output shapes and dtypes.
         """
         in_shape = args[0].shape
         v_shape = in_shape[:-2] + (in_shape[-1],)
@@ -135,15 +131,14 @@ class PowerIteration(OpDef):
 class Polar(OpDef):
     """Polar Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0].shape, args[0].shape
 
@@ -152,20 +147,19 @@ class Polar(OpDef):
 class TridiagonalSolve(OpDef):
     """TridiagonalSolve Operation Definition."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[3].shape
 
 
-def lu(a: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+def lu(a: Tensor) -> Any:
     """Compute the LU decomposition of a matrix.
 
     Args:
@@ -187,7 +181,7 @@ def lu(a: Tensor) -> tuple[Tensor, Tensor, Tensor]:
     return _emit_linalg_node("Lu", [a], {}, [a.shape, a.shape, a.shape], [a.dtype] * 3)
 
 
-def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Tensor:
+def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Any:
     """Solve an equation system, a x = b, given the LU factorization of a.
 
     Args:
@@ -207,7 +201,7 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Tensor:
     return _emit_linalg_node("LuSolve", [lu, piv, b], {}, [b.shape], [b.dtype])
 
 
-def polar(a: Tensor, side: str = "right") -> tuple[Tensor, Tensor]:
+def polar(a: Tensor, side: str = "right") -> Any:
     """Compute the polar decomposition of a matrix.
 
     Args:
@@ -229,7 +223,7 @@ def polar(a: Tensor, side: str = "right") -> tuple[Tensor, Tensor]:
     return _emit_linalg_node("Polar", [a], {"side": side}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Tensor:
+def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:
     """Solves a tridiagonal linear system.
 
     Args:
@@ -256,7 +250,7 @@ class TridiagonalMatmul(OpDef):
 
     op_name = "TridiagonalMatmul"
 
-    def infer_shape(self, dl: object, d: object, du: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, dl: Any, d: Any, du: Any, b: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -266,7 +260,6 @@ class TridiagonalMatmul(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return b.shape

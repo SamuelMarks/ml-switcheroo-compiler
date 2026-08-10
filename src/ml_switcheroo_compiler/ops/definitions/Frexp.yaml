@@ -1,0 +1,7 @@
+operation: Frexp
+description: The Frexp operation.
+variants:
+  cupy:
+    eager: cp.frexp
+  dask:
+    eager: da.frexp

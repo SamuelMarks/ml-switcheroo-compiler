@@ -1,0 +1,9 @@
+operation: Unique
+description: The Unique operation.
+variants:
+  cupy:
+    eager: cp.unique
+  dask:
+    eager: da.unique
+  tensorflow:
+    eager: tf.unique

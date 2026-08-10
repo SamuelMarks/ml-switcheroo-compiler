@@ -1,0 +1,9 @@
+operation: Slogdet
+description: The Slogdet operation.
+variants:
+  keras:
+    eager: keras_ops.slogdet
+  numpy:
+    generator: np.linalg.slogdet
+  tensorflow:
+    eager: tf.linalg.slogdet

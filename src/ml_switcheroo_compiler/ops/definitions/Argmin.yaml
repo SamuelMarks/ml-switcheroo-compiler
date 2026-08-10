@@ -1,0 +1,13 @@
+operation: Argmin
+description: The Argmin operation.
+variants:
+  cupy:
+    eager: cp.argmin
+  dask:
+    eager: da.argmin
+  keras:
+    eager: keras_ops.argmin
+  pytorch:
+    generator: torch.argmin({0}, dim={axis}, keepdim={keepdims})
+  tensorflow:
+    eager: tf.argmin

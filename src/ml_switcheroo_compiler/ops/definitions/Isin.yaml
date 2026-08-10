@@ -1,0 +1,7 @@
+operation: Isin
+description: The Isin operation.
+variants:
+  cupy:
+    eager: cp.isin
+  dask:
+    eager: da.isin

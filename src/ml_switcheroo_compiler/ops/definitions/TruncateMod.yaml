@@ -1,0 +1,5 @@
+operation: TruncateMod
+description: The TruncateMod operation.
+variants:
+  pytorch:
+    generator: torch.fmod({0}, {1})

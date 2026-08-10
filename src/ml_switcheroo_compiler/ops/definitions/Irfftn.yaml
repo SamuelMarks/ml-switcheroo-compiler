@@ -1,0 +1,9 @@
+operation: Irfftn
+description: The Irfftn operation.
+variants:
+  cupy:
+    eager: cp.fft.irfftn
+  dask:
+    eager: da.fft.irfftn
+  numpy:
+    generator: np.fft.irfftn

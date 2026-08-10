@@ -1,0 +1,7 @@
+operation: Fmod
+description: The Fmod operation.
+variants:
+  cupy:
+    eager: cp.fmod
+  dask:
+    eager: da.fmod

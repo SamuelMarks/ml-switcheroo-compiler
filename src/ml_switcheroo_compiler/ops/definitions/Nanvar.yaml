@@ -1,0 +1,7 @@
+operation: Nanvar
+description: The Nanvar operation.
+variants:
+  cupy:
+    eager: cp.nanvar
+  dask:
+    eager: da.nanvar

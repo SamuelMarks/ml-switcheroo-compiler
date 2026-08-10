@@ -1,0 +1,13 @@
+operation: Cumsum
+description: The Cumsum operation.
+variants:
+  cupy:
+    eager: cp.cumsum
+  dask:
+    eager: da.cumsum
+  keras:
+    eager: keras_ops.cumsum
+  numpy:
+    generator: np.cumsum
+  tensorflow:
+    eager: tf.cumsum

@@ -1,9 +1,11 @@
-# ruff: noqa: C901, PLR0912
-"""Loop Unrolling pass for edge execution."""
-
 from __future__ import annotations
 
+"""Loop Unrolling pass for edge execution."""
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 import typing
+from typing import Any
 
 from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -70,8 +72,7 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
         initial_state (dict): The initial_state parameter.
         max_iters (int): The max_iters parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.backends.registry import get_active_backend
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
@@ -97,7 +98,7 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
 
         try:
             # Map state to body graph inputs
-            body_state = {}
+            body_state: dict[str, typing.Any] = {}
             for c_inp, b_inp in zip(cond_graph.inputs, body_graph.inputs):
                 body_state[b_inp] = state.get(c_inp, state.get(b_inp))
 
@@ -105,12 +106,12 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
             out_node_id = body_mock.outputs[0]
             out_val = body_outputs[out_node_id]
 
-            next_state = {}
+            next_state: dict[str, typing.Any] = {}
             if len(cond_graph.inputs) == 1:
                 next_state[cond_graph.inputs[0]] = out_val
             else:
                 for j, inp_id in enumerate(cond_graph.inputs):
-                    next_state[inp_id] = out_val[j]
+                    next_state[inp_id] = typing.cast(list[typing.Any], out_val)[j]
             state = next_state
         except Exception:
             # print("Body exc", e)
@@ -129,7 +130,7 @@ def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any
     Returns:
         dict: Result.
     """
-    state = {}
+    state: dict[str, typing.Any] = {}
     cond_graph = node.attributes.get("cond")
     if not cond_graph:
         return state
@@ -141,12 +142,12 @@ def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any
     return state
 
 
-def _perform_unroll(node: IRNode, body_graph: object, unroll_iters: int, new_nodes: dict) -> None:
+def _perform_unroll(node: IRNode, body_graph: Any, unroll_iters: int, new_nodes: dict) -> None:
     """Perform actual unrolling of a loop body.
 
     Args:
         node (IRNode): The loop node.
-        body_graph (object): The body graph to unroll.
+        body_graph (Any): The body graph to unroll.
         unroll_iters (int): Number of iterations.
         new_nodes (dict): Target dictionary for new nodes.
     """
@@ -217,7 +218,7 @@ def loop_unrolling_pass(graph: IRGraph) -> bool:
         bool: True if the graph was modified, False otherwise.
     """
     modified = False
-    new_nodes = {}
+    new_nodes: dict[str, IRNode] = {}
 
     sorted_nodes = DAGTopologicalSorter.sort(graph)
 

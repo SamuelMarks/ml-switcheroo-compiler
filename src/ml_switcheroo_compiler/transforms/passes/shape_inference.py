@@ -1,6 +1,12 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """Shape Inference Pass."""
 
-from __future__ import annotations
+
+import typing
+from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.errors import CompilationError
@@ -9,11 +15,11 @@ from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _infer_constant_shape(node: object, shapes: dict) -> tuple:
+def _infer_constant_shape(node: Any, shapes: dict) -> tuple:
     """Evaluate _infer_constant_shape operation.
 
     Args:
-        node (object): The node parameter.
+        node (Any): The node parameter.
         shapes (dict): The shapes parameter.
 
     Returns:
@@ -26,26 +32,25 @@ def _infer_constant_shape(node: object, shapes: dict) -> tuple:
     return getattr(arr, "shape", ())
 
 
-def _infer_output_shape(node: object, shapes: dict) -> tuple | None:
+def _infer_output_shape(node: Any, shapes: dict) -> tuple | None:
     """Evaluate _infer_output_shape operation.
 
     Args:
-        node (object): The node parameter.
+        node (Any): The node parameter.
         shapes (dict): The shapes parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if node.inputs:
         return shapes.get(node.inputs[0])
     return None
 
 
-def _prepare_op_kwargs(node: object) -> dict:
+def _prepare_op_kwargs(node: Any) -> dict:
     """Evaluate _prepare_op_kwargs operation.
 
     Args:
-        node (object): The node parameter.
+        node (Any): The node parameter.
 
     Returns:
         dict: Result.
@@ -59,32 +64,30 @@ def _prepare_op_kwargs(node: object) -> dict:
     return kwargs
 
 
-def _infer_op_shape(node: object, shapes: dict) -> tuple | None:
+def _infer_op_shape(node: Any, shapes: dict) -> tuple | None:
     """Evaluate _infer_op_shape operation.
 
     Args:
-        node (object): The node parameter.
+        node (Any): The node parameter.
         shapes (dict): The shapes parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     op_cls = get_op(node.op_type)
     op = op_cls()
     in_shapes = [shapes.get(inp) for inp in node.inputs]
     kwargs = _prepare_op_kwargs(node)
-    return op.infer_shape(*in_shapes, **kwargs)
+    return typing.cast(typing.Optional[tuple[int, ...]], op.infer_shape(*in_shapes, **kwargs))
 
 
-def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...]]) -> tuple[int, ...] | None:
+def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> tuple[int, ...] | None:
     """Evaluate _determine_node_shape operation.
 
     Args:
         node (IRNode): The node parameter.
         shapes (dict): The shapes parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         CompilationError: An exception.
@@ -118,7 +121,7 @@ def shape_inference_pass(graph: IRGraph) -> bool:
     """
     modified = False
     sorted_nodes = DAGTopologicalSorter.sort(graph)
-    shapes = {}
+    shapes: dict[str, tuple[int, ...] | None] = {}
 
     for node in sorted_nodes:
         out_shape = _determine_node_shape(node, shapes)

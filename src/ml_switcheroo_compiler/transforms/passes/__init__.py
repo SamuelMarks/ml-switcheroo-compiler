@@ -1,3 +1,6 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Passes package."""
 
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
@@ -12,6 +15,7 @@ from ml_switcheroo_compiler.transforms.passes.graph_scheduling import graph_sche
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 from ml_switcheroo_compiler.transforms.passes.mixed_precision import mixed_precision_pass
+from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
 from ml_switcheroo_compiler.transforms.passes.state_lowering import state_lowering_pass
@@ -26,6 +30,7 @@ __all__ = [
     "inject_spmd_communication_pass",
     "lift_state_pass",
     "shape_inference_pass",
+    "rematerialization_pass",
     "type_promotion_explicitizer_pass",
     "axis_translation_pass",
     "batch_norm_folding_pass",

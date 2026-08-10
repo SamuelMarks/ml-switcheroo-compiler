@@ -47,6 +47,6 @@ def test_dispatch_tracing():
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
         out = dispatch("test", "TestDispatchTracing", t)
         assert out.shape == ()
-        assert out.dtype == "float32"
+        assert out.dtype.value == "float32"
     finally:
         global_tracing_state.stop_tracing()

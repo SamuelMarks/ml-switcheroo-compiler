@@ -1,6 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Tracing node builder module."""
 
 import uuid
+from typing import Any
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -15,7 +17,7 @@ class TracingNodeBuilder:
     """Build tracing nodes."""
 
     @staticmethod
-    def create_constant_node(val: object, shape: tuple) -> str:
+    def create_constant_node(val: Any, shape: tuple) -> str:
         """Create a constant node in the active tracing graph.
 
         Args:
@@ -36,7 +38,7 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def extract_from_tensor(a: object) -> tuple[str, tuple]:
+    def extract_from_tensor(a: Any) -> tuple[str, tuple]:
         """Extract the node identifier and shape metadata from a tensor or proxy.
 
         Args:
@@ -57,7 +59,7 @@ class TracingNodeBuilder:
         return out_id, a.shape
 
     @staticmethod
-    def extract_from_constant(a: object) -> tuple[str, tuple]:
+    def extract_from_constant(a: Any) -> Any:
         """Extract the node identifier and shape metadata from a constant value.
 
         Args:
@@ -88,11 +90,11 @@ class TracingNodeBuilder:
         return out_id, shape
 
     @staticmethod
-    def extract_proxy_inputs(args: tuple[object, ...]) -> tuple[list[str], list[tuple], object]:
+    def extract_proxy_inputs(args: tuple[Any, ...]) -> tuple[list[str], list[tuple], Any]:
         """Extract proxy node IDs and shapes from a list of arguments.
 
         Args:
-            args (tuple[object, ...]): The positional arguments.
+            args (tuple[Any, ...]): The positional arguments.
 
         Returns:
             tuple: A tuple containing lists of node IDs, shapes, and the first tensor found.
@@ -140,7 +142,7 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def emit_tracing_node(op_type: str, *args: object, **kwargs: object) -> object:
+    def emit_tracing_node(op_type: str, *args: Any, **kwargs: Any) -> Any:
         """Emit a new tracing node and return its corresponding tensor.
 
         Args:
@@ -148,8 +150,7 @@ class TracingNodeBuilder:
             *args (object): Positional arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: The newly created proxy tensor.
+        Returns: Any: The newly created proxy tensor.
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 

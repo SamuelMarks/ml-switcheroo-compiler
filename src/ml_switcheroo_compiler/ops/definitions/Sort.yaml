@@ -1,0 +1,11 @@
+operation: Sort
+description: The Sort operation.
+variants:
+  keras:
+    eager: keras_ops.sort
+  numpy:
+    generator: np.sort
+  pytorch:
+    generator: torch.sort({0}, dim={dimension})
+  tensorflow:
+    eager: tf.sort

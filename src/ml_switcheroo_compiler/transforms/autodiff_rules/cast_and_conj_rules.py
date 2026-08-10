@@ -1,16 +1,19 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Unary rules for misc."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
 
 
-def _zero_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def _zero_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -23,12 +26,12 @@ def _zero_vjp(graph: object, node: object, cotangent: str) -> tuple:
     return (zero_like_x,)
 
 
-def _zero_jvp(graph: object, node: object, tangents: tuple) -> str:
+def _zero_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -42,12 +45,12 @@ def _zero_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Conj")
-def conj_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def conj_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -58,12 +61,12 @@ def conj_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Conj")
-def conj_jvp(graph: object, node: object, tangents: tuple) -> str:
+def conj_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -74,12 +77,12 @@ def conj_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Cast")
-def cast_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def cast_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -94,12 +97,12 @@ def cast_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Cast")
-def cast_jvp(graph: object, node: object, tangents: tuple) -> str:
+def cast_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:

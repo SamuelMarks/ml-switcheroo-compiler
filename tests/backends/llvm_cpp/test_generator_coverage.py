@@ -1,0 +1,58 @@
+from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+
+def test_cpp_generator_tanh_explicit():
+    graph = IRGraph()
+    gen = CppGenerator(graph)
+    node = LogicalNode(id="n1", op_type="Tanh", inputs=["in1"])
+    gen._visit_activation(node, "Tanh")
+    assert "std::tanh" in "".join(gen.lines)
+
+
+def test_cpp_generator_matmul_openmp():
+    graph = IRGraph()
+    in1 = LogicalNode(id="in1", op_type="Input")
+    in1.shape_metadata = [2, 2]
+    in2 = LogicalNode(id="in2", op_type="Input")
+    in2.shape_metadata = [2, 2]
+    graph.nodes = {"in1": in1, "in2": in2}
+
+    node = LogicalNode(id="n1", op_type="MatMul", inputs=["in1", "in2"])
+    node.shape_metadata = [2, 2]
+
+    gen = CppGenerator(graph, use_openmp=True)
+    gen._visit_matmul(node, graph)
+
+    # Test without openmp
+    gen2 = CppGenerator(graph, use_openmp=False)
+    gen2._visit_matmul(node, graph)
+
+
+def test_cpp_generator_reduce_min():
+    graph = IRGraph()
+    gen = CppGenerator(graph)
+    node = LogicalNode(id="n1", op_type="ReduceMin", inputs=["in1"])
+    gen._visit_reduce(node, "ReduceMin")
+    assert "std::min" in "".join(gen.lines)
+
+    # test unknown reduce
+    node2 = LogicalNode(id="n2", op_type="UnknownReduce", inputs=["in1"])
+    gen._visit_reduce(node2, "UnknownReduce")
+
+
+def test_cpp_generator_activation_fallback():
+    graph = IRGraph()
+    gen = CppGenerator(graph)
+    node = LogicalNode(id="n1", op_type="UnknownActivation", inputs=["in1"])
+    gen._visit_activation(node, "UnknownActivation")
+    assert "n1.data[i] = in1.data[i];" in "".join(gen.lines)
+
+
+def test_llvm_cpp_strides_num_elem():
+    from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    gen = CppGenerator(graph=IRGraph())
+    assert gen._num_elements([2, 3]) == 6
+    assert gen._get_strides([2, 3, 4]) == [12, 4, 1]

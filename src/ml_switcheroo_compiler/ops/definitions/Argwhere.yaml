@@ -1,0 +1,7 @@
+operation: Argwhere
+description: The Argwhere operation.
+variants:
+  cupy:
+    eager: cp.argwhere
+  dask:
+    eager: da.argwhere

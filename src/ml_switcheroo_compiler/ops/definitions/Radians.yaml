@@ -1,0 +1,7 @@
+operation: Radians
+description: The Radians operation.
+variants:
+  cupy:
+    eager: cp.radians
+  dask:
+    eager: da.radians

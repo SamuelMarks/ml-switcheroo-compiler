@@ -1,0 +1,11 @@
+operation: Lu
+description: The Lu operation.
+variants:
+  cupy:
+    eager: cp.linalg.lu
+  dask:
+    eager: da.linalg.lu
+  numpy:
+    generator: scipy.linalg.lu
+  tensorflow:
+    eager: tf.linalg.lu

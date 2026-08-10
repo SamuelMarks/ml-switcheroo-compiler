@@ -1,0 +1,19 @@
+operation: Greater
+description: The Greater operation.
+variants:
+  cupy:
+    eager: cp.greater
+    generator: cp.greater
+  dask:
+    eager: da.greater
+    generator: da.greater
+  edge_onnx:
+    generator: Greater
+  edge_stablehlo:
+    generator: stablehlo.compare
+  keras:
+    eager: keras_ops.greater
+  numpy:
+    generator: np.greater
+  tensorflow:
+    eager: tf.greater

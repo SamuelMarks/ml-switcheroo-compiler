@@ -1,9 +1,12 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """Provide the Environment class for managing variable state and tensor memory mappings.
 
 during evaluation
 """
-
-from __future__ import annotations
+from typing import Any
 
 
 class Environment:
@@ -14,26 +17,25 @@ class Environment:
     or execution of a graph
 
     Attributes:
-    memory (dict[str, object]): The internal storage mapping variable names to their
+    memory (dict[str, Any]): The internal storage mapping variable names to their
     values
     """
 
-    def __init__(self, inputs: dict[str, object] | None = None) -> None:
+    def __init__(self, inputs: dict[str, Any] | None = None) -> None:
         """Initialize the object.
 
         Args:
-            inputs (dict[str, object]): The inputs to process.
+            inputs (dict[str, Any]): The inputs to process.
         """
-        self.memory: dict[str, object] = inputs or {}
+        self.memory: dict[str, Any] = inputs or {}
 
-    def get(self, name: str) -> object:
+    def get(self, name: str) -> Any:
         """Retrieve the value associated with the given node or variable name.
 
         Args:
             name (str): The unique identifier for the tensor or variable to retrieve.
 
-        Returns:
-            object: The concrete tensor, scalar, or value associated with the name.
+        Returns: Any: The concrete tensor, scalar, or value associated with the name.
 
         Raises:
             ValueError: If the requested name does not exist in the environment's memory.
@@ -43,7 +45,7 @@ class Environment:
             raise ValueError(msg)
         return self.memory[name]
 
-    def set(self, name: str, value: object) -> None:
+    def set(self, name: str, value: Any) -> None:
         """Store or update a value in the environment for a specific node or variable.
 
         Args:

@@ -1,0 +1,5 @@
+operation: MatrixNorm
+description: The MatrixNorm operation.
+variants:
+  numpy:
+    generator: np.linalg.norm({0}, keepdims={keepdims})

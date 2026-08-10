@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Generate random ops module."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -12,15 +15,14 @@ class Binomial(OpDef):
 
     op_name = "Binomial"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return args[0] if args else ()
 
@@ -31,15 +33,14 @@ class Cauchy(OpDef):
 
     op_name = "Cauchy"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -50,15 +51,14 @@ class Chisquare(OpDef):
 
     op_name = "Chisquare"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -69,15 +69,14 @@ class Dirichlet(OpDef):
 
     op_name = "Dirichlet"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -88,15 +87,14 @@ class DoubleSidedMaxwell(OpDef):
 
     op_name = "DoubleSidedMaxwell"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -107,15 +105,14 @@ class Exponential(OpDef):
 
     op_name = "Exponential"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -126,15 +123,14 @@ class F(OpDef):
 
     op_name = "F"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -145,15 +141,14 @@ class Gumbel(OpDef):
 
     op_name = "Gumbel"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -164,15 +159,14 @@ class Laplace(OpDef):
 
     op_name = "Laplace"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -183,15 +177,14 @@ class Loggamma(OpDef):
 
     op_name = "Loggamma"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -202,15 +195,14 @@ class Logistic(OpDef):
 
     op_name = "Logistic"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -221,15 +213,14 @@ class Lognormal(OpDef):
 
     op_name = "Lognormal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -240,15 +231,14 @@ class Maxwell(OpDef):
 
     op_name = "Maxwell"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -259,15 +249,14 @@ class MultivariateNormal(OpDef):
 
     op_name = "MultivariateNormal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -278,15 +267,14 @@ class Pareto(OpDef):
 
     op_name = "Pareto"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -297,15 +285,14 @@ class Poisson(OpDef):
 
     op_name = "Poisson"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -316,15 +303,14 @@ class Rayleigh(OpDef):
 
     op_name = "Rayleigh"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -335,15 +321,14 @@ class T(OpDef):
 
     op_name = "T"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -354,15 +339,14 @@ class Triangular(OpDef):
 
     op_name = "Triangular"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -373,15 +357,14 @@ class Wald(OpDef):
 
     op_name = "Wald"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -392,15 +375,14 @@ class WeibullMin(OpDef):
 
     op_name = "WeibullMin"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -411,15 +393,14 @@ class Clone(OpDef):
 
     op_name = "Clone"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -430,15 +411,14 @@ class KeyData(OpDef):
 
     op_name = "KeyData"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -449,15 +429,14 @@ class KeyImpl(OpDef):
 
     op_name = "KeyImpl"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -468,15 +447,14 @@ class WrapKeyData(OpDef):
 
     op_name = "WrapKeyData"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -487,15 +465,14 @@ class Bits(OpDef):
 
     op_name = "Bits"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -506,15 +483,14 @@ class GeneralizedNormal(OpDef):
 
     op_name = "GeneralizedNormal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -525,15 +501,14 @@ class Orthogonal(OpDef):
 
     op_name = "Orthogonal"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -544,15 +519,14 @@ class RandomGammaP(OpDef):
 
     op_name = "RandomGammaP"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -563,15 +537,14 @@ class Ball(OpDef):
 
     op_name = "Ball"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -582,15 +555,14 @@ class Key(OpDef):
 
     op_name = "Key"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -601,7 +573,7 @@ class RngBitGenerator(OpDef):
 
     op_name = "RngBitGenerator"
 
-    def infer_shape(self, key: object, shape: object, dtype: object, **kwargs: object) -> object:
+    def infer_shape(self, key: Any, shape: Any, dtype: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the RngBitGenerator operation.
 
         Args:
@@ -610,8 +582,7 @@ class RngBitGenerator(OpDef):
             dtype (object): The desired output data type.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The computed output shape, which matches the input shape parameter.
+        Returns: Any: The computed output shape, which matches the input shape parameter.
         """
         return shape
 
@@ -622,7 +593,7 @@ class RngUniform(OpDef):
 
     op_name = "RngUniform"
 
-    def infer_shape(self, a: object, b: object, shape: object, dtype: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, shape: Any, dtype: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the RngUniform operation.
 
         Args:
@@ -632,8 +603,7 @@ class RngUniform(OpDef):
             dtype (object): The desired output data type.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The computed output shape, which matches the input shape parameter.
+        Returns: Any: The computed output shape, which matches the input shape parameter.
         """
         return shape
 
@@ -644,15 +614,14 @@ class Beta(OpDef):
 
     op_name = "Beta"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -663,15 +632,14 @@ class Gamma(OpDef):
 
     op_name = "Gamma"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape based on the provided inputs.
 
         Args:
             *args (object): Positional arguments typically representing input shapes or values.
             **kwargs (object): Keyword arguments representing additional configurations.
 
-        Returns:
-            object: The evaluated shape for this operation, usually derived from the first argument.
+        Returns: Any: The evaluated shape for this operation, usually derived from the first argument.
         """
         return args[0] if args else ()
 
@@ -688,7 +656,7 @@ class categorical(OpDef):
 
     op_name = "categorical"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -696,8 +664,7 @@ class categorical(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -708,7 +675,7 @@ class dirichlet(OpDef):
 
     op_name = "dirichlet"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -716,8 +683,7 @@ class dirichlet(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -728,7 +694,7 @@ class binomial(OpDef):
 
     op_name = "binomial"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -736,8 +702,7 @@ class binomial(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -748,7 +713,7 @@ class truncated_normal(OpDef):
 
     op_name = "truncated_normal"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -756,8 +721,7 @@ class truncated_normal(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -768,7 +732,7 @@ class permutation(OpDef):
 
     op_name = "permutation"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -776,8 +740,7 @@ class permutation(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -788,7 +751,7 @@ class choice(OpDef):
 
     op_name = "choice"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -796,7 +759,6 @@ class choice(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())

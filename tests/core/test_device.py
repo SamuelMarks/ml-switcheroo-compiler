@@ -132,6 +132,9 @@ def test_device_classes():
     d = Device(DeviceType.CPU, 1)
     assert repr(d) == "Device(cpu:1)"
 
+    d_str = Device("cuda", 0)
+    assert repr(d_str) == "Device(cuda:0)"
+
     s = Stream(device=d)
     assert s.device == d
 

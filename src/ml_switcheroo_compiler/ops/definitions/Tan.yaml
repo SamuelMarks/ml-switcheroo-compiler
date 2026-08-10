@@ -1,0 +1,13 @@
+operation: Tan
+description: The Tan operation.
+variants:
+  cupy:
+    eager: cp.tan
+  dask:
+    eager: da.tan
+  edge_onnx:
+    generator: Tan
+  keras:
+    eager: keras_ops.tan
+  tensorflow:
+    eager: tf.tan

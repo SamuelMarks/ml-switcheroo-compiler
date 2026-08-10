@@ -1,0 +1,5 @@
+operation: Fromfile
+description: The Fromfile operation.
+variants:
+  numpy:
+    generator: np.fromfile

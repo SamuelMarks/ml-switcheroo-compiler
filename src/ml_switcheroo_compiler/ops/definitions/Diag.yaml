@@ -1,0 +1,11 @@
+operation: Diag
+description: The Diag operation.
+variants:
+  cupy:
+    eager: cp.diag
+  dask:
+    eager: da.diag
+  keras:
+    eager: keras_ops.diag
+  tensorflow:
+    eager: tf.linalg.diag

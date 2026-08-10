@@ -1,0 +1,7 @@
+operation: Flipud
+description: The Flipud operation.
+variants:
+  cupy:
+    eager: cp.flipud
+  dask:
+    eager: da.flipud

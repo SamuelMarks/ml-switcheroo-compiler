@@ -1,0 +1,7 @@
+operation: ConvTranspose
+description: The ConvTranspose operation.
+variants:
+  keras:
+    eager: keras_ops.conv_transpose
+  tensorflow:
+    eager: tf.nn.conv_transpose

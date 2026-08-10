@@ -1,0 +1,5 @@
+operation: IsStrictlyIncreasing
+description: The IsStrictlyIncreasing operation.
+variants:
+  tensorflow:
+    eager: tf.math.is_strictly_increasing

@@ -1,0 +1,1451 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.13, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/samuel/repos/ml-switcheroo-compiler
+configfile: pytest.ini
+plugins: anyio-4.12.1, mock-3.15.1, asyncio-1.2.0, cov-7.1.0, jaxtyping-0.2.36, hypothesis-6.141.1, xdist-3.8.0, json-report-1.5.0, timeout-2.4.0, metadata-3.1.1, respx-0.23.1, requests-mock-1.12.1
+asyncio: mode=strict, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3049 items
+
+tests/backends/common/test_array_mixin.py .                              [  0%]
+tests/backends/common/test_audio_utils.py ..                             [  0%]
+tests/backends/common/test_backends_edge_cases.py ...                    [  0%]
+tests/backends/common/test_common_mixin.py .                             [  0%]
+tests/backends/common/test_control_flow_mixin.py .                       [  0%]
+tests/backends/common/test_cross_backend.py ........                     [  0%]
+tests/backends/common/test_distributed_mixin.py .                        [  0%]
+tests/backends/common/test_image_mixin.py .                              [  0%]
+tests/backends/common/test_linalg_mixin.py ...                           [  0%]
+tests/backends/common/test_variable_mixin.py .                           [  0%]
+tests/backends/cupy/test_cupy_backend.py .........                       [  1%]
+tests/backends/dask/test_dask_backend.py ......                          [  1%]
+tests/backends/eager/test_audio.py .                                     [  1%]
+tests/backends/eager/test_core_group_ops.py ...                          [  1%]
+tests/backends/eager/test_core_math_ops.py ......                        [  1%]
+tests/backends/eager/test_core_math_ops_auto.py .....                    [  1%]
+tests/backends/eager/test_core_math_ops_auto2.py .                       [  1%]
+tests/backends/eager/test_core_math_ops_auto3.py .                       [  1%]
+tests/backends/eager/test_core_math_ops_control.py .                     [  1%]
+tests/backends/eager/test_optimizers.py ....                             [  1%]
+tests/backends/eager/test_random_ops.py ...                              [  2%]
+tests/backends/eager/test_signal.py .                                    [  2%]
+tests/backends/eager/test_utils.py ...                                   [  2%]
+tests/backends/eager/test_vision_augmentation.py ......                  [  2%]
+tests/backends/eager/test_vision_filtering.py ........                   [  2%]
+tests/backends/eager/test_vision_transforms.py ...                       [  2%]
+tests/backends/eager/test_vision_utils.py .                              [  2%]
+tests/backends/edge/test_export_coverage.py ............                 [  3%]
+tests/backends/edge/test_onnx.py ...............                         [  3%]
+tests/backends/edge/test_stablehlo.py .........                          [  3%]
+tests/backends/edge/test_wasm.py .................                       [  4%]
+tests/backends/edge/test_wasm_coverage.py .                              [  4%]
+tests/backends/edge/test_wasm_strides.py ..                              [  4%]
+tests/backends/edge/test_webgl.py .......                                [  4%]
+tests/backends/edge/test_webgl_compute_size.py .                         [  4%]
+tests/backends/edge/test_webgpu.py .........                             [  5%]
+tests/backends/edge/test_webgpu_coverage.py .                            [  5%]
+tests/backends/edge/test_wgsl_ast.py ........                            [  5%]
+tests/backends/jax/eager/test_jax_eager.py ....                          [  5%]
+tests/backends/jax/generator/test_jax_generator.py ..........            [  5%]
+tests/backends/jax/test_jax_generator.py ............                    [  6%]
+tests/backends/jax/test_jax_ragged_eager.py .                            [  6%]
+tests/backends/jax/test_jax_types.py .                                   [  6%]
+tests/backends/keras/test_keras_eager.py ..                              [  6%]
+tests/backends/keras/test_keras_generator.py .......                     [  6%]
+tests/backends/keras/test_keras_types.py .                               [  6%]
+tests/backends/llvm_cpp/test_cpp_execution.py ....                       [  6%]
+tests/backends/llvm_cpp/test_generator.py ..........                     [  7%]
+tests/backends/llvm_cpp/test_generator_coverage.py ....                  [  7%]
+tests/backends/mlx/eager/test_mlx_conversion_fallback.py ..              [  7%]
+tests/backends/mlx/eager/test_mlx_eager.py ..                            [  7%]
+tests/backends/mlx/generator/test_mlx_generator.py .........             [  7%]
+tests/backends/mlx/misc/test_mlx_types.py ..                             [  7%]
+tests/backends/mlx/misc/test_parity.py ...                               [  7%]
+tests/backends/mlx/test_mlx_eager.py .......                             [  8%]
+tests/backends/mlx/test_mlx_generator.py .                               [  8%]
+tests/backends/numpy/distributed/test_ipc.py ........                    [  8%]
+tests/backends/numpy/eager/test_advanced_indexing.py .                   [  8%]
+tests/backends/numpy/eager/test_control_flow.py .                        [  8%]
+tests/backends/numpy/eager/test_custom_linear_solve.py .                 [  8%]
+tests/backends/numpy/eager/test_distributed.py ...........               [  8%]
+tests/backends/numpy/eager/test_distributed_simulator.py .               [  8%]
+tests/backends/numpy/eager/test_distributed_unimplemented.py ..          [  8%]
+tests/backends/numpy/eager/test_eager_edge_cases.py .................... [  9%]
+........................................................................ [ 11%]
+..............                                                           [ 12%]
+tests/backends/numpy/eager/test_eager_lax.py .                           [ 12%]
+tests/backends/numpy/eager/test_householder_fallback.py .                [ 12%]
+tests/backends/numpy/eager/test_householder_product.py .                 [ 12%]
+tests/backends/numpy/eager/test_io_ops.py ..................             [ 13%]
+tests/backends/numpy/eager/test_linalg_advanced.py ..................... [ 13%]
+.........                                                                [ 14%]
+tests/backends/numpy/eager/test_loss_ops.py ..                           [ 14%]
+tests/backends/numpy/eager/test_math_advanced.py ........                [ 14%]
+tests/backends/numpy/eager/test_math_binary.py .....                     [ 14%]
+tests/backends/numpy/eager/test_math_special.py ..                       [ 14%]
+tests/backends/numpy/eager/test_math_special_custom.py .                 [ 14%]
+tests/backends/numpy/eager/test_math_special_distributions.py .......... [ 15%]
+...                                                                      [ 15%]
+tests/backends/numpy/eager/test_math_special_errors.py .                 [ 15%]
+tests/backends/numpy/eager/test_math_special_mock.py .                   [ 15%]
+tests/backends/numpy/eager/test_math_special_unimplemented.py .......    [ 15%]
+tests/backends/numpy/eager/test_math_stats.py .....                      [ 15%]
+tests/backends/numpy/eager/test_nn_ops.py ...                            [ 15%]
+tests/backends/numpy/eager/test_nn_polyfills.py ....................     [ 16%]
+tests/backends/numpy/eager/test_numpy_eager_init.py .........            [ 16%]
+tests/backends/numpy/eager/test_random_ops.py ..                         [ 16%]
+tests/backends/numpy/eager/test_sparse.py ..                             [ 16%]
+tests/backends/numpy/eager/test_sparse_and_ragged.py .                   [ 16%]
+tests/backends/numpy/eager/test_strings.py ..                            [ 16%]
+tests/backends/numpy/eager/test_tridiagonal.py .                         [ 16%]
+tests/backends/numpy/eager/test_variable_ops.py .                        [ 16%]
+tests/backends/numpy/eager/test_vision_geometry.py ..                    [ 16%]
+tests/backends/numpy/indexing/test_advanced_indexing.py ................ [ 17%]
+......                                                                   [ 17%]
+tests/backends/numpy/indexing/test_indexing.py ................          [ 18%]
+tests/backends/numpy/indexing/test_indexing_parsing_utils.py ........    [ 18%]
+tests/backends/numpy/linalg/test_linalg.py .                             [ 18%]
+tests/backends/numpy/linalg/test_linalg_solvers.py ...............       [ 19%]
+tests/backends/numpy/math/test_math_binary.py .                          [ 19%]
+tests/backends/numpy/math/test_math_extended.py ..................       [ 19%]
+tests/backends/numpy/math/test_math_fft.py .                             [ 19%]
+tests/backends/numpy/math/test_math_logical.py ...........               [ 20%]
+tests/backends/numpy/math/test_math_logical_reductions.py ..             [ 20%]
+tests/backends/numpy/math/test_math_nan.py ..........                    [ 20%]
+tests/backends/numpy/math/test_math_reductions.py ..............         [ 20%]
+tests/backends/numpy/math/test_math_scatter.py ...........               [ 21%]
+tests/backends/numpy/math/test_math_special.py ......................... [ 22%]
+.................................                                        [ 23%]
+tests/backends/numpy/math/test_math_special_auto.py .................... [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+.............                                                            [ 31%]
+tests/backends/numpy/math/test_math_special_batch_.py .                  [ 31%]
+tests/backends/numpy/math/test_math_special_extended.py ...              [ 31%]
+tests/backends/numpy/math/test_math_stats.py ...............             [ 31%]
+tests/backends/numpy/math/test_math_unary_erf.py .                       [ 31%]
+tests/backends/numpy/misc/test_distributed.py ..                         [ 32%]
+tests/backends/numpy/misc/test_fft_ops.py ..............                 [ 32%]
+tests/backends/numpy/misc/test_generator.py ......                       [ 32%]
+tests/backends/numpy/misc/test_generator_edge_cases.py .                 [ 32%]
+tests/backends/numpy/misc/test_lookups.py ....                           [ 32%]
+tests/backends/numpy/misc/test_numpy_distributed_fallback.py .           [ 32%]
+tests/backends/numpy/misc/test_numpy_mixins.py ...                       [ 32%]
+tests/backends/numpy/misc/test_numpy_types.py .                          [ 33%]
+tests/backends/numpy/misc/test_search_sort_ops.py ............           [ 33%]
+tests/backends/numpy/misc/test_shape_ops.py ............................ [ 34%]
+........                                                                 [ 34%]
+tests/backends/numpy/misc/test_stats_and_complex.py .........            [ 34%]
+tests/backends/numpy/misc/test_strings.py .....                          [ 35%]
+tests/backends/numpy/misc/test_variable_ops.py .....                     [ 35%]
+tests/backends/numpy/nn/test_activation_ops.py .......                   [ 35%]
+tests/backends/numpy/nn/test_conv.py .....................               [ 36%]
+tests/backends/numpy/nn/test_nn.py ..........                            [ 36%]
+tests/backends/numpy/nn/test_window_reductions_edge_cases.py .           [ 36%]
+tests/backends/numpy/test_distributed_eager.py .....                     [ 36%]
+tests/backends/numpy/test_generator.py ..                                [ 36%]
+tests/backends/numpy/vision/test_vision.py ......                        [ 36%]
+tests/backends/numpy/vision/test_vision_augmentation.py ................ [ 37%]
+......                                                                   [ 37%]
+tests/backends/numpy/vision/test_vision_color.py .                       [ 37%]
+tests/backends/numpy/vision/test_vision_common.py ..                     [ 37%]
+tests/backends/numpy/vision/test_vision_filtering.py .....               [ 37%]
+tests/backends/numpy/vision/test_vision_filters.py ..                    [ 37%]
+tests/backends/numpy/vision/test_vision_geometry.py .........            [ 38%]
+tests/backends/numpy/vision/test_vision_transforms_edge_cases.py .       [ 38%]
+tests/backends/pytorch/eager/test_distributed_simulator.py .             [ 38%]
+tests/backends/pytorch/eager/test_pytorch_eager.py ..                    [ 38%]
+tests/backends/pytorch/eager/test_pytorch_eager_edge_cases.py .          [ 38%]
+tests/backends/pytorch/eager/test_pytorch_eager_edge_cases_2.py ....     [ 38%]
+tests/backends/pytorch/eager/test_pytorch_eager_extended.py .            [ 38%]
+tests/backends/pytorch/generator/test_pytorch_generator.py ......        [ 38%]
+tests/backends/pytorch/misc/test_types.py ....                           [ 38%]
+tests/backends/pytorch/test_ast_validation.py .                          [ 38%]
+tests/backends/pytorch/test_pytorch_ragged_eager.py .                    [ 38%]
+tests/backends/tensorflow/generator/test_tensorflow_generator.py .       [ 39%]
+tests/backends/tensorflow/test_tensorflow_generator.py .......           [ 39%]
+tests/backends/tensorflow/test_tensorflow_types.py .                     [ 39%]
+tests/backends/tensorflow/test_tf_eager.py ..                            [ 39%]
+tests/backends/test_ast_parsing.py ......                                [ 39%]
+tests/backends/test_backend_registry.py ....                             [ 39%]
+tests/backends/test_backend_utils.py ..                                  [ 39%]
+tests/backends/test_base_generator.py .................                  [ 40%]
+tests/backends/test_cst_transpiler.py ..........                         [ 40%]
+tests/backends/test_eager_registry.py ...                                [ 40%]
+tests/backends/test_edge.py ...........                                  [ 41%]
+tests/backends/test_formatters.py .......                                [ 41%]
+tests/backends/test_generators.py ...................................... [ 42%]
+...........                                                              [ 42%]
+tests/backends/test_type_mapper.py .                                     [ 42%]
+tests/backends/test_visitor.py ..                                        [ 43%]
+tests/control_flow/test_cond.py ..                                       [ 43%]
+tests/control_flow/test_control_flow.py ......................           [ 43%]
+tests/control_flow/test_map_fn.py ..                                     [ 43%]
+tests/control_flow/test_scan.py ...                                      [ 43%]
+tests/control_flow/test_scan_bind.py .                                   [ 44%]
+tests/control_flow/test_while_loop.py ...                                [ 44%]
+tests/core/advanced_tensors/test_advanced_tensors.py ...                 [ 44%]
+tests/core/advanced_tensors/test_advanced_tensors_sparse.py ...          [ 44%]
+tests/core/advanced_tensors/test_ragged_tensor.py .                      [ 44%]
+tests/core/advanced_tensors/test_sparse_tensor.py .                      [ 44%]
+tests/core/assertions/test_assertions.py ..                              [ 44%]
+tests/core/assertions/test_assertions_edge_cases.py .                    [ 44%]
+tests/core/config/test_config_context_and_stream.py ........             [ 44%]
+tests/core/config/test_config_device.py ............                     [ 45%]
+tests/core/misc/test_block_masked_mm.py ..                               [ 45%]
+tests/core/misc/test_core_init.py .                                      [ 45%]
+tests/core/misc/test_dataset.py ...................                      [ 45%]
+tests/core/misc/test_dispatch.py .                                       [ 45%]
+tests/core/misc/test_dropout2d.py ..                                     [ 45%]
+tests/core/misc/test_graph_utils.py ....                                 [ 46%]
+tests/core/misc/test_mixins.py ..                                        [ 46%]
+tests/core/misc/test_shape.py .                                          [ 46%]
+tests/core/misc/test_tree_util.py .................                      [ 46%]
+tests/core/misc/test_type_promotion.py ...........                       [ 47%]
+tests/core/misc/test_wrappers.py .                                       [ 47%]
+tests/core/random/test_random.py .....................                   [ 47%]
+tests/core/random/test_random_state_eager.py .                           [ 47%]
+tests/core/state/test_state_manager.py .                                 [ 47%]
+tests/core/state/test_variable.py .                                      [ 47%]
+tests/core/tensor/test_tensor.py ....                                    [ 48%]
+tests/core/tensor/test_tensor_array.py .                                 [ 48%]
+tests/core/tensor/test_tensor_dunders.py ......                          [ 48%]
+tests/core/tensor/test_tensor_edge_cases.py .                            [ 48%]
+tests/core/tensor/test_tensor_mixins.py .........................        [ 49%]
+tests/core/tensor/test_tensor_mixins_fallback.py ....                    [ 49%]
+tests/core/tensor/test_tensor_variable_assign.py ......                  [ 49%]
+tests/core/test_device.py ............                                   [ 49%]
+tests/core/test_dispatch.py ..                                           [ 49%]
+tests/core/test_eager_isolation.py .                                     [ 49%]
+tests/core/test_errors.py .                                              [ 49%]
+tests/diagnostics/test_diagnostics.py .......                            [ 50%]
+tests/diagnostics/test_diagnostics_extended.py .                         [ 50%]
+tests/distributed/test_device_mesh.py .                                  [ 50%]
+tests/distributed/test_distributed_init.py ........                      [ 50%]
+tests/distributed/test_ir_sharding.py .                                  [ 50%]
+tests/distributed/test_layout_map.py ..                                  [ 50%]
+tests/distributed/test_lowering.py ..                                    [ 50%]
+tests/distributed/test_pipeline_primitives.py .....                      [ 50%]
+tests/distributed/test_pipeline_runtime.py .                             [ 50%]
+tests/distributed/test_strategy.py ..................................... [ 52%]
+.............                                                            [ 52%]
+tests/docs/test_conf.py .                                                [ 52%]
+tests/docs/test_ml_playground_directive.py ..                            [ 52%]
+tests/export/test_aot.py ..............                                  [ 53%]
+tests/export/test_export_api.py ...                                      [ 53%]
+tests/export/test_export_init.py .                                       [ 53%]
+tests/grad/test_autodiff_rules_math.py ..                                [ 53%]
+tests/grad/test_autodiff_rules_nn.py ..                                  [ 53%]
+tests/grad/test_control_flow_grad.py ..                                  [ 53%]
+tests/grad/test_grad_coverage.py .............                           [ 53%]
+tests/grad/test_grad_edge_cases.py ........                              [ 54%]
+tests/grad/test_grad_hvp.py ...                                          [ 54%]
+tests/grad/test_grad_missing.py ......                                   [ 54%]
+tests/grad/test_grad_missing3.py ......                                  [ 54%]
+tests/grad/test_more_math_coverage.py ..                                 [ 54%]
+tests/grad/test_vjp_coverage4.py ..                                      [ 54%]
+tests/interpreter/test_evaluator.py ........                             [ 55%]
+tests/interpreter/test_evaluator_edge_cases.py ..                        [ 55%]
+tests/interpreter/test_interpreter.py .....                              [ 55%]
+tests/ir/test_core_ir.py ....                                            [ 55%]
+tests/ir/test_ir_state.py .                                              [ 55%]
+tests/ir/test_shape.py .........                                         [ 55%]
+tests/ir/test_shape_system.py .                                          [ 55%]
+tests/linker/test_linker.py ...                                          [ 55%]
+tests/nn/test_activations.py .                                           [ 55%]
+tests/nn/test_initializers.py .                                          [ 55%]
+tests/ops/audio/test_audio_features_numpy.py .                           [ 55%]
+tests/ops/audio/test_audio_ops.py ..                                     [ 55%]
+tests/ops/audio/test_audio_shapes.py .                                   [ 56%]
+tests/ops/audio/test_ops.py .                                            [ 56%]
+tests/ops/autodiff/test_binary_division.py .....                         [ 56%]
+tests/ops/autodiff/test_binary_math.py ..............                    [ 56%]
+tests/ops/autodiff/test_binary_special.py .....                          [ 56%]
+tests/ops/autodiff/test_binary_trig.py .                                 [ 56%]
+tests/ops/autodiff/test_cast_and_conj_rules.py .                         [ 56%]
+tests/ops/autodiff/test_generic_shape_rules.py .                         [ 56%]
+tests/ops/autodiff/test_main.py ............                             [ 57%]
+tests/ops/autodiff/test_ops_jvp.py .                                     [ 57%]
+tests/ops/autodiff/test_shape_creation.py ..                             [ 57%]
+tests/ops/autodiff/test_shape_shape.py ....                              [ 57%]
+tests/ops/autodiff/test_unary_math.py ..                                 [ 57%]
+tests/ops/autodiff/test_unary_nn.py ...                                  [ 57%]
+tests/ops/base/test_ops_base.py ...                                      [ 57%]
+tests/ops/base/test_ops_base_edge_cases.py .                             [ 57%]
+tests/ops/binary/test_binary.py ...                                      [ 57%]
+tests/ops/binary/test_binary_init.py .                                   [ 57%]
+tests/ops/binary/test_binary_math.py ....                                [ 58%]
+tests/ops/binary/test_binary_special.py ..                               [ 58%]
+tests/ops/binary/test_edge_cases.py ..                                   [ 58%]
+tests/ops/binary/test_math.py ..................                         [ 58%]
+tests/ops/binary/test_special.py ...                                     [ 58%]
+tests/ops/control_flow/test_control_flow.py ..........                   [ 59%]
+tests/ops/control_flow/test_eager.py .........                           [ 59%]
+tests/ops/control_flow/test_main.py ..                                   [ 59%]
+tests/ops/control_flow/test_tracing.py .......                           [ 59%]
+tests/ops/control_flow/test_utils.py .                                   [ 59%]
+tests/ops/conv/test_edge_cases.py .....                                  [ 60%]
+tests/ops/conv/test_frontend.py ..                                       [ 60%]
+tests/ops/conv/test_lstm.py ...                                          [ 60%]
+tests/ops/conv/test_main.py .                                            [ 60%]
+tests/ops/conv/test_tracing.py .                                         [ 60%]
+tests/ops/conv/test_utils.py ...................                         [ 60%]
+tests/ops/creation/core/test_basic.py .                                  [ 60%]
+tests/ops/creation/core/test_edge_cases.py .                             [ 60%]
+tests/ops/creation/core/test_ops_creation.py .................           [ 61%]
+tests/ops/creation/frontend/test_frontend.py ..                          [ 61%]
+tests/ops/creation/frontend/test_frontend_basic.py ......                [ 61%]
+tests/ops/creation/frontend/test_frontend_exceptions.py ..               [ 61%]
+tests/ops/creation/frontend/test_frontend_matrix.py .                    [ 61%]
+tests/ops/creation/frontend/test_frontend_random.py .                    [ 61%]
+tests/ops/creation/frontend/test_frontend_sequence.py .                  [ 61%]
+tests/ops/creation/frontend/test_frontend_utils.py .....                 [ 62%]
+tests/ops/creation/test_frontend_utils.py ..                             [ 62%]
+tests/ops/frontend/test_frontend_lazy.py ....                            [ 62%]
+tests/ops/frontend/test_frontend_mocked.py ....                          [ 62%]
+tests/ops/io/test_base64_fallback.py .                                   [ 62%]
+tests/ops/io/test_file_utils.py .                                        [ 62%]
+tests/ops/io/test_io.py ........                                         [ 62%]
+tests/ops/io/test_io_decoders.py .......                                 [ 63%]
+tests/ops/io/test_io_tracing.py ...                                      [ 63%]
+tests/ops/linalg/conv/test_conv_edge_cases.py ....                       [ 63%]
+tests/ops/linalg/conv/test_conv_ops.py .                                 [ 63%]
+tests/ops/linalg/core/test_frontend.py ...                               [ 63%]
+tests/ops/linalg/core/test_matrix_ops.py ...                             [ 63%]
+tests/ops/linalg/core/test_transform.py .                                [ 63%]
+tests/ops/linalg/core/test_unimplemented_ops.py .                        [ 63%]
+tests/ops/linalg/decompositions/test_cholesky.py ...                     [ 63%]
+tests/ops/linalg/decompositions/test_decompositions.py ................. [ 64%]
+......................                                                   [ 64%]
+tests/ops/linalg/decompositions/test_eig.py .....                        [ 65%]
+tests/ops/linalg/decompositions/test_inv.py ....                         [ 65%]
+tests/ops/linalg/decompositions/test_lu.py .....                         [ 65%]
+tests/ops/linalg/decompositions/test_norms.py ...                        [ 65%]
+tests/ops/linalg/decompositions/test_qr.py ..                            [ 65%]
+tests/ops/linalg/decompositions/test_solve.py .....                      [ 65%]
+tests/ops/linalg/decompositions/test_solvers.py ...                      [ 65%]
+tests/ops/linalg/decompositions/test_svd.py ....                         [ 65%]
+tests/ops/linalg/einsum/test_einsum.py .......                           [ 66%]
+tests/ops/linalg/einsum/test_einsum_frontend.py .....                    [ 66%]
+tests/ops/linalg/matmul/test_dot.py .....                                [ 66%]
+tests/ops/linalg/matmul/test_linear_operator.py .                        [ 66%]
+tests/ops/linalg/matmul/test_matmul.py .........                         [ 66%]
+tests/ops/linalg/products/test_products.py ...                           [ 66%]
+tests/ops/linalg/solvers/test_solvers.py ...                             [ 67%]
+tests/ops/linalg/test_einsum_dynamic_rank.py .ss.                        [ 67%]
+tests/ops/linalg/test_linalg_utils.py .                                  [ 67%]
+tests/ops/loss/test_loss.py ..                                           [ 67%]
+tests/ops/loss/test_loss_extended.py .                                   [ 67%]
+tests/ops/misc/test_configs.py .                                         [ 67%]
+tests/ops/misc/test_custom_kernels.py .......                            [ 67%]
+tests/ops/misc/test_dataset_utils.py .........                           [ 67%]
+tests/ops/misc/test_device.py ..                                         [ 67%]
+tests/ops/misc/test_distributed_ops.py .                                 [ 67%]
+tests/ops/misc/test_eager_evaluator.py ..                                [ 67%]
+tests/ops/misc/test_export.py .                                          [ 68%]
+tests/ops/misc/test_info_functions.py ..                                 [ 68%]
+tests/ops/misc/test_lookup.py .                                          [ 68%]
+tests/ops/misc/test_metrics_primitives.py ..                             [ 68%]
+tests/ops/misc/test_np_utils.py ..                                       [ 68%]
+tests/ops/misc/test_operation_utils.py .............                     [ 68%]
+tests/ops/misc/test_ops_math.py ..                                       [ 68%]
+tests/ops/misc/test_raw_ops.py ..                                        [ 68%]
+tests/ops/misc/test_state.py .                                           [ 68%]
+tests/ops/misc/test_transforms_rewriter.py .                             [ 68%]
+tests/ops/misc/test_vmap.py .......                                      [ 69%]
+tests/ops/nn/activations/test_dropout.py .                               [ 69%]
+tests/ops/nn/activations/test_nn_activations.py .                        [ 69%]
+tests/ops/nn/activations/test_one_hot_metadata.py .                      [ 69%]
+tests/ops/nn/attention/test_attention_rope_alibi.py .....                [ 69%]
+tests/ops/nn/attention/test_nn_attention_utils.py F                      [ 69%]
+tests/ops/nn/conv/test_conv_nd.py ....                                   [ 69%]
+tests/ops/nn/conv/test_conv_utils.py .....                               [ 69%]
+tests/ops/nn/conv/test_erosion_dilation.py ..                            [ 69%]
+tests/ops/nn/core/test_linear_ops.py .                                   [ 69%]
+tests/ops/nn/loss/test_loss.py .                                         [ 69%]
+tests/ops/nn/loss/test_loss_adaptive.py ....                             [ 69%]
+tests/ops/nn/normalization/test_group_norm.py ....                       [ 70%]
+tests/ops/nn/normalization/test_nlp.py .                                 [ 70%]
+tests/ops/nn/normalization/test_norm_nlp_extended.py .....               [ 70%]
+tests/ops/nn/normalization/test_normalization.py ..                      [ 70%]
+tests/ops/nn/normalization/test_normalization_edge_cases.py .            [ 70%]
+tests/ops/nn/normalization/test_normalization_frontend_edge_cases.py .   [ 70%]
+tests/ops/nn/pooling/test_pooling.py .                                   [ 70%]
+tests/ops/nn/pooling/test_pooling_edge_cases.py .                        [ 70%]
+tests/ops/nn/quantized/test_quantized_extended.py .                      [ 70%]
+tests/ops/nn/quantized/test_quantized_ops.py ..                          [ 70%]
+tests/ops/nn/quantized/test_quantized_ops_eager.py .                     [ 70%]
+tests/ops/nn/quantized/test_quantized_ops_edge_cases.py .                [ 70%]
+tests/ops/nn/rnn/test_gru.py .                                           [ 70%]
+tests/ops/nn/rnn/test_gru_extended.py .                                  [ 70%]
+tests/ops/nn/rnn/test_lstm.py .                                          [ 70%]
+tests/ops/nn/rnn/test_rnn_quantized_edge_cases.py ...                    [ 70%]
+tests/ops/nn/rnn/test_rnn_utils.py ..                                    [ 70%]
+tests/ops/nn/rnn/test_rnn_utils_coverage.py ....                         [ 71%]
+tests/ops/nn/rnn/test_rnn_utils_edge_cases.py .                          [ 71%]
+tests/ops/nn/test_activations.py .                                       [ 71%]
+tests/ops/nn/test_rnn_init.py .                                          [ 71%]
+tests/ops/nn/upsample/test_upsample.py .                                 [ 71%]
+tests/ops/nn/upsample/test_upsample_edge_cases.py .                      [ 71%]
+tests/ops/optimizers/test_adamw_coverage.py ..                           [ 71%]
+tests/ops/optimizers/test_main.py ...............                        [ 71%]
+tests/ops/optimizers/test_optimizers.py .                                [ 71%]
+tests/ops/optimizers/test_updates.py .                                   [ 71%]
+tests/ops/optimizers/test_updates_edge_cases.py .                        [ 71%]
+tests/ops/optimizers/test_updates_opdefs.py ....                         [ 71%]
+tests/ops/ragged/test_ragged.py ..                                       [ 72%]
+tests/ops/ragged/test_ragged_frontend.py .                               [ 72%]
+tests/ops/random/test_continuous_dirichlet.py .                          [ 72%]
+tests/ops/random/test_discrete.py .....                                  [ 72%]
+tests/ops/random/test_ops.py .                                           [ 72%]
+tests/ops/random/test_random_extended.py .                               [ 72%]
+tests/ops/random/test_random_ops.py .                                    [ 72%]
+tests/ops/random/test_random_stateless.py .                              [ 72%]
+tests/ops/random/test_state.py ........                                  [ 72%]
+tests/ops/random/test_stateless_ops.py .................                 [ 73%]
+tests/ops/reductions/core/test_aggregations.py .                         [ 73%]
+tests/ops/reductions/core/test_core.py ...                               [ 73%]
+tests/ops/reductions/core/test_distributed.py ..                         [ 73%]
+tests/ops/reductions/core/test_init.py .                                 [ 73%]
+tests/ops/reductions/frontend/test_frontend.py ..                        [ 73%]
+tests/ops/reductions/frontend/test_frontend_edge_cases.py .              [ 73%]
+tests/ops/reductions/frontend/test_frontend_pool.py .                    [ 73%]
+tests/ops/reductions/frontend/test_frontend_pool_eager.py .              [ 73%]
+tests/ops/reductions/frontend/test_frontend_pool_tracing.py .            [ 73%]
+tests/ops/reductions/frontend/test_frontend_stats.py .........           [ 73%]
+tests/ops/reductions/frontend/test_frontend_utils_extended.py .          [ 73%]
+tests/ops/reductions/pooling/test_pooling_infer_shape.py .               [ 74%]
+tests/ops/reductions/shape/test_shape_edge_cases.py ...                  [ 74%]
+tests/ops/reductions/test_frontend_pool.py .                             [ 74%]
+tests/ops/reductions/test_reductions.py .                                [ 74%]
+tests/ops/reductions/test_reductions_init_brute.py .                     [ 74%]
+tests/ops/registry/test_registries.py .                                  [ 74%]
+tests/ops/registry/test_registry.py .....                                [ 74%]
+tests/ops/serialization/test_h.py ..                                     [ 74%]
+tests/ops/serialization/test_ir_format.py .                              [ 74%]
+tests/ops/serialization/test_main.py ......................              [ 75%]
+tests/ops/serialization/test_npz.py .                                    [ 75%]
+tests/ops/serialization/test_pickle.py .                                 [ 75%]
+tests/ops/serialization/test_safetensors.py ..                           [ 75%]
+tests/ops/serialization/test_utils.py ................                   [ 75%]
+tests/ops/shape/core/test_diag_and_block.py ............................ [ 76%]
+........                                                                 [ 77%]
+tests/ops/shape/core/test_inference.py ...                               [ 77%]
+tests/ops/shape/core/test_moveaxis_permute.py ....                       [ 77%]
+tests/ops/shape/core/test_pad_and_tile_dispatch.py ......                [ 77%]
+tests/ops/shape/core/test_space_batch.py ...                             [ 77%]
+tests/ops/shape/core/test_utils.py ..                                    [ 77%]
+tests/ops/shape/indexing/test_dynamic_slicing.py ......                  [ 77%]
+tests/ops/shape/indexing/test_indexing.py ...........                    [ 78%]
+tests/ops/shape/indexing/test_indexing_advanced.py ................      [ 78%]
+tests/ops/shape/indexing/test_scatter.py .......                         [ 78%]
+tests/ops/shape/indexing/test_slicing.py ......                          [ 79%]
+tests/ops/shape/manipulation/test_concat.py ..........                   [ 79%]
+tests/ops/shape/manipulation/test_joining.py ........                    [ 79%]
+tests/ops/shape/manipulation/test_joining_splitting.py ................  [ 80%]
+tests/ops/shape/manipulation/test_splitting.py ...............           [ 80%]
+tests/ops/shape/reshaping/test_expand_squeeze.py ...............         [ 81%]
+tests/ops/shape/reshaping/test_reshape.py ..................             [ 81%]
+tests/ops/shape/test_pad_and_tile.py .                                   [ 81%]
+tests/ops/signal/test_main.py .....                                      [ 82%]
+tests/ops/signal/test_signal.py ...                                      [ 82%]
+tests/ops/signal/test_signal_eager.py .                                  [ 82%]
+tests/ops/signal/test_stft.py ....                                       [ 82%]
+tests/ops/sparse/test_init.py .                                          [ 82%]
+tests/ops/sparse/test_ragged.py ..........                               [ 82%]
+tests/ops/sparse/test_ragged_extended.py ..                              [ 82%]
+tests/ops/sparse/test_text.py .........                                  [ 83%]
+tests/ops/stats/test_descriptive.py ..                                   [ 83%]
+tests/ops/stats/test_distributions.py ..                                 [ 83%]
+tests/ops/tensor/test_ops_tensor.py .                                    [ 83%]
+tests/ops/tensor/test_ops_tensor_array.py .                              [ 83%]
+tests/ops/tensor/test_tensordot_einsum_routing.py ....                   [ 83%]
+tests/ops/test_arithmetic_ops.py ......                                  [ 83%]
+tests/ops/test_distributed_ops.py ...                                    [ 83%]
+tests/ops/test_eager_evaluator.py .                                      [ 83%]
+tests/ops/test_exponential_ops.py ...                                    [ 83%]
+tests/ops/test_finfo_iinfo.py ...                                        [ 83%]
+tests/ops/test_info_and_histograms.py ..                                 [ 83%]
+tests/ops/test_io.py ......................                              [ 84%]
+tests/ops/test_logical_ops.py ....                                       [ 84%]
+tests/ops/test_matrix_ops.py ..                                          [ 84%]
+tests/ops/test_random_ops.py .                                           [ 84%]
+tests/ops/test_random_stateless.py .                                     [ 84%]
+tests/ops/test_reduction_ops.py ....                                     [ 85%]
+tests/ops/test_registry.py ...                                           [ 85%]
+tests/ops/test_tracing_utils.py .                                        [ 85%]
+tests/ops/test_trigonometric_ops.py ...                                  [ 85%]
+tests/ops/test_various_stubs.py .................                        [ 85%]
+tests/ops/text/test_text.py ................                             [ 86%]
+tests/ops/text/test_text_infer_shape.py .                                [ 86%]
+tests/ops/tracing/test_autograph.py .                                    [ 86%]
+tests/ops/tracing/test_tracer.py .                                       [ 86%]
+tests/ops/tracing/test_tracer_mixins.py .                                [ 86%]
+tests/ops/tracing/test_tracing_builder.py .....                          [ 86%]
+tests/ops/tracing/test_tracing_state.py ...                              [ 86%]
+tests/ops/type/test_type_inference.py ..                                 [ 86%]
+tests/ops/type/test_type_promotion_explicitizer.py ...                   [ 86%]
+tests/ops/unary/test_exponential.py .                                    [ 86%]
+tests/ops/unary/test_init.py .                                           [ 87%]
+tests/ops/unary/test_logical.py ......                                   [ 87%]
+tests/ops/unary/test_ops_unary.py ....                                   [ 87%]
+tests/ops/unary/test_sets.py .                                           [ 87%]
+tests/ops/unary/test_special.py ..                                       [ 87%]
+tests/ops/unary/test_unary_logical.py .                                  [ 87%]
+tests/ops/vision/test_affine.py ..                                       [ 87%]
+tests/ops/vision/test_bbox.py ....                                       [ 87%]
+tests/ops/vision/test_color.py ..                                        [ 87%]
+tests/ops/vision/test_filtering.py ....                                  [ 87%]
+tests/ops/vision/test_interpolation.py .                                 [ 87%]
+tests/ops/vision/test_mixing.py .                                        [ 87%]
+tests/ops/vision/test_transforms.py ...                                  [ 88%]
+tests/ops/vision/test_vis_utils.py ...                                   [ 88%]
+tests/random/continuous/test_ball.py .                                   [ 88%]
+tests/random/continuous/test_cauchy.py .                                 [ 88%]
+tests/random/continuous/test_chisquare.py .                              [ 88%]
+tests/random/continuous/test_double_sided_maxwell.py .                   [ 88%]
+tests/random/continuous/test_exponential.py .                            [ 88%]
+tests/random/continuous/test_f.py .                                      [ 88%]
+tests/random/continuous/test_gamma.py ..                                 [ 88%]
+tests/random/continuous/test_generalized_normal.py .                     [ 88%]
+tests/random/continuous/test_gumbel.py .                                 [ 88%]
+tests/random/continuous/test_laplace.py .                                [ 88%]
+tests/random/continuous/test_loggamma.py .                               [ 88%]
+tests/random/continuous/test_logistic.py .                               [ 88%]
+tests/random/continuous/test_lognormal.py .                              [ 88%]
+tests/random/continuous/test_maxwell.py .                                [ 88%]
+tests/random/continuous/test_multivariate_normal.py ..                   [ 88%]
+tests/random/continuous/test_orthogonal.py .                             [ 88%]
+tests/random/continuous/test_pareto.py .                                 [ 88%]
+tests/random/continuous/test_random_gamma_p.py .                         [ 88%]
+tests/random/continuous/test_rayleigh.py .                               [ 88%]
+tests/random/continuous/test_t.py .                                      [ 88%]
+tests/random/continuous/test_triangular.py .                             [ 88%]
+tests/random/continuous/test_wald.py .                                   [ 88%]
+tests/random/continuous/test_weibull_min.py .                            [ 88%]
+tests/serialization/test_base_format.py ..                               [ 89%]
+tests/serialization/test_h.py .....                                      [ 89%]
+tests/serialization/test_init_extract_model.py ...................       [ 89%]
+tests/serialization/test_init_final.py ..                                [ 89%]
+tests/serialization/test_init_methods.py ..                              [ 89%]
+tests/serialization/test_npz.py .                                        [ 89%]
+tests/serialization/test_serialization.py ...                            [ 90%]
+tests/serialization/test_serialization_extended.py .                     [ 90%]
+tests/serialization/test_z_init_unmocked.py .                            [ 90%]
+tests/test_architectural_boundaries.py .                                 [ 90%]
+tests/test_checkpoint.py ...                                             [ 90%]
+tests/test_foreign.py .....                                              [ 90%]
+tests/test_fuzz_higher_order.py .ss.                                     [ 90%]
+tests/test_grad.py ................                                      [ 91%]
+tests/test_lint_pass.py .                                                [ 91%]
+tests/tracing/test_autograph.py ..                                       [ 91%]
+tests/tracing/test_builder.py .....                                      [ 91%]
+tests/tracing/test_builder_proxy_elif.py .                               [ 91%]
+tests/tracing/test_proxy_tensor_dunders.py ....                          [ 91%]
+tests/tracing/test_tracer.py .                                           [ 91%]
+tests/tracing/test_tracing.py .......                                    [ 91%]
+tests/transforms/passes/test_axis_translation.py ....                    [ 91%]
+tests/transforms/passes/test_axis_translation_empty.py .                 [ 91%]
+tests/transforms/passes/test_batch_norm_folding.py ....                  [ 92%]
+tests/transforms/passes/test_batch_norm_folding_empty.py .               [ 92%]
+tests/transforms/passes/test_broadcast_explicitizer.py ....              [ 92%]
+tests/transforms/passes/test_buffer_allocation.py .........              [ 92%]
+tests/transforms/passes/test_dtype_inference.py .........                [ 92%]
+tests/transforms/passes/test_graph_scheduling.py ......                  [ 93%]
+tests/transforms/passes/test_lift_state.py ......                        [ 93%]
+tests/transforms/passes/test_loop_unrolling.py ................          [ 93%]
+tests/transforms/passes/test_loop_unrolling_duplicate.py .               [ 93%]
+tests/transforms/passes/test_mixed_precision.py ..........               [ 94%]
+tests/transforms/passes/test_operator_fusion_coverage.py .               [ 94%]
+tests/transforms/passes/test_quantization.py .........                   [ 94%]
+tests/transforms/passes/test_shape_inference.py ......                   [ 94%]
+tests/transforms/passes/test_spmd.py ..........                          [ 94%]
+tests/transforms/passes/test_state_lifting.py ....                       [ 95%]
+tests/transforms/passes/test_state_lowering.py ....                      [ 95%]
+tests/transforms/test_autodiff.py ..................................     [ 96%]
+tests/transforms/test_autodiff_custom_rules.py .........                 [ 96%]
+tests/transforms/test_autodiff_errors.py .                               [ 96%]
+tests/transforms/test_autodiff_jvp_none.py .                             [ 96%]
+tests/transforms/test_autodiff_reduction_rules.py .                      [ 96%]
+tests/transforms/test_autodiff_rules.py ....                             [ 96%]
+tests/transforms/test_autodiff_unimplemented_rules.py ...                [ 96%]
+tests/transforms/test_constant_folding.py ...........                    [ 97%]
+tests/transforms/test_cse.py .....                                       [ 97%]
+tests/transforms/test_dce.py ....                                        [ 97%]
+tests/transforms/test_edge_rules_missing.py .                            [ 97%]
+tests/transforms/test_foreign.py ......                                  [ 97%]
+tests/transforms/test_jvp_registry.py .                                  [ 97%]
+tests/transforms/test_operator_fusion.py ............                    [ 98%]
+tests/transforms/test_operator_fusion_extra.py .                         [ 98%]
+tests/transforms/test_pass_manager.py .......                            [ 98%]
+tests/transforms/test_rewriter.py .                                      [ 98%]
+tests/transforms/test_type_promotion_explicitizer.py .                   [ 98%]
+tests/transforms/test_type_promotion_explicitizer2.py ...                [ 98%]
+tests/transforms/test_vjp_registry.py .                                  [ 98%]
+tests/utils/test_dataset_utils.py ....                                   [ 98%]
+tests/utils/test_generic_utils.py ................                       [ 99%]
+tests/utils/test_generic_utils_edge_cases.py .                           [ 99%]
+tests/utils/test_operation_utils.py ...........                          [ 99%]
+tests/utils/test_save_img_squeeze.py .                                   [ 99%]
+tests/utils/test_vis_utils.py .....                                      [ 99%]
+tests/utils/test_vis_utils_edge_cases.py .                               [100%]
+
+=================================== FAILURES ===================================
+_______________________ test_nn_attention_utils_coverage _______________________
+
+    def test_nn_attention_utils_coverage():
+        config.eager_mode = True
+        t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig(shape=(1, 1, 2), dtype=DType("float32"), device=Device("cpu")))
+
+        assert RopeOp().infer_shape(t) == (1, 1, 2)
+
+        assert rope(t, axis=2) is not None
+
+        import ml_switcheroo_compiler.backends.registry as registry_mod
+
+        class MockAttentionBackend:
+            def execute_op(self, op, *args, **kwargs):
+                return np.zeros((10, 4))
+
+            def arange(self, *args, **kwargs):
+                return np.arange(*args, **kwargs)
+
+            def exp(self, x):
+                return np.exp(x)
+
+            def multiply(self, x, y):
+                return np.multiply(x, y)
+
+            def sin(self, x):
+                return np.sin(x)
+
+            def cos(self, x):
+                return np.cos(x)
+
+            def expand_dims(self, x, dim):
+                if hasattr(x, "reshape"):
+                    try:
+                        return x.reshape(x.shape + (1,))
+                    except Exception:
+                        pass
+                return np.zeros((10, 4))
+
+            def concatenate(self, x, dim):
+                return np.concatenate(x, axis=dim)
+
+        orig_backend = registry_mod.get_active_backend
+        registry_mod.get_active_backend = lambda: MockAttentionBackend()
+        try:
+>           assert sinusoidal_positional_encoding(10, 4) is not None
+
+tests/ops/nn/attention/test_nn_attention_utils.py:51:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/ml_switcheroo_compiler/ops/nn/attention_utils.py:87: in sinusoidal_positional_encoding
+    pe_sin = sin(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
+src/ml_switcheroo_compiler/ops/shape/frontend.py:30: in expand_dims
+    data = get_active_backend().execute_op("ExpandDims", getattr(a, "data", a), axis=axis)
+src/ml_switcheroo_compiler/backends/numpy/eager/__init__.py:75: in execute_op
+    return func_registry(np, *args, **kwargs)
+src/ml_switcheroo_compiler/backends/numpy/eager/array_manipulation.py:253: in _np_expand_dims
+    return backend_module.expand_dims(x, axis=axis)
+/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/shape_base.py:597: in expand_dims
+    axis = normalize_axis_tuple(axis, out_ndim)
+/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/numeric.py:1380: in normalize_axis_tuple
+    axis = tuple([normalize_axis_index(ax, ndim, argname) for ax in axis])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = <tuple_iterator object at 0x37e3dc460>
+
+>   axis = tuple([normalize_axis_index(ax, ndim, argname) for ax in axis])
+E   numpy.exceptions.AxisError: axis 1 is out of bounds for array of dimension 1
+
+/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/numeric.py:1380: AxisError
+=============================== warnings summary ===============================
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/google/api_core/_python_version_support.py:242
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/google/api_core/_python_version_support.py:242: FutureWarning: You are using a non-supported Python version (3.9.13). Google will not post any further updates to google.api_core supporting this Python version. Please upgrade to the latest Python version, or at least Python 3.10, and then update google.api_core.
+    warnings.warn(message, FutureWarning)
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/google/auth/__init__.py:54
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/google/auth/__init__.py:54: FutureWarning: You are using a Python version 3.9 past its end of life. Google will update google-auth with critical bug fixes on a best-effort basis, but not with any other fixes or features. Please upgrade your Python version, and then update google-auth.
+    warnings.warn(eol_message.format("3.9"), FutureWarning)
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/google/oauth2/__init__.py:40
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/google/oauth2/__init__.py:40: FutureWarning: You are using a Python version 3.9 past its end of life. Google will update google-auth with critical bug fixes on a best-effort basis, but not with any other fixes or features. Please upgrade your Python version, and then update google-auth.
+    warnings.warn(eol_message.format("3.9"), FutureWarning)
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/tensorflow/lite/python/util.py:51
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/tensorflow/lite/python/util.py:51
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/tensorflow/lite/python/util.py:51: DeprecationWarning: jax.xla_computation is deprecated. Please use the AOT APIs.
+    from jax import xla_computation as _xla_computation
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:64
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:64: PyparsingDeprecationWarning: 'oneOf' deprecated - use 'one_of'
+    prop = Group((name + Suppress("=") + comma_separated(value)) | oneOf(_CONSTANTS))
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:85: PyparsingDeprecationWarning: 'parseString' deprecated - use 'parse_string'
+    parse = parser.parseString(pattern)
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_fontconfig_pattern.py:89: PyparsingDeprecationWarning: 'resetCache' deprecated - use 'reset_cache'
+    parser.resetCache()
+
+../../../../Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_mathtext.py:45
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/matplotlib/_mathtext.py:45: PyparsingDeprecationWarning: 'enablePackrat' deprecated - use 'enable_packrat'
+    ParserElement.enablePackrat()
+
+tests/backends/common/test_backends_edge_cases.py::test_numpy_math_misc
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/scipy/signal/_signaltools.py:1055: RuntimeWarning: invalid value encountered in log
+    fft_ops = 3 * N * np.log(N)  # 3 separate FFTs of size full_out_shape
+
+tests/backends/common/test_backends_edge_cases.py::test_numpy_math_misc
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/fromnumeric.py:3504: RuntimeWarning: Mean of empty slice.
+    return _methods._mean(a, axis=axis, dtype=dtype,
+
+tests/backends/common/test_backends_edge_cases.py::test_numpy_math_misc
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/_methods.py:129: RuntimeWarning: invalid value encountered in scalar divide
+    ret = ret.dtype.type(ret / rcount)
+
+tests/backends/common/test_backends_edge_cases.py::test_numpy_math_misc
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/_methods.py:206: RuntimeWarning: Degrees of freedom <= 0 for slice
+    ret = _var(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+
+tests/backends/common/test_backends_edge_cases.py::test_numpy_math_misc
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/_methods.py:163: RuntimeWarning: invalid value encountered in divide
+    arrmean = um.true_divide(arrmean, div, out=arrmean,
+
+tests/backends/common/test_backends_edge_cases.py::test_numpy_math_misc
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/_methods.py:198: RuntimeWarning: invalid value encountered in scalar divide
+    ret = ret.dtype.type(ret / rcount)
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:398: RuntimeWarning: invalid value encountered in arccos
+    return func(*args, **kwargs) if func else None
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:152: RuntimeWarning: invalid value encountered in log
+    ln_1_x2 = backend_module.log(1.0 - x * x + 1e-12)
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:4746: DeprecationWarning: Passing None into shape arguments as an alias for () is deprecated.
+    res = backend_module.zeros(shape, dtype=backend_module.asarray(updates).dtype)
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:5503: RuntimeWarning: invalid value encountered in divide
+    return backend_module.trunc(backend_module.divide(*args, **kwargs))
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:6052: RuntimeWarning: invalid value encountered in cast
+    return backend_module.array([x, backend_module.zeros_like(x)], dtype=backend_module.uint32)
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:6096: RuntimeWarning: invalid value encountered in divide
+    return backend_module.where(args[0] == 0, 0, args[0] / args[1])
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:6142: RuntimeWarning: divide by zero encountered in log
+    return backend_module.where(args[0] == 0, 0, args[0] * backend_module.log(args[1]))
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:6142: RuntimeWarning: invalid value encountered in multiply
+    return backend_module.where(args[0] == 0, 0, args[0] * backend_module.log(args[1]))
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py:2120: RuntimeWarning: divide by zero encountered in slogdet
+    sign, logdet = _umath_linalg.slogdet(a, signature=signature)
+
+tests/backends/eager/test_core_math_ops_auto.py::test_all_core_math_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/eager/core_math_ops.py:22: RuntimeWarning: invalid value encountered in divide
+    return func(*args, **kwargs) if func else None
+
+tests/backends/mlx/misc/test_parity.py::test_mlx_parity_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/tests/backends/mlx/misc/test_parity.py:43: UserWarning: Active backend 'NumpyGenerator' does not support clear_cache()
+    clear_cache()
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:1725: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    return backend_module.zeros(*args, **kwargs)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/numeric.py:191: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    a = empty(shape, dtype, order)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/numeric.py:129: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    res = empty_like(a, dtype=dtype, order=order, subok=subok, shape=shape)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/numeric.py:265: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    res = empty_like(a, dtype=dtype, order=order, subok=subok, shape=shape)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/twodim_base.py:211: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    m = zeros((N, M), dtype=dtype, order=order)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:1753: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    return backend_module.empty(*args, **kwargs)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:1809: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    return backend_module.empty_like(*args, **kwargs)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/numeric.py:1764: DeprecationWarning: in the future the `.dtype` attribute of a given datatype object must be a valid dtype instance. `data_type.dtype` may need to be coerced using `np.dtype(data_type.dtype)`. (Deprecated NumPy 1.20)
+    res = empty((N,)+dimensions, dtype=dtype)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_numpy_eager_coverage_2
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/histograms.py:322: DeprecationWarning: The truth value of an empty array is ambiguous. Returning False, but in future this will result in an error. Use `array.size > 0` to check that an array is not empty.
+    if not (np.isfinite(first_edge) and np.isfinite(last_edge)):
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_core_math_ops_adjoint_det
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py:2180: RuntimeWarning: divide by zero encountered in det
+    r = _umath_linalg.det(a, signature=signature)
+
+tests/backends/numpy/eager/test_eager_edge_cases.py::test_core_math_ops_adjoint_det
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/linalg/linalg.py:2180: RuntimeWarning: invalid value encountered in det
+    r = _umath_linalg.det(a, signature=signature)
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:284: DeprecationWarning: In future, it will be an error for 'np.bool_' scalars to be interpreted as an index
+    return np.array([bin(n).count("1") for n in x_arr.flat]).reshape(x_arr.shape)
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/einsumfunc.py:597: DeprecationWarning: In future, it will be an error for 'np.bool_' scalars to be interpreted as an index
+    s = operator.index(s)
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+tests/backends/numpy/eager/test_math_special.py::test_math_advanced_coverage
+tests/backends/numpy/math/test_math_special_auto.py::test__np_fromstring_
+tests/ops/test_io.py::test_missing_io_functions_from
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:1235: DeprecationWarning: The binary mode of fromstring is deprecated, as it behaves surprisingly on unicode inputs. Use frombuffer instead
+    return backend_module.fromstring(*args, **kwargs)
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:1305: RuntimeWarning: Converting input from bool to <class 'numpy.uint8'> for compatibility.
+    return backend_module.histogram(*args, **kwargs)
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:1333: RuntimeWarning: Converting input from bool to <class 'numpy.uint8'> for compatibility.
+    return backend_module.histogram_bin_edges(*args, **kwargs)
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:4116: RuntimeWarning: Converting input from bool to <class 'numpy.uint8'> for compatibility.
+    counts, bins = np.histogram(a, bins="auto")
+
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+tests/backends/numpy/eager/test_math_advanced.py::test_math_misc_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:3259: DeprecationWarning: In future, it will be an error for 'np.bool_' scalars to be interpreted as an index
+    return np.array([bin(n).count("1") for n in x.flat]).reshape(x.shape)
+
+tests/backends/numpy/eager/test_math_binary.py::test_math_binary_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/scipy/special/_basic.py:1585: RuntimeWarning: invalid value encountered in power
+    fac2 = (-1.0)**(n+1) * gamma(n+1.0) * zeta(n+1, x)
+
+tests/backends/numpy/eager/test_math_special.py::test_math_advanced_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py:164: RuntimeWarning: invalid value encountered in divide
+    return np.trunc(np.divide(x, y))
+
+tests/backends/numpy/eager/test_math_special.py::test_math_advanced_coverage
+tests/ops/misc/test_ops_math.py::test_extra_binary
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_nan.py:133: RuntimeWarning: divide by zero encountered in log
+    res = np.where(x == 0.0, 0.0, x * np.log(y))
+
+tests/backends/numpy/eager/test_math_special.py::test_math_advanced_coverage
+tests/ops/misc/test_ops_math.py::test_extra_binary
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_nan.py:133: RuntimeWarning: invalid value encountered in multiply
+    res = np.where(x == 0.0, 0.0, x * np.log(y))
+
+tests/backends/numpy/math/test_math_special_auto.py::test__np_corrcoef
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+    c /= stddev[:, None]
+
+tests/core/config/test_config_device.py::test_clear_cache
+  /Users/samuel/repos/ml-switcheroo-compiler/tests/core/config/test_config_device.py:56: UserWarning: Active backend 'NumpyGenerator' does not support clear_cache()
+    clear_cache()
+
+tests/core/config/test_config_device.py::test_clear_cache
+tests/test_foreign.py::test_generic_utils_stubs
+tests/utils/test_generic_utils.py::test_other_stubs
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/core/config.py:277: UserWarning: Active backend 'NumpyGenerator' does not support clear_cache()
+    clear_cache()
+
+tests/core/config/test_config_device.py::test_clear_cache_try_except_extra
+  /Users/samuel/repos/ml-switcheroo-compiler/tests/core/config/test_config_device.py:161: UserWarning: Active backend 'NumpyGenerator' does not support clear_cache()
+    clear_cache()
+
+tests/distributed/test_strategy.py::test_tf_config_invalid
+  /Users/samuel/repos/ml-switcheroo-compiler/tests/distributed/test_strategy.py:479: UserWarning: Failed to parse TF_CONFIG env var as JSON: Expecting value: line 1 column 1 (char 0)
+    resolver = TFConfigClusterResolver()
+
+tests/distributed/test_strategy.py::test_distributed_strategy_tf_config_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/tests/distributed/test_strategy.py:572: UserWarning: Failed to parse TF_CONFIG env var as JSON: Expecting value: line 1 column 1 (char 0)
+    resolver = TFConfigClusterResolver()
+
+tests/grad/test_autodiff_rules_math.py::test_unary_math_rules
+tests/grad/test_more_math_coverage.py::test_remaining_unary
+tests/grad/test_vjp_coverage4.py::test_jvp_unary
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_trig.py:62: RuntimeWarning: invalid value encountered in arccosh
+    return backend_module.arccosh(*args, **kwargs)
+
+tests/grad/test_autodiff_rules_math.py::test_unary_math_rules
+tests/grad/test_more_math_coverage.py::test_remaining_unary
+tests/grad/test_vjp_coverage4.py::test_jvp_unary
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/__init__.py:98: RuntimeWarning: invalid value encountered in sqrt
+    return func(*args, **kwargs)
+
+tests/grad/test_grad_coverage.py::test_fallback_input
+tests/grad/test_grad_coverage.py::test_get_inputs_dict_none_val
+tests/grad/test_grad_coverage.py::test_backward_missing_output
+tests/grad/test_grad_coverage.py::test_grad_missing_tensor_no_id
+tests/grad/test_grad_coverage.py::test_grad_tensor_id_not_in_graph
+tests/test_grad.py::test_backward_under_tracing
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/grad.py:308: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+    all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
+
+tests/grad/test_grad_coverage.py::test_backward_missing_output
+tests/grad/test_grad_coverage.py::test_grad_tensor_id_not_in_graph
+tests/test_grad.py::test_backward_under_tracing
+tests/test_grad.py::test_grad_missing_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/grad.py:242: FutureWarning: `torch.distributed.reduce_op` is deprecated, please use `torch.distributed.ReduceOp` instead
+    all_tensors = [obj for obj in gc.get_objects() if isinstance(obj, Tensor)]
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_binary.py:274: RuntimeWarning: invalid value encountered in log
+    return backend_module.log(x / (1.0 - x))
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_trig.py:118: RuntimeWarning: invalid value encountered in arctanh
+    return backend_module.arctanh(*args, **kwargs)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_trig.py:48: RuntimeWarning: invalid value encountered in arccos
+    return backend_module.arccos(*args, **kwargs)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_trig.py:76: RuntimeWarning: invalid value encountered in arcsin
+    return backend_module.arcsin(*args, **kwargs)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_logical.py:148: DeprecationWarning: Calling nonzero on 0d arrays is deprecated, as it behaves surprisingly. Use `atleast_1d(arr).nonzero()` if the old behavior was intended.
+    return backend_module.where(*args, **kwargs)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/core/fromnumeric.py:45: DeprecationWarning: Calling nonzero on 0d arrays is deprecated, as it behaves surprisingly. Use `atleast_1d(arr).nonzero()` if the old behavior was intended.
+    result = getattr(asarray(obj), method)(*args, **kwds)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/function_base.py:2889: RuntimeWarning: Degrees of freedom <= 0 for slice
+    c = cov(x, y, rowvar, dtype=dtype)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/function_base.py:2748: RuntimeWarning: divide by zero encountered in divide
+    c *= np.true_divide(1, fact)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/numpy/lib/function_base.py:2748: RuntimeWarning: invalid value encountered in multiply
+    c *= np.true_divide(1, fact)
+
+tests/ops/autodiff/test_ops_jvp.py::test_all_ops_coverage
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_stats.py:62: RuntimeWarning: Degrees of freedom <= 0 for slice
+    return backend_module.cov(*args, **kwargs)
+
+tests/ops/binary/test_binary.py::test_divide_no_nan
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/__init__.py:98: RuntimeWarning: divide by zero encountered in divide
+    return func(*args, **kwargs)
+
+tests/ops/misc/test_ops_math.py::test_extra_unary
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_binary.py:274: RuntimeWarning: divide by zero encountered in divide
+    return backend_module.log(x / (1.0 - x))
+
+tests/ops/misc/test_ops_math.py::test_extra_unary
+  /Users/samuel/repos/ml-switcheroo-compiler/src/ml_switcheroo_compiler/backends/numpy/eager/math_binary.py:274: RuntimeWarning: divide by zero encountered in log
+    return backend_module.log(x / (1.0 - x))
+
+tests/ops/serialization/test_npz.py::test_npz_load
+  /Users/samuel/repos/ml-switcheroo-compiler/tests/ops/serialization/test_npz.py:12: UserWarning: Backend load_npz failed: . Falling back to default parse_npz.
+    assert fmt.load("test.npz") == {"b": 2}
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.9.13-final-0 _______________
+
+Name                                                                             Stmts   Miss  Cover   Missing
+--------------------------------------------------------------------------------------------------------------
+src/ml_switcheroo_compiler/__init__.py                                               8      0   100%
+src/ml_switcheroo_compiler/backends/__init__.py                                      4      0   100%
+src/ml_switcheroo_compiler/backends/backend_utils.py                                16      0   100%
+src/ml_switcheroo_compiler/backends/base_generator.py                              165      1    99%   243
+src/ml_switcheroo_compiler/backends/common/__init__.py                               2      0   100%
+src/ml_switcheroo_compiler/backends/common/audio_utils.py                           17      0   100%
+src/ml_switcheroo_compiler/backends/common/generator_mixins.py                       9      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/array.py                         116      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/common.py                         11      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/control_flow.py                   19      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/distributed.py                    18      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/image.py                          39      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/linalg.py                         83      0   100%
+src/ml_switcheroo_compiler/backends/common/mixins/variable.py                       13      0   100%
+src/ml_switcheroo_compiler/backends/cst_transpiler.py                              114      0   100%
+src/ml_switcheroo_compiler/backends/cupy/__init__.py                                 9      0   100%
+src/ml_switcheroo_compiler/backends/cupy/eager.py                                   26      0   100%
+src/ml_switcheroo_compiler/backends/cupy/generator.py                               42      0   100%
+src/ml_switcheroo_compiler/backends/cupy/types.py                                   14      0   100%
+src/ml_switcheroo_compiler/backends/dask/__init__.py                                 9      0   100%
+src/ml_switcheroo_compiler/backends/dask/eager.py                                   24      0   100%
+src/ml_switcheroo_compiler/backends/dask/generator.py                               44      0   100%
+src/ml_switcheroo_compiler/backends/dask/types.py                                   15      0   100%
+src/ml_switcheroo_compiler/backends/eager/__init__.py                               14      0   100%
+src/ml_switcheroo_compiler/backends/eager/audio.py                                  51      0   100%
+src/ml_switcheroo_compiler/backends/eager/core_group_ops.py                         87      0   100%
+src/ml_switcheroo_compiler/backends/eager/core_math_ops.py                        2186      0   100%
+src/ml_switcheroo_compiler/backends/eager/optimizers.py                             30      0   100%
+src/ml_switcheroo_compiler/backends/eager/random_ops.py                             62      0   100%
+src/ml_switcheroo_compiler/backends/eager/signal.py                                 51      0   100%
+src/ml_switcheroo_compiler/backends/eager/types_utils.py                            11      0   100%
+src/ml_switcheroo_compiler/backends/eager/utils.py                                  28      0   100%
+src/ml_switcheroo_compiler/backends/eager/vision_augmentation.py                   127      0   100%
+src/ml_switcheroo_compiler/backends/eager/vision_filtering.py                      161      0   100%
+src/ml_switcheroo_compiler/backends/eager/vision_transforms.py                      44      0   100%
+src/ml_switcheroo_compiler/backends/eager/vision_utils.py                           82      0   100%
+src/ml_switcheroo_compiler/backends/eager_registry.py                               27      0   100%
+src/ml_switcheroo_compiler/backends/edge/__init__.py                                 7      0   100%
+src/ml_switcheroo_compiler/backends/edge/onnx.py                                   130      0   100%
+src/ml_switcheroo_compiler/backends/edge/stablehlo.py                              106      0   100%
+src/ml_switcheroo_compiler/backends/edge/wasm.py                                   318      0   100%
+src/ml_switcheroo_compiler/backends/edge/webgl.py                                  255      0   100%
+src/ml_switcheroo_compiler/backends/edge/webgpu.py                                 295      0   100%
+src/ml_switcheroo_compiler/backends/edge/wgsl_ast.py                                98      0   100%
+src/ml_switcheroo_compiler/backends/formatters.py                                   55      0   100%
+src/ml_switcheroo_compiler/backends/generator_mixins.py                             44      0   100%
+src/ml_switcheroo_compiler/backends/generator_utils.py                              42      0   100%
+src/ml_switcheroo_compiler/backends/jax/__init__.py                                  4      0   100%
+src/ml_switcheroo_compiler/backends/jax/eager.py                                    98      0   100%
+src/ml_switcheroo_compiler/backends/jax/generator.py                                62      0   100%
+src/ml_switcheroo_compiler/backends/jax/generator_mixins.py                        135      0   100%
+src/ml_switcheroo_compiler/backends/jax/types.py                                    11      0   100%
+src/ml_switcheroo_compiler/backends/keras/__init__.py                                4      0   100%
+src/ml_switcheroo_compiler/backends/keras/eager.py                                  20      0   100%
+src/ml_switcheroo_compiler/backends/keras/generator.py                             110      0   100%
+src/ml_switcheroo_compiler/backends/keras/keras_mixins.py                           50      0   100%
+src/ml_switcheroo_compiler/backends/keras/types.py                                  11      0   100%
+src/ml_switcheroo_compiler/backends/linker.py                                       17      0   100%
+src/ml_switcheroo_compiler/backends/llvm_cpp/__init__.py                             3      0   100%
+src/ml_switcheroo_compiler/backends/llvm_cpp/generator.py                          223      0   100%
+src/ml_switcheroo_compiler/backends/mlx/__init__.py                                  4      0   100%
+src/ml_switcheroo_compiler/backends/mlx/eager.py                                   253      0   100%
+src/ml_switcheroo_compiler/backends/mlx/generator.py                                64      0   100%
+src/ml_switcheroo_compiler/backends/mlx/mlx_mixins.py                              181      1    99%   188
+src/ml_switcheroo_compiler/backends/mlx/types.py                                    13      0   100%
+src/ml_switcheroo_compiler/backends/numpy/__init__.py                                4      0   100%
+src/ml_switcheroo_compiler/backends/numpy/distributed/__init__.py                    2      0   100%
+src/ml_switcheroo_compiler/backends/numpy/distributed/ipc.py                       105      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/__init__.py                        116      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/_indexing_parsing_utils.py          51      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/activation_ops.py                   24      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/advanced_indexing.py               135      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/array_manipulation.py              142      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/audio_features.py                  130      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/control_flow.py                     24      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/conv.py                            212      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/distributed.py                     156      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/fft_ops.py                          81      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/indexing.py                        120      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/io_ops.py                          100      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/linalg_advanced.py                 166      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/lookups.py                          20      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/loss_ops.py                         92      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_advanced.py                  1379      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_binary.py                      82      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_extended.py                    75      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_fft.py                         68      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_logical.py                     39      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_logical_reductions.py           8      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_nan.py                         38      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_reductions.py                  57      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_scatter.py                     59      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_special.py                     86      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_stats.py                      131      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_trig.py                        35      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/math_unary.py                       79      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/nn.py                               73      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/nn_ops.py                           20      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/nn_polyfills.py                    290      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/optimizers_ops.py                   39      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/random_ops.py                       44      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/reductions.py                      184      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/search_sort_ops.py                  47      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/sparse_and_ragged.py                24      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/strings.py                          51      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/variable_ops.py                     25      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision.py                          209      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_augmentation.py             173      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_bbox.py                       2      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_color.py                     68      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_common.py                    26      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_filtering.py                 21      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_filters.py                    9      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_geometry.py                  45      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/vision_transforms.py                12      0   100%
+src/ml_switcheroo_compiler/backends/numpy/eager/window_reductions.py               127      0   100%
+src/ml_switcheroo_compiler/backends/numpy/generator.py                              88      0   100%
+src/ml_switcheroo_compiler/backends/numpy/numpy_mixins.py                           60      0   100%
+src/ml_switcheroo_compiler/backends/numpy/types.py                                  11      0   100%
+src/ml_switcheroo_compiler/backends/pytorch/__init__.py                              9      0   100%
+src/ml_switcheroo_compiler/backends/pytorch/eager.py                               158      0   100%
+src/ml_switcheroo_compiler/backends/pytorch/generator.py                           115      0   100%
+src/ml_switcheroo_compiler/backends/pytorch/pytorch_mixins.py                       43      0   100%
+src/ml_switcheroo_compiler/backends/pytorch/types.py                                14      0   100%
+src/ml_switcheroo_compiler/backends/registry.py                                     70      0   100%
+src/ml_switcheroo_compiler/backends/tensorflow/__init__.py                           4      0   100%
+src/ml_switcheroo_compiler/backends/tensorflow/eager.py                             20      0   100%
+src/ml_switcheroo_compiler/backends/tensorflow/generator.py                         92      0   100%
+src/ml_switcheroo_compiler/backends/tensorflow/tensorflow_mixins.py                 12      0   100%
+src/ml_switcheroo_compiler/backends/tensorflow/types.py                             11      0   100%
+src/ml_switcheroo_compiler/backends/type_mapper.py                                   7      0   100%
+src/ml_switcheroo_compiler/backends/visitor.py                                      46      0   100%
+src/ml_switcheroo_compiler/core/__init__.py                                         20      0   100%
+src/ml_switcheroo_compiler/core/assertions.py                                       28      0   100%
+src/ml_switcheroo_compiler/core/config.py                                          146      0   100%
+src/ml_switcheroo_compiler/core/constants.py                                         8      0   100%
+src/ml_switcheroo_compiler/core/dataset.py                                         203      0   100%
+src/ml_switcheroo_compiler/core/device.py                                           71      0   100%
+src/ml_switcheroo_compiler/core/dispatch.py                                         20      0   100%
+src/ml_switcheroo_compiler/core/dtype.py                                            62      0   100%
+src/ml_switcheroo_compiler/core/errors.py                                            8      0   100%
+src/ml_switcheroo_compiler/core/mixins.py                                           78      0   100%
+src/ml_switcheroo_compiler/core/ragged_tensor.py                                    26      0   100%
+src/ml_switcheroo_compiler/core/shape.py                                            18      0   100%
+src/ml_switcheroo_compiler/core/sparse_tensor.py                                    34      0   100%
+src/ml_switcheroo_compiler/core/state_manager.py                                    25      0   100%
+src/ml_switcheroo_compiler/core/tensor.py                                          115      0   100%
+src/ml_switcheroo_compiler/core/tensor_array.py                                     49      0   100%
+src/ml_switcheroo_compiler/core/tensor_mixins.py                                   119      0   100%
+src/ml_switcheroo_compiler/core/type_promotion.py                                   24      0   100%
+src/ml_switcheroo_compiler/core/utils/__init__.py                                    2      0   100%
+src/ml_switcheroo_compiler/core/utils/graph_utils.py                                31      0   100%
+src/ml_switcheroo_compiler/diagnostics/__init__.py                                   8      0   100%
+src/ml_switcheroo_compiler/diagnostics/debugging.py                                  4      0   100%
+src/ml_switcheroo_compiler/diagnostics/flop_counter.py                              19      0   100%
+src/ml_switcheroo_compiler/diagnostics/memory_profiler.py                           14      0   100%
+src/ml_switcheroo_compiler/diagnostics/numerical_anomaly.py                         14      0   100%
+src/ml_switcheroo_compiler/diagnostics/shape_debugger.py                            29      0   100%
+src/ml_switcheroo_compiler/diagnostics/summary.py                                    9      0   100%
+src/ml_switcheroo_compiler/distributed/__init__.py                                  55      0   100%
+src/ml_switcheroo_compiler/distributed/device_mesh.py                               24      0   100%
+src/ml_switcheroo_compiler/distributed/layout_map.py                                30      0   100%
+src/ml_switcheroo_compiler/distributed/strategy.py                                 332      2    99%   129-130
+src/ml_switcheroo_compiler/export/__init__.py                                        3      0   100%
+src/ml_switcheroo_compiler/export/aot.py                                           114      0   100%
+src/ml_switcheroo_compiler/export/export_api.py                                     60      0   100%
+src/ml_switcheroo_compiler/export/pb_utils.py                                       28      0   100%
+src/ml_switcheroo_compiler/foreign.py                                                8      0   100%
+src/ml_switcheroo_compiler/grad.py                                                 546      0   100%
+src/ml_switcheroo_compiler/interpreter/__init__.py                                   4      0   100%
+src/ml_switcheroo_compiler/interpreter/environment.py                               14      0   100%
+src/ml_switcheroo_compiler/interpreter/evaluator.py                                123      0   100%
+src/ml_switcheroo_compiler/ir/core.py                                               61      0   100%
+src/ml_switcheroo_compiler/ir/shape_system.py                                      147      0   100%
+src/ml_switcheroo_compiler/ir/state.py                                               9      0   100%
+src/ml_switcheroo_compiler/nn/__init__.py                                            2      0   100%
+src/ml_switcheroo_compiler/nn/activations.py                                         2      0   100%
+src/ml_switcheroo_compiler/nn/initializers.py                                       52      0   100%
+src/ml_switcheroo_compiler/ops/__init__.py                                          24      0   100%
+src/ml_switcheroo_compiler/ops/_math_registry.py                                     2      0   100%
+src/ml_switcheroo_compiler/ops/_nn_registry.py                                       2      0   100%
+src/ml_switcheroo_compiler/ops/_vision_registry.py                                   2      0   100%
+src/ml_switcheroo_compiler/ops/audio/__init__.py                                     2      0   100%
+src/ml_switcheroo_compiler/ops/audio/ops.py                                        196      0   100%
+src/ml_switcheroo_compiler/ops/base.py                                              48      0   100%
+src/ml_switcheroo_compiler/ops/binary/__init__.py                                  287      0   100%
+src/ml_switcheroo_compiler/ops/binary/math.py                                      401      0   100%
+src/ml_switcheroo_compiler/ops/binary/special.py                                    32      0   100%
+src/ml_switcheroo_compiler/ops/configs.py                                          121      0   100%
+src/ml_switcheroo_compiler/ops/control_flow/__init__.py                            149      0   100%
+src/ml_switcheroo_compiler/ops/control_flow/eager.py                                63      0   100%
+src/ml_switcheroo_compiler/ops/control_flow/tracing.py                             118      0   100%
+src/ml_switcheroo_compiler/ops/control_flow_utils.py                                59      0   100%
+src/ml_switcheroo_compiler/ops/creation/__init__.py                                  6      0   100%
+src/ml_switcheroo_compiler/ops/creation/basic.py                                   118      0   100%
+src/ml_switcheroo_compiler/ops/creation/frontend.py                                  6      0   100%
+src/ml_switcheroo_compiler/ops/creation/frontend_basic.py                          148      0   100%
+src/ml_switcheroo_compiler/ops/creation/frontend_matrix.py                          49      0   100%
+src/ml_switcheroo_compiler/ops/creation/frontend_random.py                          39      0   100%
+src/ml_switcheroo_compiler/ops/creation/frontend_sequence.py                        29      0   100%
+src/ml_switcheroo_compiler/ops/creation/frontend_utils.py                           82      0   100%
+src/ml_switcheroo_compiler/ops/device.py                                            36      0   100%
+src/ml_switcheroo_compiler/ops/dispatcher.py                                        12      0   100%
+src/ml_switcheroo_compiler/ops/distributed_ops.py                                  275      0   100%
+src/ml_switcheroo_compiler/ops/eager_evaluator.py                                   50      0   100%
+src/ml_switcheroo_compiler/ops/export.py                                            36      0   100%
+src/ml_switcheroo_compiler/ops/generated/__init__.py                                 0      0   100%
+src/ml_switcheroo_compiler/ops/generated_registry.py                                 2      0   100%
+src/ml_switcheroo_compiler/ops/image.py                                              3      0   100%
+src/ml_switcheroo_compiler/ops/info_and_histograms.py                              380      0   100%
+src/ml_switcheroo_compiler/ops/io.py                                               479      0   100%
+src/ml_switcheroo_compiler/ops/kernels.py                                           66      0   100%
+src/ml_switcheroo_compiler/ops/linalg/__init__.py                                  109      0   100%
+src/ml_switcheroo_compiler/ops/linalg/conv.py                                       40      0   100%
+src/ml_switcheroo_compiler/ops/linalg/conv_ops.py                                   62      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/__init__.py                    33      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/cholesky.py                    28      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/det.py                         28      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/eig.py                         50      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/inv.py                         46      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/lu.py                          33      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/norms.py                       51      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/qr.py                          98      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/solve.py                       35      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/solvers.py                     80      0   100%
+src/ml_switcheroo_compiler/ops/linalg/decompositions/svd.py                         44      0   100%
+src/ml_switcheroo_compiler/ops/linalg/dot.py                                        63      0   100%
+src/ml_switcheroo_compiler/ops/linalg/einsum.py                                    184      0   100%
+src/ml_switcheroo_compiler/ops/linalg/einsum_frontend.py                            72      0   100%
+src/ml_switcheroo_compiler/ops/linalg/linear_operator.py                            66      0   100%
+src/ml_switcheroo_compiler/ops/linalg/matmul.py                                    163      0   100%
+src/ml_switcheroo_compiler/ops/linalg/matrix_ops.py                                139      0   100%
+src/ml_switcheroo_compiler/ops/linalg/products.py                                   85      0   100%
+src/ml_switcheroo_compiler/ops/linalg/solvers.py                                   145      0   100%
+src/ml_switcheroo_compiler/ops/linalg/transform.py                                  24      0   100%
+src/ml_switcheroo_compiler/ops/linalg/utils.py                                      27      0   100%
+src/ml_switcheroo_compiler/ops/lookup.py                                            27      0   100%
+src/ml_switcheroo_compiler/ops/loss.py                                             107      0   100%
+src/ml_switcheroo_compiler/ops/nn/__init__.py                                       18      0   100%
+src/ml_switcheroo_compiler/ops/nn/activations.py                                   152      0   100%
+src/ml_switcheroo_compiler/ops/nn/attention_utils.py                                39      0   100%
+src/ml_switcheroo_compiler/ops/nn/clip_grad.py                                      44      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv1d.py                                         30      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv2d.py                                         30      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv3d.py                                         14      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv.py                                           11      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv_lstm.py                                      52      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv_nd.py                                        45      0   100%
+src/ml_switcheroo_compiler/ops/nn/conv_utils.py                                    129      0   100%
+src/ml_switcheroo_compiler/ops/nn/dropout.py                                        71      0   100%
+src/ml_switcheroo_compiler/ops/nn/gru.py                                            43      0   100%
+src/ml_switcheroo_compiler/ops/nn/linear_ops.py                                     17      0   100%
+src/ml_switcheroo_compiler/ops/nn/loss.py                                          145      0   100%
+src/ml_switcheroo_compiler/ops/nn/lstm.py                                           22      0   100%
+src/ml_switcheroo_compiler/ops/nn/nlp.py                                           114      0   100%
+src/ml_switcheroo_compiler/ops/nn/normalization.py                                 163      0   100%
+src/ml_switcheroo_compiler/ops/nn/pooling.py                                       153      0   100%
+src/ml_switcheroo_compiler/ops/nn/quantized_ops.py                                 197      0   100%
+src/ml_switcheroo_compiler/ops/nn/rnn.py                                            10      0   100%
+src/ml_switcheroo_compiler/ops/nn/rnn_cell.py                                       14      0   100%
+src/ml_switcheroo_compiler/ops/nn/rnn_utils.py                                     126      0   100%
+src/ml_switcheroo_compiler/ops/nn/time_distributed.py                               11      0   100%
+src/ml_switcheroo_compiler/ops/nn/upsample_ops.py                                   86      0   100%
+src/ml_switcheroo_compiler/ops/normalization/__init__.py                             5      0   100%
+src/ml_switcheroo_compiler/ops/normalization/basic.py                               17      0   100%
+src/ml_switcheroo_compiler/ops/normalization/frontend.py                            22      0   100%
+src/ml_switcheroo_compiler/ops/optimizers/updates.py                               303      0   100%
+src/ml_switcheroo_compiler/ops/ragged/__init__.py                                   85      0   100%
+src/ml_switcheroo_compiler/ops/ragged/core.py                                        7      0   100%
+src/ml_switcheroo_compiler/ops/ragged/frontend.py                                   37      0   100%
+src/ml_switcheroo_compiler/ops/random_ops/__init__.py                              210      0   100%
+src/ml_switcheroo_compiler/ops/random_ops/core.py                                   16      0   100%
+src/ml_switcheroo_compiler/ops/random_ops/frontend.py                               24      0   100%
+src/ml_switcheroo_compiler/ops/random_ops/sobol.py                                  10      0   100%
+src/ml_switcheroo_compiler/ops/random_stateless.py                                 136      0   100%
+src/ml_switcheroo_compiler/ops/raw_ops.py                                           17      0   100%
+src/ml_switcheroo_compiler/ops/reductions/__init__.py                              191      0   100%
+src/ml_switcheroo_compiler/ops/reductions/aggregations.py                           76      0   100%
+src/ml_switcheroo_compiler/ops/reductions/boolean.py                                12      0   100%
+src/ml_switcheroo_compiler/ops/reductions/core.py                                   17      0   100%
+src/ml_switcheroo_compiler/ops/reductions/distributed.py                            16      0   100%
+src/ml_switcheroo_compiler/ops/reductions/frontend.py                               25      0   100%
+src/ml_switcheroo_compiler/ops/reductions/frontend_pool.py                         116      0   100%
+src/ml_switcheroo_compiler/ops/reductions/frontend_segment.py                       44      0   100%
+src/ml_switcheroo_compiler/ops/reductions/frontend_stats.py                         53      0   100%
+src/ml_switcheroo_compiler/ops/reductions/frontend_utils.py                         44      0   100%
+src/ml_switcheroo_compiler/ops/reductions/nan.py                                    59      0   100%
+src/ml_switcheroo_compiler/ops/reductions/pooling.py                               136      0   100%
+src/ml_switcheroo_compiler/ops/registry.py                                          59      0   100%
+src/ml_switcheroo_compiler/ops/shape/__init__.py                                    78      0   100%
+src/ml_switcheroo_compiler/ops/shape/concat.py                                     120      0   100%
+src/ml_switcheroo_compiler/ops/shape/dynamic_slicing.py                             43      0   100%
+src/ml_switcheroo_compiler/ops/shape/frontend.py                                   208      0   100%
+src/ml_switcheroo_compiler/ops/shape/indexing.py                                   174      0   100%
+src/ml_switcheroo_compiler/ops/shape/indexing_advanced.py                          151      0   100%
+src/ml_switcheroo_compiler/ops/shape/joining.py                                     86      0   100%
+src/ml_switcheroo_compiler/ops/shape/pad_and_tile.py                               350      0   100%
+src/ml_switcheroo_compiler/ops/shape/reshape.py                                    292      0   100%
+src/ml_switcheroo_compiler/ops/shape/scatter.py                                     67      0   100%
+src/ml_switcheroo_compiler/ops/shape/slicing.py                                     71      0   100%
+src/ml_switcheroo_compiler/ops/shape/space_batch.py                                 34      0   100%
+src/ml_switcheroo_compiler/ops/shape/splitting.py                                  157      0   100%
+src/ml_switcheroo_compiler/ops/shape/utils.py                                       25      0   100%
+src/ml_switcheroo_compiler/ops/shape_inference.py                                   15      0   100%
+src/ml_switcheroo_compiler/ops/signal.py                                           319      0   100%
+src/ml_switcheroo_compiler/ops/sparse/__init__.py                                  190      0   100%
+src/ml_switcheroo_compiler/ops/sparse/frontend.py                                   73      0   100%
+src/ml_switcheroo_compiler/ops/state.py                                             10      0   100%
+src/ml_switcheroo_compiler/ops/stats/__init__.py                                     4      0   100%
+src/ml_switcheroo_compiler/ops/stats/descriptive.py                                 87      0   100%
+src/ml_switcheroo_compiler/ops/stats/distributions.py                               63      0   100%
+src/ml_switcheroo_compiler/ops/tensor.py                                             4      0   100%
+src/ml_switcheroo_compiler/ops/tensor_array/__init__.py                             22      0   100%
+src/ml_switcheroo_compiler/ops/text.py                                               8      0   100%
+src/ml_switcheroo_compiler/ops/text/__init__.py                                      5      0   100%
+src/ml_switcheroo_compiler/ops/text/frontend.py                                    119      0   100%
+src/ml_switcheroo_compiler/ops/text/ops.py                                         103      0   100%
+src/ml_switcheroo_compiler/ops/type_inference.py                                    29      0   100%
+src/ml_switcheroo_compiler/ops/unary/__init__.py                                   102      0   100%
+src/ml_switcheroo_compiler/ops/unary/arithmetic.py                                  73      0   100%
+src/ml_switcheroo_compiler/ops/unary/base.py                                         6      0   100%
+src/ml_switcheroo_compiler/ops/unary/complex_types.py                               15      0   100%
+src/ml_switcheroo_compiler/ops/unary/exponential.py                                 41      0   100%
+src/ml_switcheroo_compiler/ops/unary/hyperbolic.py                                  27      0   100%
+src/ml_switcheroo_compiler/ops/unary/logical.py                                    162      0   100%
+src/ml_switcheroo_compiler/ops/unary/normalization.py                                6      0   100%
+src/ml_switcheroo_compiler/ops/unary/sets.py                                        37      0   100%
+src/ml_switcheroo_compiler/ops/unary/special.py                                    123      0   100%
+src/ml_switcheroo_compiler/ops/unary/trigonometric.py                               48      0   100%
+src/ml_switcheroo_compiler/ops/vision/__init__.py                                    9      0   100%
+src/ml_switcheroo_compiler/ops/vision/affine.py                                    112      0   100%
+src/ml_switcheroo_compiler/ops/vision/bbox.py                                       97      0   100%
+src/ml_switcheroo_compiler/ops/vision/color.py                                     203      0   100%
+src/ml_switcheroo_compiler/ops/vision/filtering.py                                  62      0   100%
+src/ml_switcheroo_compiler/ops/vision/frontend.py                                    2      0   100%
+src/ml_switcheroo_compiler/ops/vision/interpolation.py                              43      0   100%
+src/ml_switcheroo_compiler/ops/vision/mixing.py                                     18      0   100%
+src/ml_switcheroo_compiler/ops/vision/transforms.py                                 42      0   100%
+src/ml_switcheroo_compiler/ops/vmap.py                                              57      0   100%
+src/ml_switcheroo_compiler/random/__init__.py                                        6      0   100%
+src/ml_switcheroo_compiler/random/continuous/__init__.py                            30      0   100%
+src/ml_switcheroo_compiler/random/continuous/ball.py                                 5      0   100%
+src/ml_switcheroo_compiler/random/continuous/beta.py                                 9      0   100%
+src/ml_switcheroo_compiler/random/continuous/cauchy.py                               5      0   100%
+src/ml_switcheroo_compiler/random/continuous/chisquare.py                            5      0   100%
+src/ml_switcheroo_compiler/random/continuous/dirichlet.py                            9      0   100%
+src/ml_switcheroo_compiler/random/continuous/double_sided_maxwell.py                 5      0   100%
+src/ml_switcheroo_compiler/random/continuous/exponential.py                          5      0   100%
+src/ml_switcheroo_compiler/random/continuous/f.py                                    5      0   100%
+src/ml_switcheroo_compiler/random/continuous/gamma.py                                7      0   100%
+src/ml_switcheroo_compiler/random/continuous/generalized_normal.py                   5      0   100%
+src/ml_switcheroo_compiler/random/continuous/gumbel.py                               5      0   100%
+src/ml_switcheroo_compiler/random/continuous/laplace.py                              5      0   100%
+src/ml_switcheroo_compiler/random/continuous/loggamma.py                             5      0   100%
+src/ml_switcheroo_compiler/random/continuous/logistic.py                             5      0   100%
+src/ml_switcheroo_compiler/random/continuous/lognormal.py                            5      0   100%
+src/ml_switcheroo_compiler/random/continuous/maxwell.py                              5      0   100%
+src/ml_switcheroo_compiler/random/continuous/multivariate_normal.py                 24      0   100%
+src/ml_switcheroo_compiler/random/continuous/normal.py                               7      0   100%
+src/ml_switcheroo_compiler/random/continuous/orthogonal.py                           5      0   100%
+src/ml_switcheroo_compiler/random/continuous/pareto.py                               5      0   100%
+src/ml_switcheroo_compiler/random/continuous/random_gamma_p.py                       5      0   100%
+src/ml_switcheroo_compiler/random/continuous/rayleigh.py                             5      0   100%
+src/ml_switcheroo_compiler/random/continuous/t.py                                    5      0   100%
+src/ml_switcheroo_compiler/random/continuous/triangular.py                           5      0   100%
+src/ml_switcheroo_compiler/random/continuous/truncated_normal.py                     7      0   100%
+src/ml_switcheroo_compiler/random/continuous/uniform.py                              7      0   100%
+src/ml_switcheroo_compiler/random/continuous/wald.py                                 5      0   100%
+src/ml_switcheroo_compiler/random/continuous/weibull_min.py                          5      0   100%
+src/ml_switcheroo_compiler/random/distributions_discrete.py                         49      0   100%
+src/ml_switcheroo_compiler/random/state.py                                          77      0   100%
+src/ml_switcheroo_compiler/random/transformations.py                                 5      0   100%
+src/ml_switcheroo_compiler/serialization/__init__.py                               256      0   100%
+src/ml_switcheroo_compiler/serialization/formats/base.py                            10      0   100%
+src/ml_switcheroo_compiler/serialization/formats/h5.py                              31      0   100%
+src/ml_switcheroo_compiler/serialization/formats/npz.py                             22      0   100%
+src/ml_switcheroo_compiler/serialization/formats/pickle_format.py                   10      0   100%
+src/ml_switcheroo_compiler/serialization/formats/safetensors.py                     52      0   100%
+src/ml_switcheroo_compiler/serialization/ir_format.py                               19      0   100%
+src/ml_switcheroo_compiler/serialization/utils.py                                  116      0   100%
+src/ml_switcheroo_compiler/tracing/__init__.py                                       4      0   100%
+src/ml_switcheroo_compiler/tracing/autograph.py                                     21      0   100%
+src/ml_switcheroo_compiler/tracing/builder.py                                       76      0   100%
+src/ml_switcheroo_compiler/tracing/state.py                                         40      0   100%
+src/ml_switcheroo_compiler/tracing/tracer.py                                        33      0   100%
+src/ml_switcheroo_compiler/tracing/tracer_mixins.py                                 95      0   100%
+src/ml_switcheroo_compiler/transforms/__init__.py                                    5      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff.py                                  219      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/__init__.py                     4      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/binary_division_rules.py       62      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/binary_logical_rules.py        14      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/binary_math_rules.py          259      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/binary_special_rules.py       122      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/binary_trig_rules.py           33      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/cast_and_conj_rules.py         31      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/common.py                      13      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/custom_rules.py                87      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/edge_rules.py                  14      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/generic_shape_rules.py          7      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/jvp_registry.py                15      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/reduction_rules.py            167      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/shape_creation_rules.py        51      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/shape_shape_rules.py          104      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/signal_rules.py                68      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/time_distributed_rules.py      18      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/unary_math_rules.py           275      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/unary_nn_rules.py              57      0   100%
+src/ml_switcheroo_compiler/transforms/autodiff_rules/vjp_registry.py                15      0   100%
+src/ml_switcheroo_compiler/transforms/foreign.py                                    69      0   100%
+src/ml_switcheroo_compiler/transforms/pass_manager.py                               57      0   100%
+src/ml_switcheroo_compiler/transforms/passes/__init__.py                            18      0   100%
+src/ml_switcheroo_compiler/transforms/passes/axis_translation.py                    34      0   100%
+src/ml_switcheroo_compiler/transforms/passes/batch_norm_folding.py                  23      0   100%
+src/ml_switcheroo_compiler/transforms/passes/broadcast_explicitizer.py              51      0   100%
+src/ml_switcheroo_compiler/transforms/passes/buffer_allocation.py                   75      0   100%
+src/ml_switcheroo_compiler/transforms/passes/constant_folding.py                    51      0   100%
+src/ml_switcheroo_compiler/transforms/passes/cse.py                                 36      0   100%
+src/ml_switcheroo_compiler/transforms/passes/dce.py                                 24      0   100%
+src/ml_switcheroo_compiler/transforms/passes/dtype_inference.py                     89      0   100%
+src/ml_switcheroo_compiler/transforms/passes/graph_scheduling.py                    91      0   100%
+src/ml_switcheroo_compiler/transforms/passes/lift_state.py                          49      0   100%
+src/ml_switcheroo_compiler/transforms/passes/loop_unrolling.py                     116      0   100%
+src/ml_switcheroo_compiler/transforms/passes/mixed_precision.py                     94      0   100%
+src/ml_switcheroo_compiler/transforms/passes/operator_fusion.py                    184      0   100%
+src/ml_switcheroo_compiler/transforms/passes/quantization.py                       106      0   100%
+src/ml_switcheroo_compiler/transforms/passes/shape_inference.py                     53      0   100%
+src/ml_switcheroo_compiler/transforms/passes/spmd.py                                93      0   100%
+src/ml_switcheroo_compiler/transforms/passes/state_lifting.py                       34      0   100%
+src/ml_switcheroo_compiler/transforms/passes/state_lowering.py                      20      0   100%
+src/ml_switcheroo_compiler/transforms/passes/type_promotion_explicitizer.py         42      0   100%
+src/ml_switcheroo_compiler/transforms/rewriter.py                                   13      0   100%
+src/ml_switcheroo_compiler/tree_util.py                                            109      0   100%
+src/ml_switcheroo_compiler/utils/__init__.py                                         2      0   100%
+src/ml_switcheroo_compiler/utils/dataset_utils.py                                  197      0   100%
+src/ml_switcheroo_compiler/utils/file_utils.py                                       4      0   100%
+src/ml_switcheroo_compiler/utils/generic_utils.py                                  188      0   100%
+src/ml_switcheroo_compiler/utils/np_utils.py                                        14      0   100%
+src/ml_switcheroo_compiler/utils/operation_utils.py                                 99      0   100%
+src/ml_switcheroo_compiler/utils/vis_utils.py                                       86      0   100%
+--------------------------------------------------------------------------------------------------------------
+TOTAL                                                                            32968      4    99%
+=========================== short test summary info ============================
+FAILED tests/ops/nn/attention/test_nn_attention_utils.py::test_nn_attention_utils_coverage
+=========== 1 failed, 3044 passed, 4 skipped, 125 warnings in 30.44s ===========

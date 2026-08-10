@@ -1,0 +1,5 @@
+operation: MultiDot
+description: The MultiDot operation.
+variants:
+  numpy:
+    generator: np.linalg.multi_dot({0})

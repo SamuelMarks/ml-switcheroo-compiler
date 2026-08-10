@@ -1,0 +1,11 @@
+operation: Allclose
+description: The Allclose operation.
+variants:
+  cupy:
+    eager: cp.allclose
+  dask:
+    eager: da.allclose
+  numpy:
+    generator: np.allclose
+  pytorch:
+    generator: torch.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})

@@ -1,0 +1,5 @@
+operation: RNNCellDropoutWrapper
+description: The RNNCellDropoutWrapper operation.
+variants:
+  numpy:
+    generator: tf.nn.rnn_cell.DropoutWrapper

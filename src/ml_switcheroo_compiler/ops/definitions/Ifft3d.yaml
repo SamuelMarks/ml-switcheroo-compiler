@@ -1,0 +1,5 @@
+operation: Ifft3d
+description: The Ifft3d operation.
+variants:
+  pytorch:
+    generator: torch.fft.ifftn({0}, s={s}, dim={axes})

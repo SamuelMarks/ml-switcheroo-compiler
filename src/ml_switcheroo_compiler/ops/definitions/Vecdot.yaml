@@ -1,0 +1,5 @@
+operation: Vecdot
+description: The Vecdot operation.
+variants:
+  numpy:
+    generator: np.sum({0} * {1}, axis={axis})

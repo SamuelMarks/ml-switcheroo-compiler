@@ -1,0 +1,7 @@
+operation: Div
+description: The Div operation.
+variants:
+  edge_onnx:
+    generator: Div
+  edge_stablehlo:
+    generator: stablehlo.divide

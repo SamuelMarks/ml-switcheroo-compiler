@@ -1,0 +1,9 @@
+operation: Hstack
+description: The Hstack operation.
+variants:
+  cupy:
+    eager: cp.hstack
+  dask:
+    eager: da.hstack
+  keras:
+    eager: keras_ops.hstack

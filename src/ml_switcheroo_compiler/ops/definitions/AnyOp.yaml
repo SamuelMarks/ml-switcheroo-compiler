@@ -1,0 +1,5 @@
+operation: AnyOp
+description: The AnyOp operation.
+variants:
+  pytorch:
+    generator: torch.any({0}, dim={axis}, keepdim={keepdims})

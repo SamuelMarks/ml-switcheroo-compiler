@@ -1,18 +1,19 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """State Lifting Pass."""
 
 from collections.abc import Iterable
+from typing import Any
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _get_node_items(block: object) -> Iterable[tuple[str, IRNode]]:
+def _get_node_items(block: Any) -> Iterable[tuple[str, IRNode]]:
     """Evaluate _get_node_items operation.
 
     Args:
-        block (object): The block parameter.
+        block (Any): The block parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if not hasattr(block, "nodes"):
         return []
@@ -22,13 +23,13 @@ def _get_node_items(block: object) -> Iterable[tuple[str, IRNode]]:
     return [(n.id, n) for n in nodes]
 
 
-def _lift_node_state(node: IRNode, nid: str, block: object) -> bool:
+def _lift_node_state(node: IRNode, nid: str, block: Any) -> bool:
     """Evaluate _lift_node_state operation.
 
     Args:
         node (IRNode): The node parameter.
         nid (str): The nid parameter.
-        block (object): The block parameter.
+        block (Any): The block parameter.
 
     Returns:
         bool: Result.
@@ -50,11 +51,11 @@ def _lift_node_state(node: IRNode, nid: str, block: object) -> bool:
     return False
 
 
-def _lift_block(block: object) -> bool:
+def _lift_block(block: Any) -> bool:
     """Evaluate _lift_block operation.
 
     Args:
-        block (object): The block parameter.
+        block (Any): The block parameter.
 
     Returns:
         bool: Result.

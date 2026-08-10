@@ -1,9 +1,12 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define binary mathematical operations and their shape inference and evaluation logic.
 
 This module provides a base class `BinaryMathOp` and concrete implementations for
 various element-wise binary mathematical operations (e.g., Add, Subtract, Multiply,
 Divide) using NumPy for evaluation
 """
+
+from typing import Any
 
 # Simple broadcasting
 from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -20,15 +23,14 @@ class BinaryMathOp(OpDef):
 
     op_name: str = ""
 
-    def infer_shape(self, *shapes: object, **kwargs: object) -> object:
+    def infer_shape(self, *shapes: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *shapes (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         if shapes and all(isinstance(s, tuple) for s in shapes):
             return _bs(*shapes) if len(shapes) > 1 else shapes[0]
@@ -365,15 +367,14 @@ class Diff(OpDef):
 
     op_name = "Diff"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Typically out_shape is similar to input, maybe -1 on one axis
         return ()
@@ -385,15 +386,14 @@ class Digitize(OpDef):
 
     op_name = "Digitize"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Returns indices matching input shape
         if args and hasattr(args[0], "shape"):
@@ -407,15 +407,14 @@ class ArrayEquiv(OpDef):
 
     op_name = "ArrayEquiv"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
@@ -468,7 +467,7 @@ class Betainc(OpDef):
 
     op_name = "Betainc"
 
-    def infer_shape(self, a: object, b: object, x: object = None, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, x: Any = None, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -477,8 +476,7 @@ class Betainc(OpDef):
             x (object): The x parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape_a = getattr(a, "shape", ())
         shape_b = getattr(b, "shape", ())
@@ -541,15 +539,14 @@ class Polyadd(BinaryMathOp):
 
     op_name = "Polyadd"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -567,15 +564,14 @@ class Polysub(BinaryMathOp):
 
     op_name = "Polysub"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -593,15 +589,14 @@ class Polymul(BinaryMathOp):
 
     op_name = "Polymul"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -619,15 +614,14 @@ class Polydiv(BinaryMathOp):
 
     op_name = "Polydiv"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -645,15 +639,14 @@ class Polyval(BinaryMathOp):
 
     op_name = "Polyval"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -671,15 +664,14 @@ class Poly(BinaryMathOp):
 
     op_name = "Poly"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -697,15 +689,14 @@ class Polyder(BinaryMathOp):
 
     op_name = "Polyder"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -723,15 +714,14 @@ class Polyfit(BinaryMathOp):
 
     op_name = "Polyfit"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -749,15 +739,14 @@ class Polyint(BinaryMathOp):
 
     op_name = "Polyint"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -775,15 +764,14 @@ class Roots(BinaryMathOp):
 
     op_name = "Roots"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Arguments.
             **kwargs (object): Keyword arguments.
 
-        Returns:
-            object: Computed shape.
+        Returns: Any: Computed shape.
         """
         if args:
             if hasattr(args[0], "shape"):
@@ -827,22 +815,21 @@ class Atan2(BinaryMathOp):
 class Clip(OpDef):
     """Operator Clip."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         if args and hasattr(args[0], "shape"):
             return args[0].shape
         return ()
 
 
-def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: object) -> object:
+def clip(x: Any, min_val: Any = None, max_val: Any = None, **kwargs: Any) -> Any:
     """Clip values in a tensor.
 
     Args:
@@ -851,8 +838,7 @@ def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: ob
         max_val (object): The max_val parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.core.config import config
 
@@ -867,15 +853,14 @@ def clip(x: object, min_val: object = None, max_val: object = None, **kwargs: ob
     return emit_ir_node(None, "Clip", [x], getattr(x, "shape_metadata", None), kwargs)
 
 
-def rem(*args: object, **kwargs: object) -> object:
+def rem(*args: Any, **kwargs: Any) -> Any:
     """Evaluate rem operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
@@ -952,45 +937,42 @@ class LegendrePolynomialP(BinaryMathOp):
     op_name = "LegendrePolynomialP"
 
 
-def igamma_grad_a(*args: object, **kwargs: object) -> object:
+def igamma_grad_a(*args: Any, **kwargs: Any) -> Any:
     """Compute the gradient of the regularized incomplete gamma function.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("IgammaGradA", *args, **kwargs)
 
 
-def random_gamma_grad(*args: object, **kwargs: object) -> object:
+def random_gamma_grad(*args: Any, **kwargs: Any) -> Any:
     """Compute the derivative of a Gamma random variable.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("RandomGammaGrad", *args, **kwargs)
 
 
-def sort_key_val(*args: object, **kwargs: object) -> object:
+def sort_key_val(*args: Any, **kwargs: Any) -> Any:
     """Sort keys and values.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

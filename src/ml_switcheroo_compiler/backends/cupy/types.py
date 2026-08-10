@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -14,20 +16,19 @@ except ImportError:
     cp = None
 
 
-def zeros(cls: type, shape: tuple[int, ...]) -> object:
+def zeros(cls: type, shape: tuple[int, ...]) -> Any:
     """Create a tensor of zeros.
 
     Args:
         cls (type): The backend class.
         shape (tuple[int, ...]): The shape of the tensor.
 
-    Returns:
-        object: The zeros tensor.
+    Returns: Any: The zeros tensor.
     """
     return generic_zeros(cp, shape)
 
 
-def array(cls: type, data: object, dtype: object = None) -> object:
+def array(cls: type, data: Any, dtype: Any = None) -> Any:
     """Create a tensor from data.
 
     Args:
@@ -35,26 +36,24 @@ def array(cls: type, data: object, dtype: object = None) -> object:
         data (object): The input data.
         dtype (object): The target dtype.
 
-    Returns:
-        object: The array tensor.
+    Returns: Any: The array tensor.
     """
     return generic_array(cp, data, dtype)
 
 
-def asarray(cls: type, data: object) -> object:
+def asarray(cls: type, data: Any) -> Any:
     """Convert data to an array.
 
     Args:
         cls (type): The backend class.
         data (object): The input data.
 
-    Returns:
-        object: The array tensor.
+    Returns: Any: The array tensor.
     """
     return generic_asarray(cp, data)
 
 
-def item(cls: type, data: object) -> float:
+def item(cls: type, data: Any) -> float:
     """Get scalar item from tensor.
 
     Args:

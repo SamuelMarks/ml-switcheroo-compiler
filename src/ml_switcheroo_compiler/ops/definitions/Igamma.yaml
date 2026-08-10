@@ -1,0 +1,7 @@
+operation: Igamma
+description: The Igamma operation.
+variants:
+  numpy:
+    generator: scipy.special.gammainc
+  tensorflow:
+    eager: tf.math.igamma

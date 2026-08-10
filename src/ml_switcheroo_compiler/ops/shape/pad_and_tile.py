@@ -1,8 +1,10 @@
-"""Shape operations for Tensor objects."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Shape operations for Tensor objects."""
 from collections.abc import Sequence
+from typing import Any
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -14,7 +16,7 @@ from ml_switcheroo_compiler.ops.shape.reshape import Resize
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def tile(input: Tensor, reps: Sequence[int]) -> Tensor:
+def tile(input: Tensor, reps: Sequence[int]) -> Any:
     """Construct a new tensor by repeating the input tensor the specified number of times.
 
     Args:
@@ -44,7 +46,7 @@ def repeat(
     input: Tensor,
     repeats: int | Sequence[int],
     dim: int | None = None,
-) -> Tensor:
+) -> Any:
     """Repeat elements of the input tensor along a specified dimension.
 
     Args:
@@ -71,7 +73,7 @@ def repeat(
     )
 
 
-def triu(input: Tensor, diagonal: int = 0) -> Tensor:
+def triu(input: Tensor, diagonal: int = 0) -> Any:
     """Return the upper triangular part of a matrix or batch of matrices.
 
     Args:
@@ -97,7 +99,7 @@ def triu(input: Tensor, diagonal: int = 0) -> Tensor:
     )
 
 
-def tril(input: Tensor, diagonal: int = 0) -> Tensor:
+def tril(input: Tensor, diagonal: int = 0) -> Any:
     """Return the lower triangular part of a matrix or batch of matrices.
 
     Args:
@@ -130,8 +132,7 @@ def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, .
         inputs (object): The inputs parameter.
         indexing (str): The indexing parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if not inputs:
         return ()
@@ -163,7 +164,7 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
-def _normalize_pad_width(pad_width: object, ndim: int) -> tuple:
+def _normalize_pad_width(pad_width: Any, ndim: int) -> tuple:
     """Normalize pad width representation.
 
     Args:
@@ -180,7 +181,7 @@ def _normalize_pad_width(pad_width: object, ndim: int) -> tuple:
     return tuple(pad_width) if isinstance(pad_width, (list, tuple)) else ()
 
 
-def _compute_pad_dim(dim: int, pw: object) -> int:
+def _compute_pad_dim(dim: int, pw: Any) -> int:
     """Evaluate _compute_pad_dim operation.
 
     Args:
@@ -203,7 +204,7 @@ class Pad(OpDef):
 
     op_name = "Pad"
 
-    def infer_shape(self, array: object, pad_width: object, mode: str = "constant", **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, array: Any, pad_width: Any, mode: str = "constant", **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -230,11 +231,11 @@ class Pad(OpDef):
 
 @dispatch_eager("Pad")
 def pad(
-    array: object,
-    pad_width: object,
+    array: Any,
+    pad_width: Any,
     mode: str = "constant",
-    **kwargs: object,
-) -> object:
+    **kwargs: Any,
+) -> Any:
     """Pad an array with specified widths and values.
 
     Args:
@@ -243,8 +244,7 @@ def pad(
         mode (str): The mode parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     op = Pad()
     out_shape = op.infer_shape(array, pad_width, mode, **kwargs)
@@ -254,7 +254,7 @@ def pad(
 
 
 @dispatch_eager("TopK")
-def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
+def top_k(operand: Tensor, k: int) -> Any:
     """Return the top k values and their indices along the last dimension.
 
     Args:
@@ -267,7 +267,7 @@ def top_k(operand: Tensor, k: int) -> tuple[Tensor, Tensor]:
     out_shape = list(operand.shape) if operand.shape else []
     if out_shape:
         out_shape[-1] = k
-    out_shape = tuple(out_shape)
+    out_shape = tuple(out_shape)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     inputs = [operand]
     # We cheat a bit by returning two tensors pointing to the same node for now,
     # as handling multi-output nodes properly requires more IR scaffolding
@@ -282,7 +282,7 @@ def argsort(
     is_stable: bool = True,
     axis: int | None = None,
     dim: int | None = None,
-) -> Tensor:
+) -> Any:
     """Return the indices that would sort an array along a given dimension.
 
     Args:
@@ -303,7 +303,7 @@ def argsort(
         backend = get_active_backend()
         kind = "stable" if is_stable else "quicksort"
         data = backend.execute_op("ArgSort", (operand.data if type(operand).__name__ == "Tensor" else operand), axis=dimension, kind=kind)
-        return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))
+        return Tensor(data, TensorConfig(operand.shape, DType.Int32, operand.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     inputs = [operand]
     attributes = {"dimension": dimension, "is_stable": is_stable}
     return _emit_shape_node("ArgSort", inputs, attributes, operand.shape, DType.Int32)
@@ -315,7 +315,7 @@ def sort(
     is_stable: bool = True,
     axis: int | None = None,
     dim: int | None = None,
-) -> Tensor:
+) -> Any:
     """Sorts the elements of an array along a given dimension.
 
     Args:
@@ -346,7 +346,7 @@ def sort(
 
 
 @dispatch_eager("Resize")
-def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> Tensor:
+def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> Any:
     """Resizes an image to the given target shape using interpolation.
 
     Args:
@@ -372,7 +372,7 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
 class DynamicShape(OpDef):
     """DynamicShape op."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> tuple[int, ...]:
+    def infer_shape(self, x: Any, **kwargs: Any) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -391,15 +391,14 @@ class Rank(OpDef):
 
     op_name = "Rank"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         args[0] if len(args) > 0 else None
         return ()
@@ -411,7 +410,7 @@ class Size(OpDef):
 
     op_name = "Size"
 
-    def infer_shape(self, a: object, axis: object = None, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, axis: Any = None, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -419,13 +418,12 @@ class Size(OpDef):
             axis (object): The axis parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return ()
 
 
-def pad_constant(array: object, pad_width: object, value: float = 0.0, **kwargs: object) -> object:
+def pad_constant(array: Any, pad_width: Any, value: float = 0.0, **kwargs: Any) -> Any:
     """Pad an array with a constant value.
 
     Args:
@@ -440,7 +438,7 @@ def pad_constant(array: object, pad_width: object, value: float = 0.0, **kwargs:
     return pad(array, pad_width, mode="constant", constant_values=value, **kwargs)
 
 
-def pad_reflect(array: object, pad_width: object, **kwargs: object) -> object:
+def pad_reflect(array: Any, pad_width: Any, **kwargs: Any) -> Any:
     """Pad an array with reflection.
 
     Args:
@@ -454,7 +452,7 @@ def pad_reflect(array: object, pad_width: object, **kwargs: object) -> object:
     return pad(array, pad_width, mode="reflect", **kwargs)
 
 
-def pad_replicate(array: object, pad_width: object, **kwargs: object) -> object:
+def pad_replicate(array: Any, pad_width: Any, **kwargs: Any) -> Any:
     """Pad an array with edge replication.
 
     Args:
@@ -468,7 +466,7 @@ def pad_replicate(array: object, pad_width: object, **kwargs: object) -> object:
     return pad(array, pad_width, mode="edge", **kwargs)
 
 
-def pad_circular(array: object, pad_width: object, **kwargs: object) -> object:
+def pad_circular(array: Any, pad_width: Any, **kwargs: Any) -> Any:
     """Pad an array with circular wrapping.
 
     Args:
@@ -488,15 +486,14 @@ class Flatnonzero(OpDef):
 
     op_name = "Flatnonzero"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         args[0] if len(args) > 0 else None
         return (None,)
@@ -508,15 +505,14 @@ class Lexsort(OpDef):
 
     op_name = "Lexsort"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         keys = args[0] if len(args) > 0 else None
         kwargs.get("axis", -1)
@@ -534,22 +530,21 @@ class Nonzero(OpDef):
 
     op_name = "Nonzero"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         a = args[0] if len(args) > 0 else None
         in_shape = getattr(a, "shape", ())
         return tuple((None,) for _ in in_shape)
 
 
-def _infer_shape_percentile_quantile(a: object, q: object, axis: object = None, keepdims: bool = False) -> tuple[int, ...]:
+def _infer_shape_percentile_quantile(a: Any, q: Any, axis: Any = None, keepdims: bool = False) -> tuple[int, ...]:
     """Infer shape for percentile and quantile ops.
 
     Args:
@@ -587,15 +582,14 @@ class Percentile(OpDef):
 
     op_name = "Percentile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         a = args[0] if len(args) > 0 else None
         q = args[1] if len(args) > 1 else None
@@ -610,15 +604,14 @@ class Quantile(OpDef):
 
     op_name = "Quantile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         a = args[0] if len(args) > 0 else None
         q = args[1] if len(args) > 1 else None
@@ -633,15 +626,14 @@ class RavelMultiIndex(OpDef):
 
     op_name = "RavelMultiIndex"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         multi_index = args[0] if len(args) > 0 else None
         args[1] if len(args) > 1 else None
@@ -650,7 +642,7 @@ class RavelMultiIndex(OpDef):
         return getattr(multi_index, "shape", ())
 
 
-def _repeat_infer_no_axis(in_shape: tuple, repeats: object) -> tuple:
+def _repeat_infer_no_axis(in_shape: tuple, repeats: Any) -> tuple:
     """Infer shape for repeat without an axis.
 
     Args:
@@ -679,15 +671,14 @@ class Repeat(OpDef):
 
     op_name = "Repeat"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         a = args[0] if len(args) > 0 else None
         repeats = args[1] if len(args) > 1 else None
@@ -711,15 +702,14 @@ class Searchsorted(OpDef):
 
     op_name = "Searchsorted"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         args[0] if len(args) > 0 else None
         v = args[1] if len(args) > 1 else None
@@ -732,15 +722,14 @@ class SortComplex(OpDef):
 
     op_name = "SortComplex"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         a = args[0] if len(args) > 0 else None
         return getattr(a, "shape", ())
@@ -771,15 +760,14 @@ class Tile(OpDef):
 
     op_name = "Tile"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         A = args[0] if len(args) > 0 else None
         reps = args[1] if len(args) > 1 else None
@@ -820,15 +808,14 @@ class Unique(OpDef):
 
     op_name = "Unique"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         ar = args[0] if len(args) > 0 else None
         return_index = kwargs.get("return_index", False)
@@ -854,135 +841,126 @@ class Unique(OpDef):
         return tuple(ret)
 
 
-def percentile(*args: object, **kwargs: object) -> object:
+def percentile(*args: Any, **kwargs: Any) -> Any:
     """Evaluate percentile operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Percentile", *args, **kwargs)
 
 
-def quantile(*args: object, **kwargs: object) -> object:
+def quantile(*args: Any, **kwargs: Any) -> Any:
     """Evaluate quantile operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Quantile", *args, **kwargs)
 
 
-def flatnonzero(*args: object, **kwargs: object) -> object:
+def flatnonzero(*args: Any, **kwargs: Any) -> Any:
     """Return indices that are non-zero in the flattened version of a.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Flatnonzero", *args, **kwargs)
 
 
-def nonzero(*args: object, **kwargs: object) -> object:
+def nonzero(*args: Any, **kwargs: Any) -> Any:
     """Return the indices of the elements that are non-zero.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Nonzero", *args, **kwargs)
 
 
-def ravel_multi_index(*args: object, **kwargs: object) -> object:
+def ravel_multi_index(*args: Any, **kwargs: Any) -> Any:
     """Convert a tuple of index arrays into an array of flat indices.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("RavelMultiIndex", *args, **kwargs)
 
 
-def lexsort(*args: object, **kwargs: object) -> object:
+def lexsort(*args: Any, **kwargs: Any) -> Any:
     """Perform an indirect stable sort using a sequence of keys.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Lexsort", *args, **kwargs)
 
 
-def searchsorted(*args: object, **kwargs: object) -> object:
+def searchsorted(*args: Any, **kwargs: Any) -> Any:
     """Find indices where elements should be inserted to maintain order.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("Searchsorted", *args, **kwargs)
 
 
-def sort_complex(*args: object, **kwargs: object) -> object:
+def sort_complex(*args: Any, **kwargs: Any) -> Any:
     """Sort a complex array using the real part first, then the imaginary part.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
     return dispatch_op("SortComplex", *args, **kwargs)
 
 
-def unique(*args: object, **kwargs: object) -> object:
+def unique(*args: Any, **kwargs: Any) -> Any:
     """Find the unique elements of an array.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

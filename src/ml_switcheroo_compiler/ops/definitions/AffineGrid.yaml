@@ -1,0 +1,5 @@
+operation: AffineGrid
+description: The AffineGrid operation.
+variants:
+  pytorch:
+    generator: torch.nn.functional.affine_grid({0}, {size}, align_corners={align_corners})

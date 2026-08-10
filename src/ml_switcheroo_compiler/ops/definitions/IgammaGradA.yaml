@@ -1,0 +1,5 @@
+operation: IgammaGradA
+description: The IgammaGradA operation.
+variants:
+  numpy:
+    generator: 'lambda a, x: a'

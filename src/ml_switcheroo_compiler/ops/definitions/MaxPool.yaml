@@ -1,0 +1,5 @@
+operation: MaxPool
+description: The MaxPool operation.
+variants:
+  edge_onnx:
+    generator: MaxPool

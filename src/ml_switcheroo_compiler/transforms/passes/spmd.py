@@ -1,45 +1,48 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """SPMD compiler pass."""
 
-from __future__ import annotations
+
+from typing import Any
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def _get_sharding_axes(sharding: object) -> list[str]:
+def _get_sharding_axes(sharding: Any) -> list[str]:
     """Evaluate _get_sharding_axes operation.
 
     Args:
-        sharding (object): The sharding parameter.
+        sharding (Any): The sharding parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if not sharding or not hasattr(sharding, "mesh_mapping"):
         return []
     return [m for m in sharding.mesh_mapping if m is not None]
 
 
-def _is_boundary_transition(inp_sharding: object, node_sharding: object) -> tuple[bool, bool]:
+def _is_boundary_transition(inp_sharding: Any, node_sharding: Any) -> tuple[bool, bool]:
     """Evaluate _is_boundary_transition operation.
 
     Args:
-        inp_sharding (object): The inp_sharding parameter.
-        node_sharding (object): The node_sharding parameter.
+        inp_sharding (Any): The inp_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     inp_sharded = bool(_get_sharding_axes(inp_sharding))
     node_sharded = bool(_get_sharding_axes(node_sharding))
     return inp_sharded, node_sharded
 
 
-def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_all_gather_node(inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _create_all_gather_node operation.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -47,12 +50,12 @@ def _create_all_gather_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_all_gather", op_type="all_gather", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_reduce_scatter_node(inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _create_reduce_scatter_node operation.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -60,12 +63,12 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_reduce_scatter", op_type="reduce_scatter", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _create_all_reduce_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_all_reduce_node(inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _create_all_reduce_node operation.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -73,12 +76,12 @@ def _create_all_reduce_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_all_reduce", op_type="all_reduce", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _create_all_to_all_node(inp_id: str, node_sharding: object) -> IRNode:
+def _create_all_to_all_node(inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _create_all_to_all_node operation.
 
     Args:
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -86,14 +89,14 @@ def _create_all_to_all_node(inp_id: str, node_sharding: object) -> IRNode:
     return IRNode(id=f"{inp_id}_all_to_all", op_type="all_to_all", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
-def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _inject_all_gather operation.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -103,14 +106,14 @@ def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: objec
     return gather_node
 
 
-def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _inject_reduce_scatter operation.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -120,14 +123,14 @@ def _inject_reduce_scatter(node: IRNode, idx: int, inp_id: str, node_sharding: o
     return scatter_node
 
 
-def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _inject_all_reduce operation.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -137,14 +140,14 @@ def _inject_all_reduce(node: IRNode, idx: int, inp_id: str, node_sharding: objec
     return reduce_node
 
 
-def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: object) -> IRNode:
+def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: Any) -> IRNode:
     """Evaluate _inject_all_to_all operation.
 
     Args:
         node (IRNode): The node parameter.
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
     Returns:
         IRNode: Result.
@@ -154,14 +157,14 @@ def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: objec
     return atoa_node
 
 
-def _handle_inp_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding: object, is_reduction: bool, is_grad: bool) -> IRNode | None:
+def _handle_inp_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding: Any, is_reduction: bool, is_grad: bool) -> IRNode | None:
     """Handle communication when only the input is sharded.
 
     Args:
         node (IRNode): The target node.
         idx (int): The index of the input.
         inp_id (str): The input ID.
-        node_sharding (object): The node sharding specification.
+        node_sharding (Any): The node sharding specification.
         is_reduction (bool): Whether the node is a reduction.
         is_grad (bool): Whether the node computes gradients.
 
@@ -173,14 +176,14 @@ def _handle_inp_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding:
     return _inject_all_gather(node, idx, inp_id, node_sharding)
 
 
-def _handle_node_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding: object, is_grad: bool) -> IRNode | None:
+def _handle_node_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding: Any, is_grad: bool) -> IRNode | None:
     """Handle communication when only the node is sharded.
 
     Args:
         node (IRNode): The target node.
         idx (int): The index of the input.
         inp_id (str): The input ID.
-        node_sharding (object): The node sharding specification.
+        node_sharding (Any): The node sharding specification.
         is_grad (bool): Whether the node computes gradients.
 
     Returns:
@@ -191,14 +194,14 @@ def _handle_node_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding
     return None
 
 
-def _handle_both_sharded(node: IRNode, idx: int, inp_id: str, node_sharding: object, inp_axes: list, node_axes: list) -> IRNode | None:
+def _handle_both_sharded(node: IRNode, idx: int, inp_id: str, node_sharding: Any, inp_axes: list, node_axes: list) -> IRNode | None:
     """Handle communication when both input and node are sharded.
 
     Args:
         node (IRNode): The target node.
         idx (int): The index of the input.
         inp_id (str): The input ID.
-        node_sharding (object): The node sharding specification.
+        node_sharding (Any): The node sharding specification.
         inp_axes (list): The input sharded axes.
         node_axes (list): The node sharded axes.
 
@@ -214,7 +217,7 @@ def _determine_spmd_communication(
     node: IRNode,
     idx: int,
     inp_id: str,
-    node_sharding: object,
+    node_sharding: Any,
     inp_axes: list,
     node_axes: list,
 ) -> IRNode | None:
@@ -224,7 +227,7 @@ def _determine_spmd_communication(
         node (IRNode): The target node.
         idx (int): The index of the input.
         inp_id (str): The input ID.
-        node_sharding (object): The node sharding specification.
+        node_sharding (Any): The node sharding specification.
         inp_axes (list): The input sharded axes.
         node_axes (list): The node sharded axes.
 
@@ -246,7 +249,7 @@ def _determine_spmd_communication(
     return None
 
 
-def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: object) -> IRNode | None:
+def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, node_sharding: Any) -> IRNode | None:
     """Evaluate _process_spmd_input operation.
 
     Args:
@@ -254,10 +257,9 @@ def _process_spmd_input(node: IRNode, idx: int, inp_id: str, graph: IRGraph, nod
         idx (int): The idx parameter.
         inp_id (str): The inp_id parameter.
         graph (IRGraph): The graph parameter.
-        node_sharding (object): The node_sharding parameter.
+        node_sharding (Any): The node_sharding parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if inp_id not in graph.nodes:
         return None

@@ -1,0 +1,5 @@
+operation: HannWindow
+description: The HannWindow operation.
+variants:
+  pytorch:
+    generator: torch.hann_window({window_length}, periodic={periodic})

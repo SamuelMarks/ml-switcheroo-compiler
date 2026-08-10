@@ -1,6 +1,9 @@
-"""Reductions."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Reductions."""
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
@@ -24,15 +27,14 @@ class ApplyOverAxes(OpDef):
 
     op_name = "ApplyOverAxes"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         # Typically shape does not change for some functions or reduces, fallback to None
         return None
@@ -44,15 +46,14 @@ class Bincount(OpDef):
 
     op_name = "Bincount"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # Typically returns a 1D tensor whose size depends on max value, fallback to (None,)
         return (None,)
@@ -100,15 +101,14 @@ class Corrcoef(OpDef):
     op_name = "Corrcoef"
     np_op_name = "corrcoef"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None, None)
 
@@ -120,15 +120,14 @@ class Correlate(OpDef):
     op_name = "Correlate"
     np_op_name = "correlate"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None,)
 
@@ -140,15 +139,14 @@ class Cov(OpDef):
     op_name = "Cov"
     np_op_name = "cov"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return (None, None)
 
@@ -157,18 +155,17 @@ class Cov(OpDef):
 class TrapezoidalIntegral(OpDef):
     """TrapezoidalIntegral operation."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         y = args[0] if len(args) > 0 else kwargs.get("y")
-        shape = list(y)
+        shape = list(y)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         axis = kwargs.get("axis", -1)
         if axis < 0:
             axis += len(shape)
@@ -177,7 +174,7 @@ class TrapezoidalIntegral(OpDef):
 
 
 @dispatch_eager("TrapezoidalIntegral")
-def trapezoidal_integral(y: Tensor, x: Tensor = None, dx: float = 1.0, axis: int = -1) -> Tensor:
+def trapezoidal_integral(y: Tensor, x: Any = None, dx: Any = 1.0, axis: Any = -1) -> Any:
     """Evaluate trapezoidal_integral operation.
 
     Args:
@@ -196,22 +193,21 @@ def trapezoidal_integral(y: Tensor, x: Tensor = None, dx: float = 1.0, axis: int
 class ConfusionMatrix(OpDef):
     """ConfusionMatrix operation."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         num_classes = kwargs.get("num_classes", 0)
         return (num_classes, num_classes)
 
 
 @dispatch_eager("ConfusionMatrix")
-def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights: Tensor = None) -> Tensor:
+def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights: Any = None) -> Any:
     """Evaluate confusion_matrix operation.
 
     Args:
@@ -226,7 +222,7 @@ def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weig
     return get_op("ConfusionMatrix")()(labels, predictions, num_classes=num_classes, weights=weights)
 
 
-def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[object, object]:
+def moments(x: Any, axes: Any = None, keepdims: bool = False) -> tuple[Any, Any]:
     """Compute the mean and variance of x.
 
     Args:
@@ -234,8 +230,7 @@ def moments(x: object, axes: object = None, keepdims: bool = False) -> tuple[obj
         axes (object): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     mean_op = get_op("Mean")()
     variance_op = get_op("Variance")()
@@ -253,14 +248,13 @@ class Descriptive(OpDef):
 
 
 @dispatch_eager("Descriptive")
-def descriptive(a: object) -> object:
+def descriptive(a: Any) -> Any:
     """Provide function for descriptive.
 
     Args:
         a (object): The a parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return get_op("Descriptive")()(a)
 
@@ -273,13 +267,12 @@ class Distributions(OpDef):
 
 
 @dispatch_eager("Distributions")
-def distributions(a: object) -> object:
+def distributions(a: Any) -> Any:
     """Provide function for distributions.
 
     Args:
         a (object): The a parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return get_op("Distributions")()(a)

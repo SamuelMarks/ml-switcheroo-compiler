@@ -1,0 +1,5 @@
+operation: MultiplyNoNan
+description: The MultiplyNoNan operation.
+variants:
+  tensorflow:
+    eager: tf.math.multiply_no_nan

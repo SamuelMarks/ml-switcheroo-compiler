@@ -1,0 +1,5 @@
+operation: CreateToken
+description: The CreateToken operation.
+variants:
+  numpy:
+    generator: '0'

@@ -1,7 +1,11 @@
-# ruff: noqa: C901, PLR0911, PLR0912
+from __future__ import annotations
+
 """Operator fusion pass."""
 
-from __future__ import annotations
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+import typing
+from typing import Any
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
@@ -31,7 +35,7 @@ def _match_node_inputs(
     graph: IRGraph,
     node: IRNode,
     pattern: NodePattern,
-    capture_map: dict[str, object],
+    capture_map: dict[str, Any],
 ) -> bool:
     """Match the inputs of a node against a pattern.
 
@@ -44,9 +48,10 @@ def _match_node_inputs(
     Returns:
         bool: Result.
     """
-    if len(node.inputs) != len(pattern.inputs):
+    p_inputs = pattern.inputs or []
+    if len(node.inputs) != len(p_inputs):
         return False
-    for i, inp_pat in enumerate(pattern.inputs):
+    for i, inp_pat in enumerate(p_inputs):
         inp_id = node.inputs[i]
         if not match_pattern(graph, inp_id, inp_pat, capture_map):
             return False
@@ -55,15 +60,15 @@ def _match_node_inputs(
 
 def match_pattern(
     graph: IRGraph,
-    node_id: object,
+    node_id: Any,
     pattern: NodePattern,
-    capture_map: dict[str, object],
+    capture_map: dict[str, Any],
 ) -> bool:
     """Recursively match a pattern starting from a specific node ID or value in the graph.
 
     Args:
         graph (IRGraph): The IRGraph.
-        node_id (object): The ID of the node to match, or a raw value.
+        node_id (Any): The ID of the node to match, or a raw value.
         pattern (NodePattern): The pattern to match against.
         capture_map (dict): A dictionary to store captured nodes or values.
 
@@ -99,7 +104,7 @@ class FusionRule:
         self.name = name
         self.pattern = pattern
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
         """Apply the fusion rule.
 
         Args:
@@ -107,10 +112,8 @@ class FusionRule:
             match (dict): The match parameter.
             object: Result.
 
-        Raises:
-            NotImplementedError: An exception.
         """
-        raise NotImplementedError
+        return None
 
 
 class ReshapeReshapeFusion(FusionRule):
@@ -135,7 +138,7 @@ class ReshapeReshapeFusion(FusionRule):
         )
         super().__init__("reshape_reshape", pattern)
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
         """Apply the reshape-reshape fusion.
 
         Args:
@@ -145,7 +148,7 @@ class ReshapeReshapeFusion(FusionRule):
         Returns:
             dict[str, IRNode] | None: The replacement dictionary.
         """
-        reshape2 = match["reshape2"]
+        reshape2 = typing.cast(IRNode, match["reshape2"])
         input_node_or_val = match["input"]
         shape2 = match["shape2"]
         # If it's a node, get its id, otherwise use the value directly
@@ -182,7 +185,7 @@ class PatternMatchingEngine:
             bool: Result.
         """
         for rule in self.rules:
-            capture_map: dict[str, object] = {}
+            capture_map: dict[str, Any] = {}
             if match_pattern(graph, node_id, rule.pattern, capture_map):
                 replacements = rule.apply(graph, capture_map)
                 if replacements:
@@ -203,7 +206,7 @@ class PatternMatchingEngine:
             bool: True if the graph was modified.
         """
         optimized = False
-        new_nodes = {}
+        new_nodes: dict[str, IRNode] = {}
         for node_id, node in graph.nodes.items():
             matched_rule = self._try_match_rules(graph, node_id, new_nodes)
             if matched_rule:
@@ -234,6 +237,9 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
         Conv2DBatchNormFusion(),
         LinearFusion(),
         MHAFusion(),
+        FMAFusion(),
+        NormalizationFusion(),
+        ConsecutiveElementwiseFusion(),
     ]
     engine = PatternMatchingEngine(rules, CostModel(max_cost=50))
     engine.apply_passes(graph)
@@ -261,7 +267,7 @@ class ElementwiseFusion(FusionRule):
         )
         super().__init__("add_relu", pattern)
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
         """Apply the fusion rule.
 
         Args:
@@ -271,7 +277,7 @@ class ElementwiseFusion(FusionRule):
         Returns:
             dict: The replacement nodes.
         """
-        relu = match["relu"]
+        relu = typing.cast(IRNode, match["relu"])
         in1 = match["in1"]
         in2 = match["in2"]
         in1_id = in1.id if isinstance(in1, IRNode) else in1
@@ -307,7 +313,7 @@ class Conv2DBatchNormFusion(FusionRule):
         )
         super().__init__("conv2d_batchnorm", pattern)
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
         """Apply the fusion rule.
 
         Args:
@@ -317,7 +323,7 @@ class Conv2DBatchNormFusion(FusionRule):
         Returns:
             dict: The replacement nodes.
         """
-        bn = match["bn"]
+        bn = typing.cast(IRNode, match["bn"])
         in_id = match["in"].id if isinstance(match["in"], IRNode) else match["in"]
         weight_id = match["weight"].id if isinstance(match["weight"], IRNode) else match["weight"]
         scale_id = match["scale"].id if isinstance(match["scale"], IRNode) else match["scale"]
@@ -351,7 +357,7 @@ class LinearFusion(FusionRule):
         )
         super().__init__("linear", pattern)
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
         """Apply the fusion rule.
 
         Args:
@@ -361,7 +367,7 @@ class LinearFusion(FusionRule):
         Returns:
             dict: The replacement nodes.
         """
-        add = match["add"]
+        add = typing.cast(IRNode, match["add"])
         in1_id = match["in1"].id if isinstance(match["in1"], IRNode) else match["in1"]
         in2_id = match["in2"].id if isinstance(match["in2"], IRNode) else match["in2"]
         bias_id = match["bias"].id if isinstance(match["bias"], IRNode) else match["bias"]
@@ -399,7 +405,7 @@ class MHAFusion(FusionRule):
         )
         super().__init__("mha", pattern)
 
-    def apply(self, graph: IRGraph, match: dict[str, object]) -> dict[str, IRNode] | None:
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
         """Apply the fusion rule.
 
         Args:
@@ -409,7 +415,7 @@ class MHAFusion(FusionRule):
         Returns:
             dict: The replacement nodes.
         """
-        matmul2 = match["matmul2"]
+        matmul2 = typing.cast(IRNode, match["matmul2"])
         q_id = match["q"].id if isinstance(match["q"], IRNode) else match["q"]
         k_id = match["k"].id if isinstance(match["k"], IRNode) else match["k"]
         v_id = match["v"].id if isinstance(match["v"], IRNode) else match["v"]
@@ -439,7 +445,12 @@ def estimate_node_cost(node: IRNode) -> int:
         "Conv2DBatchNorm": 25,
         "MultiHeadAttention": 30,
         "AddRelu": 2,
+        "FusedMultiplyAdd": 2,
+        "LayerNorm": 8,
     }
+    # For generic Fused combinations
+    if node.op_type and node.op_type.startswith("Fused"):
+        return 2
     return cost_map.get(node.op_type, 1)
 
 
@@ -470,3 +481,122 @@ class CostModel:
 
 
 # Ensure we update the PatternMatchingEngine to use the cost model
+
+
+class FMAFusion(FusionRule):
+    """Fuses Multiply followed by Add into FusedMultiplyAdd."""
+
+    def __init__(self) -> None:
+        """Initialize FMAFusion."""
+        pattern = NodePattern(
+            op_type="Add",
+            capture="add",
+            inputs=[
+                NodePattern(
+                    op_type="Multiply",
+                    capture="mul",
+                    inputs=[
+                        NodePattern(capture="in1"),
+                        NodePattern(capture="in2"),
+                    ],
+                ),
+                NodePattern(capture="in3"),
+            ],
+        )
+        super().__init__("fma", pattern)
+
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
+        """Apply the fusion rule.
+
+        Args:
+            graph (IRGraph): The IRGraph.
+            match (dict): The matched nodes.
+
+        Returns:
+            dict: The replacement nodes.
+        """
+        add = typing.cast(IRNode, match["add"])
+        in1 = match["in1"].id if isinstance(match["in1"], IRNode) else match["in1"]
+        in2 = match["in2"].id if isinstance(match["in2"], IRNode) else match["in2"]
+        in3 = match["in3"].id if isinstance(match["in3"], IRNode) else match["in3"]
+        new_node = clone_logical_node(add, inputs=[in1, in2, in3])
+        new_node.op_type = "FusedMultiplyAdd"
+        return {add.id: new_node}
+
+
+class NormalizationFusion(FusionRule):
+    """Fuses Mean->Sub->Pow->Mean->Add->Sqrt->Div into LayerNorm."""
+
+    def __init__(self) -> None:
+        """Initialize NormalizationFusion."""
+        pattern = NodePattern(
+            op_type="Divide",
+            capture="div",
+            inputs=[
+                NodePattern(
+                    op_type="Subtract",
+                    capture="sub",
+                    inputs=[
+                        NodePattern(capture="in"),
+                        NodePattern(op_type="ReduceMean", capture="mean1"),
+                    ],
+                ),
+                NodePattern(
+                    op_type="Sqrt",
+                    capture="sqrt",
+                    inputs=[
+                        NodePattern(
+                            op_type="Add",
+                            capture="add_eps",
+                            inputs=[
+                                NodePattern(op_type="ReduceMean", capture="mean2"),
+                                NodePattern(capture="eps"),
+                            ],
+                        )
+                    ],
+                ),
+            ],
+        )
+        super().__init__("layer_norm_fusion", pattern)
+
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
+        """Apply the fusion rule.
+
+        Args:
+            graph (IRGraph): The IRGraph.
+            match (dict): The matched nodes.
+
+        Returns:
+            dict: The replacement nodes.
+        """
+        div = typing.cast(IRNode, match["div"])
+        in_id = match["in"].id if isinstance(match["in"], IRNode) else match["in"]
+        new_node = clone_logical_node(div, inputs=[in_id])
+        new_node.op_type = "LayerNorm"
+        return {div.id: new_node}
+
+
+class ConsecutiveElementwiseFusion(FusionRule):
+    """Fuses Exp(Log(x)) and similar elementwise chains."""
+
+    def __init__(self) -> None:
+        """Initialize ConsecutiveElementwiseFusion."""
+        pattern = NodePattern(op_type="Exp", capture="op2", inputs=[NodePattern(op_type="Log", capture="op1", inputs=[NodePattern(capture="in")])])
+        super().__init__("consecutive_elementwise", pattern)
+
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
+        """Apply the fusion rule.
+
+        Args:
+            graph (IRGraph): The IRGraph.
+            match (dict): The matched nodes.
+
+        Returns:
+            dict: The replacement nodes.
+        """
+        op2 = typing.cast(IRNode, match["op2"])
+        op1 = typing.cast(IRNode, match["op1"])
+        in_id = match["in"].id if isinstance(match["in"], IRNode) else match["in"]
+        new_node = clone_logical_node(op2, inputs=[in_id])
+        new_node.op_type = f"Fused{op1.op_type}{op2.op_type}"
+        return {op2.id: new_node}

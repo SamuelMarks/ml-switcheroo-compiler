@@ -1,7 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Formatting utilities for backend code generators."""
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -73,10 +74,10 @@ class FallbackHandler:
 
     @staticmethod
     def generate_fallback_code(
-        node: object,
+        node: Any,
         input_vars: list[str],
         prefix: str,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> str:
         """Generate fallback code for an unsupported operation.
 

@@ -1,0 +1,11 @@
+operation: Rfft
+description: The Rfft operation.
+variants:
+  cupy:
+    eager: cp.fft.rfft
+  dask:
+    eager: da.fft.rfft
+  keras:
+    eager: keras_ops.rfft
+  numpy:
+    generator: np.fft.rfft

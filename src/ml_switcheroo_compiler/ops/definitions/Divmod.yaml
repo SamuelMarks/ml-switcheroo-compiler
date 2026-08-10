@@ -1,0 +1,7 @@
+operation: Divmod
+description: The Divmod operation.
+variants:
+  cupy:
+    eager: cp.divmod
+  dask:
+    eager: da.divmod

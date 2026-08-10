@@ -1,6 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Binary rules for math."""
 
 import enum
+import typing
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
@@ -15,12 +18,12 @@ class UnconnectedGradients(enum.Enum):
 
 
 @register_vjp("Add")
-def add_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def add_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the addition operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -30,15 +33,15 @@ def add_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Add")
-def add_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def add_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the addition operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -47,12 +50,12 @@ def add_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs
 
 
 @register_vjp("Subtract")
-def subtract_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def subtract_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the subtraction operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -64,20 +67,20 @@ def subtract_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Subtract")
 def subtract_jvp(
-    tangent_x: object,
-    tangent_y: object,
-    x: object,
-    y: object,
-    **kwargs: object,
+    tangent_x: Any,
+    tangent_y: Any,
+    x: Any,
+    y: Any,
+    **kwargs: Any,
 ) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the subtraction operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -86,12 +89,12 @@ def subtract_jvp(
 
 
 @register_vjp("Multiply")
-def multiply_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def multiply_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the multiplication operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -105,20 +108,20 @@ def multiply_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Multiply")
 def multiply_jvp(
-    tangent_x: object,
-    tangent_y: object,
-    x: object,
-    y: object,
-    **kwargs: object,
+    tangent_x: Any,
+    tangent_y: Any,
+    x: Any,
+    y: Any,
+    **kwargs: Any,
 ) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the multiplication operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -128,12 +131,12 @@ def multiply_jvp(
 
 @register_vjp("Divide")
 @register_vjp("TrueDivide")
-def divide_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def divide_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the division operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -152,15 +155,15 @@ def divide_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 @register_jvp("Divide")
 @register_jvp("TrueDivide")
-def divide_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def divide_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the division operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -169,12 +172,12 @@ def divide_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwa
 
 
 @register_vjp("Power")
-def power_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def power_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the power operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -195,15 +198,15 @@ def power_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Power")
-def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def power_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the power operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -212,12 +215,12 @@ def power_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwar
 
 
 @register_vjp("DivideNoNan")
-def divide_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def divide_no_nan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for DivideNoNan.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -235,12 +238,12 @@ def divide_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("DivideNoNan")
-def divide_no_nan_jvp(graph: object, node: object, tangents: tuple) -> str:
+def divide_no_nan_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for DivideNoNan.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -256,12 +259,12 @@ def divide_no_nan_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("MultiplyNoNan")
-def multiply_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def multiply_no_nan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for MultiplyNoNan.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -276,12 +279,12 @@ def multiply_no_nan_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("MultiplyNoNan")
-def multiply_no_nan_jvp(graph: object, node: object, tangents: tuple) -> str:
+def multiply_no_nan_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for MultiplyNoNan.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -295,12 +298,12 @@ def multiply_no_nan_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("SquaredDifference")
-def squared_difference_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def squared_difference_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for SquaredDifference.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -316,12 +319,12 @@ def squared_difference_vjp(graph: object, node: object, cotangent: str) -> tuple
 
 
 @register_jvp("SquaredDifference")
-def squared_difference_jvp(graph: object, node: object, tangents: tuple) -> str:
+def squared_difference_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for SquaredDifference.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -337,12 +340,12 @@ def squared_difference_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Xdivy")
-def xdivy_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def xdivy_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Xdivy.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -361,12 +364,12 @@ def xdivy_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Xdivy")
-def xdivy_jvp(graph: object, node: object, tangents: tuple) -> str:
+def xdivy_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Xdivy.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -383,12 +386,12 @@ def xdivy_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Xlog1py")
-def xlog1py_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def xlog1py_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Xlog1py.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -406,12 +409,12 @@ def xlog1py_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Xlog1py")
-def xlog1py_jvp(graph: object, node: object, tangents: tuple) -> str:
+def xlog1py_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Xlog1py.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -430,12 +433,12 @@ def xlog1py_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Maximum")
-def maximum_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def maximum_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the maximum operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -455,32 +458,32 @@ def maximum_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Maximum")
-def maximum_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def maximum_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the maximum operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
     """
-    graph = kwargs.get("graph")
+    graph = typing.cast(typing.Any, kwargs.get("graph"))
     cond_dx = emit_ir_node(graph, "GreaterEqual", [x, y], graph.nodes[x].shape_metadata)
     dz = emit_ir_node(graph, "Select", [cond_dx, tangent_x, tangent_y], graph.nodes[x].shape_metadata)
     return dz
 
 
 @register_vjp("Minimum")
-def minimum_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def minimum_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the minimum operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -500,32 +503,32 @@ def minimum_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Minimum")
-def minimum_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def minimum_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the minimum operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
     """
-    graph = kwargs.get("graph")
+    graph = typing.cast(typing.Any, kwargs.get("graph"))
     cond_dx = emit_ir_node(graph, "LessEqual", [x, y], graph.nodes[x].shape_metadata)
     dz = emit_ir_node(graph, "Select", [cond_dx, tangent_x, tangent_y], graph.nodes[x].shape_metadata)
     return dz
 
 
 @register_vjp("Fmax")
-def fmax_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def fmax_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the Fmax operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -535,15 +538,15 @@ def fmax_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Fmax")
-def fmax_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def fmax_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the Fmax operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -552,12 +555,12 @@ def fmax_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwarg
 
 
 @register_vjp("Fmin")
-def fmin_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def fmin_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the Fmin operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -567,15 +570,15 @@ def fmin_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Fmin")
-def fmin_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def fmin_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the Fmin operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
@@ -584,12 +587,12 @@ def fmin_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwarg
 
 
 @register_vjp("Hypot")
-def hypot_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def hypot_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for the Hypot operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -610,20 +613,20 @@ def hypot_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Hypot")
-def hypot_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def hypot_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for the Hypot operation.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
     """
-    graph = kwargs.get("graph")
+    graph = typing.cast(typing.Any, kwargs.get("graph"))
     hypot_val = emit_ir_node(graph, "Hypot", [x, y], graph.nodes[x].shape_metadata)
 
     x_div = emit_ir_node(graph, "Divide", [x, hypot_val], graph.nodes[x].shape_metadata)
@@ -637,12 +640,12 @@ def hypot_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwar
 
 
 @register_vjp("Logaddexp")
-def logaddexp_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def logaddexp_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for Logaddexp.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -663,20 +666,20 @@ def logaddexp_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Logaddexp")
-def logaddexp_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def logaddexp_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for Logaddexp.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
     """
-    graph = kwargs.get("graph")
+    graph = typing.cast(typing.Any, kwargs.get("graph"))
     z = emit_ir_node(graph, "Logaddexp", [x, y], graph.nodes[x].shape_metadata)
 
     x_minus_z = emit_ir_node(graph, "Subtract", [x, z], graph.nodes[x].shape_metadata)
@@ -692,12 +695,12 @@ def logaddexp_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **
 
 
 @register_vjp("Logaddexp2")
-def logaddexp2_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def logaddexp2_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Compute the Vector-Jacobian Product (VJP) for Logaddexp2.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -718,20 +721,20 @@ def logaddexp2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Logaddexp2")
-def logaddexp2_jvp(tangent_x: object, tangent_y: object, x: object, y: object, **kwargs: object) -> str:
+def logaddexp2_jvp(tangent_x: Any, tangent_y: Any, x: Any, y: Any, **kwargs: Any) -> str:
     """Compute the Jacobian-Vector Product (JVP) for Logaddexp2.
 
     Args:
-        tangent_x (object): The tangent_x parameter.
-        tangent_y (object): The tangent_y parameter.
-        x (object): The x parameter.
-        y (object): The y parameter.
-        **kwargs (object): Keyword args.
+        tangent_x (Any): The tangent_x parameter.
+        tangent_y (Any): The tangent_y parameter.
+        x (Any): The x parameter.
+        y (Any): The y parameter.
+        **kwargs (Any): Keyword args.
 
     Returns:
         str: Result.
     """
-    graph = kwargs.get("graph")
+    graph = typing.cast(typing.Any, kwargs.get("graph"))
     z = emit_ir_node(graph, "Logaddexp2", [x, y], graph.nodes[x].shape_metadata)
 
     x_minus_z = emit_ir_node(graph, "Subtract", [x, z], graph.nodes[x].shape_metadata)

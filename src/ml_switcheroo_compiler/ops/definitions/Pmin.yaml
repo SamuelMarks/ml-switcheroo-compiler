@@ -1,0 +1,5 @@
+operation: Pmin
+description: The Pmin operation.
+variants:
+  numpy:
+    generator: '{0}'

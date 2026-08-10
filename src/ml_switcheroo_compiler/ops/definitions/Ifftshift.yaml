@@ -1,0 +1,9 @@
+operation: Ifftshift
+description: The Ifftshift operation.
+variants:
+  cupy:
+    eager: cp.fft.ifftshift
+  dask:
+    eager: da.fft.ifftshift
+  numpy:
+    generator: np.fft.ifftshift({0})

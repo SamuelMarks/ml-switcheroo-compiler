@@ -1,0 +1,5 @@
+operation: YuvToRgb
+description: The YuvToRgb operation.
+variants:
+  pytorch:
+    generator: '{0}'

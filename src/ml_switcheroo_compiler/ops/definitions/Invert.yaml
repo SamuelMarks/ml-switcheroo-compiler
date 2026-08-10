@@ -1,0 +1,7 @@
+operation: Invert
+description: The Invert operation.
+variants:
+  cupy:
+    eager: cp.invert
+  dask:
+    eager: da.invert

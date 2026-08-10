@@ -1,0 +1,7 @@
+operation: Igammac
+description: The Igammac operation.
+variants:
+  numpy:
+    generator: scipy.special.gammaincc
+  tensorflow:
+    eager: tf.math.igammac

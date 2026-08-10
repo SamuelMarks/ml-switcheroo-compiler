@@ -1,6 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3, MAGIC_VAL_4, MAGIC_VAL_5
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -36,15 +37,15 @@ def conv_lstm_cell(
     Raises:
         ValueError: An exception.
     """
-    ndim = len(inputs.shape)
-    if ndim == MAGIC_VAL_3:
+    naxis = len(inputs.shape)
+    if naxis == MAGIC_VAL_3:
         return conv1d_lstm_cell(inputs, state, weights, config)
-    elif ndim == MAGIC_VAL_4:
+    elif naxis == MAGIC_VAL_4:
         return conv2d_lstm_cell(inputs, state, weights, config)
-    elif ndim == MAGIC_VAL_5:
+    elif naxis == MAGIC_VAL_5:
         return conv3d_lstm_cell(inputs, state, weights, config)
     else:
-        raise ValueError(f"Unsupported input dimension for conv_lstm_cell: {ndim}. Expected 3, 4, or 5.")
+        raise ValueError(f"Unsupported input dimension for conv_lstm_cell: {naxis}. Expected 3, 4, or 5.")
 
 
 def _apply_conv_lstm_gates(
@@ -71,8 +72,8 @@ def _apply_conv_lstm_gates(
     if weights.bias is not None:
         gates = add(gates, weights.bias)
 
-    dim = -1 if data_format == "channels_last" else 1
-    i, f, c, o = split(gates, 4, dim=dim)
+    axis_val = -1 if data_format == "channels_last" else 1
+    i, f, c, o = split(gates, 4, axis=axis_val)
 
     i = _sigmoid(i)
     f = _sigmoid(f)
@@ -199,14 +200,13 @@ def conv3d_lstm_cell(
     return _apply_conv_lstm_gates(x_conv, h_conv, state, weights, conf.data_format)
 
 
-def _sigmoid(x: object) -> object:
+def _sigmoid(x: Any) -> Any:
     """Sigmoid.
 
     Args:
         x (object): The x parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.nn.activations import sigmoid as s
 

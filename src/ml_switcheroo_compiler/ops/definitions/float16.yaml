@@ -1,0 +1,5 @@
+operation: float16
+description: The float16 operation.
+variants:
+  edge_stablehlo:
+    generator: f16

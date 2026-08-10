@@ -1,0 +1,11 @@
+operation: Softmax
+description: The Softmax operation.
+variants:
+  edge_onnx:
+    generator: Softmax
+  keras:
+    eager: keras_ops.softmax
+  numpy:
+    generator: scipy.special.softmax({0}, axis={axis})
+  tensorflow:
+    eager: tf.math.softmax

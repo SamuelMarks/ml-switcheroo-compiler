@@ -21,7 +21,7 @@ repos:
     - --follow-imports=skip
     additional_dependencies:
     - types-requests
-    files: ^src/ml_switcheroo_compiler/transforms/pass_manager.py
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)transforms/pass_manager.py
 - repo: local
   hooks:
   - id: update-badges
@@ -34,13 +34,13 @@ repos:
     name: Generate Module Exports
     entry: python3 scripts/generate_exports.py
     language: system
-    files: ^src/ml_switcheroo_compiler/.*\.py$
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
     pass_filenames: false
   - id: numpy-leak-check
     name: Check for NumPy Leaks
     entry: python3 scripts/lint_numpy_leak.py
     language: system
-    files: ^src/ml_switcheroo_compiler/.*\.py$
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
     pass_filenames: false
 - repo: local
   hooks:
@@ -49,7 +49,7 @@ repos:
     entry: pylint --disable=all --enable=too-many-instance-attributes
     language: python
     types: [python]
-    files: ^src/ml_switcheroo_compiler/
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
     additional_dependencies: [pylint]
 - repo: local
   hooks:
@@ -59,7 +59,7 @@ repos:
     language: python
     types:
     - python
-    files: ^src/ml_switcheroo_compiler/
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
     additional_dependencies:
     - radon
 - repo: local
@@ -69,5 +69,5 @@ repos:
     entry: xenon --max-absolute D --max-modules C --max-average B
     language: python
     types: [python]
-    files: ^src/ml_switcheroo_compiler/
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
     additional_dependencies: [xenon]

@@ -1,0 +1,11 @@
+operation: All
+description: The All operation.
+variants:
+  cupy:
+    eager: cp.all
+  dask:
+    eager: da.all
+  keras:
+    eager: keras_ops.all
+  pytorch:
+    generator: torch.all({0}, dim={axis}, keepdim={keepdims})

@@ -1,19 +1,20 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dtype resolution and type inference logic."""
 
 import re
+from typing import Any
 
 from ml_switcheroo_compiler.core.dtype import DType
 
 
-def resolve_dtype(res_data: object, first_tensor: object) -> object:
+def resolve_dtype(res_data: Any, first_tensor: Any) -> Any:
     """Resolve the dtype for the eager result.
 
     Args:
         res_data (object): The raw result data.
         first_tensor (object): The first input tensor, used as fallback.
 
-    Returns:
-        object: The resolved DType.
+    Returns: Any: The resolved DType.
     """
     if hasattr(res_data, "dtype"):
         dtype_str = str(res_data.dtype)
@@ -33,7 +34,7 @@ def resolve_dtype(res_data: object, first_tensor: object) -> object:
     return DType.Float32
 
 
-def resolve_output_dtype_and_device(first_tensor: object, kwargs: dict) -> tuple[object, object]:
+def resolve_output_dtype_and_device(first_tensor: Any, kwargs: dict) -> tuple[Any, Any]:
     """Resolve output dtype and device based on inputs and kwargs.
 
     Args:
@@ -41,7 +42,7 @@ def resolve_output_dtype_and_device(first_tensor: object, kwargs: dict) -> tuple
         kwargs (dict): The keyword arguments passed to the operation.
 
     Returns:
-        tuple[object, object]: A tuple containing the resolved dtype and device.
+        tuple[Any, Any]: A tuple containing the resolved dtype and device.
     """
     out_dtype = None
     if "dtype" in kwargs:

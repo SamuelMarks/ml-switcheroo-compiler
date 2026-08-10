@@ -1,0 +1,5 @@
+operation: Irfft3d
+description: The Irfft3d operation.
+variants:
+  pytorch:
+    generator: torch.fft.irfftn({0}, s={s}, dim={axes})

@@ -1,0 +1,9 @@
+operation: Isclose
+description: The Isclose operation.
+variants:
+  cupy:
+    eager: cp.isclose
+  dask:
+    eager: da.isclose
+  keras:
+    eager: keras_ops.isclose

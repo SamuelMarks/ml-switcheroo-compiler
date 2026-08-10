@@ -1,0 +1,15 @@
+operation: Max
+description: The Max operation.
+variants:
+  cupy:
+    eager: cp.max
+    generator: cp.max
+  dask:
+    eager: da.max
+    generator: da.max
+  keras:
+    eager: keras_ops.max
+  numpy:
+    generator: np.max
+  pytorch:
+    generator: torch.max({0}, dim={axis}, keepdim={keepdims})

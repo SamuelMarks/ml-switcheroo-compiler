@@ -1,0 +1,5 @@
+operation: SparseSlice
+description: The SparseSlice operation.
+variants:
+  numpy:
+    generator: tf.sparse.slice

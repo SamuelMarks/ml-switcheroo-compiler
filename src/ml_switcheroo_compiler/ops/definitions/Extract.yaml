@@ -1,0 +1,7 @@
+operation: Extract
+description: The Extract operation.
+variants:
+  cupy:
+    eager: cp.extract
+  dask:
+    eager: da.extract

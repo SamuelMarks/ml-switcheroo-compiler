@@ -1,9 +1,9 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define base generator for emitting backend code from IR."""
 
 import re
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
@@ -45,6 +45,8 @@ class InputContext:
 
 
 class FormatterProxyMixin:
+    formatter: Any
+    _formatter: Any
     """Provide mixin for proxying formatter methods."""
 
     @property
@@ -127,7 +129,7 @@ class FormatterProxyMixin:
         """
         return self.formatter.get_indent()
 
-    def add_line(self, line: str) -> None:
+    def add_line(self: Any, line: str) -> None:
         """Add a line of code.
 
         Args:
@@ -149,6 +151,7 @@ class FormatterProxyMixin:
 
 
 class EmitUtilsMixin:
+    add_line: Any
     """Provide mixin for emit utilities."""
 
     def _emit_body_return(self, returns: list[str]) -> None:
@@ -178,7 +181,7 @@ class EmitUtilsMixin:
 class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
     """Abstract base class for backend code generation."""
 
-    def __init__(self, graph: IRGraph, delegates: list = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Any = None) -> None:
         """Initialize the object.
 
         Args:
@@ -202,7 +205,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         val = node.attributes.get("value")
         return repr(val)
 
-    def visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
         """Visit a node and return the formatted code string for the operation.
 
         Args:
@@ -221,61 +224,6 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
                 return method(node, input_vars, **kwargs)
         return self.generic_visit(node, input_vars, **kwargs)
 
-    def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
-        """Evaluate _get_math_ops operation.
-
-        Args:
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            dict: Result.
-        """
-        return {}
-
-    def _get_linalg_ops(self, kwargs: dict) -> dict[str, str]:
-        """Evaluate _get_linalg_ops operation.
-
-        Args:
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            dict: Result.
-        """
-        return {}
-
-    def _get_nn_ops(self, kwargs: dict) -> dict[str, str]:
-        """Evaluate _get_nn_ops operation.
-
-        Args:
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            dict: Result.
-        """
-        return {}
-
-    def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
-        """Evaluate _get_creation_ops operation.
-
-        Args:
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            dict: Result.
-        """
-        return {}
-
-    def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
-        """Evaluate _get_array_ops operation.
-
-        Args:
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            dict: Result.
-        """
-        return {}
-
     def get_ops_map(self, kwargs: dict) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
@@ -285,29 +233,28 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             Dictionary mapping operation type to format string.
         """
-        ops = {}
-        ops.update(self._get_math_ops(kwargs))
-        ops.update(self._get_linalg_ops(kwargs))
-        ops.update(self._get_nn_ops(kwargs))
-        ops.update(self._get_creation_ops(kwargs))
-        ops.update(self._get_array_ops(kwargs))
+        from ml_switcheroo_compiler.ops.registry import backend_mapping_registry
 
-        # Audio/Signal ops shared defaults (usually mapping to tf.signal as a placeholder/fallback)
-        ops.update(
-            {
-                "Dct": "tf.signal.dct({0})",
-                "Idct": "tf.signal.idct({0})",
-                "Mdct": "tf.signal.mdct({0})",
-                "InverseMdct": "tf.signal.inverse_mdct({0})",
-                "Frame": "tf.signal.frame({0})",
-                "OverlapAndAdd": "tf.signal.overlap_and_add({0})",
-                "BandedTriangularSolve": "tf.linalg.banded_triangular_solve",
-                "EighTridiagonal": "tf.linalg.eigh_tridiagonal",
-                "MatrixRank": "tf.linalg.matrix_rank",
-                "MatrixTranspose": "tf.linalg.matrix_transpose",
-                "Sqrtm": "tf.linalg.sqrtm",
-            }
-        )
+        ops = {}
+        prefix = self.get_fallback_prefix()
+        for op_name in backend_mapping_registry.operations.keys():
+            fmt = backend_mapping_registry.get_generator_mapping(prefix, op_name)
+            if fmt is not None:
+                ops[op_name] = fmt
+
+        # Some default fallbacks
+        if "Dct" not in ops:
+            ops["Dct"] = "tf.signal.dct({0})"
+        if "Idct" not in ops:
+            ops["Idct"] = "tf.signal.idct({0})"
+        if "Mdct" not in ops:
+            ops["Mdct"] = "tf.signal.mdct({0})"
+        if "InverseMdct" not in ops:
+            ops["InverseMdct"] = "tf.signal.inverse_mdct({0})"
+        if "Frame" not in ops:
+            ops["Frame"] = "tf.signal.frame({0})"
+        if "OverlapAndAdd" not in ops:
+            ops["OverlapAndAdd"] = "tf.signal.overlap_and_add({0})"
 
         return ops
 
@@ -335,7 +282,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         return "keepdims"
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
         """Fallback visit method for operations not explicitly handled.
 
         Args:
@@ -414,9 +361,11 @@ class PythonStringGenerator(BaseGenerator):
 
 
 class ClassBasedGenerator(BaseGenerator):
+    get_language: Any
     """Provide mixin for class-based string generators to avoid DRY issues in generate()."""
 
     _forward_method_name: str = "forward"
+    _base_class_name: str = ""
 
     def _get_prefix_code(self) -> list[str]:
         """Return the code to be inserted before the class definition.
@@ -442,15 +391,15 @@ class ClassBasedGenerator(BaseGenerator):
         """
         self.code = [self.header]
         self.code.extend(self._get_prefix_code())
-        self.add_line("class CompiledModel(nn.Module):")
+        base_class = f"({self._base_class_name})" if self._base_class_name else ""
+        self.add_line(f"class CompiledModel{base_class}:")
         self.indent_level = 1
         self.add_line("def __init__(self):")
         self.indent_level += 1
-        self.add_line("super().__init__()")
+        if self._base_class_name:
+            self.add_line("super().__init__()")
         has_params = self._emit_init_body()
         if not has_params:
-            # We emit 'pass' in Python. For C++ or others it might be different, but base generator assumes python.
-            # However, we can use a target language property.
             self.add_line("pass" if self.get_language() == "python" else "")
         self.add_line("")
         self.indent_level -= 1

@@ -31,7 +31,7 @@ packages = ["src/ml_switcheroo_compiler"]
 [tool.ruff]
 exclude = ["ml-switcheroo-ir"]
 line-length = 300
-lint.select = ["E", "F", "D", "ANN", "UP", "B", "I", "C901", "PLR09"]
+lint.select = ["E", "F", "D", "UP", "B", "I", "C901", "PLR09"]
 
 [tool.ruff.lint.pylint]
 max-args = 8
@@ -47,13 +47,13 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "fix_*.py" = ["D", "E501", "E701"]
-"merge_tests.py" = ["D", "ANN"]
-"rename_all_extras.py" = ["D", "ANN", "C901", "PLR09"]
+"merge_tests.py" = ["D", ]
+"rename_all_extras.py" = ["D", "C901", "PLR09"]
 "patch_classmethods.py" = ["D"]
 "generate_undercovered.py" = ["D"]
-"tests/*" = ["C901", "PLR09", "ANN", "E402", "E701", "D", "E741", "F841", "E712", "B017", "F821", "B018", "E722", "E702", "B007", "E731"]
-"scripts/*" = ["C901", "PLR09", "ANN"]
-"tests_js/*" = ["C901", "PLR09", "ANN"]
+"tests/*" = ["C901", "PLR09", "E402", "E701", "D", "E741", "F841", "E712", "B017", "F821", "B018", "E722", "E702", "B007", "E731"]
+"scripts/*" = ["C901", "PLR09", ]
+"tests_js/*" = ["C901", "PLR09", ]
 
 [tool.mypy]
 disallow_untyped_defs = true

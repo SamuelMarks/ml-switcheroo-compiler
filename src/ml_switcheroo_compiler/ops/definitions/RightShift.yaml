@@ -1,0 +1,9 @@
+operation: RightShift
+description: The RightShift operation.
+variants:
+  cupy:
+    eager: cp.right_shift
+  dask:
+    eager: da.right_shift
+  keras:
+    eager: keras_ops.right_shift

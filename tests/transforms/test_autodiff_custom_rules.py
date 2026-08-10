@@ -38,10 +38,67 @@ def test_assoc_scan_vjp():
 
 
 def test_jvp_nulls():
-    assert _if_jvp(None, None, None) is None
-    assert _loop_jvp(None, None, None) is None
-    assert _scan_jvp(None, None, None) is None
-    assert _assoc_scan_jvp(None, None, None) is None
+    assert _if_jvp(None, None, None) == ""
+    assert _loop_jvp(None, None, None) == ""
+    assert _scan_jvp(None, None, None) == ""
+    assert _assoc_scan_jvp(None, None, None) == ""
+
+
+def test_zero_vjps_custom():
+    from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY
+
+    for op_name in [
+        "CudaKernel",
+        "MetalKernel",
+        "PrecompiledCudaKernel",
+        "TopK",
+        "Cholesky",
+        "CholeskyEx",
+        "Eig",
+        "Eigh",
+        "Eigvals",
+        "Eigvalsh",
+        "FFT",
+        "IFFT",
+        "Sort",
+        "SortComplex",
+        "SortKeyVal",
+        "Argsort",
+        "Fftconvolve",
+        "Fft",
+        "Rfft",
+        "Fft2",
+        "Fftfreq",
+        "Irfft",
+        "Ihfft",
+        "Ifft",
+        "Fftn",
+        "Ifftn",
+        "Rfftn",
+        "Irfftn",
+        "Ifft2",
+        "Rfft2",
+        "Irfft2",
+        "Fftnd",
+        "Ifftnd",
+        "Rfftnd",
+        "Irfftnd",
+        "Fftshift",
+        "Ifftshift",
+        "Hfft",
+        "Rfftfreq",
+    ]:
+        assert op_name in _VJP_REGISTRY
+        assert op_name in _JVP_REGISTRY
+
+        node = LogicalNode(id="n1", op_type=op_name, inputs=["a", "b"])
+        vjp_func = _VJP_REGISTRY[op_name]
+        res = vjp_func(None, node, "cot")
+        assert res == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
+
+        jvp_func = _JVP_REGISTRY[op_name]
+        assert jvp_func(None, node, ("tan1", "tan2")) == ""
 
 
 def test_inline_subgraph():

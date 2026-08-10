@@ -1,0 +1,7 @@
+operation: FloatPower
+description: The FloatPower operation.
+variants:
+  cupy:
+    eager: cp.float_power
+  dask:
+    eager: da.float_power

@@ -1,8 +1,10 @@
-"""Visualization utilities."""
-
 from __future__ import annotations
 
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Visualization utilities."""
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -21,17 +23,16 @@ class PlotModelConfig:
 
 
 def plot_model(
-    model: object,
+    model: Any,
     config: PlotModelConfig | None = None,
-) -> object:
+) -> Any:
     """Convert a model to dot format and save to a file.
 
     Args:
         model (object): The model parameter.
         config (object): The config parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ImportError: An exception.
@@ -62,7 +63,7 @@ def plot_model(
     return dot
 
 
-def array_to_img(*args: object, **kwargs: object) -> object:
+def array_to_img(*args: Any, **kwargs: Any) -> Any:
     """Convert an array to an image.
 
     Args:
@@ -83,7 +84,7 @@ def array_to_img(*args: object, **kwargs: object) -> object:
         return None
 
 
-def img_to_array(*args: object, **kwargs: object) -> object:
+def img_to_array(*args: Any, **kwargs: Any) -> Any:
     """Convert an image to an array.
 
     Args:
@@ -103,7 +104,7 @@ def img_to_array(*args: object, **kwargs: object) -> object:
         return None
 
 
-def load_img(*args: object, **kwargs: object) -> object:
+def load_img(*args: Any, **kwargs: Any) -> Any:
     """Load an image.
 
     Args:
@@ -123,7 +124,7 @@ def load_img(*args: object, **kwargs: object) -> object:
         return None
 
 
-def model_to_dot(*args: object, **kwargs: object) -> object:
+def model_to_dot(*args: Any, **kwargs: Any) -> Any:
     """Convert a model to a dot graph.
 
     Args:
@@ -141,7 +142,7 @@ def model_to_dot(*args: object, **kwargs: object) -> object:
         return None
 
 
-def _array_to_image(val: object, np: object, Image: object) -> object:
+def _array_to_image(val: Any, np: Any, Image: Any) -> Any:
     """Help to convert array to image.
 
     Args:
@@ -149,15 +150,14 @@ def _array_to_image(val: object, np: object, Image: object) -> object:
         np (object): The np parameter.
         Image (object): The Image parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if val.ndim == 3 and val.shape[-1] == 1:
         val = val.squeeze(-1)
     return Image.fromarray(np.clip(val, 0, 255).astype(np.uint8))
 
 
-def save_img(path: str, x: object, **kwargs: object) -> None:
+def save_img(path: str, x: Any, **kwargs: Any) -> None:
     """Save an image.
 
     Args:

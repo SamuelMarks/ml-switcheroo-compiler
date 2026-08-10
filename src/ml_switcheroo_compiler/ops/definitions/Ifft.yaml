@@ -1,0 +1,11 @@
+operation: Ifft
+description: The Ifft operation.
+variants:
+  cupy:
+    eager: cp.fft.ifft
+  dask:
+    eager: da.fft.ifft
+  numpy:
+    generator: np.fft.ifft
+  pytorch:
+    generator: torch.fft.ifft({0}, n={n}, dim={axis})

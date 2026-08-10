@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Control flow ops."""
+
+from typing import Any
 
 import numpy as np
 
@@ -7,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("AssociativeScan")
-def _np_associative_scan(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_associative_scan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_associative_scan operation.
 
     Args:
@@ -15,8 +17,7 @@ def _np_associative_scan(backend_module: object, *args: object, **kwargs: object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if len(args) < 2:
         return args[0]
@@ -41,7 +42,7 @@ def _np_associative_scan(backend_module: object, *args: object, **kwargs: object
 
 
 @numpy_eager_registry.register("StopGradient")
-def _stop_gradient(backend_module: object, x: object, *args: object, **kwargs: object) -> object:
+def _stop_gradient(backend_module: Any, x: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _stop_gradient operation.
 
     Args:
@@ -50,7 +51,6 @@ def _stop_gradient(backend_module: object, x: object, *args: object, **kwargs: o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.array(x)

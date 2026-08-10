@@ -1,0 +1,5 @@
+operation: SparseFillEmptyRows
+description: The SparseFillEmptyRows operation.
+variants:
+  numpy:
+    generator: tf.sparse.fill_empty_rows

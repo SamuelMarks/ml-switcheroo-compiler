@@ -1,0 +1,7 @@
+operation: Conv2D
+description: The Conv2D operation.
+variants:
+  edge_onnx:
+    generator: Conv
+  edge_stablehlo:
+    generator: stablehlo.convolution

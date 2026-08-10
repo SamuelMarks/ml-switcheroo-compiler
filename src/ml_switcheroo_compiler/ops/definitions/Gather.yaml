@@ -1,0 +1,9 @@
+operation: Gather
+description: The Gather operation.
+variants:
+  edge_onnx:
+    generator: Gather
+  edge_stablehlo:
+    generator: stablehlo.gather
+  tensorflow:
+    eager: tf.gather

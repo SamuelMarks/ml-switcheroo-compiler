@@ -1,0 +1,9 @@
+operation: Append
+description: The Append operation.
+variants:
+  cupy:
+    eager: cp.append
+  dask:
+    eager: da.append
+  keras:
+    eager: keras_ops.append

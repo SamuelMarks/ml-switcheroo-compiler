@@ -1,8 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """StableHLO edge code generator."""
 
 import uuid
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -34,7 +34,16 @@ class StableHLOCodeGenerator(BaseGenerator):
         dt = {
             "float32": "f32",
             "float64": "f64",
+            "float16": "f16",
+            "bfloat16": "bf16",
+            "int64": "i64",
             "int32": "i32",
+            "int16": "i16",
+            "int8": "i8",
+            "uint64": "ui64",
+            "uint32": "ui32",
+            "uint16": "ui16",
+            "uint8": "ui8",
             "bool": "i1",
         }.get(str(dtype).lower(), "f32")
         if not shape:
@@ -42,7 +51,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         shape_str = "x".join(str(s) for s in shape)
         return f"tensor<{shape_str}x{dt}>"
 
-    def _get_node_type(self, node: object) -> str:
+    def _get_node_type(self, node: Any) -> str:
         """Extract the type mapping for a given node.
 
         Args:
@@ -55,7 +64,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         meta_dtype = getattr(node, "attributes", {}).get("dtype", getattr(node, "dtype", "float32"))
         return self._map_type(meta_shape, meta_dtype)
 
-    def _resolve_input_types(self, node: object, out_type: str) -> list[str]:
+    def _resolve_input_types(self, node: Any, out_type: str) -> list[str]:
         """Resolve the input types for a given node.
 
         Args:
@@ -74,7 +83,7 @@ class StableHLOCodeGenerator(BaseGenerator):
                 in_types.append(out_type)
         return in_types
 
-    def _emit_constant(self, node: object, nid: str) -> str:
+    def _emit_constant(self, node: Any, nid: str) -> str:
         """Emit a StableHLO constant operation.
 
         Args:
@@ -93,7 +102,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         self.add_line(f'  {res_var} = "stablehlo.constant"() {{value = {dense_val} : {t_type}}} : () -> {t_type}')
         return res_var
 
-    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process a node and return its generated code name.
 
         Args:
@@ -124,8 +133,41 @@ class StableHLOCodeGenerator(BaseGenerator):
             "Div": "stablehlo.divide",
             "Exp": "stablehlo.exponential",
             "Log": "stablehlo.log",
+            "Log1p": "stablehlo.log1p",
             "Negative": "stablehlo.negate",
             "Neg": "stablehlo.negate",
+            "MatMul": "stablehlo.dot_general",
+            "Conv2D": "stablehlo.convolution",
+            "Reshape": "stablehlo.reshape",
+            "Transpose": "stablehlo.transpose",
+            "Broadcast": "stablehlo.broadcast_in_dim",
+            "Concat": "stablehlo.concatenate",
+            "Slice": "stablehlo.slice",
+            "Gather": "stablehlo.gather",
+            "Scatter": "stablehlo.scatter",
+            "ReduceSum": "stablehlo.reduce",
+            "ReduceMean": "stablehlo.reduce",
+            "ReduceMax": "stablehlo.reduce",
+            "ReduceMin": "stablehlo.reduce",
+            "Relu": "stablehlo.maximum",  # Will need 0 constant binding later
+            "Sigmoid": "stablehlo.logistic",
+            "Tanh": "stablehlo.tanh",
+            "Abs": "stablehlo.abs",
+            "Sqrt": "stablehlo.sqrt",
+            "Cbrt": "stablehlo.cbrt",
+            "Round": "stablehlo.round_nearest_afz",
+            "Floor": "stablehlo.floor",
+            "Ceil": "stablehlo.ceil",
+            "Sin": "stablehlo.sine",
+            "Cos": "stablehlo.cosine",
+            "Equal": "stablehlo.compare",
+            "Greater": "stablehlo.compare",
+            "Less": "stablehlo.compare",
+            "Where": "stablehlo.select",
+            "Pad": "stablehlo.pad",
+            "Cast": "stablehlo.convert",
+            "If": "stablehlo.if",
+            "WhileLoop": "stablehlo.while",
         }
 
         hlo_op = op_map.get(op_type, "stablehlo.custom_call")
@@ -145,11 +187,11 @@ class StableHLOCodeGenerator(BaseGenerator):
 
         return res_var
 
-    def _build_func_args(self, input_nodes: list[object]) -> list[str]:
+    def _build_func_args(self, input_nodes: list[Any]) -> list[str]:
         """Build the list of function arguments for the generated MLIR module.
 
         Args:
-            input_nodes (list[object]): List of input IR nodes.
+            input_nodes (list[Any]): List of input IR nodes.
 
         Returns:
             list[str]: A list of argument strings for the MLIR function.

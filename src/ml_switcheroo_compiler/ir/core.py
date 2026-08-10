@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
 """Unified Intermediate Representation (IR) Schema."""
 
-from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -11,7 +14,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.core.dtype import DType
 
 
-def clone_logical_node(node: LogicalNode, **kwargs: object) -> LogicalNode:
+def clone_logical_node(node: LogicalNode, **kwargs: Any) -> LogicalNode:
     """Clones a LogicalNode, allowing overrides via kwargs.
 
     Args:

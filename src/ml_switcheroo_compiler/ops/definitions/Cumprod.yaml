@@ -1,0 +1,13 @@
+operation: Cumprod
+description: The Cumprod operation.
+variants:
+  cupy:
+    eager: cp.cumprod
+  dask:
+    eager: da.cumprod
+  keras:
+    eager: keras_ops.cumprod
+  numpy:
+    generator: np.cumprod
+  tensorflow:
+    eager: tf.math.cumprod

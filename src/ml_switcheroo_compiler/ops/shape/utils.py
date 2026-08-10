@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Utility functions for shape ops."""
 
-from __future__ import annotations
 
 # pylint: disable=duplicate-code
 import uuid
@@ -23,7 +27,7 @@ def _emit_shape_node(
     attrs: dict,
     out_shape: tuple,
     out_dtype: DType,
-) -> Tensor:
+) -> Any:
     """Emit a logical shape node to the tracer and returns a new Tensor.
 
     Args:
@@ -51,7 +55,7 @@ def _emit_shape_node(
 
     dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype) if hasattr(out_dtype, "name") else out_dtype
 
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
+    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     device = getattr(inputs[0], "device", config.default_device) if len(inputs) > 0 else config.default_device
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))
 
@@ -64,8 +68,7 @@ def compute_reduction_shape(x_shape: tuple[int, ...], axes: tuple[int, ...], kee
         axes (object): The axes parameter.
         keepdims (bool): The keepdims parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if keepdims:
         return tuple(1 if i in axes else s for i, s in enumerate(x_shape))

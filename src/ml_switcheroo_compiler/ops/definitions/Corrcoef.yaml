@@ -1,0 +1,7 @@
+operation: Corrcoef
+description: The Corrcoef operation.
+variants:
+  cupy:
+    eager: cp.corrcoef
+  dask:
+    eager: da.corrcoef

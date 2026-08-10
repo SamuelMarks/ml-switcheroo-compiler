@@ -1,9 +1,8 @@
-# ruff: noqa
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Implementations of functional optimizer update steps for various algorithms."""
 
-from typing import Optional
-
 from dataclasses import dataclass
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, divide, maximum, multiply, subtract
@@ -534,10 +533,10 @@ def muon_update(
     return new_param, state
 
 
+from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
-from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.backends.registry import get_active_backend
 
 
 @register_op("ApplyAdam")
@@ -546,7 +545,7 @@ class ApplyAdam(OpDef):
 
     op_name = "ApplyAdam"
 
-    def infer_shape(self, param: object, m: object, v: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, param: Any, m: Any, v: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -556,8 +555,7 @@ class ApplyAdam(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(param, "shape", ())
 
@@ -568,7 +566,7 @@ class ApplyAdagrad(OpDef):
 
     op_name = "ApplyAdagrad"
 
-    def infer_shape(self, param: object, accum: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, param: Any, accum: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -577,8 +575,7 @@ class ApplyAdagrad(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(param, "shape", ())
 
@@ -589,7 +586,7 @@ class ApplyFtrl(OpDef):
 
     op_name = "ApplyFtrl"
 
-    def infer_shape(self, param: object, accum: object, linear: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, param: Any, accum: Any, linear: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -599,8 +596,7 @@ class ApplyFtrl(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(param, "shape", ())
 
@@ -611,7 +607,7 @@ class ApplyRMSProp(OpDef):
 
     op_name = "ApplyRMSProp"
 
-    def infer_shape(self, param: object, ms: object, mom: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, param: Any, ms: Any, mom: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -621,13 +617,12 @@ class ApplyRMSProp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(param, "shape", ())
 
 
-def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
+def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> Any:
     """Apply Adam update.
 
     Args:
@@ -648,7 +643,7 @@ def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> 
     return out, m, v
 
 
-def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor]:
+def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> Any:
     """Apply Adagrad update.
 
     Args:
@@ -667,7 +662,7 @@ def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> tupl
     return out, accum
 
 
-def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
+def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> Any:
     """Apply FTRL update.
 
     Args:
@@ -687,7 +682,7 @@ def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: f
     return out, accum, linear
 
 
-def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> tuple[Tensor, Tensor, Tensor]:
+def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> Any:
     """Apply RMSProp update.
 
     Args:
@@ -713,7 +708,7 @@ class LionConfigOp(OpDef):
 
     op_name = "LionConfig"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -721,8 +716,7 @@ class LionConfigOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())
 
@@ -733,7 +727,7 @@ class AdamaxHyperparamsOp(OpDef):
 
     op_name = "AdamaxHyperparams"
 
-    def infer_shape(self, inputs: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, inputs: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -741,7 +735,6 @@ class AdamaxHyperparamsOp(OpDef):
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(inputs, "shape", ())

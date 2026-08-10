@@ -1,0 +1,11 @@
+operation: Mod
+description: The Mod operation.
+variants:
+  cupy:
+    eager: cp.mod
+  dask:
+    eager: da.mod
+  keras:
+    eager: keras_ops.mod
+  tensorflow:
+    eager: tf.math.mod

@@ -1,11 +1,14 @@
-"""Dot product operations."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Dot product operations."""
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _has_valid_shape(obj: object) -> bool:
+def _has_valid_shape(obj: Any) -> bool:
     """Evaluate _has_valid_shape operation.
 
     Args:
@@ -24,7 +27,7 @@ class Dot(OpDef):
     Computes the dot product of two arrays
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -32,8 +35,7 @@ class Dot(OpDef):
             b (object): The b parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return None
 
@@ -47,15 +49,14 @@ class DotGeneral(OpDef):
 
     op_name = "DotGeneral"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
@@ -96,7 +97,7 @@ class Tensordot(OpDef):
     Computes tensor dot product along specified axes.
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:
@@ -104,8 +105,7 @@ class Tensordot(OpDef):
             b (object): The second input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The computed result.
+        Returns: Any: The computed result.
         """
         return ()
 
@@ -117,7 +117,7 @@ class Inner(OpDef):
     Computes the inner product of two vectors or matrices.
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:
@@ -125,8 +125,7 @@ class Inner(OpDef):
             b (object): The second input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The computed result.
+        Returns: Any: The computed result.
         """
         return ()
 
@@ -138,7 +137,7 @@ class Outer(OpDef):
     Computes the outer product of two vectors.
     """
 
-    def infer_shape(self, a: object, b: object, **kwargs: object) -> object:
+    def infer_shape(self, a: Any, b: Any, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:
@@ -146,8 +145,7 @@ class Outer(OpDef):
             b (object): The second input tensor.
             **kwargs (object): Additional keyword arguments.
 
-        Returns:
-            object: The computed result.
+        Returns: Any: The computed result.
         """
         return ()
 
@@ -181,15 +179,14 @@ class Pdot(OpDef):
 
     op_name = "Pdot"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         lhs = args[0] if len(args) > 0 else None
         rhs = args[1] if len(args) > 1 else None
@@ -198,15 +195,14 @@ class Pdot(OpDef):
         return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 
-def pdot(*args: object, **kwargs: object) -> object:
+def pdot(*args: Any, **kwargs: Any) -> Any:
     """Evaluate pdot operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 

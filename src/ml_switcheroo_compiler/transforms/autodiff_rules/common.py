@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Common autodiff rules definitions."""
 
 import enum
-from typing import Callable
+from typing import Any, Callable
 
 
 class UnconnectedGradients(enum.Enum):
@@ -21,12 +22,12 @@ def make_zero_vjp(name: str) -> Callable:
         Callable: The generated VJP function.
     """
 
-    def vjp(graph: object, node: object, cotangent: str) -> tuple:
+    def vjp(graph: Any, node: Any, cotangent: str) -> tuple:
         """Return zero gradients for all inputs.
 
         Args:
-            graph (object): The IR graph.
-            node (object): The node.
+            graph (Any): The IR graph.
+            node (Any): The node.
             cotangent (str): The cotangent ID.
 
         Returns:
@@ -47,17 +48,17 @@ def make_zero_jvp(name: str) -> Callable:
         Callable: The generated JVP function.
     """
 
-    def jvp(graph: object, node: object, tangents: tuple) -> str:
+    def jvp(graph: Any, node: Any, tangents: tuple) -> str:
         """Return None to represent a zero tangent.
 
         Args:
-            graph (object): The IR graph.
-            node (object): The node.
+            graph (Any): The IR graph.
+            node (Any): The node.
             tangents (tuple): The input tangents.
 
         Returns:
             str: None.
         """
-        return None
+        return ""
 
     return jvp

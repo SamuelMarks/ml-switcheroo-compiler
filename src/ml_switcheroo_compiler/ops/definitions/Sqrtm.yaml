@@ -1,0 +1,5 @@
+operation: Sqrtm
+description: The Sqrtm operation.
+variants:
+  tensorflow:
+    eager: tf.linalg.sqrtm

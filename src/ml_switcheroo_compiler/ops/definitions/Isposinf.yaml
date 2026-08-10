@@ -1,0 +1,7 @@
+operation: Isposinf
+description: The Isposinf operation.
+variants:
+  cupy:
+    eager: cp.isposinf
+  dask:
+    eager: da.isposinf

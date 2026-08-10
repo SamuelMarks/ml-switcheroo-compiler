@@ -1,0 +1,11 @@
+operation: LogicalXor
+description: The LogicalXor operation.
+variants:
+  cupy:
+    eager: cp.logical_xor
+  dask:
+    eager: da.logical_xor
+  keras:
+    eager: keras_ops.logical_xor
+  tensorflow:
+    eager: tf.math.logical_xor

@@ -1,0 +1,5 @@
+operation: TensorScatterAdd
+description: The TensorScatterAdd operation.
+variants:
+  pytorch:
+    generator: '{0}.clone().index_put_(tuple({1}.unbind(-1)), {2}, accumulate=True)'

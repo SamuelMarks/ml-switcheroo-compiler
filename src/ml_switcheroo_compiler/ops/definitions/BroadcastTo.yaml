@@ -1,0 +1,17 @@
+operation: BroadcastTo
+description: The BroadcastTo operation.
+variants:
+  cupy:
+    eager: cp.broadcast_to
+    generator: cp.broadcast_to
+  dask:
+    eager: da.broadcast_to
+    generator: da.broadcast_to
+  keras:
+    eager: keras_ops.broadcast_to
+  numpy:
+    generator: np.broadcast_to
+  pytorch:
+    generator: '{0}.expand({shape})'
+  tensorflow:
+    eager: tf.broadcast_to

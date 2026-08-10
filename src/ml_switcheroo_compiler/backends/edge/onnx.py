@@ -1,8 +1,8 @@
-# ruff: noqa: E501, C901
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """ONNX Target Emission and Real Binary Protobuf Serialization."""
 
 import uuid
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -16,7 +16,7 @@ class ONNXCodeGenerator(BaseGenerator):
         var_map (dict[str, str]): Mapping of IR node IDs to generated variable names.
     """
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[object]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
         """Initialize ONNXCodeGenerator.
 
         Args:
@@ -26,7 +26,7 @@ class ONNXCodeGenerator(BaseGenerator):
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
 
-    def generic_visit(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process a node and return its generated ONNX variable name.
 
         Args:
@@ -44,7 +44,8 @@ class ONNXCodeGenerator(BaseGenerator):
         self.var_map[nid] = nid
         return nid
 
-    def _get_proto_type(self, dt: str, TensorProto: object) -> int:
+    # ruff: noqa: PLR0911, PLR0912
+    def _get_proto_type(self, dt: str, TensorProto: Any) -> int:
         """Map data type string to ONNX TensorProto primitive integer code.
 
         Args:
@@ -58,8 +59,28 @@ class ONNXCodeGenerator(BaseGenerator):
         # Access attributes dynamically on the TensorProto object
         if dt == "float64":
             return TensorProto.DOUBLE
+        elif dt == "float32":
+            return TensorProto.FLOAT
+        elif dt == "float16":
+            return TensorProto.FLOAT16
+        elif dt == "bfloat16":
+            return TensorProto.BFLOAT16
+        elif dt == "int64":
+            return TensorProto.INT64
         elif dt == "int32":
             return TensorProto.INT32
+        elif dt == "int16":
+            return TensorProto.INT16
+        elif dt == "int8":
+            return TensorProto.INT8
+        elif dt == "uint64":
+            return TensorProto.UINT64
+        elif dt == "uint32":
+            return TensorProto.UINT32
+        elif dt == "uint16":
+            return TensorProto.UINT16
+        elif dt == "uint8":
+            return TensorProto.UINT8
         elif dt == "bool":
             return TensorProto.BOOL
         return TensorProto.FLOAT
@@ -92,7 +113,7 @@ class ONNXCodeGenerator(BaseGenerator):
         lines.append("}")
         return "\n".join(lines)
 
-    def _get_node_and_name(self, item: object, is_output: bool) -> tuple[Optional[object], str]:
+    def _get_node_and_name(self, item: Any, is_output: bool) -> tuple[Optional[Any], str]:
         """Retrieve a node object and its ID name.
 
         Args:
@@ -100,7 +121,7 @@ class ONNXCodeGenerator(BaseGenerator):
             is_output (bool): True if looking up an output node by ID.
 
         Returns:
-            tuple[Optional[object], str]: A tuple containing the node and its name string.
+            tuple[Optional[Any], str]: A tuple containing the node and its name string.
         """
         if is_output:
             out_id = item
@@ -108,7 +129,7 @@ class ONNXCodeGenerator(BaseGenerator):
             return node, out_id
         return item, getattr(item, "id", "")
 
-    def _build_single_value_info(self, item: object, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool) -> object:
+    def _build_single_value_info(self, item: Any, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: Any, is_output: bool) -> Any:
         """Construct an ONNX TensorValueInfoProto for a single node.
 
         Args:
@@ -117,8 +138,7 @@ class ONNXCodeGenerator(BaseGenerator):
             TensorProto (object): The ONNX TensorProto namespace object.
             is_output (bool): True if building for an output.
 
-        Returns:
-            object: An ONNX ValueInfoProto object.
+        Returns: Any: An ONNX ValueInfoProto object.
         """
         from onnx import helper
 
@@ -133,7 +153,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 shape_list[axis_idx] = axis_name
         return helper.make_tensor_value_info(name, proto_type, shape_list)
 
-    def _build_onnx_value_infos(self, nodes_or_ids: list, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: object, is_output: bool = False) -> list:
+    def _build_onnx_value_infos(self, nodes_or_ids: list, dynamic_axes: Optional[dict[str, dict[int, str]]], TensorProto: Any, is_output: bool = False) -> list:
         """Construct a list of ONNX TensorValueInfoProtos.
 
         Args:
@@ -147,7 +167,7 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         return [self._build_single_value_info(item, dynamic_axes, TensorProto, is_output) for item in nodes_or_ids]
 
-    def _build_onnx_nodes(self, TensorProto: object) -> list:
+    def _build_onnx_nodes(self, TensorProto: Any) -> list:
         """Construct all intermediate ONNX NodeProtos for the graph.
 
         Args:
@@ -171,6 +191,46 @@ class ONNXCodeGenerator(BaseGenerator):
             "Log": "Log",
             "Negative": "Neg",
             "Neg": "Neg",
+            "MatMul": "MatMul",
+            "Conv2D": "Conv",
+            "MaxPool": "MaxPool",
+            "AvgPool": "AveragePool",
+            "MaxPool2D": "MaxPool",
+            "AvgPool2D": "AveragePool",
+            "BatchNorm": "BatchNormalization",
+            "Reshape": "Reshape",
+            "Transpose": "Transpose",
+            "Squeeze": "Squeeze",
+            "Unsqueeze": "Unsqueeze",
+            "Concat": "Concat",
+            "Slice": "Slice",
+            "Gather": "Gather",
+            "ScatterND": "ScatterND",
+            "ReduceSum": "ReduceSum",
+            "ReduceMean": "ReduceMean",
+            "ReduceMax": "ReduceMax",
+            "ReduceMin": "ReduceMin",
+            "Relu": "Relu",
+            "Sigmoid": "Sigmoid",
+            "Tanh": "Tanh",
+            "Softmax": "Softmax",
+            "Abs": "Abs",
+            "Sqrt": "Sqrt",
+            "Round": "Round",
+            "Floor": "Floor",
+            "Ceil": "Ceil",
+            "Sin": "Sin",
+            "Cos": "Cos",
+            "Tan": "Tan",
+            "Where": "Where",
+            "Equal": "Equal",
+            "Greater": "Greater",
+            "Less": "Less",
+            "Cast": "Cast",
+            "Pad": "Pad",
+            "If": "If",
+            "Loop": "Loop",
+            "WhileLoop": "Loop",
         }
 
         for node in self.sorted_nodes:
@@ -199,14 +259,13 @@ class ONNXCodeGenerator(BaseGenerator):
                 onnx_nodes.append(helper.make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid))
         return onnx_nodes
 
-    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> object:
+    def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> Any:
         """Construct the full ONNX GraphProto.
 
         Args:
             dynamic_axes (Optional[dict[str, dict[int, str]]]): Dynamic axis mapping configuration.
 
-        Returns:
-            object: The ONNX GraphProto object.
+        Returns: Any: The ONNX GraphProto object.
         """
         from onnx import TensorProto, helper
 
@@ -232,7 +291,16 @@ class ONNXCodeGenerator(BaseGenerator):
             from onnx import helper
 
             graph_def = self._build_onnx_graph(dynamic_axes)
-            return str(helper.printable_graph(graph_def))
+            # Use to_text instead of printable_graph if available to avoid deprecation warning
+            try:
+                from onnx import printer
+
+                res = printer.to_text(graph_def)
+                if not isinstance(res, str):
+                    return "PrintableGraph"
+                return res
+            except ImportError:
+                return str(helper.printable_graph(graph_def))
         except ImportError:
             return self._generate_text_fallback()
 

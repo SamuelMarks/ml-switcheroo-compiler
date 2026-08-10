@@ -1,0 +1,5 @@
+operation: RandomCategorical
+description: The RandomCategorical operation.
+variants:
+  numpy:
+    generator: np.argmax({1} + np.random.gumbel(size={1}.shape), axis={axis})

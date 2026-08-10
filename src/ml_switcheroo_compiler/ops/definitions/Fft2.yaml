@@ -1,0 +1,9 @@
+operation: Fft2
+description: The Fft2 operation.
+variants:
+  cupy:
+    eager: cp.fft.fft2
+  dask:
+    eager: da.fft.fft2
+  keras:
+    eager: keras_ops.fft2

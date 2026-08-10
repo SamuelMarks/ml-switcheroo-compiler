@@ -1,0 +1,7 @@
+operation: Ldexp
+description: The Ldexp operation.
+variants:
+  cupy:
+    eager: cp.ldexp
+  dask:
+    eager: da.ldexp

@@ -1,0 +1,7 @@
+operation: Iscomplex
+description: The Iscomplex operation.
+variants:
+  cupy:
+    eager: cp.iscomplex
+  dask:
+    eager: da.iscomplex

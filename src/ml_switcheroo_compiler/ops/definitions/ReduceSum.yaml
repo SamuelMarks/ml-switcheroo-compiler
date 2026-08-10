@@ -1,0 +1,7 @@
+operation: ReduceSum
+description: The ReduceSum operation.
+variants:
+  edge_onnx:
+    generator: ReduceSum
+  edge_stablehlo:
+    generator: stablehlo.reduce

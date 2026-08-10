@@ -1,0 +1,5 @@
+operation: Inner
+description: The Inner operation.
+variants:
+  keras:
+    eager: keras_ops.inner

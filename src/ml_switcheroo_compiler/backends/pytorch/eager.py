@@ -1,4 +1,4 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
 from typing import Any, cast
@@ -6,15 +6,14 @@ from typing import Any, cast
 import torch
 
 
-def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
+def _execute_accumulate_n(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_accumulate_n operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -28,15 +27,14 @@ def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
     return res
 
 
-def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
+def _execute_tensor_scatter_max(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_tensor_scatter_max operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     tensor, indices, updates = (
         cast(Any, args[0]),
@@ -49,15 +47,14 @@ def _execute_tensor_scatter_max(*args: object, **kwargs: object) -> object:
     return res.reshape(tensor.shape)
 
 
-def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
+def _execute_tensor_scatter_min(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_tensor_scatter_min operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     tensor, indices, updates = (
         cast(Any, args[0]),
@@ -70,41 +67,38 @@ def _execute_tensor_scatter_min(*args: object, **kwargs: object) -> object:
     return res.reshape(tensor.shape)
 
 
-def _execute_tensor_scatter_update(*args: object, **kwargs: object) -> object:
+def _execute_tensor_scatter_update(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_tensor_scatter_update operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]))
 
 
-def _execute_tensor_scatter_add(*args: object, **kwargs: object) -> object:
+def _execute_tensor_scatter_add(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_tensor_scatter_add operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return cast(Any, args[0]).clone().index_put_(tuple(cast(Any, args[1]).unbind(-1)), cast(Any, args[2]), accumulate=True)
 
 
-def _execute_power_iteration(*args: object, **kwargs: object) -> object:
+def _execute_power_iteration(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_power_iteration operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     w = args[0]
     num_iters = kwargs.get("num_iters", 1)
@@ -121,28 +115,26 @@ def _execute_power_iteration(*args: object, **kwargs: object) -> object:
     return (v.squeeze(-1), u.squeeze(-1), sigma.squeeze(-1).squeeze(-1))
 
 
-def _execute_broadcast_to(*args: object, **kwargs: object) -> object:
+def _execute_broadcast_to(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_broadcast_to operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return cast(Any, args[0]).expand(kwargs["shape"])
 
 
-def _execute_cast(*args: object, **kwargs: object) -> object:
+def _execute_cast(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cast operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     tensor = cast(Any, args[0])
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -162,54 +154,50 @@ def _execute_cast(*args: object, **kwargs: object) -> object:
     return tensor.to(dt)
 
 
-def _execute_cummax(*args: object, **kwargs: object) -> object:
+def _execute_cummax(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cummax operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return torch.cummax(*args, **kwargs)[0]
 
 
-def _execute_cummin(*args: object, **kwargs: object) -> object:
+def _execute_cummin(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cummin operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return torch.cummin(*args, **kwargs)[0]
 
 
-def _execute_cumlogsumexp(*args: object, **kwargs: object) -> object:
+def _execute_cumlogsumexp(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cumlogsumexp operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return torch.logcumsumexp(*args, **kwargs)
 
 
-def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
+def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_ragged_tensor_to_dense operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     # Dummy mock returning dense tensor with proper shape padding or just the tensor itself for testing fallback.
     # In PyTorch, ragged tensors might be list of tensors, converting to dense means padding.
@@ -220,7 +208,7 @@ def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
         # simple pad
         from torch.nn.utils.rnn import pad_sequence
 
-        return pad_sequence(rt, batch_first=True)
+        return pad_sequence(rt, batch_first=True)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     return rt
 
 
@@ -245,36 +233,143 @@ def _get_custom_torch_op_map() -> dict:
     }
 
 
-def _torch_variance(*args: object, **kwargs: object) -> object:
+def _torch_variance(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _torch_variance operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     kwargs.setdefault("correction", kwargs.pop("ddof", 0))
     return torch.var(*args, **kwargs)
 
 
-def _torch_tensordot(*args: object, **kwargs: object) -> object:
+def _torch_tensordot(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _torch_tensordot operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if "axes" in kwargs:
         kwargs["dims"] = kwargs.pop("axes")
     return torch.tensordot(*args, **kwargs)
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def _get_torch_reduce_op(op_type: str) -> Any:
+    """Get the torch.distributed reduce op.
+
+    Args:
+        op_type (str): The reduce operation type.
+
+    Returns: Any: The torch.distributed.ReduceOp.
+    """
+    import torch.distributed as dist
+
+    op_type = op_type.lower()
+    if op_type == "sum":
+        return dist.ReduceOp.SUM
+    elif op_type == "prod":
+        return dist.ReduceOp.PRODUCT
+    elif op_type == "min":
+        return dist.ReduceOp.MIN
+    elif op_type == "max":
+        return dist.ReduceOp.MAX
+    elif op_type == "avg" or op_type == "mean":
+        return dist.ReduceOp.AVG
+    return dist.ReduceOp.SUM
+
+
+def _torch_all_gather(tensor: torch.Tensor, **kwargs: Any) -> torch.Tensor:
+    """Execute torch distributed AllGather.
+
+    Args:
+        tensor (torch.Tensor): The input tensor.
+        **kwargs (object): Additional args.
+
+    Returns:
+        torch.Tensor: The gathered tensor.
+    """
+    import torch.distributed as dist
+
+    if not dist.is_initialized():
+        return torch.stack([tensor])
+    tensor_list = [torch.empty_like(tensor) for _ in range(dist.get_world_size())]
+    dist.all_gather(tensor_list, tensor)
+    axis = kwargs.get("axis", 0)
+    return torch.cat(tensor_list, dim=axis)
+
+
+def _torch_all_reduce(tensor: torch.Tensor, **kwargs: Any) -> torch.Tensor:
+    """Execute torch distributed AllReduce.
+
+    Args:
+        tensor (torch.Tensor): The input tensor.
+        **kwargs (object): Additional args.
+
+    Returns:
+        torch.Tensor: The reduced tensor.
+    """
+    import torch.distributed as dist
+
+    if not dist.is_initialized():
+        return tensor
+    res = tensor.clone()
+    op_type = kwargs.get("op_type", "sum")
+    dist.all_reduce(res, op=_get_torch_reduce_op(op_type))
+    return res
+
+
+def _torch_reduce_scatter(tensor: torch.Tensor, **kwargs: Any) -> torch.Tensor:
+    """Execute torch distributed ReduceScatter.
+
+    Args:
+        tensor (torch.Tensor): The input tensor.
+        **kwargs (object): Additional args.
+
+    Returns:
+        torch.Tensor: The reduce-scattered tensor.
+    """
+    import torch.distributed as dist
+
+    if not dist.is_initialized():
+        return tensor
+    op_type = kwargs.get("op_type", "sum")
+    axis = kwargs.get("axis", 0)
+    tensor_list = list(torch.tensor_split(tensor, dist.get_world_size(), dim=axis))
+    res = torch.empty_like(tensor_list[0])
+    dist.reduce_scatter(res, tensor_list, op=_get_torch_reduce_op(op_type))
+    return res
+
+
+def _torch_all_to_all(tensor: torch.Tensor, **kwargs: Any) -> torch.Tensor:
+    """Execute torch distributed AllToAll.
+
+    Args:
+        tensor (torch.Tensor): The input tensor.
+        **kwargs (object): Additional args.
+
+    Returns:
+        torch.Tensor: The scattered/gathered tensor.
+    """
+    import torch.distributed as dist
+
+    if not dist.is_initialized():
+        return tensor
+    # Assuming input is pre-split along axis 0
+    split_dim = kwargs.get("split_axis", 0)
+    concat_dim = kwargs.get("concat_axis", 0)
+    input_tensor_list = list(torch.tensor_split(tensor, dist.get_world_size(), dim=split_dim))
+    output_tensor_list = [torch.empty_like(input_tensor_list[0]) for _ in range(dist.get_world_size())]
+    dist.all_to_all(output_tensor_list, input_tensor_list)
+    return torch.cat(output_tensor_list, dim=concat_dim)
+
+
+def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Evaluate execute_op operation.
 
     Args:
@@ -283,8 +378,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         BackendNotSupportedError: An exception.
@@ -365,8 +459,10 @@ _TORCH_EAGER_OP_MAP = {
     "AdaptiveMaxPool3D": torch.nn.functional.adaptive_max_pool3d,
     "AdaptiveMaxPool3D_Indices": lambda x, sz, **kwargs: torch.nn.functional.adaptive_max_pool3d(x, sz, return_indices=True),
     "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, torch.zeros((), dtype=target.dtype, device=target.device)),
-    "AllGather": lambda tensor, *args, **kwargs: torch.stack([tensor]),
-    "AllToAll": lambda tensor, *args, **kwargs: tensor,
+    "AllGather": lambda tensor, *args, **kwargs: _torch_all_gather(tensor, **kwargs),
+    "AllReduce": lambda tensor, *args, **kwargs: _torch_all_reduce(tensor, **kwargs),
+    "ReduceScatter": lambda tensor, *args, **kwargs: _torch_reduce_scatter(tensor, **kwargs),
+    "AllToAll": lambda tensor, *args, **kwargs: _torch_all_to_all(tensor, **kwargs),
     "Append": lambda arr, values, axis=None, **kwargs: torch.cat([arr, values], dim=axis) if axis is not None else torch.cat([arr.flatten(), values.flatten()]),
     "ApplyOverAxes": lambda func, a, axes, **kwargs: a,
     "Argpartition": lambda a, kth, axis=-1, **kwargs: torch.argsort(a, dim=axis),

@@ -1,3 +1,5 @@
+from ml_switcheroo_compiler.core.dtype import DType
+
 """Test nn activations coverage."""
 
 from ml_switcheroo_compiler.core.config import config
@@ -15,7 +17,7 @@ def test_isotonic_regression_tracing():
         out1, out2 = isotonic_regression(y)
         assert out1.shape == (5,)
         assert out2.shape == (5,)
-        assert out2.dtype == "int32"
+        assert out2.dtype == DType.Int32
     finally:
         global_tracing_state.stop_tracing()
         config.eager_mode = True

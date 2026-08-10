@@ -304,8 +304,11 @@ def test_image_resize(mocker):
     mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile._emit_shape_node", return_value="resize")
     assert image_resize(t, (5, 6)) == "resize"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.pad_and_tile.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2, 5, 6, 3))
+    mock_array = mocker.MagicMock()
+    mock_array.shape = (2, 5, 6, 3)
+    mock_backend.array.return_value = mock_array
     assert image_resize(t, (5, 6)).config.shape == (2, 5, 6, 3)
 
 

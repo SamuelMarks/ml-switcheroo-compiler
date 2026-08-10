@@ -1,0 +1,7 @@
+operation: Flatnonzero
+description: The Flatnonzero operation.
+variants:
+  cupy:
+    eager: cp.flatnonzero
+  dask:
+    eager: da.flatnonzero

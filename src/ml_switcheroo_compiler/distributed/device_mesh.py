@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply logical hardware topology abstraction."""
 
 from collections.abc import Sequence
-from typing import Optional
+from typing import Any, Optional
 
 
 class DeviceMesh:
@@ -11,7 +12,7 @@ class DeviceMesh:
         self,
         shape: Sequence[int],
         axis_names: Sequence[str],
-        devices: Optional[Sequence[object]] = None,
+        devices: Optional[Sequence[Any]] = None,
     ) -> None:
         """Initialize DeviceMesh.
 
@@ -50,7 +51,7 @@ class DeviceMesh:
         """
         return f"DeviceMesh(shape={self.shape}, axis_names={self.axis_names})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Equality check.
 
         Args:

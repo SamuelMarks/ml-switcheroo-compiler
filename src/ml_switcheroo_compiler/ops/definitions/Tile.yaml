@@ -1,0 +1,11 @@
+operation: Tile
+description: The Tile operation.
+variants:
+  cupy:
+    eager: cp.tile
+  dask:
+    eager: da.tile
+  keras:
+    eager: keras_ops.tile
+  tensorflow:
+    eager: tf.tile

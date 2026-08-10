@@ -1,0 +1,5 @@
+operation: YiqToRgb
+description: The YiqToRgb operation.
+variants:
+  pytorch:
+    generator: '{0}'

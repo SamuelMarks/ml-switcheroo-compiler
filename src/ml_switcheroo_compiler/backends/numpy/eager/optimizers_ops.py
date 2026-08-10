@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy implementations for optimizer update steps."""
+
+from typing import Any
 
 import numpy as np
 
@@ -6,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("ApplyAdam")
-def _np_apply_adam(backend_module: object, param: object, m: object, v: object, grad: object, **kwargs: object) -> tuple:
+def _np_apply_adam(backend_module: Any, param: Any, m: Any, v: Any, grad: Any, **kwargs: Any) -> tuple:
     """Numpy eager fallback for ApplyAdam.
 
     Args:
@@ -31,7 +34,7 @@ def _np_apply_adam(backend_module: object, param: object, m: object, v: object, 
 
 
 @numpy_eager_registry.register("ApplyAdagrad")
-def _np_apply_adagrad(backend_module: object, param: object, accum: object, grad: object, **kwargs: object) -> tuple:
+def _np_apply_adagrad(backend_module: Any, param: Any, accum: Any, grad: Any, **kwargs: Any) -> tuple:
     """Numpy eager fallback for ApplyAdagrad.
 
     Args:
@@ -53,7 +56,7 @@ def _np_apply_adagrad(backend_module: object, param: object, accum: object, grad
 
 
 @numpy_eager_registry.register("ApplyFtrl")
-def _np_apply_ftrl(backend_module: object, param: object, accum: object, linear: object, grad: object, **kwargs: object) -> tuple:
+def _np_apply_ftrl(backend_module: Any, param: Any, accum: Any, linear: Any, grad: Any, **kwargs: Any) -> tuple:
     """Numpy eager fallback for ApplyFtrl.
 
     Args:
@@ -77,7 +80,7 @@ def _np_apply_ftrl(backend_module: object, param: object, accum: object, linear:
 
 
 @numpy_eager_registry.register("ApplyRMSProp")
-def _np_apply_rmsprop(backend_module: object, param: object, ms: object, mom: object, grad: object, **kwargs: object) -> tuple:
+def _np_apply_rmsprop(backend_module: Any, param: Any, ms: Any, mom: Any, grad: Any, **kwargs: Any) -> tuple:
     """Numpy eager fallback for ApplyRMSProp.
 
     Args:

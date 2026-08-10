@@ -1,0 +1,9 @@
+operation: Vdot
+description: The Vdot operation.
+variants:
+  cupy:
+    eager: cp.vdot
+  dask:
+    eager: da.vdot
+  keras:
+    eager: keras_ops.vdot

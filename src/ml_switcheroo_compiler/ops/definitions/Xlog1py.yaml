@@ -1,0 +1,5 @@
+operation: Xlog1py
+description: The Xlog1py operation.
+variants:
+  tensorflow:
+    eager: tf.math.xlog1py

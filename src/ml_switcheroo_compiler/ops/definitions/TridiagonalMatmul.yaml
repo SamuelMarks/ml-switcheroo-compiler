@@ -1,0 +1,5 @@
+operation: TridiagonalMatmul
+description: The TridiagonalMatmul operation.
+variants:
+  tensorflow:
+    eager: tf.linalg.tridiagonal_matmul

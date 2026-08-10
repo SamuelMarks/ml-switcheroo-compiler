@@ -1,0 +1,21 @@
+operation: Transpose
+description: The Transpose operation.
+variants:
+  cupy:
+    eager: cp.transpose
+    generator: cp.transpose
+  dask:
+    eager: da.transpose
+    generator: da.transpose
+  edge_onnx:
+    generator: Transpose
+  edge_stablehlo:
+    generator: stablehlo.transpose
+  keras:
+    eager: keras_ops.transpose
+  numpy:
+    generator: np.transpose
+  pytorch:
+    generator: torch.permute({0}, {axes})
+  tensorflow:
+    eager: tf.transpose

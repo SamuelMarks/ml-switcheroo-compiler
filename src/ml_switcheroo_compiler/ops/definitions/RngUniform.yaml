@@ -1,0 +1,5 @@
+operation: RngUniform
+description: The RngUniform operation.
+variants:
+  numpy:
+    generator: np.random.uniform({0}, {1}, size={shape})

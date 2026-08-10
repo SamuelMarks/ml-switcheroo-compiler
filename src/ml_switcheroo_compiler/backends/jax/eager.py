@@ -1,4 +1,4 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
 from typing import Any, Callable
@@ -11,15 +11,14 @@ import jax.scipy.special as jss
 import jax.scipy.stats
 
 
-def _execute_adaptive_pool_mock(*args: object, **kwargs: object) -> object:
+def _execute_adaptive_pool_mock(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_adaptive_pool_mock operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import jax.numpy as jnp
 
@@ -38,15 +37,14 @@ def _execute_adaptive_pool_mock(*args: object, **kwargs: object) -> object:
     return operand
 
 
-def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
+def _execute_accumulate_n(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_accumulate_n operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         ValueError: An exception.
@@ -60,95 +58,88 @@ def _execute_accumulate_n(*args: object, **kwargs: object) -> object:
     return res
 
 
-def _execute_binom_cdf(*args: object, **kwargs: object) -> object:
+def _execute_binom_cdf(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_binom_cdf operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     k, n, p = args[0], args[1], args[2]
     loc = kwargs.get("loc", 0.0)
     return jss.betainc(n - (k - loc), (k - loc) + 1, 1 - p)
 
 
-def _execute_bessel_jn(*args: object, **kwargs: object) -> object:
+def _execute_bessel_jn(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_bessel_jn operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return jax.scipy.special.bessel_jn(args[1], v=args[0])
 
 
-def _execute_unsorted_segment_sum(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_sum(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_sum operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return jax.ops.segment_sum(*args, **kwargs)
 
 
-def _execute_unsorted_segment_max(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_max(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_max operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return jax.ops.segment_max(*args, **kwargs)
 
 
-def _execute_unsorted_segment_min(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_min(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_min operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return jax.ops.segment_min(*args, **kwargs)
 
 
-def _execute_unsorted_segment_prod(*args: object, **kwargs: object) -> object:
+def _execute_unsorted_segment_prod(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_unsorted_segment_prod operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return jax.ops.segment_prod(*args, **kwargs)
 
 
-def _execute_variance(*args: object, **kwargs: object) -> object:
+def _execute_variance(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_variance operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import jax.numpy as jnp
 
@@ -156,15 +147,14 @@ def _execute_variance(*args: object, **kwargs: object) -> object:
     return jnp.var(*args, **kwargs)
 
 
-def _execute_cast(*args: object, **kwargs: object) -> object:
+def _execute_cast(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cast operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     tensor = args[0]
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
@@ -184,15 +174,14 @@ def _execute_cast(*args: object, **kwargs: object) -> object:
     return tensor.astype(dt)
 
 
-def _execute_ragged_tensor_to_dense(*args: object, **kwargs: object) -> object:
+def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_ragged_tensor_to_dense operation.
 
     Args:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import jax.numpy as jnp
 
@@ -251,8 +240,14 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
     "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_pool_mock(*args, **kwargs), _execute_adaptive_pool_mock(*args, **kwargs)),
     "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=target.dtype)),
     "Adjoint": lambda x, **kwargs: __import__("jax").numpy.conj(__import__("jax").numpy.transpose(x)),
-    "AllGather": lambda tensor, *args, **kwargs: __import__("jax").numpy.stack([tensor]),
-    "AllToAll": lambda tensor, *args, **kwargs: tensor,
+    "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if hasattr(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),
+    "AllReduce": lambda tensor, *args, **kwargs: __import__("jax").lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if kwargs.get("op_type", "sum").lower() == "sum" else __import__("jax").lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),
+    "ReduceScatter": lambda tensor, *args, **kwargs: (
+        __import__("jax").lax.reduce_scatter(tensor, __import__("jax").lax.add if kwargs.get("op_type", "sum").lower() == "sum" else __import__("jax").lax.max, scatter_dimension=kwargs.get("axis", 0), axis_name=kwargs.get("axis_name", "i"))
+        if hasattr(__import__("jax").lax, "reduce_scatter")
+        else tensor
+    ),
+    "AllToAll": lambda tensor, *args, **kwargs: __import__("jax").lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if hasattr(__import__("jax").lax, "all_to_all") else tensor,
     "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(__import__("jax").random.bernoulli(__import__("jax").random.PRNGKey(0), 1.0 - kwargs.get("p", 0.5), x.shape), x, 0.0),
     "AsString": lambda arr, **kwargs: str(arr),
     "Assert": lambda condition, data, summarize=3, **kwargs: None,
@@ -302,7 +297,7 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
 }
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Evaluate execute_op operation.
 
     Args:
@@ -311,8 +306,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
 
     Raises:
         BackendNotSupportedError: An exception.

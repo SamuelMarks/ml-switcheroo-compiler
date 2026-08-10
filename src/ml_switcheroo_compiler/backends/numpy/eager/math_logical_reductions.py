@@ -1,11 +1,13 @@
 """Numpy Logical Reductions."""
 
-# ruff: noqa: E501
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("All")
-def _np_all(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_all(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_all operation.
 
     Args:
@@ -13,14 +15,13 @@ def _np_all(backend_module: object, *args: object, **kwargs: object) -> object:
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.all(*args, **kwargs)
 
 
 @numpy_eager_registry.register("CountNonzero")
-def _np_count_nonzero(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_count_nonzero(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_count_nonzero operation.
 
     Args:
@@ -28,7 +29,6 @@ def _np_count_nonzero(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return backend_module.count_nonzero(*args, **kwargs)

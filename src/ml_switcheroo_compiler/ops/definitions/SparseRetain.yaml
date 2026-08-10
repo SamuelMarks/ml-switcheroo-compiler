@@ -1,0 +1,5 @@
+operation: SparseRetain
+description: The SparseRetain operation.
+variants:
+  numpy:
+    generator: tf.sparse.retain

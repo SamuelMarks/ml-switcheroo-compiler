@@ -1,0 +1,7 @@
+operation: Nanmean
+description: The Nanmean operation.
+variants:
+  cupy:
+    eager: cp.nanmean
+  dask:
+    eager: da.nanmean

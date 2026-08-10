@@ -1,0 +1,19 @@
+operation: Subtract
+description: The Subtract operation.
+variants:
+  cupy:
+    eager: cp.subtract
+    generator: cp.subtract
+  dask:
+    eager: da.subtract
+    generator: da.subtract
+  edge_onnx:
+    generator: Sub
+  edge_stablehlo:
+    generator: stablehlo.subtract
+  keras:
+    eager: keras_ops.subtract
+  numpy:
+    generator: np.subtract
+  tensorflow:
+    eager: tf.subtract

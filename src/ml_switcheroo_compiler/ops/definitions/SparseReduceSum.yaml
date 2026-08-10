@@ -1,0 +1,5 @@
+operation: SparseReduceSum
+description: The SparseReduceSum operation.
+variants:
+  numpy:
+    generator: tf.sparse.reduce_sum

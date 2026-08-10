@@ -1,0 +1,7 @@
+operation: Polygamma
+description: The Polygamma operation.
+variants:
+  numpy:
+    generator: scipy.special.polygamma
+  tensorflow:
+    eager: tf.math.polygamma

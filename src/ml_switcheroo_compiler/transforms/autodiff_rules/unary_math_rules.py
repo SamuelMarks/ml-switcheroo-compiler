@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Unary rules for math."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
@@ -6,12 +9,12 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import regist
 
 
 @register_vjp("Abs")
-def abs_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def abs_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -25,12 +28,12 @@ def abs_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Abs")
-def abs_jvp(graph: object, node: object, tangents: tuple) -> str:
+def abs_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -45,12 +48,12 @@ def abs_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Exp")
-def exp_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def exp_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -64,12 +67,12 @@ def exp_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Exp")
-def exp_jvp(graph: object, node: object, tangents: tuple) -> str:
+def exp_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Evaluate exp_jvp operation.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -83,12 +86,12 @@ def exp_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Exp2")
-def exp2_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def exp2_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -106,12 +109,12 @@ def exp2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Exp2")
-def exp2_jvp(graph: object, node: object, tangents: tuple) -> str:
+def exp2_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -130,12 +133,12 @@ def exp2_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Expm1")
-def expm1_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def expm1_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -149,12 +152,12 @@ def expm1_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Expm1")
-def expm1_jvp(graph: object, node: object, tangents: tuple) -> str:
+def expm1_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -169,12 +172,12 @@ def expm1_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Log")
-def log_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def log_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -189,12 +192,12 @@ def log_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Log")
-def log_jvp(graph: object, node: object, tangents: tuple) -> str:
+def log_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -210,12 +213,12 @@ def log_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Log10")
-def log10_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def log10_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -232,12 +235,12 @@ def log10_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Log10")
-def log10_jvp(graph: object, node: object, tangents: tuple) -> str:
+def log10_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -255,12 +258,12 @@ def log10_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Log1P")
-def log1p_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def log1p_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -276,12 +279,12 @@ def log1p_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Log1P")
-def log1p_jvp(graph: object, node: object, tangents: tuple) -> str:
+def log1p_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -298,12 +301,12 @@ def log1p_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Log2")
-def log2_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def log2_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -320,12 +323,12 @@ def log2_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Log2")
-def log2_jvp(graph: object, node: object, tangents: tuple) -> str:
+def log2_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -343,12 +346,12 @@ def log2_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Sqrt")
-def sqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def sqrt_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -364,12 +367,12 @@ def sqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Sqrt")
-def sqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
+def sqrt_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -386,12 +389,12 @@ def sqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Rsqrt")
-def rsqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def rsqrt_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -408,12 +411,12 @@ def rsqrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Rsqrt")
-def rsqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
+def rsqrt_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -431,12 +434,12 @@ def rsqrt_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Square")
-def square_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def square_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -451,12 +454,12 @@ def square_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Square")
-def square_jvp(graph: object, node: object, tangents: tuple) -> str:
+def square_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -472,12 +475,12 @@ def square_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Negative")
-def negative_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def negative_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -488,12 +491,12 @@ def negative_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Negative")
-def negative_jvp(graph: object, node: object, tangents: tuple) -> str:
+def negative_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -504,12 +507,12 @@ def negative_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Positive")
-def positive_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def positive_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -520,12 +523,12 @@ def positive_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Positive")
-def positive_jvp(graph: object, node: object, tangents: tuple) -> str:
+def positive_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -536,12 +539,12 @@ def positive_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Reciprocal")
-def reciprocal_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def reciprocal_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -556,12 +559,12 @@ def reciprocal_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Reciprocal")
-def reciprocal_jvp(graph: object, node: object, tangents: tuple) -> str:
+def reciprocal_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -577,12 +580,12 @@ def reciprocal_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Cbrt")
-def cbrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def cbrt_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -601,12 +604,12 @@ def cbrt_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Cbrt")
-def cbrt_jvp(graph: object, node: object, tangents: tuple) -> str:
+def cbrt_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """Docstring.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -626,12 +629,12 @@ def cbrt_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Cosh")
-def cosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def cosh_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Cosh.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -646,12 +649,12 @@ def cosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Cosh")
-def cosh_jvp(graph: object, node: object, tangents: tuple) -> str:
+def cosh_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Cosh.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -667,12 +670,12 @@ def cosh_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Acosh")
-def acosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def acosh_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Acosh.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -691,12 +694,12 @@ def acosh_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Acosh")
-def acosh_jvp(graph: object, node: object, tangents: tuple) -> str:
+def acosh_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Acosh.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:

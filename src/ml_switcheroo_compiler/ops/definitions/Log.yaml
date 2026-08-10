@@ -1,0 +1,19 @@
+operation: Log
+description: The Log operation.
+variants:
+  cupy:
+    eager: cp.log
+    generator: cp.log
+  dask:
+    eager: da.log
+    generator: da.log
+  edge_onnx:
+    generator: Log
+  edge_stablehlo:
+    generator: stablehlo.log
+  keras:
+    eager: keras_ops.log
+  numpy:
+    generator: np.log
+  tensorflow:
+    eager: tf.math.log

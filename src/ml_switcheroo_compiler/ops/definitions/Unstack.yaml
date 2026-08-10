@@ -1,0 +1,7 @@
+operation: Unstack
+description: The Unstack operation.
+variants:
+  keras:
+    eager: keras_ops.unstack
+  tensorflow:
+    eager: tf.unstack

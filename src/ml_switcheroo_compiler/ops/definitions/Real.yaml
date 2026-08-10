@@ -1,0 +1,11 @@
+operation: Real
+description: The Real operation.
+variants:
+  cupy:
+    eager: cp.real
+  dask:
+    eager: da.real
+  keras:
+    eager: keras_ops.real
+  tensorflow:
+    eager: tf.math.real

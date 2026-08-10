@@ -1,0 +1,13 @@
+operation: Solve
+description: The Solve operation.
+variants:
+  cupy:
+    eager: cp.linalg.solve
+  dask:
+    eager: da.linalg.solve
+  keras:
+    eager: keras_ops.solve
+  numpy:
+    generator: np.linalg.solve
+  tensorflow:
+    eager: tf.linalg.solve

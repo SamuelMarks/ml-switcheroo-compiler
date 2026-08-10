@@ -1,0 +1,5 @@
+operation: Ppermute
+description: The Ppermute operation.
+variants:
+  numpy:
+    generator: '{0}'

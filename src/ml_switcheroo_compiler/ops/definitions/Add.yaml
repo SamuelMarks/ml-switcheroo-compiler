@@ -1,0 +1,19 @@
+operation: Add
+description: The Add operation.
+variants:
+  cupy:
+    eager: cp.add
+    generator: cp.add
+  dask:
+    eager: da.add
+    generator: da.add
+  edge_onnx:
+    generator: Add
+  edge_stablehlo:
+    generator: stablehlo.add
+  keras:
+    eager: keras_ops.add
+  numpy:
+    generator: np.add
+  tensorflow:
+    eager: tf.add

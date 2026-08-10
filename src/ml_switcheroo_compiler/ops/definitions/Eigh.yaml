@@ -1,0 +1,9 @@
+operation: Eigh
+description: The Eigh operation.
+variants:
+  keras:
+    eager: keras_ops.eigh
+  numpy:
+    generator: np.linalg.eigh
+  tensorflow:
+    eager: tf.linalg.eigh

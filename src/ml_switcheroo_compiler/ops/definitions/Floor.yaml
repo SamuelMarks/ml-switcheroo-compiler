@@ -1,0 +1,15 @@
+operation: Floor
+description: The Floor operation.
+variants:
+  cupy:
+    eager: cp.floor
+  dask:
+    eager: da.floor
+  edge_onnx:
+    generator: Floor
+  edge_stablehlo:
+    generator: stablehlo.floor
+  keras:
+    eager: keras_ops.floor
+  tensorflow:
+    eager: tf.floor

@@ -1,0 +1,13 @@
+operation: Qr
+description: The Qr operation.
+variants:
+  cupy:
+    eager: cp.linalg.qr
+  dask:
+    eager: da.linalg.qr
+  keras:
+    eager: keras_ops.qr
+  numpy:
+    generator: np.linalg.qr
+  tensorflow:
+    eager: tf.linalg.qr

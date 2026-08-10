@@ -1,0 +1,5 @@
+operation: Ndtri
+description: The Ndtri operation.
+variants:
+  tensorflow:
+    eager: tf.math.ndtri

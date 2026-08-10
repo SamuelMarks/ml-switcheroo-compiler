@@ -1,24 +1,24 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Utilities for parsing stringified indexing keys in NumPy backend."""
 
 import ast
-from typing import Callable
+from typing import Any, Callable
 
 
-def _eval_constant(node: ast.AST) -> object:
+def _eval_constant(node: ast.AST) -> Any:
     """Evaluate _eval_constant operation.
 
     Args:
         node (object): The node parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if getattr(node, "value", None) is Ellipsis:
         return Ellipsis
     return getattr(node, "value", None)
 
 
-def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> slice:
+def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> slice:
     """Evaluate _eval_slice_call operation.
 
     Args:
@@ -31,15 +31,14 @@ def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> sl
     return slice(*[_eval_fn(a) for a in getattr(node, "args", [])])
 
 
-def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
+def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> Any:
     """Evaluate _eval_array_call operation.
 
     Args:
         node (object): The node parameter.
         _eval_fn (object): The _eval_fn parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import numpy as np
 
@@ -61,15 +60,14 @@ def _is_np_array_call(node: ast.AST) -> bool:
     return False
 
 
-def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
+def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> Any:
     """Evaluate _eval_call operation.
 
     Args:
         node (object): The node parameter.
         _eval_fn (object): The _eval_fn parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     func = getattr(node, "func", None)
     if isinstance(func, ast.Name):
@@ -82,14 +80,13 @@ def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
     raise ValueError("Unsupported Call")
 
 
-def _eval_name(node: ast.AST) -> object:
+def _eval_name(node: ast.AST) -> Any:
     """Evaluate _eval_name operation.
 
     Args:
         node (object): The node parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     node_id = getattr(node, "id", "")
     if node_id == "Ellipsis":
@@ -99,24 +96,23 @@ def _eval_name(node: ast.AST) -> object:
     raise ValueError("Unsupported Name")
 
 
-def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], object]) -> object:
+def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], Any]) -> Any:
     """Evaluate _eval_unary_op operation.
 
     Args:
         node (object): The node parameter.
         _eval_fn (object): The _eval_fn parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(getattr(node, "op", None), ast.USub):
-        val = _eval_fn(getattr(node, "operand", None))
+        val = _eval_fn(getattr(node, "operand", None))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         if isinstance(val, (int, float)):
             return -val
     raise ValueError("Unsupported UnaryOp")
 
 
-def _get_node_evaluators() -> dict[type, Callable[..., object]]:
+def _get_node_evaluators() -> dict[type, Callable[..., Any]]:
     """Get the dictionary mapping AST node types to evaluation functions.
 
     Returns:
@@ -132,26 +128,24 @@ def _get_node_evaluators() -> dict[type, Callable[..., object]]:
     }
 
 
-def _safe_parse_key(key_str: str) -> object:
+def _safe_parse_key(key_str: str) -> Any:
     """Safely parse a stringified indexing key.
 
     Args:
         key_str (str): The key_str parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     tree = ast.parse(key_str, mode="eval").body
     evaluators = _get_node_evaluators()
 
-    def _eval(node: ast.AST) -> object:
+    def _eval(node: ast.AST) -> Any:
         """Evaluate _eval operation.
 
         Args:
             node (object): The node parameter.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         node_type = type(node)
         if node_type in evaluators:

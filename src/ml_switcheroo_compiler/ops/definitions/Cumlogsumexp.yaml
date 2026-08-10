@@ -1,0 +1,5 @@
+operation: Cumlogsumexp
+description: The Cumlogsumexp operation.
+variants:
+  numpy:
+    generator: np.logaddexp.accumulate

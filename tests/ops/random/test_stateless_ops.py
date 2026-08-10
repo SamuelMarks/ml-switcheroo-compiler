@@ -163,7 +163,7 @@ def test_generator():
 def test_create_rng_state():
     state = create_rng_state(42)
     assert state.config.shape == (2,)
-    assert str(state.config.dtype) == "int64"
+    assert state.config.dtype == DType.Int64
 
 
 def test_global_generator():

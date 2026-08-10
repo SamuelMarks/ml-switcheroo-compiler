@@ -1,0 +1,11 @@
+operation: Outer
+description: The Outer operation.
+variants:
+  cupy:
+    eager: cp.outer
+  dask:
+    eager: da.outer
+  keras:
+    eager: keras_ops.outer
+  numpy:
+    generator: np.outer({0}, {1})

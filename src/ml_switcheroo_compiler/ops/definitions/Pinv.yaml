@@ -1,0 +1,7 @@
+operation: Pinv
+description: The Pinv operation.
+variants:
+  numpy:
+    generator: np.linalg.pinv
+  tensorflow:
+    eager: tf.linalg.pinv

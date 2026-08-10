@@ -1,0 +1,5 @@
+operation: int64
+description: The int64 operation.
+variants:
+  edge_stablehlo:
+    generator: i64

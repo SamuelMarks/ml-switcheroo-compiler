@@ -7571,28 +7571,28 @@ def test_math_misc_coverage():
     # _np_psum
     import ml_switcheroo_compiler.backends.numpy.eager.distributed as dist
 
-    dist._mock_dist_ctx.world_size = 2
+    dist._tcp_dist_ctx.world_size = 2
     try:
         mod._np_psum(bk, arg1)
     except Exception:
         pass
-    dist._mock_dist_ctx.world_size = 1
+    dist._tcp_dist_ctx.world_size = 1
 
     # _np_pmax
-    dist._mock_dist_ctx.world_size = 2
+    dist._tcp_dist_ctx.world_size = 2
     try:
         mod._np_pmax(bk, arg1)
     except Exception:
         pass
-    dist._mock_dist_ctx.world_size = 1
+    dist._tcp_dist_ctx.world_size = 1
 
     # _np_pmin
-    dist._mock_dist_ctx.world_size = 2
+    dist._tcp_dist_ctx.world_size = 2
     try:
         mod._np_pmin(bk, arg1)
     except Exception:
         pass
-    dist._mock_dist_ctx.world_size = 1
+    dist._tcp_dist_ctx.world_size = 1
 
     # _np_scanop
     try:
@@ -9027,3 +9027,48 @@ def test_math_misc_confusion_matrix_none_classes():
     # test Descriptive with num_classes=None (Descriptive doesn't return shape, it returns a dict)
     res = numpy_eager_registry._registry["Descriptive"](None, np.array([0]))
     assert "mean" in res
+
+
+def test_math_advanced_mocked_fallbacks() -> None:
+    from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_rem
+
+    mock_np = MagicMock()
+    mock_np.rem.return_value = "rem"
+    mock_np.confusion_matrix.return_value = "cm"
+
+    assert _np_rem(mock_np, 1, 2) == 1
+    try:
+        _np_confusion_matrix(mock_np, 1, 2)
+    except Exception:
+        pass
+
+
+def test_math_advanced_oserror() -> None:
+    from unittest.mock import mock_open, patch
+
+    import pytest
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_write_file as _np_save_img
+
+    with patch("builtins.open", mock_open()) as mocked_file:
+        mocked_file.side_effect = Exception("test")
+        with pytest.raises(OSError):
+            _np_save_img("dummy", "dummy.png", b"dummy")
+
+
+def test_math_advanced_mocked_fallbacks_2() -> None:
+    from unittest.mock import MagicMock
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import numpy_eager_registry
+
+    mock_np = MagicMock()
+    mock_np.rem.return_value = "rem"
+    mock_np.confusion_matrix.return_value = "cm"
+
+    _np_rem_lower = numpy_eager_registry._registry["rem"]
+    assert _np_rem_lower(mock_np, 1, 2) == "rem"
+
+    _np_cm_lower = numpy_eager_registry._registry["confusion_matrix"]
+    assert _np_cm_lower(mock_np, 1, 2) == "cm"

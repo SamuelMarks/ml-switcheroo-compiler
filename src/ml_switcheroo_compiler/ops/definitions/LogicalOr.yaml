@@ -1,0 +1,11 @@
+operation: LogicalOr
+description: The LogicalOr operation.
+variants:
+  cupy:
+    eager: cp.logical_or
+  dask:
+    eager: da.logical_or
+  keras:
+    eager: keras_ops.logical_or
+  tensorflow:
+    eager: tf.logical_or

@@ -1,0 +1,5 @@
+operation: Roots
+description: The Roots operation.
+variants:
+  numpy:
+    generator: np.roots

@@ -1,0 +1,7 @@
+operation: Full
+description: The Full operation.
+variants:
+  numpy:
+    generator: np.full
+  pytorch:
+    generator: torch.full({shape}, {fill_value})

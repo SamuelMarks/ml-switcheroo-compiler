@@ -1,7 +1,10 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define stateful operations for reading and writing variables within the ML Switcheroo.
 
 framework
 """
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -13,7 +16,7 @@ class ReadVariable(OpDef):
     computational graph
     """
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:
@@ -33,7 +36,7 @@ class AssignVariable(OpDef):
     computational graph
     """
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:

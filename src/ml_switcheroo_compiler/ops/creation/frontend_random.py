@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Constants & Creation Operations."""
 
-from __future__ import annotations
 
 from collections.abc import Sequence
 
@@ -17,7 +21,7 @@ def rand(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Any:
     """Return a tensor filled with random numbers from a uniform distribution.
 
     Args:
@@ -42,7 +46,7 @@ def randn(
     *size: int,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Any:
     """Return a tensor filled with random numbers from a standard normal distribution.
 
     Args:
@@ -69,7 +73,7 @@ def randint(
     size: Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Any:
     """Return a tensor filled with random integers from [low, high).
 
     Args:

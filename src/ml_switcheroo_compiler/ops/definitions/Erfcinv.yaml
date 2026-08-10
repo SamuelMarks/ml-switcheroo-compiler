@@ -1,0 +1,5 @@
+operation: Erfcinv
+description: The Erfcinv operation.
+variants:
+  tensorflow:
+    eager: tf.math.erfcinv

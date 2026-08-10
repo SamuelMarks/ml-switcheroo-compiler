@@ -1,0 +1,5 @@
+operation: BatchNorm
+description: The BatchNorm operation.
+variants:
+  edge_onnx:
+    generator: BatchNormalization

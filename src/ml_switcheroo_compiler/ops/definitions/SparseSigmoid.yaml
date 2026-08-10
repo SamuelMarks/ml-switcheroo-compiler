@@ -1,0 +1,5 @@
+operation: SparseSigmoid
+description: The SparseSigmoid operation.
+variants:
+  keras:
+    eager: keras_ops.sparse_sigmoid

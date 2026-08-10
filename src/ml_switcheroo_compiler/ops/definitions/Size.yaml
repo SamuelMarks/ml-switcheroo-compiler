@@ -1,0 +1,7 @@
+operation: Size
+description: The Size operation.
+variants:
+  keras:
+    eager: keras_ops.size
+  tensorflow:
+    eager: tf.size

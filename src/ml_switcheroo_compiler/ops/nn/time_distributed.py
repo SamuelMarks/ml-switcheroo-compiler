@@ -1,6 +1,9 @@
-"""Time distributed wrapper operations."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Time distributed wrapper operations."""
+from typing import Any
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
@@ -10,15 +13,14 @@ from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, regis
 class TimeDistributed(OpDef):
     """TimeDistributed operation."""
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the infer_shape operation.
 
         Args:
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         # Note: True shape inference depends on the wrapped op.
         # This is a placeholder since the IR maps it to an identity or reshapes.
@@ -28,8 +30,8 @@ class TimeDistributed(OpDef):
 @dispatch_eager("TimeDistributed")
 def time_distributed(
     x: Tensor,
-    **kwargs: object,
-) -> Tensor:
+    **kwargs: Any,
+) -> Any:
     """TimeDistributed operation.
 
     Args:

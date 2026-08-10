@@ -1,0 +1,19 @@
+operation: Multiply
+description: The Multiply operation.
+variants:
+  cupy:
+    eager: cp.multiply
+    generator: cp.multiply
+  dask:
+    eager: da.multiply
+    generator: da.multiply
+  edge_onnx:
+    generator: Mul
+  edge_stablehlo:
+    generator: stablehlo.multiply
+  keras:
+    eager: keras_ops.multiply
+  numpy:
+    generator: np.multiply
+  tensorflow:
+    eager: tf.multiply

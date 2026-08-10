@@ -1,0 +1,7 @@
+operation: Fliplr
+description: The Fliplr operation.
+variants:
+  cupy:
+    eager: cp.fliplr
+  dask:
+    eager: da.fliplr

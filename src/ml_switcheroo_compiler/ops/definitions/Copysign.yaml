@@ -1,0 +1,7 @@
+operation: Copysign
+description: The Copysign operation.
+variants:
+  cupy:
+    eager: cp.copysign
+  dask:
+    eager: da.copysign

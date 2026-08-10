@@ -1,0 +1,5 @@
+operation: GetItem
+description: The GetItem operation.
+variants:
+  keras:
+    eager: keras_ops.get_item

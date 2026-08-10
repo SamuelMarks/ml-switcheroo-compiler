@@ -1,0 +1,9 @@
+operation: Hfft
+description: The Hfft operation.
+variants:
+  cupy:
+    eager: cp.fft.hfft
+  dask:
+    eager: da.fft.hfft
+  numpy:
+    generator: np.fft.hfft

@@ -1,0 +1,7 @@
+operation: Block
+description: The Block operation.
+variants:
+  cupy:
+    eager: cp.block
+  dask:
+    eager: da.block

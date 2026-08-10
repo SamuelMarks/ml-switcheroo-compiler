@@ -1,0 +1,5 @@
+operation: SparseEye
+description: The SparseEye operation.
+variants:
+  numpy:
+    generator: tf.sparse.eye

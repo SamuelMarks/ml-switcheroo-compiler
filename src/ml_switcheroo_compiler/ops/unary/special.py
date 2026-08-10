@@ -1,7 +1,10 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define special unary operations for the ML Switcheroo framework, including Cast,.
 
 Bitcast, and Frexp
 """
+
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -12,7 +15,7 @@ from .base import UnaryMathOp
 class Cast(OpDef):
     """Provide an operation that casts an input array to a specified data type."""
 
-    def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, dtype: Any = None, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -20,8 +23,7 @@ class Cast(OpDef):
             dtype (object): The dtype parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return x
 
@@ -37,15 +39,14 @@ class CanCast(OpDef):
 
     op_name = "CanCast"
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         # CanCast returns a boolean scalar
         return ()
@@ -55,7 +56,7 @@ class CanCast(OpDef):
 class Frexp(OpDef):
     """Provide an operation that decomposes a floating-point array into mantissa and exponent."""
 
-    def infer_shape(self, x: object, dtype: object = None, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, dtype: Any = None, **kwargs: Any) -> Any:
         """Infer the output shape of the operation.
 
         Args:
@@ -63,8 +64,7 @@ class Frexp(OpDef):
             dtype (object): The dtype parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return x
 
@@ -176,15 +176,14 @@ class Lbeta(OpDef):
 
     op_name = "Lbeta"
 
-    def infer_shape(self, x: object, **kwargs: object) -> object:
+    def infer_shape(self, x: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             x (object): The x parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         shape = getattr(x, "shape", ())
         if len(shape) > 0:

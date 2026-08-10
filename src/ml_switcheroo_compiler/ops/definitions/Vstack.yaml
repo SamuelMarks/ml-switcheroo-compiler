@@ -1,0 +1,9 @@
+operation: Vstack
+description: The Vstack operation.
+variants:
+  cupy:
+    eager: cp.vstack
+  dask:
+    eager: da.vstack
+  keras:
+    eager: keras_ops.vstack

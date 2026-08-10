@@ -1,0 +1,7 @@
+operation: Sinc
+description: The Sinc operation.
+variants:
+  cupy:
+    eager: cp.sinc
+  dask:
+    eager: da.sinc

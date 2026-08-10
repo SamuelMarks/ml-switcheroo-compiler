@@ -1,0 +1,5 @@
+operation: BandedTriangularSolve
+description: The BandedTriangularSolve operation.
+variants:
+  tensorflow:
+    eager: tf.linalg.banded_triangular_solve

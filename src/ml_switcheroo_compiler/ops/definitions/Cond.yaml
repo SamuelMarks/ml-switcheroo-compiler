@@ -1,0 +1,9 @@
+operation: Cond
+description: The Cond operation.
+variants:
+  keras:
+    eager: keras_ops.cond
+  numpy:
+    generator: np.linalg.cond
+  tensorflow:
+    eager: tf.cond

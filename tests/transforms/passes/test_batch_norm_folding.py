@@ -1,49 +1,66 @@
+"""Unit tests for Batch Norm Folding pass."""
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.batch_norm_folding import batch_norm_folding_pass
 
 
-def test_batch_norm_folding_pass():
-    g = IRGraph()
-    n1 = IRNode(id="n1", op_type="Conv2D", inputs=["in1"])
-    n2 = IRNode(id="n2", op_type="BatchNorm", inputs=["n1"])
-    n3 = IRNode(id="n3", op_type="BatchNorm", inputs=["non_existent"])
-    g.nodes["n1"] = n1
-    g.nodes["n2"] = n2
-    g.nodes["n3"] = n3
+def test_batch_norm_folding_no_op():
+    """Test on an empty graph."""
+    graph = IRGraph()
+    assert batch_norm_folding_pass(graph) is False
 
-    modified = batch_norm_folding_pass(g)
+
+def test_batch_norm_folding_basic():
+    """Test folding BatchNorm into Conv2D."""
+    graph = IRGraph()
+
+    conv = IRNode(id="conv_1", op_type="Conv2D", inputs=["inp_1", "weight_1"])
+    bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["conv_1", "scale", "bias", "mean", "var"])
+    relu = IRNode(id="relu_1", op_type="Relu", inputs=["bn_1"])
+
+    graph.nodes = {"conv_1": conv, "bn_1": bn, "relu_1": relu}
+    graph.outputs = ["relu_1"]
+
+    modified = batch_norm_folding_pass(graph)
     assert modified is True
 
-    assert n1.attributes.get("folded_batch_norm") is True
-    assert n2.attributes.get("folded") is True
-    assert "folded" not in n3.attributes
+    # Check Conv2D is modified
+    assert conv.attributes.get("folded_batch_norm") is True
+    assert conv.attributes.get("bn_inputs") == ["scale", "bias", "mean", "var"]
 
-    # Run again, should not modify (actually it might modify again if we don't check)
-    # Wait, our simple pass doesn't check if already folded, so it will return True.
-    # We should update it to check.
+    # Check BatchNorm is removed
+    assert "bn_1" not in graph.nodes
 
-
-def test_batch_norm_folding_empty_graph():
-    g = IRGraph()
-    assert batch_norm_folding_pass(g) is False
+    # Check consumer is rewired
+    assert relu.inputs == ["conv_1"]
 
 
-def test_batch_norm_folding_again():
-    g = IRGraph()
-    n1 = IRNode(id="n1", op_type="Conv2D", inputs=["in1"])
-    n2 = IRNode(id="n2", op_type="BatchNorm", inputs=["n1"])
-    g.nodes["n1"] = n1
-    g.nodes["n2"] = n2
+def test_batch_norm_folding_output_node():
+    """Test folding when BatchNorm is an output node."""
+    graph = IRGraph()
 
-    batch_norm_folding_pass(g)
-    modified_again = batch_norm_folding_pass(g)
-    assert modified_again is False
+    conv = IRNode(id="conv_1", op_type="Conv2D", inputs=["inp_1", "weight_1"])
+    bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["conv_1", "scale", "bias", "mean", "var"])
+
+    graph.nodes = {"conv_1": conv, "bn_1": bn}
+    graph.outputs = ["bn_1"]
+
+    modified = batch_norm_folding_pass(graph)
+    assert modified is True
+    assert "bn_1" not in graph.nodes
+    assert graph.outputs == ["conv_1"]
 
 
-def test_batch_norm_folding_no_inputs():
-    g = IRGraph()
-    n2 = IRNode(id="n2", op_type="BatchNorm", inputs=[])
-    g.nodes["n2"] = n2
+def test_batch_norm_folding_no_conv2d():
+    """Test when BatchNorm is not preceded by Conv2D."""
+    graph = IRGraph()
 
-    modified = batch_norm_folding_pass(g)
+    add = IRNode(id="add_1", op_type="Add", inputs=["inp_1", "inp_2"])
+    bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["add_1", "scale", "bias", "mean", "var"])
+
+    graph.nodes = {"add_1": add, "bn_1": bn}
+    graph.outputs = ["bn_1"]
+
+    modified = batch_norm_folding_pass(graph)
     assert modified is False
+    assert "bn_1" in graph.nodes

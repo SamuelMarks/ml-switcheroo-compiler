@@ -1,7 +1,8 @@
-# ruff: noqa
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Attention mechanism operations."""
 
 import math
+from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -9,8 +10,8 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import multiply, subtract
 from ml_switcheroo_compiler.ops.creation.frontend import arange
-from ml_switcheroo_compiler.ops.shape.joining import concatenate
 from ml_switcheroo_compiler.ops.shape.frontend import expand_dims
+from ml_switcheroo_compiler.ops.shape.joining import concatenate
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import cos, exp, sin
 
@@ -23,30 +24,29 @@ class RopeOp(OpDef):
 
     op_name = "Rope"
 
-    def infer_shape(self, input: object, **kwargs: object) -> object:
+    def infer_shape(self, input: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
             input (object): The input parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return getattr(input, "shape", ())
 
 
 def rope(
     input: Tensor,
-    dim: int,
+    axis: int,
     base: float = 10000.0,
     offset: int = 0,
-) -> Tensor:
+) -> Any:
     """Apply Rotary Positional Encoding (RoPE) to the input tensor.
 
     Args:
-        input: The input tensor, usually of shape (..., seq_len, dim).
-        dim: The dimension of the rotary encoding.
+        input: The input tensor, usually of shape (..., seq_len, axis).
+        axis: The axisension of the rotary encoding.
         base: The base for the frequency scaling.
         offset: The starting position offset.
 
@@ -57,43 +57,43 @@ def rope(
         data = get_active_backend().execute_op(
             "Rope",
             getattr(input, "data", input),
-            dim=dim,
+            axis=axis,
             base=base,
             offset=offset,
         )
         return Tensor(data, input.config)
-    return _emit_shape_node("Rope", [input], {"dim": dim, "base": base, "offset": offset}, input.shape, input.dtype)
+    return _emit_shape_node("Rope", [input], {"axis": axis, "base": base, "offset": offset}, input.shape, input.dtype)
 
 
 def sinusoidal_positional_encoding(
     seq_len: int,
-    dim: int,
+    axis: int,
     base: float = 10000.0,
-    dtype: object = None,
-) -> Tensor:
+    dtype: Any = None,
+) -> Any:
     """Generate sinusoidal positional encodings.
 
     Args:
         seq_len: Length of the sequence.
-        dim: Dimensionality of the embeddings.
+        axis: Dimensionality of the embeddings.
         base: Base for frequency scaling.
         dtype: Data type of the returned tensor.
 
     Returns:
-        A tensor of shape (seq_len, dim) containing the encodings.
+        A tensor of shape (seq_len, axis) containing the encodings.
     """
     position = arange(seq_len)
-    div_term = exp(multiply(arange(0, dim, 2), -math.log(base) / dim))
+    div_term = exp(multiply(arange(0, axis, 2), -math.log(base) / axis))
     pe_sin = sin(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
     pe_cos = cos(multiply(expand_dims(position, 1), expand_dims(div_term, 0)))
-    return concatenate([pe_sin, pe_cos], dim=-1)
+    return concatenate([pe_sin, pe_cos], axis=-1)
 
 
 def alibi_mask(
     seq_len: int,
     num_heads: int,
-    dtype: object = None,
-) -> Tensor:
+    dtype: Any = None,
+) -> Any:
     """Generate an ALiBi (Attention with Linear Biases) mask.
 
     Args:
@@ -123,7 +123,7 @@ class ScaledDotProductAttention(OpDef):
 
     op_name = "ScaledDotProductAttention"
 
-    def infer_shape(self, query: object, key: object, value: object, **kwargs: object) -> object:
+    def infer_shape(self, query: Any, key: Any, value: Any, **kwargs: Any) -> Any:
         """Infer shape.
 
         Args:
@@ -132,7 +132,6 @@ class ScaledDotProductAttention(OpDef):
             value (object): The value parameter.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         return query.shape

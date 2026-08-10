@@ -1,0 +1,13 @@
+operation: Norm
+description: The Norm operation.
+variants:
+  cupy:
+    eager: cp.linalg.norm
+  dask:
+    eager: da.linalg.norm
+  keras:
+    eager: keras_ops.norm
+  numpy:
+    generator: np.linalg.norm
+  tensorflow:
+    eager: tf.norm

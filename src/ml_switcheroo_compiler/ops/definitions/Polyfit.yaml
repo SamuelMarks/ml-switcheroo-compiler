@@ -1,0 +1,5 @@
+operation: Polyfit
+description: The Polyfit operation.
+variants:
+  numpy:
+    generator: np.polyfit

@@ -1,0 +1,5 @@
+operation: BroadcastedIota
+description: The BroadcastedIota operation.
+variants:
+  numpy:
+    generator: np.broadcasted_iota

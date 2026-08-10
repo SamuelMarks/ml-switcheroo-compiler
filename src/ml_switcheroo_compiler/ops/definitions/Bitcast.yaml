@@ -1,0 +1,7 @@
+operation: Bitcast
+description: The Bitcast operation.
+variants:
+  pytorch:
+    generator: '{0}.view(getattr(torch, str(''{dtype}'')))'
+  tensorflow:
+    eager: tf.bitcast

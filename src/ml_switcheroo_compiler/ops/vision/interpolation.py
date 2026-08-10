@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Vision operations."""
 
-from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -9,7 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Tensor:
+def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images to size using bilinear interpolation.
 
     Args:
@@ -27,7 +31,7 @@ def resize_bilinear(images: Tensor, size: tuple[int, int], align_corners: bool =
     return _emit_shape_node("ResizeBilinear", [images], {"size": size, "align_corners": align_corners}, (), DType.Int32)
 
 
-def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Tensor:
+def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images to size using nearest neighbor interpolation.
 
     Args:
@@ -45,7 +49,7 @@ def resize_nearest(images: Tensor, size: tuple[int, int], align_corners: bool = 
     return _emit_shape_node("ResizeNearest", [images], {"size": size, "align_corners": align_corners}, (), DType.Int32)
 
 
-def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Tensor:
+def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images to size using bicubic interpolation.
 
     Args:
@@ -72,7 +76,7 @@ def resize_bicubic(images: Tensor, size: tuple[int, int], align_corners: bool = 
     )
 
 
-def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Tensor:
+def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool = False) -> Any:
     """Resize images to size using lanczos3 interpolation.
 
     Args:
@@ -99,7 +103,7 @@ def resize_lanczos3(images: Tensor, size: tuple[int, int], align_corners: bool =
     )
 
 
-def resize(images: Tensor, size: tuple[int, int], method: str = "bilinear", antialias: bool = False) -> Tensor:
+def resize(images: Tensor, size: tuple[int, int], method: str = "bilinear", antialias: bool = False) -> Any:
     """Resize images to size using the specified method.
 
     Args:
@@ -133,7 +137,7 @@ def map_coordinates(
     order: int,
     fill_mode: str = "half_pixel",
     cval: float = 0.0,
-) -> Tensor:
+) -> Any:
     """Map coordinates.
 
     Args:

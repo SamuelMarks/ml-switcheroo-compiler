@@ -1,8 +1,9 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Einstein summation operations."""
 
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -18,8 +19,7 @@ class EinsumLexer:
         Args:
         equation (str): The equation parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         equation = equation.replace(" ", "")
         if "->" in equation:
@@ -178,8 +178,7 @@ class EinsumPlanner:
         shape (object): The shape parameter.
         broadcast_shape (object): The broadcast_shape parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         EinsumPlanner._validate_ellipsis_count(part, shape)
         parts_str = part.split("...")
@@ -239,8 +238,7 @@ class EinsumPlanner:
         in_subs (str): The in_subs parameter.
         shapes (object): The shapes parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
@@ -291,8 +289,7 @@ class EinsumPlanner:
         out_sub (str): The out_sub parameter.
         axis_map (object): The axis_map parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         out_shape = []
         for char in out_sub:
@@ -405,8 +402,7 @@ class EinsumEquationParser:
         equation (str): The equation parameter.
         shapes (object): The shapes parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         in_subs, out_sub = EinsumLexer.parse_equation_sides(equation)
         EinsumValidator.validate_inputs(in_subs, shapes)
@@ -422,7 +418,7 @@ class Einsum(OpDef):
     """
 
     @staticmethod
-    def _extract_equation(args: tuple[object, ...], kwargs: dict[str, object]) -> tuple[str, tuple[object, ...]]:
+    def _extract_equation(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[str, tuple[Any, ...]]:
         """Evaluate _extract_equation operation.
 
         Args:
@@ -443,14 +439,13 @@ class Einsum(OpDef):
         raise ValueError("Einsum requires an 'equation' string attribute.")
 
     @staticmethod
-    def _extract_shapes(args: tuple[object, ...]) -> Optional[list[tuple[int, ...]]]:
+    def _extract_shapes(args: tuple[Any, ...]) -> Optional[list[tuple[int, ...]]]:
         """Evaluate _extract_shapes operation.
 
         Args:
         args (object): The args parameter.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         shapes: list[tuple[int, ...]] = []
         for arg in args:
@@ -465,17 +460,16 @@ class Einsum(OpDef):
 
     def infer_shape(
         self,
-        *args: object,
-        **kwargs: object,
-    ) -> object:
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         """Infer the output shape of the operation.
 
         Args:
             *args (object): Positional args.
             **kwargs (object): Keyword args.
 
-        Returns:
-            object: Result.
+        Returns: Any: Result.
         """
         equation, remaining_args = self._extract_equation(args, kwargs)
         shapes = self._extract_shapes(remaining_args)

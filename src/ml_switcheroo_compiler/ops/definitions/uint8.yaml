@@ -1,0 +1,5 @@
+operation: uint8
+description: The uint8 operation.
+variants:
+  edge_stablehlo:
+    generator: ui8

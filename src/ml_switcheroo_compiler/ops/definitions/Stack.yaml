@@ -1,0 +1,11 @@
+operation: Stack
+description: The Stack operation.
+variants:
+  cupy:
+    eager: cp.stack
+  dask:
+    eager: da.stack
+  keras:
+    eager: keras_ops.stack
+  tensorflow:
+    eager: tf.stack

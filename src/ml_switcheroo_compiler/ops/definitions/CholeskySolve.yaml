@@ -1,0 +1,7 @@
+operation: CholeskySolve
+description: The CholeskySolve operation.
+variants:
+  numpy:
+    generator: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
+  tensorflow:
+    eager: tf.linalg.cholesky_solve

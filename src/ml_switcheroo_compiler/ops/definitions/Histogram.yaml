@@ -1,0 +1,5 @@
+operation: Histogram
+description: The Histogram operation.
+variants:
+  numpy:
+    generator: np.histogram

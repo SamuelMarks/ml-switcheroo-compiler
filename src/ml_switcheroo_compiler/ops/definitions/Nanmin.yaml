@@ -1,0 +1,7 @@
+operation: Nanmin
+description: The Nanmin operation.
+variants:
+  cupy:
+    eager: cp.nanmin
+  dask:
+    eager: da.nanmin

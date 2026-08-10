@@ -1,0 +1,5 @@
+operation: I0
+description: The I0 operation.
+variants:
+  numpy:
+    generator: np.i0

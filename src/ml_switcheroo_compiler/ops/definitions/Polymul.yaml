@@ -1,0 +1,5 @@
+operation: Polymul
+description: The Polymul operation.
+variants:
+  numpy:
+    generator: np.polymul

@@ -1,0 +1,11 @@
+operation: Square
+description: The Square operation.
+variants:
+  cupy:
+    eager: cp.square
+  dask:
+    eager: da.square
+  keras:
+    eager: keras_ops.square
+  tensorflow:
+    eager: tf.square

@@ -1,0 +1,13 @@
+operation: NanToNum
+description: The NanToNum operation.
+variants:
+  cupy:
+    eager: cp.nan_to_num
+  dask:
+    eager: da.nan_to_num
+  keras:
+    eager: keras_ops.nan_to_num
+  numpy:
+    generator: np.nan_to_num
+  pytorch:
+    generator: torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})

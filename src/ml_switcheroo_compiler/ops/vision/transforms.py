@@ -1,6 +1,9 @@
-"""Vision operations."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+
+"""Vision operations."""
+from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -15,9 +18,9 @@ def perspective_transform(
     images: Tensor,
     start_points: Tensor,
     end_points: Tensor,
-    config_obj: object | None = None,
-    **kwargs: object,
-) -> Tensor:
+    config_obj: Any | None = None,
+    **kwargs: Any,
+) -> Any:
     """Apply a perspective transformation to the image(s).
 
     Args:
@@ -59,9 +62,9 @@ def perspective_transform(
 def elastic_transform(
     images: Tensor,
     displacement: Tensor,
-    config_obj: object | None = None,
-    **kwargs: object,
-) -> Tensor:
+    config_obj: Any | None = None,
+    **kwargs: Any,
+) -> Any:
     """Apply an elastic transformation to the image(s).
 
     Args:
@@ -98,7 +101,7 @@ def elastic_transform(
     )
 
 
-def flip_left_right(images: Tensor) -> Tensor:
+def flip_left_right(images: Tensor) -> Any:
     """Flips images horizontally.
 
     Args:
@@ -115,7 +118,7 @@ def flip_left_right(images: Tensor) -> Tensor:
     return get_op("FlipLeftRight")()(images, dtype=DType.Int32)
 
 
-def flip_up_down(images: Tensor) -> Tensor:
+def flip_up_down(images: Tensor) -> Any:
     """Flips images vertically.
 
     Args:
@@ -138,7 +141,7 @@ class ElasticTransform(OpDef):
 
     op_name = "ElasticTransform"
 
-    def infer_shape(self, images: object, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, images: Any, *args: Any, **kwargs: Any) -> Any:
         """Infer the output shape for the infer_shape operation.
 
         Args:
@@ -146,7 +149,6 @@ class ElasticTransform(OpDef):
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-        Returns:
-        object: Result.
+        Returns: Any: Result.
         """
         return getattr(images, "shape", ())

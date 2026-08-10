@@ -1,0 +1,15 @@
+operation: Min
+description: The Min operation.
+variants:
+  cupy:
+    eager: cp.min
+    generator: cp.min
+  dask:
+    eager: da.min
+    generator: da.min
+  keras:
+    eager: keras_ops.min
+  numpy:
+    generator: np.min
+  pytorch:
+    generator: torch.min({0}, dim={axis}, keepdim={keepdims})

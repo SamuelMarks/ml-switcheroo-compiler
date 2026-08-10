@@ -1,0 +1,5 @@
+operation: Mgrid
+description: The Mgrid operation.
+variants:
+  numpy:
+    generator: np.mgrid

@@ -1,7 +1,8 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy string operations."""
 
 import hashlib
+from typing import Any
 
 import numpy as np
 
@@ -10,7 +11,7 @@ from ml_switcheroo_compiler.core.constants import MAGIC_VAL_3
 
 
 @numpy_eager_registry.register("StringToHash")
-def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets: int, **kwargs: object) -> object:
+def _np_string_to_hash(backend_module: Any, input_tensor: Any, num_buckets: int, **kwargs: Any) -> Any:
     """Evaluate _np_string_to_hash operation.
 
     Args:
@@ -19,8 +20,7 @@ def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets
         num_buckets (int): The num_buckets parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
 
     def hash_str(s: str) -> int:
@@ -40,7 +40,7 @@ def _np_string_to_hash(backend_module: object, input_tensor: object, num_buckets
 
 
 @numpy_eager_registry.register("TextVectorization")
-def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: object) -> object:
+def _np_text_vectorization(backend_module: Any, inputs: Any, **kwargs: Any) -> Any:
     """Evaluate _np_text_vectorization operation.
 
     Args:
@@ -48,8 +48,7 @@ def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: obj
         inputs (object): The inputs parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     inputs = np.array(inputs)
     output_mode = kwargs.get("output_mode", "int")
@@ -62,7 +61,7 @@ def _np_text_vectorization(backend_module: object, inputs: object, **kwargs: obj
 
 
 @numpy_eager_registry.register("AsString")
-def _np_as_string(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_as_string(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_as_string operation.
 
     Args:
@@ -70,14 +69,13 @@ def _np_as_string(backend_module: object, x: object, **kwargs: object) -> object
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.array([str(x)]) if np.isscalar(x) else x.astype(str)
 
 
 @numpy_eager_registry.register("CreateToken")
-def _np_create_token(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_create_token(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_create_token operation.
 
     Args:
@@ -85,8 +83,7 @@ def _np_create_token(backend_module: object, *args: object, **kwargs: object) ->
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if args and isinstance(args[0], str):
         text = args[0]

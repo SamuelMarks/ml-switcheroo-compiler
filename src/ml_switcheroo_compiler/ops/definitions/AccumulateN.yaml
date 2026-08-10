@@ -1,0 +1,5 @@
+operation: AccumulateN
+description: The AccumulateN operation.
+variants:
+  tensorflow:
+    eager: tf.math.accumulate_n

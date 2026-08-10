@@ -1,0 +1,9 @@
+operation: FloorDivide
+description: The FloorDivide operation.
+variants:
+  cupy:
+    eager: cp.floor_divide
+  dask:
+    eager: da.floor_divide
+  keras:
+    eager: keras_ops.floor_divide

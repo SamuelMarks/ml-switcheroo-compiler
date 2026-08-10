@@ -1,0 +1,7 @@
+operation: LuFactor
+description: The LuFactor operation.
+variants:
+  keras:
+    eager: keras_ops.lu_factor
+  numpy:
+    generator: scipy.linalg.lu_factor

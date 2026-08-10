@@ -1,0 +1,11 @@
+operation: GreaterEqual
+description: The GreaterEqual operation.
+variants:
+  cupy:
+    eager: cp.greater_equal
+  dask:
+    eager: da.greater_equal
+  keras:
+    eager: keras_ops.greater_equal
+  tensorflow:
+    eager: tf.greater_equal

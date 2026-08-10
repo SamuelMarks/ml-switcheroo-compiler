@@ -1,0 +1,5 @@
+operation: Polar
+description: The Polar operation.
+variants:
+  keras:
+    eager: keras_ops.polar

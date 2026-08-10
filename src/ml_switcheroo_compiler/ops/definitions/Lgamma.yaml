@@ -1,0 +1,5 @@
+operation: Lgamma
+description: The Lgamma operation.
+variants:
+  tensorflow:
+    eager: tf.math.lgamma

@@ -1,0 +1,5 @@
+operation: Logcumsumexp
+description: The Logcumsumexp operation.
+variants:
+  numpy:
+    generator: scipy.special.logsumexp

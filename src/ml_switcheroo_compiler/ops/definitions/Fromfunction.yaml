@@ -1,0 +1,9 @@
+operation: Fromfunction
+description: The Fromfunction operation.
+variants:
+  cupy:
+    eager: cp.fromfunction
+  dask:
+    eager: da.fromfunction
+  numpy:
+    generator: np.fromfunction

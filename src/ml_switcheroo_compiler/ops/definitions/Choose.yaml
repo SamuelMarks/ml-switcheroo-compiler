@@ -1,0 +1,7 @@
+operation: Choose
+description: The Choose operation.
+variants:
+  cupy:
+    eager: cp.choose
+  dask:
+    eager: da.choose

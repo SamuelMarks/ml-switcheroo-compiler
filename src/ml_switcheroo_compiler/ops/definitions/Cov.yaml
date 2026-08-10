@@ -1,0 +1,7 @@
+operation: Cov
+description: The Cov operation.
+variants:
+  cupy:
+    eager: cp.cov
+  dask:
+    eager: da.cov

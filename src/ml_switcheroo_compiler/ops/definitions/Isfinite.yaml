@@ -1,0 +1,9 @@
+operation: Isfinite
+description: The Isfinite operation.
+variants:
+  cupy:
+    eager: cp.isfinite
+  dask:
+    eager: da.isfinite
+  keras:
+    eager: keras_ops.isfinite

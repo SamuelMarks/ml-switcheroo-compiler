@@ -1,0 +1,5 @@
+operation: uint32
+description: The uint32 operation.
+variants:
+  edge_stablehlo:
+    generator: ui32

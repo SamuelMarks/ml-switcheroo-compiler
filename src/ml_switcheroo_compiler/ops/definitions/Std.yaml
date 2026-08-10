@@ -1,0 +1,9 @@
+operation: Std
+description: The Std operation.
+variants:
+  cupy:
+    eager: cp.std
+  dask:
+    eager: da.std
+  keras:
+    eager: keras_ops.std

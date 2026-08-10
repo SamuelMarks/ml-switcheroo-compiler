@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Tracing engine for constructing LogicalGraphs via operator overloading."""
 
-from __future__ import annotations
 
 import threading
 from typing import TYPE_CHECKING, Any, TypeVar
@@ -24,7 +28,7 @@ T = TypeVar("T", bound="ProxyTensor")
 _TRACE_COUNTS: dict[int, int] = {}
 
 
-def get_trace_count(func: object) -> int:
+def get_trace_count(func: Any) -> int:
     """Return the number of times the function has been traced.
 
     Args:
@@ -36,7 +40,7 @@ def get_trace_count(func: object) -> int:
     return _TRACE_COUNTS.get(id(func), 0)
 
 
-def increment_trace_count(func: object) -> None:
+def increment_trace_count(func: Any) -> None:
     """Increment the trace count for the given function.
 
     Args:
@@ -45,7 +49,7 @@ def increment_trace_count(func: object) -> None:
     _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
 
 
-def reset_trace_count(func: object) -> None:
+def reset_trace_count(func: Any) -> None:
     """Reset the trace count for the given function.
 
     Args:

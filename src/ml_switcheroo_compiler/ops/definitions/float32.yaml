@@ -1,0 +1,5 @@
+operation: float32
+description: The float32 operation.
+variants:
+  edge_stablehlo:
+    generator: f32

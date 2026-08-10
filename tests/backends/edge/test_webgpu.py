@@ -1,108 +1,147 @@
-"""Tests for webgpu backend coverage."""
-
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
 
-def test_webgpu_coverage() -> None:
-    """Test webgpu generic visit."""
-    gen = WebGPUCodeGenerator(IRGraph())
-    nodes = [
-        LogicalNode(id="n_add", op_type="Add", inputs=["in1", "in2"]),
-        LogicalNode(id="n_exp", op_type="Exp", inputs=["in1"]),
-        LogicalNode(id="n_min", op_type="Min", inputs=["in1", "in2"]),
-        LogicalNode(id="n_neg", op_type="Negative", inputs=["in1"]),
-        LogicalNode(id="n_other", op_type="OtherOp", inputs=["in1"]),
-        None,
-    ]
-    for n in nodes:
-        gen.generic_visit(n, [])
-    gen._generate_js_orchestrator("", [], [], 0, 1)
+def test_webgpu_generator_matmul_dynamic_dispatch():
+    graph = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (32, 64)
+    n2 = LogicalNode(id="in2", op_type="Input")
+    n2.shape_metadata = (64, 128)
+    n3 = LogicalNode(id="out", op_type="MatMul", inputs=["in1", "in2"])
+    n3.shape_metadata = (32, 128)
+    graph.nodes = {"in1": n1, "in2": n2, "out": n3}
+
+    gen = WebGPUCodeGenerator(graph)
+    code = gen.generate()
+
+    assert "@workgroup_size(16, 16)" in code
+    assert "Math.ceil(128 / 16)" in code
+    assert "Math.ceil(32 / 16)" in code
 
 
-def test_webgpu_more() -> None:
-    """Test webgpu more operations."""
-    gen = WebGPUCodeGenerator(IRGraph())
-    for op in ["Log", "Sqrt", "Abs", "Max", "Subtract", "Multiply", "TrueDivide", "Div", "SomeOtherOp", "Neg"]:
-        n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "in2"])
-        gen.generic_visit(n, [])
+def test_webgpu_generator_elementwise_dynamic_dispatch():
+    graph = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (1000,)
+    n2 = LogicalNode(id="out", op_type="Add", inputs=["in1", "in1"])
+    n2.shape_metadata = (1000,)
+    n3 = LogicalNode(id="out2", op_type="ReduceMean", inputs=["in1"])
+    n3.shape_metadata = (1,)
+    n3.inputs_nelem = [1000]
+    n4 = LogicalNode(id="out3", op_type="Negative", inputs=["in1"])
+    n4.shape_metadata = (1000,)
+    n6 = LogicalNode(id="out_mat", op_type="MatMul", inputs=["in1", "in1"])
+    n6.shape_metadata = ()
+    n6_2 = LogicalNode(id="out_mat2", op_type="MatMul", inputs=["in1", "in1"])
+    n6_2.shape_metadata = (1, 2, 3)
+    n7 = LogicalNode(id="out_red", op_type="ReduceSum", inputs=["in1"])
+    n7.shape_metadata = (1,)
+    n8 = LogicalNode(id="out_red2", op_type="ReduceMean", inputs=["in1"])
+    n8.shape_metadata = (1,)
+    n9 = LogicalNode(id="out_red3", op_type="ReduceMax", inputs=["in1"])
+    n9.shape_metadata = (1,)
+    n10 = LogicalNode(id="out_red4", op_type="ReduceMin", inputs=["in1"])
+    n10.shape_metadata = (1,)
+    graph.nodes = {"in1": n1, "out": n2, "out2": n3, "out3": n4, "out_mat": n6, "out_mat2": n6_2, "out_red": n7, "out_red2": n8, "out_red3": n9, "out_red4": n10}
+    graph.outputs = ["out2", "out_mat", "out_mat2", "out_red", "out_red2", "out_red3", "out_red4"]
+
+    gen = WebGPUCodeGenerator(graph)
+    code = gen.generate()
+
+    assert "@workgroup_size(64)" in code
+    assert "Math.ceil(1000 / 64)" in code
+    assert "-buf_in0_f32[in0_offset]" in code
+    assert "max(res, buf_in0_f32[i])" in code
+    assert "min(res, buf_in0_f32[i])" in code
 
 
-def test_webgpu_map_type() -> None:
-    """Test map_type."""
-    gen = WebGPUCodeGenerator(IRGraph())
-    assert gen._map_type("float32") == "f32"
+def test_webgpu_generator_get_offset():
+    graph = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (10, 20)
+    n2 = LogicalNode(id="out", op_type="Add", inputs=["in1", "in1"])
+    n2.shape_metadata = (10, 20)
+    graph.nodes = {"in1": n1, "out": n2}
+
+    gen = WebGPUCodeGenerator(graph)
+    code = gen.generate()
+
+    assert "let out_offset_d1 = out_offset_remaining % 20u;" in code
+    assert "out_offset_offset = out_offset_offset + out_offset_d1 * 1u;" in code
+
+
+def test_map_type_float64():
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
     assert gen._map_type("float64") == "f32"
-    assert gen._map_type("int32") == "i32"
-    assert gen._map_type("bool") == "bool"
     assert gen._map_type("unknown") == "f32"
 
 
-def test_webgpu_shape_and_strides() -> None:
-    """Test shape and strides."""
-    gen = WebGPUCodeGenerator(IRGraph())
-
-    node = LogicalNode(id="n1", op_type="Add")
-    assert gen._get_shape_and_strides(node) == ([], [])
-
-    node.shape_metadata = []
-    assert gen._get_shape_and_strides(node) == ([], [])
-
+def test_get_shape_and_strides_scalar():
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
+    node = LogicalNode(id="n1", op_type="Input")
     node.shape_metadata = 5
-    assert gen._get_shape_and_strides(node) == ([5], [1])
+    shape, strides = gen._get_shape_and_strides(node)
+    assert shape == [5]
+    assert strides == [1]
 
-    node.shape_metadata = [2, 3, 4]
-    assert gen._get_shape_and_strides(node) == ([2, 3, 4], [12, 4, 1])
+
+def test_get_shape_and_strides_empty():
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
+    node = LogicalNode(id="n1", op_type="Input")
+    node.shape_metadata = ()
+    shape, strides = gen._get_shape_and_strides(node)
+    assert shape == []
+    assert strides == []
 
 
-def test_webgpu_generate() -> None:
-    """Test generate method end-to-end."""
-    graph = IRGraph()
-    n1 = LogicalNode(id="in1", op_type="Input")
-    n1.shape_metadata = [2, 3]
-    n1.dtype = "float32"
+def test_num_elements_empty():
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
+    assert gen._num_elements([]) == 1
 
-    n2 = LogicalNode(id="in2", op_type="Input")
-    n2.shape_metadata = [6]
-    n2.dtype = "int32"
 
-    n3 = LogicalNode(id="c1", op_type="Constant", attributes={"value": 42.0})
-    n3.shape_metadata = [1]
-
-    n4 = LogicalNode(id="add", op_type="Add", inputs=["in1", "c1"])
-    n4.shape_metadata = [2, 3]
-
-    n_no_id = LogicalNode(id="", op_type="Add")
-
-    graph.nodes = {"in1": n1, "in2": n2, "c1": n3, "add": n4, "": n_no_id}
-    graph.outputs = ["add", "in2"]
-
-    gen = WebGPUCodeGenerator(graph)
-
+def test_generate_empty_graph():
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
     code = gen.generate()
-    assert "fn get_offset_in1" in code
-    assert "f32" in code
-    assert "i32" in code
-    assert "function run" in code
+    assert "async function run" in code
 
 
-def test_webgpu_generate_empty() -> None:
-    """Test generate with empty graph."""
-    graph = IRGraph()
-    graph.outputs = None
-    gen = WebGPUCodeGenerator(graph)
+def test_generic_visit_no_id():
+    g = IRGraph()
+    gen = WebGPUCodeGenerator(g)
+
+    class DummyNode:
+        pass
+
+    assert gen.generic_visit(DummyNode(), []) == ""
+
+
+def test_webgpu_fused_ops():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="n1", op_type="Input")
+    n1.shape_metadata = (2, 2)
+    n2 = LogicalNode(id="n2", op_type="Input")
+    n2.shape_metadata = (2, 2)
+    n3 = LogicalNode(id="n3", op_type="Input")
+    n3.shape_metadata = (2, 2)
+
+    n_relu = LogicalNode(id="relu", op_type="FusedAddRelu", inputs=["n1", "n2"])
+    n_relu.shape_metadata = (2, 2)
+    n_fma = LogicalNode(id="fma", op_type="FusedMultiplyAdd", inputs=["n1", "n2", "n3"])
+    n_fma.shape_metadata = (2, 2)
+    n_logexp = LogicalNode(id="logexp", op_type="FusedLogExp", inputs=["n1"])
+    n_logexp.shape_metadata = (2, 2)
+
+    g.nodes = {"n1": n1, "n2": n2, "n3": n3, "relu": n_relu, "fma": n_fma, "logexp": n_logexp}
+    gen = WebGPUCodeGenerator(g)
     code = gen.generate()
-    assert "function run" in code
-
-
-def test_webgpu_visit_input() -> None:
-    """Test generic_visit on Input node."""
-    gen = WebGPUCodeGenerator(IRGraph())
-
-    n1 = LogicalNode(id="in1", op_type="Input")
-    n1.shape_metadata = [2, 3]
-    assert gen.generic_visit(n1, []) == "in_0[get_offset_in1(idx)]"
-
-    n2 = LogicalNode(id="in2", op_type="Input")
-    n2.shape_metadata = [6]
-    assert gen.generic_visit(n2, []) == "in_1[idx]"
+    assert "max(0.0" in code
+    assert "log(exp(" in code

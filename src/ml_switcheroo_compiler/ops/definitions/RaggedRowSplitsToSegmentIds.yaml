@@ -1,0 +1,5 @@
+operation: RaggedRowSplitsToSegmentIds
+description: The RaggedRowSplitsToSegmentIds operation.
+variants:
+  numpy:
+    generator: tf.ragged.row_splits_to_segment_ids

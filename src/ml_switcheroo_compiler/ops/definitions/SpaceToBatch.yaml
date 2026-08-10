@@ -1,0 +1,5 @@
+operation: SpaceToBatch
+description: The SpaceToBatch operation.
+variants:
+  tensorflow:
+    eager: tf.space_to_batch

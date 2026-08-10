@@ -1,0 +1,9 @@
+operation: Log10
+description: The Log10 operation.
+variants:
+  cupy:
+    eager: cp.log10
+  dask:
+    eager: da.log10
+  keras:
+    eager: keras_ops.log10

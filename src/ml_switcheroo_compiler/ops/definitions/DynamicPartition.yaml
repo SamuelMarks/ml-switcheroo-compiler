@@ -1,0 +1,5 @@
+operation: DynamicPartition
+description: The DynamicPartition operation.
+variants:
+  tensorflow:
+    eager: tf.dynamic_partition

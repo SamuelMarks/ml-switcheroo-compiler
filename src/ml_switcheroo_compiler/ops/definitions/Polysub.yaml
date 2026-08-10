@@ -1,0 +1,5 @@
+operation: Polysub
+description: The Polysub operation.
+variants:
+  numpy:
+    generator: np.polysub

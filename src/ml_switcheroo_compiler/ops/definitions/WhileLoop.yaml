@@ -1,0 +1,7 @@
+operation: WhileLoop
+description: The WhileLoop operation.
+variants:
+  edge_onnx:
+    generator: Loop
+  edge_stablehlo:
+    generator: stablehlo.while

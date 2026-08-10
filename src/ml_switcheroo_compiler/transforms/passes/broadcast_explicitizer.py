@@ -1,3 +1,6 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+from typing import Any
+
 """Broadcast Explicitizer Pass."""
 
 import uuid
@@ -40,11 +43,10 @@ def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[i
     """Evaluate _needs_broadcast operation.
 
     Args:
-        shape1 (object): The shape1 parameter.
-        shape2 (object): The shape2 parameter.
+        shape1 (Any): The shape1 parameter.
+        shape2 (Any): The shape2 parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None

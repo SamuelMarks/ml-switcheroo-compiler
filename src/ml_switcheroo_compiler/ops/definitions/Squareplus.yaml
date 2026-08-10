@@ -1,0 +1,5 @@
+operation: Squareplus
+description: The Squareplus operation.
+variants:
+  keras:
+    eager: keras_ops.squareplus

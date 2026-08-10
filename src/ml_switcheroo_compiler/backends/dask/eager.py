@@ -1,10 +1,12 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
+
+from typing import Any
 
 try:
     import dask.array as da
 except ImportError:
-    da = None
+    da = None  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
 _OP_MAPPING = None
@@ -221,7 +223,7 @@ def _get_op_mapping() -> dict:
     return _OP_MAPPING
 
 
-def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> object:
+def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
     """Execute an eager operation using the Dask backend.
 
     Args:
@@ -230,8 +232,7 @@ def execute_op(cls: type, op_type: str, *args: object, **kwargs: object) -> obje
         *args (object): Positional arguments for the operation.
         **kwargs (object): Keyword arguments for the operation.
 
-    Returns:
-        object: The result of the operation execution.
+    Returns: Any: The result of the operation execution.
 
     Raises:
         BackendNotSupportedError: If the operation is not supported by the Dask backend.

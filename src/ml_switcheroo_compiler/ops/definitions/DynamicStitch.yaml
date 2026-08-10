@@ -1,0 +1,5 @@
+operation: DynamicStitch
+description: The DynamicStitch operation.
+variants:
+  tensorflow:
+    eager: tf.dynamic_stitch

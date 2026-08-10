@@ -1,0 +1,5 @@
+operation: RandomGammaGrad
+description: The RandomGammaGrad operation.
+variants:
+  numpy:
+    generator: 'lambda a, x: a'

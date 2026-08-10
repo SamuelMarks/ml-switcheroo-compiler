@@ -1,0 +1,5 @@
+operation: Histogramdd
+description: The Histogramdd operation.
+variants:
+  numpy:
+    generator: np.histogramdd

@@ -1,0 +1,13 @@
+operation: Trace
+description: The Trace operation.
+variants:
+  cupy:
+    eager: cp.trace
+  dask:
+    eager: da.trace
+  keras:
+    eager: keras_ops.trace
+  numpy:
+    generator: np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+  tensorflow:
+    eager: tf.linalg.trace

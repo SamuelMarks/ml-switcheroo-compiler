@@ -1,0 +1,5 @@
+operation: Resize
+description: The Resize operation.
+variants:
+  pytorch:
+    generator: torch.nn.functional.interpolate({0}, size={size}, mode={method}, antialias={antialias})

@@ -1,0 +1,7 @@
+operation: Ifftnd
+description: The Ifftnd operation.
+variants:
+  numpy:
+    generator: np.fft.ifftn({0})
+  tensorflow:
+    eager: tf.ifftnd

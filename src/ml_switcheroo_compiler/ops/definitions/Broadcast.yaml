@@ -1,0 +1,5 @@
+operation: Broadcast
+description: The Broadcast operation.
+variants:
+  edge_stablehlo:
+    generator: stablehlo.broadcast_in_dim

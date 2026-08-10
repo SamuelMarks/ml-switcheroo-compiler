@@ -1,5 +1,7 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy eager special math functions."""
+
+from typing import Any
 
 import numpy as np
 
@@ -7,7 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("BesselJ0")
-def _np_bessel_j0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_j0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_j0 operation.
 
     Args:
@@ -15,8 +17,7 @@ def _np_bessel_j0(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -25,7 +26,7 @@ def _np_bessel_j0(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("BesselJ1")
-def _np_bessel_j1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_j1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_j1 operation.
 
     Args:
@@ -33,8 +34,7 @@ def _np_bessel_j1(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -43,7 +43,7 @@ def _np_bessel_j1(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("BesselK0")
-def _np_bessel_k0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_k0 operation.
 
     Args:
@@ -51,8 +51,7 @@ def _np_bessel_k0(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -61,7 +60,7 @@ def _np_bessel_k0(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("BesselK0e")
-def _np_bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_k0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_k0e operation.
 
     Args:
@@ -69,8 +68,7 @@ def _np_bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -79,7 +77,7 @@ def _np_bessel_k0e(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("BesselK1")
-def _np_bessel_k1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_k1 operation.
 
     Args:
@@ -87,8 +85,7 @@ def _np_bessel_k1(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -97,7 +94,7 @@ def _np_bessel_k1(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("BesselK1e")
-def _np_bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_k1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_k1e operation.
 
     Args:
@@ -105,8 +102,7 @@ def _np_bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> o
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -115,7 +111,7 @@ def _np_bessel_k1e(backend_module: object, *args: object, **kwargs: object) -> o
 
 
 @numpy_eager_registry.register("BesselY0")
-def _np_bessel_y0(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_y0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_y0 operation.
 
     Args:
@@ -123,8 +119,7 @@ def _np_bessel_y0(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -133,7 +128,7 @@ def _np_bessel_y0(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("BesselY1")
-def _np_bessel_y1(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_bessel_y1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_y1 operation.
 
     Args:
@@ -141,8 +136,7 @@ def _np_bessel_y1(backend_module: object, *args: object, **kwargs: object) -> ob
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -151,7 +145,7 @@ def _np_bessel_y1(backend_module: object, *args: object, **kwargs: object) -> ob
 
 
 @numpy_eager_registry.register("Dawsn")
-def _np_dawsn(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_dawsn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_dawsn operation.
 
     Args:
@@ -159,8 +153,7 @@ def _np_dawsn(backend_module: object, *args: object, **kwargs: object) -> object
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -169,7 +162,7 @@ def _np_dawsn(backend_module: object, *args: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("Expint")
-def _np_expint(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_expint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_expint operation.
 
     Args:
@@ -177,8 +170,7 @@ def _np_expint(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -190,7 +182,7 @@ def _np_expint(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("FresnelCos")
-def _np_fresnel_cos(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fresnel_cos(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fresnel_cos operation.
 
     Args:
@@ -198,8 +190,7 @@ def _np_fresnel_cos(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -208,7 +199,7 @@ def _np_fresnel_cos(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("FresnelSin")
-def _np_fresnel_sin(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_fresnel_sin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fresnel_sin operation.
 
     Args:
@@ -216,8 +207,7 @@ def _np_fresnel_sin(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -226,7 +216,7 @@ def _np_fresnel_sin(backend_module: object, *args: object, **kwargs: object) -> 
 
 
 @numpy_eager_registry.register("Spence")
-def _np_spence(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_spence(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_spence operation.
 
     Args:
@@ -234,8 +224,7 @@ def _np_spence(backend_module: object, *args: object, **kwargs: object) -> objec
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -244,7 +233,7 @@ def _np_spence(backend_module: object, *args: object, **kwargs: object) -> objec
 
 
 @numpy_eager_registry.register("BesselI0")
-def _np_bessel_i0(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_bessel_i0(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_i0 operation.
 
     Args:
@@ -252,8 +241,7 @@ def _np_bessel_i0(backend_module: object, x: object, **kwargs: object) -> object
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -261,7 +249,7 @@ def _np_bessel_i0(backend_module: object, x: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("BesselI1")
-def _np_bessel_i1(backend_module: object, x: object, **kwargs: object) -> object:
+def _np_bessel_i1(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_i1 operation.
 
     Args:
@@ -269,8 +257,7 @@ def _np_bessel_i1(backend_module: object, x: object, **kwargs: object) -> object
         x (object): The x parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -278,7 +265,7 @@ def _np_bessel_i1(backend_module: object, x: object, **kwargs: object) -> object
 
 
 @numpy_eager_registry.register("BesselJn")
-def _np_bessel_jn(backend_module: object, x: object, y: object, **kwargs: object) -> object:
+def _np_bessel_jn(backend_module: Any, x: Any, y: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bessel_jn operation.
 
     Args:
@@ -287,8 +274,7 @@ def _np_bessel_jn(backend_module: object, x: object, y: object, **kwargs: object
         y (object): The y parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     import scipy.special as sc
 
@@ -296,7 +282,7 @@ def _np_bessel_jn(backend_module: object, x: object, y: object, **kwargs: object
 
 
 @numpy_eager_registry.register("Bartlett")
-def _np_bartlett(backend_module: object, M: object, **kwargs: object) -> object:
+def _np_bartlett(backend_module: Any, M: Any, **kwargs: Any) -> Any:
     """Evaluate _np_bartlett operation.
 
     Args:
@@ -304,7 +290,6 @@ def _np_bartlett(backend_module: object, M: object, **kwargs: object) -> object:
         M (object): The M parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.bartlett(M)

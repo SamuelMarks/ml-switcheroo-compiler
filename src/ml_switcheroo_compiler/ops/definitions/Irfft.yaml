@@ -1,0 +1,11 @@
+operation: Irfft
+description: The Irfft operation.
+variants:
+  cupy:
+    eager: cp.fft.irfft
+  dask:
+    eager: da.fft.irfft
+  keras:
+    eager: keras_ops.irfft
+  pytorch:
+    generator: torch.fft.irfft({0}, n={n}, dim={axis})

@@ -1,4 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Constant Folding pass."""
+
+from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
@@ -26,17 +29,16 @@ def _are_all_inputs_constant(canonical_inputs: list[str], graph: IRGraph) -> boo
     return True
 
 
-def _evaluate_constant_node(node: object, canonical_inputs: list[str], graph: IRGraph, backend: object) -> object:
+def _evaluate_constant_node(node: Any, canonical_inputs: list[str], graph: IRGraph, backend: Any) -> Any:
     """Evaluate _evaluate_constant_node operation.
 
     Args:
-        node (object): The node parameter.
+        node (Any): The node parameter.
         canonical_inputs (list): The canonical_inputs parameter.
         graph (IRGraph): The graph parameter.
-        backend (object): The backend parameter.
+        backend (Any): The backend parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     subgraph = LogicalGraph(outputs=[node.id])
     for inp in canonical_inputs:

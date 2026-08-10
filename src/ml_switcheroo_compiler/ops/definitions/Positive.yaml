@@ -1,0 +1,7 @@
+operation: Positive
+description: The Positive operation.
+variants:
+  cupy:
+    eager: cp.positive
+  dask:
+    eager: da.positive

@@ -1,0 +1,5 @@
+operation: HardSwish
+description: The HardSwish operation.
+variants:
+  keras:
+    eager: keras_ops.hard_swish

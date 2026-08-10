@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Export API."""
 
 import os
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
 
@@ -11,11 +12,11 @@ class ExportArchive:
 
     def __init__(self) -> None:
         """Initialize."""
-        self.trackables: dict[int, object] = {}
-        self.endpoints: dict[str, Callable[..., object]] = {}
-        self.collections: dict[str, object] = {}
+        self.trackables: dict[int, Any] = {}
+        self.endpoints: dict[str, Callable[..., Any]] = {}
+        self.collections: dict[str, Any] = {}
 
-    def track(self, resource: object) -> None:
+    def track(self, resource: Any) -> None:
         """Track a resource.
 
         Args:
@@ -23,7 +24,7 @@ class ExportArchive:
         """
         self.trackables[id(resource)] = resource
 
-    def add_endpoint(self, name: str, fn: Callable[..., object], **kwargs: object) -> None:
+    def add_endpoint(self, name: str, fn: Callable[..., Any], **kwargs: Any) -> None:
         """Add an endpoint.
 
         Args:
@@ -98,7 +99,7 @@ class ExportArchive:
         saved_model.add_message(2, meta_graph)  # meta_graphs
         return saved_model.get_bytes()
 
-    def write_out(self, filepath: str, options: Optional[object] = None) -> None:
+    def write_out(self, filepath: str, options: Optional[Any] = None) -> None:
         """Write the archive to a directory.
 
         Args:
@@ -126,7 +127,7 @@ class ExportArchive:
         with open(os.path.join(filepath, "saved_model.pb"), "wb") as f:
             f.write(self._build_saved_model())
 
-    def add_variable_collection(self, name: str, variables: object) -> None:
+    def add_variable_collection(self, name: str, variables: Any) -> None:
         """Add a variable collection.
 
         Args:

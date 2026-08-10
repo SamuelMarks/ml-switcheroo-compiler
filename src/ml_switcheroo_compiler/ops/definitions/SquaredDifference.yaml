@@ -1,0 +1,5 @@
+operation: SquaredDifference
+description: The SquaredDifference operation.
+variants:
+  tensorflow:
+    eager: tf.math.squared_difference

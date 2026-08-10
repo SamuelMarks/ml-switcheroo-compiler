@@ -1,0 +1,19 @@
+operation: Equal
+description: The Equal operation.
+variants:
+  cupy:
+    eager: cp.equal
+    generator: cp.equal
+  dask:
+    eager: da.equal
+    generator: da.equal
+  edge_onnx:
+    generator: Equal
+  edge_stablehlo:
+    generator: stablehlo.compare
+  keras:
+    eager: keras_ops.equal
+  numpy:
+    generator: np.equal
+  tensorflow:
+    eager: tf.equal

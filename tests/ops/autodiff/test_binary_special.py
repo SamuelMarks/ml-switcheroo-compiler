@@ -49,7 +49,7 @@ def test_zeta(mocker):
     (graph, node) = create_mock_graph_2_inputs()
     assert zeta_vjp(graph, node, "cot") == (UnconnectedGradients.ZERO, "node")
     assert zeta_jvp(graph, node, ("tx", "ty")) == "node"
-    assert zeta_jvp(graph, node, ("tx", None)) is None
+    assert zeta_jvp(graph, node, ("tx", None)) == ""
 
 
 def test_polygamma(mocker):

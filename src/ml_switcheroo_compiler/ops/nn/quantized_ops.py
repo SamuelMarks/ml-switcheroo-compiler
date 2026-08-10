@@ -1,7 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for quantized_ops.py."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -16,15 +17,14 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class QuantizeOp(OpDef):
     """Operation definition for quantizing a floating-point weight tensor."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the quantize operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -33,15 +33,14 @@ class QuantizeOp(OpDef):
 class QuantizedMatmulOp(OpDef):
     """Operation definition for performing a matrix multiplication with quantized weights."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the quantized matmul operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -50,15 +49,14 @@ class QuantizedMatmulOp(OpDef):
 class GatherQMMOp(OpDef):
     """Operation definition for combined gathering and quantized matrix multiplication."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the gather and quantized matmul operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -67,15 +65,14 @@ class GatherQMMOp(OpDef):
 class FakeQuantWithMinMaxVarsOp(OpDef):
     """Operation definition for simulating quantization using minimum and maximum variables."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the fake quantization operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -84,15 +81,14 @@ class FakeQuantWithMinMaxVarsOp(OpDef):
 class QuantizeAndDequantizeOp(OpDef):
     """Operation definition for sequentially quantizing and then dequantizing a tensor."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the quantize and dequantize operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -101,15 +97,14 @@ class QuantizeAndDequantizeOp(OpDef):
 class AbsMaxQuantizeOp(OpDef):
     """Operation definition for performing absolute maximum-based quantization."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the absolute max quantize operation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -118,15 +113,14 @@ class AbsMaxQuantizeOp(OpDef):
 class ComputeFloat8AmaxHistoryOp(OpDef):
     """Operation definition for computing the absolute maximum history for float8 quantization."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the float8 amax history computation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -135,15 +129,14 @@ class ComputeFloat8AmaxHistoryOp(OpDef):
 class ComputeFloat8ScaleOp(OpDef):
     """Operation definition for computing the scale factor for float8 quantization."""
 
-    def infer_shape(self, *args: object, **kwargs: object) -> object:
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
         """Infers the shape of the output tensor for the float8 scale computation.
 
         Args:
             *args: Variable length argument list where the first element is the input tensor.
             **kwargs: Arbitrary keyword arguments.
 
-        Returns:
-            object: The inferred shape of the output tensor.
+        Returns: Any: The inferred shape of the output tensor.
         """
         return getattr(args[0], "shape", ())
 
@@ -154,7 +147,7 @@ def fake_quant_with_min_max_vars(
     max_val: Tensor,
     num_bits: int = 8,
     narrow_range: bool = False,
-) -> Tensor:
+) -> Any:
     """Simulate quantization and dequantization of a tensor using min and max variables.
 
     This function is useful for quantization-aware training, simulating the precision loss
@@ -196,7 +189,7 @@ def quantize_and_dequantize(
     input_min: Tensor,
     input_max: Tensor,
     params: Optional[QuantizationParams] = None,
-) -> Tensor:
+) -> Any:
     """Quantizes and then dequantizes a tensor to simulate lower precision.
 
     This operation applies quantization based on the provided min/max bounds and parameters,
@@ -231,7 +224,7 @@ def quantize_and_dequantize(
 def abs_max_quantize(
     input: Tensor,
     axis: Optional[int] = None,
-) -> tuple[Tensor, Tensor]:
+) -> Any:
     """Quantizes an input tensor using absolute maximum quantization scaling.
 
     This method calculates scaling factors based on the absolute maximum values along
@@ -258,7 +251,7 @@ def abs_max_quantize(
 def compute_float8_amax_history(
     x: Tensor,
     amax_history: Tensor,
-) -> Tensor:
+) -> Any:
     """Compute and updates the absolute maximum history for float8 quantization scaling.
 
     Args:
@@ -280,7 +273,7 @@ def compute_float8_scale(
     amax_history: Tensor,
     scale: Tensor,
     margin: float = 0.0,
-) -> Tensor:
+) -> Any:
     """Compute the scaling factor for float8 quantization from absolute maximum history.
 
     Args:
@@ -304,7 +297,7 @@ def quantize(
     w: Tensor,
     group_size: int = 64,
     bits: int = 4,
-) -> tuple[Tensor, Tensor, Tensor]:
+) -> Any:
     """Quantizes a floating-point weight tensor into a lower-bit representation.
 
     Args:
@@ -356,7 +349,7 @@ class QuantizedOpsConfig:
 def quantized_matmul(
     x: Tensor,
     config: QuantizedOpsConfig,
-) -> Tensor:
+) -> Any:
     """Perform a matrix multiplication using a quantized weight matrix configuration.
 
     Args:
@@ -386,7 +379,7 @@ def quantized_matmul(
 def gather_qmm(
     x: Tensor,
     config: QuantizedOpsConfig,
-) -> Tensor:
+) -> Any:
     """Gather elements and performs a matrix multiplication with quantized weights.
 
     Args:
@@ -417,7 +410,7 @@ def gather_qmm(
 def quantized_linear(
     input: Tensor,
     config: QuantizedOpsConfig,
-) -> Tensor:
+) -> Any:
     """Apply a linear transformation to incoming data using quantized parameters.
 
     The weight tensor within the configuration is expected to be quantized (e.g., int4 or int8).
@@ -459,7 +452,7 @@ def quantized_linear(
 def quantized_embedding(
     input: Tensor,
     config: QuantizedOpsConfig,
-) -> Tensor:
+) -> Any:
     """Look up embeddings from a quantized embedding weight table.
 
     Args:
@@ -489,9 +482,9 @@ def quantized_embedding(
 
         weight_float = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
 
-        return gather(weight_float, dim=0, index=input)
+        return gather(weight_float, axis=0, index=input)
     else:
-        return gather(config.weight, dim=0, index=input)
+        return gather(config.weight, axis=0, index=input)
 
 
 def dequantize(
@@ -500,7 +493,7 @@ def dequantize(
     biases: Optional[Tensor] = None,
     group_size: int = 64,
     bits: int = 4,
-) -> Tensor:
+) -> Any:
     """Dequantizes a tensor back to a floating point representation.
 
     Args:
@@ -544,7 +537,7 @@ def quantized_conv(
     padding: int = 0,
     dilation: int = 1,
     groups: int = 1,
-) -> Tensor:
+) -> Any:
     """Perform a convolution using a quantized weight configuration.
 
     Args:

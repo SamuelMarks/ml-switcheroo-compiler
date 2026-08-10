@@ -1,0 +1,7 @@
+operation: LuSolve
+description: The LuSolve operation.
+variants:
+  numpy:
+    generator: scipy.linalg.lu_solve
+  tensorflow:
+    eager: tf.linalg.lu_solve

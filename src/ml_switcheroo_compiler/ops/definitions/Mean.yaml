@@ -1,0 +1,15 @@
+operation: Mean
+description: The Mean operation.
+variants:
+  cupy:
+    eager: cp.mean
+    generator: cp.mean
+  dask:
+    eager: da.mean
+    generator: da.mean
+  keras:
+    eager: keras_ops.mean
+  numpy:
+    generator: np.mean
+  pytorch:
+    generator: torch.mean({0}, dim={axis}, keepdim={keepdims})

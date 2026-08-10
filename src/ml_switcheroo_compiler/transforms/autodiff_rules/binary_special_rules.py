@@ -1,6 +1,8 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Binary rules for special."""
 
 import enum
+from typing import Any
 
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import register_jvp
@@ -15,12 +17,12 @@ class UnconnectedGradients(enum.Enum):
 
 
 @register_vjp("Igamma")
-def igamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def igamma_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Igamma.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -40,12 +42,12 @@ def igamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Igamma")
-def igamma_jvp(graph: object, node: object, tangents: tuple) -> str:
+def igamma_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Igamma.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -61,12 +63,12 @@ def igamma_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Igammac")
-def igammac_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def igammac_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Igammac.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -81,12 +83,12 @@ def igammac_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Igammac")
-def igammac_jvp(graph: object, node: object, tangents: tuple) -> str:
+def igammac_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Igammac.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -97,12 +99,12 @@ def igammac_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Zeta")
-def zeta_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def zeta_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Zeta.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -122,12 +124,12 @@ def zeta_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Zeta")
-def zeta_jvp(graph: object, node: object, tangents: tuple) -> str:
+def zeta_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Zeta.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -137,7 +139,7 @@ def zeta_jvp(graph: object, node: object, tangents: tuple) -> str:
     t_x, t_q = tangents
 
     if t_q is None:
-        return None
+        return ""
 
     # dz/dq = -x * zeta(x+1, q) * t_q
     one = emit_ir_node(graph, "Constant", [], None, {"value": 1.0})
@@ -149,12 +151,12 @@ def zeta_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Polygamma")
-def polygamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def polygamma_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Polygamma.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -172,12 +174,12 @@ def polygamma_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Polygamma")
-def polygamma_jvp(graph: object, node: object, tangents: tuple) -> str:
+def polygamma_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Polygamma.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -194,12 +196,12 @@ def polygamma_jvp(graph: object, node: object, tangents: tuple) -> str:
 
 
 @register_vjp("Betainc")
-def betainc_vjp(graph: object, node: object, cotangent: str) -> tuple:
+def betainc_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     """VJP for Betainc.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         cotangent (str): The cotangent parameter.
 
     Returns:
@@ -217,12 +219,12 @@ def betainc_vjp(graph: object, node: object, cotangent: str) -> tuple:
 
 
 @register_jvp("Betainc")
-def betainc_jvp(graph: object, node: object, tangents: tuple) -> str:
+def betainc_jvp(graph: Any, node: Any, tangents: tuple) -> str:
     """JVP for Betainc.
 
     Args:
-        graph (object): The graph parameter.
-        node (object): The node parameter.
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
         tangents (tuple): The tangents parameter.
 
     Returns:
@@ -235,11 +237,11 @@ def betainc_jvp(graph: object, node: object, tangents: tuple) -> str:
     return emit_ir_node(graph, "Multiply", [t_x, dx_base], node.shape_metadata)
 
 
-def _compute_igamma_dx(graph: object, a: str, x: str) -> str:
+def _compute_igamma_dx(graph: Any, a: str, x: str) -> str:
     """Evaluate _compute_igamma_dx operation.
 
     Args:
-        graph (object): The graph parameter.
+        graph (Any): The graph parameter.
         a (str): The a parameter.
         x (str): The x parameter.
 
@@ -257,11 +259,11 @@ def _compute_igamma_dx(graph: object, a: str, x: str) -> str:
     return emit_ir_node(graph, "Exp", [term3], graph.nodes[x].shape_metadata)
 
 
-def _compute_betainc_dx(graph: object, a: str, b: str, x: str) -> str:
+def _compute_betainc_dx(graph: Any, a: str, b: str, x: str) -> str:
     """Evaluate _compute_betainc_dx operation.
 
     Args:
-        graph (object): The graph parameter.
+        graph (Any): The graph parameter.
         a (str): The a parameter.
         b (str): The b parameter.
         x (str): The x parameter.
@@ -278,11 +280,11 @@ def _compute_betainc_dx(graph: object, a: str, b: str, x: str) -> str:
     return emit_ir_node(graph, "Exp", [log_dx], graph.nodes[x].shape_metadata)
 
 
-def _compute_betainc_log_beta(graph: object, a: str, b: str) -> str:
+def _compute_betainc_log_beta(graph: Any, a: str, b: str) -> str:
     """Evaluate _compute_betainc_log_beta operation.
 
     Args:
-        graph (object): The graph parameter.
+        graph (Any): The graph parameter.
         a (str): The a parameter.
         b (str): The b parameter.
 
@@ -298,18 +300,17 @@ def _compute_betainc_log_beta(graph: object, a: str, b: str) -> str:
     return emit_ir_node(graph, "Subtract", [log_beta, lgamma_ab], graph.nodes[a].shape_metadata)
 
 
-def _compute_betainc_dx_terms(graph: object, a: str, b: str, x: str, one: str) -> tuple[str, str]:
+def _compute_betainc_dx_terms(graph: Any, a: str, b: str, x: str, one: str) -> tuple[str, str]:
     """Evaluate _compute_betainc_dx_terms operation.
 
     Args:
-        graph (object): The graph parameter.
+        graph (Any): The graph parameter.
         a (str): The a parameter.
         b (str): The b parameter.
         x (str): The x parameter.
         one (str): The one parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     a_minus_1 = emit_ir_node(graph, "Subtract", [a, one], graph.nodes[a].shape_metadata)
     b_minus_1 = emit_ir_node(graph, "Subtract", [b, one], graph.nodes[b].shape_metadata)

@@ -1,0 +1,7 @@
+operation: Fftnd
+description: The Fftnd operation.
+variants:
+  numpy:
+    generator: np.fft.fftn({0})
+  tensorflow:
+    eager: tf.fftnd

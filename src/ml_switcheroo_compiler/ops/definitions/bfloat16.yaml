@@ -1,0 +1,5 @@
+operation: bfloat16
+description: The bfloat16 operation.
+variants:
+  edge_stablehlo:
+    generator: bf16

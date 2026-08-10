@@ -1,0 +1,11 @@
+operation: Reciprocal
+description: The Reciprocal operation.
+variants:
+  cupy:
+    eager: cp.reciprocal
+  dask:
+    eager: da.reciprocal
+  keras:
+    eager: keras_ops.reciprocal
+  tensorflow:
+    eager: tf.math.reciprocal

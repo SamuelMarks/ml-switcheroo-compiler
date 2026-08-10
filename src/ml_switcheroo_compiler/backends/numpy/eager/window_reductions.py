@@ -1,6 +1,8 @@
 """Numpy Window Reductions."""
 
-# ruff: noqa: E501
+from typing import Any
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
@@ -8,7 +10,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_windo
 
 
 @numpy_eager_registry.register("ReduceWindow")
-def _np_reduce_window(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_reduce_window(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_reduce_window operation.
 
     Args:
@@ -16,14 +18,13 @@ def _np_reduce_window(backend_module: object, *args: object, **kwargs: object) -
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _reduce_window(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentSum")
-def _np_segment_sum(backend_module: object, *args: object, **kwargs: object) -> object:
+def _np_segment_sum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_segment_sum operation.
 
     Args:
@@ -31,14 +32,13 @@ def _np_segment_sum(backend_module: object, *args: object, **kwargs: object) -> 
         *args (object): Positional args.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _segment_sum(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentMax")
-def _np_segment_max(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
+def _np_segment_max(backend_module: Any, data: Any, segment_ids: Any, num_segments: Any = None) -> Any:
     """Evaluate _np_segment_max operation.
 
     Args:
@@ -47,8 +47,7 @@ def _np_segment_max(backend_module: object, data: object, segment_ids: object, n
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -61,7 +60,7 @@ def _np_segment_max(backend_module: object, data: object, segment_ids: object, n
 
 
 @numpy_eager_registry.register("SegmentMin")
-def _np_segment_min(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
+def _np_segment_min(backend_module: Any, data: Any, segment_ids: Any, num_segments: Any = None) -> Any:
     """Evaluate _np_segment_min operation.
 
     Args:
@@ -70,8 +69,7 @@ def _np_segment_min(backend_module: object, data: object, segment_ids: object, n
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -84,7 +82,7 @@ def _np_segment_min(backend_module: object, data: object, segment_ids: object, n
 
 
 @numpy_eager_registry.register("SegmentProd")
-def _np_segment_prod(backend_module: object, data: object, segment_ids: object, num_segments: object = None) -> object:
+def _np_segment_prod(backend_module: Any, data: Any, segment_ids: Any, num_segments: Any = None) -> Any:
     """Evaluate _np_segment_prod operation.
 
     Args:
@@ -93,8 +91,7 @@ def _np_segment_prod(backend_module: object, data: object, segment_ids: object, 
         segment_ids (object): The segment_ids parameter.
         num_segments (object): The num_segments parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if num_segments is None:
         num_segments = np.max(segment_ids) + 1
@@ -113,8 +110,7 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
         input_dim (int): The input_dim parameter.
         output_dim (int): The output_dim parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     indices = []
     for i in range(output_dim):
@@ -127,7 +123,7 @@ def _adaptive_pool_1d_indices(input_dim: int, output_dim: int) -> list[tuple[int
 
 
 @numpy_eager_registry.register("AdaptiveAvgPool2D")
-def _np_adaptive_avg_pool2d(backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object) -> object:
+def _np_adaptive_avg_pool2d(backend_module: Any, operand: Any, output_size: tuple[int, int], **kwargs: Any) -> Any:
     """Evaluate _np_adaptive_avg_pool2d operation.
 
     Args:
@@ -136,8 +132,7 @@ def _np_adaptive_avg_pool2d(backend_module: object, operand: object, output_size
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -159,7 +154,7 @@ def _np_adaptive_avg_pool2d(backend_module: object, operand: object, output_size
 
 
 @numpy_eager_registry.register("AdaptiveAvgPool3D")
-def _np_adaptive_avg_pool3d(backend_module: object, operand: object, output_size: tuple[int, int, int], **kwargs: object) -> object:
+def _np_adaptive_avg_pool3d(backend_module: Any, operand: Any, output_size: tuple[int, int, int], **kwargs: Any) -> Any:
     """Evaluate _np_adaptive_avg_pool3d operation.
 
     Args:
@@ -168,8 +163,7 @@ def _np_adaptive_avg_pool3d(backend_module: object, operand: object, output_size
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -193,7 +187,7 @@ def _np_adaptive_avg_pool3d(backend_module: object, operand: object, output_size
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D")
-def _np_adaptive_max_pool3d(backend_module: object, operand: object, output_size: tuple[int, int, int], **kwargs: object) -> object:
+def _np_adaptive_max_pool3d(backend_module: Any, operand: Any, output_size: tuple[int, int, int], **kwargs: Any) -> Any:
     """Evaluate _np_adaptive_max_pool3d operation.
 
     Args:
@@ -202,8 +196,7 @@ def _np_adaptive_max_pool3d(backend_module: object, operand: object, output_size
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -227,7 +220,7 @@ def _np_adaptive_max_pool3d(backend_module: object, operand: object, output_size
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool3D_Indices")
-def _np_adaptive_max_pool3d_indices(backend_module: object, operand: object, output_size: tuple[int, int, int], **kwargs: object) -> object:
+def _np_adaptive_max_pool3d_indices(backend_module: Any, operand: Any, output_size: tuple[int, int, int], **kwargs: Any) -> Any:
     """Evaluate _np_adaptive_max_pool3d_indices operation.
 
     Args:
@@ -236,15 +229,14 @@ def _np_adaptive_max_pool3d_indices(backend_module: object, operand: object, out
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     res = _np_adaptive_max_pool3d(backend_module, operand, output_size, **kwargs)
     return (res, np.zeros_like(res, dtype=np.int64))
 
 
 @numpy_eager_registry.register("AdaptiveMaxPool2D")
-def _np_adaptive_max_pool2d(backend_module: object, operand: object, output_size: tuple[int, int], **kwargs: object) -> object:
+def _np_adaptive_max_pool2d(backend_module: Any, operand: Any, output_size: tuple[int, int], **kwargs: Any) -> Any:
     """Evaluate _np_adaptive_max_pool2d operation.
 
     Args:
@@ -253,8 +245,7 @@ def _np_adaptive_max_pool2d(backend_module: object, operand: object, output_size
         output_size (object): The output_size parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if isinstance(operand, np.ndarray):
         sh = list(operand.shape)
@@ -276,7 +267,7 @@ def _np_adaptive_max_pool2d(backend_module: object, operand: object, output_size
 
 
 @numpy_eager_registry.register("FractionalAvgPool")
-def _np_fractional_avg_pool(backend_module: object, value: object, **kwargs: object) -> object:
+def _np_fractional_avg_pool(backend_module: Any, value: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fractional_avg_pool operation.
 
     Args:
@@ -284,14 +275,13 @@ def _np_fractional_avg_pool(backend_module: object, value: object, **kwargs: obj
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.asarray(value)
 
 
 @numpy_eager_registry.register("FractionalMaxPool")
-def _np_fractional_max_pool(backend_module: object, value: object, **kwargs: object) -> object:
+def _np_fractional_max_pool(backend_module: Any, value: Any, **kwargs: Any) -> Any:
     """Evaluate _np_fractional_max_pool operation.
 
     Args:
@@ -299,7 +289,6 @@ def _np_fractional_max_pool(backend_module: object, value: object, **kwargs: obj
         value (object): The value parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return np.asarray(value)

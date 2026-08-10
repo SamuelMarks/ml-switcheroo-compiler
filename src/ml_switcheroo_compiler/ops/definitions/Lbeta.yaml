@@ -1,0 +1,5 @@
+operation: Lbeta
+description: The Lbeta operation.
+variants:
+  tensorflow:
+    eager: tf.math.lbeta

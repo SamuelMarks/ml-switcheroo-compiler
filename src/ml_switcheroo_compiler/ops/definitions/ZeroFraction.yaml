@@ -1,0 +1,5 @@
+operation: ZeroFraction
+description: The ZeroFraction operation.
+variants:
+  tensorflow:
+    eager: tf.math.zero_fraction

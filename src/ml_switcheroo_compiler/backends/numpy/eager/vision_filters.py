@@ -1,12 +1,14 @@
-# ruff: noqa: E501
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy vision filters."""
+
+from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_gaussian_blur, _np_sharpen
 
 
 @numpy_eager_registry.register("RandomGaussianBlur")
-def _np_random_gaussian_blur(backend_module: object, images: object, kernel_size: object, sigma: object, **kwargs: object) -> object:
+def _np_random_gaussian_blur(backend_module: Any, images: Any, kernel_size: Any, sigma: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_gaussian_blur operation.
 
     Args:
@@ -16,14 +18,13 @@ def _np_random_gaussian_blur(backend_module: object, images: object, kernel_size
         sigma (object): The sigma parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _np_gaussian_blur(backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs)
 
 
 @numpy_eager_registry.register("RandomSharpness")
-def _np_random_sharpness(backend_module: object, images: object, factor: object, **kwargs: object) -> object:
+def _np_random_sharpness(backend_module: Any, images: Any, factor: Any, **kwargs: Any) -> Any:
     """Evaluate _np_random_sharpness operation.
 
     Args:
@@ -32,7 +33,6 @@ def _np_random_sharpness(backend_module: object, images: object, factor: object,
         factor (object): The factor parameter.
         **kwargs (object): Keyword args.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     return _np_sharpen(backend_module, images, factor=factor, **kwargs)

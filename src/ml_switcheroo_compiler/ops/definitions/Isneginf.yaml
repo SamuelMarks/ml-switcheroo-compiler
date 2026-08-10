@@ -1,0 +1,7 @@
+operation: Isneginf
+description: The Isneginf operation.
+variants:
+  cupy:
+    eager: cp.isneginf
+  dask:
+    eager: da.isneginf

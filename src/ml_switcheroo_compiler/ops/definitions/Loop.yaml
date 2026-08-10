@@ -1,0 +1,5 @@
+operation: Loop
+description: The Loop operation.
+variants:
+  edge_onnx:
+    generator: Loop

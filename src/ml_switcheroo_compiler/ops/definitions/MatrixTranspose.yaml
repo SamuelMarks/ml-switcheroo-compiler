@@ -1,0 +1,7 @@
+operation: MatrixTranspose
+description: The MatrixTranspose operation.
+variants:
+  numpy:
+    generator: np.swapaxes({0}, -1, -2)
+  tensorflow:
+    eager: tf.linalg.matrix_transpose

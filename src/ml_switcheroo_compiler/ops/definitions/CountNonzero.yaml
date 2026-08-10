@@ -1,0 +1,11 @@
+operation: CountNonzero
+description: The CountNonzero operation.
+variants:
+  cupy:
+    eager: cp.count_nonzero
+  dask:
+    eager: da.count_nonzero
+  keras:
+    eager: keras_ops.count_nonzero
+  tensorflow:
+    eager: tf.math.count_nonzero

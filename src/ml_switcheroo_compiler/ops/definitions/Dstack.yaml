@@ -1,0 +1,7 @@
+operation: Dstack
+description: The Dstack operation.
+variants:
+  cupy:
+    eager: cp.dstack
+  dask:
+    eager: da.dstack

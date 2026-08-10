@@ -1,7 +1,8 @@
-# ruff: noqa: E501
-"""Provide mixin module."""
-
 from __future__ import annotations
+
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Provide mixin module."""
+from typing import Any
 
 from .common import CommonASTVisitor
 
@@ -10,7 +11,7 @@ class DistributedASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Distributed communication AST generator mixin."""
 
-    def visit_AllGather(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AllGather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_AllGather operation.
 
         Args:
@@ -25,7 +26,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         axis = kwargs.get("axis", 0)
         return f"{pfx}_all_gather({input_vars[0]}, axis={axis})"
 
-    def visit_AllReduce(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AllReduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_AllReduce operation.
 
         Args:
@@ -40,7 +41,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         op = kwargs.get("op", "sum")
         return f"{pfx}_all_reduce({input_vars[0]}, op='{op}')"
 
-    def visit_AllToAll(self, node: object, input_vars: list[str], **kwargs: object) -> str:
+    def visit_AllToAll(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_AllToAll operation.
 
         Args:

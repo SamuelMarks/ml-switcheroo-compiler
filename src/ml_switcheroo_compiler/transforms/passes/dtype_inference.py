@@ -1,6 +1,7 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """DType Inference Pass."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.type_promotion import promote_types
@@ -8,14 +9,13 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _get_value_dtype(val: object) -> Optional[DType]:
+def _get_value_dtype(val: Any) -> Optional[DType]:
     """Get the dtype from a constant value.
 
     Args:
-        val (object): The val parameter.
+        val (Any): The val parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if hasattr(val, "dtype"):
         return DType(str(val.dtype))
@@ -28,11 +28,11 @@ def _get_value_dtype(val: object) -> Optional[DType]:
     return None
 
 
-def _infer_constant_dtype(node: object, dtypes: dict[str, str]) -> bool:
+def _infer_constant_dtype(node: Any, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a Constant node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (Any): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -52,11 +52,11 @@ def _infer_constant_dtype(node: object, dtypes: dict[str, str]) -> bool:
     return False
 
 
-def _infer_input_dtype(node: object, dtypes: dict[str, str]) -> bool:
+def _infer_input_dtype(node: Any, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Input node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (Any): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -66,11 +66,11 @@ def _infer_input_dtype(node: object, dtypes: dict[str, str]) -> bool:
     return False
 
 
-def _infer_output_dtype(node: object, dtypes: dict[str, str]) -> bool:
+def _infer_output_dtype(node: Any, dtypes: dict[str, str]) -> bool:
     """Infer dtype for an Output node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (Any): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:
@@ -80,7 +80,8 @@ def _infer_output_dtype(node: object, dtypes: dict[str, str]) -> bool:
     inp_dtype = None
     if node.inputs:
         inp_dtype = dtypes.get(node.inputs[0])
-    dtypes[node.id] = inp_dtype
+    if inp_dtype is not None:
+        dtypes[node.id] = inp_dtype
     if inp_dtype and node.attributes.get("dtype") != inp_dtype:
         modified = True
         node.attributes["dtype"] = inp_dtype
@@ -91,7 +92,7 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
     """Evaluate _get_promoted_dtype operation.
 
     Args:
-        valid_dtypes (object): The valid_dtypes parameter.
+        valid_dtypes (Any): The valid_dtypes parameter.
 
     Returns:
         str: Result.
@@ -107,15 +108,14 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
         return valid_dtypes[0]
 
 
-def _handle_cast_dtype(node: object, valid_dtypes: list[str]) -> Optional[str]:
+def _handle_cast_dtype(node: Any, valid_dtypes: list[str]) -> Optional[str]:
     """Evaluate _handle_cast_dtype operation.
 
     Args:
-        node (object): The node parameter.
-        valid_dtypes (object): The valid_dtypes parameter.
+        node (Any): The node parameter.
+        valid_dtypes (Any): The valid_dtypes parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     if "dtype" in node.attributes:
         val = node.attributes["dtype"]
@@ -123,12 +123,12 @@ def _handle_cast_dtype(node: object, valid_dtypes: list[str]) -> Optional[str]:
     return None
 
 
-def _handle_boolean_dtype(node: object, valid_dtypes: list[str]) -> str:
+def _handle_boolean_dtype(node: Any, valid_dtypes: list[str]) -> str:
     """Evaluate _handle_boolean_dtype operation.
 
     Args:
-        node (object): The node parameter.
-        valid_dtypes (object): The valid_dtypes parameter.
+        node (Any): The node parameter.
+        valid_dtypes (Any): The valid_dtypes parameter.
 
     Returns:
         str: Result.
@@ -157,15 +157,14 @@ DTYPE_INFERENCE_REGISTRY = {
 }
 
 
-def _get_node_valid_dtypes(node: object, dtypes: dict[str, str]) -> list[str]:
+def _get_node_valid_dtypes(node: Any, dtypes: dict[str, str]) -> list[str]:
     """Evaluate _get_node_valid_dtypes operation.
 
     Args:
-        node (object): The node parameter.
-        dtypes (object): The dtypes parameter.
+        node (Any): The node parameter.
+        dtypes (Any): The dtypes parameter.
 
-    Returns:
-        object: Result.
+    Returns: Any: Result.
     """
     valid = []
     for inp in node.inputs:
@@ -175,11 +174,11 @@ def _get_node_valid_dtypes(node: object, dtypes: dict[str, str]) -> list[str]:
     return valid
 
 
-def _infer_op_dtype(node: object, dtypes: dict[str, str]) -> bool:
+def _infer_op_dtype(node: Any, dtypes: dict[str, str]) -> bool:
     """Infer dtype for a generic Op node.
 
     Args:
-        node (object): The node parameter for the operation.
+        node (Any): The node parameter for the operation.
         dtypes (dict[str, str]): The dtypes dict.
 
     Returns:

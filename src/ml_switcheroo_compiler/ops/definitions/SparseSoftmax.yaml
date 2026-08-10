@@ -1,0 +1,5 @@
+operation: SparseSoftmax
+description: The SparseSoftmax operation.
+variants:
+  numpy:
+    generator: tf.sparse.softmax

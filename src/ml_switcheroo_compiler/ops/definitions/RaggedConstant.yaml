@@ -1,0 +1,5 @@
+operation: RaggedConstant
+description: The RaggedConstant operation.
+variants:
+  numpy:
+    generator: tf.ragged.constant

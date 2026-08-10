@@ -1,0 +1,15 @@
+operation: Ceil
+description: The Ceil operation.
+variants:
+  cupy:
+    eager: cp.ceil
+  dask:
+    eager: da.ceil
+  edge_onnx:
+    generator: Ceil
+  edge_stablehlo:
+    generator: stablehlo.ceil
+  keras:
+    eager: keras_ops.ceil
+  tensorflow:
+    eager: tf.math.ceil

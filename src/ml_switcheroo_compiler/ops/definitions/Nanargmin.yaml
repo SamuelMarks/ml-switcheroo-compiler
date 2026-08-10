@@ -1,0 +1,7 @@
+operation: Nanargmin
+description: The Nanargmin operation.
+variants:
+  cupy:
+    eager: cp.nanargmin
+  dask:
+    eager: da.nanargmin
