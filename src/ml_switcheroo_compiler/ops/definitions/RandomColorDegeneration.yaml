@@ -1,0 +1,8 @@
+operation: RandomColorDegeneration
+description: Randomly performs the color degeneration operation on given images.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: factor
+  type: float
+variants: {}

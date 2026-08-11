@@ -426,3 +426,141 @@ def test_evaluator_target_dispatch_more():
 
     with pytest.raises(AttributeError):
         _dispatch_op(n2, env, MockBackend(), "Checkpoint", [t], {})
+
+
+def test_evaluate_if_node():
+    import numpy as np
+
+    from ml_switcheroo_compiler.interpreter.evaluator import Environment, _evaluate_node
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    env = Environment()
+    env.set("cond", np.array([True]))
+    env.set("a", 5)
+
+    node = LogicalNode(id="out", op_type="If", inputs=["cond"])
+
+    then_graph = IRGraph()
+    n_then = LogicalNode(id="then_node", op_type="Identity", inputs=["a"])
+    then_graph.nodes = [n_then]
+    then_graph.outputs = ["then_node"]
+    node.attributes = {"then_branch": then_graph}
+
+    class MockBackend:
+        def execute_op(self, op, *args, **kwargs):
+            if op == "Identity":
+                return args[0] * 2
+
+    _evaluate_node(node, env, MockBackend())
+    assert env.get("out") == 10
+
+
+def test_evaluate_if_node_false():
+
+    from ml_switcheroo_compiler.interpreter.evaluator import Environment, _evaluate_node
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    env = Environment()
+    env.set("cond", 0)
+    env.set("b", 6)
+
+    node = LogicalNode(id="out", op_type="If", inputs=["cond"])
+
+    else_graph = IRGraph()
+    n_else = LogicalNode(id="else_node", op_type="Identity", inputs=["b"])
+    else_graph.nodes = {"else_node": n_else}
+    else_graph.outputs = "else_node"
+    node.attributes = {"false_branch": else_graph}
+
+    class MockBackend:
+        def execute_op(self, op, *args, **kwargs):
+            if op == "Identity":
+                return args[0] + 1
+
+    _evaluate_node(node, env, MockBackend())
+    assert env.get("out") == 7
+
+
+def test_evaluate_if_node_no_outputs():
+
+    from ml_switcheroo_compiler.interpreter.evaluator import Environment, _evaluate_node
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    env = Environment()
+    env.set("cond", 1)
+
+    node = LogicalNode(id="out", op_type="If", inputs=["cond"])
+
+    then_graph = IRGraph()
+    n_then = LogicalNode(id="then_node", op_type="Constant", inputs=[])
+    n_then.attributes = {"value": 99}
+    then_graph.nodes = [n_then]
+    then_graph.outputs = None
+    node.attributes = {"then_branch": then_graph}
+
+    class MockBackend:
+        def array(self, x):
+            return x
+
+        def execute_op(self, op, *args, **kwargs):
+            return args[0]
+
+    _evaluate_node(node, env, MockBackend())
+    assert env.get("out") == 99
+
+
+def test_evaluate_loop_node():
+
+    from ml_switcheroo_compiler.interpreter.evaluator import Environment, _evaluate_node
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    env = Environment()
+    env.set("curr", 3)
+
+    node = LogicalNode(id="out", op_type="Loop", inputs=["curr"])
+
+    cond_graph = IRGraph()
+    n_cond_in = LogicalNode(id="cond_in", op_type="Input")
+    n_cond = LogicalNode(id="cond_eval", op_type="Greater", inputs=["cond_in"])
+    cond_graph.nodes = [n_cond_in, n_cond]
+    cond_graph.outputs = ["cond_eval"]
+
+    body_graph = IRGraph()
+    n_body_in = LogicalNode(id="body_in", op_type="Input")
+    n_body = LogicalNode(id="body_eval", op_type="Sub", inputs=["body_in"])
+    body_graph.nodes = {"body_in": n_body_in, "body_eval": n_body}
+    body_graph.outputs = ["body_eval"]
+
+    node.attributes = {"cond": cond_graph, "body": body_graph}
+
+    class MockBackend:
+        def execute_op(self, op, *args, **kwargs):
+            val = args[0] if args else None
+            if val is None:
+                val = 0
+            if op == "Greater":
+                return val > 0
+            if op in ("Sub", "Subtract"):
+                return val - 1
+
+    _evaluate_node(node, env, MockBackend())
+    print("MEMORY:", env.memory)
+    assert env.get("out") == 0
+
+
+def test_evaluate_if_no_branch():
+    import numpy as np
+
+    from ml_switcheroo_compiler.interpreter.evaluator import Environment, _evaluate_node
+    from ml_switcheroo_compiler.ir.core import LogicalNode
+
+    env = Environment()
+    env.set("cond", np.array([True]))
+
+    node = LogicalNode(id="out", op_type="If", inputs=["cond"])
+    node.attributes = {}
+
+    class MockBackend:
+        pass
+
+    _evaluate_node(node, env, MockBackend())

@@ -1,0 +1,4 @@
+operation: Quint8
+description: Data type for quint8 quantized tensors.
+std_args: []
+variants: {}

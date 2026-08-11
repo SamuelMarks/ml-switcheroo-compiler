@@ -1,0 +1,23 @@
+operation: AttrPriority
+description: Auto-generated mapping for AttrPriority.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.attrpriority
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.attrpriority
+  keras:
+    eager: keras_ops.attrpriority
+  pytorch:
+    eager: torch.attrpriority
+  jax:
+    eager: jax.numpy.attrpriority
+  mlx:
+    eager: mlx.core.attrpriority
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

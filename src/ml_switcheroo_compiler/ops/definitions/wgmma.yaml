@@ -1,0 +1,9 @@
+operation: wgmma
+description: Perform acc += a @ b using the WGMMA instruction.
+std_args:
+- acc
+- a
+- b
+- swizzle
+type: function
+variants: {}

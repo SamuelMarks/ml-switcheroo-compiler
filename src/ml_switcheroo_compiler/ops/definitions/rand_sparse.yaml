@@ -1,0 +1,9 @@
+operation: rand_sparse
+description: The class representing a Python function.
+std_args:
+- rng
+- nse
+- post
+- rand_method
+type: function
+variants: {}

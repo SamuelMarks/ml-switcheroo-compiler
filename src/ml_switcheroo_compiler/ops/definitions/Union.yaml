@@ -1,0 +1,7 @@
+operation: Union
+description: The class representing a Python class.
+std_args:
+- self
+- members
+type: class
+variants: {}

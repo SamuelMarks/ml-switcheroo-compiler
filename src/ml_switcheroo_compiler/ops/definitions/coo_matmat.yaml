@@ -1,0 +1,8 @@
+operation: coo_matmat
+description: Product of COO sparse matrix and a dense matrix.
+std_args:
+- mat
+- B
+- transpose
+type: function
+variants: {}

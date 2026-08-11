@@ -1,0 +1,5 @@
+operation: all_passes
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

@@ -5,3 +5,18 @@ variants:
     generator: np.fft.ifftn({0})
   tensorflow:
     eager: tf.ifftnd
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.ifftnd
+  pytorch:
+    eager: torch.ifftnd
+  jax:
+    eager: jax.numpy.ifftnd
+  mlx:
+    eager: mlx.core.ifftnd
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

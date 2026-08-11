@@ -1,0 +1,27 @@
+operation: BitwiseCount
+description: Computes the number of 1-bits in the absolute value of x.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Array
+variants:
+  numpy:
+    eager: numpy.bitwisecount
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.bitwisecount
+  keras:
+    eager: keras_ops.bitwisecount
+  pytorch:
+    eager: torch.bitwisecount
+  jax:
+    eager: jax.numpy.bitwisecount
+  mlx:
+    eager: mlx.core.bitwisecount
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

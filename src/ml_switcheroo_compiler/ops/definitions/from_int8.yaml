@@ -1,0 +1,8 @@
+operation: from_int8
+description: Converts an int8 array to a float array with a scale.
+std_args:
+- x
+- h
+- dtype
+type: function
+variants: {}

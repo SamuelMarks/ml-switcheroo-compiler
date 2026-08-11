@@ -877,3 +877,52 @@ def test_server_close_coverage():
     s._server = MockSocket()
     # It catches exception gracefully
     s.join()
+
+
+def test_microbatch_loop_structure():
+    """Strict structural validation for the generated microbatch WhileLoop IR."""
+    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    n_in = IRNode(id="in0", op_type="Input")
+    n_add = IRNode(id="add0", op_type="Add", inputs=["in0", "in0"])
+    n_out = IRNode(id="out0", op_type="Output", inputs=["add0"])
+
+    g.nodes = {"in0": n_in, "add0": n_add, "out0": n_out}
+    g.inputs = ["in0"]
+    g.outputs = ["out0"]
+
+    strategy = PipelineParallelismStrategy(num_microbatches=4)
+    strategy.generate_microbatch_loop(g)
+
+    # 1. Main graph should only have Input, WhileLoop, and Concat nodes.
+    assert "in0" in g.nodes
+    assert "microbatch_loop" in g.nodes
+    assert "out0_concat" in g.nodes
+    assert "add0" not in g.nodes  # Moved to body
+
+    loop_node = g.nodes["microbatch_loop"]
+    assert loop_node.op_type == "WhileLoop"
+
+    # 2. Extract nested graphs
+    body_graph = loop_node.attributes["body"]
+    cond_graph = loop_node.attributes["cond"]
+
+    # 3. Validate cond graph
+    assert cond_graph.inputs == ["idx_cond"]
+    assert cond_graph.outputs == ["cond_cmp"]
+    assert "cond_cmp" in cond_graph.nodes
+    assert cond_graph.nodes["cond_cmp"].op_type == "Less"
+
+    # 4. Validate body graph
+    assert "in0_b" in body_graph.nodes
+    assert "in0_slice" in body_graph.nodes
+    assert "add0" in body_graph.nodes
+    assert "out0" in body_graph.nodes
+
+    # The inputs to the operations should have been updated to the sliced inputs
+    assert body_graph.nodes["add0"].inputs == ["in0_slice", "in0_slice"]
+
+    # The body graph outputs should remain the original ones
+    assert body_graph.outputs == ["out0"]

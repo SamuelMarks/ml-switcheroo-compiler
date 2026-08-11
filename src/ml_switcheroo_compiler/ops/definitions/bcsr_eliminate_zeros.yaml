@@ -1,0 +1,7 @@
+operation: bcsr_eliminate_zeros
+description: Eliminate zeros in BCSR representation.
+std_args:
+- mat
+- nse
+type: function
+variants: {}

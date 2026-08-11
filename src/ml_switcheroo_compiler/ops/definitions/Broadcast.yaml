@@ -1,5 +1,19 @@
-operation: Broadcast
+operation: broadcast
 description: The Broadcast operation.
+std_args: []
+type: function
 variants:
   edge_stablehlo:
     generator: stablehlo.broadcast_in_dim
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,21 @@
+operation: AlignTensors
+description: Reshapes tensors to match the broadcast shape of the inputs.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: List[Tensor]
+variants:
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

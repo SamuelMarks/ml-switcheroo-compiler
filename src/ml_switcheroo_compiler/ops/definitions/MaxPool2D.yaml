@@ -1,5 +1,15 @@
 operation: MaxPool2D
 description: The MaxPool2D operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kernel_size
+  type: Union[int, Tuple[int, int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stride
+  type: Union[int, Tuple[int, int]]
+type: class
 variants:
   edge_onnx:
     generator: MaxPool

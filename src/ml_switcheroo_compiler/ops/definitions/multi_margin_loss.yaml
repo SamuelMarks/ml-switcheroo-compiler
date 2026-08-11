@@ -1,0 +1,5 @@
+operation: multi_margin_loss
+description: Auto-generated mapping for multi_margin_loss.
+std_args: []
+type: function
+variants: {}

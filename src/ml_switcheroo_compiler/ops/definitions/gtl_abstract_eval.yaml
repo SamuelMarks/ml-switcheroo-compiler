@@ -1,0 +1,8 @@
+operation: gtl_abstract_eval
+description: The class representing a Python function.
+std_args:
+- arr
+- global_mesh
+- pspec
+type: function
+variants: {}

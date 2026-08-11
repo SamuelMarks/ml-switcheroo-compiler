@@ -1,0 +1,4 @@
+operation: FunctionSchema
+description: Internal schema representation for functions.
+std_args: []
+variants: {}

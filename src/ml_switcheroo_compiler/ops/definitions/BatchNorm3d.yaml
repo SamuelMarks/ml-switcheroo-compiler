@@ -1,0 +1,5 @@
+operation: BatchNorm3d
+description: Auto-generated mapping for BatchNorm3d.
+std_args: []
+type: class
+variants: {}

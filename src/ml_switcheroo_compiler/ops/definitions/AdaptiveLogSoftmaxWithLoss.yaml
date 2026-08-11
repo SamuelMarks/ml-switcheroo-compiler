@@ -1,0 +1,5 @@
+operation: AdaptiveLogSoftmaxWithLoss
+description: Auto-generated mapping for AdaptiveLogSoftmaxWithLoss.
+std_args: []
+type: class
+variants: {}

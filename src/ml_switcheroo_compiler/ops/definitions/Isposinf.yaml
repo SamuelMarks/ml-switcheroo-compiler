@@ -1,7 +1,25 @@
-operation: Isposinf
+operation: isposinf
 description: The Isposinf operation.
+std_args: []
 variants:
   cupy:
     eager: cp.isposinf
   dask:
     eager: da.isposinf
+  numpy:
+    eager: numpy.isposinf
+  tensorflow:
+    eager: tf.isposinf
+  keras:
+    eager: keras_ops.isposinf
+  pytorch:
+    eager: torch.isposinf
+  jax:
+    eager: jax.numpy.isposinf
+  mlx:
+    eager: mlx.core.isposinf
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

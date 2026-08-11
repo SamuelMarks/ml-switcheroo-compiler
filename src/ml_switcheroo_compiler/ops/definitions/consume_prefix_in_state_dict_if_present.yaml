@@ -1,0 +1,5 @@
+operation: consume_prefix_in_state_dict_if_present
+description: Auto-generated mapping for consume_prefix_in_state_dict_if_present.
+std_args: []
+type: function
+variants: {}

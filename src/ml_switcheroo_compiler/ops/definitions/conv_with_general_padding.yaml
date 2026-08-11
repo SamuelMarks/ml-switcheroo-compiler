@@ -1,0 +1,4 @@
+operation: conv_with_general_padding
+description: Auto-generated mapping for conv_with_general_padding.
+std_args: []
+variants: {}

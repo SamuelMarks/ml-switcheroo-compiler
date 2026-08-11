@@ -1,0 +1,6 @@
+operation: filter_passes
+description: Gets all registered passes whose display name matches the given regex.
+std_args:
+- regex
+type: function
+variants: {}

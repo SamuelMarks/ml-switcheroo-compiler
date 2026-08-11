@@ -1,0 +1,11 @@
+operation: philox_4x32_kernel
+description: Generates random bits using the Philox keyed hash function.
+std_args:
+- key
+- shape
+- unpadded_shape
+- block_size
+- offset
+- fuse_output
+type: function
+variants: {}

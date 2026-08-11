@@ -1,5 +1,7 @@
-operation: Lu
+operation: lu
 description: The Lu operation.
+std_args: []
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.lu

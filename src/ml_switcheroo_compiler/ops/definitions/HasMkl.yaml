@@ -1,0 +1,4 @@
+operation: HasMkl
+description: Checks if MKL is available.
+std_args: []
+variants: {}

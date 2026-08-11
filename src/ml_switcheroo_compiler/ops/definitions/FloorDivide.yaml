@@ -1,5 +1,14 @@
 operation: FloorDivide
 description: The FloorDivide operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Tensor
 variants:
   cupy:
     eager: cp.floor_divide
@@ -7,3 +16,18 @@ variants:
     eager: da.floor_divide
   keras:
     eager: keras_ops.floor_divide
+  numpy:
+    eager: numpy.floordivide
+  tensorflow:
+    eager: tf.floordivide
+  pytorch:
+    eager: torch.floordivide
+  jax:
+    eager: jax.numpy.floordivide
+  mlx:
+    eager: mlx.core.floordivide
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

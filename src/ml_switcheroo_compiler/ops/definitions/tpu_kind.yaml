@@ -1,0 +1,5 @@
+operation: tpu_kind
+description: Query identification string for the currently attached TPU.
+std_args: []
+type: function
+variants: {}

@@ -1,0 +1,7 @@
+operation: infer_layout
+description: Infers layouts for the given module.
+std_args:
+- module
+- fuel
+type: function
+variants: {}

@@ -1,5 +1,6 @@
-operation: Allclose
+operation: allclose
 description: The Allclose operation.
+std_args: []
 variants:
   cupy:
     eager: cp.allclose
@@ -9,3 +10,16 @@ variants:
     generator: np.allclose
   pytorch:
     generator: torch.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})
+  tensorflow:
+    eager: tf.experimental.numpy.allclose
+  keras:
+    eager: keras_ops.allclose
+  jax:
+    eager: jax.numpy.allclose
+  mlx:
+    eager: mlx.core.allclose
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

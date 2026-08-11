@@ -3,3 +3,20 @@ description: The Infeed operation.
 variants:
   numpy:
     generator: '{0}'
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.infeed
+  keras:
+    eager: keras_ops.infeed
+  pytorch:
+    eager: torch.infeed
+  jax:
+    eager: jax.numpy.infeed
+  mlx:
+    eager: mlx.core.infeed
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

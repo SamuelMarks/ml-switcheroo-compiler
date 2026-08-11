@@ -1,0 +1,13 @@
+operation: assertSparseArraysEquivalent
+description: The class representing a Python function.
+std_args:
+- self
+- x
+- y
+- check_dtypes
+- atol
+- rtol
+- canonicalize_dtypes
+- err_msg
+type: function
+variants: {}

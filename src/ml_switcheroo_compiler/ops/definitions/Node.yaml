@@ -1,0 +1,4 @@
+operation: Node
+description: JIT Graph Node.
+std_args: []
+variants: {}

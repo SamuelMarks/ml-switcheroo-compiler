@@ -1,0 +1,7 @@
+operation: preprocess_arg_tf
+description: Pre-processes the TF args.
+std_args:
+- arg_idx
+- arg_tf
+type: function
+variants: {}

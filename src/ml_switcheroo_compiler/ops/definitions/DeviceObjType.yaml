@@ -1,0 +1,4 @@
+operation: DeviceObjType
+description: Internal type definition for Device objects.
+std_args: []
+variants: {}

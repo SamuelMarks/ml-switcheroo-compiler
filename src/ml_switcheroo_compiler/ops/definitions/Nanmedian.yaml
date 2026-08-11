@@ -1,7 +1,19 @@
-operation: Nanmedian
+operation: nanmedian
 description: The Nanmedian operation.
+std_args: []
 variants:
   cupy:
     eager: cp.nanmedian
   dask:
     eager: da.nanmedian
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,27 @@
 operation: ReciprocalNoNan
 description: The ReciprocalNoNan operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.reciprocal_no_nan
+  numpy:
+    eager: numpy.reciprocalnonan
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.reciprocalnonan
+  pytorch:
+    eager: torch.reciprocalnonan
+  jax:
+    eager: jax.numpy.reciprocalnonan
+  mlx:
+    eager: mlx.core.reciprocalnonan
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

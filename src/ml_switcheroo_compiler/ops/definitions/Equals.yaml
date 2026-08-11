@@ -1,0 +1,8 @@
+operation: Equals
+description: States that `lhs` and `rhs` are equal.
+std_args:
+- self
+- lhs
+- rhs
+type: class
+variants: {}

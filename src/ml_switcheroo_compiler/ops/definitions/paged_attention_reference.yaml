@@ -1,0 +1,11 @@
+operation: paged_attention_reference
+description: Grouped query attention reference implementation.
+std_args:
+- q
+- k
+- v
+- lengths
+- mask_value
+- attn_logits_soft_cap
+type: function
+variants: {}

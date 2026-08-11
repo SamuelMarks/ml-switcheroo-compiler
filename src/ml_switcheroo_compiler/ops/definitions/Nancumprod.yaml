@@ -1,7 +1,19 @@
-operation: Nancumprod
+operation: nancumprod
 description: The Nancumprod operation.
+std_args: []
 variants:
   cupy:
     eager: cp.nancumprod
   dask:
     eager: da.nancumprod
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

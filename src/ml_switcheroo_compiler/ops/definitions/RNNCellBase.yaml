@@ -1,0 +1,5 @@
+operation: RNNCellBase
+description: Base class for RNN Cells.
+std_args: []
+type: class
+variants: {}

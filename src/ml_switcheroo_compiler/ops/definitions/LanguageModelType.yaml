@@ -1,0 +1,4 @@
+operation: LanguageModelType
+description: Enumerator for Language Model Types.
+std_args: []
+variants: {}

@@ -1,5 +1,6 @@
-operation: Frompyfunc
+operation: frompyfunc
 description: The Frompyfunc operation.
+std_args: []
 variants:
   cupy:
     eager: cp.frompyfunc
@@ -7,3 +8,18 @@ variants:
     eager: da.frompyfunc
   numpy:
     generator: np.frompyfunc
+  tensorflow:
+    eager: tf.frompyfunc
+  keras:
+    eager: keras_ops.frompyfunc
+  pytorch:
+    eager: torch.frompyfunc
+  jax:
+    eager: jax.numpy.frompyfunc
+  mlx:
+    eager: mlx.core.frompyfunc
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,7 @@
+operation: fragmented_array_to_ir
+description: Converts a FragmentedArray to an IR value.
+std_args:
+- fragmented_array
+- ty
+type: function
+variants: {}

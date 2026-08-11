@@ -1,5 +1,14 @@
 operation: CountNonzero
 description: The CountNonzero operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dim
+  type: Union[int, Tuple[int]]
 variants:
   cupy:
     eager: cp.count_nonzero
@@ -9,3 +18,12 @@ variants:
     eager: keras_ops.count_nonzero
   tensorflow:
     eager: tf.math.count_nonzero
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

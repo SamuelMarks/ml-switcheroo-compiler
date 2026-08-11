@@ -1,0 +1,9 @@
+operation: SparseTrace
+description: The class representing a Python class.
+std_args:
+- self
+- parent_trace
+- tag
+- spenv
+type: class
+variants: {}

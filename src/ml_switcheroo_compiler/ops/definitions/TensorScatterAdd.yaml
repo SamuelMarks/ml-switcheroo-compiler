@@ -3,3 +3,20 @@ description: The TensorScatterAdd operation.
 variants:
   pytorch:
     generator: '{0}.clone().index_put_(tuple({1}.unbind(-1)), {2}, accumulate=True)'
+  numpy:
+    eager: numpy.tensorscatteradd
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.tensorscatteradd
+  keras:
+    eager: keras_ops.tensorscatteradd
+  jax:
+    eager: jax.numpy.tensorscatteradd
+  mlx:
+    eager: mlx.core.tensorscatteradd
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

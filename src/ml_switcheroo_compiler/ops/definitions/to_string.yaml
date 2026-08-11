@@ -1,0 +1,8 @@
+operation: to_string
+description: Returns a string representation of the block mask. Quite nifty.
+std_args:
+- self
+- grid_size
+- limit
+type: function
+variants: {}

@@ -1,0 +1,4 @@
+operation: Model
+description: Base class for Neural Network Models.
+std_args: []
+variants: {}

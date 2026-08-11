@@ -1,0 +1,6 @@
+operation: coo_todense
+description: Convert a COO-format sparse matrix to a dense matrix.
+std_args:
+- mat
+type: function
+variants: {}

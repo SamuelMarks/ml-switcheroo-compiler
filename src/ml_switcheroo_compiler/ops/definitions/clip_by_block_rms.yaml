@@ -1,0 +1,5 @@
+operation: clip_by_block_rms
+description: Auto-generated from jax_code_defs
+std_args: []
+type: attribute
+variants: {}

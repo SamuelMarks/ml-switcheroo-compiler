@@ -1,0 +1,4 @@
+operation: scatter_add
+description: Auto-generated mapping for scatter_add.
+std_args: []
+variants: {}

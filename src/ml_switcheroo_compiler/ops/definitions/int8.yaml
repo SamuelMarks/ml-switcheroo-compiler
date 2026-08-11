@@ -1,5 +1,18 @@
 operation: int8
 description: The int8 operation.
+std_args: []
 variants:
   edge_stablehlo:
     generator: i8
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

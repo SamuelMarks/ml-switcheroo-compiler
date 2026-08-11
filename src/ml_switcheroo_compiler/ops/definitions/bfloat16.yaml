@@ -1,5 +1,19 @@
 operation: bfloat16
 description: The bfloat16 operation.
+std_args: []
+type: function
 variants:
   edge_stablehlo:
     generator: bf16
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

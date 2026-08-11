@@ -4,6 +4,7 @@ from typing import Any
 """Syntactic Transpilation Engine (Whitespace/Comment Preserving)."""
 
 import libcst as cst
+import libcst.matchers as m
 
 TARGET_CONFIGS: dict[str, tuple[str, list[str]]] = {
     "jax": ("jax", ["jax", "numpy"]),
@@ -13,6 +14,29 @@ TARGET_CONFIGS: dict[str, tuple[str, list[str]]] = {
     "dask": ("dask.array", ["dask", "array"]),
     "cupy": ("cupy", ["cupy"]),
     "numpy": ("numpy", ["numpy"]),
+}
+
+KWARG_MAP: dict[str, dict[str, str]] = {
+    "jax": {
+        "dim": "axis",
+        "keepdim": "keepdims",
+    },
+    "pytorch": {
+        "axis": "dim",
+        "keepdims": "keepdim",
+    },
+    "mlx": {
+        "dim": "axis",
+        "keepdim": "keepdims",
+    },
+    "numpy": {
+        "dim": "axis",
+        "keepdim": "keepdims",
+    },
+    "keras": {
+        "dim": "axis",
+        "keepdim": "keepdims",
+    },
 }
 
 KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "keras", "tensorflow"}
@@ -142,8 +166,39 @@ class CSTTransformer(cst.CSTTransformer):
             original_node (cst.Call): The original_node parameter.
             updated_node (cst.Call): The updated_node parameter.
         """
-        if not isinstance(updated_node.func, cst.Attribute):
-            return updated_node
+        new_args = []
+        mutated_args = False
+        if self.target_framework in KWARG_MAP:
+            kw_map = KWARG_MAP[self.target_framework]
+            for arg in updated_node.args:
+                if arg.keyword and arg.keyword.value in kw_map:
+                    new_kw = arg.keyword.with_changes(value=kw_map[arg.keyword.value])
+                    new_args.append(arg.with_changes(keyword=new_kw))
+                    mutated_args = True
+                else:
+                    new_args.append(arg)
+        else:
+            new_args = list(updated_node.args)
+
+        final_node = updated_node
+        if mutated_args:
+            final_node = final_node.with_changes(args=new_args)
+
+        if not isinstance(final_node.func, cst.Attribute):
+            return final_node
+
+        # Handle explicit broadcast translations (e.g. x.expand(...) -> jnp.broadcast_to(x, ...))
+        if final_node.func.attr.value == "expand" and self.target_framework in ("jax", "numpy", "mlx"):
+            if self.target_framework == "jax":
+                target_base = _build_attribute_chain(["jnp", "broadcast_to"])
+            elif self.target_framework == "numpy":
+                target_base = _build_attribute_chain(["np", "broadcast_to"])
+            else:
+                target_base = _build_attribute_chain(["mlx", "core", "broadcast_to"])
+            return final_node.with_changes(func=target_base, args=[cst.Arg(value=final_node.func.value)] + list(final_node.args))
+
+        if final_node.func.attr.value == "broadcast_to" and self.target_framework == "pytorch":
+            return final_node.with_changes(func=cst.Attribute(value=final_node.args[0].value, attr=cst.Name("expand")), args=list(final_node.args)[1:])
 
         def _get_base_name(node: cst.BaseExpression) -> str:
             if isinstance(node, cst.Name):
@@ -152,15 +207,75 @@ class CSTTransformer(cst.CSTTransformer):
                 return _get_base_name(node.value)
             return ""
 
-        src_call_base = _get_base_name(updated_node.func)
+        src_call_base = _get_base_name(final_node.func)
 
         if src_call_base in KNOWN_SOURCE_FRAMEWORKS and self.target_framework in TARGET_CONFIGS:
             target_chain = TARGET_CONFIGS[self.target_framework][1]
             if target_chain != [src_call_base]:
                 new_value = _build_attribute_chain(target_chain)
-                new_func = updated_node.func.with_changes(value=new_value)
-                return updated_node.with_changes(func=new_func)
+                new_func = final_node.func.with_changes(value=new_value)
+                return final_node.with_changes(func=new_func)
 
+        return final_node
+
+    def leave_ClassDef(
+        self,
+        original_node: cst.ClassDef,
+        updated_node: cst.ClassDef,
+    ) -> cst.ClassDef:
+        """Handle Stateful-to-Functional and Functional-to-Stateful class rewrites.
+
+        Args:
+            original_node (cst.ClassDef): The original node.
+            updated_node (cst.ClassDef): The updated node.
+
+        Returns:
+            cst.ClassDef: The modified class definition.
+        """
+        new_bases = []
+        mutated_bases = False
+        for base in updated_node.bases:
+            if m.matches(base.value, m.Attribute(value=m.Name("nn"), attr=m.Name("Module"))):
+                if self.target_framework == "jax":
+                    new_base = base.with_changes(value=_build_attribute_chain(["flax", "linen", "Module"]))
+                    new_bases.append(new_base)
+                    mutated_bases = True
+                else:
+                    new_bases.append(base)
+            elif m.matches(base.value, m.Attribute(value=m.Attribute(value=m.Name("flax"), attr=m.Name("linen")), attr=m.Name("Module"))):
+                if self.target_framework == "pytorch":
+                    new_base = base.with_changes(value=_build_attribute_chain(["nn", "Module"]))
+                    new_bases.append(new_base)
+                    mutated_bases = True
+                else:
+                    new_bases.append(base)
+            else:
+                new_bases.append(base)
+
+        if mutated_bases:
+            return updated_node.with_changes(bases=new_bases)
+        return updated_node
+
+    def leave_FunctionDef(
+        self,
+        original_node: cst.FunctionDef,
+        updated_node: cst.FunctionDef,
+    ) -> cst.FunctionDef:
+        """Rewrite method names based on framework conventions.
+
+        Args:
+            original_node (cst.FunctionDef): The original node.
+            updated_node (cst.FunctionDef): The updated node.
+
+        Returns:
+            cst.FunctionDef: The modified function definition.
+        """
+        if updated_node.name.value == "forward" and self.target_framework == "jax":
+            return updated_node.with_changes(name=cst.Name("__call__"))
+        if updated_node.name.value == "__call__" and self.target_framework == "pytorch":
+            # Only change if it seems like a class method (has self)
+            if updated_node.params.params and updated_node.params.params[0].name.value == "self":
+                return updated_node.with_changes(name=cst.Name("forward"))
         return updated_node
 
     def leave_Attribute(

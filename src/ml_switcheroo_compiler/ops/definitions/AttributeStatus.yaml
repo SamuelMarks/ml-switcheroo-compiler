@@ -1,0 +1,23 @@
+operation: AttributeStatus
+description: Auto-generated mapping for AttributeStatus.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.attributestatus
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.attributestatus
+  keras:
+    eager: keras_ops.attributestatus
+  pytorch:
+    eager: torch.attributestatus
+  jax:
+    eager: jax.numpy.attributestatus
+  mlx:
+    eager: mlx.core.attributestatus
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -53,3 +53,15 @@ def get_vjp(op_name: str) -> Callable:
     if op_name not in _VJP_REGISTRY:
         raise ValueError(f"Missing VJP rule for operation: {op_name}")
     return _VJP_REGISTRY[op_name]
+
+
+def has_vjp(op_name: str) -> bool:
+    """Check if a rule is registered.
+
+    Args:
+        op_name (str): The op_name parameter.
+
+    Returns:
+        bool: Result.
+    """
+    return op_name in _VJP_REGISTRY

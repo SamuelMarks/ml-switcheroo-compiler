@@ -1,0 +1,4 @@
+operation: NoDCEEffect
+description: Auto-generated mapping for NoDCEEffect.
+std_args: []
+variants: {}

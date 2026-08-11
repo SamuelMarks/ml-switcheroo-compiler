@@ -1,0 +1,6 @@
+operation: vector_concat
+description: The class representing a Python function.
+std_args:
+- vectors
+type: function
+variants: {}

@@ -5,3 +5,20 @@ variants:
     generator: ReduceMax
   edge_stablehlo:
     generator: stablehlo.reduce
+  numpy:
+    eager: numpy.reducemax
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.reducemax
+  keras:
+    eager: keras_ops.reducemax
+  pytorch:
+    eager: torch.reducemax
+  jax:
+    eager: jax.numpy.reducemax
+  mlx:
+    eager: mlx.core.reducemax
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

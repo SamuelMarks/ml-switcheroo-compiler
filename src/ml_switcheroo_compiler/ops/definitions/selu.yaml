@@ -1,0 +1,5 @@
+operation: SELU
+description: Auto-generated mapping for selu.
+std_args: []
+type: function
+variants: {}

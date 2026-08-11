@@ -3,3 +3,20 @@ description: The RaggedConstant operation.
 variants:
   numpy:
     generator: tf.ragged.constant
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.raggedconstant
+  keras:
+    eager: keras_ops.raggedconstant
+  pytorch:
+    eager: torch.raggedconstant
+  jax:
+    eager: jax.numpy.raggedconstant
+  mlx:
+    eager: mlx.core.raggedconstant
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

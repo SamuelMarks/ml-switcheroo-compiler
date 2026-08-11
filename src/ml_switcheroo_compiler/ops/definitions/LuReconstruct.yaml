@@ -7,3 +7,18 @@ variants:
       axis=-1), -1), {0}.shape), axis=-2)
   tensorflow:
     eager: tf.linalg.lu_reconstruct
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.lureconstruct
+  pytorch:
+    eager: torch.lureconstruct
+  jax:
+    eager: jax.numpy.lureconstruct
+  mlx:
+    eager: mlx.core.lureconstruct
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

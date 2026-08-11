@@ -1,0 +1,4 @@
+operation: scatter_min
+description: Auto-generated mapping for scatter_min.
+std_args: []
+variants: {}

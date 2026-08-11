@@ -1,5 +1,14 @@
 operation: LogicalXor
 description: The LogicalXor operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Tensor
 variants:
   cupy:
     eager: cp.logical_xor
@@ -9,3 +18,16 @@ variants:
     eager: keras_ops.logical_xor
   tensorflow:
     eager: tf.math.logical_xor
+  numpy:
+    eager: numpy.logicalxor
+  pytorch:
+    eager: torch.logicalxor
+  jax:
+    eager: jax.numpy.logicalxor
+  mlx:
+    eager: mlx.core.logicalxor
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

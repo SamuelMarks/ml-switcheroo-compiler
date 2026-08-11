@@ -1,0 +1,4 @@
+operation: ComplexFloatStorage
+description: Storage for Complex Float (complex64) data.
+std_args: []
+variants: {}

@@ -1,5 +1,15 @@
-operation: Qr
+operation: QR
 description: The Qr operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mode
+  type: Literal[reduced, complete]
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.qr

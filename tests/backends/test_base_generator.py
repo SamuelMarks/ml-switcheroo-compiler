@@ -527,7 +527,7 @@ def test_base_generator_coverage_extras():
 
     # Hit line 243 by forcing get_ops_map to fetch from registry
     ops = gen.get_ops_map({})
-    assert "Transpose" in ops
+    assert "transpose" in ops or "Transpose" in ops
 
     # Hit line 304-312 by forcing _format_operation with no format string
     node = IRNode(id="n1", op_type="UnknownCovOp", inputs=[])

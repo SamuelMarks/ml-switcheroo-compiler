@@ -1,0 +1,4 @@
+operation: ConcreteModuleTypeBuilder
+description: Builder class for ConcreteModuleType.
+std_args: []
+variants: {}

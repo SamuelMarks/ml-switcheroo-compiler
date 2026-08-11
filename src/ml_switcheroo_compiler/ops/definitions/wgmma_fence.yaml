@@ -1,0 +1,6 @@
+operation: wgmma_fence
+description: Fences the array construction from WGMMA instructions.
+std_args:
+- array
+type: function
+variants: {}

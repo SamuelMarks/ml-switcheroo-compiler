@@ -1,0 +1,5 @@
+operation: set_up_flags
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

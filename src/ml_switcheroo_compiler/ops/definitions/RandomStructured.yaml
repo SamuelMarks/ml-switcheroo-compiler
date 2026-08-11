@@ -1,0 +1,8 @@
+operation: RandomStructured
+description: Prune entire (currently unpruned) channels in a tensor at random.
+std_args:
+- self
+- amount
+- dim
+type: class
+variants: {}

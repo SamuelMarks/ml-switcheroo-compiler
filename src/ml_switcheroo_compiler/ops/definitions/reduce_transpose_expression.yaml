@@ -1,0 +1,7 @@
+operation: reduce_transpose_expression
+description: The class representing a Python function.
+std_args:
+- transpose
+- assignments
+type: function
+variants: {}

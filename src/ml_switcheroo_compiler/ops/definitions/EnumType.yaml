@@ -1,0 +1,4 @@
+operation: EnumType
+description: Internal type definition for Enums in TorchScript.
+std_args: []
+variants: {}

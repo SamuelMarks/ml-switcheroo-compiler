@@ -1,0 +1,27 @@
+operation: TorchSave
+description: Definition for TorchSave
+std_args:
+- obj
+- f
+variants:
+  pytorch:
+    eager: torch.save
+  jax:
+    eager: save
+    requires_plugin: io_handler
+  numpy:
+    eager: save
+    requires_plugin: io_handler
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.torchsave
+  keras:
+    eager: keras_ops.torchsave
+  mlx:
+    eager: mlx.core.torchsave
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

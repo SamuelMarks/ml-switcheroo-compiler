@@ -1,0 +1,8 @@
+operation: OptArray
+description: Optimizer state for an array.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: value
+  type: Any
+variants: {}

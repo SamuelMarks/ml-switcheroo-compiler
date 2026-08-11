@@ -1,0 +1,8 @@
+operation: Iterable
+description: Check whether or not an object can be iterated over.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y
+  type: Any
+variants: {}

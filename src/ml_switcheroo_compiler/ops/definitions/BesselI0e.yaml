@@ -1,7 +1,23 @@
 operation: BesselI0e
 description: The BesselI0e operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   numpy:
     generator: scipy.special.i0e
   tensorflow:
     eager: tf.math.bessel_i0e
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

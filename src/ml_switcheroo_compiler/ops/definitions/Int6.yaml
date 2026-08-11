@@ -1,0 +1,4 @@
+operation: Int6
+description: 6-bit integer data type (Quantization).
+std_args: []
+variants: {}

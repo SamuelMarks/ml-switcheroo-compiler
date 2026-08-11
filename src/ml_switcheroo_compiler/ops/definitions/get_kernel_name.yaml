@@ -1,0 +1,9 @@
+operation: get_kernel_name
+description: Returns a unique name for all SplashAttention kernel variants.
+std_args:
+- is_mqa
+- save_residuals
+- is_segmented
+- phase
+type: function
+variants: {}

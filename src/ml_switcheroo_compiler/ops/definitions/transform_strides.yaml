@@ -1,0 +1,7 @@
+operation: transform_strides
+description: The class representing a Python function.
+std_args:
+- self
+- strides
+type: function
+variants: {}

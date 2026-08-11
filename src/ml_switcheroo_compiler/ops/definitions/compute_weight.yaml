@@ -1,0 +1,7 @@
+operation: compute_weight
+description: The class representing a Python function.
+std_args:
+- self
+- module
+type: function
+variants: {}

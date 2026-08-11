@@ -1,5 +1,7 @@
-operation: Xlogy
+operation: xlogy
 description: The Xlogy operation.
+std_args: []
+type: attribute
 variants:
   tensorflow:
     eager: tf.math.xlogy

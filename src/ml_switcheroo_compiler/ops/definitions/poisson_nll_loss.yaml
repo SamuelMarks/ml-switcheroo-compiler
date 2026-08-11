@@ -1,0 +1,5 @@
+operation: poisson_nll_loss
+description: Auto-generated mapping for poisson_nll_loss.
+std_args: []
+type: function
+variants: {}

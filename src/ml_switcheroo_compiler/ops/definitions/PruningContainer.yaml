@@ -1,0 +1,7 @@
+operation: PruningContainer
+description: Container holding a sequence of pruning methods for iterative pruning.
+std_args:
+- self
+- args
+type: class
+variants: {}

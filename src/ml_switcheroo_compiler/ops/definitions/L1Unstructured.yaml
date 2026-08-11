@@ -1,0 +1,8 @@
+operation: L1Unstructured
+description: Prune (currently unpruned) units in a tensor by zeroing out the ones
+  with the lowest L1-norm.
+std_args:
+- self
+- amount
+type: class
+variants: {}

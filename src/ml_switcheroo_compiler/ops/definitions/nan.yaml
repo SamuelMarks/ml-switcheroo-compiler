@@ -1,0 +1,4 @@
+operation: nan
+description: IEEE 754 floating-point representation of Not a Number (``NaN``).
+std_args: []
+variants: {}

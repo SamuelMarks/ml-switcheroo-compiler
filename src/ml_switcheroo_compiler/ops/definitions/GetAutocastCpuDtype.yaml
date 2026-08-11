@@ -1,0 +1,4 @@
+operation: GetAutocastCpuDtype
+description: Get autocast CPU dtype.
+std_args: []
+variants: {}

@@ -1,0 +1,5 @@
+operation: tmem
+description: Returns the attribute for the TMEM memory space.
+std_args: []
+type: function
+variants: {}

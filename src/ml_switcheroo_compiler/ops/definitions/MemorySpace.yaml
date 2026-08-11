@@ -1,0 +1,5 @@
+operation: MemorySpace
+description: The memory space of a variable.
+std_args: []
+type: class
+variants: {}

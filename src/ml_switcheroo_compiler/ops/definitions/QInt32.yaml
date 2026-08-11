@@ -1,0 +1,4 @@
+operation: QInt32
+description: Quantized Int32 Dtype.
+std_args: []
+variants: {}

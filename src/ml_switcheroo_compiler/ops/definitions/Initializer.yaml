@@ -1,0 +1,4 @@
+operation: Initializer
+description: Variable initializer type.
+std_args: []
+variants: {}

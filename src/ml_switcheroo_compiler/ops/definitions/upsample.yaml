@@ -1,0 +1,5 @@
+operation: upsample
+description: Auto-generated mapping for upsample.
+std_args: []
+type: function
+variants: {}

@@ -1,5 +1,7 @@
-operation: Logsumexp
+operation: logsumexp
 description: The Logsumexp operation.
+std_args: []
+type: attribute
 variants:
   keras:
     eager: keras_ops.logsumexp

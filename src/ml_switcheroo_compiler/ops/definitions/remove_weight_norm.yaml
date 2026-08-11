@@ -1,0 +1,7 @@
+operation: remove_weight_norm
+description: Remove the weight normalization reparameterization from a module.
+std_args:
+- module
+- name
+type: function
+variants: {}

@@ -1,0 +1,4 @@
+operation: InitNumThreads
+description: Initializes the number of parallel threads used on the current thread.
+std_args: []
+variants: {}

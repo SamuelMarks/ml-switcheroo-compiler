@@ -1,0 +1,9 @@
+operation: extract_assignment_candidates_from_reduce_equation
+description: Yields layout candidates for the reduce equation `small = reduce(large,
+  reduction_dims).
+std_args:
+- small
+- large
+- reduction_dims
+type: function
+variants: {}

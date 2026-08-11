@@ -1,7 +1,46 @@
 operation: TopK
 description: The TopK operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: k
+  type: int
+- default: -1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: dim
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: largest
+  type: bool
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: sorted
+  type: bool
 variants:
   keras:
     eager: keras_ops.top_k
   tensorflow:
     eager: tf.math.top_k
+  numpy:
+    eager: numpy.topk
+  cupy: {}
+  dask: {}
+  pytorch:
+    eager: torch.topk
+  jax:
+    eager: jax.numpy.topk
+  mlx:
+    eager: mlx.core.topk
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

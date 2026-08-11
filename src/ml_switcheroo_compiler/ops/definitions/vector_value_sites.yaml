@@ -1,0 +1,6 @@
+operation: vector_value_sites
+description: Returns all the vector operands and results for the given op.
+std_args:
+- op
+type: function
+variants: {}

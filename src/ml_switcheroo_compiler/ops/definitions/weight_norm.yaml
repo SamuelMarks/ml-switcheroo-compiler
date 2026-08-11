@@ -1,0 +1,8 @@
+operation: weight_norm
+description: Apply weight normalization to a parameter in the given module.
+std_args:
+- module
+- name
+- dim
+type: function
+variants: {}

@@ -1,0 +1,4 @@
+operation: TensorType
+description: Type representation of a Tensor.
+std_args: []
+variants: {}

@@ -1,5 +1,11 @@
 operation: Tanh
 description: The Tanh operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: function
 variants:
   cupy:
     eager: cp.tanh
@@ -13,3 +19,14 @@ variants:
     eager: keras_ops.tanh
   tensorflow:
     eager: tf.tanh
+  numpy:
+    eager: numpy.tanh
+  pytorch:
+    eager: torch.tanh
+  jax:
+    eager: jax.numpy.tanh
+  mlx:
+    eager: mlx.core.tanh
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

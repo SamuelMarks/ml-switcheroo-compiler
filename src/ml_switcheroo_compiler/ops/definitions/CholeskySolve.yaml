@@ -1,7 +1,32 @@
 operation: CholeskySolve
 description: The CholeskySolve operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input2
+  type: Tensor
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: upper
+  type: bool
 variants:
   numpy:
     generator: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
   tensorflow:
     eager: tf.linalg.cholesky_solve
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

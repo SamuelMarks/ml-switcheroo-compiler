@@ -1,0 +1,4 @@
+operation: Intp
+description: Integer used for indexing (pointer size).
+std_args: []
+variants: {}

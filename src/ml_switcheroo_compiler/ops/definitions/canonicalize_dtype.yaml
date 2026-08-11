@@ -1,0 +1,4 @@
+operation: canonicalize_dtype
+description: Auto-generated mapping for canonicalize_dtype.
+std_args: []
+variants: {}

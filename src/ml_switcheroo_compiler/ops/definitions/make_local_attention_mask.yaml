@@ -1,0 +1,8 @@
+operation: make_local_attention_mask
+description: Makes a local attention mask.
+std_args:
+- shape
+- window_size
+- offset
+type: function
+variants: {}

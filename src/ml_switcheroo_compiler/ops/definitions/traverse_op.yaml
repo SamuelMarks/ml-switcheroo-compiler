@@ -1,0 +1,7 @@
+operation: traverse_op
+description: Traverses the operation and applies the callback in pre-order fashion.
+std_args:
+- op
+- callback
+type: function
+variants: {}

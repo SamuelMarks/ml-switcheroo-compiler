@@ -1,0 +1,22 @@
+operation: RandomRotation
+description: Randomly rotates images during training.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: factor
+  type: float
+- default: reflect
+  is_variadic: false
+  kind: positional_or_keyword
+  name: fill_mode
+  type: str
+- default: bilinear
+  is_variadic: false
+  kind: positional_or_keyword
+  name: interpolation
+  type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: seed
+  type: int
+variants: {}

@@ -7,3 +7,18 @@ variants:
       axis=-1), -1), {0}.shape), axis=-2))
   tensorflow:
     eager: tf.linalg.lu_matrix_inverse
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.lumatrixinverse
+  pytorch:
+    eager: torch.lumatrixinverse
+  jax:
+    eager: jax.numpy.lumatrixinverse
+  mlx:
+    eager: mlx.core.lumatrixinverse
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

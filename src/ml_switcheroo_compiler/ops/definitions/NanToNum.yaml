@@ -1,5 +1,23 @@
 operation: NanToNum
 description: The NanToNum operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- default: 0.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: nan
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: posinf
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: neginf
+  type: float
 variants:
   cupy:
     eager: cp.nan_to_num
@@ -11,3 +29,11 @@ variants:
     generator: np.nan_to_num
   pytorch:
     generator: torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})
+  tensorflow: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

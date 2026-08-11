@@ -1,0 +1,7 @@
+operation: from_bcoo
+description: The class representing a Python function.
+std_args:
+- cls
+- arr
+type: function
+variants: {}

@@ -1,0 +1,55 @@
+operation: BatchNormGatherStats
+description: Internal operation for BatchNorm statistics gathering.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mean
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: invstd
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: running_mean
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: running_var
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: momentum
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: eps
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: count
+  type: Any
+variants:
+  numpy:
+    eager: numpy.batchnormgatherstats
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.batchnormgatherstats
+  keras:
+    eager: keras_ops.batchnormgatherstats
+  pytorch:
+    eager: torch.batchnormgatherstats
+  jax:
+    eager: jax.numpy.batchnormgatherstats
+  mlx:
+    eager: mlx.core.batchnormgatherstats
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

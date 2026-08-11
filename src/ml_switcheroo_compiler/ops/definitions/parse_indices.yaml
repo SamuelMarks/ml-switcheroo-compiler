@@ -1,0 +1,8 @@
+operation: parse_indices
+description: The class representing a Python function.
+std_args:
+- index
+- shape
+- check_oob
+type: function
+variants: {}

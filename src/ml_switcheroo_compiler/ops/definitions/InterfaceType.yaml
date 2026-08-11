@@ -1,0 +1,4 @@
+operation: InterfaceType
+description: JIT type representing Interface.
+std_args: []
+variants: {}

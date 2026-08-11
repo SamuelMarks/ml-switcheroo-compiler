@@ -1,5 +1,23 @@
-operation: Polyint
+operation: polyint
 description: The Polyint operation.
+std_args: []
 variants:
   numpy:
     generator: np.polyint
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.polyint
+  keras:
+    eager: keras_ops.polyint
+  pytorch:
+    eager: torch.polyint
+  jax:
+    eager: jax.numpy.polyint
+  mlx:
+    eager: mlx.core.polyint
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

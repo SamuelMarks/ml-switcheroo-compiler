@@ -3,3 +3,21 @@ description: The Loop operation.
 variants:
   edge_onnx:
     generator: Loop
+  numpy:
+    eager: numpy.loop
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.loop
+  keras:
+    eager: keras_ops.loop
+  pytorch:
+    eager: torch.loop
+  jax:
+    eager: jax.numpy.loop
+  mlx:
+    eager: mlx.core.loop
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

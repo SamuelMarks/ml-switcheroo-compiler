@@ -1,0 +1,19 @@
+operation: SeedGenerator
+description: Auto-generated mapping for SeedGenerator.
+std_args: []
+variants:
+  keras:
+    eager: keras.random.SeedGenerator
+    required_imports: []
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

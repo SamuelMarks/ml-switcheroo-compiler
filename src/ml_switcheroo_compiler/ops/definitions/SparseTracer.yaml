@@ -1,0 +1,8 @@
+operation: SparseTracer
+description: The class representing a Python class.
+std_args:
+- self
+- trace
+- spvalue
+type: class
+variants: {}

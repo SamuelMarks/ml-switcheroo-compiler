@@ -1,0 +1,5 @@
+operation: ReflectionPad1d
+description: Auto-generated mapping for ReflectionPad1d.
+std_args: []
+type: class
+variants: {}

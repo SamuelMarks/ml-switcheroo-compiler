@@ -1,0 +1,4 @@
+operation: IsAutocastEnabled
+description: Returns True if autocast is enabled.
+std_args: []
+variants: {}

@@ -1,7 +1,33 @@
-operation: Remainder
+operation: remainder
 description: The Remainder operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     eager: cp.remainder
   dask:
     eager: da.remainder
+  numpy:
+    eager: numpy.remainder
+  tensorflow:
+    eager: tf.remainder
+  keras:
+    eager: keras_ops.remainder
+  pytorch:
+    eager: torch.remainder
+  jax:
+    eager: jax.numpy.remainder
+  mlx:
+    eager: mlx.core.remainder
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

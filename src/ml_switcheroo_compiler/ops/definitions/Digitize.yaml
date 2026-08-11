@@ -1,5 +1,6 @@
-operation: Digitize
+operation: digitize
 description: The Digitize operation.
+std_args: []
 variants:
   cupy:
     eager: cp.digitize
@@ -7,3 +8,13 @@ variants:
     eager: da.digitize
   keras:
     eager: keras_ops.digitize
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

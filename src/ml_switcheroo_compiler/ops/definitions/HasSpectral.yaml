@@ -1,0 +1,4 @@
+operation: HasSpectral
+description: Checks if spectral ops are available.
+std_args: []
+variants: {}

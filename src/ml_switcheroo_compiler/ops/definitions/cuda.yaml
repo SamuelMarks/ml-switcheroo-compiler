@@ -1,0 +1,7 @@
+operation: cuda
+description: Move all model parameters and buffers to the GPU.
+std_args:
+- self
+- device
+type: function
+variants: {}

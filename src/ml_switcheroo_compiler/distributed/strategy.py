@@ -454,38 +454,53 @@ class PipelineParallelismStrategy(Distribution):
 
         Returns: Any: Result.
         """
-        from ml_switcheroo_compiler.ir.core import IRNode
+        from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
         if self.num_microbatches <= 1:
             return
 
         inputs = [n for n in graph.nodes.values() if n.op_type == "Input"]
+        compute_nodes = {nid: n for nid, n in graph.nodes.items() if n.op_type != "Input"}
 
-        # 1. Inject slices
-        sliced_inputs = []
+        graph.nodes = {n.id: n for n in inputs}
+
+        body_graph = IRGraph()
+        body_inputs = []
         for inp in inputs:
+            body_in = IRNode(id=f"{inp.id}_b", op_type="Input")
+            body_graph.nodes[body_in.id] = body_in
+            body_inputs.append(body_in)
+
             slice_id = f"{inp.id}_slice"
-            slice_node = IRNode(id=slice_id, op_type="Slice", inputs=[inp.id, "microbatch_idx"], attributes={"axis": 0, "num_chunks": self.num_microbatches})
-            graph.nodes[slice_id] = slice_node
-            sliced_inputs.append(slice_id)
+            slice_node = IRNode(id=slice_id, op_type="Slice", inputs=[body_in.id, "microbatch_idx"], attributes={"axis": 0, "num_chunks": self.num_microbatches})
+            body_graph.nodes[slice_id] = slice_node
 
-            # Re-route the rest of the graph to use the sliced input
-            for n in graph.nodes.values():
-                if n.id not in (slice_id, "microbatch_idx", "microbatch_loop"):
-                    for i, in_id in enumerate(n.inputs):
-                        if in_id == inp.id:
-                            n.inputs[i] = slice_id
+            for n in compute_nodes.values():
+                for i, in_id in enumerate(n.inputs):
+                    if in_id == inp.id:
+                        n.inputs[i] = slice_id
 
-        # 2. Add loop wrapper
-        loop_node = IRNode(id="microbatch_loop", op_type="WhileLoop", inputs=[i.id for i in inputs], attributes={"num_iterations": self.num_microbatches, "microbatch": True})
+        for n in compute_nodes.values():
+            body_graph.nodes[n.id] = n
+
+        body_graph.inputs = [i.id for i in body_inputs]
+        body_graph.outputs = graph.outputs
+
+        cond_graph = IRGraph()
+        cond_in = IRNode(id="idx_cond", op_type="Input")
+        cond_cmp = IRNode(id="cond_cmp", op_type="Less", inputs=["idx_cond", "max_iters"], attributes={})
+        cond_graph.nodes = {"idx_cond": cond_in, "cond_cmp": cond_cmp}
+        cond_graph.inputs = ["idx_cond"]
+        cond_graph.outputs = ["cond_cmp"]
+
+        loop_node = IRNode(id="microbatch_loop", op_type="WhileLoop", inputs=[i.id for i in inputs], attributes={"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph})
         graph.nodes[loop_node.id] = loop_node
 
-        # 3. Concatenate outputs
         if graph.outputs:
             new_outputs = []
             for out_id in graph.outputs:
                 concat_id = f"{out_id}_concat"
-                concat_node = IRNode(id=concat_id, op_type="Concat", inputs=[out_id], attributes={"axis": 0, "num_chunks": self.num_microbatches})
+                concat_node = IRNode(id=concat_id, op_type="Concat", inputs=[loop_node.id], attributes={"axis": 0, "num_chunks": self.num_microbatches, "original_out": out_id})
                 graph.nodes[concat_id] = concat_node
                 new_outputs.append(concat_id)
             graph.outputs = new_outputs

@@ -1,0 +1,8 @@
+operation: reduce_expression
+description: Reduces an expression as much as is possible given a set of known variable
+  assignments.
+std_args:
+- expr
+- assignments
+type: function
+variants: {}

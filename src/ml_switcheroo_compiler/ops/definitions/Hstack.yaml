@@ -1,5 +1,6 @@
-operation: Hstack
+operation: hstack
 description: The Hstack operation.
+std_args: []
 variants:
   cupy:
     eager: cp.hstack
@@ -7,3 +8,18 @@ variants:
     eager: da.hstack
   keras:
     eager: keras_ops.hstack
+  numpy:
+    eager: numpy.hstack
+  tensorflow:
+    eager: tf.hstack
+  pytorch:
+    eager: torch.hstack
+  jax:
+    eager: jax.numpy.hstack
+  mlx:
+    eager: mlx.core.hstack
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

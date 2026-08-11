@@ -1,0 +1,4 @@
+operation: SparseCsc
+description: Layout constant for CSC.
+std_args: []
+variants: {}

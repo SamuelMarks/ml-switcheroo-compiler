@@ -1,5 +1,6 @@
-operation: Bincount
+operation: bincount
 description: The Bincount operation.
+std_args: []
 variants:
   cupy:
     eager: cp.bincount
@@ -11,3 +12,11 @@ variants:
     generator: np.bincount
   tensorflow:
     eager: tf.math.bincount
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

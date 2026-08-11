@@ -1,0 +1,4 @@
+operation: Gpu
+description: GPU Device Identifier.
+std_args: []
+variants: {}

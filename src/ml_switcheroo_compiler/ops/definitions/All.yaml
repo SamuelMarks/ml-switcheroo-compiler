@@ -1,5 +1,18 @@
-operation: All
+operation: all
 description: The All operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[Union[int, Tuple[int, Ellipsis]]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   cupy:
     eager: cp.all
@@ -9,3 +22,17 @@ variants:
     eager: keras_ops.all
   pytorch:
     generator: torch.all({0}, dim={axis}, keepdim={keepdims})
+  numpy:
+    eager: np.all
+  tensorflow:
+    eager: tf.reduce_all
+  jax:
+    eager: jax.numpy.all
+  mlx:
+    eager: mlx.core.all
+  edge_onnx:
+    generator: ReduceAll
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

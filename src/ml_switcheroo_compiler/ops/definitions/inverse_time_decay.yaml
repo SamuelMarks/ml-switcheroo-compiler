@@ -1,0 +1,9 @@
+operation: inverse_time_decay
+description: The class representing a Python function.
+std_args:
+- step_size
+- decay_steps
+- decay_rate
+- staircase
+type: function
+variants: {}

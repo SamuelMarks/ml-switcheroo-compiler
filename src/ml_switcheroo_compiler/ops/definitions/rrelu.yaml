@@ -1,0 +1,5 @@
+operation: rrelu
+description: Auto-generated mapping for rrelu.
+std_args: []
+type: function
+variants: {}

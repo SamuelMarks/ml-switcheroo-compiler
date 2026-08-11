@@ -1,0 +1,7 @@
+operation: make_jaxpr_dump
+description: The class representing a Python function.
+std_args:
+- jaxpr
+- _
+type: function
+variants: {}

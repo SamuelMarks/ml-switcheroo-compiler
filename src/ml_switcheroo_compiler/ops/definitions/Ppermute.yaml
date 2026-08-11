@@ -1,5 +1,23 @@
-operation: Ppermute
+operation: ppermute
 description: The Ppermute operation.
+std_args: []
 variants:
   numpy:
     generator: '{0}'
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.ppermute
+  keras:
+    eager: keras_ops.ppermute
+  pytorch:
+    eager: torch.ppermute
+  jax:
+    eager: jax.numpy.ppermute
+  mlx:
+    eager: mlx.core.ppermute
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,10 @@
-operation: Sin
+operation: sin
 description: The Sin operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.sin
@@ -17,3 +22,9 @@ variants:
     generator: np.sin
   tensorflow:
     eager: tf.sin
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

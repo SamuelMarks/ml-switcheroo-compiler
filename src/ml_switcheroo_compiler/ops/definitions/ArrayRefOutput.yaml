@@ -1,0 +1,23 @@
+operation: ArrayRefOutput
+description: Auto-generated mapping for ArrayRefOutput.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.arrayrefoutput
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arrayrefoutput
+  keras:
+    eager: keras_ops.arrayrefoutput
+  pytorch:
+    eager: torch.arrayrefoutput
+  jax:
+    eager: jax.numpy.arrayrefoutput
+  mlx:
+    eager: mlx.core.arrayrefoutput
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

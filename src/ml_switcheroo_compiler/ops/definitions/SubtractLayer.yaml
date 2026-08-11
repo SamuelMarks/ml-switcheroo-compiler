@@ -1,0 +1,4 @@
+operation: SubtractLayer
+description: Layer that performs elementwise subtraction on a list of two inputs.
+std_args: []
+variants: {}

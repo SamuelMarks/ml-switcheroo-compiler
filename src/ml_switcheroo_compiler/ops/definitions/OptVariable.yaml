@@ -1,0 +1,8 @@
+operation: OptVariable
+description: Optimizer variable type.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: value
+  type: Any
+variants: {}

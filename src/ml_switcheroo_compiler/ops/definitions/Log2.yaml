@@ -1,5 +1,10 @@
-operation: Log2
+operation: log2
 description: The Log2 operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.log2
@@ -7,3 +12,18 @@ variants:
     eager: da.log2
   keras:
     eager: keras_ops.log2
+  numpy:
+    eager: numpy.log2
+  tensorflow:
+    eager: tf.log2
+  pytorch:
+    eager: torch.log2
+  jax:
+    eager: jax.numpy.log2
+  mlx:
+    eager: mlx.core.log2
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,6 @@
-operation: Vstack
+operation: vstack
 description: The Vstack operation.
+std_args: []
 variants:
   cupy:
     eager: cp.vstack
@@ -7,3 +8,18 @@ variants:
     eager: da.vstack
   keras:
     eager: keras_ops.vstack
+  numpy:
+    eager: numpy.vstack
+  tensorflow:
+    eager: tf.vstack
+  pytorch:
+    eager: torch.vstack
+  jax:
+    eager: jax.numpy.vstack
+  mlx:
+    eager: mlx.core.vstack
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

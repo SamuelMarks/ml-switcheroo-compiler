@@ -1,0 +1,4 @@
+operation: DeviceCpu
+description: Returns the CPU device object.
+std_args: []
+variants: {}

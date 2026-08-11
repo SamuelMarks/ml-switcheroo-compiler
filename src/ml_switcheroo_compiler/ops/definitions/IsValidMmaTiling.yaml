@@ -1,0 +1,8 @@
+operation: IsValidMmaTiling
+description: States that the `expr` SMEM tiling must be compatible with MMA requirements.
+std_args:
+- self
+- expr
+- bitwidth
+type: class
+variants: {}

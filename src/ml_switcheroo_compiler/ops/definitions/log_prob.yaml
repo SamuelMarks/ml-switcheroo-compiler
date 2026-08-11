@@ -1,0 +1,5 @@
+operation: log_prob
+description: Auto-generated from mlx_code_defs
+std_args: []
+type: function
+variants: {}

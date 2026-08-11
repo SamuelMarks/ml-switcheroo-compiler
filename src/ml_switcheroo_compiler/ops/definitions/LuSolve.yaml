@@ -1,7 +1,31 @@
-operation: LuSolve
+operation: LUSolve
 description: The LuSolve operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: b
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: LU_data
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: LU_pivots
+  type: Tensor
 variants:
   numpy:
     generator: scipy.linalg.lu_solve
   tensorflow:
     eager: tf.linalg.lu_solve
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

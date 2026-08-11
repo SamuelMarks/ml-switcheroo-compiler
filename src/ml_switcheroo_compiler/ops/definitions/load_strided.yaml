@@ -1,0 +1,9 @@
+operation: load_strided
+description: The class representing a Python function.
+std_args:
+- cls
+- ref
+- is_signed
+- vec_size
+type: function
+variants: {}

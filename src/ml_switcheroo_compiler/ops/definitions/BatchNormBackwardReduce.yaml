@@ -1,0 +1,51 @@
+operation: BatchNormBackwardReduce
+description: Internal operation for BatchNorm backward reduction steps.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: grad_out
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mean
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: invstd
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weight
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input_g_qs
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weight_g_qs
+  type: Any
+variants:
+  numpy:
+    eager: numpy.batchnormbackwardreduce
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.batchnormbackwardreduce
+  keras:
+    eager: keras_ops.batchnormbackwardreduce
+  pytorch:
+    eager: torch.batchnormbackwardreduce
+  jax:
+    eager: jax.numpy.batchnormbackwardreduce
+  mlx:
+    eager: mlx.core.batchnormbackwardreduce
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,8 @@
+operation: check_tf_result
+description: The class representing a Python function.
+std_args:
+- idx
+- r_tf
+- r_aval
+type: function
+variants: {}

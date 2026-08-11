@@ -1,5 +1,35 @@
-operation: Reverse
+operation: reverse
 description: The Reverse operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: self
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: args
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kwargs
+  type: Any
 variants:
   numpy:
     generator: np.flip
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.reverse
+  keras:
+    eager: keras_ops.reverse
+  pytorch:
+    eager: torch.reverse
+  jax:
+    eager: jax.numpy.reverse
+  mlx:
+    eager: mlx.core.reverse
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

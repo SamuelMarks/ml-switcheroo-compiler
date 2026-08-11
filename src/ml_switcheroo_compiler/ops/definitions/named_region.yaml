@@ -1,0 +1,8 @@
+operation: named_region
+description: The class representing a Python function.
+std_args:
+- self
+- args
+- kwargs
+type: function
+variants: {}

@@ -1,7 +1,25 @@
-operation: Ldexp
+operation: ldexp
 description: The Ldexp operation.
+std_args: []
 variants:
   cupy:
     eager: cp.ldexp
   dask:
     eager: da.ldexp
+  numpy:
+    eager: numpy.ldexp
+  tensorflow:
+    eager: tf.ldexp
+  keras:
+    eager: keras_ops.ldexp
+  pytorch:
+    eager: torch.ldexp
+  jax:
+    eager: jax.numpy.ldexp
+  mlx:
+    eager: mlx.core.ldexp
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

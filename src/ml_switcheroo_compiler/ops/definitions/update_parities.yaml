@@ -1,0 +1,7 @@
+operation: update_parities
+description: The class representing a Python function.
+std_args:
+- self
+- parities
+type: function
+variants: {}

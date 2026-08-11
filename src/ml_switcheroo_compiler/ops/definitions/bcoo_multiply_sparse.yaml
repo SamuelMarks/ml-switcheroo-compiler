@@ -1,0 +1,7 @@
+operation: bcoo_multiply_sparse
+description: An element-wise multiplication of two sparse arrays.
+std_args:
+- lhs
+- rhs
+type: function
+variants: {}

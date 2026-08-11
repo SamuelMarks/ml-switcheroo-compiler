@@ -1,0 +1,8 @@
+operation: MultiMetric
+description: Container for multiple metrics.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: metrics
+  type: Any
+variants: {}

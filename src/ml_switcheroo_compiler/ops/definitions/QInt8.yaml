@@ -1,0 +1,4 @@
+operation: QInt8
+description: Quantized Int8 Dtype.
+std_args: []
+variants: {}

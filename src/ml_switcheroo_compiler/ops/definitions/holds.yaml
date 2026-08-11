@@ -1,0 +1,6 @@
+operation: holds
+description: The class representing a Python function.
+std_args:
+- self
+type: function
+variants: {}

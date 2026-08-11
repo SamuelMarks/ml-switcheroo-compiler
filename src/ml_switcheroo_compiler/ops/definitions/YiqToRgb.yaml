@@ -3,3 +3,15 @@ description: The YiqToRgb operation.
 variants:
   pytorch:
     generator: '{0}'
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

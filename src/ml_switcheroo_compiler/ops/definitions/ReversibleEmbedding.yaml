@@ -1,0 +1,17 @@
+operation: ReversibleEmbedding
+description: Embedding layer that can project backwards to the input dim.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input_dim
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: output_dim
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: tie_weights
+  type: bool
+variants: {}

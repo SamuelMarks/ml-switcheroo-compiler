@@ -1,0 +1,4 @@
+operation: BoolStorage
+description: Storage for Boolean data.
+std_args: []
+variants: {}

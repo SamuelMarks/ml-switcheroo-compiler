@@ -1,0 +1,5 @@
+operation: output_ratio
+description: Auto-generated from flax_nnx_code_defs
+std_args: []
+type: attribute
+variants: {}

@@ -1,0 +1,4 @@
+operation: Float8E5m2
+description: FP8 type E5M2.
+std_args: []
+variants: {}

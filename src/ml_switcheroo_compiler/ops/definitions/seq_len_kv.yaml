@@ -1,0 +1,5 @@
+operation: seq_len_kv
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

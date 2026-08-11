@@ -1,0 +1,6 @@
+operation: is_transpose_transform
+description: The class representing a Python function.
+std_args:
+- attr
+type: function
+variants: {}

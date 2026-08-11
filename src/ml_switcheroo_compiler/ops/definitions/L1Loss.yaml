@@ -1,0 +1,5 @@
+operation: L1Loss
+description: Auto-generated mapping for L1Loss.
+std_args: []
+type: class
+variants: {}

@@ -173,13 +173,14 @@ class PatternMatchingEngine:
         self.rules = rules
         self.cost_model = cost_model
 
-    def _try_match_rules(self, graph: IRGraph, node_id: str, new_nodes: dict) -> bool:
+    def _try_match_rules(self, graph: IRGraph, node_id: str, new_nodes: dict, id_map: dict) -> bool:
         """Try applying matching rules to a single node.
 
         Args:
             graph (IRGraph): The graph parameter.
             node_id (str): The node_id parameter.
             new_nodes (dict): The new_nodes parameter.
+            id_map (dict): The id_map parameter.
 
         Returns:
             bool: Result.
@@ -191,8 +192,10 @@ class PatternMatchingEngine:
                 if replacements:
                     if self.cost_model and not self.cost_model.is_fusion_valid(replacements):
                         continue
-                    for rep_id, new_node in replacements.items():
-                        new_nodes[rep_id] = new_node
+                    for old_id, new_node in replacements.items():
+                        new_nodes[new_node.id] = new_node
+                        if old_id != new_node.id:
+                            id_map[old_id] = new_node.id
                     return True
         return False
 
@@ -207,14 +210,32 @@ class PatternMatchingEngine:
         """
         optimized = False
         new_nodes: dict[str, IRNode] = {}
+        id_map: dict[str, str] = {}
+
         for node_id, node in graph.nodes.items():
-            matched_rule = self._try_match_rules(graph, node_id, new_nodes)
+            matched_rule = self._try_match_rules(graph, node_id, new_nodes, id_map)
             if matched_rule:
                 optimized = True
             else:
                 if node_id not in new_nodes:
                     new_nodes[node_id] = node
+
         if optimized:
+            # Explicit Edge Rewiring
+            for n in new_nodes.values():
+                for i, in_id in enumerate(n.inputs):
+                    if in_id in id_map:
+                        n.inputs[i] = id_map[in_id]
+
+            if hasattr(graph, "inputs"):
+                for i, in_id in enumerate(graph.inputs):
+                    if in_id in id_map:
+                        graph.inputs[i] = id_map[in_id]
+            # Also update graph outputs
+            for i, out_id in enumerate(graph.outputs):
+                if out_id in id_map:
+                    graph.outputs[i] = id_map[out_id]
+
             graph.nodes.clear()
             graph.nodes.update(new_nodes)
         return optimized
@@ -231,6 +252,8 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
     Returns:
         IRGraph: The optimized graph.
     """
+    from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
+
     rules = [
         ReshapeReshapeFusion(),
         ElementwiseFusion(),
@@ -242,7 +265,8 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
         ConsecutiveElementwiseFusion(),
     ]
     engine = PatternMatchingEngine(rules, CostModel(max_cost=50))
-    engine.apply_passes(graph)
+    if engine.apply_passes(graph):
+        dce_pass(graph)
     return graph
 
 

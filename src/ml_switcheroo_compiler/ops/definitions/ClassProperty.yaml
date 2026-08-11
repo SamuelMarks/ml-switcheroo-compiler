@@ -1,0 +1,8 @@
+operation: ClassProperty
+description: Decorator that converts a method into a read-only class property.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: func
+  type: Callable
+variants: {}

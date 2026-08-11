@@ -1,5 +1,23 @@
-operation: Rank
+operation: rank
 description: The Rank operation.
+std_args: []
 variants:
   tensorflow:
     eager: tf.rank
+  numpy:
+    eager: numpy.rank
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.rank
+  pytorch:
+    eager: torch.rank
+  jax:
+    eager: jax.numpy.rank
+  mlx:
+    eager: mlx.core.rank
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,8 @@
+operation: Lambda
+description: Wraps arbitrary expressions as a Layer object.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: function
+  type: callable
+variants: {}

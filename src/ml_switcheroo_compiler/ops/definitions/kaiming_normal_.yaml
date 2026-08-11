@@ -1,0 +1,10 @@
+operation: kaiming_normal_
+description: Fill the input `Tensor` with values using a Kaiming normal distribution.
+std_args:
+- tensor
+- a
+- mode
+- nonlinearity
+- generator
+type: function
+variants: {}

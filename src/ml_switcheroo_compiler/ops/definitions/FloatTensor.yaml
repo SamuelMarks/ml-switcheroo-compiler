@@ -1,0 +1,4 @@
+operation: FloatTensor
+description: Legacy constructor for float32 tensors.
+std_args: []
+variants: {}

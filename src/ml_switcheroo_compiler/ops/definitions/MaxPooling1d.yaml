@@ -1,0 +1,18 @@
+operation: MaxPooling1d
+description: Max pooling operation for 1D temporal data (Alias).
+std_args:
+- default: 2
+  is_variadic: false
+  kind: positional_or_keyword
+  name: pool_size
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: strides
+  type: int
+- default: valid
+  is_variadic: false
+  kind: positional_or_keyword
+  name: padding
+  type: str
+variants: {}

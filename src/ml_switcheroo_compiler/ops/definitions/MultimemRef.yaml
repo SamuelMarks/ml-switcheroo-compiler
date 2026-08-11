@@ -1,0 +1,7 @@
+operation: MultimemRef
+description: The class representing a Python class.
+std_args:
+- self
+- ref
+type: class
+variants: {}

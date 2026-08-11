@@ -1,0 +1,8 @@
+operation: mlir_buffer_type
+description: The class representing a Python function.
+std_args:
+- self
+- grid
+- block
+type: function
+variants: {}

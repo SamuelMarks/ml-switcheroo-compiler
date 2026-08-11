@@ -1,5 +1,23 @@
-operation: Histogramdd
+operation: histogramdd
 description: The Histogramdd operation.
+std_args: []
 variants:
   numpy:
     generator: np.histogramdd
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.histogramdd
+  keras:
+    eager: keras_ops.histogramdd
+  pytorch:
+    eager: torch.histogramdd
+  jax:
+    eager: jax.numpy.histogramdd
+  mlx:
+    eager: mlx.core.histogramdd
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

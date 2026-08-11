@@ -3,3 +3,20 @@ description: The GatherNd operation.
 variants:
   tensorflow:
     eager: tf.gather_nd
+  numpy:
+    eager: numpy.gathernd
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.gathernd
+  pytorch:
+    eager: torch.gathernd
+  jax:
+    eager: jax.numpy.gathernd
+  mlx:
+    eager: mlx.core.gathernd
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

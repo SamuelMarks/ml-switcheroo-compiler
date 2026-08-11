@@ -1,0 +1,7 @@
+operation: TopologyDescription
+description: The class representing a Python class.
+std_args:
+- self
+- devices
+type: class
+variants: {}

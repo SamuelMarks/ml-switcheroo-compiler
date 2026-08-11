@@ -1,0 +1,4 @@
+operation: eig_jvp_rule
+description: Auto-generated mapping for eig_jvp_rule.
+std_args: []
+variants: {}

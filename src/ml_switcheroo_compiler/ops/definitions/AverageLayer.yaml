@@ -1,0 +1,23 @@
+operation: AverageLayer
+description: Averages a list of inputs element-wise.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.averagelayer
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.averagelayer
+  keras:
+    eager: keras_ops.averagelayer
+  pytorch:
+    eager: torch.averagelayer
+  jax:
+    eager: jax.numpy.averagelayer
+  mlx:
+    eager: mlx.core.averagelayer
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

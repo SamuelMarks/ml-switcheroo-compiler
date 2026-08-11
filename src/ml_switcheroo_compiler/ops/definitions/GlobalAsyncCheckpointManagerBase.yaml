@@ -1,0 +1,5 @@
+operation: GlobalAsyncCheckpointManagerBase
+description: Interface for checkpointing GDAs asynchronously.
+std_args: []
+type: class
+variants: {}

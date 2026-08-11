@@ -1,0 +1,8 @@
+operation: SetAutocastXlaEnabled
+description: Enables autocast for XLA.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: enabled
+  type: bool
+variants: {}

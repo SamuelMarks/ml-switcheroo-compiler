@@ -1,7 +1,25 @@
-operation: Fmin
+operation: fmin
 description: The Fmin operation.
+std_args: []
 variants:
   cupy:
     eager: cp.fmin
   dask:
     eager: da.fmin
+  numpy:
+    eager: numpy.fmin
+  tensorflow:
+    eager: tf.fmin
+  keras:
+    eager: keras_ops.fmin
+  pytorch:
+    eager: torch.fmin
+  jax:
+    eager: jax.numpy.fmin
+  mlx:
+    eager: mlx.core.fmin
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

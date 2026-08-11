@@ -1,0 +1,4 @@
+operation: Future
+description: Wrapper for future results (JIT/Async).
+std_args: []
+variants: {}

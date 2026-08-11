@@ -1,0 +1,27 @@
+operation: AsMatrix
+description: Interpret the input as a matrix.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: data
+  type: Any
+variants:
+  numpy:
+    eager: numpy.asmatrix
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asmatrix
+  keras:
+    eager: keras_ops.asmatrix
+  pytorch:
+    eager: torch.asmatrix
+  jax:
+    eager: jax.numpy.asmatrix
+  mlx:
+    eager: mlx.core.asmatrix
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

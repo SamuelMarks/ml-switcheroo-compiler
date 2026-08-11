@@ -1,0 +1,23 @@
+operation: AssertClose
+description: Auto-generated from jax_code_defs
+std_args: []
+variants:
+  numpy:
+    eager: numpy.assertclose
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.assertclose
+  keras:
+    eager: keras_ops.assertclose
+  pytorch:
+    eager: torch.assertclose
+  jax:
+    eager: jax.numpy.assertclose
+  mlx:
+    eager: mlx.core.assertclose
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

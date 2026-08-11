@@ -1,5 +1,18 @@
-operation: Moveaxis
+operation: moveaxis
 description: The Moveaxis operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: source
+  type: Union[int, Tuple[int, Ellipsis]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: destination
+  type: Union[int, Tuple[int, Ellipsis]]
 variants:
   cupy:
     eager: cp.moveaxis
@@ -7,3 +20,13 @@ variants:
     eager: da.moveaxis
   keras:
     eager: keras_ops.moveaxis
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,6 @@
+operation: gpu_address_space_to_nvptx
+description: The class representing a Python function.
+std_args:
+- address_space
+type: function
+variants: {}

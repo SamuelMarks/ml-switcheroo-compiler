@@ -1,0 +1,5 @@
+operation: register_module_parameter_registration_hook
+description: Auto-generated mapping for register_module_parameter_registration_hook.
+std_args: []
+type: function
+variants: {}

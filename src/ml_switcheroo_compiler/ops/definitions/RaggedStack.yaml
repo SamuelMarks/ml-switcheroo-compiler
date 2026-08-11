@@ -3,3 +3,20 @@ description: The RaggedStack operation.
 variants:
   numpy:
     generator: tf.ragged.stack
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.raggedstack
+  keras:
+    eager: keras_ops.raggedstack
+  pytorch:
+    eager: torch.raggedstack
+  jax:
+    eager: jax.numpy.raggedstack
+  mlx:
+    eager: mlx.core.raggedstack
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

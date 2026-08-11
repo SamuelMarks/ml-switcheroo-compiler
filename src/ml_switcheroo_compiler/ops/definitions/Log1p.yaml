@@ -1,5 +1,11 @@
-operation: Log1p
+operation: log1p
 description: The Log1p operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: attribute
 variants:
   edge_stablehlo:
     generator: stablehlo.log1p

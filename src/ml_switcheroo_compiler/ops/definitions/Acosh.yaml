@@ -1,5 +1,10 @@
-operation: Acosh
+operation: acosh
 description: The Acosh operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     generator: cp.arccosh
@@ -9,3 +14,17 @@ variants:
     generator: np.arccosh
   tensorflow:
     eager: tf.acosh
+  keras:
+    eager: keras_ops.acosh
+  pytorch:
+    eager: torch.acosh
+  jax:
+    eager: jax.numpy.arccosh
+  mlx:
+    eager: mlx.core.acosh
+  edge_onnx:
+    generator: Acosh
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

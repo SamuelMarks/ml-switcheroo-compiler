@@ -1,0 +1,4 @@
+operation: jax_to_nnx_path
+description: Auto-generated mapping for jax_to_nnx_path.
+std_args: []
+variants: {}

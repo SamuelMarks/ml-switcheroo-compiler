@@ -1,0 +1,27 @@
+operation: Atleast2d
+description: Returns a 2-dimensional view.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.atleast2d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.atleast2d
+  keras:
+    eager: keras_ops.atleast2d
+  pytorch:
+    eager: torch.atleast2d
+  jax:
+    eager: jax.numpy.atleast2d
+  mlx:
+    eager: mlx.core.atleast2d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

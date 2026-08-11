@@ -1,0 +1,5 @@
+operation: is_nvshmem_used
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

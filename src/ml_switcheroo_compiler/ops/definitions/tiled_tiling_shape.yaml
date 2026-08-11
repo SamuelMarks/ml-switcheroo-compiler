@@ -1,0 +1,5 @@
+operation: tiled_tiling_shape
+description: The shape of the suffix of the array after tiling.
+std_args: []
+type: attribute
+variants: {}

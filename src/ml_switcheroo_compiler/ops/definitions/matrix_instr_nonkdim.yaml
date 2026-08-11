@@ -1,0 +1,5 @@
+operation: matrix_instr_nonkdim
+description: ROCm-specific matrix instruction non-K dimension.
+std_args: []
+type: attribute
+variants: {}

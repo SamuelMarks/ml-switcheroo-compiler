@@ -1,0 +1,4 @@
+operation: gelu_approx
+description: Auto-generated mapping for gelu_approx.
+std_args: []
+variants: {}

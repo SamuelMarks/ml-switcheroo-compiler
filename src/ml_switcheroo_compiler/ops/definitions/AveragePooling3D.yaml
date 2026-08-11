@@ -1,0 +1,40 @@
+operation: AveragePooling3D
+description: Average pooling operation for 3D volumetric data.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: pool_size
+  type: Union[int, Tuple[int, int, int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: strides
+  type: Union[int, Tuple[int, int, int]]
+- default: valid
+  is_variadic: false
+  kind: positional_or_keyword
+  name: padding
+  type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: data_format
+  type: str
+variants:
+  numpy:
+    eager: numpy.averagepooling3d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.averagepooling3d
+  keras:
+    eager: keras_ops.averagepooling3d
+  pytorch:
+    eager: torch.averagepooling3d
+  jax:
+    eager: jax.numpy.averagepooling3d
+  mlx:
+    eager: mlx.core.averagepooling3d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

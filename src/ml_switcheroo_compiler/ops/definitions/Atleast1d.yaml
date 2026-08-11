@@ -1,0 +1,27 @@
+operation: Atleast1d
+description: Returns a 1-dimensional view of each input tensor with zero dimensions.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.atleast1d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.atleast1d
+  keras:
+    eager: keras_ops.atleast1d
+  pytorch:
+    eager: torch.atleast1d
+  jax:
+    eager: jax.numpy.atleast1d
+  mlx:
+    eager: mlx.core.atleast1d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

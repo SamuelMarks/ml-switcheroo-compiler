@@ -1,0 +1,7 @@
+operation: bcoo_rev
+description: Sparse implementation of :func:`jax.lax.rev`
+std_args:
+- operand
+- dimensions
+type: function
+variants: {}

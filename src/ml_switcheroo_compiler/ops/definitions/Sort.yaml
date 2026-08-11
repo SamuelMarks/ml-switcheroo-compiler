@@ -1,5 +1,22 @@
-operation: Sort
+operation: sort
 description: The Sort operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: descending
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stable
+  type: bool
 variants:
   keras:
     eager: keras_ops.sort
@@ -9,3 +26,12 @@ variants:
     generator: torch.sort({0}, dim={dimension})
   tensorflow:
     eager: tf.sort
+  cupy: {}
+  dask: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

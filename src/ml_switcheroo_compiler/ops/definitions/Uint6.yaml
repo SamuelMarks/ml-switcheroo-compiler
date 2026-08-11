@@ -1,0 +1,4 @@
+operation: Uint6
+description: 6-bit unsigned integer type.
+std_args: []
+variants: {}

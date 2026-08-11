@@ -1,0 +1,6 @@
+operation: get_serialized_proto_from_hlo_sharding
+description: The class representing a Python function.
+std_args:
+- sharding
+type: function
+variants: {}

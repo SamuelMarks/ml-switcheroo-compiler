@@ -1,0 +1,22 @@
+operation: ActivationLayer
+description: Applies an activation function to an output.
+std_args:
+- doc: Name of activation function or callable.
+  is_variadic: false
+  kind: positional_or_keyword
+  name: activation
+  type: str
+variants:
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

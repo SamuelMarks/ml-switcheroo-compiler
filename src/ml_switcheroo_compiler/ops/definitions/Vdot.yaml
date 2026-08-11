@@ -1,5 +1,6 @@
 operation: Vdot
 description: The Vdot operation.
+std_args: []
 variants:
   cupy:
     eager: cp.vdot
@@ -7,3 +8,18 @@ variants:
     eager: da.vdot
   keras:
     eager: keras_ops.vdot
+  numpy:
+    eager: numpy.vdot
+  tensorflow:
+    eager: tf.vdot
+  pytorch:
+    eager: torch.vdot
+  jax:
+    eager: jax.numpy.vdot
+  mlx:
+    eager: mlx.core.vdot
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

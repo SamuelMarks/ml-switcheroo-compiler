@@ -1,5 +1,15 @@
-operation: Svd
+operation: SVD
 description: The Svd operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: full_matrices
+  type: bool
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.svd

@@ -1,5 +1,14 @@
 operation: ExpandDims
 description: The ExpandDims operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
 variants:
   cupy:
     eager: cp.expand_dims
@@ -9,3 +18,12 @@ variants:
     eager: keras_ops.expand_dims
   tensorflow:
     eager: tf.expand_dims
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

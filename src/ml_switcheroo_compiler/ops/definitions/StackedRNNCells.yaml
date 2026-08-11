@@ -1,0 +1,8 @@
+operation: StackedRNNCells
+description: Wrapper allowing a stack of RNN cells to behave as a single cell.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: cells
+  type: List[Any]
+variants: {}

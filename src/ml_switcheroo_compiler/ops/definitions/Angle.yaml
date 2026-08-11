@@ -1,5 +1,6 @@
-operation: Angle
+operation: angle
 description: The Angle operation.
+std_args: []
 variants:
   cupy:
     eager: cp.angle
@@ -9,3 +10,16 @@ variants:
     eager: keras_ops.angle
   tensorflow:
     eager: tf.math.angle
+  numpy:
+    eager: np.angle
+  pytorch:
+    eager: torch.angle
+  jax:
+    eager: jax.numpy.angle
+  mlx:
+    eager: mlx.core.angle
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

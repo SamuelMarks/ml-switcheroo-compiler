@@ -1,0 +1,8 @@
+operation: ProfilerSpec
+description: The class representing a Python class.
+std_args:
+- self
+- entries_per_warpgroup
+- dump_path
+type: class
+variants: {}

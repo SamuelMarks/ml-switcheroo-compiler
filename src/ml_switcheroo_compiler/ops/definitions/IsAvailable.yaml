@@ -1,0 +1,4 @@
+operation: IsAvailable
+description: Check if the accelerator backend is available.
+std_args: []
+variants: {}

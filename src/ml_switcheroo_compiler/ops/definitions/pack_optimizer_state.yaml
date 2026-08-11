@@ -1,0 +1,6 @@
+operation: pack_optimizer_state
+description: Converts a marked pytree to an OptimizerState.
+std_args:
+- marked_pytree
+type: function
+variants: {}

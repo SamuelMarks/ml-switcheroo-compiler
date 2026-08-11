@@ -1,0 +1,5 @@
+operation: DataParallel
+description: Auto-generated from keras_code_defs
+std_args: []
+type: class
+variants: {}

@@ -1,0 +1,4 @@
+operation: bmm_einsum
+description: Auto-generated mapping for bmm_einsum.
+std_args: []
+variants: {}

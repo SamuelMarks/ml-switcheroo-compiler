@@ -1,7 +1,25 @@
-operation: Flatnonzero
+operation: flatnonzero
 description: The Flatnonzero operation.
+std_args: []
 variants:
   cupy:
     eager: cp.flatnonzero
   dask:
     eager: da.flatnonzero
+  numpy:
+    eager: numpy.flatnonzero
+  tensorflow:
+    eager: tf.flatnonzero
+  keras:
+    eager: keras_ops.flatnonzero
+  pytorch:
+    eager: torch.flatnonzero
+  jax:
+    eager: jax.numpy.flatnonzero
+  mlx:
+    eager: mlx.core.flatnonzero
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

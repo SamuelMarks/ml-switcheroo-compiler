@@ -1,5 +1,7 @@
-operation: LogSigmoid
+operation: logsigmoid
 description: The LogSigmoid operation.
+std_args: []
+type: attribute
 variants:
   keras:
     eager: keras_ops.log_sigmoid

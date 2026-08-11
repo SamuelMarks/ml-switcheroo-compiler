@@ -1,7 +1,21 @@
 operation: Scan
 description: The Scan operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.scan
   tensorflow:
     eager: tf.scan
+  edge_onnx:
+    generator: Scan
+  edge_stablehlo:
+    generator: stablehlo.reduce_window
+  numpy: {}
+  cupy: {}
+  dask: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

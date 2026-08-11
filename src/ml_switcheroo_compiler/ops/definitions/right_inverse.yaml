@@ -1,0 +1,8 @@
+operation: right_inverse
+description: Call the ``right_inverse`` methods of the parametrizations in the inverse
+  registration order.
+std_args:
+- self
+- value
+type: function
+variants: {}

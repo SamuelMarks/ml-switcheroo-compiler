@@ -1,0 +1,14 @@
+operation: CircleLoss
+description: Computes Circle Loss between integer labels and L2-normalized embeddings.
+std_args:
+- default: 80.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: gamma
+  type: float
+- default: 0.4
+  is_variadic: false
+  kind: positional_or_keyword
+  name: margin
+  type: float
+variants: {}

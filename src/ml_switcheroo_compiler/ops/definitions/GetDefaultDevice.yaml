@@ -1,0 +1,4 @@
+operation: GetDefaultDevice
+description: Gets the default device.
+std_args: []
+variants: {}

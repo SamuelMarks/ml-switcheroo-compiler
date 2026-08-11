@@ -1,0 +1,4 @@
+operation: Int5
+description: 5-bit integer data type (Quantization).
+std_args: []
+variants: {}

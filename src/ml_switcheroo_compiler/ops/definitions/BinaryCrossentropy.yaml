@@ -1,0 +1,53 @@
+operation: BinaryCrossentropy
+description: Computes the cross-entropy loss between true labels and predicted labels.
+std_args:
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: from_logits
+  type: bool
+- default: 0.0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: label_smoothing
+  type: float
+- default: -1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- default: sum_over_batch_size
+  is_variadic: false
+  kind: positional_or_keyword
+  name: reduction
+  options:
+  - sum
+  - sum_over_batch_size
+  - mean
+  - none
+  type: str
+- default: binary_crossentropy
+  is_variadic: false
+  kind: positional_or_keyword
+  name: name
+  type: str
+variants:
+  numpy:
+    eager: numpy.binarycrossentropy
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.binarycrossentropy
+  keras:
+    eager: keras_ops.binarycrossentropy
+  pytorch:
+    eager: torch.binarycrossentropy
+  jax:
+    eager: jax.numpy.binarycrossentropy
+  mlx:
+    eager: mlx.core.binarycrossentropy
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

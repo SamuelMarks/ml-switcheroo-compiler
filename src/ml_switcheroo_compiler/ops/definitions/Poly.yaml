@@ -1,5 +1,18 @@
-operation: Poly
+operation: poly
 description: The Poly operation.
+std_args: []
 variants:
   numpy:
     generator: np.poly
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

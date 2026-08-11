@@ -1,5 +1,11 @@
-operation: Log
+operation: log
 description: The Log operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: attribute
 variants:
   cupy:
     eager: cp.log

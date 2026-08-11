@@ -1,0 +1,6 @@
+operation: fact
+description: The class representing a Python function.
+std_args:
+- n
+type: function
+variants: {}

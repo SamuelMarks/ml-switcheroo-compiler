@@ -45,3 +45,21 @@ def test_rematerialization_pass():
     n4.shape_metadata = None
     assert _estimate_compute(n4) == 1.0
     assert _estimate_memory(n4) == 4.0
+
+
+def test_rematerialization_already_exists():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
+
+    g = IRGraph()
+    n1 = IRNode(id="n1", op_type="Input")
+    n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
+    n2.shape_metadata = (1024, 1024)
+    # simulate what happens if we already have the recompute node in graph
+    n2_rec = IRNode(id="n2_recompute", op_type="Recompute")
+
+    g.nodes = {"n1": n1, "n2": n2, "n2_recompute": n2_rec}
+
+    modified = rematerialization_pass(g)
+    assert not modified
+    assert n2.attributes.get("rematerialize") is None

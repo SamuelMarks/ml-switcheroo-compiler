@@ -1,5 +1,7 @@
-operation: Gather
+operation: gather
 description: The Gather operation.
+std_args: []
+type: function
 variants:
   edge_onnx:
     generator: Gather
@@ -7,3 +9,18 @@ variants:
     generator: stablehlo.gather
   tensorflow:
     eager: tf.gather
+  numpy:
+    eager: numpy.gather
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.gather
+  pytorch:
+    eager: torch.gather
+  jax:
+    eager: jax.numpy.gather
+  mlx:
+    eager: mlx.core.gather
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

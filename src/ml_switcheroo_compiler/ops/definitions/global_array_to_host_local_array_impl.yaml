@@ -1,0 +1,8 @@
+operation: global_array_to_host_local_array_impl
+description: The class representing a Python function.
+std_args:
+- arr
+- global_mesh
+- pspec
+type: function
+variants: {}

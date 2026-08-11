@@ -1,0 +1,13 @@
+operation: mqa_reference
+description: The class representing a Python function.
+std_args:
+- q
+- k
+- v
+- start_idx
+- kv_seq_len
+- sm_scale
+- return_residuals
+- normalize_output
+type: function
+variants: {}

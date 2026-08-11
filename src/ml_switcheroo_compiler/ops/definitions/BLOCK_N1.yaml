@@ -1,0 +1,5 @@
+operation: BLOCK_N1
+description: Thread block size for K/V dimension in backward pass. Use as 'bwd_BLOCK_N1'.
+std_args: []
+type: attribute
+variants: {}

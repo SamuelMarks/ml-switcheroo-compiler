@@ -1,0 +1,27 @@
+operation: AsyncEval
+description: Asynchronously evaluate an array or tree of arrays.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.asynceval
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asynceval
+  keras:
+    eager: keras_ops.asynceval
+  pytorch:
+    eager: torch.asynceval
+  jax:
+    eager: jax.numpy.asynceval
+  mlx:
+    eager: mlx.core.asynceval
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,5 @@
+operation: leaky_relu
+description: Auto-generated from keras_code_defs
+std_args: []
+type: function
+variants: {}

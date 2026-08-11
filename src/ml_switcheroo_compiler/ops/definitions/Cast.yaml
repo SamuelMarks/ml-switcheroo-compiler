@@ -1,5 +1,23 @@
 operation: Cast
 description: The Cast operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: round_mode
+  type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: saturate
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: to
+  type: int
+type: attribute
 variants:
   edge_onnx:
     generator: Cast

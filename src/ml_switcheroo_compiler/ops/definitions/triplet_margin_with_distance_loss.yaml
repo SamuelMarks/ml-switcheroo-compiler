@@ -1,0 +1,5 @@
+operation: triplet_margin_with_distance_loss
+description: Auto-generated mapping for triplet_margin_with_distance_loss.
+std_args: []
+type: function
+variants: {}

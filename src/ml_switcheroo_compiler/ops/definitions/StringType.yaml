@@ -1,0 +1,4 @@
+operation: StringType
+description: Internal string type.
+std_args: []
+variants: {}

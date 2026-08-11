@@ -1,0 +1,27 @@
+operation: Asinh_
+description: In-place version of Asinh.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.asinh_
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asinh_
+  keras:
+    eager: keras_ops.asinh_
+  pytorch:
+    eager: torch.asinh_
+  jax:
+    eager: jax.numpy.asinh_
+  mlx:
+    eager: mlx.core.asinh_
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

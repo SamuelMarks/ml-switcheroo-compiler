@@ -36,3 +36,91 @@ def test_check_numerical_grads():
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     check_numerical_grads(f, (x,))
+
+
+def test_grad_of_grad():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.autodiff import grad
+
+    g = IRGraph()
+    n_in = IRNode(id="x", op_type="Input")
+    n_mul1 = IRNode(id="mul1", op_type="Multiply", inputs=["x", "x"])
+    n_mul2 = IRNode(id="mul2", op_type="Multiply", inputs=["mul1", "x"])
+    g.nodes = {"x": n_in, "mul1": n_mul1, "mul2": n_mul2}
+    g.inputs = ["x"]
+    g.outputs = ["mul2"]
+
+    grad_g = grad(g, ["x"], "mul2")
+    # Take grad of grad with respect to x again
+    grad_grad_g = grad(grad_g, ["x"], grad_g.outputs[0])
+    assert "x" in [n.id for n in grad_grad_g.nodes.values() if getattr(n, "op_type", "") == "Input"]
+    assert len(grad_grad_g.outputs) == 1
+
+
+def test_hvp_control_flow_graceful_fallback():
+    from ml_switcheroo_compiler.ops.control_flow import cond
+
+    def f(x):
+        return cond(x > 0, lambda: x * x * x, lambda: -x * x * x)
+
+    x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
+    v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
+
+    import pytest
+
+    with pytest.raises(NotImplementedError, match="Missing second-order derivative rules"):
+        hvp(f, x, v)
+
+
+def test_hvp_graph_control_flow_elif_hit_final():
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_compiler.transforms.autodiff import hvp as hvp_graph
+
+    # We must patch has_vjp and has_jvp so they RETURN TRUE for Loop,
+    # thereby avoiding the FIRST `if not has_vjp` and hitting the ELIF !
+    from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY
+
+    _JVP_REGISTRY["Loop"] = lambda x: x
+    _VJP_REGISTRY["Loop"] = lambda x: x
+
+    g = IRGraph()
+    n_in = LogicalNode(id="x", op_type="Input")
+    n_if = LogicalNode(id="cond", op_type="Loop", inputs=["x"])
+    g.nodes = {"x": n_in, "cond": n_if}
+    g.inputs = ["x"]
+    g.outputs = ["cond"]
+
+    import pytest
+
+    try:
+        with pytest.raises(NotImplementedError, match="Missing second-order derivative rules"):
+            hvp_graph(g, ["x"], ["v"], ["cond"])
+    finally:
+        _JVP_REGISTRY.pop("Loop", None)
+        _VJP_REGISTRY.pop("Loop", None)
+
+
+def test_hvp_graph_control_flow_elif_hit_final_really():
+    from unittest.mock import patch
+
+    # the function we are calling is hvp_graph (which is hvp inside autodiff)
+    # it uses has_jvp and has_vjp from the module scope of autodiff!
+    import pytest
+
+    # Let's bypass has_jvp and has_vjp by replacing them entirely!
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_compiler.transforms.autodiff import hvp as hvp_graph
+
+    g = IRGraph()
+    n_in = LogicalNode(id="x", op_type="Input")
+    n_if = LogicalNode(id="cond", op_type="Loop", inputs=["x"])
+    g.nodes = {"x": n_in, "cond": n_if}
+    g.inputs = ["x"]
+    g.outputs = ["cond"]
+
+    # We must patch `has_jvp` and `has_vjp` inside `ml_switcheroo_compiler.transforms.autodiff` BEFORE `hvp` calls them!
+    with patch("ml_switcheroo_compiler.transforms.autodiff.has_jvp", return_value=True, create=True):
+        with patch("ml_switcheroo_compiler.transforms.autodiff.has_vjp", return_value=True, create=True):
+            with pytest.raises(NotImplementedError):
+                hvp_graph(g, ["x"], ["v"], ["cond"])

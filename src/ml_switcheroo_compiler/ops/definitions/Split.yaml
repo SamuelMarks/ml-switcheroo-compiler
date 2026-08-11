@@ -1,7 +1,23 @@
-operation: Split
+operation: split
 description: The Split operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.split
   tensorflow:
     eager: tf.split
+  numpy:
+    eager: numpy.split
+  cupy: {}
+  dask: {}
+  pytorch:
+    eager: torch.split
+  jax:
+    eager: jax.numpy.split
+  mlx:
+    eager: mlx.core.split
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

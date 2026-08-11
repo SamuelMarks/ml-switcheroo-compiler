@@ -1,7 +1,27 @@
-operation: CtcLoss
+operation: ctcloss
 description: The CtcLoss operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y_true
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: y_pred
+  type: Tensor
 variants:
   keras:
     eager: keras_ops.ctc_loss
   tensorflow:
     eager: tf.nn.ctc_loss
+  numpy: {}
+  cupy: {}
+  dask: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

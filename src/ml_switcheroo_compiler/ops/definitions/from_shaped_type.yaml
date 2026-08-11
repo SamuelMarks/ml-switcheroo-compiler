@@ -1,0 +1,7 @@
+operation: from_shaped_type
+description: Returns a WGStridedFragLayout for the given shaped type.
+std_args:
+- cls
+- shaped_ty
+type: function
+variants: {}

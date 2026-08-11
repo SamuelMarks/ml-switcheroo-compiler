@@ -6,3 +6,18 @@ variants:
       {3})
   tensorflow:
     eager: tf.linalg.tridiagonal_solve
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.tridiagonalsolve
+  pytorch:
+    eager: torch.tridiagonalsolve
+  jax:
+    eager: jax.numpy.tridiagonalsolve
+  mlx:
+    eager: mlx.core.tridiagonalsolve
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

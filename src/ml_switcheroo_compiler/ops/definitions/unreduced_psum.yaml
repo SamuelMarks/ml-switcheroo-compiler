@@ -1,0 +1,4 @@
+operation: unreduced_psum
+description: Auto-generated mapping for unreduced_psum.
+std_args: []
+variants: {}

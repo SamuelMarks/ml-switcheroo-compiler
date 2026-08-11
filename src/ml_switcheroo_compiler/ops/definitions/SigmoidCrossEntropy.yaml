@@ -1,0 +1,8 @@
+operation: SigmoidCrossEntropy
+description: Sigmoid cross-entropy loss layer.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: num_classes
+  type: int
+variants: {}

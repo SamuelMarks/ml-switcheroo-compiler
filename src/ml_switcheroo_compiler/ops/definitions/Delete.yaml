@@ -1,7 +1,19 @@
-operation: Delete
+operation: delete
 description: The Delete operation.
+std_args: []
 variants:
   cupy:
     eager: cp.delete
   dask:
     eager: da.delete
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

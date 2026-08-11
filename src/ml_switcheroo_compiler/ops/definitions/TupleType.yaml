@@ -1,0 +1,4 @@
+operation: TupleType
+description: Type representation of a tuple.
+std_args: []
+variants: {}

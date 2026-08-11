@@ -1,0 +1,27 @@
+operation: Arctan_
+description: In-place version of Arctan.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.arctan_
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arctan_
+  keras:
+    eager: keras_ops.arctan_
+  pytorch:
+    eager: torch.arctan_
+  jax:
+    eager: jax.numpy.arctan_
+  mlx:
+    eager: mlx.core.arctan_
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

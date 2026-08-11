@@ -1,5 +1,7 @@
 operation: Eig
 description: The Eig operation.
+std_args: []
+type: attribute
 variants:
   keras:
     eager: keras_ops.eig

@@ -1,5 +1,14 @@
-operation: Stack
+operation: stack
 description: The Stack operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: arrays
+  type: Union[Tuple[array, Ellipsis], List[array]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
 variants:
   cupy:
     eager: cp.stack
@@ -9,3 +18,16 @@ variants:
     eager: keras_ops.stack
   tensorflow:
     eager: tf.stack
+  numpy:
+    eager: numpy.stack
+  pytorch:
+    eager: torch.stack
+  jax:
+    eager: jax.numpy.stack
+  mlx:
+    eager: mlx.core.stack
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

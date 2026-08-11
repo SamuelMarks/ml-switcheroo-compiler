@@ -1,0 +1,5 @@
+operation: Conv1D
+description: Auto-generated from keras_code_defs
+std_args: []
+type: attribute
+variants: {}

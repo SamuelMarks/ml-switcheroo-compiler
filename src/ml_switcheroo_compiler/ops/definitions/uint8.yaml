@@ -1,5 +1,18 @@
-operation: uint8
+operation: Uint8
 description: The uint8 operation.
+std_args: []
 variants:
   edge_stablehlo:
     generator: ui8
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

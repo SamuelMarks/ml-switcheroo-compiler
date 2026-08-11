@@ -1,0 +1,4 @@
+operation: CompleteArgumentSpec
+description: JIT Complete Argument Specification.
+std_args: []
+variants: {}

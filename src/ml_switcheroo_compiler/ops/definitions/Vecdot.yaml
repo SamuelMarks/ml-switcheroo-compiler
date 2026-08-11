@@ -1,5 +1,19 @@
-operation: Vecdot
+operation: vecdot
 description: The Vecdot operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+type: attribute
 variants:
   numpy:
     generator: np.sum({0} * {1}, axis={axis})

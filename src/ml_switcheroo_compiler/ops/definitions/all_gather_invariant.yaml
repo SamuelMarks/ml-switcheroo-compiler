@@ -1,0 +1,4 @@
+operation: all_gather_invariant
+description: Auto-generated mapping for all_gather_invariant.
+std_args: []
+variants: {}

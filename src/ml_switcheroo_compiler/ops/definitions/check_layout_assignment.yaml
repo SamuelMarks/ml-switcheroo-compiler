@@ -1,0 +1,7 @@
+operation: check_layout_assignment
+description: Raises if the given layout can not be assigned to the given `ValueSite`.
+std_args:
+- v
+- layout
+type: function
+variants: {}

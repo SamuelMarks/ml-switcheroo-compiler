@@ -1,5 +1,6 @@
-operation: Swapaxes
+operation: swapaxes
 description: The Swapaxes operation.
+std_args: []
 variants:
   cupy:
     eager: cp.swapaxes
@@ -7,3 +8,18 @@ variants:
     eager: da.swapaxes
   keras:
     eager: keras_ops.swapaxes
+  numpy:
+    eager: numpy.swapaxes
+  tensorflow:
+    eager: tf.swapaxes
+  pytorch:
+    eager: torch.swapaxes
+  jax:
+    eager: jax.numpy.swapaxes
+  mlx:
+    eager: mlx.core.swapaxes
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

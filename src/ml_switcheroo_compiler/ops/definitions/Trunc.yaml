@@ -1,5 +1,10 @@
-operation: Trunc
+operation: trunc
 description: The Trunc operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.trunc
@@ -7,3 +12,18 @@ variants:
     eager: da.trunc
   keras:
     eager: keras_ops.trunc
+  numpy:
+    eager: numpy.trunc
+  tensorflow:
+    eager: tf.trunc
+  pytorch:
+    eager: torch.trunc
+  jax:
+    eager: jax.numpy.trunc
+  mlx:
+    eager: mlx.core.trunc
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

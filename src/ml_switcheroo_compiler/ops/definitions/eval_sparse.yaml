@@ -1,0 +1,9 @@
+operation: eval_sparse
+description: The class representing a Python function.
+std_args:
+- jaxpr
+- consts
+- spvalues
+- spenv
+type: function
+variants: {}

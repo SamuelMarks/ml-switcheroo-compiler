@@ -1,5 +1,14 @@
-operation: Multiply
+operation: multiply
 description: The Multiply operation.
+std_args:
+- name: x1
+  type: Union[array, int, float, complex]
+  is_variadic: false
+  kind: positional_or_keyword
+- name: x2
+  type: Union[array, int, float, complex]
+  is_variadic: false
+  kind: positional_or_keyword
 variants:
   cupy:
     eager: cp.multiply
@@ -13,7 +22,25 @@ variants:
     generator: stablehlo.multiply
   keras:
     eager: keras_ops.multiply
+    args:
+      inputs: inputs
+      kwargs: kwargs
   numpy:
     generator: np.multiply
+    args: {}
   tensorflow:
     eager: tf.multiply
+  jax:
+    eager: jax.numpy.multiply
+  pytorch:
+    eager: torch.multiply
+  stablehlo:
+    eager: stablehlo.multiply
+  mlx:
+    eager: mlx.core.multiply
+    args:
+      args: args
+      kwargs: kwargs
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

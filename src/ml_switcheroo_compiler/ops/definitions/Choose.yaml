@@ -1,7 +1,19 @@
-operation: Choose
+operation: choose
 description: The Choose operation.
+std_args: []
 variants:
   cupy:
     eager: cp.choose
   dask:
     eager: da.choose
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

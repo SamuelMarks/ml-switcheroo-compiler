@@ -1,0 +1,10 @@
+operation: zero
+description: The class representing a Python function.
+std_args:
+- cls
+- m
+- n
+- dtype
+- is_signed
+type: function
+variants: {}

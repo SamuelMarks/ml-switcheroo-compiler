@@ -1,7 +1,28 @@
-operation: Bitcast
+operation: BitCast
 description: The Bitcast operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Dtype
+type: function
 variants:
   pytorch:
     generator: '{0}.view(getattr(torch, str(''{dtype}'')))'
   tensorflow:
     eager: tf.bitcast
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

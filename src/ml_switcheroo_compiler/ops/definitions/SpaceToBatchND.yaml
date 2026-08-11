@@ -3,3 +3,15 @@ description: The SpaceToBatchND operation.
 variants:
   tensorflow:
     eager: tf.space_to_batch_nd
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

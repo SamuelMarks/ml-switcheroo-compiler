@@ -1,0 +1,8 @@
+operation: optimized_generate_dump
+description: The class representing a Python function.
+std_args:
+- args
+- xla_compiler_flags
+- _
+type: function
+variants: {}

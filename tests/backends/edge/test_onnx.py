@@ -11,7 +11,7 @@ mock_onnx.TensorProto.FLOAT = 1
 mock_onnx.helper.make_tensor_value_info.return_value = "ValueInfo"
 mock_onnx.helper.make_tensor.return_value = "Tensor"
 mock_onnx.helper.make_node.return_value = "Node"
-mock_onnx.helper.make_graph.return_value = "Graph"
+mock_onnx.helper.make_graph.return_value = MagicMock()
 mock_onnx.helper.printable_graph.return_value = "PrintableGraph"
 sys.modules["onnx"] = mock_onnx
 
@@ -270,3 +270,64 @@ class TestONNXCodeGenerator(unittest.TestCase):
                     mock_printable_graph.return_value = "MockedPrintableGraph"
                     res = self.gen.generate()
                     self.assertEqual(res, "MockedPrintableGraph")
+
+    def test_onnx_subgraphs_if_loop(self):
+        """Test subgraph generation for If and Loop ops."""
+        g = IRGraph()
+        n_if = LogicalNode(id="n_If", op_type="If", inputs=["cond"])
+
+        then_graph = IRGraph()
+        then_node = LogicalNode(id="then_add", op_type="Add", inputs=["a", "b"])
+        then_graph.nodes = {"then_add": then_node}
+        then_graph.outputs = ["then_add"]
+        n_if.attributes = {"then_branch": then_graph}
+
+        else_graph = IRGraph()
+        else_node = LogicalNode(id="else_sub", op_type="Sub", inputs=["a", "b"])
+        else_graph.nodes = {"else_sub": else_node}
+        else_graph.outputs = ["else_sub"]
+        n_if.attributes["else_branch"] = else_graph
+
+        n_loop = LogicalNode(id="n_Loop", op_type="Loop", inputs=["len"])
+        body_graph = IRGraph()
+        body_node = LogicalNode(id="body_mul", op_type="Multiply", inputs=["a", "b"])
+        body_graph.nodes = {"body_mul": body_node}
+        body_graph.outputs = ["body_mul"]
+        n_loop.attributes = {"body": body_graph}
+
+        g.nodes = {"n_If": n_if, "n_Loop": n_loop}
+        gen = ONNXCodeGenerator(g)
+        gen.sorted_nodes = [n_if, n_loop]
+
+        nodes = gen._build_onnx_nodes(mock_onnx.TensorProto)
+        # Should have called make_node with kwargs then_branch, else_branch, body
+        self.assertEqual(len(nodes), 2)
+
+        # Check that mock_onnx.helper.make_node was called with the right kwargs
+        # Since it's a MagicMock, we can inspect its call args
+        calls = mock_onnx.helper.make_node.call_args_list
+        if_call = next(c for c in calls if c[0][0] == "If")
+        loop_call = next(c for c in calls if c[0][0] == "Loop")
+
+        self.assertIn("then_branch", if_call[1])
+        self.assertIn("else_branch", if_call[1])
+        self.assertIn("body", loop_call[1])
+
+    def test_onnx_subgraphs_missing_branches(self):
+        """Test subgraph generation for If and Loop ops missing branches."""
+        g = IRGraph()
+        n_if_no_then = LogicalNode(id="n_If_nothen", op_type="If", inputs=["cond"])
+        n_if_no_then.attributes = {"else_branch": IRGraph()}
+
+        n_if_no_else = LogicalNode(id="n_If_noelse", op_type="If", inputs=["cond"])
+        n_if_no_else.attributes = {"then_branch": IRGraph()}
+
+        n_loop_no_body = LogicalNode(id="n_Loop_nobody", op_type="Loop", inputs=["len"])
+        n_loop_no_body.attributes = {}
+
+        g.nodes = {"n_If_nothen": n_if_no_then, "n_If_noelse": n_if_no_else, "n_Loop_nobody": n_loop_no_body}
+        gen = ONNXCodeGenerator(g)
+        gen.sorted_nodes = [n_if_no_then, n_if_no_else, n_loop_no_body]
+
+        nodes = gen._build_onnx_nodes(mock_onnx.TensorProto)
+        self.assertEqual(len(nodes), 3)

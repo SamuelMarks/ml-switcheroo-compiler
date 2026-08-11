@@ -1,0 +1,4 @@
+operation: Hsmm
+description: Hidden Semi-Markov Model (likely specialized/internal).
+std_args: []
+variants: {}

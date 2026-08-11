@@ -1,0 +1,4 @@
+operation: Uint7
+description: 7-bit unsigned integer type.
+std_args: []
+variants: {}

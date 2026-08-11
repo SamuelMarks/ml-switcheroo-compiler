@@ -1,0 +1,4 @@
+operation: ThroughputBenchmark
+description: PyTorch internal benchmarking utility.
+std_args: []
+variants: {}

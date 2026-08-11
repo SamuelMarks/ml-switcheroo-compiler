@@ -1,0 +1,4 @@
+operation: Layer
+description: Base class for all layers.
+std_args: []
+variants: {}

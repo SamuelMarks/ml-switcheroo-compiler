@@ -1,0 +1,7 @@
+operation: estimate_read_memory_footprint
+description: The class representing a Python function.
+std_args:
+- t
+- domain
+type: function
+variants: {}

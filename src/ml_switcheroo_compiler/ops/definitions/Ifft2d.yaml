@@ -3,3 +3,20 @@ description: The Ifft2d operation.
 variants:
   pytorch:
     generator: torch.fft.ifft2({0}, s={s}, dim={axes})
+  numpy:
+    eager: numpy.ifft2d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.ifft2d
+  keras:
+    eager: keras_ops.ifft2d
+  jax:
+    eager: jax.numpy.ifft2d
+  mlx:
+    eager: mlx.core.ifft2d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

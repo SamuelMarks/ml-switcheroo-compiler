@@ -53,6 +53,9 @@ def test_distributed_ops():
 
     import ml_switcheroo_compiler.ops.distributed_ops as dist
 
+    orig_dist_backend = dist.get_active_backend
+    orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
+    has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
     dist.get_active_backend = lambda: DummyBackend()
     reg._ACTIVE_BACKEND = DummyBackend()
 
@@ -118,3 +121,8 @@ def test_distributed_ops():
         assert pbroadcast(t) == "emitted"
 
     config.eager_mode = True
+    dist.get_active_backend = orig_dist_backend
+    if has_reg_backend:
+        reg._ACTIVE_BACKEND = orig_reg_backend
+    else:
+        del reg._ACTIVE_BACKEND

@@ -1,0 +1,4 @@
+operation: ensure_arraylike_tuple
+description: Auto-generated mapping for ensure_arraylike_tuple.
+std_args: []
+variants: {}

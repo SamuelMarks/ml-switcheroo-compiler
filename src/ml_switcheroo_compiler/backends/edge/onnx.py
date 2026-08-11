@@ -256,7 +256,25 @@ class ONNXCodeGenerator(BaseGenerator):
                 onnx_nodes.append(helper.make_node("Constant", inputs=[], outputs=[nid], name=nid, value=tensor_proto))
             else:
                 onnx_op = op_map.get(op_type, op_type)
-                onnx_nodes.append(helper.make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid))
+
+                kwargs = {}
+                if op_type == "If":
+                    if "then_branch" in node.attributes:
+                        subgen = ONNXCodeGenerator(node.attributes["then_branch"])
+                        kwargs["then_branch"] = subgen._build_onnx_graph(None)
+                        # Fix graph name for ONNX validation
+                        kwargs["then_branch"].name = f"{nid}_then"
+                    if "else_branch" in node.attributes:
+                        subgen = ONNXCodeGenerator(node.attributes["else_branch"])
+                        kwargs["else_branch"] = subgen._build_onnx_graph(None)
+                        kwargs["else_branch"].name = f"{nid}_else"
+                elif op_type in ("Loop", "WhileLoop"):
+                    if "body" in node.attributes:
+                        subgen = ONNXCodeGenerator(node.attributes["body"])
+                        kwargs["body"] = subgen._build_onnx_graph(None)
+                        kwargs["body"].name = f"{nid}_body"
+
+                onnx_nodes.append(helper.make_node(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs))
         return onnx_nodes
 
     def _build_onnx_graph(self, dynamic_axes: Optional[dict[str, dict[int, str]]]) -> Any:

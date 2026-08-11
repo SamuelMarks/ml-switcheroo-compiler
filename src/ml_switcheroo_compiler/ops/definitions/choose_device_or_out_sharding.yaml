@@ -1,0 +1,4 @@
+operation: choose_device_or_out_sharding
+description: Auto-generated mapping for choose_device_or_out_sharding.
+std_args: []
+variants: {}

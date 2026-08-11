@@ -1,0 +1,5 @@
+operation: invert_permutation
+description: Auto-generated from tensorflow_code_defs
+std_args: []
+type: function
+variants: {}

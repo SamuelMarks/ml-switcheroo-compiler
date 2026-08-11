@@ -1,7 +1,23 @@
-operation: Polyval
+operation: polyval
 description: The Polyval operation.
+std_args: []
 variants:
   numpy:
     generator: np.polyval
   tensorflow:
     eager: tf.math.polyval
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.polyval
+  pytorch:
+    eager: torch.polyval
+  jax:
+    eager: jax.numpy.polyval
+  mlx:
+    eager: mlx.core.polyval
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -5,3 +5,14 @@ variants:
     generator: np.fft.rfftn({0})
   tensorflow:
     eager: tf.rfftnd
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

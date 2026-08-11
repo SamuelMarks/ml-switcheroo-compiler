@@ -1,0 +1,9 @@
+operation: store_untiled
+description: The class representing a Python function.
+std_args:
+- self
+- ref
+- swizzle
+- optimized
+type: function
+variants: {}

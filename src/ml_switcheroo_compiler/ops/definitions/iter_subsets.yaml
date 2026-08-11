@@ -1,0 +1,6 @@
+operation: iter_subsets
+description: Return an iterator over all subsets of a sequence s
+std_args:
+- s
+type: function
+variants: {}

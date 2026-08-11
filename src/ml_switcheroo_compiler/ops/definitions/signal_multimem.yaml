@@ -1,0 +1,8 @@
+operation: signal_multimem
+description: The class representing a Python function.
+std_args:
+- ptr
+- value
+- predicate
+type: function
+variants: {}

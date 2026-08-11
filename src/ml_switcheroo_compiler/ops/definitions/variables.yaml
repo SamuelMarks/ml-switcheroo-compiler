@@ -1,0 +1,4 @@
+operation: variables
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+variants: {}

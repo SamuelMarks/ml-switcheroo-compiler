@@ -1,5 +1,6 @@
-operation: Slice
+operation: slice
 description: The Slice operation.
+std_args: []
 variants:
   edge_onnx:
     generator: Slice
@@ -9,3 +10,12 @@ variants:
     eager: keras_ops.slice
   tensorflow:
     eager: tf.slice
+  numpy: {}
+  cupy: {}
+  dask: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

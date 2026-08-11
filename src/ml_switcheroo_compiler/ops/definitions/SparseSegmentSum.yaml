@@ -3,3 +3,15 @@ description: The SparseSegmentSum operation.
 variants:
   numpy:
     generator: tf.sparse.segment_sum
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

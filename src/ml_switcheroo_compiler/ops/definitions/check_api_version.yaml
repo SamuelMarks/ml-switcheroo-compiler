@@ -1,0 +1,4 @@
+operation: check_api_version
+description: Auto-generated mapping for check_api_version.
+std_args: []
+variants: {}

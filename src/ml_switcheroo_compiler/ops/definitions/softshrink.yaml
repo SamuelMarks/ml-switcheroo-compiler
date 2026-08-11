@@ -1,0 +1,5 @@
+operation: softshrink
+description: Auto-generated mapping for softshrink.
+std_args: []
+type: attribute
+variants: {}

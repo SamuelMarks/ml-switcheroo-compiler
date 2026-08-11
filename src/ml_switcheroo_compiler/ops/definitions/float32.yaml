@@ -1,5 +1,21 @@
-operation: float32
+operation: Float32
 description: The float32 operation.
+std_args: []
 variants:
   edge_stablehlo:
     generator: f32
+  jax:
+    eager: jax.numpy.float32
+  numpy:
+    eager: numpy.float32
+  keras:
+    eager: numpy.float32
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  pytorch: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

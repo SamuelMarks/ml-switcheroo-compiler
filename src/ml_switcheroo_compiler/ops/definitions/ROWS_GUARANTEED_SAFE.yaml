@@ -1,0 +1,6 @@
+operation: ROWS_GUARANTEED_SAFE
+description: If True, guarantees that at least one value in each row is not masked
+  out.
+std_args: []
+type: attribute
+variants: {}

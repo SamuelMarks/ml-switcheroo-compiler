@@ -1,0 +1,7 @@
+operation: tile_shape
+description: The class representing a Python function.
+std_args:
+- shape
+- tiling
+type: function
+variants: {}

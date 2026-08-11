@@ -1,0 +1,6 @@
+operation: dtype_to_ir_type
+description: The class representing a Python function.
+std_args:
+- dtype
+type: function
+variants: {}

@@ -1,0 +1,5 @@
+operation: adaptive_max_pool1d_with_indices
+description: Auto-generated mapping for adaptive_max_pool1d_with_indices.
+std_args: []
+type: function
+variants: {}

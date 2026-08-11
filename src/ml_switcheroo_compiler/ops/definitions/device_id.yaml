@@ -1,0 +1,7 @@
+operation: device_id
+description: The class representing a Python function.
+std_args:
+- self
+- on_host
+type: function
+variants: {}

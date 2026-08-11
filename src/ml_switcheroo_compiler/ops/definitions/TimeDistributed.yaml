@@ -1,0 +1,8 @@
+operation: TimeDistributed
+description: This wrapper allows to apply a layer to every temporal slice of an input.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: layer
+  type: Any
+variants: {}

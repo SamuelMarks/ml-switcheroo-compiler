@@ -3,3 +3,20 @@ description: The StridedSlice operation.
 variants:
   tensorflow:
     eager: tf.strided_slice
+  numpy:
+    eager: numpy.stridedslice
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.stridedslice
+  pytorch:
+    eager: torch.stridedslice
+  jax:
+    eager: jax.numpy.stridedslice
+  mlx:
+    eager: mlx.core.stridedslice
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

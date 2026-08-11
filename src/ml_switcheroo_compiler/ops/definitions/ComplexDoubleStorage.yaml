@@ -1,0 +1,4 @@
+operation: ComplexDoubleStorage
+description: Storage for Complex Double (complex128) data.
+std_args: []
+variants: {}

@@ -1,0 +1,4 @@
+operation: Swish
+description: Swish activation layer.
+std_args: []
+variants: {}

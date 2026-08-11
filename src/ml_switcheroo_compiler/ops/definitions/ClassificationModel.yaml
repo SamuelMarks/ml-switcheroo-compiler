@@ -1,0 +1,4 @@
+operation: ClassificationModel
+description: Classification task for images/video.
+std_args: []
+variants: {}

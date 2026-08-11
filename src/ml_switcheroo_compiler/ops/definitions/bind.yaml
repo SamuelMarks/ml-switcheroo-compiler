@@ -1,0 +1,7 @@
+operation: bind
+description: The class representing a Python function.
+std_args:
+- optional
+- fn
+type: function
+variants: {}

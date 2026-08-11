@@ -3,3 +3,20 @@ description: The Rfft3d operation.
 variants:
   pytorch:
     generator: torch.fft.rfftn({0}, s={s}, dim={axes})
+  numpy:
+    eager: numpy.rfft3d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.rfft3d
+  keras:
+    eager: keras_ops.rfft3d
+  jax:
+    eager: jax.numpy.rfft3d
+  mlx:
+    eager: mlx.core.rfft3d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

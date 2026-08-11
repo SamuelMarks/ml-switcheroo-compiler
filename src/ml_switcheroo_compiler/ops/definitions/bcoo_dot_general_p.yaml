@@ -1,0 +1,5 @@
+operation: bcoo_dot_general_p
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

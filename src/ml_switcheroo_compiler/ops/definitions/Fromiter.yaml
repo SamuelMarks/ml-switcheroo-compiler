@@ -1,5 +1,23 @@
-operation: Fromiter
+operation: fromiter
 description: The Fromiter operation.
+std_args: []
 variants:
   numpy:
     generator: np.fromiter
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.fromiter
+  keras:
+    eager: keras_ops.fromiter
+  pytorch:
+    eager: torch.fromiter
+  jax:
+    eager: jax.numpy.fromiter
+  mlx:
+    eager: mlx.core.fromiter
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

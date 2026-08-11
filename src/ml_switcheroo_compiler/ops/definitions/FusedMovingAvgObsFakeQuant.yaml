@@ -1,0 +1,8 @@
+operation: FusedMovingAvgObsFakeQuant
+description: Quantization utility (Fused Moving Avg Fake Quant).
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+variants: {}

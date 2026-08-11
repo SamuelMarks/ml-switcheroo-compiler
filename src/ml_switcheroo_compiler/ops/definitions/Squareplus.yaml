@@ -1,5 +1,23 @@
-operation: Squareplus
+operation: squareplus
 description: The Squareplus operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.squareplus
+  numpy:
+    eager: numpy.squareplus
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.squareplus
+  pytorch:
+    eager: torch.squareplus
+  jax:
+    eager: jax.numpy.squareplus
+  mlx:
+    eager: mlx.core.squareplus
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,8 @@
+operation: CastBFloat16
+description: Casts input to bfloat16.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Any
+variants: {}

@@ -288,6 +288,51 @@ def _dispatch_op(node: LogicalNode, env: Environment, backend: Any, target_op: s
         env.set(node.id, result)
 
 
+def _evaluate_if_node(node: LogicalNode, env: Environment, backend: Any) -> None:
+    cond_val = env.get(node.inputs[0])
+    is_true = bool(cond_val) if isinstance(cond_val, (bool, int, float)) else bool(getattr(cond_val, "item", lambda cr=cond_val: cr)())
+    branch = node.attributes.get("then_branch" if is_true else "else_branch")
+    if not branch:
+        branch = node.attributes.get("true_branch" if is_true else "false_branch")
+    if branch:
+        nodes = branch.nodes if isinstance(branch.nodes, list) else list(branch.nodes.values())
+        for sub_node in nodes:
+            _evaluate_node(sub_node, env, backend)
+        if hasattr(branch, "outputs") and branch.outputs:
+            if isinstance(branch.outputs, list):
+                env.set(node.id, env.get(branch.outputs[0]))
+            else:
+                env.set(node.id, env.get(branch.outputs))
+        else:
+            last_node = nodes[-1]
+            env.set(node.id, env.get(last_node.id))
+
+
+def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: Any) -> None:
+    cond_graph = node.attributes.get("cond")
+    body_graph = node.attributes.get("body")
+    curr_val = env.get(node.inputs[0])
+    while True:
+        cond_input_id = cond_graph.nodes[0].id if isinstance(cond_graph.nodes, list) else list(cond_graph.nodes.keys())[0]
+        env.set(cond_input_id, curr_val)
+        nodes = cond_graph.nodes if isinstance(cond_graph.nodes, list) else cond_graph.nodes.values()
+        for sub_node in nodes:
+            if sub_node.id != cond_input_id:
+                _evaluate_node(sub_node, env, backend)
+        cond_res = env.get(cond_graph.outputs[0])
+        is_true = bool(cond_res) if isinstance(cond_res, (bool, int, float)) else bool(getattr(cond_res, "item", lambda cr=cond_res: cr)())
+        if not is_true:
+            break
+        body_input_id = body_graph.nodes[0].id if isinstance(body_graph.nodes, list) else list(body_graph.nodes.keys())[0]
+        env.set(body_input_id, curr_val)
+        nodes = body_graph.nodes if isinstance(body_graph.nodes, list) else body_graph.nodes.values()
+        for sub_node in nodes:
+            if sub_node.id != body_input_id:
+                _evaluate_node(sub_node, env, backend)
+        curr_val = env.get(body_graph.outputs[0])
+    env.set(node.id, curr_val)
+
+
 def _evaluate_node(node: LogicalNode, env: Environment, backend: Any) -> None:
     """Execute a single logical node and update the local environment with its result.
 
@@ -299,9 +344,13 @@ def _evaluate_node(node: LogicalNode, env: Environment, backend: Any) -> None:
     if node.op_type == "Input":
         env.get(node.id)
     elif node.op_type == "Output":
-        in_vals = [env.get(inp) for inp in node.inputs]
+        in_vals = [env.get(inp) for inp in node.inputs if inp]
         val = in_vals[0] if len(in_vals) == 1 else tuple(in_vals)
         env.set(node.id, val)
+    elif node.op_type in ("If", "Cond"):
+        _evaluate_if_node(node, env, backend)
+    elif node.op_type in ("WhileLoop", "Loop"):
+        _evaluate_loop_node(node, env, backend)
     elif node.op_type == "Constant":
         env.set(node.id, backend.array(node.attributes["value"]))
     elif node.op_type == "Recompute":

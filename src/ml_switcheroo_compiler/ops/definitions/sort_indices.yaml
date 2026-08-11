@@ -1,0 +1,6 @@
+operation: sort_indices
+description: Return a copy of the matrix with indices sorted.
+std_args:
+- self
+type: function
+variants: {}

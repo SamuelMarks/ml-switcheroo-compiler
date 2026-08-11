@@ -1,0 +1,6 @@
+operation: compute_transitively_equal_vars
+description: Computes all transitively equal variables in a constraint system.
+std_args:
+- system
+type: function
+variants: {}

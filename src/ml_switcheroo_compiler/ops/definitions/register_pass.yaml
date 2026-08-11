@@ -1,0 +1,6 @@
+operation: register_pass
+description: The class representing a Python function.
+std_args:
+- pass_
+type: function
+variants: {}

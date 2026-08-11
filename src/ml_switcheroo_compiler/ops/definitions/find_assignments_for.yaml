@@ -1,0 +1,8 @@
+operation: find_assignments_for
+description: Attempts to find assignments that satisfy `constraint_system` for `unknowns`.
+std_args:
+- unknowns
+- constraint_system
+- fuel
+type: function
+variants: {}

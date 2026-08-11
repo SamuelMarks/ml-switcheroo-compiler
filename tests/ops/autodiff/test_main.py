@@ -157,6 +157,8 @@ def test_jvp_hvp(mocker):
     g2 = jvp(g, ["n1"], ["t1"], ["n2"])
     assert g2 is not None
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=g2)
+    mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.has_vjp", return_value=True)
+    mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.has_jvp", return_value=True)
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff.jvp", return_value="hvp_res")
     assert hvp(g, ["n1"], ["t1"], ["n2"]) == "hvp_res"
 

@@ -1,0 +1,7 @@
+operation: spvalues_to_avals
+description: Convert a pytree of spvalues to an equivalent pytree of abstract values.
+std_args:
+- spenv
+- spvalues
+type: function
+variants: {}

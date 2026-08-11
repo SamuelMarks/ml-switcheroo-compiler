@@ -1,0 +1,7 @@
+operation: intern_name
+description: The class representing a Python function.
+std_args:
+- self
+- name
+type: function
+variants: {}

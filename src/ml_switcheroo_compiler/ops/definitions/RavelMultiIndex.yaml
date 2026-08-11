@@ -1,7 +1,50 @@
 operation: RavelMultiIndex
 description: The RavelMultiIndex operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: multi_index
+  type: Tuple[Array]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dims
+  type: Tuple[int]
+- default: raise
+  is_variadic: false
+  kind: positional_or_keyword
+  name: mode
+  options:
+  - raise
+  - wrap
+  - clip
+  type: str
+- default: C
+  is_variadic: false
+  kind: positional_or_keyword
+  name: order
+  options:
+  - C
+  - F
+  type: str
 variants:
   cupy:
     eager: cp.ravel_multi_index
   dask:
     eager: da.ravel_multi_index
+  numpy:
+    eager: numpy.ravelmultiindex
+  tensorflow:
+    eager: tf.ravelmultiindex
+  keras:
+    eager: keras_ops.ravelmultiindex
+  pytorch:
+    eager: torch.ravelmultiindex
+  jax:
+    eager: jax.numpy.ravelmultiindex
+  mlx:
+    eager: mlx.core.ravelmultiindex
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

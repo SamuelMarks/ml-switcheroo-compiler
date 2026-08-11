@@ -1,0 +1,5 @@
+operation: MultiMarginLoss
+description: Auto-generated mapping for MultiMarginLoss.
+std_args: []
+type: class
+variants: {}

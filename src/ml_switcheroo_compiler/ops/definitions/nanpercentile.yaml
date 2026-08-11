@@ -1,0 +1,4 @@
+operation: nanpercentile
+description: Auto-generated mapping for nanpercentile.
+std_args: []
+variants: {}

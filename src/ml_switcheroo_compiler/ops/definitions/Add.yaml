@@ -1,5 +1,14 @@
 operation: Add
 description: The Add operation.
+std_args:
+- name: x1
+  type: Union[array, int, float, complex]
+  is_variadic: false
+  kind: positional_or_keyword
+- name: x2
+  type: Union[array, int, float, complex]
+  is_variadic: false
+  kind: positional_or_keyword
 variants:
   cupy:
     eager: cp.add
@@ -13,7 +22,32 @@ variants:
     generator: stablehlo.add
   keras:
     eager: keras_ops.add
+    args:
+      inputs: inputs
+      kwargs: kwargs
+    macro_template: keras.ops.add({input}, {other} * {alpha})
   numpy:
     generator: np.add
+    macro_template: numpy.add({input}, {other} * {alpha})
   tensorflow:
     eager: tf.add
+    macro_template: tf.math.add({input}, {other} * {alpha})
+  pytorch:
+    eager: torch.add
+    args:
+      self: self
+      x: x
+      y: y
+  jax:
+    eager: jax.numpy.add
+    args: {}
+    macro_template: jax.numpy.add({input}, {other} * {alpha})
+  mlx:
+    eager: mlx.core.add
+    args:
+      args: args
+      kwargs: kwargs
+    macro_template: mlx.core.add({input}, {other} * {alpha})
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

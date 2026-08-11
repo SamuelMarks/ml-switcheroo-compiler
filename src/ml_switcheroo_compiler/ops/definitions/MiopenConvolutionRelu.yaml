@@ -1,0 +1,4 @@
+operation: MiopenConvolutionRelu
+description: Backend specific fused convolution.
+std_args: []
+variants: {}

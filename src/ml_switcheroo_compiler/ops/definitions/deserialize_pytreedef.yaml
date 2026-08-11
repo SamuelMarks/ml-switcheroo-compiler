@@ -1,0 +1,6 @@
+operation: deserialize_pytreedef
+description: The class representing a Python function.
+std_args:
+- pytreedef_repr
+type: function
+variants: {}

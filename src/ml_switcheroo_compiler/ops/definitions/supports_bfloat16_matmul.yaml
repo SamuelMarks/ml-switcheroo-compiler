@@ -1,0 +1,5 @@
+operation: supports_bfloat16_matmul
+description: Does the currently attached CPU support bfloat16 inputs?
+std_args: []
+type: function
+variants: {}

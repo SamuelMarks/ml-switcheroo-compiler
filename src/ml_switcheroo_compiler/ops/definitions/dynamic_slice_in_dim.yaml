@@ -1,0 +1,4 @@
+operation: dynamic_slice_in_dim
+description: Auto-generated mapping for dynamic_slice_in_dim.
+std_args: []
+variants: {}

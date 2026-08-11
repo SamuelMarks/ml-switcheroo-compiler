@@ -1,0 +1,5 @@
+operation: FractionalMaxPool2d
+description: Auto-generated mapping for FractionalMaxPool2d.
+std_args: []
+type: class
+variants: {}

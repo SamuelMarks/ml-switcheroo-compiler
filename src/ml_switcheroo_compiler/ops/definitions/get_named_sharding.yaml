@@ -1,0 +1,4 @@
+operation: get_named_sharding
+description: Auto-generated mapping for get_named_sharding.
+std_args: []
+variants: {}

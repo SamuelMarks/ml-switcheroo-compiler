@@ -1,0 +1,8 @@
+operation: ModuleWrapper
+description: A subclass of ``torch.nn.Module`` that wraps a C++ frontend module and
+  delegates all access.
+std_args:
+- self
+- cpp_module
+type: class
+variants: {}

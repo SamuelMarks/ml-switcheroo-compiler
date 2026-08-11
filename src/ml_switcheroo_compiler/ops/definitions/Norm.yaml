@@ -1,5 +1,7 @@
 operation: Norm
 description: The Norm operation.
+std_args: []
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.norm

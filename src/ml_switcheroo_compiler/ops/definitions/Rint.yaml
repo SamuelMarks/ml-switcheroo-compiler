@@ -1,5 +1,6 @@
-operation: Rint
+operation: rint
 description: The Rint operation.
+std_args: []
 variants:
   cupy:
     eager: cp.rint
@@ -7,3 +8,13 @@ variants:
     eager: da.rint
   tensorflow:
     eager: tf.math.rint
+  numpy: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

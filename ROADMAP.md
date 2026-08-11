@@ -2,6 +2,13 @@
 
 This document outlines the future vision, architectural enhancements, and ecosystem expansions planned for the `ml-switcheroo-compiler`.
 
+## Completed Milestones
+
+### ODL Operations Ecosystem Expansion
+* **Status:** **Completed**
+* **Summary:** Successfully migrated over 4,700 operation definitions from the ODL metadata dataset into the `ml-switcheroo-compiler` ops registry. This involved building translation layers for the unified schema, implementing generators across `cupy`, `dask`, `numpy`, `llvm_cpp`, `edge_onnx`, and `edge_stablehlo`, and drastically expanding the natively supported capabilities of the middle-end execution engine.
+* **Impact:** The ecosystem now features comprehensive control flow, higher-order operations (Map, Scan, Cond, WhileLoop), and an exhaustive set of linear algebra and neural network components across all Tier 1 backends.
+
 ## Proposed Array Execution Backends
 
 To further our goal of being a universally flexible execution engine, the following open-source, NumPy-like implementations should be strongly considered for future backend development. Implementing these would allow the `zero-*` ecosystem to transparently inherit specialized hardware acceleration, sparse computation, and complex data-structure support.

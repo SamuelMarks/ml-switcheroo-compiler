@@ -1,0 +1,4 @@
+operation: dot_product_attention_weights
+description: Auto-generated mapping for dot_product_attention_weights.
+std_args: []
+variants: {}

@@ -1,5 +1,23 @@
-operation: Gamma
+operation: gamma
 description: The Gamma operation.
+std_args: []
 variants:
   numpy:
     generator: np.random.gamma({1}, size={shape})
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.gamma
+  keras:
+    eager: keras_ops.gamma
+  pytorch:
+    eager: torch.gamma
+  jax:
+    eager: jax.numpy.gamma
+  mlx:
+    eager: mlx.core.gamma
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

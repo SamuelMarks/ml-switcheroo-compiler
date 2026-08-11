@@ -1,0 +1,5 @@
+operation: VariableType
+description: The type of a variable.
+std_args: []
+type: class
+variants: {}

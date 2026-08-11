@@ -1,0 +1,5 @@
+operation: InstanceNorm1d
+description: Auto-generated mapping for InstanceNorm1d.
+std_args: []
+type: class
+variants: {}

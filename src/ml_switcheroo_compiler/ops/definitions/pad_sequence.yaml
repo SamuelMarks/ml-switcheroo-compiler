@@ -1,0 +1,9 @@
+operation: pad_sequence
+description: Pad a list of variable length Tensors with :attr:`padding_value`.
+std_args:
+- sequences
+- batch_first
+- padding_value
+- padding_side
+type: function
+variants: {}

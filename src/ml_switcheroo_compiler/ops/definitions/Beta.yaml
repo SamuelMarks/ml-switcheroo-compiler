@@ -1,5 +1,7 @@
-operation: Beta
+operation: beta
 description: The Beta operation.
+std_args: []
+type: attribute
 variants:
   numpy:
     generator: np.random.beta({1}, {2}, size={shape})

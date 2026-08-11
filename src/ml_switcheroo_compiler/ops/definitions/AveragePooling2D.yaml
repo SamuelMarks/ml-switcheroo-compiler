@@ -1,0 +1,40 @@
+operation: AveragePooling2D
+description: Average pooling operation for 2D spatial data.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: pool_size
+  type: Union[int, Tuple[int, int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: strides
+  type: Union[int, Tuple[int, int]]
+- default: valid
+  is_variadic: false
+  kind: positional_or_keyword
+  name: padding
+  type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: data_format
+  type: str
+variants:
+  numpy:
+    eager: numpy.averagepooling2d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.averagepooling2d
+  keras:
+    eager: keras_ops.averagepooling2d
+  pytorch:
+    eager: torch.averagepooling2d
+  jax:
+    eager: jax.numpy.averagepooling2d
+  mlx:
+    eager: mlx.core.averagepooling2d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

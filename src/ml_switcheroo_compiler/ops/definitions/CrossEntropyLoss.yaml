@@ -1,0 +1,5 @@
+operation: CrossEntropyLoss
+description: Auto-generated from jax_code_defs
+std_args: []
+type: class
+variants: {}

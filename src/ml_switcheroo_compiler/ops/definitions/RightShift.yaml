@@ -1,5 +1,14 @@
 operation: RightShift
 description: The RightShift operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Array
 variants:
   cupy:
     eager: cp.right_shift
@@ -7,3 +16,13 @@ variants:
     eager: da.right_shift
   keras:
     eager: keras_ops.right_shift
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

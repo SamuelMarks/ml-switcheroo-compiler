@@ -1,0 +1,6 @@
+operation: wait_and_get_loaded
+description: Wait async copies and gets the loaded buffer as a jax.Array.
+std_args:
+- self
+type: function
+variants: {}

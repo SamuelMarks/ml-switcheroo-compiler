@@ -1,0 +1,23 @@
+operation: BenchmarkConfig
+description: Configuration for benchmarks.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.benchmarkconfig
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.benchmarkconfig
+  keras:
+    eager: keras_ops.benchmarkconfig
+  pytorch:
+    eager: torch.benchmarkconfig
+  jax:
+    eager: jax.numpy.benchmarkconfig
+  mlx:
+    eager: mlx.core.benchmarkconfig
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

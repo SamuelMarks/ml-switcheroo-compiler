@@ -1,0 +1,6 @@
+operation: is_terminator
+description: The class representing a Python function.
+std_args:
+- op
+type: function
+variants: {}

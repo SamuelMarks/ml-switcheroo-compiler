@@ -1,0 +1,7 @@
+operation: check_collective
+description: Checks that the collective attribute is consistent across operations.
+std_args:
+- self
+- op
+type: function
+variants: {}

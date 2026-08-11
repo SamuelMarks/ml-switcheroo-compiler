@@ -1,7 +1,19 @@
-operation: Compress
+operation: compress
 description: The Compress operation.
+std_args: []
 variants:
   cupy:
     eager: cp.compress
   dask:
     eager: da.compress
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

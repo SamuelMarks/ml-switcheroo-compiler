@@ -1,0 +1,6 @@
+operation: causal_upper_left
+description: Creates an upper-left triangular causal bias.
+std_args:
+- size
+type: function
+variants: {}

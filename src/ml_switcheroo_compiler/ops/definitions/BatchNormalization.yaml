@@ -1,0 +1,48 @@
+operation: BatchNormalization
+description: Layer that normalizes its inputs.
+std_args:
+- default: -1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- default: 0.99
+  is_variadic: false
+  kind: positional_or_keyword
+  name: momentum
+  type: float
+- default: 0.001
+  is_variadic: false
+  kind: positional_or_keyword
+  name: epsilon
+  type: float
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: center
+  type: bool
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: scale
+  type: bool
+variants:
+  numpy:
+    eager: numpy.batchnormalization
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.batchnormalization
+  keras:
+    eager: keras_ops.batchnormalization
+  pytorch:
+    eager: torch.batchnormalization
+  jax:
+    eager: jax.numpy.batchnormalization
+  mlx:
+    eager: mlx.core.batchnormalization
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

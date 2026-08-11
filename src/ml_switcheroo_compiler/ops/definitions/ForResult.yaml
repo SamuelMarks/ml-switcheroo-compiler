@@ -1,0 +1,8 @@
+operation: ForResult
+description: The class representing a Python class.
+std_args:
+- self
+- op
+- results
+type: class
+variants: {}

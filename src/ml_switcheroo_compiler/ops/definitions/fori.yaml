@@ -1,0 +1,7 @@
+operation: fori
+description: The class representing a Python function.
+std_args:
+- bound
+- carrys
+type: function
+variants: {}

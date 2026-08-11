@@ -1,0 +1,7 @@
+operation: from_aval
+description: The class representing a Python function.
+std_args:
+- cls
+- aval
+type: function
+variants: {}

@@ -1,0 +1,12 @@
+operation: rms_norm_backward
+description: The class representing a Python function.
+std_args:
+- num_warps
+- num_stages
+- eps
+- backward_pass_impl
+- interpret
+- res
+- do
+type: function
+variants: {}

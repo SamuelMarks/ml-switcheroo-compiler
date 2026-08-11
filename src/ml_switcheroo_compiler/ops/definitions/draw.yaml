@@ -1,0 +1,7 @@
+operation: draw
+description: Auto-generated mapping for draw.
+std_args: []
+variants:
+  tikz:
+    eager: tikz.draw
+    required_imports: []

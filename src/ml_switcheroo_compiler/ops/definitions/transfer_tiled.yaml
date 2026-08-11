@@ -1,0 +1,11 @@
+operation: transfer_tiled
+description: Generate a transfer schedule for a tiled layout.
+std_args:
+- ref
+- swizzle
+- layout
+- shape
+- optimized
+- ref_tiling_rank
+type: function
+variants: {}

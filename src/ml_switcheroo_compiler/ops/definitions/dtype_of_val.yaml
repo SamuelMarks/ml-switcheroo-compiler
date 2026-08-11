@@ -1,0 +1,6 @@
+operation: dtype_of_val
+description: Computes the TensorFlow dtype using JAX's typing rules.
+std_args:
+- val
+type: function
+variants: {}

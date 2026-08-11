@@ -1,0 +1,4 @@
+operation: SquaredReLU
+description: Squared ReLU activation layer.
+std_args: []
+variants: {}

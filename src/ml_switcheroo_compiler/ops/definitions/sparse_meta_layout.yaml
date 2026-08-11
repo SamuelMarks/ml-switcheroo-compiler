@@ -1,0 +1,5 @@
+operation: sparse_meta_layout
+description: A TMEM layout for A sparsity metadata.
+std_args: []
+type: function
+variants: {}

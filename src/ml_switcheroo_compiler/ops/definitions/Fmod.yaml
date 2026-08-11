@@ -1,7 +1,25 @@
-operation: Fmod
+operation: fmod
 description: The Fmod operation.
+std_args: []
 variants:
   cupy:
     eager: cp.fmod
   dask:
     eager: da.fmod
+  numpy:
+    eager: numpy.fmod
+  tensorflow:
+    eager: tf.fmod
+  keras:
+    eager: keras_ops.fmod
+  pytorch:
+    eager: torch.fmod
+  jax:
+    eager: jax.numpy.fmod
+  mlx:
+    eager: mlx.core.fmod
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

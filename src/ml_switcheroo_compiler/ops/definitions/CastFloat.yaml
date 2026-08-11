@@ -1,0 +1,21 @@
+operation: CastFloat
+description: Definition for CastFloat
+std_args:
+- x
+variants:
+  pytorch:
+    eager: float
+  jax:
+    eager: astype
+    requires_plugin: type_methods
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,43 @@
+operation: BinaryCrossEntropyWithLogits
+description: Computes Binary Cross Entropy with Logits.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: target
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weight
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: pos_weight
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: reduction
+  type: Any
+variants:
+  numpy:
+    eager: numpy.binarycrossentropywithlogits
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.binarycrossentropywithlogits
+  keras:
+    eager: keras_ops.binarycrossentropywithlogits
+  pytorch:
+    eager: torch.binarycrossentropywithlogits
+  jax:
+    eager: jax.numpy.binarycrossentropywithlogits
+  mlx:
+    eager: mlx.core.binarycrossentropywithlogits
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

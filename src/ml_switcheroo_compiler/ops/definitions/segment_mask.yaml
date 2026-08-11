@@ -1,0 +1,7 @@
+operation: segment_mask
+description: The class representing a Python function.
+std_args:
+- q_segment_ids
+- kv_segment_ids
+type: function
+variants: {}

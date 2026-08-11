@@ -1,5 +1,23 @@
-operation: Irfft
+operation: irfft
 description: The Irfft operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n
+  type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: norm
+  type: Literal[backward, ortho, forward]
+type: function
 variants:
   cupy:
     eager: cp.fft.irfft
@@ -9,3 +27,16 @@ variants:
     eager: keras_ops.irfft
   pytorch:
     generator: torch.fft.irfft({0}, n={n}, dim={axis})
+  numpy:
+    eager: numpy.irfft
+  tensorflow:
+    eager: tf.irfft
+  jax:
+    eager: jax.numpy.irfft
+  mlx:
+    eager: mlx.core.irfft
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

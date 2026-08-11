@@ -1,0 +1,6 @@
+operation: should_have_transforms
+description: Returns 'True' if the operation should be assigned in/out transforms.
+std_args:
+- op
+type: function
+variants: {}

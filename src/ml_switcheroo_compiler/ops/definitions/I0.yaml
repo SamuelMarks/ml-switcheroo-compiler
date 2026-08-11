@@ -1,5 +1,7 @@
-operation: I0
+operation: i0
 description: The I0 operation.
+std_args: []
+type: attribute
 variants:
   numpy:
     generator: np.i0

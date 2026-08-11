@@ -1,5 +1,24 @@
-operation: HardSwish
+operation: Hardswish
 description: The HardSwish operation.
+std_args: []
+type: function
 variants:
   keras:
     eager: keras_ops.hard_swish
+  numpy:
+    eager: numpy.hardswish
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.hardswish
+  pytorch:
+    eager: torch.hardswish
+  jax:
+    eager: jax.numpy.hardswish
+  mlx:
+    eager: mlx.core.hardswish
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

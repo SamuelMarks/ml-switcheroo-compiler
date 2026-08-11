@@ -1,0 +1,4 @@
+operation: ExecutionPlan
+description: Internal representation of an execution plan.
+std_args: []
+variants: {}

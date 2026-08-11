@@ -5,3 +5,20 @@ variants:
     generator: If
   edge_stablehlo:
     generator: stablehlo.if
+  numpy:
+    eager: numpy.if
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.if
+  keras:
+    eager: keras_ops.if
+  pytorch:
+    eager: torch.if
+  jax:
+    eager: jax.numpy.if
+  mlx:
+    eager: mlx.core.if
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

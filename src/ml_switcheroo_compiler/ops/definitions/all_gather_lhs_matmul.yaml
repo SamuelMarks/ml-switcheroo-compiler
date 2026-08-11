@@ -1,0 +1,10 @@
+operation: all_gather_lhs_matmul
+description: The class representing a Python function.
+std_args:
+- lhs
+- rhs
+- axis_name
+- config
+- dtype
+type: function
+variants: {}

@@ -22,12 +22,8 @@ def test_cond_grad():
     out, vjp_fn = vjp(f, x)
     assert out is not None
     # Test backward pass graph construction
-    import pytest
-
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-    with pytest.raises(UnimplementedMathError, match="Operation If is not implemented in interpreter."):
-        gx = vjp_fn(Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu"))))
+    gx = vjp_fn(Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu"))))
+    assert gx is not None
 
 
 def test_while_loop_grad():
@@ -45,9 +41,5 @@ def test_while_loop_grad():
 
     out, vjp_fn = vjp(f, x)
     assert out is not None
-    import pytest
-
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-
-    with pytest.raises(UnimplementedMathError, match="Operation Loop is not implemented in interpreter."):
-        gx = vjp_fn(Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu"))))
+    gx = vjp_fn(Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu"))))
+    assert gx is not None

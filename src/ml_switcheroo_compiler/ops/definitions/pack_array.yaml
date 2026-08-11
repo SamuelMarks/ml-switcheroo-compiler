@@ -1,0 +1,6 @@
+operation: pack_array
+description: The class representing a Python function.
+std_args:
+- values
+type: function
+variants: {}

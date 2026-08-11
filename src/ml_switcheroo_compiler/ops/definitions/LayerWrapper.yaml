@@ -1,0 +1,8 @@
+operation: LayerWrapper
+description: Abstract wrapper base class.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: layer
+  type: Any
+variants: {}

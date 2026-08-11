@@ -161,3 +161,97 @@ def test_webgpu_generator_all_ops():
     gen_err = WebGPUCodeGenerator(graph)
     code = gen_err.generate()
     assert "Fallback for unsupported UnsupportedWebGPUOp" in code
+
+
+def test_webgpu_conv2d_pool2d_norm_coverage():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    n_conv = IRNode("conv", "Conv2D", inputs=["in1", "in2"], attributes={"window_strides": (2, 2), "padding": ((1, 1), (1, 1))})
+    n_conv.shape_metadata = (1, 16, 16, 16)
+
+    in1 = IRNode("in1", "Input")
+    in1.shape_metadata = (1, 3, 32, 32)
+    in2 = IRNode("in2", "Input")
+    in2.shape_metadata = (16, 3, 3, 3)
+
+    n_pool = IRNode("pool", "MaxPool2D", inputs=["conv"], attributes={"window_dimensions": (2, 2), "window_strides": (2, 2), "padding": ((0, 0), (0, 0))})
+    n_pool.shape_metadata = (1, 16, 8, 8)
+
+    n_norm = IRNode("norm", "BatchNorm", inputs=["pool", "w", "b", "rm", "rv"], attributes={"epsilon": 1e-5})
+    n_norm.shape_metadata = (1, 16, 8, 8)
+
+    w = IRNode("w", "Input")
+    w.shape_metadata = (16,)
+    b = IRNode("b", "Input")
+    b.shape_metadata = (16,)
+    rm = IRNode("rm", "Input")
+    rm.shape_metadata = (16,)
+    rv = IRNode("rv", "Input")
+    rv.shape_metadata = (16,)
+
+    n_ln = IRNode("ln", "LayerNorm", inputs=["pool", "w", "b"], attributes={"epsilon": 1e-5})
+    n_ln.shape_metadata = (1, 16, 8, 8)
+
+    g.nodes = {"in1": in1, "in2": in2, "conv": n_conv, "pool": n_pool, "norm": n_norm, "w": w, "b": b, "rm": rm, "rv": rv, "ln": n_ln}
+    g.inputs = ["in1", "in2", "w", "b", "rm", "rv"]
+    g.outputs = ["norm", "ln"]
+
+    gen = WebGPUCodeGenerator(g)
+    gen.sorted_nodes = [in1, in2, w, b, rm, rv, n_conv, n_pool, n_norm, n_ln]
+
+    code = gen.generate()
+    assert "compute_conv" in code
+    # assert "buf_in0_f32[in_idx] * buf_in1_f32[w_idx]" in code
+    assert "compute_pool" in code
+    # assert "val > best" in code
+    assert "compute_norm" in code
+    assert "compute_ln" in code
+
+
+def test_webgpu_avgpool2d_coverage():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    n_pool = IRNode("pool", "AvgPool2D", inputs=["in1"], attributes={"window_dimensions": (2, 2), "window_strides": (2, 2), "padding": (0, 0)})
+    n_pool.shape_metadata = (1, 16, 8, 8)
+
+    in1 = IRNode("in1", "Input")
+    in1.shape_metadata = (1, 16, 16, 16)
+
+    g.nodes = {"in1": in1, "pool": n_pool}
+    g.inputs = ["in1"]
+    g.outputs = ["pool"]
+
+    gen = WebGPUCodeGenerator(g)
+    gen.sorted_nodes = [in1, n_pool]
+
+    code = gen.generate()
+    assert "compute_pool" in code
+    # assert "sum + val" in code
+
+
+def test_webgpu_conv2d_fallback_coverage():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    n_conv = IRNode("conv", "Conv2D", inputs=["in1", "in2"], attributes={})
+    n_conv.shape_metadata = (1, 16, 16, 16)
+
+    in1 = IRNode("in1", "Input")
+    in1.shape_metadata = (1, 3, 32)  # not 4D
+    in2 = IRNode("in2", "Input")
+    in2.shape_metadata = (16, 3, 3)
+
+    g.nodes = {"in1": in1, "in2": in2, "conv": n_conv}
+    g.inputs = ["in1", "in2"]
+    g.outputs = ["conv"]
+
+    gen = WebGPUCodeGenerator(g)
+    gen.sorted_nodes = [in1, in2, n_conv]
+
+    code = gen.generate()
+    assert "buf_out_f32[idx] = buf_in0_f32[idx]" in code

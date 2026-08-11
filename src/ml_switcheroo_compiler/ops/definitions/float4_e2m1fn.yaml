@@ -1,0 +1,4 @@
+operation: float4_e2m1fn
+description: Auto-generated from jax_code_defs
+std_args: []
+variants: {}

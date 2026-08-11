@@ -1,0 +1,12 @@
+operation: VitExitLayers
+description: Exit block of ViT.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: hidden_dim
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: output_dim
+  type: int
+variants: {}

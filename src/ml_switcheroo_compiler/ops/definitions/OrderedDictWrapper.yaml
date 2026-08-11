@@ -1,0 +1,8 @@
+operation: OrderedDictWrapper
+description: A wrapper around a C++ OrderedDict.
+std_args:
+- self
+- cpp_module
+- attr
+type: class
+variants: {}

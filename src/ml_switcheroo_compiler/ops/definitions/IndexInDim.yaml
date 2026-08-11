@@ -3,3 +3,20 @@ description: The IndexInDim operation.
 variants:
   numpy:
     generator: np.take({0}, {1}, axis={2})
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.indexindim
+  keras:
+    eager: keras_ops.indexindim
+  pytorch:
+    eager: torch.indexindim
+  jax:
+    eager: jax.numpy.indexindim
+  mlx:
+    eager: mlx.core.indexindim
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

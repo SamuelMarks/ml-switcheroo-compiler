@@ -1,0 +1,4 @@
+operation: ErrorReport
+description: Internal wrapper for error reporting.
+std_args: []
+variants: {}

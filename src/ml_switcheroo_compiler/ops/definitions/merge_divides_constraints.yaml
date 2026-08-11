@@ -1,0 +1,6 @@
+operation: merge_divides_constraints
+description: Merges Divides constraints that can be merged.
+std_args:
+- constraints
+type: function
+variants: {}

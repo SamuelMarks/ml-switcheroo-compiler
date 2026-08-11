@@ -1,5 +1,23 @@
-operation: Fromstring
+operation: fromstring
 description: The Fromstring operation.
+std_args: []
 variants:
   numpy:
     generator: np.fromstring
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.fromstring
+  keras:
+    eager: keras_ops.fromstring
+  pytorch:
+    eager: torch.fromstring
+  jax:
+    eager: jax.numpy.fromstring
+  mlx:
+    eager: mlx.core.fromstring
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

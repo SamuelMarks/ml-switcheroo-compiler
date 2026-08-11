@@ -1,0 +1,8 @@
+operation: transfer_strided
+description: The class representing a Python function.
+std_args:
+- self
+- ref
+- vec_size
+type: function
+variants: {}

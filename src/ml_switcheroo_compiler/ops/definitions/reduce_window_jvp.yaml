@@ -1,0 +1,4 @@
+operation: reduce_window_jvp
+description: Auto-generated mapping for reduce_window_jvp.
+std_args: []
+variants: {}

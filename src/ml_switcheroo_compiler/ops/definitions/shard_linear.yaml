@@ -1,0 +1,4 @@
+operation: shard_linear
+description: Auto-generated mapping for shard_linear.
+std_args: []
+variants: {}

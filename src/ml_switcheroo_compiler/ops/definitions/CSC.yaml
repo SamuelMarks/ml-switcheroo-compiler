@@ -1,0 +1,8 @@
+operation: CSC
+description: Experimental CSC matrix implemented in JAX; API subject to change.
+std_args:
+- self
+- args
+- shape
+type: class
+variants: {}

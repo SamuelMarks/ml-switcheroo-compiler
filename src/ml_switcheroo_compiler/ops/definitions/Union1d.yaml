@@ -1,7 +1,25 @@
-operation: Union1d
+operation: union1d
 description: The Union1d operation.
+std_args: []
 variants:
   cupy:
     eager: cp.union1d
   dask:
     eager: da.union1d
+  numpy:
+    eager: numpy.union1d
+  tensorflow:
+    eager: tf.union1d
+  keras:
+    eager: keras_ops.union1d
+  pytorch:
+    eager: torch.union1d
+  jax:
+    eager: jax.numpy.union1d
+  mlx:
+    eager: mlx.core.union1d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

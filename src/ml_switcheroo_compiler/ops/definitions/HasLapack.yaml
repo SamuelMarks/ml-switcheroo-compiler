@@ -1,0 +1,4 @@
+operation: HasLapack
+description: Checks if LAPACK is available.
+std_args: []
+variants: {}

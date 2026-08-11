@@ -1,5 +1,7 @@
-operation: Erfc
+operation: erfc
 description: The Erfc operation.
+std_args: []
+type: attribute
 variants:
   tensorflow:
     eager: tf.math.erfc

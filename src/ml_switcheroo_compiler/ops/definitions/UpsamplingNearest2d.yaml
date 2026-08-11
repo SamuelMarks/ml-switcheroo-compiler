@@ -1,0 +1,5 @@
+operation: UpsamplingNearest2d
+description: Auto-generated mapping for UpsamplingNearest2d.
+std_args: []
+type: class
+variants: {}

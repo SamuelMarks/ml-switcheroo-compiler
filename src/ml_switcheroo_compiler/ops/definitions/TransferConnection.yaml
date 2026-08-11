@@ -1,0 +1,5 @@
+operation: TransferConnection
+description: Represents a connection to exactly one peer.
+std_args: []
+type: class
+variants: {}

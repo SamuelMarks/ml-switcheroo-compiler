@@ -1,0 +1,4 @@
+operation: is_available
+description: Return a bool indicating if XPU is currently available.
+std_args: []
+variants: {}

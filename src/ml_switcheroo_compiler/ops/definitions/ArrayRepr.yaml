@@ -1,0 +1,27 @@
+operation: ArrayRepr
+description: Return the string representation of an array.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: arr
+  type: Array
+variants:
+  numpy:
+    eager: numpy.arrayrepr
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arrayrepr
+  keras:
+    eager: keras_ops.arrayrepr
+  pytorch:
+    eager: torch.arrayrepr
+  jax:
+    eager: jax.numpy.arrayrepr
+  mlx:
+    eager: mlx.core.arrayrepr
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

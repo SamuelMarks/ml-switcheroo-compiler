@@ -3,3 +3,20 @@ description: The Irfft2d operation.
 variants:
   pytorch:
     generator: torch.fft.irfft2({0}, s={s}, dim={axes})
+  numpy:
+    eager: numpy.irfft2d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.irfft2d
+  keras:
+    eager: keras_ops.irfft2d
+  jax:
+    eager: jax.numpy.irfft2d
+  mlx:
+    eager: mlx.core.irfft2d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

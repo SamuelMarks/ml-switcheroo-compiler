@@ -1,5 +1,31 @@
 operation: SobolSample
 description: The SobolSample operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dim
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: num_results
+  type: int
+- default: 0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: skip
+  type: int
 variants:
   tensorflow:
     eager: tf.math.sobol_sample
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

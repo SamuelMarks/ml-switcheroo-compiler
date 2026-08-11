@@ -1,0 +1,8 @@
+operation: FlaxLayer
+description: Keras Layer wrapping Flax.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: module
+  type: Any
+variants: {}

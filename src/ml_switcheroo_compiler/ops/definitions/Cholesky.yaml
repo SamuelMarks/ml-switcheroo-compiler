@@ -1,5 +1,15 @@
 operation: Cholesky
 description: The Cholesky operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: upper
+  type: bool
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.cholesky

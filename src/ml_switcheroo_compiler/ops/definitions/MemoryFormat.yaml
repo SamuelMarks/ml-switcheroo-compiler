@@ -1,0 +1,4 @@
+operation: MemoryFormat
+description: Enum for memory layout.
+std_args: []
+variants: {}

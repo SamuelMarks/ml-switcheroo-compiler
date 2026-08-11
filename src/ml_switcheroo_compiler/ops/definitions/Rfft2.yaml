@@ -1,5 +1,7 @@
-operation: Rfft2
+operation: rfft2
 description: The Rfft2 operation.
+std_args: []
+type: function
 variants:
   cupy:
     eager: cp.fft.rfft2
@@ -7,3 +9,18 @@ variants:
     eager: da.fft.rfft2
   numpy:
     generator: np.fft.rfft2
+  tensorflow:
+    eager: tf.rfft2
+  keras:
+    eager: keras_ops.rfft2
+  pytorch:
+    eager: torch.rfft2
+  jax:
+    eager: jax.numpy.rfft2
+  mlx:
+    eager: mlx.core.rfft2
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,10 @@
-operation: Negative
+operation: negative
 description: The Negative operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.negative
@@ -17,3 +22,9 @@ variants:
     generator: np.negative
   tensorflow:
     eager: tf.negative
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

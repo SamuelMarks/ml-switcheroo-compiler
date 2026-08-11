@@ -1,0 +1,4 @@
+operation: PyTorchFileReader
+description: Internal file reader.
+std_args: []
+variants: {}

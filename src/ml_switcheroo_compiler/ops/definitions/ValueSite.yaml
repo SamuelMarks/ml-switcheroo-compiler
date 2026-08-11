@@ -1,0 +1,10 @@
+operation: ValueSite
+description: A unique identifier for a variable.
+std_args:
+- self
+- operation
+- type
+- index
+- region_index
+type: class
+variants: {}

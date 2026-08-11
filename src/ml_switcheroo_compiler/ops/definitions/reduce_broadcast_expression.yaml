@@ -1,0 +1,7 @@
+operation: reduce_broadcast_expression
+description: The class representing a Python function.
+std_args:
+- broadcast
+- assignments
+type: function
+variants: {}

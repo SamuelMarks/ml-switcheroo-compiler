@@ -1,5 +1,15 @@
-operation: Diagonal
+operation: diagonal
 description: The Diagonal operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: offset
+  type: int
+type: attribute
 variants:
   cupy:
     eager: cp.diagonal

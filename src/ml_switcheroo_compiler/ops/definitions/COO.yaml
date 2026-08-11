@@ -1,0 +1,10 @@
+operation: COO
+description: Experimental COO matrix implemented in JAX.
+std_args:
+- self
+- args
+- shape
+- rows_sorted
+- cols_sorted
+type: class
+variants: {}

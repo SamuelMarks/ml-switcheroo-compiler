@@ -1,0 +1,6 @@
+operation: to_splat_fragmented_layout_attr
+description: 'Constructs a #mosaic_gpu.WGSplatFragLayout attribute from a WGSplatFragLayout.'
+std_args:
+- layout
+type: function
+variants: {}

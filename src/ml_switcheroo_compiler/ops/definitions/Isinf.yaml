@@ -1,5 +1,10 @@
-operation: Isinf
+operation: isinf
 description: The Isinf operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.isinf
@@ -7,3 +12,18 @@ variants:
     eager: da.isinf
   keras:
     eager: keras_ops.isinf
+  numpy:
+    eager: numpy.isinf
+  tensorflow:
+    eager: tf.isinf
+  pytorch:
+    eager: torch.isinf
+  jax:
+    eager: jax.numpy.isinf
+  mlx:
+    eager: mlx.core.isinf
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

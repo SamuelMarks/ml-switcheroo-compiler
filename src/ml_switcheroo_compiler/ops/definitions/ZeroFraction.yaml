@@ -1,5 +1,22 @@
 operation: ZeroFraction
 description: The ZeroFraction operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: value
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.zero_fraction
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

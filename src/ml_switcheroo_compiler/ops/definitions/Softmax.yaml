@@ -1,5 +1,7 @@
 operation: Softmax
 description: The Softmax operation.
+std_args: []
+type: attribute
 variants:
   edge_onnx:
     generator: Softmax

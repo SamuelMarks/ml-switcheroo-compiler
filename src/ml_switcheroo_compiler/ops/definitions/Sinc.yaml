@@ -1,5 +1,7 @@
-operation: Sinc
+operation: sinc
 description: The Sinc operation.
+std_args: []
+type: attribute
 variants:
   cupy:
     eager: cp.sinc

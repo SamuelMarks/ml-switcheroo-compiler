@@ -1,0 +1,8 @@
+operation: Rad2Deg_
+description: In-place version of rad2deg.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+variants: {}

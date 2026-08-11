@@ -1,0 +1,5 @@
+operation: is_single_process_multi_device_topology
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

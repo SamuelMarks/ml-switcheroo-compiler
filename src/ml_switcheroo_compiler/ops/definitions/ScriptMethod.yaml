@@ -1,0 +1,4 @@
+operation: ScriptMethod
+description: Internal TorchScript method.
+std_args: []
+variants: {}

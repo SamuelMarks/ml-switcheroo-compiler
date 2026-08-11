@@ -3,3 +3,20 @@ description: The RaggedSegmentIdsToRowSplits operation.
 variants:
   numpy:
     generator: tf.ragged.segment_ids_to_row_splits
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.raggedsegmentidstorowsplits
+  keras:
+    eager: keras_ops.raggedsegmentidstorowsplits
+  pytorch:
+    eager: torch.raggedsegmentidstorowsplits
+  jax:
+    eager: jax.numpy.raggedsegmentidstorowsplits
+  mlx:
+    eager: mlx.core.raggedsegmentidstorowsplits
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

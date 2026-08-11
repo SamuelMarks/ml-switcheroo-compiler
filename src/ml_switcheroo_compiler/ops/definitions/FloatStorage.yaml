@@ -1,0 +1,4 @@
+operation: FloatStorage
+description: Storage class for float32 data.
+std_args: []
+variants: {}

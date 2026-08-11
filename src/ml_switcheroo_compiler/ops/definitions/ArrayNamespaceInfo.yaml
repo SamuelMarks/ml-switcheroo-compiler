@@ -1,0 +1,23 @@
+operation: ArrayNamespaceInfo
+description: Auto-generated mapping for ArrayNamespaceInfo.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.arraynamespaceinfo
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arraynamespaceinfo
+  keras:
+    eager: keras_ops.arraynamespaceinfo
+  pytorch:
+    eager: torch.arraynamespaceinfo
+  jax:
+    eager: jax.numpy.arraynamespaceinfo
+  mlx:
+    eager: mlx.core.arraynamespaceinfo
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

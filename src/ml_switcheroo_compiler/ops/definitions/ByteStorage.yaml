@@ -1,0 +1,4 @@
+operation: ByteStorage
+description: Storage for Byte (UInt8) data.
+std_args: []
+variants: {}

@@ -1,0 +1,10 @@
+operation: kaiming_uniform_
+description: Fill the input `Tensor` with values using a Kaiming uniform distribution.
+std_args:
+- tensor
+- a
+- mode
+- nonlinearity
+- generator
+type: function
+variants: {}

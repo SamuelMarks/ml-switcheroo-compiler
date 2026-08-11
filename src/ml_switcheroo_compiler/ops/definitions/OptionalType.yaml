@@ -1,0 +1,4 @@
+operation: OptionalType
+description: JIT type representing Optional[T].
+std_args: []
+variants: {}

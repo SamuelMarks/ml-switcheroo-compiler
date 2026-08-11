@@ -1,0 +1,8 @@
+operation: result
+description: The class representing a Python function.
+std_args:
+- self
+- args
+- kw
+type: function
+variants: {}

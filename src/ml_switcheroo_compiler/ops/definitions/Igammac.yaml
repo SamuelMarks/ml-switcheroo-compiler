@@ -1,7 +1,23 @@
-operation: Igammac
+operation: igammac
 description: The Igammac operation.
+std_args: []
 variants:
   numpy:
     generator: scipy.special.gammaincc
   tensorflow:
     eager: tf.math.igammac
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.igammac
+  pytorch:
+    eager: torch.igammac
+  jax:
+    eager: jax.numpy.igammac
+  mlx:
+    eager: mlx.core.igammac
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

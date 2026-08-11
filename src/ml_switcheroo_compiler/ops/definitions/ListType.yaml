@@ -1,0 +1,4 @@
+operation: ListType
+description: JIT type representing List.
+std_args: []
+variants: {}

@@ -1,0 +1,8 @@
+operation: FilterAny
+description: Filter that matches if any sub-filter matches.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: filters
+  type: Any
+variants: {}

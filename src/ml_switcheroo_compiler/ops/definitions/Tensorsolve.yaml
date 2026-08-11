@@ -1,5 +1,24 @@
-operation: Tensorsolve
+operation: tensorsolve
 description: The Tensorsolve operation.
+std_args: []
+type: function
 variants:
   numpy:
     generator: np.linalg.tensorsolve({0}, {1}, axes={axes})
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.tensorsolve
+  keras:
+    eager: keras_ops.tensorsolve
+  pytorch:
+    eager: torch.tensorsolve
+  jax:
+    eager: jax.numpy.tensorsolve
+  mlx:
+    eager: mlx.core.tensorsolve
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

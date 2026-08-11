@@ -1,0 +1,4 @@
+operation: custom_vjp
+description: Auto-generated mapping for custom_vjp.
+std_args: []
+variants: {}

@@ -1,0 +1,6 @@
+operation: should_have_layout
+description: Returns 'true' if the operation should be assigned a layout.
+std_args:
+- op
+type: function
+variants: {}

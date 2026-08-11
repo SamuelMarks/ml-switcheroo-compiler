@@ -1,5 +1,40 @@
 operation: HistogramBinEdges
 description: The HistogramBinEdges operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Array
+- default: 10
+  is_variadic: false
+  kind: positional_or_keyword
+  name: bins
+  type: Union[int, str]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: range
+  type: Optional[Tuple[float, float]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weights
+  type: Optional[Array]
 variants:
   numpy:
     generator: np.histogram_bin_edges
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.histogrambinedges
+  keras:
+    eager: keras_ops.histogrambinedges
+  pytorch:
+    eager: torch.histogrambinedges
+  jax:
+    eager: jax.numpy.histogrambinedges
+  mlx:
+    eager: mlx.core.histogrambinedges
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

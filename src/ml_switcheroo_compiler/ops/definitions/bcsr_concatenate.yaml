@@ -1,0 +1,7 @@
+operation: bcsr_concatenate
+description: Sparse implementation of :func:`jax.lax.concatenate`
+std_args:
+- operands
+- dimension
+type: function
+variants: {}

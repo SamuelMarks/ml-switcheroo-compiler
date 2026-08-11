@@ -1,0 +1,4 @@
+operation: FilterEverything
+description: Filter matching everything.
+std_args: []
+variants: {}

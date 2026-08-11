@@ -1,5 +1,10 @@
-operation: Cos
+operation: cos
 description: The Cos operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.cos
@@ -17,3 +22,9 @@ variants:
     generator: np.cos
   tensorflow:
     eager: tf.cos
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

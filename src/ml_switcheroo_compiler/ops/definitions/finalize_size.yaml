@@ -1,0 +1,6 @@
+operation: finalize_size
+description: Allocates and initializes the host buffer. This needs to be done after
+std_args:
+- self
+type: function
+variants: {}

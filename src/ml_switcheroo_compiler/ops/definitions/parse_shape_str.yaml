@@ -1,0 +1,6 @@
+operation: parse_shape_str
+description: The class representing a Python function.
+std_args:
+- s
+type: function
+variants: {}

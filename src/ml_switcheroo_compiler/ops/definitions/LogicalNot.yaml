@@ -1,5 +1,10 @@
 operation: LogicalNot
 description: The LogicalNot operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
 variants:
   cupy:
     eager: cp.logical_not
@@ -9,3 +14,16 @@ variants:
     eager: keras_ops.logical_not
   tensorflow:
     eager: tf.logical_not
+  numpy:
+    eager: numpy.logicalnot
+  pytorch:
+    eager: torch.logicalnot
+  jax:
+    eager: jax.numpy.logicalnot
+  mlx:
+    eager: mlx.core.logicalnot
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

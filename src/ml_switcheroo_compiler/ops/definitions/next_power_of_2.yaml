@@ -1,0 +1,6 @@
+operation: next_power_of_2
+description: Finds the smallest power of 2 >= x using bit manipulation.
+std_args:
+- x
+type: function
+variants: {}

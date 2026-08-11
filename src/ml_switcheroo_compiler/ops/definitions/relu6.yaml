@@ -1,0 +1,5 @@
+operation: relu6
+description: Auto-generated mapping for relu6.
+std_args: []
+type: function
+variants: {}

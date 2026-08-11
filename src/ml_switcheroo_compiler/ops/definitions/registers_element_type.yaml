@@ -1,0 +1,7 @@
+operation: registers_element_type
+description: The class representing a Python function.
+std_args:
+- self
+- t
+type: function
+variants: {}

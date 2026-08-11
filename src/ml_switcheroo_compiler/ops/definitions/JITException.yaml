@@ -1,0 +1,4 @@
+operation: JITException
+description: Common base class for all non-exit exceptions in JIT.
+std_args: []
+variants: {}

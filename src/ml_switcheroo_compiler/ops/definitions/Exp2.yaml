@@ -1,5 +1,7 @@
-operation: Exp2
+operation: exp2
 description: The Exp2 operation.
+std_args: []
+type: attribute
 variants:
   cupy:
     eager: cp.exp2

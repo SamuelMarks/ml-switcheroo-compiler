@@ -1,5 +1,31 @@
-operation: Logcumsumexp
+operation: LogCumSumExp
 description: The Logcumsumexp operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dim
+  type: int
 variants:
   numpy:
     generator: scipy.special.logsumexp
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.logcumsumexp
+  keras:
+    eager: keras_ops.logcumsumexp
+  pytorch:
+    eager: torch.logcumsumexp
+  jax:
+    eager: jax.numpy.logcumsumexp
+  mlx:
+    eager: mlx.core.logcumsumexp
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

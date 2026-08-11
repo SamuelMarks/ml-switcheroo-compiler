@@ -1,0 +1,4 @@
+operation: IntType
+description: JIT type representing Int.
+std_args: []
+variants: {}

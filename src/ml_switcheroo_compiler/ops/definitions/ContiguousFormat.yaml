@@ -1,0 +1,4 @@
+operation: ContiguousFormat
+description: Memory format constant.
+std_args: []
+variants: {}

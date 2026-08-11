@@ -1,5 +1,24 @@
-operation: Tensorinv
+operation: tensorinv
 description: The Tensorinv operation.
+std_args: []
+type: function
 variants:
   numpy:
     generator: np.linalg.tensorinv({0}, ind={ind})
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.tensorinv
+  keras:
+    eager: keras_ops.tensorinv
+  pytorch:
+    eager: torch.tensorinv
+  jax:
+    eager: jax.numpy.tensorinv
+  mlx:
+    eager: mlx.core.tensorinv
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

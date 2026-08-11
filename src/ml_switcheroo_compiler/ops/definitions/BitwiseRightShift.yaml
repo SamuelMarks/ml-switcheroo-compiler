@@ -1,0 +1,31 @@
+operation: BitwiseRightShift
+description: Computes the right arithmetic shift of input by other bits.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Any
+variants:
+  numpy:
+    eager: numpy.bitwiserightshift
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.bitwiserightshift
+  keras:
+    eager: keras_ops.bitwiserightshift
+  pytorch:
+    eager: torch.bitwiserightshift
+  jax:
+    eager: jax.numpy.bitwiserightshift
+  mlx:
+    eager: mlx.core.bitwiserightshift
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

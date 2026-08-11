@@ -1,0 +1,6 @@
+operation: CudnnGridSampler
+description: CuDNN Grid Sampler.
+std_args:
+- input
+- grid
+variants: {}

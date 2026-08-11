@@ -1,0 +1,6 @@
+operation: canonicalize
+description: Returns a version of this layout where tiling is canonical.
+std_args:
+- self
+type: function
+variants: {}

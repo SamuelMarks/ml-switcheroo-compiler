@@ -1,5 +1,23 @@
 operation: R_
 description: The R_ operation.
+std_args: []
 variants:
   numpy:
     generator: np.r_
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.r_
+  keras:
+    eager: keras_ops.r_
+  pytorch:
+    eager: torch.r_
+  jax:
+    eager: jax.numpy.r_
+  mlx:
+    eager: mlx.core.r_
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

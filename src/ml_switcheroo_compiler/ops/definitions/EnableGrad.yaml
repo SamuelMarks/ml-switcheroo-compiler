@@ -1,0 +1,4 @@
+operation: EnableGrad
+description: Context-manager that enables gradient calculation.
+std_args: []
+variants: {}

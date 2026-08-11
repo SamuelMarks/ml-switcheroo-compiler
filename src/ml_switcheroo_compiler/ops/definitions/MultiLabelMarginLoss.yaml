@@ -1,0 +1,5 @@
+operation: MultiLabelMarginLoss
+description: Auto-generated mapping for MultiLabelMarginLoss.
+std_args: []
+type: class
+variants: {}

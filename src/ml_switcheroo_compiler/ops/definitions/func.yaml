@@ -1,0 +1,7 @@
+operation: func
+description: Auto-generated mapping for func.
+std_args: []
+variants:
+  mlir:
+    eager: sw.func
+    required_imports: []

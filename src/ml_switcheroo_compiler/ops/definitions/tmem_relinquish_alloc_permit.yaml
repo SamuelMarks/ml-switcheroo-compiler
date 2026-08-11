@@ -1,0 +1,6 @@
+operation: tmem_relinquish_alloc_permit
+description: The class representing a Python function.
+std_args:
+- collective
+type: function
+variants: {}

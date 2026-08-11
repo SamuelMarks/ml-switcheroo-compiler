@@ -1,0 +1,4 @@
+operation: DictType
+description: Type representation for Dictionaries in TorchScript.
+std_args: []
+variants: {}

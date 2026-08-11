@@ -1,7 +1,42 @@
-operation: Ihfft
+operation: ihfft
 description: The Ihfft operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n
+  type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: norm
+  type: Literal[backward, ortho, forward]
+type: function
 variants:
   cupy:
     eager: cp.fft.ihfft
   dask:
     eager: da.fft.ihfft
+  numpy:
+    eager: numpy.ihfft
+  tensorflow:
+    eager: tf.ihfft
+  keras:
+    eager: keras_ops.ihfft
+  pytorch:
+    eager: torch.ihfft
+  jax:
+    eager: jax.numpy.ihfft
+  mlx:
+    eager: mlx.core.ihfft
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

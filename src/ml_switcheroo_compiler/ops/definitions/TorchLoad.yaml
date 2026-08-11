@@ -1,0 +1,26 @@
+operation: TorchLoad
+description: Definition for TorchLoad
+std_args:
+- f
+variants:
+  pytorch:
+    eager: torch.load
+  jax:
+    eager: load
+    requires_plugin: io_handler
+  numpy:
+    eager: load
+    requires_plugin: io_handler
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.torchload
+  keras:
+    eager: keras_ops.torchload
+  mlx:
+    eager: mlx.core.torchload
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

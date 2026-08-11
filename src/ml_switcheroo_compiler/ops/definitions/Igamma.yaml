@@ -1,7 +1,23 @@
-operation: Igamma
+operation: igamma
 description: The Igamma operation.
+std_args: []
 variants:
   numpy:
     generator: scipy.special.gammainc
   tensorflow:
     eager: tf.math.igamma
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.igamma
+  pytorch:
+    eager: torch.igamma
+  jax:
+    eager: jax.numpy.igamma
+  mlx:
+    eager: mlx.core.igamma
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

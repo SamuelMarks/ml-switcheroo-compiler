@@ -1,0 +1,5 @@
+operation: smem
+description: Returns the attribute for the SMEM memory space.
+std_args: []
+type: function
+variants: {}

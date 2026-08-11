@@ -1,5 +1,23 @@
-operation: Rfftn
+operation: rfftn
 description: The Rfftn operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: s
+  type: Optional[Sequence[int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axes
+  type: Optional[Sequence[int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: norm
+  type: Literal[backward, ortho, forward]
+type: function
 variants:
   cupy:
     eager: cp.fft.rfftn
@@ -7,3 +25,18 @@ variants:
     eager: da.fft.rfftn
   numpy:
     generator: np.fft.rfftn
+  tensorflow:
+    eager: tf.rfftn
+  keras:
+    eager: keras_ops.rfftn
+  pytorch:
+    eager: torch.rfftn
+  jax:
+    eager: jax.numpy.rfftn
+  mlx:
+    eager: mlx.core.rfftn
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

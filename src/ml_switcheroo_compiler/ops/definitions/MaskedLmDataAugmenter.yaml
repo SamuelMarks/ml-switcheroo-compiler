@@ -1,0 +1,12 @@
+operation: MaskedLmDataAugmenter
+description: Performs data augmentation according to the BERT paper.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: vocab_size
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mask_prob
+  type: float
+variants: {}

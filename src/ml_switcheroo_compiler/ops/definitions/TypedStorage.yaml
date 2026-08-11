@@ -1,0 +1,4 @@
+operation: TypedStorage
+description: Legacy storage class for typed data.
+std_args: []
+variants: {}

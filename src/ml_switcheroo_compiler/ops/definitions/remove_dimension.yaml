@@ -1,0 +1,7 @@
+operation: remove_dimension
+description: The class representing a Python function.
+std_args:
+- self
+- dim
+type: function
+variants: {}

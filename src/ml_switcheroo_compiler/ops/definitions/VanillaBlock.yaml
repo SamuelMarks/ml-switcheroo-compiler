@@ -1,0 +1,17 @@
+operation: VanillaBlock
+description: Vanilla Convolution Block.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input_dim
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: output_dim
+  type: int
+- default: 3
+  is_variadic: false
+  kind: positional_or_keyword
+  name: kernel_size
+  type: int
+variants: {}

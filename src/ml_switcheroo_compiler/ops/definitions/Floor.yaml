@@ -1,5 +1,10 @@
-operation: Floor
+operation: floor
 description: The Floor operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.floor
@@ -13,3 +18,14 @@ variants:
     eager: keras_ops.floor
   tensorflow:
     eager: tf.floor
+  numpy:
+    eager: numpy.floor
+  pytorch:
+    eager: torch.floor
+  jax:
+    eager: jax.numpy.floor
+  mlx:
+    eager: mlx.core.floor
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

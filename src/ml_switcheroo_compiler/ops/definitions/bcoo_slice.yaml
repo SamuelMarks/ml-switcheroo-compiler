@@ -1,0 +1,9 @@
+operation: bcoo_slice
+description: Sparse implementation of :func:`jax.lax.slice`.
+std_args:
+- mat
+- start_indices
+- limit_indices
+- strides
+type: function
+variants: {}

@@ -1,7 +1,25 @@
-operation: Fmax
+operation: fmax
 description: The Fmax operation.
+std_args: []
 variants:
   cupy:
     eager: cp.fmax
   dask:
     eager: da.fmax
+  numpy:
+    eager: numpy.fmax
+  tensorflow:
+    eager: tf.fmax
+  keras:
+    eager: keras_ops.fmax
+  pytorch:
+    eager: torch.fmax
+  jax:
+    eager: jax.numpy.fmax
+  mlx:
+    eager: mlx.core.fmax
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

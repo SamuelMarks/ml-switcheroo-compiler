@@ -1,0 +1,27 @@
+operation: AsRefVars
+description: Converts a Variable or structure of Variables to Variables with has_ref=True.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: node
+  type: Any
+variants:
+  numpy:
+    eager: numpy.asrefvars
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asrefvars
+  keras:
+    eager: keras_ops.asrefvars
+  pytorch:
+    eager: torch.asrefvars
+  jax:
+    eager: jax.numpy.asrefvars
+  mlx:
+    eager: mlx.core.asrefvars
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

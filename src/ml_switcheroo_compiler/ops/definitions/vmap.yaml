@@ -1,0 +1,19 @@
+operation: Vmap
+description: Auto-generated from jax_code_defs
+std_args: []
+variants:
+  edge_onnx:
+    generator: Vmap
+  edge_stablehlo:
+    generator: stablehlo.map
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

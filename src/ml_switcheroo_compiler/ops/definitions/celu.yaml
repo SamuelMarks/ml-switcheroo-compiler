@@ -1,0 +1,5 @@
+operation: celu
+description: Auto-generated mapping for celu.
+std_args: []
+type: function
+variants: {}

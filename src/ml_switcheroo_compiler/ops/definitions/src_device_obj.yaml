@@ -1,0 +1,5 @@
+operation: src_device_obj
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

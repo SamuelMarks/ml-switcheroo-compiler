@@ -1,7 +1,19 @@
-operation: Rsqrt
+operation: rsqrt
 description: The Rsqrt operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.rsqrt
   tensorflow:
     eager: tf.math.rsqrt
+  numpy: {}
+  cupy: {}
+  dask: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

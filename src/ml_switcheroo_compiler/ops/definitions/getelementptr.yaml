@@ -1,0 +1,8 @@
+operation: getelementptr
+description: The class representing a Python function.
+std_args:
+- ptr
+- indices
+- dtype
+type: function
+variants: {}

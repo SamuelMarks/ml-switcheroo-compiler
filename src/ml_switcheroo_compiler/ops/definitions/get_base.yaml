@@ -1,0 +1,7 @@
+operation: get_base
+description: The class representing a Python function.
+std_args:
+- self
+- source_coords
+type: function
+variants: {}

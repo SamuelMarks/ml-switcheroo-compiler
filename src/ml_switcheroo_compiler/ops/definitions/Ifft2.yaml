@@ -1,5 +1,7 @@
-operation: Ifft2
+operation: ifft2
 description: The Ifft2 operation.
+std_args: []
+type: function
 variants:
   cupy:
     eager: cp.fft.ifft2
@@ -9,3 +11,16 @@ variants:
     eager: keras_ops.ifft2
   numpy:
     generator: np.fft.ifft2
+  tensorflow:
+    eager: tf.ifft2
+  pytorch:
+    eager: torch.ifft2
+  jax:
+    eager: jax.numpy.ifft2
+  mlx:
+    eager: mlx.core.ifft2
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

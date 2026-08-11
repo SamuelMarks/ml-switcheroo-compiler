@@ -1,0 +1,7 @@
+operation: transform_index
+description: The class representing a Python function.
+std_args:
+- self
+- idx
+type: function
+variants: {}

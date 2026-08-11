@@ -1,0 +1,27 @@
+operation: AsArrayVars
+description: Converts specific variables.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: node
+  type: Any
+variants:
+  numpy:
+    eager: numpy.asarrayvars
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asarrayvars
+  keras:
+    eager: keras_ops.asarrayvars
+  pytorch:
+    eager: torch.asarrayvars
+  jax:
+    eager: jax.numpy.asarrayvars
+  mlx:
+    eager: mlx.core.asarrayvars
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,18 @@
-operation: Where
+operation: where
 description: The Where operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: condition
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float, complex, bool]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float, complex, bool]
 variants:
   cupy:
     eager: cp.where
@@ -13,3 +26,14 @@ variants:
     eager: keras_ops.where
   tensorflow:
     eager: tf.where
+  numpy:
+    eager: numpy.where
+  pytorch:
+    eager: torch.where
+  jax:
+    eager: jax.numpy.where
+  mlx:
+    eager: mlx.core.where
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

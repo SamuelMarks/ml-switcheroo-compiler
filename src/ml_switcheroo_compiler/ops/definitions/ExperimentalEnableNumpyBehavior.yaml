@@ -1,0 +1,4 @@
+operation: ExperimentalEnableNumpyBehavior
+description: Enables NumPy behavior on Tensors (TensorFlow specific).
+std_args: []
+variants: {}

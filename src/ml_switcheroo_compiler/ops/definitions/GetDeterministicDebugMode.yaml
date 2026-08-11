@@ -1,0 +1,4 @@
+operation: GetDeterministicDebugMode
+description: Returns the current value of the debug mode for deterministic operations.
+std_args: []
+variants: {}

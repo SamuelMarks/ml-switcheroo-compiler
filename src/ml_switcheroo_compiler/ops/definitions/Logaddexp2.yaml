@@ -1,7 +1,25 @@
-operation: Logaddexp2
+operation: logaddexp2
 description: The Logaddexp2 operation.
+std_args: []
 variants:
   cupy:
     eager: cp.logaddexp2
   dask:
     eager: da.logaddexp2
+  numpy:
+    eager: numpy.logaddexp2
+  tensorflow:
+    eager: tf.logaddexp2
+  keras:
+    eager: keras_ops.logaddexp2
+  pytorch:
+    eager: torch.logaddexp2
+  jax:
+    eager: jax.numpy.logaddexp2
+  mlx:
+    eager: mlx.core.logaddexp2
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

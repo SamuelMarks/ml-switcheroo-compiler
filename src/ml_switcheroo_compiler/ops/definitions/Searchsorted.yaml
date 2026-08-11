@@ -1,5 +1,22 @@
-operation: Searchsorted
+operation: searchsorted
 description: The Searchsorted operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: side
+  type: Literal[left, right]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: sorter
+  type: Optional[array]
 variants:
   cupy:
     eager: cp.searchsorted
@@ -9,3 +26,12 @@ variants:
     eager: keras_ops.searchsorted
   tensorflow:
     eager: tf.searchsorted
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

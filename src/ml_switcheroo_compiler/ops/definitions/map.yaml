@@ -1,0 +1,9 @@
+operation: Map
+description: Auto-generated from flax_nnx_code_defs
+std_args: []
+type: attribute
+variants:
+  edge_onnx:
+    generator: Map
+  edge_stablehlo:
+    generator: stablehlo.map

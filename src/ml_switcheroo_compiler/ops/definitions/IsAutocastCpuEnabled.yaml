@@ -1,0 +1,4 @@
+operation: IsAutocastCpuEnabled
+description: Returns True if autocast is enabled on CPU.
+std_args: []
+variants: {}

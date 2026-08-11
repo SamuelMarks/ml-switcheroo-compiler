@@ -1,0 +1,5 @@
+operation: ComplexLongDouble
+description: Complex number type composed of two extended-precision floating-point
+  numbers.
+std_args: []
+variants: {}

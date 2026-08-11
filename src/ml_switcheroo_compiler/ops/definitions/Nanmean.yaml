@@ -1,7 +1,19 @@
-operation: Nanmean
+operation: nanmean
 description: The Nanmean operation.
+std_args: []
 variants:
   cupy:
     eager: cp.nanmean
   dask:
     eager: da.nanmean
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

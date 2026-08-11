@@ -1,0 +1,8 @@
+operation: flatten_fun_for_sparse_ad
+description: The class representing a Python function.
+std_args:
+- fun
+- argnums
+- args
+type: function
+variants: {}

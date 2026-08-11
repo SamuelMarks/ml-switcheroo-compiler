@@ -1,5 +1,7 @@
 operation: Sigmoid
 description: The Sigmoid operation.
+std_args: []
+type: function
 variants:
   edge_onnx:
     generator: Sigmoid
@@ -11,3 +13,11 @@ variants:
     generator: scipy.special.expit({0})
   tensorflow:
     eager: tf.sigmoid
+  cupy: {}
+  dask: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

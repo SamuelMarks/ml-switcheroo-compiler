@@ -1,0 +1,4 @@
+operation: MultitaskResidualAdapter
+description: A multitask residual adapter layer.
+std_args: []
+variants: {}

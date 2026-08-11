@@ -1,0 +1,8 @@
+operation: Floor_
+description: In-place floor.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+variants: {}

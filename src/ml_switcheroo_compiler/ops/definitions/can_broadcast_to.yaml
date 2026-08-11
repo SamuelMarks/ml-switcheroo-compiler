@@ -1,0 +1,7 @@
+operation: can_broadcast_to
+description: Check that the shape can be broadcast.
+std_args:
+- self
+- shape
+type: function
+variants: {}

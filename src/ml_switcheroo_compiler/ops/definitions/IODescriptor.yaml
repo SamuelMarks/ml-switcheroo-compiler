@@ -1,0 +1,4 @@
+operation: IODescriptor
+description: Description of IO descriptor.
+std_args: []
+variants: {}

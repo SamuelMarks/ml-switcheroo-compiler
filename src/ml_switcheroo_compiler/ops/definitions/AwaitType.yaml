@@ -1,0 +1,23 @@
+operation: AwaitType
+description: JIT Await Type.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.awaittype
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.awaittype
+  keras:
+    eager: keras_ops.awaittype
+  pytorch:
+    eager: torch.awaittype
+  jax:
+    eager: jax.numpy.awaittype
+  mlx:
+    eager: mlx.core.awaittype
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

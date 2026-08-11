@@ -1,0 +1,4 @@
+operation: ChannelsLast3d
+description: Memory format constant for 3D.
+std_args: []
+variants: {}

@@ -1,0 +1,7 @@
+operation: dyn_dot
+description: The class representing a Python function.
+std_args:
+- x
+- y
+type: function
+variants: {}

@@ -1,0 +1,8 @@
+operation: RoPE
+description: Rotary Positional Embeddings.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dims
+  type: int
+variants: {}

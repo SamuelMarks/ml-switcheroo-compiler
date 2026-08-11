@@ -1,0 +1,6 @@
+operation: scheduling_group
+description: The class representing a Python function.
+std_args:
+- name
+type: function
+variants: {}

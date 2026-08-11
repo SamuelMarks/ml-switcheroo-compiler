@@ -1,7 +1,19 @@
-operation: Dstack
+operation: dstack
 description: The Dstack operation.
+std_args: []
 variants:
   cupy:
     eager: cp.dstack
   dask:
     eager: da.dstack
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

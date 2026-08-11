@@ -1,5 +1,18 @@
-operation: Argpartition
+operation: argpartition
 description: The Argpartition operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.argpartition
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

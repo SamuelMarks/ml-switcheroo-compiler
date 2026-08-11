@@ -1,5 +1,10 @@
-operation: Atan
+operation: atan
 description: The Atan operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     generator: cp.arctan
@@ -9,3 +14,17 @@ variants:
     generator: np.arctan
   tensorflow:
     eager: tf.atan
+  keras:
+    eager: keras_ops.atan
+  pytorch:
+    eager: torch.atan
+  jax:
+    eager: jax.numpy.arctan
+  mlx:
+    eager: mlx.core.atan
+  edge_onnx:
+    generator: Atan
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

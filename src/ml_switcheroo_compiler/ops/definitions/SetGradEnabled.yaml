@@ -1,0 +1,8 @@
+operation: SetGradEnabled
+description: Context-manager that sets gradient calculation on or off.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mode
+  type: bool
+variants: {}

@@ -1,5 +1,15 @@
 operation: Solve
 description: The Solve operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: array
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.solve

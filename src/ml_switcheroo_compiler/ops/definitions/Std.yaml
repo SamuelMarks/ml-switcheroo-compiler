@@ -1,5 +1,22 @@
-operation: Std
+operation: std
 description: The Std operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[Union[int, Tuple[int, Ellipsis]]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: correction
+  type: Union[int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   cupy:
     eager: cp.std
@@ -7,3 +24,18 @@ variants:
     eager: da.std
   keras:
     eager: keras_ops.std
+  numpy:
+    eager: numpy.std
+  tensorflow:
+    eager: tf.std
+  pytorch:
+    eager: torch.std
+  jax:
+    eager: jax.numpy.std
+  mlx:
+    eager: mlx.core.std
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

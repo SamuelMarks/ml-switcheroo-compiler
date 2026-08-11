@@ -1,0 +1,5 @@
+operation: DistributedDataParallelCPU
+description: Auto-generated from torch_v2.10.0_map.json
+std_args: []
+type: class
+variants: {}

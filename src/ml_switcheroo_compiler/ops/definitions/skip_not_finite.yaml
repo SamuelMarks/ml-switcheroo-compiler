@@ -1,0 +1,5 @@
+operation: skip_not_finite
+description: Auto-generated from jax_code_defs
+std_args: []
+type: attribute
+variants: {}

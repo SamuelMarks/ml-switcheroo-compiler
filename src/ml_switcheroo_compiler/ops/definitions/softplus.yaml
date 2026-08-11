@@ -1,0 +1,5 @@
+operation: Softplus
+description: Auto-generated mapping for softplus.
+std_args: []
+type: attribute
+variants: {}

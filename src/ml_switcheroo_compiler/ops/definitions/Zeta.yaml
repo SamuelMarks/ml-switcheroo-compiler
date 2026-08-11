@@ -1,5 +1,7 @@
-operation: Zeta
+operation: zeta
 description: The Zeta operation.
+std_args: []
+type: attribute
 variants:
   numpy:
     generator: scipy.special.zeta

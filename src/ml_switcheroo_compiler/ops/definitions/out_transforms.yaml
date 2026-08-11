@@ -1,0 +1,6 @@
+operation: out_transforms
+description: Returns the out_transforms attribute of the given operation.
+std_args:
+- op
+type: function
+variants: {}

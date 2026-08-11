@@ -1,0 +1,27 @@
+operation: BitwiseInvert
+description: Compute bit-wise inversion, or bit-wise NOT, element-wise.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.bitwiseinvert
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.bitwiseinvert
+  keras:
+    eager: keras_ops.bitwiseinvert
+  pytorch:
+    eager: torch.bitwiseinvert
+  jax:
+    eager: jax.numpy.bitwiseinvert
+  mlx:
+    eager: mlx.core.bitwiseinvert
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

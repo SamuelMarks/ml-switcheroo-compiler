@@ -1,5 +1,11 @@
-operation: Expm1
+operation: expm1
 description: The Expm1 operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: attribute
 variants:
   cupy:
     eager: cp.expm1

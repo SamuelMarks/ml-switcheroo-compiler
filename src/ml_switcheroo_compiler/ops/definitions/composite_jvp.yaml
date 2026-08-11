@@ -1,0 +1,4 @@
+operation: composite_jvp
+description: Auto-generated mapping for composite_jvp.
+std_args: []
+variants: {}

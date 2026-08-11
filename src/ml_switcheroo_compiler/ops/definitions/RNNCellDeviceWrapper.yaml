@@ -3,3 +3,20 @@ description: The RNNCellDeviceWrapper operation.
 variants:
   numpy:
     generator: tf.nn.rnn_cell.DeviceWrapper
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.rnncelldevicewrapper
+  keras:
+    eager: keras_ops.rnncelldevicewrapper
+  pytorch:
+    eager: torch.rnncelldevicewrapper
+  jax:
+    eager: jax.numpy.rnncelldevicewrapper
+  mlx:
+    eager: mlx.core.rnncelldevicewrapper
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,8 @@
+operation: registers_shape
+description: Returns the shape of the register array needed to represent an array
+  of the given logical shape.
+std_args:
+- self
+- shape
+type: function
+variants: {}

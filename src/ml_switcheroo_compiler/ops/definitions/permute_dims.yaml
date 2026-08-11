@@ -1,0 +1,24 @@
+operation: permute_dims
+description: Definition for permute_dims
+std_args:
+- x
+- name: axes
+  is_variadic: true
+variants:
+  jax:
+    eager: jnp.transpose
+    pack_to_tuple: axes
+  numpy:
+    eager: numpy.transpose
+    pack_to_tuple: axes
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

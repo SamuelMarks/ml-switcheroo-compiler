@@ -1,0 +1,34 @@
+operation: AllToShardedLinear
+description: Distributed linear layer where result is sharded across the group.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: in_features
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: out_features
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: bias
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: group
+  type: Any
+variants:
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

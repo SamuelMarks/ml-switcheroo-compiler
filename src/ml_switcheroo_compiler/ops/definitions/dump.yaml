@@ -1,0 +1,10 @@
+operation: dump
+description: The class representing a Python function.
+std_args:
+- self
+- buffer
+- f
+- grid
+- block
+type: function
+variants: {}

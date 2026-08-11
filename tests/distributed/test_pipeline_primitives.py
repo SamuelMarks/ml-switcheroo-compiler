@@ -81,7 +81,7 @@ def test_pipeline_microbatch_loop():
 
     assert "n2_concat" in graph.nodes
     assert "microbatch_loop" in graph.nodes
-    assert "n1_slice" in graph.nodes
+    assert "n1_slice" in graph.nodes["microbatch_loop"].attributes["body"].nodes
     assert graph.outputs == ["n2_concat"]
 
 

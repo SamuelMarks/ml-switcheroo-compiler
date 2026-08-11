@@ -1,0 +1,6 @@
+operation: sync_global_devices
+description: Creates a barrier across all hosts/devices.
+std_args:
+- name
+type: function
+variants: {}

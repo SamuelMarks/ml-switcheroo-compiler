@@ -1,0 +1,5 @@
+operation: group_norm
+description: Auto-generated mapping for group_norm.
+std_args: []
+type: function
+variants: {}

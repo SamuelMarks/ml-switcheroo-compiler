@@ -1,0 +1,6 @@
+operation: defzero
+description: The class representing a Python function.
+std_args:
+- prim
+type: function
+variants: {}

@@ -1,0 +1,5 @@
+operation: dropout1d
+description: Auto-generated mapping for dropout1d.
+std_args: []
+type: function
+variants: {}

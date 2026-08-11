@@ -1,0 +1,8 @@
+operation: RandomVectorQuantizer
+description: Random quantization for BEST-RQ.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: projection_dim
+  type: int
+variants: {}

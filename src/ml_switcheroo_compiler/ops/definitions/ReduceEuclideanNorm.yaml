@@ -3,3 +3,20 @@ description: The ReduceEuclideanNorm operation.
 variants:
   tensorflow:
     eager: tf.math.reduce_euclidean_norm
+  numpy:
+    eager: numpy.reduceeuclideannorm
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.reduceeuclideannorm
+  pytorch:
+    eager: torch.reduceeuclideannorm
+  jax:
+    eager: jax.numpy.reduceeuclideannorm
+  mlx:
+    eager: mlx.core.reduceeuclideannorm
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

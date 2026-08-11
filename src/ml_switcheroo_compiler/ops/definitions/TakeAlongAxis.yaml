@@ -1,5 +1,35 @@
 operation: TakeAlongAxis
 description: The TakeAlongAxis operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: arr
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: indices
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
 variants:
   keras:
     eager: keras_ops.take_along_axis
+  numpy:
+    eager: numpy.takealongaxis
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.takealongaxis
+  pytorch:
+    eager: torch.takealongaxis
+  jax:
+    eager: jax.numpy.takealongaxis
+  mlx:
+    eager: mlx.core.takealongaxis
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

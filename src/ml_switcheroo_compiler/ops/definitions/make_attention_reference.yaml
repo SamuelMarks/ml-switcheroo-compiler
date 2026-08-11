@@ -1,0 +1,9 @@
+operation: make_attention_reference
+description: The class representing a Python function.
+std_args:
+- mask
+- is_mqa
+- backward_impl
+- params
+type: function
+variants: {}

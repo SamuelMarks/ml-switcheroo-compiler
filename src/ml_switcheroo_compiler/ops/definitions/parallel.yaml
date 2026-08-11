@@ -1,0 +1,6 @@
+operation: parallel
+description: Combinator for composing layers in parallel.
+std_args:
+- layers
+type: function
+variants: {}

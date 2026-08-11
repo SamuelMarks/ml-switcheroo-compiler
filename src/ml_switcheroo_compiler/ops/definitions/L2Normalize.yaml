@@ -1,5 +1,36 @@
 operation: L2Normalize
 description: The L2Normalize operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- default: 1e-12
+  is_variadic: false
+  kind: positional_or_keyword
+  name: epsilon
+  type: float
 variants:
   tensorflow:
     eager: tf.linalg.l2_normalize
+  numpy:
+    eager: numpy.l2normalize
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.l2normalize
+  pytorch:
+    eager: torch.l2normalize
+  jax:
+    eager: jax.numpy.l2normalize
+  mlx:
+    eager: mlx.core.l2normalize
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

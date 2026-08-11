@@ -1,5 +1,14 @@
-operation: Equal
+operation: equal
 description: The Equal operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float, complex, bool]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float, complex, bool]
 variants:
   cupy:
     eager: cp.equal
@@ -17,3 +26,9 @@ variants:
     generator: np.equal
   tensorflow:
     eager: tf.equal
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

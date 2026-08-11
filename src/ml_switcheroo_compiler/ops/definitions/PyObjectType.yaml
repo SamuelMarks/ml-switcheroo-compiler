@@ -1,0 +1,4 @@
+operation: PyObjectType
+description: JIT type representing generic Python object.
+std_args: []
+variants: {}

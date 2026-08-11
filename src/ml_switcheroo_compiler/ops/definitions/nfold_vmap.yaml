@@ -1,0 +1,9 @@
+operation: nfold_vmap
+description: Convenience function to apply (broadcasted) vmap N times.
+std_args:
+- fun
+- N
+- broadcasted
+- in_axes
+type: function
+variants: {}

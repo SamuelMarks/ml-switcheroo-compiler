@@ -1,5 +1,14 @@
 operation: TrueDivide
 description: The TrueDivide operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dividend
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: divisor
+  type: Tensor
 variants:
   cupy:
     eager: cp.true_divide
@@ -17,3 +26,12 @@ variants:
     generator: np.divide
   pytorch:
     generator: torch.true_divide({0}, {1})
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}
+  tensorflow:
+    eager: tf.truedivide
+  jax:
+    eager: jax.numpy.truedivide
+  mlx:
+    eager: mlx.core.truedivide

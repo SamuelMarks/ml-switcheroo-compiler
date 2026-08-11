@@ -1,5 +1,23 @@
-operation: Histogram2d
+operation: histogram2d
 description: The Histogram2d operation.
+std_args: []
 variants:
   numpy:
     generator: np.histogram2d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.histogram2d
+  keras:
+    eager: keras_ops.histogram2d
+  pytorch:
+    eager: torch.histogram2d
+  jax:
+    eager: jax.numpy.histogram2d
+  mlx:
+    eager: mlx.core.histogram2d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

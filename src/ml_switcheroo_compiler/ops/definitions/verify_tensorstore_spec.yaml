@@ -1,0 +1,10 @@
+operation: verify_tensorstore_spec
+description: Verify the minimum requirements for a tensorstore spec.
+std_args:
+- spec
+- arr
+- path
+- ocdbt
+- check_metadata
+type: function
+variants: {}

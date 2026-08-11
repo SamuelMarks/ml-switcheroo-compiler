@@ -3,3 +3,20 @@ description: The RNNCellResidualWrapper operation.
 variants:
   numpy:
     generator: tf.nn.rnn_cell.ResidualWrapper
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.rnncellresidualwrapper
+  keras:
+    eager: keras_ops.rnncellresidualwrapper
+  pytorch:
+    eager: torch.rnncellresidualwrapper
+  jax:
+    eager: jax.numpy.rnncellresidualwrapper
+  mlx:
+    eager: mlx.core.rnncellresidualwrapper
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

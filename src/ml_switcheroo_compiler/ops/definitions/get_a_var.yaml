@@ -1,0 +1,6 @@
+operation: get_a_var
+description: The class representing a Python function.
+std_args:
+- obj
+type: function
+variants: {}

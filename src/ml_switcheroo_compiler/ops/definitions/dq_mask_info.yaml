@@ -1,0 +1,5 @@
+operation: dq_mask_info
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

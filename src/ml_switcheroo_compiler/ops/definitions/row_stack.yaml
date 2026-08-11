@@ -1,0 +1,4 @@
+operation: row_stack
+description: row_stack
+std_args: []
+variants: {}

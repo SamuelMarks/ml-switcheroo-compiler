@@ -3,3 +3,15 @@ description: The AffineGrid operation.
 variants:
   pytorch:
     generator: torch.nn.functional.affine_grid({0}, {size}, align_corners={align_corners})
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,6 @@
-operation: Diag
+operation: diag
 description: The Diag operation.
+std_args: []
 variants:
   cupy:
     eager: cp.diag
@@ -9,3 +10,12 @@ variants:
     eager: keras_ops.diag
   tensorflow:
     eager: tf.linalg.diag
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

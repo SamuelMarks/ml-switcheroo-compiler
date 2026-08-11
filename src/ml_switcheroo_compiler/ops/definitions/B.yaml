@@ -1,0 +1,23 @@
+operation: B
+description: Auto-generated from flax_nnx_code_defs
+std_args: []
+variants:
+  numpy:
+    eager: numpy.b
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.b
+  keras:
+    eager: keras_ops.b
+  pytorch:
+    eager: torch.b
+  jax:
+    eager: jax.numpy.b
+  mlx:
+    eager: mlx.core.b
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

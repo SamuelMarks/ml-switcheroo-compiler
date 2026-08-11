@@ -1,0 +1,4 @@
+operation: random_gamma_grad_impl
+description: Auto-generated mapping for random_gamma_grad_impl.
+std_args: []
+variants: {}

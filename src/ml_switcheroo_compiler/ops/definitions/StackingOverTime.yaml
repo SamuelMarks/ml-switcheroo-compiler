@@ -1,0 +1,8 @@
+operation: StackingOverTime
+description: Stacking applied along the time axis.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stride
+  type: int
+variants: {}

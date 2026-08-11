@@ -1,7 +1,25 @@
-operation: Frexp
+operation: frexp
 description: The Frexp operation.
+std_args: []
 variants:
   cupy:
     eager: cp.frexp
   dask:
     eager: da.frexp
+  numpy:
+    eager: numpy.frexp
+  tensorflow:
+    eager: tf.frexp
+  keras:
+    eager: keras_ops.frexp
+  pytorch:
+    eager: torch.frexp
+  jax:
+    eager: jax.numpy.frexp
+  mlx:
+    eager: mlx.core.frexp
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

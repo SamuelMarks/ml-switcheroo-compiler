@@ -1,0 +1,5 @@
+operation: are_hlo_shardings_equal
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

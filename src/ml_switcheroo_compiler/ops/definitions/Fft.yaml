@@ -1,5 +1,23 @@
-operation: Fft
+operation: fft
 description: The Fft operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n
+  type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: norm
+  type: Literal[backward, ortho, forward]
+type: function
 variants:
   cupy:
     eager: cp.fft
@@ -9,3 +27,12 @@ variants:
     eager: keras_ops.fft
   numpy:
     generator: np.fft.fft
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

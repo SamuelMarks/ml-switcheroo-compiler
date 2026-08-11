@@ -1,5 +1,34 @@
 operation: ConvTranspose
 description: The ConvTranspose operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: in_features
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: out_features
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kernel_size
+  type: Union[int, Tuple[int]]
+- default: 1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: strides
+  type: Union[int, Tuple[int]]
+- default: SAME
+  is_variadic: false
+  kind: positional_or_keyword
+  name: padding
+  type: Union[str, int, Tuple[int]]
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: use_bias
+  type: bool
+type: attribute
 variants:
   keras:
     eager: keras_ops.conv_transpose

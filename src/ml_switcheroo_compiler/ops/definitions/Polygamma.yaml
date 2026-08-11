@@ -1,5 +1,7 @@
-operation: Polygamma
+operation: polygamma
 description: The Polygamma operation.
+std_args: []
+type: attribute
 variants:
   numpy:
     generator: scipy.special.polygamma

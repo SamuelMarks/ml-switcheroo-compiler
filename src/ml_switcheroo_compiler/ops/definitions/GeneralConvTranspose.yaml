@@ -1,0 +1,12 @@
+operation: GeneralConvTranspose
+description: Layer construction function for a general transposed-convolution layer.
+std_args:
+- dimension_numbers
+- out_chan
+- filter_shape
+- strides
+- padding
+- W_init
+- b_init
+type: function
+variants: {}

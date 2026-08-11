@@ -3,3 +3,15 @@ description: The EighTridiagonal operation.
 variants:
   tensorflow:
     eager: tf.linalg.eigh_tridiagonal
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

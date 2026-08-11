@@ -1,7 +1,25 @@
-operation: Flipud
+operation: flipud
 description: The Flipud operation.
+std_args: []
 variants:
   cupy:
     eager: cp.flipud
   dask:
     eager: da.flipud
+  numpy:
+    eager: numpy.flipud
+  tensorflow:
+    eager: tf.flipud
+  keras:
+    eager: keras_ops.flipud
+  pytorch:
+    eager: torch.flipud
+  jax:
+    eager: jax.numpy.flipud
+  mlx:
+    eager: mlx.core.flipud
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

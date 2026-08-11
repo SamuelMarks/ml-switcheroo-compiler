@@ -1,7 +1,26 @@
-operation: Insert
+operation: insert
 description: The Insert operation.
+std_args: []
+type: function
 variants:
   cupy:
     eager: cp.insert
   dask:
     eager: da.insert
+  numpy:
+    eager: numpy.insert
+  tensorflow:
+    eager: tf.insert
+  keras:
+    eager: keras_ops.insert
+  pytorch:
+    eager: torch.insert
+  jax:
+    eager: jax.numpy.insert
+  mlx:
+    eager: mlx.core.insert
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

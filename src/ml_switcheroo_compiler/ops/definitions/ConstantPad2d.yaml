@@ -1,0 +1,5 @@
+operation: ConstantPad2d
+description: Auto-generated mapping for ConstantPad2d.
+std_args: []
+type: class
+variants: {}

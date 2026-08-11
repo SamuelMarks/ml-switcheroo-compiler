@@ -1,0 +1,4 @@
+operation: cumred_reduce_window_impl
+description: Auto-generated mapping for cumred_reduce_window_impl.
+std_args: []
+variants: {}

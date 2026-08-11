@@ -1,0 +1,7 @@
+operation: run_fun_tf
+description: The class representing a Python function.
+std_args:
+- self
+- args_flat_tf
+type: function
+variants: {}

@@ -1,7 +1,19 @@
-operation: Nanmin
+operation: nanmin
 description: The Nanmin operation.
+std_args: []
 variants:
   cupy:
     eager: cp.nanmin
   dask:
     eager: da.nanmin
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

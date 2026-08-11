@@ -1,0 +1,11 @@
+operation: nm_spmm
+description: Dot operation where one of the operands has N:M sparsity.
+std_args:
+- lhs
+- rhs
+- metadata
+- dimension_numbers
+- sparse_operand_idx
+- output_dtype
+type: function
+variants: {}

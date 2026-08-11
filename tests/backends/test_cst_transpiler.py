@@ -200,3 +200,59 @@ def test_type_infer_assign_edge_cases() -> None:
     source = "self.x = 1.0\nx, y = 1\nself.y = 2\nz = 'hello'\n"
     res = type_infer_dry_run(source)
     assert res == {"dry_run": "success"}
+
+
+def test_transpile_kwargs():
+    source = "torch.sum(x, dim=1, keepdim=True)\n"
+    assert transpile_source(source, target_framework="jax") == "jax.numpy.sum(x, axis=1, keepdims=True)\n"
+
+    source = "jax.numpy.sum(x, axis=1, keepdims=True)\n"
+    assert transpile_source(source, target_framework="pytorch") == "torch.sum(x, dim=1, keepdim=True)\n"
+
+
+def test_transpile_broadcast_expand():
+    source = "x.expand(1, 2)\n"
+    assert transpile_source(source, target_framework="jax") == "jnp.broadcast_to(x, 1, 2)\n"
+    assert transpile_source(source, target_framework="mlx") == "mlx.core.broadcast_to(x, 1, 2)\n"
+    assert transpile_source(source, target_framework="numpy") == "np.broadcast_to(x, 1, 2)\n"
+
+    source = "jnp.broadcast_to(x, 1, 2)\n"
+    assert transpile_source(source, target_framework="pytorch") == "x.expand(1, 2)\n"
+
+
+def test_transpile_classdef():
+    source = "class MyModel(nn.Module):\n    def forward(self, x):\n        return x\n"
+    res_jax = transpile_source(source, target_framework="jax")
+    assert "class MyModel(flax.linen.Module):" in res_jax
+    assert "def __call__(self, x):" in res_jax
+
+    source2 = "class MyModel(flax.linen.Module):\n    def __call__(self, x):\n        return x\n"
+    res_pt = transpile_source(source2, target_framework="pytorch")
+    assert "class MyModel(nn.Module):" in res_pt
+    assert "def forward(self, x):" in res_pt
+
+
+def test_cst_coverage_edge_cases():
+    source = "class MyModel(object):\n    def __call__(x):\n        return x\n"
+    res = transpile_source(source, target_framework="pytorch")
+    assert "class MyModel(object):" in res
+    assert "def __call__(x):" in res
+
+    source2 = "class MyModel(nn.Module):\n    pass\n"
+    res2 = transpile_source(source2, target_framework="pytorch")
+    assert "class MyModel(nn.Module):" in res2
+
+    source3 = "class MyModel(flax.linen.Module):\n    pass\n"
+    res3 = transpile_source(source3, target_framework="jax")
+    assert "class MyModel(flax.linen.Module):" in res3
+
+    # KWARG_MAP else branch
+    source4 = "def foo(a=1): pass\n"
+    res4 = transpile_source(source4, target_framework="unknown")
+    assert "def foo(a=1): pass" in res4
+
+
+def test_transpile_kwarg_else():
+    source = "foo(a=1)\n"
+    res = transpile_source(source, target_framework="unknown")
+    assert "foo(a=1)" in res

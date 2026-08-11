@@ -1,0 +1,9 @@
+operation: String
+description: NumPy string_ type constructor.
+std_args:
+- default: ''
+  is_variadic: false
+  kind: positional_or_keyword
+  name: value
+  type: str
+variants: {}

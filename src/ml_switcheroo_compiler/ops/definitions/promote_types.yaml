@@ -1,0 +1,4 @@
+operation: promote_types
+description: Auto-generated from jax_code_defs
+std_args: []
+variants: {}

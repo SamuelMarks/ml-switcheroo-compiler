@@ -1,0 +1,23 @@
+operation: DepthwiseConv2D
+description: 2D depthwise convolution layer.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kernel_size
+  type: int | Tuple[int, int]
+- default: 1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: stride
+  type: int | Tuple[int, int]
+- default: 1
+  is_variadic: false
+  kind: positional_or_keyword
+  name: depth_multiplier
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: bias
+  type: bool
+variants: {}

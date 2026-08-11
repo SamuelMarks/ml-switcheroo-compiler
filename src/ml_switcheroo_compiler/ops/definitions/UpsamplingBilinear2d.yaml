@@ -1,0 +1,5 @@
+operation: UpsamplingBilinear2d
+description: Auto-generated mapping for UpsamplingBilinear2d.
+std_args: []
+type: class
+variants: {}

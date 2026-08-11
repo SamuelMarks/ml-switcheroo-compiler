@@ -1,5 +1,23 @@
-operation: Rfftfreq
+operation: rfftfreq
 description: The Rfftfreq operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: n
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: d
+  type: float
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Optional[device]
+type: function
 variants:
   cupy:
     eager: cp.fft.rfftfreq
@@ -7,3 +25,18 @@ variants:
     eager: da.fft.rfftfreq
   numpy:
     generator: np.fft.rfftfreq({0}, d={d})
+  tensorflow:
+    eager: tf.rfftfreq
+  keras:
+    eager: keras_ops.rfftfreq
+  pytorch:
+    eager: torch.rfftfreq
+  jax:
+    eager: jax.numpy.rfftfreq
+  mlx:
+    eager: mlx.core.rfftfreq
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

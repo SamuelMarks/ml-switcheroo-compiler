@@ -1,0 +1,12 @@
+operation: create_instr_descriptor
+description: The class representing a Python function.
+std_args:
+- m
+- n
+- acc_dtype
+- input_dtype
+- transpose_a
+- transpose_b
+- sparsity_selector
+type: function
+variants: {}

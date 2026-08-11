@@ -1,0 +1,4 @@
+operation: ConcreteModuleType
+description: Internal PyTorch type representing a concrete module type for JIT.
+std_args: []
+variants: {}

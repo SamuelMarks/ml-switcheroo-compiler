@@ -1,0 +1,5 @@
+operation: Layout
+description: Layout type constant.
+std_args: []
+type: attribute
+variants: {}

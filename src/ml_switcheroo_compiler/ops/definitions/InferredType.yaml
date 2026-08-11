@@ -1,0 +1,4 @@
+operation: InferredType
+description: JIT internal type inference helper.
+std_args: []
+variants: {}

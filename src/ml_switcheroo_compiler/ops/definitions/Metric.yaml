@@ -1,0 +1,4 @@
+operation: Metric
+description: Base class for metrics.
+std_args: []
+variants: {}

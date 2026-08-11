@@ -1,0 +1,8 @@
+operation: memref_fold
+description: The class representing a Python function.
+std_args:
+- ref
+- dim
+- fold_rank
+type: function
+variants: {}

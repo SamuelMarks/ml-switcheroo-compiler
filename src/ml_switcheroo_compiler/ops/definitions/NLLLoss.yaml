@@ -1,0 +1,5 @@
+operation: NLLLoss
+description: Auto-generated mapping for NLLLoss.
+std_args: []
+type: class
+variants: {}

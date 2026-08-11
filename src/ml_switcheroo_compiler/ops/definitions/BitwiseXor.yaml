@@ -1,5 +1,14 @@
 operation: BitwiseXor
 description: The BitwiseXor operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Any
 variants:
   cupy:
     eager: cp.bitwise_xor
@@ -7,3 +16,13 @@ variants:
     eager: da.bitwise_xor
   keras:
     eager: keras_ops.bitwise_xor
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

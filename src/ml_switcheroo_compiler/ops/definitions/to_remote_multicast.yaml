@@ -1,0 +1,7 @@
+operation: to_remote_multicast
+description: The class representing a Python function.
+std_args:
+- self
+- ref
+type: function
+variants: {}

@@ -1,0 +1,4 @@
+operation: ScriptDictKeyIterator
+description: Internal TorchScript dictionary key iterator.
+std_args: []
+variants: {}

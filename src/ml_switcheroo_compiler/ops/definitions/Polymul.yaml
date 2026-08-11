@@ -1,5 +1,23 @@
-operation: Polymul
+operation: polymul
 description: The Polymul operation.
+std_args: []
 variants:
   numpy:
     generator: np.polymul
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.polymul
+  keras:
+    eager: keras_ops.polymul
+  pytorch:
+    eager: torch.polymul
+  jax:
+    eager: jax.numpy.polymul
+  mlx:
+    eager: mlx.core.polymul
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

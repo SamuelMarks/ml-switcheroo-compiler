@@ -3,3 +3,20 @@ description: The FractionalAvgPool operation.
 variants:
   tensorflow:
     eager: tf.nn.fractional_avg_pool
+  numpy:
+    eager: numpy.fractionalavgpool
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.fractionalavgpool
+  pytorch:
+    eager: torch.fractionalavgpool
+  jax:
+    eager: jax.numpy.fractionalavgpool
+  mlx:
+    eager: mlx.core.fractionalavgpool
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

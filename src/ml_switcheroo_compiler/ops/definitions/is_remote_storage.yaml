@@ -1,0 +1,6 @@
+operation: is_remote_storage
+description: Detect if user is using cloud storages.
+std_args:
+- tspec
+type: function
+variants: {}

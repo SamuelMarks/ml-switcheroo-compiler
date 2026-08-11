@@ -1,0 +1,32 @@
+operation: BartlettWindow
+description: Computes the Bartlett window function.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: window_length
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: periodic
+  type: bool
+variants:
+  numpy:
+    eager: numpy.bartlettwindow
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.bartlettwindow
+  keras:
+    eager: keras_ops.bartlettwindow
+  pytorch:
+    eager: torch.bartlettwindow
+  jax:
+    eager: jax.numpy.bartlettwindow
+  mlx:
+    eager: mlx.core.bartlettwindow
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

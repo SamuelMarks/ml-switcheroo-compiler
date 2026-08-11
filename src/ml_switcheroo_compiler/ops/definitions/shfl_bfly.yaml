@@ -1,0 +1,7 @@
+operation: shfl_bfly
+description: The class representing a Python function.
+std_args:
+- x
+- distance
+type: function
+variants: {}

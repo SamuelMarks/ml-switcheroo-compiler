@@ -1,0 +1,6 @@
+operation: is_mma_layout
+description: The class representing a Python function.
+std_args:
+- layout
+type: function
+variants: {}

@@ -1,0 +1,6 @@
+operation: num_stages
+description: Number of pipeline stages in the CUDA kernel. Higher values may improve
+  performance
+std_args: []
+type: attribute
+variants: {}

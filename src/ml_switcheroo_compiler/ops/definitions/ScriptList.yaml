@@ -1,0 +1,4 @@
+operation: ScriptList
+description: Internal TorchScript list.
+std_args: []
+variants: {}

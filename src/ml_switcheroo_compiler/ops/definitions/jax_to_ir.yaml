@@ -1,0 +1,9 @@
+operation: jax_to_ir
+description: Converts a JAX function to a serialized ir and a debug txt dump.
+std_args:
+- fn
+- input_shapes
+- constants
+- format
+type: function
+variants: {}

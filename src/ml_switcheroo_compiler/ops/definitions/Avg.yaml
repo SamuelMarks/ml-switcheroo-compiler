@@ -1,0 +1,23 @@
+operation: Avg
+description: Aggregation constant for Average.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.avg
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.avg
+  keras:
+    eager: keras_ops.avg
+  pytorch:
+    eager: torch.avg
+  jax:
+    eager: jax.numpy.avg
+  mlx:
+    eager: mlx.core.avg
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

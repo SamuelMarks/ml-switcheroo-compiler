@@ -1,0 +1,7 @@
+operation: sparsify_fun
+description: The class representing a Python function.
+std_args:
+- wrapped_fun
+- args
+type: function
+variants: {}

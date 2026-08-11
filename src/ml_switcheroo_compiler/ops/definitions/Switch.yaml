@@ -1,5 +1,25 @@
 operation: Switch
 description: The Switch operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.switch
+  edge_onnx:
+    generator: Switch
+  edge_stablehlo:
+    generator: stablehlo.case
+  numpy:
+    eager: numpy.switch
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.switch
+  pytorch:
+    eager: torch.switch
+  jax:
+    eager: jax.numpy.switch
+  mlx:
+    eager: mlx.core.switch
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

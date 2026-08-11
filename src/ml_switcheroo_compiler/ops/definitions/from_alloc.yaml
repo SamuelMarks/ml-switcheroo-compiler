@@ -1,0 +1,11 @@
+operation: from_alloc
+description: The class representing a Python function.
+std_args:
+- cls
+- tmem_addr_ref
+- shape
+- dtype
+- collective
+- layout
+type: function
+variants: {}

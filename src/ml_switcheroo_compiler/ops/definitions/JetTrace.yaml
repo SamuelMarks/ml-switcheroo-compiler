@@ -1,0 +1,9 @@
+operation: JetTrace
+description: The class representing a Python class.
+std_args:
+- self
+- tag
+- parent_trace
+- order
+type: class
+variants: {}

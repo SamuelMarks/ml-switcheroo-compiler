@@ -1,0 +1,6 @@
+operation: to_layout_attr
+description: Constructs an MLIR attribute that corresponds to the given layout.
+std_args:
+- layout
+type: function
+variants: {}

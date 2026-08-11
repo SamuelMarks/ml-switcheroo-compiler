@@ -3,3 +3,20 @@ description: The VectorNorm operation.
 variants:
   numpy:
     generator: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.vectornorm
+  keras:
+    eager: keras_ops.vectornorm
+  pytorch:
+    eager: torch.vectornorm
+  jax:
+    eager: jax.numpy.vectornorm
+  mlx:
+    eager: mlx.core.vectornorm
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,18 @@
 operation: Mgrid
 description: The Mgrid operation.
+std_args: []
 variants:
   numpy:
     generator: np.mgrid
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,14 @@
-operation: Greater
+operation: greater
 description: The Greater operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     eager: cp.greater
@@ -17,3 +26,12 @@ variants:
     generator: np.greater
   tensorflow:
     eager: tf.greater
+  pytorch:
+    eager: torch.greater
+  jax:
+    eager: jax.numpy.greater
+  mlx:
+    eager: mlx.core.greater
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

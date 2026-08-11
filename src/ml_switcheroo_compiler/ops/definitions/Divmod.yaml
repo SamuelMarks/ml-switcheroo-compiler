@@ -1,7 +1,19 @@
-operation: Divmod
+operation: divmod
 description: The Divmod operation.
+std_args: []
 variants:
   cupy:
     eager: cp.divmod
   dask:
     eager: da.divmod
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,27 @@
+operation: AsPytreeVars
+description: Converts specific variables.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: node
+  type: Any
+variants:
+  numpy:
+    eager: numpy.aspytreevars
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.aspytreevars
+  keras:
+    eager: keras_ops.aspytreevars
+  pytorch:
+    eager: torch.aspytreevars
+  jax:
+    eager: jax.numpy.aspytreevars
+  mlx:
+    eager: mlx.core.aspytreevars
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

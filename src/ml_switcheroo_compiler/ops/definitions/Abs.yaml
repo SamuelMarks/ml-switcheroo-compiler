@@ -1,5 +1,7 @@
 operation: Abs
 description: The Abs operation.
+std_args:
+- x
 variants:
   cupy:
     eager: cp.abs
@@ -13,3 +15,14 @@ variants:
     eager: keras_ops.abs
   tensorflow:
     eager: tf.abs
+  pytorch:
+    eager: torch.abs
+  jax:
+    eager: jax.numpy.abs
+  numpy:
+    eager: numpy.abs
+  mlx:
+    eager: mlx.core.abs
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

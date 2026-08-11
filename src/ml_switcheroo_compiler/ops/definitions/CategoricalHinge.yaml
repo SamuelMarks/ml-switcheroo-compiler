@@ -1,0 +1,9 @@
+operation: CategoricalHinge
+description: Computes the categorical hinge loss.
+std_args:
+- default: sum_over_batch_size
+  is_variadic: false
+  kind: positional_or_keyword
+  name: reduction
+  type: str
+variants: {}

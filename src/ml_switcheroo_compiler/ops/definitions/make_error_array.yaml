@@ -1,0 +1,7 @@
+operation: make_error_array
+description: The class representing a Python function.
+std_args:
+- aval
+- message
+type: function
+variants: {}

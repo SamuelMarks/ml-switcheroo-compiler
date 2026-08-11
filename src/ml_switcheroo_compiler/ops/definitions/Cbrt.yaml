@@ -1,5 +1,6 @@
-operation: Cbrt
+operation: cbrt
 description: The Cbrt operation.
+std_args: []
 variants:
   cupy:
     eager: cp.cbrt
@@ -7,3 +8,13 @@ variants:
     eager: da.cbrt
   edge_stablehlo:
     generator: stablehlo.cbrt
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,9 @@
+operation: initialize
+description: The class representing a Python function.
+std_args:
+- barrier_memref
+- arrival_count
+- dims
+- cluster_shape
+type: function
+variants: {}

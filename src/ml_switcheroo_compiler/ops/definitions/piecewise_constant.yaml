@@ -1,0 +1,7 @@
+operation: piecewise_constant
+description: The class representing a Python function.
+std_args:
+- boundaries
+- values
+type: function
+variants: {}

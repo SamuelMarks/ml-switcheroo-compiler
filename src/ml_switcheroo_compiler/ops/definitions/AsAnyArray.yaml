@@ -1,0 +1,31 @@
+operation: AsAnyArray
+description: Convert the input to an ndarray, but pass ndarray subclasses through.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: str
+variants:
+  numpy:
+    eager: numpy.asanyarray
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asanyarray
+  keras:
+    eager: keras_ops.asanyarray
+  pytorch:
+    eager: torch.asanyarray
+  jax:
+    eager: jax.numpy.asanyarray
+  mlx:
+    eager: mlx.core.asanyarray
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

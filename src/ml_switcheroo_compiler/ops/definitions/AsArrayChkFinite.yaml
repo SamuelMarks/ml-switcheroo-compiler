@@ -1,0 +1,31 @@
+operation: AsArrayChkFinite
+description: Convert the input to an array, checking for NaNs or Infs.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: dtype
+variants:
+  numpy:
+    eager: numpy.asarraychkfinite
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.asarraychkfinite
+  keras:
+    eager: keras_ops.asarraychkfinite
+  pytorch:
+    eager: torch.asarraychkfinite
+  jax:
+    eager: jax.numpy.asarraychkfinite
+  mlx:
+    eager: mlx.core.asarraychkfinite
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

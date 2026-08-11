@@ -1,0 +1,8 @@
+operation: PathContains
+description: Path filter predicate.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: key
+  type: str
+variants: {}

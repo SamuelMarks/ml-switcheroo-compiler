@@ -4,3 +4,15 @@ variants:
   numpy:
     generator: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
       'ndim') else {0}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

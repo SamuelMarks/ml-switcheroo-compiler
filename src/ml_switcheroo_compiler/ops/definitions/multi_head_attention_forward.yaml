@@ -1,0 +1,5 @@
+operation: multi_head_attention_forward
+description: Auto-generated mapping for multi_head_attention_forward.
+std_args: []
+type: function
+variants: {}

@@ -1,0 +1,5 @@
+operation: optimization_barrier
+description: Auto-generated mapping for optimization_barrier.
+std_args: []
+type: function
+variants: {}

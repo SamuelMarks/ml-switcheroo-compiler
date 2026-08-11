@@ -1,0 +1,4 @@
+operation: Intc
+description: Signed integer type compatible with C int.
+std_args: []
+variants: {}

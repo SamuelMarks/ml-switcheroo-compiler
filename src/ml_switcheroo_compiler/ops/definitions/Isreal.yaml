@@ -1,7 +1,25 @@
-operation: Isreal
+operation: isreal
 description: The Isreal operation.
+std_args: []
 variants:
   cupy:
     eager: cp.isreal
   dask:
     eager: da.isreal
+  numpy:
+    eager: numpy.isreal
+  tensorflow:
+    eager: tf.isreal
+  keras:
+    eager: keras_ops.isreal
+  pytorch:
+    eager: torch.isreal
+  jax:
+    eager: jax.numpy.isreal
+  mlx:
+    eager: mlx.core.isreal
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

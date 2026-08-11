@@ -1,0 +1,48 @@
+operation: BlockMaskedMM
+description: Matrix multiplication with block masking.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: b
+  type: Tensor
+- default: 64
+  is_variadic: false
+  kind: positional_or_keyword
+  name: block_size
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mask_out
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mask_lhs
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mask_rhs
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.blockmaskedmm
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.blockmaskedmm
+  keras:
+    eager: keras_ops.blockmaskedmm
+  pytorch:
+    eager: torch.blockmaskedmm
+  jax:
+    eager: jax.numpy.blockmaskedmm
+  mlx:
+    eager: mlx.core.blockmaskedmm
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

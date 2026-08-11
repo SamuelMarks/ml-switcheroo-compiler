@@ -1,0 +1,10 @@
+operation: BCSR
+description: Experimental batched CSR matrix implemented in JAX.
+std_args:
+- self
+- args
+- shape
+- indices_sorted
+- unique_indices
+type: class
+variants: {}

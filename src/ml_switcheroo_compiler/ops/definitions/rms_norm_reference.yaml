@@ -1,0 +1,9 @@
+operation: rms_norm_reference
+description: The class representing a Python function.
+std_args:
+- x
+- weight
+- bias
+- eps
+type: function
+variants: {}

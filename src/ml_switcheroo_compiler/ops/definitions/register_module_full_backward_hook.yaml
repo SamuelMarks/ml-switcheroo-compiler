@@ -1,0 +1,5 @@
+operation: register_module_full_backward_hook
+description: Auto-generated mapping for register_module_full_backward_hook.
+std_args: []
+type: function
+variants: {}

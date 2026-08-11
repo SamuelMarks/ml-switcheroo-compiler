@@ -1,5 +1,18 @@
-operation: Diagflat
+operation: diagflat
 description: The Diagflat operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.diagflat
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

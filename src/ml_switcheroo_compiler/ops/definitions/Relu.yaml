@@ -1,7 +1,26 @@
-operation: Relu
+operation: ReLU
 description: The Relu operation.
+std_args: []
+type: function
 variants:
   edge_onnx:
     generator: Relu
   edge_stablehlo:
     generator: stablehlo.maximum
+  numpy:
+    eager: numpy.relu
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.relu
+  keras:
+    eager: keras_ops.relu
+  pytorch:
+    eager: torch.relu
+  jax:
+    eager: jax.numpy.relu
+  mlx:
+    eager: mlx.core.relu
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

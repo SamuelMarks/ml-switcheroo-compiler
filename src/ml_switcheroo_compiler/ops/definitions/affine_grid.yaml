@@ -1,0 +1,5 @@
+operation: affine_grid
+description: Auto-generated mapping for affine_grid.
+std_args: []
+type: function
+variants: {}

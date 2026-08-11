@@ -1,0 +1,23 @@
+operation: AreDeterministicAlgorithmsEnabled
+description: Returns True if global deterministic flag is turned on.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.aredeterministicalgorithmsenabled
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.aredeterministicalgorithmsenabled
+  keras:
+    eager: keras_ops.aredeterministicalgorithmsenabled
+  pytorch:
+    eager: torch.aredeterministicalgorithmsenabled
+  jax:
+    eager: jax.numpy.aredeterministicalgorithmsenabled
+  mlx:
+    eager: mlx.core.aredeterministicalgorithmsenabled
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

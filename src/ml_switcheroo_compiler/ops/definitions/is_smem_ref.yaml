@@ -1,0 +1,6 @@
+operation: is_smem_ref
+description: Returns true if the input mem ref or memref type points to SMEM.
+std_args:
+- ref
+type: function
+variants: {}

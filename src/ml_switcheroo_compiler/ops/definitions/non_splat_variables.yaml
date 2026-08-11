@@ -1,0 +1,6 @@
+operation: non_splat_variables
+description: Returns a all vars distinct from a splat.
+std_args:
+- constraints
+type: function
+variants: {}

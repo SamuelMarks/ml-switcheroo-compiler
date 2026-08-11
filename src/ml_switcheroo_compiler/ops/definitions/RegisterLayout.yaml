@@ -1,0 +1,7 @@
+operation: RegisterLayout
+description: Wraps a known register layout.
+std_args:
+- self
+- value
+type: class
+variants: {}

@@ -1,5 +1,7 @@
-operation: Digamma
+operation: digamma
 description: The Digamma operation.
+std_args: []
+type: attribute
 variants:
   tensorflow:
     eager: tf.math.digamma

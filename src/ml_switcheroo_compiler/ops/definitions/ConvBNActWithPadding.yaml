@@ -1,0 +1,4 @@
+operation: ConvBNActWithPadding
+description: Fused Block with Padding support.
+std_args: []
+variants: {}

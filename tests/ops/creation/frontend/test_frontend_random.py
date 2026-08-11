@@ -13,9 +13,12 @@ def test_frontend_random():
         def execute_op(self, op, *a, **k):
             return op
 
+    orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
+    has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
     reg._ACTIVE_BACKEND = DummyBackend()
     import ml_switcheroo_compiler.ops.creation.frontend_random as rand_mod
 
+    orig_rand_backend = rand_mod.get_active_backend
     rand_mod.get_active_backend = lambda: DummyBackend()
 
     from ml_switcheroo_compiler.core.config import config
@@ -41,3 +44,8 @@ def test_frontend_random():
                 manual_seed(42)
 
     config.eager_mode = True
+    if has_reg_backend:
+        reg._ACTIVE_BACKEND = orig_reg_backend
+    else:
+        del reg._ACTIVE_BACKEND
+    rand_mod.get_active_backend = orig_rand_backend

@@ -3,3 +3,15 @@ description: The AsString operation.
 variants:
   tensorflow:
     eager: tf.as_string
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

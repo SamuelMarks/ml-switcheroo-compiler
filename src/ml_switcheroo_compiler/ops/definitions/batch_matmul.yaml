@@ -1,0 +1,4 @@
+operation: batch_matmul
+description: Auto-generated mapping for batch_matmul.
+std_args: []
+variants: {}

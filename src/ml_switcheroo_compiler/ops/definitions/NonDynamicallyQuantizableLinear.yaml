@@ -1,0 +1,5 @@
+operation: NonDynamicallyQuantizableLinear
+description: Auto-generated mapping for NonDynamicallyQuantizableLinear.
+std_args: []
+type: class
+variants: {}

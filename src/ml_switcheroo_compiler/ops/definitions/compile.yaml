@@ -1,0 +1,8 @@
+operation: compile
+description: Compile this Module's forward using :func:`torch.compile`.
+std_args:
+- self
+- args
+- kwargs
+type: function
+variants: {}

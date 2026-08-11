@@ -1,0 +1,23 @@
+operation: BFloat16Storage
+description: Storage for BFloat16 data.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.bfloat16storage
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.bfloat16storage
+  keras:
+    eager: keras_ops.bfloat16storage
+  pytorch:
+    eager: torch.bfloat16storage
+  jax:
+    eager: jax.numpy.bfloat16storage
+  mlx:
+    eager: mlx.core.bfloat16storage
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

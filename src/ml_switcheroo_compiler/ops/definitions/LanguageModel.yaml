@@ -1,0 +1,4 @@
+operation: LanguageModel
+description: Language Model base task.
+std_args: []
+variants: {}

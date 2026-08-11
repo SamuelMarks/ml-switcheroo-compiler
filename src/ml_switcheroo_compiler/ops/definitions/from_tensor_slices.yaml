@@ -1,0 +1,19 @@
+operation: from_tensor_slices
+description: Auto-generated mapping for from_tensor_slices.
+std_args: []
+variants:
+  tensorflow:
+    eager: tf.data.Dataset.from_tensor_slices
+    required_imports: []
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

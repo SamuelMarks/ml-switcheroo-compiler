@@ -1,0 +1,4 @@
+operation: DeserializationStorageContext
+description: Context manager/helper for deserialization storage resolution.
+std_args: []
+variants: {}

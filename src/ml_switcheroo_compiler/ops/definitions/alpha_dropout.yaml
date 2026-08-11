@@ -1,0 +1,5 @@
+operation: alpha_dropout
+description: Auto-generated mapping for alpha_dropout.
+std_args: []
+type: function
+variants: {}

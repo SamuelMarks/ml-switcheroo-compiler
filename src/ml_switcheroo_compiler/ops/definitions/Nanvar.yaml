@@ -1,7 +1,19 @@
-operation: Nanvar
+operation: nanvar
 description: The Nanvar operation.
+std_args: []
 variants:
   cupy:
     eager: cp.nanvar
   dask:
     eager: da.nanvar
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

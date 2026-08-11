@@ -1,0 +1,4 @@
+operation: scatter_max
+description: Auto-generated mapping for scatter_max.
+std_args: []
+variants: {}

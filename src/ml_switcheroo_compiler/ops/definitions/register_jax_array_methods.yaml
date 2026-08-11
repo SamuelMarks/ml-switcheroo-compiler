@@ -1,0 +1,4 @@
+operation: register_jax_array_methods
+description: Auto-generated mapping for register_jax_array_methods.
+std_args: []
+variants: {}

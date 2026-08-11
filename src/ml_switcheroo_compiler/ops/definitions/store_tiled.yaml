@@ -1,0 +1,10 @@
+operation: store_tiled
+description: The class representing a Python function.
+std_args:
+- self
+- ref
+- swizzle
+- optimized
+- tiling_rank
+type: function
+variants: {}

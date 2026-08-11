@@ -55,6 +55,31 @@ def _load_pure_python() -> None:
     import ml_switcheroo_compiler.backends.pure_python  # noqa: F401
 
 
+def _load_llvm_cpp() -> None:
+    """Load the llvm_cpp backend."""
+    import ml_switcheroo_compiler.backends.llvm_cpp  # noqa: F401
+
+
+def _load_edge_onnx() -> None:
+    """Load the edge_onnx backend."""
+    import ml_switcheroo_compiler.backends.edge.onnx  # noqa: F401
+
+
+def _load_edge_stablehlo() -> None:
+    """Load the edge_stablehlo backend."""
+    import ml_switcheroo_compiler.backends.edge.stablehlo  # noqa: F401
+
+
+def _load_edge_wgsl() -> None:
+    """Load the edge_wgsl backend."""
+    import ml_switcheroo_compiler.backends.edge.webgpu  # noqa: F401
+
+
+def _load_edge_wasm_simd() -> None:
+    """Load the edge_wasm_simd backend."""
+    import ml_switcheroo_compiler.backends.edge.wasm  # noqa: F401
+
+
 _LOADERS = {
     "numpy": _load_numpy,
     "pytorch": _load_pytorch,
@@ -66,9 +91,14 @@ _LOADERS = {
     "keras": _load_keras,
     "cupy": _load_cupy,
     "pure_python": _load_pure_python,
+    "llvm_cpp": _load_llvm_cpp,
+    "edge_onnx": _load_edge_onnx,
+    "edge_stablehlo": _load_edge_stablehlo,
+    "edge_wgsl": _load_edge_wgsl,
+    "edge_wasm_simd": _load_edge_wasm_simd,
 }
 
-BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python"]
+BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd"]
 
 
 class BackendRegistry:
@@ -87,6 +117,11 @@ class BackendRegistry:
         "cupy": "ml_switcheroo_compiler.backends.cupy",
         "dask": "ml_switcheroo_compiler.backends.dask",
         "pure_python": "ml_switcheroo_compiler.backends.pure_python",
+        "llvm_cpp": "ml_switcheroo_compiler.backends.llvm_cpp",
+        "edge_onnx": "ml_switcheroo_compiler.backends.edge.onnx",
+        "edge_stablehlo": "ml_switcheroo_compiler.backends.edge.stablehlo",
+        "edge_wgsl": "ml_switcheroo_compiler.backends.edge.webgpu",
+        "edge_wasm_simd": "ml_switcheroo_compiler.backends.edge.wasm",
     }
 
     @classmethod

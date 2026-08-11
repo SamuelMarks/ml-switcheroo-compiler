@@ -3,3 +3,20 @@ description: The Lookup operation.
 variants:
   tensorflow:
     eager: tf.lookup
+  numpy:
+    eager: numpy.lookup
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.lookup
+  pytorch:
+    eager: torch.lookup
+  jax:
+    eager: jax.numpy.lookup
+  mlx:
+    eager: mlx.core.lookup
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

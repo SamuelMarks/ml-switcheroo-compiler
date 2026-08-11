@@ -1,0 +1,4 @@
+operation: linalg_primitive
+description: Auto-generated mapping for linalg_primitive.
+std_args: []
+variants: {}

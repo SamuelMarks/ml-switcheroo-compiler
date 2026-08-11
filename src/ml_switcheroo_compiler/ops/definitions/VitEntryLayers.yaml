@@ -1,0 +1,16 @@
+operation: VitEntryLayers
+description: Entry block of ViT (Patch Embed).
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: patch_size
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input_dims
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: output_dims
+  type: int
+variants: {}

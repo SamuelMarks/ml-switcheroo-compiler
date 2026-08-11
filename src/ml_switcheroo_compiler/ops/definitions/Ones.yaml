@@ -1,7 +1,31 @@
-operation: Ones
+operation: ones
 description: The Ones operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: shape
+  type: Union[int, Tuple[int, Ellipsis]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Optional[device]
 variants:
   numpy:
     generator: np.ones
   pytorch:
     generator: torch.ones({shape})
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

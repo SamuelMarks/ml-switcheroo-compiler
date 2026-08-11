@@ -1,0 +1,5 @@
+operation: get_arch
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

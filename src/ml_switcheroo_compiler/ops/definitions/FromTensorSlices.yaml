@@ -1,0 +1,24 @@
+operation: FromTensorSlices
+description: Definition for from_tensor_slices
+std_args:
+- tensors
+variants:
+  tensorflow:
+    eager: tf.data.Dataset.from_tensor_slices
+  numpy:
+    eager: numpy.fromtensorslices
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.fromtensorslices
+  pytorch:
+    eager: torch.fromtensorslices
+  jax:
+    eager: jax.numpy.fromtensorslices
+  mlx:
+    eager: mlx.core.fromtensorslices
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

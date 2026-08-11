@@ -1,5 +1,23 @@
-operation: Geomspace
+operation: geomspace
 description: The Geomspace operation.
+std_args: []
 variants:
   numpy:
     generator: np.geomspace
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.geomspace
+  keras:
+    eager: keras_ops.geomspace
+  pytorch:
+    eager: torch.geomspace
+  jax:
+    eager: jax.numpy.geomspace
+  mlx:
+    eager: mlx.core.geomspace
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

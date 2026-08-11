@@ -1,5 +1,7 @@
-operation: Xlog1py
+operation: xlog1py
 description: The Xlog1py operation.
+std_args: []
+type: attribute
 variants:
   tensorflow:
     eager: tf.math.xlog1py

@@ -1,7 +1,19 @@
-operation: Div
+operation: div
 description: The Div operation.
+std_args: []
 variants:
   edge_onnx:
     generator: Div
   edge_stablehlo:
     generator: stablehlo.divide
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}

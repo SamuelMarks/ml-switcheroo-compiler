@@ -1,5 +1,18 @@
-operation: Clip
+operation: clip
 description: The Clip operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: min
+  type: Optional[Union[int, float, array]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: max
+  type: Optional[Union[int, float, array]]
 variants:
   cupy:
     eager: cp.clip
@@ -9,3 +22,12 @@ variants:
     eager: keras_ops.clip
   numpy:
     generator: np.clip({0}, a_min={a_min}, a_max={a_max})
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

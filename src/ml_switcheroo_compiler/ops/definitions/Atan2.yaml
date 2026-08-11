@@ -1,5 +1,14 @@
-operation: Atan2
+operation: atan2
 description: The Atan2 operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     generator: cp.arctan2
@@ -9,3 +18,18 @@ variants:
     generator: np.arctan2
   tensorflow:
     eager: tf.atan2
+  keras:
+    eager: keras_ops.arctan2
+  pytorch:
+    eager: torch.atan2
+  jax:
+    eager: jax.numpy.arctan2
+  mlx:
+    eager: mlx.core.arctan2
+  edge_onnx:
+    generator: Atan2
+  edge_stablehlo:
+    generator: stablehlo.atan2
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

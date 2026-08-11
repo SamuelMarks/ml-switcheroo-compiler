@@ -1,0 +1,23 @@
+operation: ArrayRefDef
+description: Auto-generated mapping for ArrayRefDef.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.arrayrefdef
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arrayrefdef
+  keras:
+    eager: keras_ops.arrayrefdef
+  pytorch:
+    eager: torch.arrayrefdef
+  jax:
+    eager: jax.numpy.arrayrefdef
+  mlx:
+    eager: mlx.core.arrayrefdef
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

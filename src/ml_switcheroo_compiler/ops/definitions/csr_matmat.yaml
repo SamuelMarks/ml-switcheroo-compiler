@@ -1,0 +1,8 @@
+operation: csr_matmat
+description: Product of CSR sparse matrix and a dense matrix.
+std_args:
+- mat
+- B
+- transpose
+type: function
+variants: {}

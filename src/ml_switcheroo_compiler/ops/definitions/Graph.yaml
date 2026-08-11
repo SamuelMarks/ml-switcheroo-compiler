@@ -1,0 +1,4 @@
+operation: Graph
+description: Internal representation of a TorchScript graph.
+std_args: []
+variants: {}

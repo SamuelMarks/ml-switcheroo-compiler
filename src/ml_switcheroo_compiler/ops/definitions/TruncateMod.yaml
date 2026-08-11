@@ -3,3 +3,20 @@ description: The TruncateMod operation.
 variants:
   pytorch:
     generator: torch.fmod({0}, {1})
+  numpy:
+    eager: numpy.truncatemod
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.truncatemod
+  keras:
+    eager: keras_ops.truncatemod
+  jax:
+    eager: jax.numpy.truncatemod
+  mlx:
+    eager: mlx.core.truncatemod
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,7 +1,31 @@
-operation: Zeros
+operation: zeros
 description: The Zeros operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: shape
+  type: Union[int, Tuple[int, Ellipsis]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: Optional[dtype]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: device
+  type: Optional[device]
 variants:
   numpy:
     generator: np.zeros
   pytorch:
     generator: torch.zeros({shape})
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

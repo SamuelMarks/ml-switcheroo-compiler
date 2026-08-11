@@ -1,0 +1,7 @@
+operation: dynamic_gcd
+description: The class representing a Python function.
+std_args:
+- a
+- b
+type: function
+variants: {}

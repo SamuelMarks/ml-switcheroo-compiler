@@ -3,3 +3,15 @@ description: The DynamicPartition operation.
 variants:
   tensorflow:
     eager: tf.dynamic_partition
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

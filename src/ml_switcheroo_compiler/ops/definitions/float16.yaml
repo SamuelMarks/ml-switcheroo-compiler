@@ -1,5 +1,18 @@
-operation: float16
+operation: Float16
 description: The float16 operation.
+std_args: []
 variants:
   edge_stablehlo:
     generator: f16
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

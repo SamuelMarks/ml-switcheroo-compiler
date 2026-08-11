@@ -1,5 +1,18 @@
-operation: AvgPool
+operation: Avgpool
 description: The AvgPool operation.
+std_args: []
 variants:
   edge_onnx:
     generator: AveragePool
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

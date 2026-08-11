@@ -1,5 +1,18 @@
-operation: Reshape
+operation: reshape
 description: The Reshape operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: shape
+  type: Tuple[int, Ellipsis]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: copy
+  type: Optional[bool]
 variants:
   cupy:
     eager: cp.reshape
@@ -19,3 +32,10 @@ variants:
     generator: torch.reshape({0}, {shape})
   tensorflow:
     eager: tf.reshape
+  jax:
+    eager: jax.numpy.reshape
+  mlx:
+    eager: mlx.core.reshape
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

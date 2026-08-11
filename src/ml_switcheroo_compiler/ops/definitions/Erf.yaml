@@ -1,5 +1,7 @@
-operation: Erf
+operation: erf
 description: The Erf operation.
+std_args: []
+type: attribute
 variants:
   keras:
     eager: keras_ops.erf

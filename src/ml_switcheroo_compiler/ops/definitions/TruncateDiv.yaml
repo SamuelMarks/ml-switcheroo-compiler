@@ -3,3 +3,20 @@ description: The TruncateDiv operation.
 variants:
   pytorch:
     generator: torch.trunc({0} / {1})
+  numpy:
+    eager: numpy.truncatediv
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.truncatediv
+  keras:
+    eager: keras_ops.truncatediv
+  jax:
+    eager: jax.numpy.truncatediv
+  mlx:
+    eager: mlx.core.truncatediv
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

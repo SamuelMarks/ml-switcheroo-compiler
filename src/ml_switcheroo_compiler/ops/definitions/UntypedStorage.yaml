@@ -1,0 +1,4 @@
+operation: UntypedStorage
+description: Legacy storage class for untyped data.
+std_args: []
+variants: {}

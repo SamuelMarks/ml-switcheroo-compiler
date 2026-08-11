@@ -1,5 +1,28 @@
-operation: Svdvals
+operation: svdvals
 description: The Svdvals operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: function
 variants:
   numpy:
     generator: np.linalg.svd({0}, compute_uv=False)
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.svdvals
+  keras:
+    eager: keras_ops.svdvals
+  pytorch:
+    eager: torch.svdvals
+  jax:
+    eager: jax.numpy.svdvals
+  mlx:
+    eager: mlx.core.svdvals
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

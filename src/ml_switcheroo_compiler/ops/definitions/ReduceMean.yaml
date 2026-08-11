@@ -5,3 +5,20 @@ variants:
     generator: ReduceMean
   edge_stablehlo:
     generator: stablehlo.reduce
+  numpy:
+    eager: numpy.reducemean
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.reducemean
+  keras:
+    eager: keras_ops.reducemean
+  pytorch:
+    eager: torch.reducemean
+  jax:
+    eager: jax.numpy.reducemean
+  mlx:
+    eager: mlx.core.reducemean
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

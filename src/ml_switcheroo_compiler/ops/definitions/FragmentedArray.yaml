@@ -1,0 +1,9 @@
+operation: FragmentedArray
+description: The class representing a Python class.
+std_args:
+- self
+- _registers
+- _layout
+- _is_signed
+type: class
+variants: {}

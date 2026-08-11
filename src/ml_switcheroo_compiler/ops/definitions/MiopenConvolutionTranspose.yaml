@@ -1,0 +1,4 @@
+operation: MiopenConvolutionTranspose
+description: Backend specific convolution transpose.
+std_args: []
+variants: {}

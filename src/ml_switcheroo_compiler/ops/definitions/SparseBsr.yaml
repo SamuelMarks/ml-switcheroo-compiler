@@ -1,0 +1,4 @@
+operation: SparseBsr
+description: Layout constant for BSR.
+std_args: []
+variants: {}

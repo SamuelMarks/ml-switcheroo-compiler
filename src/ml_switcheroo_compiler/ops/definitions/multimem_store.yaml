@@ -1,0 +1,7 @@
+operation: multimem_store
+description: The class representing a Python function.
+std_args:
+- ptr
+- value
+type: function
+variants: {}

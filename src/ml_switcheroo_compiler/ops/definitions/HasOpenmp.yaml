@@ -1,0 +1,4 @@
+operation: HasOpenmp
+description: Checks if OpenMP is available.
+std_args: []
+variants: {}

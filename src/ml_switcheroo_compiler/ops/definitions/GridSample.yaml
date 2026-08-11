@@ -4,3 +4,20 @@ variants:
   pytorch:
     generator: torch.nn.functional.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
       align_corners={align_corners})
+  numpy:
+    eager: numpy.gridsample
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.gridsample
+  keras:
+    eager: keras_ops.gridsample
+  jax:
+    eager: jax.numpy.gridsample
+  mlx:
+    eager: mlx.core.gridsample
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,15 @@
-operation: Fftshift
+operation: fftshift
 description: The Fftshift operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axes
+  type: Optional[Union[int, Sequence[int]]]
+type: function
 variants:
   cupy:
     eager: cp.fft.fftshift
@@ -7,3 +17,18 @@ variants:
     eager: da.fft.fftshift
   numpy:
     generator: np.fft.fftshift({0})
+  tensorflow:
+    eager: tf.fftshift
+  keras:
+    eager: keras_ops.fftshift
+  pytorch:
+    eager: torch.fftshift
+  jax:
+    eager: jax.numpy.fftshift
+  mlx:
+    eager: mlx.core.fftshift
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

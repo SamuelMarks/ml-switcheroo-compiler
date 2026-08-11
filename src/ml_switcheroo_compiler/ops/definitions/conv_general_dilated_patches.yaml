@@ -1,0 +1,4 @@
+operation: conv_general_dilated_patches
+description: Auto-generated mapping for conv_general_dilated_patches.
+std_args: []
+variants: {}

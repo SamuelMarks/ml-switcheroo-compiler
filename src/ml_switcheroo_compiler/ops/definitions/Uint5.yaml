@@ -1,0 +1,4 @@
+operation: Uint5
+description: 5-bit unsigned integer type.
+std_args: []
+variants: {}

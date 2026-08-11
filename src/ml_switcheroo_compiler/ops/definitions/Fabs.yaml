@@ -1,7 +1,19 @@
-operation: Fabs
+operation: fabs
 description: The Fabs operation.
+std_args: []
 variants:
   cupy:
     eager: cp.fabs
   dask:
     eager: da.fabs
+  numpy: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

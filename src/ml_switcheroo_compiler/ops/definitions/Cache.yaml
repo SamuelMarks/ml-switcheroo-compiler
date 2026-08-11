@@ -1,0 +1,4 @@
+operation: Cache
+description: Wrapper for autoregressive cache state.
+std_args: []
+variants: {}

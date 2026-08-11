@@ -1,0 +1,7 @@
+operation: smem_bytes
+description: The class representing a Python function.
+std_args:
+- self
+- block
+type: function
+variants: {}

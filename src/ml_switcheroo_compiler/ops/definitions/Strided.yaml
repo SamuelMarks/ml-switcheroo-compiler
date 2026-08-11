@@ -1,0 +1,4 @@
+operation: Strided
+description: Directs layout to strided (Standard).
+std_args: []
+variants: {}

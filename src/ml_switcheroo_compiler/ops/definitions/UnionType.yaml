@@ -1,0 +1,4 @@
+operation: UnionType
+description: Type representation for unions.
+std_args: []
+variants: {}

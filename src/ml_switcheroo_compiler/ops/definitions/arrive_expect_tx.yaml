@@ -1,0 +1,7 @@
+operation: arrive_expect_tx
+description: The class representing a Python function.
+std_args:
+- self
+- bytes
+type: function
+variants: {}

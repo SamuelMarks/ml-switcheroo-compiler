@@ -1,0 +1,4 @@
+operation: ScalarType
+description: Tuple of scalar types.
+std_args: []
+variants: {}

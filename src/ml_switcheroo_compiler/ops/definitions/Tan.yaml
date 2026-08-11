@@ -1,5 +1,10 @@
-operation: Tan
+operation: tan
 description: The Tan operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.tan
@@ -11,3 +16,15 @@ variants:
     eager: keras_ops.tan
   tensorflow:
     eager: tf.tan
+  numpy:
+    eager: numpy.tan
+  pytorch:
+    eager: torch.tan
+  jax:
+    eager: jax.numpy.tan
+  mlx:
+    eager: mlx.core.tan
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

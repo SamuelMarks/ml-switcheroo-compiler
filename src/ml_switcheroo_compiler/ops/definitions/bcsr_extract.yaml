@@ -1,0 +1,8 @@
+operation: bcsr_extract
+description: Extract values from a dense matrix at given BCSR (indices, indptr).
+std_args:
+- indices
+- indptr
+- mat
+type: function
+variants: {}

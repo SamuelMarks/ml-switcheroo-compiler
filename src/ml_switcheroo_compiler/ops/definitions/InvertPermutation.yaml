@@ -1,5 +1,27 @@
 operation: InvertPermutation
 description: The InvertPermutation operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.invert_permutation
+  numpy:
+    eager: numpy.invertpermutation
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.invertpermutation
+  pytorch:
+    eager: torch.invertpermutation
+  jax:
+    eager: jax.numpy.invertpermutation
+  mlx:
+    eager: mlx.core.invertpermutation
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

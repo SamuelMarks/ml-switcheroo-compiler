@@ -1,0 +1,9 @@
+operation: ravel_first_arg_
+description: The class representing a Python function.
+std_args:
+- f
+- unravel
+- y_flat
+- args
+type: function
+variants: {}

@@ -1,5 +1,23 @@
-operation: Lgamma
+operation: lgamma
 description: The Lgamma operation.
+std_args: []
 variants:
   tensorflow:
     eager: tf.math.lgamma
+  numpy:
+    eager: numpy.lgamma
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.lgamma
+  pytorch:
+    eager: torch.lgamma
+  jax:
+    eager: jax.numpy.lgamma
+  mlx:
+    eager: mlx.core.lgamma
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

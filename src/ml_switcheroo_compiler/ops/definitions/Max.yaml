@@ -1,5 +1,18 @@
-operation: Max
+operation: max
 description: The Max operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[Union[int, Tuple[int, Ellipsis]]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   cupy:
     eager: cp.max
@@ -13,3 +26,11 @@ variants:
     generator: np.max
   pytorch:
     generator: torch.max({0}, dim={axis}, keepdim={keepdims})
+  tensorflow: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

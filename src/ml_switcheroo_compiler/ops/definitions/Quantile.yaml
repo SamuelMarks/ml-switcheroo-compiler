@@ -1,5 +1,23 @@
-operation: Quantile
+operation: quantile
 description: The Quantile operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.quantile
+  numpy:
+    eager: numpy.quantile
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.quantile
+  pytorch:
+    eager: torch.quantile
+  jax:
+    eager: jax.numpy.quantile
+  mlx:
+    eager: mlx.core.quantile
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,23 @@
+operation: AutodiffCheckpointType
+description: Enumeration for JAX checkpoint types.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.autodiffcheckpointtype
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.autodiffcheckpointtype
+  keras:
+    eager: keras_ops.autodiffcheckpointtype
+  pytorch:
+    eager: torch.autodiffcheckpointtype
+  jax:
+    eager: jax.numpy.autodiffcheckpointtype
+  mlx:
+    eager: mlx.core.autodiffcheckpointtype
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

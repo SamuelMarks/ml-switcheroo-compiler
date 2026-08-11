@@ -1,0 +1,9 @@
+operation: traceable
+description: The class representing a Python function.
+std_args:
+- f
+- store
+- in_tree_def
+- primals_and_series
+type: function
+variants: {}

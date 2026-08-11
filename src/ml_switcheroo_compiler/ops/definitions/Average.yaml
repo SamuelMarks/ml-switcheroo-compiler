@@ -1,5 +1,6 @@
-operation: Average
+operation: average
 description: The Average operation.
+std_args: []
 variants:
   cupy:
     eager: cp.average
@@ -7,3 +8,13 @@ variants:
     eager: da.average
   keras:
     eager: keras_ops.average
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

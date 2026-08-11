@@ -1,5 +1,18 @@
-operation: Polyadd
+operation: polyadd
 description: The Polyadd operation.
+std_args: []
 variants:
   numpy:
     generator: np.polyadd
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

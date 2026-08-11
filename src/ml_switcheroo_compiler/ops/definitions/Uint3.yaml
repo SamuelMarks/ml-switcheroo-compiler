@@ -1,0 +1,4 @@
+operation: Uint3
+description: 3-bit unsigned integer type.
+std_args: []
+variants: {}

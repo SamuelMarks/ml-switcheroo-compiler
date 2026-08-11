@@ -1,5 +1,14 @@
 operation: LessEqual
 description: The LessEqual operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Tensor
 variants:
   cupy:
     eager: cp.less_equal
@@ -9,3 +18,16 @@ variants:
     eager: keras_ops.less_equal
   tensorflow:
     eager: tf.less_equal
+  numpy:
+    eager: numpy.lessequal
+  pytorch:
+    eager: torch.lessequal
+  jax:
+    eager: jax.numpy.lessequal
+  mlx:
+    eager: mlx.core.lessequal
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

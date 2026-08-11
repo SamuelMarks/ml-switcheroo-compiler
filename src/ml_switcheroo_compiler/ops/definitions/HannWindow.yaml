@@ -1,5 +1,36 @@
 operation: HannWindow
 description: The HannWindow operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: window_length
+  type: int
+- default: true
+  is_variadic: false
+  kind: positional_or_keyword
+  name: periodic
+  type: bool
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dtype
+  type: str
 variants:
   pytorch:
     generator: torch.hann_window({window_length}, periodic={periodic})
+  numpy:
+    eager: numpy.hannwindow
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.hannwindow
+  keras:
+    eager: keras_ops.hannwindow
+  jax:
+    eager: jax.numpy.hannwindow
+  mlx:
+    eager: mlx.core.hannwindow
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

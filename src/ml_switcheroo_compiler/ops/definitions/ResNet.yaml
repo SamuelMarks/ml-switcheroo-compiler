@@ -1,0 +1,8 @@
+operation: ResNet
+description: ResNet model.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: blocks
+  type: Sequence[int]
+variants: {}

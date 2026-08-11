@@ -1,0 +1,8 @@
+operation: Arch
+description: The class representing a Python class.
+std_args:
+- self
+- major
+- minor
+type: class
+variants: {}

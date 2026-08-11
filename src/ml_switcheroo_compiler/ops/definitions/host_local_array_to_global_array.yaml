@@ -1,0 +1,8 @@
+operation: host_local_array_to_global_array
+description: Converts a host local value to a globally sharded jax.Array.
+std_args:
+- local_inputs
+- global_mesh
+- pspecs
+type: function
+variants: {}

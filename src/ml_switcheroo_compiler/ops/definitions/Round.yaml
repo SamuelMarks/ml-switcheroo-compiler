@@ -1,5 +1,11 @@
-operation: Round
+operation: round
 description: The Round operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: attribute
 variants:
   cupy:
     eager: cp.round

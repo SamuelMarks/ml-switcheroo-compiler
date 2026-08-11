@@ -1,0 +1,7 @@
+operation: bcoo_transpose
+description: Transpose a BCOO-format array.
+std_args:
+- mat
+- permutation
+type: function
+variants: {}

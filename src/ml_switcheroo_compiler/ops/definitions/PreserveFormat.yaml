@@ -1,0 +1,4 @@
+operation: PreserveFormat
+description: Preservation logic, likely profiling or internal. No standard equivalent.
+std_args: []
+variants: {}

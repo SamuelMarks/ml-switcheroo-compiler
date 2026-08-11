@@ -1,5 +1,14 @@
 operation: BitwiseOr
 description: The BitwiseOr operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: other
+  type: Any
 variants:
   cupy:
     eager: cp.bitwise_or
@@ -7,3 +16,13 @@ variants:
     eager: da.bitwise_or
   keras:
     eager: keras_ops.bitwise_or
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

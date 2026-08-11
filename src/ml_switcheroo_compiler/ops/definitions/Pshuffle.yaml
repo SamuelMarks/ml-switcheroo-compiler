@@ -1,5 +1,23 @@
-operation: Pshuffle
+operation: pshuffle
 description: The Pshuffle operation.
+std_args: []
 variants:
   numpy:
     generator: '{0}'
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.pshuffle
+  keras:
+    eager: keras_ops.pshuffle
+  pytorch:
+    eager: torch.pshuffle
+  jax:
+    eager: jax.numpy.pshuffle
+  mlx:
+    eager: mlx.core.pshuffle
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

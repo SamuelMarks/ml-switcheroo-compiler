@@ -1,0 +1,5 @@
+operation: TripletMarginWithDistanceLoss
+description: Auto-generated mapping for TripletMarginWithDistanceLoss.
+std_args: []
+type: class
+variants: {}

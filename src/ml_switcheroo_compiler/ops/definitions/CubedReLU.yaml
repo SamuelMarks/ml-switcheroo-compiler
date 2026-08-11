@@ -1,0 +1,4 @@
+operation: CubedReLU
+description: 'Activation: max(0, x)^3.'
+std_args: []
+variants: {}

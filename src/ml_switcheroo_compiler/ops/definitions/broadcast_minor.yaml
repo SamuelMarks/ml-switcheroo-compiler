@@ -1,0 +1,7 @@
+operation: broadcast_minor
+description: The class representing a Python function.
+std_args:
+- self
+- n
+type: function
+variants: {}

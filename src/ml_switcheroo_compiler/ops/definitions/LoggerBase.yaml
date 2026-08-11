@@ -1,0 +1,4 @@
+operation: LoggerBase
+description: Base class for loggers.
+std_args: []
+variants: {}

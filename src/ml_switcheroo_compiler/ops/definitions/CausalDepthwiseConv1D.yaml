@@ -1,0 +1,12 @@
+operation: CausalDepthwiseConv1D
+description: Causal depth-wise convolution applied to a 1-d sequence.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kernel_size
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: hidden_dims
+  type: int
+variants: {}

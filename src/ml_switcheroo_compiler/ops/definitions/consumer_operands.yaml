@@ -1,0 +1,7 @@
+operation: consumer_operands
+description: Given a result or an argument, returns the corresponding operands in
+  its consumers.
+std_args:
+- result
+type: function
+variants: {}

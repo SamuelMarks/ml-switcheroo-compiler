@@ -1,5 +1,6 @@
-operation: Unique
+operation: unique
 description: The Unique operation.
+std_args: []
 variants:
   cupy:
     eager: cp.unique
@@ -7,3 +8,18 @@ variants:
     eager: da.unique
   tensorflow:
     eager: tf.unique
+  numpy:
+    eager: numpy.unique
+  keras:
+    eager: keras_ops.unique
+  pytorch:
+    eager: torch.unique
+  jax:
+    eager: jax.numpy.unique
+  mlx:
+    eager: mlx.core.unique
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,6 @@
-operation: Transpose
+operation: transpose
 description: The Transpose operation.
+std_args: []
 variants:
   cupy:
     eager: cp.transpose
@@ -19,3 +20,10 @@ variants:
     generator: torch.permute({0}, {axes})
   tensorflow:
     eager: tf.transpose
+  jax:
+    eager: jax.numpy.transpose
+  mlx:
+    eager: mlx.core.transpose
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

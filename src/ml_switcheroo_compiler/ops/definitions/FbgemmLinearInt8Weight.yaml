@@ -1,0 +1,4 @@
+operation: FbgemmLinearInt8Weight
+description: FBGEMM linear with Int8 weights.
+std_args: []
+variants: {}

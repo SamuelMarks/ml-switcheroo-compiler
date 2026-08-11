@@ -1,0 +1,6 @@
+operation: assign_layouts
+description: Assigns the layouts in `solution` to the MLIR ops they belong to.
+std_args:
+- solution
+type: function
+variants: {}

@@ -1,0 +1,4 @@
+operation: BytesType
+description: Byte string type.
+std_args: []
+variants: {}

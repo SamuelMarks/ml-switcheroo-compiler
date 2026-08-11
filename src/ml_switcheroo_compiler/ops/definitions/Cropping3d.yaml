@@ -1,0 +1,9 @@
+operation: Cropping3d
+description: Cropping layer for 3D data.
+std_args:
+- default: 0
+  is_variadic: false
+  kind: positional_or_keyword
+  name: cropping
+  type: int | Tuple[int, int, int] | Tuple[Tuple[int, int], ...]
+variants: {}

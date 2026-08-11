@@ -1,0 +1,6 @@
+operation: get_attached_topology
+description: The class representing a Python function.
+std_args:
+- platform
+type: function
+variants: {}

@@ -1,0 +1,12 @@
+operation: HalfTensor
+description: Legacy constructor for Float16 tensor.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: args
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kwargs
+  type: Any
+variants: {}

@@ -1,0 +1,4 @@
+operation: LocalSelfAttentionRelativeBias
+description: Local version of trainable relative bias position encoding.
+std_args: []
+variants: {}

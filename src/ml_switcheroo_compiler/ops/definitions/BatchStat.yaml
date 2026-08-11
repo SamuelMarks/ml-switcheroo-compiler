@@ -1,0 +1,23 @@
+operation: BatchStat
+description: Wrapper for Batch Statistics state.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.batchstat
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.batchstat
+  keras:
+    eager: keras_ops.batchstat
+  pytorch:
+    eager: torch.batchstat
+  jax:
+    eager: jax.numpy.batchstat
+  mlx:
+    eager: mlx.core.batchstat
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

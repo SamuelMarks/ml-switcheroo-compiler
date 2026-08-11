@@ -1,0 +1,13 @@
+operation: mha_reference
+description: The class representing a Python function.
+std_args:
+- q
+- k
+- v
+- ab
+- segment_ids
+- causal
+- mask_value
+- sm_scale
+type: function
+variants: {}

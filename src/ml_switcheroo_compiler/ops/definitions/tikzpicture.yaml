@@ -1,0 +1,7 @@
+operation: tikzpicture
+description: Auto-generated mapping for tikzpicture.
+std_args: []
+variants:
+  tikz:
+    eager: tikz.tikzpicture
+    required_imports: []

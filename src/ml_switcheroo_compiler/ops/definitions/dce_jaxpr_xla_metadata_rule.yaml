@@ -1,0 +1,7 @@
+operation: dce_jaxpr_xla_metadata_rule
+description: The class representing a Python function.
+std_args:
+- used_outputs
+- eqn
+type: function
+variants: {}

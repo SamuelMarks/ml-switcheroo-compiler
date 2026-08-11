@@ -1,0 +1,7 @@
+operation: eval_polymorphic_shape
+description: Evaluates the output shape in presence of shape polymorphism.
+std_args:
+- fun_jax
+- polymorphic_shapes
+type: function
+variants: {}

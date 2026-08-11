@@ -3,3 +3,15 @@ description: The BroadcastedIota operation.
 variants:
   numpy:
     generator: np.broadcasted_iota
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,9 @@
+operation: share_memory
+description: See :meth:`torch.Tensor.share_memory_`.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: self
+  type: Any
+type: function
+variants: {}

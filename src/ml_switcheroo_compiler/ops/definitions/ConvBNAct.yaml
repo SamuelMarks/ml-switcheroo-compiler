@@ -1,0 +1,4 @@
+operation: ConvBNAct
+description: 'Fused Block: Convolution -> BatcNorm -> Activation.'
+std_args: []
+variants: {}

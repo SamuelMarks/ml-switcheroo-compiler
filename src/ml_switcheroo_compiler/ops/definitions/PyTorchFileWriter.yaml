@@ -1,0 +1,4 @@
+operation: PyTorchFileWriter
+description: Internal file writer.
+std_args: []
+variants: {}

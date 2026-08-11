@@ -1,0 +1,7 @@
+operation: TransposeTransform
+description: Transposes memref dimensions.
+std_args:
+- self
+- permutation
+type: class
+variants: {}

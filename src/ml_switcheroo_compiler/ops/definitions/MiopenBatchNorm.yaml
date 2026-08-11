@@ -1,0 +1,4 @@
+operation: MiopenBatchNorm
+description: Backend specific batch norm.
+std_args: []
+variants: {}

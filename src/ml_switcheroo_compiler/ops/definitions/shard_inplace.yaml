@@ -1,0 +1,4 @@
+operation: shard_inplace
+description: Auto-generated mapping for shard_inplace.
+std_args: []
+variants: {}

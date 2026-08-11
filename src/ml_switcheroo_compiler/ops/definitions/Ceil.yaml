@@ -1,5 +1,10 @@
-operation: Ceil
+operation: ceil
 description: The Ceil operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.ceil
@@ -13,3 +18,10 @@ variants:
     eager: keras_ops.ceil
   tensorflow:
     eager: tf.math.ceil
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

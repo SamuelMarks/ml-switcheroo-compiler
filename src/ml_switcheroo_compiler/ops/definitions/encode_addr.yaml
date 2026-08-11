@@ -1,0 +1,6 @@
+operation: encode_addr
+description: The class representing a Python function.
+std_args:
+- x
+type: function
+variants: {}

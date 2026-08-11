@@ -1,0 +1,6 @@
+operation: abs2
+description: The class representing a Python function.
+std_args:
+- x
+type: function
+variants: {}

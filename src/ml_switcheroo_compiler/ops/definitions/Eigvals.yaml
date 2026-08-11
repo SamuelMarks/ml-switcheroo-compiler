@@ -1,5 +1,7 @@
-operation: Eigvals
+operation: eigvals
 description: The Eigvals operation.
+std_args: []
+type: attribute
 variants:
   tensorflow:
     eager: tf.eigvals

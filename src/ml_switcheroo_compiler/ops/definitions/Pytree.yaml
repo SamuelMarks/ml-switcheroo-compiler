@@ -1,0 +1,4 @@
+operation: Pytree
+description: Base class for Pytree-registered objects.
+std_args: []
+variants: {}

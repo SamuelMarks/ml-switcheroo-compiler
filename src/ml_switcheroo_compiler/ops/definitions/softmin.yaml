@@ -1,0 +1,5 @@
+operation: softmin
+description: Auto-generated mapping for softmin.
+std_args: []
+type: function
+variants: {}

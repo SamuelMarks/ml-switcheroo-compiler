@@ -1,0 +1,5 @@
+operation: warpgroup_barrier
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

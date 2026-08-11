@@ -1,0 +1,7 @@
+operation: remove_spectral_norm
+description: Remove the spectral normalization reparameterization from a module.
+std_args:
+- module
+- name
+type: function
+variants: {}

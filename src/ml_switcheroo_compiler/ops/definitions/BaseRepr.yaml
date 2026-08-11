@@ -1,0 +1,32 @@
+operation: BaseRepr
+description: Return a string representation of a number in the given base system.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: number
+  type: int
+- default: 2
+  is_variadic: false
+  kind: positional_or_keyword
+  name: base
+  type: int
+variants:
+  numpy:
+    eager: numpy.baserepr
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.baserepr
+  keras:
+    eager: keras_ops.baserepr
+  pytorch:
+    eager: torch.baserepr
+  jax:
+    eager: jax.numpy.baserepr
+  mlx:
+    eager: mlx.core.baserepr
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

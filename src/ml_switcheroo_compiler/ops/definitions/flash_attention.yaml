@@ -1,0 +1,14 @@
+operation: flash_attention
+description: The class representing a Python function.
+std_args:
+- q
+- k
+- v
+- ab
+- segment_ids
+- causal
+- sm_scale
+- block_sizes
+- debug
+type: function
+variants: {}

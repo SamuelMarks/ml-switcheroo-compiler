@@ -1,0 +1,5 @@
+operation: shard_map
+description: Auto-generated mapping for shard_map.
+std_args: []
+type: function
+variants: {}

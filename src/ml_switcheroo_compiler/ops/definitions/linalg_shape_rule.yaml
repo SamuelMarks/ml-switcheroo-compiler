@@ -1,0 +1,4 @@
+operation: linalg_shape_rule
+description: Auto-generated mapping for linalg_shape_rule.
+std_args: []
+variants: {}

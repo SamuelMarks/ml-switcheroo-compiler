@@ -1,7 +1,25 @@
-operation: Radians
+operation: radians
 description: The Radians operation.
+std_args: []
 variants:
   cupy:
     eager: cp.radians
   dask:
     eager: da.radians
+  numpy:
+    eager: numpy.radians
+  tensorflow:
+    eager: tf.radians
+  keras:
+    eager: keras_ops.radians
+  pytorch:
+    eager: torch.radians
+  jax:
+    eager: jax.numpy.radians
+  mlx:
+    eager: mlx.core.radians
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,23 @@
+operation: ArrayLike
+description: Type hint for array-compatible objects.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.arraylike
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arraylike
+  keras:
+    eager: keras_ops.arraylike
+  pytorch:
+    eager: torch.arraylike
+  jax:
+    eager: jax.numpy.arraylike
+  mlx:
+    eager: mlx.core.arraylike
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

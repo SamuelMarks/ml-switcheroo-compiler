@@ -1,0 +1,9 @@
+operation: tmem_dealloc
+description: The class representing a Python function.
+std_args:
+- tmem_addr
+- ncols
+- collective
+- exact
+type: function
+variants: {}

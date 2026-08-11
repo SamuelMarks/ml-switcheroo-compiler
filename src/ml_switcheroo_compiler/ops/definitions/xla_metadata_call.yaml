@@ -1,0 +1,7 @@
+operation: xla_metadata_call
+description: The class representing a Python function.
+std_args:
+- f
+- meta
+type: function
+variants: {}

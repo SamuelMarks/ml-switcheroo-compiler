@@ -1,0 +1,10 @@
+operation: StaggeredTransferPlanImpl
+description: The class representing a Python class.
+std_args:
+- self
+- stagger
+- dim
+- size
+- group_pred
+type: class
+variants: {}

@@ -1,0 +1,11 @@
+operation: deserialize_with_paths
+description: The class representing a Python function.
+std_args:
+- self
+- shardings
+- paths
+- global_shapes
+- dtypes
+- concurrent_gb
+type: function
+variants: {}

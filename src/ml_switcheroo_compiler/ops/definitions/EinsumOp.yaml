@@ -1,0 +1,4 @@
+operation: EinsumOp
+description: Functional einsum operation wrapper.
+std_args: []
+variants: {}

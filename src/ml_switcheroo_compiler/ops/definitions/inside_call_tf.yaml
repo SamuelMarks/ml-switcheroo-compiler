@@ -1,0 +1,5 @@
+operation: inside_call_tf
+description: The class representing a Python function.
+std_args: []
+type: function
+variants: {}

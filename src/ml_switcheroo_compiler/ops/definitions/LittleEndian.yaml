@@ -1,0 +1,4 @@
+operation: LittleEndian
+description: Check if system is little endian.
+std_args: []
+variants: {}

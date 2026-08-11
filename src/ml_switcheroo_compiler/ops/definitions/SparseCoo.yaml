@@ -1,0 +1,4 @@
+operation: SparseCoo
+description: Layout constant for COO.
+std_args: []
+variants: {}

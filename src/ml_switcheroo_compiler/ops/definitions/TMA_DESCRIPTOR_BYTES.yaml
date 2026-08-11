@@ -1,0 +1,5 @@
+operation: TMA_DESCRIPTOR_BYTES
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

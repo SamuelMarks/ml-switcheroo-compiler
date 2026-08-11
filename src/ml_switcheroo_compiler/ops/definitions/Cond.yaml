@@ -1,5 +1,7 @@
 operation: Cond
 description: The Cond operation.
+std_args: []
+type: attribute
 variants:
   keras:
     eager: keras_ops.cond
@@ -7,3 +9,7 @@ variants:
     generator: np.linalg.cond
   tensorflow:
     eager: tf.cond
+  edge_onnx:
+    generator: If
+  edge_stablehlo:
+    generator: stablehlo.cond

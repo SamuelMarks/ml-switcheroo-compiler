@@ -1,5 +1,23 @@
-operation: Fromfile
+operation: fromfile
 description: The Fromfile operation.
+std_args: []
 variants:
   numpy:
     generator: np.fromfile
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.fromfile
+  keras:
+    eager: keras_ops.fromfile
+  pytorch:
+    eager: torch.fromfile
+  jax:
+    eager: jax.numpy.fromfile
+  mlx:
+    eager: mlx.core.fromfile
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

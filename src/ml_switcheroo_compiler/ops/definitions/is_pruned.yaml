@@ -1,0 +1,6 @@
+operation: is_pruned
+description: Check if a module is pruned by looking for pruning pre-hooks.
+std_args:
+- module
+type: function
+variants: {}

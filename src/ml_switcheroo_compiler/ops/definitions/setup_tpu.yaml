@@ -1,0 +1,6 @@
+operation: setup_tpu
+description: Raises an error. Do not use.
+std_args:
+- tpu_driver_version
+type: function
+variants: {}

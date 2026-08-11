@@ -1,0 +1,5 @@
+operation: BLOCKS_ARE_CONTIGUOUS
+description: If True, guarantees that all blocks in the mask are contiguous.
+std_args: []
+type: attribute
+variants: {}

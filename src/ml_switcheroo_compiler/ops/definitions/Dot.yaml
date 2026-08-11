@@ -1,5 +1,6 @@
 operation: Dot
 description: The Dot operation.
+std_args: []
 variants:
   cupy:
     eager: cp.dot
@@ -7,3 +8,13 @@ variants:
     eager: da.dot
   keras:
     eager: keras_ops.dot
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

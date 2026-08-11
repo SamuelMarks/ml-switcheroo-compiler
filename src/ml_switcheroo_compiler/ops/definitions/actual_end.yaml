@@ -1,0 +1,5 @@
+operation: actual_end
+description: The class representing a Python module/class/instance attribute.
+std_args: []
+type: attribute
+variants: {}

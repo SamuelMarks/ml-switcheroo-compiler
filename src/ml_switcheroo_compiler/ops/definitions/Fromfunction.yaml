@@ -1,5 +1,6 @@
-operation: Fromfunction
+operation: fromfunction
 description: The Fromfunction operation.
+std_args: []
 variants:
   cupy:
     eager: cp.fromfunction
@@ -7,3 +8,18 @@ variants:
     eager: da.fromfunction
   numpy:
     generator: np.fromfunction
+  tensorflow:
+    eager: tf.fromfunction
+  keras:
+    eager: keras_ops.fromfunction
+  pytorch:
+    eager: torch.fromfunction
+  jax:
+    eager: jax.numpy.fromfunction
+  mlx:
+    eager: mlx.core.fromfunction
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

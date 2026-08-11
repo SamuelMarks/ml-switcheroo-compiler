@@ -1,0 +1,8 @@
+operation: Not
+description: Filter predicate for negation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: filter
+  type: Any
+variants: {}

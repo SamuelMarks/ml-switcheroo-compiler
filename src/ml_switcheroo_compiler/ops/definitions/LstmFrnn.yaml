@@ -1,0 +1,4 @@
+operation: LstmFrnn
+description: A FRNN for LSTMCellSimple cell.
+std_args: []
+variants: {}

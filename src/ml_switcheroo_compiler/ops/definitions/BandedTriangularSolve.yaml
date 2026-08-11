@@ -3,3 +3,15 @@ description: The BandedTriangularSolve operation.
 variants:
   tensorflow:
     eager: tf.linalg.banded_triangular_solve
+  numpy: {}
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

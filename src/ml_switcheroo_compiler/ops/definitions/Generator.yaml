@@ -1,0 +1,4 @@
+operation: Generator
+description: Pseudo-random number generator state.
+std_args: []
+variants: {}

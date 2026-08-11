@@ -1,5 +1,18 @@
-operation: Polar
+operation: polar
 description: The Polar operation.
+std_args: []
 variants:
   keras:
     eager: keras_ops.polar
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

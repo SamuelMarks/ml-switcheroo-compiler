@@ -1,0 +1,12 @@
+operation: GlobalAvgPool3D
+description: Alias for GlobalAveragePooling3D.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: data_format
+  type: str
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
+variants: {}

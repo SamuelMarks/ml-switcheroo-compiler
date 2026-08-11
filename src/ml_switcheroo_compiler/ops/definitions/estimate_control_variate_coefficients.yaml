@@ -1,0 +1,5 @@
+operation: estimate_control_variate_coefficients
+description: Auto-generated from jax_code_defs
+std_args: []
+type: function
+variants: {}

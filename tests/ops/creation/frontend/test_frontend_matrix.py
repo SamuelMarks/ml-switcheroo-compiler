@@ -19,9 +19,12 @@ def test_frontend_matrix():
 
     import ml_switcheroo_compiler.backends.registry as reg
 
+    orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
+    has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
     reg._ACTIVE_BACKEND = DummyBackend()
     import ml_switcheroo_compiler.ops.creation.frontend_matrix
 
+    orig_frontend_matrix_backend = ml_switcheroo_compiler.ops.creation.frontend_matrix.get_active_backend
     ml_switcheroo_compiler.ops.creation.frontend_matrix.get_active_backend = lambda: DummyBackend()
 
     from ml_switcheroo_compiler.core.config import config
@@ -86,3 +89,9 @@ def test_frontend_matrix():
     config.eager_mode = False
     with pytest.raises(ValueError):
         diag(DummyInput3())
+
+    if has_reg_backend:
+        reg._ACTIVE_BACKEND = orig_reg_backend
+    else:
+        del reg._ACTIVE_BACKEND
+    ml_switcheroo_compiler.ops.creation.frontend_matrix.get_active_backend = orig_frontend_matrix_backend

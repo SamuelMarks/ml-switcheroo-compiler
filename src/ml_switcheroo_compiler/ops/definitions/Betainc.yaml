@@ -1,7 +1,19 @@
-operation: Betainc
+operation: betainc
 description: The Betainc operation.
+std_args: []
 variants:
   numpy:
     generator: scipy.special.betainc
   tensorflow:
     eager: tf.math.betainc
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

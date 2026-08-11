@@ -1,0 +1,4 @@
+operation: Int3
+description: 3-bit integer data type (Quantization).
+std_args: []
+variants: {}

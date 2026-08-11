@@ -1,0 +1,6 @@
+operation: l2_norm
+description: Compute the l2 norm of a pytree of arrays. Useful for weight decay.
+std_args:
+- tree
+type: function
+variants: {}

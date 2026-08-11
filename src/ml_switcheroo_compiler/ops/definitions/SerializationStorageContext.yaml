@@ -1,0 +1,4 @@
+operation: SerializationStorageContext
+description: Internal serialization context.
+std_args: []
+variants: {}

@@ -1,5 +1,6 @@
-operation: Cumprod
+operation: cumprod
 description: The Cumprod operation.
+std_args: []
 variants:
   cupy:
     eager: cp.cumprod
@@ -11,3 +12,11 @@ variants:
     generator: np.cumprod
   tensorflow:
     eager: tf.math.cumprod
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

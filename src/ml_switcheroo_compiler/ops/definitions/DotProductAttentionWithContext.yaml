@@ -1,0 +1,12 @@
+operation: DotProductAttentionWithContext
+description: Attention with local/global context constraints.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: left_context
+  type: int
+- is_variadic: false
+  kind: positional_or_keyword
+  name: right_context
+  type: int
+variants: {}

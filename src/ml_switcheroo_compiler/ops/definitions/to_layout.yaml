@@ -1,0 +1,7 @@
+operation: to_layout
+description: Converts the fragmented array to the given layout.
+std_args:
+- self
+- new_layout
+type: function
+variants: {}

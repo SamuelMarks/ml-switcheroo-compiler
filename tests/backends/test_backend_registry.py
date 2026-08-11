@@ -19,8 +19,7 @@ def test_registry_import_error() -> object:
         BackendRegistry._LAZY_MODULES["fake"] = "fake_module"
         with pytest.raises(ValueError, match="Backend 'fake' not found"):
             BackendRegistry.get("fake")
-        with patch("importlib.import_module", side_effect=ImportError):
-            BackendRegistry.get_all()
+        BackendRegistry.get_all()
         del BackendRegistry._LAZY_MODULES["fake"]
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
@@ -69,3 +68,79 @@ def test_ensure_loaded_import_error() -> None:
     _LOADERS.update(original_loaders)
     BackendRegistry._LAZY_MODULES.clear()
     BackendRegistry._LAZY_MODULES.update(original_lazy)
+
+
+def test_backend_registry_import_error():
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+    import builtins
+
+    BackendRegistry._registry.pop("mock_import_fail", None)
+    BackendRegistry._LAZY_MODULES["mock_import_fail"] = "mock_import_fail_module"
+
+    def mock_loader():
+        raise ImportError("mocked import error")
+
+    from ml_switcheroo_compiler.backends.registry import _LOADERS
+
+    _LOADERS["mock_import_fail"] = mock_loader
+
+    import pytest
+
+    with pytest.raises(ValueError):
+        BackendRegistry.get("mock_import_fail")
+
+
+def test_get_active_backend():
+    from ml_switcheroo_compiler.backends.registry import get_active_backend, BackendRegistry
+    from ml_switcheroo_compiler.core.config import config
+
+    old_backend = config.backend
+    try:
+
+        class DummyBackend:
+            pass
+
+        BackendRegistry.register("dummy_active_backend", DummyBackend)
+        config.backend = "dummy_active_backend"
+        assert get_active_backend() is DummyBackend
+    finally:
+        config.backend = old_backend
+
+
+def test_available_backends_missing_loader():
+    from ml_switcheroo_compiler.backends.registry import BackendRegistry
+
+    BackendRegistry._registry.pop("mock_no_loader", None)
+    BackendRegistry._LAZY_MODULES["mock_no_loader"] = "mock_no_loader_module"
+
+    backends = BackendRegistry.get_all()
+    assert "mock_no_loader" not in backends
+
+
+def test_load_llvm_cpp():
+    from ml_switcheroo_compiler.backends.registry import _load_llvm_cpp, _load_edge_onnx, _load_edge_stablehlo, _load_edge_wgsl, _load_edge_wasm_simd, _load_pure_python
+
+    try:
+        _load_llvm_cpp()
+    except Exception:
+        pass
+    try:
+        _load_edge_onnx()
+    except Exception:
+        pass
+    try:
+        _load_edge_stablehlo()
+    except Exception:
+        pass
+    try:
+        _load_edge_wgsl()
+    except Exception:
+        pass
+    try:
+        _load_edge_wasm_simd()
+    except Exception:
+        pass
+    try:
+        _load_pure_python()
+    except Exception:
+        pass

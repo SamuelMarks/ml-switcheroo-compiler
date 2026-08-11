@@ -3,3 +3,20 @@ description: The RaggedStackDynamicPartitions operation.
 variants:
   numpy:
     generator: tf.ragged.stack_dynamic_partitions
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.raggedstackdynamicpartitions
+  keras:
+    eager: keras_ops.raggedstackdynamicpartitions
+  pytorch:
+    eager: torch.raggedstackdynamicpartitions
+  jax:
+    eager: jax.numpy.raggedstackdynamicpartitions
+  mlx:
+    eager: mlx.core.raggedstackdynamicpartitions
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

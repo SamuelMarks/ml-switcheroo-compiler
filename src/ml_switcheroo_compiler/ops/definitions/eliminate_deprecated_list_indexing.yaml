@@ -1,0 +1,4 @@
+operation: eliminate_deprecated_list_indexing
+description: Auto-generated mapping for eliminate_deprecated_list_indexing.
+std_args: []
+variants: {}

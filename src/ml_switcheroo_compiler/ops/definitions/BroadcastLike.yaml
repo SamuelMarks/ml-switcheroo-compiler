@@ -1,0 +1,8 @@
+operation: BroadcastLike
+description: Produce an object that mimics broadcasting.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: arrays
+  type: Any
+variants: {}

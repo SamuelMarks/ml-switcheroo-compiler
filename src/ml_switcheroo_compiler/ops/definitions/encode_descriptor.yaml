@@ -1,0 +1,11 @@
+operation: encode_descriptor
+description: The class representing a Python function.
+std_args:
+- ref_arg
+- leading_byte_offset
+- stride_byte_offset
+- swizzle
+- const_init
+- split_const
+type: function
+variants: {}

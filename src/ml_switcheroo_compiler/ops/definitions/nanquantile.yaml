@@ -1,0 +1,4 @@
+operation: nanquantile
+description: Auto-generated mapping for nanquantile.
+std_args: []
+variants: {}

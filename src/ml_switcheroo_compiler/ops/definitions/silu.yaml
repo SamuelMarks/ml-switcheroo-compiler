@@ -1,0 +1,5 @@
+operation: SiLU
+description: Auto-generated mapping for silu.
+std_args: []
+type: function
+variants: {}

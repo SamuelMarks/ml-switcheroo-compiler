@@ -1,5 +1,30 @@
 operation: AddN
 description: The AddN operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: inputs
+  type: List[Tensor]
 variants:
   tensorflow:
     eager: tf.add_n
+  numpy:
+    generator: sum
+  cupy:
+    generator: sum
+  dask:
+    generator: sum
+  keras:
+    eager: keras_ops.add
+  pytorch:
+    eager: torch.stack
+  jax:
+    eager: jax.tree_util.tree_reduce
+  mlx:
+    eager: mlx.core.add
+  edge_onnx:
+    generator: Sum
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

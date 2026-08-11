@@ -1,5 +1,18 @@
 operation: uint16
 description: The uint16 operation.
+std_args: []
 variants:
   edge_stablehlo:
     generator: ui16
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

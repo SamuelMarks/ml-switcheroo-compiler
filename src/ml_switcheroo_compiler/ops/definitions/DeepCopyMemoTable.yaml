@@ -1,0 +1,4 @@
+operation: DeepCopyMemoTable
+description: Internal helper for deepcopy operations in PyTorch.
+std_args: []
+variants: {}

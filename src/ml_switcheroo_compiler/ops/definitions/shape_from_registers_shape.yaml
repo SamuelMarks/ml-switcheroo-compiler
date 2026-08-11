@@ -1,0 +1,7 @@
+operation: shape_from_registers_shape
+description: The class representing a Python function.
+std_args:
+- self
+- shape
+type: function
+variants: {}

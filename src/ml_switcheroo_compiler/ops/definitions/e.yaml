@@ -1,0 +1,4 @@
+operation: e
+description: IEEE 754 floating-point representation of Euler's constant.
+std_args: []
+variants: {}

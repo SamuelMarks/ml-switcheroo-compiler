@@ -1,0 +1,23 @@
+operation: BaseActivation
+description: Base class for activation functions.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.baseactivation
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.baseactivation
+  keras:
+    eager: keras_ops.baseactivation
+  pytorch:
+    eager: torch.baseactivation
+  jax:
+    eager: jax.numpy.baseactivation
+  mlx:
+    eager: mlx.core.baseactivation
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

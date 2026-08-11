@@ -1,0 +1,23 @@
+operation: AutocastIncrementNesting
+description: Increment nesting count for autocast.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.autocastincrementnesting
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.autocastincrementnesting
+  keras:
+    eager: keras_ops.autocastincrementnesting
+  pytorch:
+    eager: torch.autocastincrementnesting
+  jax:
+    eager: jax.numpy.autocastincrementnesting
+  mlx:
+    eager: mlx.core.autocastincrementnesting
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

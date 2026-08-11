@@ -1,0 +1,6 @@
+operation: serialize_pytreedef
+description: The class representing a Python function.
+std_args:
+- node
+type: function
+variants: {}

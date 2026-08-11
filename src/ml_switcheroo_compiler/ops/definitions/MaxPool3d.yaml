@@ -1,0 +1,13 @@
+operation: MaxPool3D
+description: Applies a 3D max pooling over an input signal.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: kernel_size
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: stride
+  type: Any
+type: class
+variants: {}

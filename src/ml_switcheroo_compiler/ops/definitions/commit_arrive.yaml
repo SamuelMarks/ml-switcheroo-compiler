@@ -1,0 +1,8 @@
+operation: commit_arrive
+description: The class representing a Python function.
+std_args:
+- barrier
+- collective
+- ctx
+type: function
+variants: {}

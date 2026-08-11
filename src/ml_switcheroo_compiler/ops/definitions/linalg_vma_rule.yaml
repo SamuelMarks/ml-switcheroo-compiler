@@ -1,0 +1,4 @@
+operation: linalg_vma_rule
+description: Auto-generated mapping for linalg_vma_rule.
+std_args: []
+variants: {}

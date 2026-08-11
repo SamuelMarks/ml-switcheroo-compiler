@@ -1,0 +1,27 @@
+operation: BFloat16Tensor
+description: Constructs a Tensor with bfloat16 data type.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: data
+  type: Any
+variants:
+  numpy:
+    eager: numpy.bfloat16tensor
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.bfloat16tensor
+  keras:
+    eager: keras_ops.bfloat16tensor
+  pytorch:
+    eager: torch.bfloat16tensor
+  jax:
+    eager: jax.numpy.bfloat16tensor
+  mlx:
+    eager: mlx.core.bfloat16tensor
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

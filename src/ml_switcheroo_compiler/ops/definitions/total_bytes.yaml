@@ -1,0 +1,7 @@
+operation: total_bytes
+description: The class representing a Python function.
+std_args:
+- cls
+- avals
+type: function
+variants: {}

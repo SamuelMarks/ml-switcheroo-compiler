@@ -1,0 +1,7 @@
+operation: tile_offset
+description: Tiles the trailing offsets in `offsets` according to `tiling`.
+std_args:
+- offsets
+- tiling
+type: function
+variants: {}

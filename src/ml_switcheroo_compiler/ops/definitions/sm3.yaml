@@ -1,0 +1,7 @@
+operation: sm3
+description: Construct optimizer triple for SM3.
+std_args:
+- step_size
+- momentum
+type: function
+variants: {}

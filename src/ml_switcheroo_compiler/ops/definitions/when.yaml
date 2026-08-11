@@ -1,0 +1,6 @@
+operation: when
+description: The class representing a Python function.
+std_args:
+- cond
+type: function
+variants: {}

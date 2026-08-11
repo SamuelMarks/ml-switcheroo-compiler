@@ -1,5 +1,10 @@
-operation: Nonzero
+operation: nonzero
 description: The Nonzero operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.nonzero
@@ -7,3 +12,13 @@ variants:
     eager: da.nonzero
   keras:
     eager: keras_ops.nonzero
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

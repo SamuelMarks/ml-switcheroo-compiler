@@ -1,0 +1,27 @@
+operation: ArrayStr
+description: Return a string representation of the data in an array.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: a
+  type: Array
+variants:
+  numpy:
+    eager: numpy.arraystr
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.arraystr
+  keras:
+    eager: keras_ops.arraystr
+  pytorch:
+    eager: torch.arraystr
+  jax:
+    eager: jax.numpy.arraystr
+  mlx:
+    eager: mlx.core.arraystr
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

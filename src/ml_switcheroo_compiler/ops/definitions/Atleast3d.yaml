@@ -1,0 +1,27 @@
+operation: Atleast3d
+description: Returns a 3-dimensional view.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: tensors
+  type: Tensor
+variants:
+  numpy:
+    eager: numpy.atleast3d
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.atleast3d
+  keras:
+    eager: keras_ops.atleast3d
+  pytorch:
+    eager: torch.atleast3d
+  jax:
+    eager: jax.numpy.atleast3d
+  mlx:
+    eager: mlx.core.atleast3d
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

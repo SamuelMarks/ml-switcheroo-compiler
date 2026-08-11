@@ -1,0 +1,4 @@
+operation: StreamObjType
+description: Internal stream type.
+std_args: []
+variants: {}

@@ -1,0 +1,4 @@
+operation: BufferDict
+description: Dictionary of buffers.
+std_args: []
+variants: {}

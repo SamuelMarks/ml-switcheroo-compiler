@@ -1,0 +1,6 @@
+operation: has_any_layout_set
+description: The class representing a Python function.
+std_args:
+- op
+type: function
+variants: {}

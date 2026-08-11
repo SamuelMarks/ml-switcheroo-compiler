@@ -1,5 +1,14 @@
-operation: Less
+operation: less
 description: The Less operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     eager: cp.less
@@ -17,3 +26,12 @@ variants:
     generator: np.less
   tensorflow:
     eager: tf.less
+  pytorch:
+    eager: torch.less
+  jax:
+    eager: jax.numpy.less
+  mlx:
+    eager: mlx.core.less
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

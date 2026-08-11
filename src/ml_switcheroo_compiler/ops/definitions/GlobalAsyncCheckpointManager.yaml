@@ -1,0 +1,7 @@
+operation: GlobalAsyncCheckpointManager
+description: Responsible for serializing GDAs via TensorStore.
+std_args:
+- self
+- timeout_secs
+type: class
+variants: {}

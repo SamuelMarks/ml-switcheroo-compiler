@@ -1,0 +1,4 @@
+operation: NoopLogger
+description: Internal no-op logger.
+std_args: []
+variants: {}

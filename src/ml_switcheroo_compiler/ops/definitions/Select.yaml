@@ -1,5 +1,6 @@
-operation: Select
+operation: select
 description: The Select operation.
+std_args: []
 variants:
   cupy:
     eager: cp.select
@@ -7,3 +8,13 @@ variants:
     eager: da.select
   keras:
     eager: keras_ops.select
+  numpy: {}
+  tensorflow: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

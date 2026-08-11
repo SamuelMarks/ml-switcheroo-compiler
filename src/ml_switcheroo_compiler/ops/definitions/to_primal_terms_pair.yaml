@@ -1,0 +1,7 @@
+operation: to_primal_terms_pair
+description: The class representing a Python function.
+std_args:
+- self
+- val
+type: function
+variants: {}

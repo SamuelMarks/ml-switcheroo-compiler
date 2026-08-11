@@ -1,5 +1,10 @@
-operation: Sinh
+operation: sinh
 description: The Sinh operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.sinh
@@ -9,3 +14,12 @@ variants:
     eager: keras_ops.sinh
   tensorflow:
     eager: tf.sinh
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

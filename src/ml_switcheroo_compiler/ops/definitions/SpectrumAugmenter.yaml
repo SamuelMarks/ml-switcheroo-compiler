@@ -1,0 +1,4 @@
+operation: SpectrumAugmenter
+description: SpecAugment data augmentation.
+std_args: []
+variants: {}

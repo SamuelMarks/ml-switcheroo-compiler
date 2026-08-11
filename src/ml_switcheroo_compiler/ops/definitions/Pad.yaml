@@ -1,5 +1,7 @@
-operation: Pad
+operation: pad
 description: The Pad operation.
+std_args: []
+type: function
 variants:
   cupy:
     eager: cp.pad
@@ -13,3 +15,10 @@ variants:
     eager: keras_ops.pad
   tensorflow:
     eager: tf.pad
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

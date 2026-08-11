@@ -1,0 +1,8 @@
+operation: Standardize
+description: Standardizes input (centering and scaling).
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
+variants: {}

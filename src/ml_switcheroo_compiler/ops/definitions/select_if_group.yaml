@@ -1,0 +1,9 @@
+operation: select_if_group
+description: The class representing a Python function.
+std_args:
+- self
+- group_idx
+- old
+- new
+type: function
+variants: {}

@@ -1,5 +1,14 @@
-operation: Logaddexp
+operation: logaddexp
 description: The Logaddexp operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     eager: cp.logaddexp
@@ -7,3 +16,18 @@ variants:
     eager: da.logaddexp
   keras:
     eager: keras_ops.logaddexp
+  numpy:
+    eager: numpy.logaddexp
+  tensorflow:
+    eager: tf.logaddexp
+  pytorch:
+    eager: torch.logaddexp
+  jax:
+    eager: jax.numpy.logaddexp
+  mlx:
+    eager: mlx.core.logaddexp
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

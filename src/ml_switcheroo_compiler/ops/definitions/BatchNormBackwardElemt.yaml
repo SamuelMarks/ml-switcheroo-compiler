@@ -1,0 +1,51 @@
+operation: BatchNormBackwardElemt
+description: Internal operation for BatchNorm backward elementwise steps.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: grad_out
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: mean
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: invstd
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: weight
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: sum_dy
+  type: Any
+- is_variadic: false
+  kind: positional_or_keyword
+  name: sum_dy_x_mu
+  type: Any
+variants:
+  numpy:
+    eager: numpy.batchnormbackwardelemt
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.batchnormbackwardelemt
+  keras:
+    eager: keras_ops.batchnormbackwardelemt
+  pytorch:
+    eager: torch.batchnormbackwardelemt
+  jax:
+    eager: jax.numpy.batchnormbackwardelemt
+  mlx:
+    eager: mlx.core.batchnormbackwardelemt
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,4 @@
+operation: Object
+description: Base class for NNX objects that are not Pytrees.
+std_args: []
+variants: {}

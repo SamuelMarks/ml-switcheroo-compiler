@@ -1,0 +1,5 @@
+operation: max_unpool3d
+description: Auto-generated mapping for max_unpool3d.
+std_args: []
+type: function
+variants: {}

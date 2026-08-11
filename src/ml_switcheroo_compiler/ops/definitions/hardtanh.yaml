@@ -1,0 +1,5 @@
+operation: hardtanh
+description: Auto-generated mapping for hardtanh.
+std_args: []
+type: function
+variants: {}

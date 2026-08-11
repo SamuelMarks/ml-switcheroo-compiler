@@ -1,0 +1,4 @@
+operation: TYPE_CHECKING
+description: Boolean constant used for static analysis guards.
+std_args: []
+variants: {}

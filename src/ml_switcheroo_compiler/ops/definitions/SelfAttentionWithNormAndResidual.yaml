@@ -1,0 +1,4 @@
+operation: SelfAttentionWithNormAndResidual
+description: Self attention sub-layer.
+std_args: []
+variants: {}

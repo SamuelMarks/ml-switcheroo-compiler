@@ -1,0 +1,8 @@
+operation: PositionalEmbedding2D
+description: Generates 2-d position embedding for sequence of flattened patches.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: embedding_dims
+  type: int
+variants: {}

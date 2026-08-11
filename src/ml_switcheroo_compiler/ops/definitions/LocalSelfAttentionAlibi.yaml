@@ -1,0 +1,4 @@
+operation: LocalSelfAttentionAlibi
+description: Local version of non-trainable relative bias position encoding (ALiBi).
+std_args: []
+variants: {}

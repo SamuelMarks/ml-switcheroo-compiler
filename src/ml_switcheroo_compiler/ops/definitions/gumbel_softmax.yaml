@@ -1,0 +1,5 @@
+operation: gumbel_softmax
+description: Auto-generated mapping for gumbel_softmax.
+std_args: []
+type: function
+variants: {}

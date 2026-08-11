@@ -1,0 +1,23 @@
+operation: AutocastDecrementNesting
+description: Decrement nesting count for autocast.
+std_args: []
+variants:
+  numpy:
+    eager: numpy.autocastdecrementnesting
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.autocastdecrementnesting
+  keras:
+    eager: keras_ops.autocastdecrementnesting
+  pytorch:
+    eager: torch.autocastdecrementnesting
+  jax:
+    eager: jax.numpy.autocastdecrementnesting
+  mlx:
+    eager: mlx.core.autocastdecrementnesting
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

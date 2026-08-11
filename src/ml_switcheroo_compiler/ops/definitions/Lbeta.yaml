@@ -1,5 +1,27 @@
-operation: Lbeta
+operation: LBeta
 description: The Lbeta operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: Tensor
 variants:
   tensorflow:
     eager: tf.math.lbeta
+  numpy:
+    eager: numpy.lbeta
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.lbeta
+  pytorch:
+    eager: torch.lbeta
+  jax:
+    eager: jax.numpy.lbeta
+  mlx:
+    eager: mlx.core.lbeta
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

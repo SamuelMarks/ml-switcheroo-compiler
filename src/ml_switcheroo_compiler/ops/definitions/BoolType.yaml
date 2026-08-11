@@ -1,0 +1,4 @@
+operation: BoolType
+description: JIT Bool Type.
+std_args: []
+variants: {}

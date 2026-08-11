@@ -1,0 +1,17 @@
+operation: ALiBi
+description: Attention with Linear Biases (ALiBi) layer.
+std_args: []
+variants:
+  numpy: {}
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

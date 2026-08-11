@@ -1,0 +1,8 @@
+operation: complete_tx
+description: The class representing a Python function.
+std_args:
+- self
+- bytes
+- predicate
+type: function
+variants: {}

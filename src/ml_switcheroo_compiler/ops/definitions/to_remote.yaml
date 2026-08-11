@@ -1,0 +1,10 @@
+operation: to_remote
+description: The class representing a Python function.
+std_args:
+- self
+- ref
+- peer
+- _kernel_arg_idx
+- on_host
+type: function
+variants: {}

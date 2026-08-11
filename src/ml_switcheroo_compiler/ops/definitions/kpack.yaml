@@ -1,0 +1,5 @@
+operation: kpack
+description: ROCm-specific kernel packing parameter.
+std_args: []
+type: attribute
+variants: {}

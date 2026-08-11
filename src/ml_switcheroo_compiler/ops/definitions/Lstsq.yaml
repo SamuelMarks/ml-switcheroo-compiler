@@ -1,5 +1,7 @@
 operation: Lstsq
 description: The Lstsq operation.
+std_args: []
+type: attribute
 variants:
   cupy:
     eager: cp.linalg.lstsq

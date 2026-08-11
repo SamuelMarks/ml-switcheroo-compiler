@@ -1,0 +1,9 @@
+operation: zero_prop
+description: The class representing a Python function.
+std_args:
+- prim
+- primals_in
+- series_in
+- params
+type: function
+variants: {}

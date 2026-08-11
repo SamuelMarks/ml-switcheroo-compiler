@@ -1,0 +1,7 @@
+operation: bcoo_squeeze
+description: Sparse implementation of :func:`jax.lax.squeeze`.
+std_args:
+- arr
+- dimensions
+type: function
+variants: {}

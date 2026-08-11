@@ -1,7 +1,23 @@
 operation: Adjoint
 description: The Adjoint operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
 variants:
   numpy:
     generator: tf.linalg.adjoint
   tensorflow:
     eager: tf.linalg.adjoint
+  cupy: {}
+  dask: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

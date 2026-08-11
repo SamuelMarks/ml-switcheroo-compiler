@@ -1,0 +1,4 @@
+operation: SequenceModel
+description: Sequence Model base task.
+std_args: []
+variants: {}

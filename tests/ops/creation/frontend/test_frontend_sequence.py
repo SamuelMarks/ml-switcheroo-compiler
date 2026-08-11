@@ -17,6 +17,7 @@ def test_frontend_sequence():
 
     import ml_switcheroo_compiler.ops.creation.frontend_sequence
 
+    orig_backend = ml_switcheroo_compiler.ops.creation.frontend_sequence.get_active_backend
     ml_switcheroo_compiler.ops.creation.frontend_sequence.get_active_backend = lambda: DummyBackend()
 
     assert arange(10).shape == (10,)
@@ -31,3 +32,4 @@ def test_frontend_sequence():
         assert linspace(1, 10, 50) == "emitted"
 
     config.eager_mode = True
+    ml_switcheroo_compiler.ops.creation.frontend_sequence.get_active_backend = orig_backend

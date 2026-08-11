@@ -1,0 +1,6 @@
+operation: warpgroup_idx
+description: The class representing a Python function.
+std_args:
+- sync
+type: function
+variants: {}

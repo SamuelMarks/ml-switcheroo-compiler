@@ -1,0 +1,6 @@
+operation: derive_relayout_constraints
+description: Derives relayout constraints from the given variable mapping.
+std_args:
+- value_sites_for_variable
+type: function
+variants: {}

@@ -1,5 +1,11 @@
 operation: Slogdet
 description: The Slogdet operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+type: attribute
 variants:
   keras:
     eager: keras_ops.slogdet

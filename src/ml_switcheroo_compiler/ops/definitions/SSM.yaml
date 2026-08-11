@@ -1,0 +1,8 @@
+operation: SSM
+description: State Space Model layer.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: dim
+  type: int
+variants: {}

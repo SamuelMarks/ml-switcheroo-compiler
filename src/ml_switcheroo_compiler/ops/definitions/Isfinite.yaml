@@ -1,5 +1,10 @@
-operation: Isfinite
+operation: isfinite
 description: The Isfinite operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     eager: cp.isfinite
@@ -7,3 +12,18 @@ variants:
     eager: da.isfinite
   keras:
     eager: keras_ops.isfinite
+  numpy:
+    eager: numpy.isfinite
+  tensorflow:
+    eager: tf.isfinite
+  pytorch:
+    eager: torch.isfinite
+  jax:
+    eager: jax.numpy.isfinite
+  mlx:
+    eager: mlx.core.isfinite
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

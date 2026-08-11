@@ -1,0 +1,10 @@
+operation: TMEMRef
+description: The class representing a Python class.
+std_args:
+- self
+- address
+- shape
+- dtype
+- layout
+type: class
+variants: {}

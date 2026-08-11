@@ -1,0 +1,8 @@
+operation: get_weight
+description: ''
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: self
+  type: Any
+variants: {}

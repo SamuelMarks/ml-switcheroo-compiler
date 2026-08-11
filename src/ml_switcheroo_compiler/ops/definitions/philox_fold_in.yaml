@@ -1,0 +1,7 @@
+operation: philox_fold_in
+description: The class representing a Python function.
+std_args:
+- key
+- data
+type: function
+variants: {}

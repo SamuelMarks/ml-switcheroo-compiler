@@ -1,0 +1,5 @@
+operation: register_backward_hook
+description: Auto-generated from torch_v2.10.0_map.json
+std_args: []
+type: function
+variants: {}

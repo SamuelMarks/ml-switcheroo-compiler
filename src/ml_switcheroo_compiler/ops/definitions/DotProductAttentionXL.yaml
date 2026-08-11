@@ -1,0 +1,4 @@
+operation: DotProductAttentionXL
+description: Transformer-XL attention.
+std_args: []
+variants: {}

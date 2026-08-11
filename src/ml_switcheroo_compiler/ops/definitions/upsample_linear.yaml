@@ -1,0 +1,4 @@
+operation: upsample_linear
+description: Auto-generated mapping for upsample_linear.
+std_args: []
+variants: {}

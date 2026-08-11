@@ -1,0 +1,8 @@
+operation: Log10_
+description: Computes the base-10 logarithm element-wise in-place.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+variants: {}

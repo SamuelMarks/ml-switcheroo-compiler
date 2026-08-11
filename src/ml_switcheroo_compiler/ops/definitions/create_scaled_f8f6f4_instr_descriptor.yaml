@@ -1,0 +1,7 @@
+operation: create_scaled_f8f6f4_instr_descriptor
+description: The class representing a Python function.
+std_args:
+- args
+- kwargs
+type: function
+variants: {}

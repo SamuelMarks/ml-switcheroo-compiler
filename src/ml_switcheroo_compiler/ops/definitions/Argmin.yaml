@@ -1,5 +1,18 @@
-operation: Argmin
+operation: argmin
 description: The Argmin operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: Optional[int]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   cupy:
     eager: cp.argmin
@@ -11,3 +24,11 @@ variants:
     generator: torch.argmin({0}, dim={axis}, keepdim={keepdims})
   tensorflow:
     eager: tf.argmin
+  numpy: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

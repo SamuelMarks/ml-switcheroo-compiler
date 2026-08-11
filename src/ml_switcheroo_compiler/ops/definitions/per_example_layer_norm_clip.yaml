@@ -1,0 +1,5 @@
+operation: per_example_layer_norm_clip
+description: Auto-generated from jax_code_defs
+std_args: []
+type: attribute
+variants: {}

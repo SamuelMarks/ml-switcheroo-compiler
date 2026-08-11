@@ -1,0 +1,4 @@
+operation: TracingState
+description: Internal JIT tracing state container.
+std_args: []
+variants: {}

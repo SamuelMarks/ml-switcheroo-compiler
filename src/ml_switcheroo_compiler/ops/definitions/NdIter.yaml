@@ -1,0 +1,8 @@
+operation: NdIter
+description: Efficient multi-dimensional iterator object.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: op
+  type: Array
+variants: {}

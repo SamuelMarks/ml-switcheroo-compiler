@@ -1,5 +1,10 @@
-operation: Acos
+operation: acos
 description: The Acos operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
 variants:
   cupy:
     generator: cp.arccos
@@ -9,3 +14,17 @@ variants:
     generator: np.arccos
   tensorflow:
     eager: tf.acos
+  keras:
+    eager: keras_ops.acos
+  pytorch:
+    eager: torch.acos
+  jax:
+    eager: jax.numpy.arccos
+  mlx:
+    eager: mlx.core.acos
+  edge_onnx:
+    generator: Acos
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,0 +1,7 @@
+operation: supported_tmem_transfers
+description: Returns the list of supported TMEM <-> Register transfers.
+std_args:
+- self
+- packing
+type: function
+variants: {}

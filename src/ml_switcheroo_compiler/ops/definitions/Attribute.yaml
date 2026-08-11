@@ -1,0 +1,26 @@
+operation: Attribute
+description: Auto-generated mapping for Attribute.
+std_args: []
+variants:
+  latex_dsl:
+    eager: midl.Attribute
+    required_imports: []
+  numpy:
+    eager: numpy.attribute
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.attribute
+  keras:
+    eager: keras_ops.attribute
+  pytorch:
+    eager: torch.attribute
+  jax:
+    eager: jax.numpy.attribute
+  mlx:
+    eager: mlx.core.attribute
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

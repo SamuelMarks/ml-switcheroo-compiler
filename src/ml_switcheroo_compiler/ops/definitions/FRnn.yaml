@@ -1,0 +1,8 @@
+operation: FRnn
+description: Generic RNN layer wrapper.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: cell
+  type: Any
+variants: {}

@@ -1,0 +1,8 @@
+operation: combine_kvstores
+description: Merge a list of kvstores into a single kvstore. NOT multi-process safe.
+std_args:
+- combined_kvstore
+- kvstores
+- context
+type: function
+variants: {}

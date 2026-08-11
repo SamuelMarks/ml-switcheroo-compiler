@@ -1,0 +1,5 @@
+operation: LazyConv1d
+description: Auto-generated mapping for LazyConv1d.
+std_args: []
+type: class
+variants: {}

@@ -1,5 +1,14 @@
 operation: LeftShift
 description: The LeftShift operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Tensor
 variants:
   cupy:
     eager: cp.left_shift
@@ -7,3 +16,18 @@ variants:
     eager: da.left_shift
   keras:
     eager: keras_ops.left_shift
+  numpy:
+    eager: numpy.leftshift
+  tensorflow:
+    eager: tf.leftshift
+  pytorch:
+    eager: torch.leftshift
+  jax:
+    eager: jax.numpy.leftshift
+  mlx:
+    eager: mlx.core.leftshift
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

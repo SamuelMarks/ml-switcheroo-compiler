@@ -1,0 +1,4 @@
+operation: QPerChannelZeroPoints
+description: Quantization utility for accessing per-channel zero points.
+std_args: []
+variants: {}

@@ -1,0 +1,6 @@
+operation: get_dtype_packing
+description: The class representing a Python function.
+std_args:
+- dtype
+type: function
+variants: {}

@@ -1,0 +1,5 @@
+operation: register_buffer
+description: Auto-generated from flax_nnx_code_defs
+std_args: []
+type: function
+variants: {}

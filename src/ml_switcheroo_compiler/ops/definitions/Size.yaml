@@ -1,5 +1,7 @@
-operation: Size
+operation: size
 description: The Size operation.
+std_args: []
+type: attribute
 variants:
   keras:
     eager: keras_ops.size

@@ -3,3 +3,20 @@ description: The RNNCellDropoutWrapper operation.
 variants:
   numpy:
     generator: tf.nn.rnn_cell.DropoutWrapper
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.rnncelldropoutwrapper
+  keras:
+    eager: keras_ops.rnncelldropoutwrapper
+  pytorch:
+    eager: torch.rnncelldropoutwrapper
+  jax:
+    eager: jax.numpy.rnncelldropoutwrapper
+  mlx:
+    eager: mlx.core.rnncelldropoutwrapper
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

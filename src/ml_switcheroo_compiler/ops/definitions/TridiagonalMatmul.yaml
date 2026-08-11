@@ -3,3 +3,20 @@ description: The TridiagonalMatmul operation.
 variants:
   tensorflow:
     eager: tf.linalg.tridiagonal_matmul
+  numpy:
+    eager: numpy.tridiagonalmatmul
+  cupy: {}
+  dask: {}
+  keras:
+    eager: keras_ops.tridiagonalmatmul
+  pytorch:
+    eager: torch.tridiagonalmatmul
+  jax:
+    eager: jax.numpy.tridiagonalmatmul
+  mlx:
+    eager: mlx.core.tridiagonalmatmul
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

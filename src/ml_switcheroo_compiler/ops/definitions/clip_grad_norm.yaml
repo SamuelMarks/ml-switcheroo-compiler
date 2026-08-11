@@ -1,0 +1,5 @@
+operation: clip_grad_norm
+description: Auto-generated from mlx_code_defs
+std_args: []
+type: function
+variants: {}

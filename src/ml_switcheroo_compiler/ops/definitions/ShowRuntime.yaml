@@ -1,0 +1,4 @@
+operation: ShowRuntime
+description: Print information about various resources in the system.
+std_args: []
+variants: {}

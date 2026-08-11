@@ -1,0 +1,8 @@
+operation: xavier_normal_
+description: Fill the input `Tensor` with values using a Xavier normal distribution.
+std_args:
+- tensor
+- gain
+- generator
+type: function
+variants: {}

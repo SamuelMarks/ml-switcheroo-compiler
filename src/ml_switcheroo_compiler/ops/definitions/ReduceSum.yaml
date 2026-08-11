@@ -1,7 +1,38 @@
 operation: ReduceSum
 description: The ReduceSum operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: input
+  type: Tensor
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axis
+  type: int | List[int]
+- default: false
+  is_variadic: false
+  kind: positional_or_keyword
+  name: keepdims
+  type: bool
 variants:
   edge_onnx:
     generator: ReduceSum
   edge_stablehlo:
     generator: stablehlo.reduce
+  numpy:
+    eager: numpy.reducesum
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.reducesum
+  keras:
+    eager: keras_ops.reducesum
+  pytorch:
+    eager: torch.reducesum
+  jax:
+    eager: jax.numpy.reducesum
+  mlx:
+    eager: mlx.core.reducesum
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

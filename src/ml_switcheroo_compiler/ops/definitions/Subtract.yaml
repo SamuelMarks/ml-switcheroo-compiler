@@ -1,5 +1,14 @@
-operation: Subtract
+operation: subtract
 description: The Subtract operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float, complex]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float, complex]
 variants:
   cupy:
     eager: cp.subtract
@@ -17,3 +26,12 @@ variants:
     generator: np.subtract
   tensorflow:
     eager: tf.subtract
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}
+  pytorch:
+    eager: torch.subtract
+  jax:
+    eager: jax.numpy.subtract
+  mlx:
+    eager: mlx.core.subtract

@@ -1,5 +1,14 @@
-operation: Minimum
+operation: minimum
 description: The Minimum operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: Union[array, int, float]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: Union[array, int, float]
 variants:
   cupy:
     eager: cp.minimum
@@ -9,3 +18,12 @@ variants:
     eager: keras_ops.minimum
   tensorflow:
     eager: tf.minimum
+  numpy: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

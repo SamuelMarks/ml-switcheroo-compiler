@@ -1,5 +1,23 @@
-operation: Ifftn
+operation: ifftn
 description: The Ifftn operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: s
+  type: Optional[Sequence[int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axes
+  type: Optional[Sequence[int]]
+- is_variadic: false
+  kind: positional_or_keyword
+  name: norm
+  type: Literal[backward, ortho, forward]
+type: function
 variants:
   cupy:
     eager: cp.fft.ifftn
@@ -7,3 +25,18 @@ variants:
     eager: da.fft.ifftn
   numpy:
     generator: np.fft.ifftn
+  tensorflow:
+    eager: tf.ifftn
+  keras:
+    eager: keras_ops.ifftn
+  pytorch:
+    eager: torch.ifftn
+  jax:
+    eager: jax.numpy.ifftn
+  mlx:
+    eager: mlx.core.ifftn
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

@@ -1,5 +1,18 @@
-operation: Ogrid
+operation: OGrid
 description: The Ogrid operation.
+std_args: []
 variants:
   numpy:
     generator: np.ogrid
+  cupy: {}
+  dask: {}
+  tensorflow: {}
+  keras: {}
+  pytorch: {}
+  jax: {}
+  mlx: {}
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

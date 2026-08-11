@@ -1,0 +1,6 @@
+operation: assert_is_supported_dtype
+description: The class representing a Python function.
+std_args:
+- dtype
+type: function
+variants: {}

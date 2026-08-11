@@ -1,0 +1,6 @@
+operation: create_mlir_sourcemap
+description: The class representing a Python function.
+std_args:
+- mlir_dump
+type: function
+variants: {}

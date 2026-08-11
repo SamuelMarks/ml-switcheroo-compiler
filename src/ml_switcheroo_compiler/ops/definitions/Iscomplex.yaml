@@ -1,7 +1,25 @@
-operation: Iscomplex
+operation: iscomplex
 description: The Iscomplex operation.
+std_args: []
 variants:
   cupy:
     eager: cp.iscomplex
   dask:
     eager: da.iscomplex
+  numpy:
+    eager: numpy.iscomplex
+  tensorflow:
+    eager: tf.iscomplex
+  keras:
+    eager: keras_ops.iscomplex
+  pytorch:
+    eager: torch.iscomplex
+  jax:
+    eager: jax.numpy.iscomplex
+  mlx:
+    eager: mlx.core.iscomplex
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

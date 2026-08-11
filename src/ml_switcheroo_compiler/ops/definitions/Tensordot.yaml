@@ -1,5 +1,18 @@
 operation: Tensordot
 description: The Tensordot operation.
+std_args:
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x1
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: x2
+  type: array
+- is_variadic: false
+  kind: positional_or_keyword
+  name: axes
+  type: Union[int, Tuple[Sequence[int], Sequence[int]]]
 variants:
   cupy:
     eager: cp.tensordot
@@ -11,3 +24,14 @@ variants:
     generator: np.tensordot({0}, {1}, axes={axes})
   tensorflow:
     eager: tf.tensordot
+  pytorch:
+    eager: torch.tensordot
+  jax:
+    eager: jax.numpy.tensordot
+  mlx:
+    eager: mlx.core.tensordot
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}

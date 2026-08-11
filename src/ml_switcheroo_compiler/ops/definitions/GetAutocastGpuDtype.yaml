@@ -1,0 +1,4 @@
+operation: GetAutocastGpuDtype
+description: Get autocast GPU dtype.
+std_args: []
+variants: {}

@@ -1,5 +1,23 @@
-operation: Pswapaxes
+operation: pswapaxes
 description: The Pswapaxes operation.
+std_args: []
 variants:
   numpy:
     generator: '{0}'
+  cupy: {}
+  dask: {}
+  tensorflow:
+    eager: tf.pswapaxes
+  keras:
+    eager: keras_ops.pswapaxes
+  pytorch:
+    eager: torch.pswapaxes
+  jax:
+    eager: jax.numpy.pswapaxes
+  mlx:
+    eager: mlx.core.pswapaxes
+  edge_onnx: {}
+  edge_stablehlo: {}
+  edge_wgsl: {}
+  edge_wasm_simd: {}
+  llvm_cpp: {}
