@@ -1,4 +1,4 @@
-operation: minimum
+operation: Minimum
 description: The Minimum operation.
 std_args:
 - is_variadic: false
@@ -24,6 +24,19 @@ variants:
   mlx: {}
   edge_onnx: {}
   edge_stablehlo: {}
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: binary
+    expr: min(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])
+  edge_wasm_simd:
+    template: binary
+    simd_expr: wasm_f32x4_min(in0_val, in1_val)
+    scalar_expr: std::min(in0_val, in1_val)
+  llvm_cpp:
+    template: binary
+    scalar_expr: std::min(in0_val, in1_val)
+autodiff:
+  vjp:
+  - Multiply($cotangent, Less($input[0], $input[1]))
+  - Multiply($cotangent, GreaterEqual($input[0], $input[1]))
+  jvp: Add(Multiply($tangent[0], Less($input[0], $input[1])), Multiply($tangent[1],
+    GreaterEqual($input[0], $input[1])))

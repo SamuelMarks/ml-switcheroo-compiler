@@ -20,6 +20,13 @@ variants:
     eager: mlx.core.isin
   edge_onnx: {}
   edge_stablehlo: {}
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: binary
+    expr: f32(buf_in0_f32[in0_offset] != 0.0 && buf_in1_f32[in1_offset] != 0.0)
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

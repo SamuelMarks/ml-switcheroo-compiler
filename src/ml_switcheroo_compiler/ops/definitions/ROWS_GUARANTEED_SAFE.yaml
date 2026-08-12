@@ -3,4 +3,11 @@ description: If True, guarantees that at least one value in each row is not mask
   out.
 std_args: []
 type: attribute
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

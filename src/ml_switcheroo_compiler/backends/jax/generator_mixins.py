@@ -53,7 +53,7 @@ class JaxDistributedVisitor:
 
     """Provide mixin for JAX distributed node visitors."""
 
-    def visit_all_gather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AllGather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate JAX code for the all_gather operation.
 
         Args:
@@ -68,7 +68,7 @@ class JaxDistributedVisitor:
         axis_name = getattr(node, "attributes", {}).get("axis_name", "'x'")
         return f"jax.lax.all_gather({tensor}, axis_name={axis_name})"
 
-    def visit_reduce_scatter(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ReduceScatter(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate JAX code for the reduce_scatter operation.
 
         Args:
@@ -85,7 +85,7 @@ class JaxDistributedVisitor:
         op = getattr(node, "attributes", {}).get("op", "jax.lax.psum")
         return f"jax.lax.reduce_scatter({tensor}, {op}, scatter_dimension={axis}, axis_name={axis_name})"
 
-    def visit_all_reduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AllReduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate JAX code for the all_reduce operation.
 
         Args:

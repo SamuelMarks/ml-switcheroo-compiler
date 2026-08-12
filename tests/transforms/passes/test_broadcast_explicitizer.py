@@ -29,7 +29,10 @@ def test_process_broadcast_node() -> None:
     # Op doesn't exist
     node1 = IRNode(id="node1", op_type="UnknownOp", inputs=[])
     graph = IRGraph(name="test", nodes={"node1": node1}, outputs=[])
-    assert _process_broadcast_node(graph, node1) is False
+    import pytest
+
+    with pytest.raises(ValueError):
+        _process_broadcast_node(graph, node1)
 
     # Not 2 inputs
     node2 = IRNode(id="node2", op_type="Add", inputs=["in1"])

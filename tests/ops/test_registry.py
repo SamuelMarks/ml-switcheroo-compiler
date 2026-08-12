@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as regi
 def test_registry_get_op():
     """Test getting an operation."""
     # Transpose should definitely exist.
-    op = registry.get_op("transpose")
+    op = registry.get_op("Transpose")
     assert op is not None
     assert op["description"] == "The Transpose operation."
 
@@ -17,7 +17,7 @@ def test_registry_get_op():
 def test_registry_get_eager_mapping():
     """Test getting eager mapping."""
     # Cupy has eager for Transpose
-    mapping = registry.get_eager_mapping("cupy", "transpose")
+    mapping = registry.get_eager_mapping("cupy", "Transpose")
     assert mapping == "cp.transpose"
 
     # Missing backend
@@ -29,7 +29,7 @@ def test_registry_get_eager_mapping():
 
 def test_registry_get_generator_mapping():
     """Test getting generator mapping."""
-    mapping = registry.get_generator_mapping("numpy", "transpose")
+    mapping = registry.get_generator_mapping("numpy", "Transpose")
     assert mapping == "np.transpose"
 
     # Missing backend

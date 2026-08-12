@@ -4,4 +4,11 @@ description: 'Constructs a WGStridedFragLayout from a #mosaic_gpu.WGStridedFragL
 std_args:
 - attr
 type: function
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

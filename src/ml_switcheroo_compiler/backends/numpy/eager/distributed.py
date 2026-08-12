@@ -95,7 +95,7 @@ class TCPDistributedContext:
 _tcp_dist_ctx = TCPDistributedContext()
 
 
-def set_mock_distributed_context(world_size: int, rank: int, addr: str = "localhost", port: int = 29500) -> None:
+def set_np_distributed_context(world_size: int, rank: int, addr: str = "localhost", port: int = 29500) -> None:
     """Set mock distributed context.
 
     Args:

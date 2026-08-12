@@ -1,4 +1,11 @@
 operation: PyObjectType
 description: JIT type representing generic Python object.
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

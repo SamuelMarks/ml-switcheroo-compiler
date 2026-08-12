@@ -1,4 +1,11 @@
 operation: f
 description: Auto-generated from flax_nnx_code_defs
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

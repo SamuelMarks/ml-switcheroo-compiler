@@ -1,0 +1,19 @@
+operation: AllGather
+description: The AllGather collective operation.
+std_args:
+- name: input
+  type: Tensor
+variants:
+  pytorch:
+    eager: torch.distributed.all_gather
+    generator: torch.distributed.all_gather_into_tensor
+    macro_template: torch.distributed.all_gather_into_tensor(torch.empty_like({input}),
+      {input})
+  jax:
+    eager: jax.lax.all_gather
+    generator: jax.lax.all_gather
+    macro_template: jax.lax.all_gather({input}, axis={axis})
+  mlx: {}
+  llvm_cpp: {}
+  edge_wasm_simd: {}
+  edge_wgsl: {}

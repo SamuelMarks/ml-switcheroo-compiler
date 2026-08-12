@@ -15,7 +15,7 @@ def test_webgpu_generator_matmul_dynamic_dispatch():
     gen = WebGPUCodeGenerator(graph)
     code = gen.generate()
 
-    assert "@workgroup_size(16, 16)" in code
+    assert "@workgroup_size(16, 16, 1)" in code
     assert "Math.ceil(128 / 16)" in code
     assert "Math.ceil(32 / 16)" in code
 
@@ -49,7 +49,7 @@ def test_webgpu_generator_elementwise_dynamic_dispatch():
     gen = WebGPUCodeGenerator(graph)
     code = gen.generate()
 
-    assert "@workgroup_size(64)" in code
+    assert "@workgroup_size(64, 1, 1)" in code
     assert "Math.ceil(1000 / 64)" in code
     assert "-buf_in0_f32[in0_offset]" in code
     assert "max(res, buf_in0_f32[i])" in code

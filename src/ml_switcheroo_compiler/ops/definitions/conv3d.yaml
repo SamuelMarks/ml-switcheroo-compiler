@@ -2,4 +2,13 @@ operation: Conv3D
 description: Auto-generated from keras_code_defs
 std_args: []
 type: attribute
-variants: {}
+variants:
+  edge_wgsl:
+    template: conv_pool_1d_flat
+    expr: buf_in0_f32[0] * buf_in1_f32[0]
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

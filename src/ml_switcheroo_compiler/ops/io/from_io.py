@@ -1,0 +1,195 @@
+# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""I/O and memory operations."""
+
+from __future__ import annotations
+
+import glob
+import os
+import shutil
+from typing import Any
+
+from ml_switcheroo_compiler.core.config import config as core_config
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
+from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
+from ml_switcheroo_compiler.serialization.utils import load_npz
+
+
+@register_op("Fromfile")
+class Fromfile(OpDef):
+    """Construct an array from data in a text or binary file.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+    """
+
+    op_name = "Fromfile"
+
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns: Any: Result.
+        """
+        count = kwargs.get("count", -1)
+        return (count if count != -1 else None,)
+
+
+@register_op("Fromstring")
+class Fromstring(OpDef):
+    """Provide a new 1-D array initialized from text data in a string.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+    """
+
+    op_name = "Fromstring"
+
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns: Any: Result.
+        """
+        count = kwargs.get("count", -1)
+        return (count if count != -1 else None,)
+
+
+@register_op("Fromiter")
+class Fromiter(OpDef):
+    """Create a new 1-dimensional array from an iterable object.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+    """
+
+    op_name = "Fromiter"
+
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns: Any: Result.
+        """
+        count = kwargs.get("count", -1)
+        return (count if count != -1 else None,)
+
+
+@register_op("Fromfunction")
+class Fromfunction(OpDef):
+    """Construct an array by executing a function over each coordinate.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+    """
+
+    op_name = "Fromfunction"
+
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """Infer shape.
+
+        Args:
+            *args (object): Positional args.
+            **kwargs (object): Keyword args.
+
+        Returns: Any: Result.
+        """
+        shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
+        return tuple(shape) if isinstance(shape, (list, tuple)) else (shape,)
+
+
+def fromfile(file: Any, dtype: Any = float, count: int = -1, sep: str = "", offset: int = 0, *, like: Any = None) -> Any:
+    """Construct an array from data in a text or binary file.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+
+    Args:
+        file (object): The file parameter.
+        like (object): The like parameter.
+    dtype (object): The dtype parameter.
+        count (int): The count parameter.
+        sep (str): The sep parameter.
+        offset (int): The offset parameter.
+
+    Returns: Any: Result.
+    """
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromfile", file, dtype=dtype, count=count, sep=sep, offset=offset, like=like)
+
+
+def fromstring(string: str, dtype: Any = float, count: int = -1, sep: str = "", *, like: Any = None) -> Any:
+    """Provide a new 1-D array initialized from text data in a string.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+
+    Args:
+        string (str): The string parameter.
+        like (object): The like parameter.
+    dtype (object): The dtype parameter.
+        count (int): The count parameter.
+        sep (str): The sep parameter.
+
+    Returns: Any: Result.
+    """
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromstring", string, dtype=dtype, count=count, sep=sep, like=like)
+
+
+def fromiter(iterable: Any, dtype: Any, count: int = -1, *, like: Any = None) -> Any:
+    """Create a new 1-dimensional array from an iterable object.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+
+    Args:
+        iterable (object): The iterable parameter.
+        like (object): The like parameter.
+    dtype (object): The dtype parameter.
+        count (int): The count parameter.
+
+    Returns: Any: Result.
+    """
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromiter", iterable, dtype, count=count, like=like)
+
+
+def fromfunction(function: Any, shape: Any, *, dtype: Any = float, like: Any = None, **kwargs: Any) -> Any:
+    """Construct an array by executing a function over each coordinate.
+
+    Args:
+        dtype (object): Dtype.
+        like (object): Like.
+
+    Args:
+        function (object): The function parameter.
+        shape (object): The shape parameter.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: Result.
+    """
+    from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+
+    return dispatch_op("Fromfunction", function, shape, dtype=dtype, like=like, **kwargs)

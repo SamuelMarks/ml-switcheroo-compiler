@@ -1,4 +1,4 @@
-operation: subtract
+operation: Subtract
 description: The Subtract operation.
 std_args:
 - is_variadic: false
@@ -26,12 +26,24 @@ variants:
     generator: np.subtract
   tensorflow:
     eager: tf.subtract
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: binary
+    expr: buf_in0_f32[in0_offset] - buf_in1_f32[in1_offset]
+  edge_wasm_simd:
+    template: binary
+    simd_expr: wasm_f32x4_sub(in0_val, in1_val)
+    scalar_expr: in0_val - in1_val
+  llvm_cpp:
+    template: binary
+    scalar_expr: in0_val - in1_val
   pytorch:
     eager: torch.subtract
   jax:
     eager: jax.numpy.subtract
   mlx:
     eager: mlx.core.subtract
+autodiff:
+  vjp:
+  - $cotangent
+  - Negative($cotangent)
+  jvp: Subtract($tangent[0], $tangent[1])

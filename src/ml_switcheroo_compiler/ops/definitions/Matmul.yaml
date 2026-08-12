@@ -15,3 +15,14 @@ variants:
     generator: MatMul
   edge_stablehlo:
     generator: stablehlo.dot_general
+  edge_wgsl:
+    template: matmul
+  edge_wasm_simd:
+    template: matmul
+  llvm_cpp:
+    template: matmul
+autodiff:
+  vjp:
+  - MatMul($cotangent, Transpose($input[1]))
+  - MatMul(Transpose($input[0]), $cotangent)
+  jvp: Add(MatMul($tangent[0], $input[1]), MatMul($input[0], $tangent[1]))

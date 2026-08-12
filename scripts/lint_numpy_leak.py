@@ -12,7 +12,7 @@ def check_for_numpy_leaks(directory: str) -> list:
     files_to_check = glob.glob(directory + "/backends/**/*.py", recursive=True)
 
     # Explicitly check root level core tracing files
-    files_to_check.append(f"{directory}/grad.py")
+    files_to_check.extend(glob.glob(f"{directory}/grad/**/*.py", recursive=True))
 
     for filepath in set(files_to_check):
         # Whitelisted directories/files

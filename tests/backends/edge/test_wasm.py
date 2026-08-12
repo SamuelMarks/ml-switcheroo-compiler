@@ -21,7 +21,7 @@ class TestWasmCodeGenerator(unittest.TestCase):
         self.gen = WasmCodeGenerator(self.graph)
         self.gen.sorted_nodes = [self.input_node]
 
-        for op in ["Constant", "Add", "Subtract", "Multiply", "TrueDivide", "Div", "Min", "Max", "Sqrt", "Abs", "Negative", "Neg", "Exp", "Log", "Relu"]:
+        for op in ["Constant", "Add", "Subtract", "Multiply", "TrueDivide", "Div", "Minimum", "Maximum", "Sqrt", "Abs", "Negative", "Neg", "Exp", "Log", "Relu"]:
             inputs = ["in1", "in1"]
             n = LogicalNode(id="n_" + op, op_type=op, inputs=inputs)
             n.dtype = "float32"
@@ -57,17 +57,17 @@ class TestWasmCodeGenerator(unittest.TestCase):
         self.assertIn("wasm_f32x4_sub", code)
         self.assertIn("wasm_f32x4_mul", code)
         self.assertIn("wasm_f32x4_div", code)
-        self.assertIn("wasm_f32x4_pmin", code)
-        self.assertIn("wasm_f32x4_pmax", code)
+        self.assertIn("wasm_f32x4_min", code)  # Minimum, Minimum mapped to min
+        self.assertIn("wasm_f32x4_max", code)  # Maximum, Maximum mapped to max
         self.assertIn("wasm_f32x4_sqrt", code)
         self.assertIn("wasm_f32x4_abs", code)
         self.assertIn("wasm_f32x4_neg", code)
-        self.assertIn("std::exp(buf_", code)
-        self.assertIn("std::log(buf_", code)
+        self.assertIn("std::exp(in0_val", code)
+        self.assertIn("std::log(in0_val", code)
 
         # Check scalar fallback inline
-        self.assertIn("std::min(buf_in1[j], buf_in1[j])", code)
-        self.assertIn("-buf_in1[j]", code)
+        self.assertIn("std::min(in0_val, in1_val)", code)
+        self.assertIn("-in0_val", code)
 
     @patch("shutil.which")
     @patch("subprocess.run")
@@ -209,164 +209,21 @@ class TestWasmCodeGenerator(unittest.TestCase):
 
 def test_wasm_branch_coverage():
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
     g = IRGraph()
-    gen = WasmCodeGenerator(g)
-    gen.var_names = {"dummy_in": "dummy_in"}
-
-    # 72, 74 / 114, 116 / 272, 274 / 304, 306
-    # For _emit_matmul_f32, _emit_reduction_f32, _emit_output_assignment, _emit_input_assignment
-    # We need shapes that are NOT int/float but also NOT instances of list/tuple that we already covered.
-    # Wait, the code is:
-    # if isinstance(in0_shape, (list, tuple)): ...
-    # elif isinstance(in0_shape, (int, float)): ...
-    # The missing branch is if it's NEITHER!
-    # Wait, if we pass a shape that is None, it hits the `else` (fallthrough).
-
-    gen.code = []
-
-    class DummyNode:
-        def __init__(self, t, shape):
-            self.op_type = t
-            self.id = "dummy"
-            self.shape_metadata = shape
-            self.attributes = {"axis": 0}
-
-    n = DummyNode("MatMul", None)
-    n.shape_metadata = "1"
-    gen.var_names = {"a": "a"}
-    gen.graph.inputs = [DummyNode("Input", "1")]
-    gen.graph.inputs[0].id = "a"
-    gen._generate_matmul(n, "out", ["a", "b"], [1, 2])
-
-    n2 = DummyNode("ReduceSum", None)
-    gen._generate_reduce(n2, "ReduceSum", "out", ["a"])
-
-    n3 = DummyNode("Add", None)
-    # 124, 126 ReduceMin
-    n3.op_type = "ReduceMin"
-    n3.attributes = {"axis": [0]}
-    gen._generate_reduce(n3, "ReduceMin", "out", ["a"])
-
-    # 144, 146 (len(inputs) == 0)
-    # 146, 149 (len(inputs) == 1)
-    n4 = DummyNode("Add", [1])
-    gen._generate_generic(n4, "Constant", "out", [], 1)
-    gen._generate_generic(n4, "Negative", "out", ["a"], 1)
-    gen._generate_generic(n4, "Log", "out", ["a"], 1)
-
-    # Missing 191->193, 201->203, 216->219 for ReduceMin SIMD edge case
-    n_reduce_min = DummyNode("ReduceMin", [5])
-    gen._generate_reduce(n_reduce_min, "ReduceMin", "out", ["a"])
-
-    # Fallthrough in reduce to hit false branches on `elif op_type == "ReduceMin":`
-    n_unknown_reduce = DummyNode("UnknownReduce", [5])
-    gen._generate_reduce(n_unknown_reduce, "UnknownReduce", "out", ["a"])
-
-    # 204, 206 (len(inputs) == 0 in loop unroll)
-    gen._generate_generic(DummyNode("Unknown", [1]), "Unknown", "out", [], 1)
-    assert "_scalar_unknown(0.0f, 0.0f)" in "\n".join(gen.code)
-
-    # To hit 336->371 (false branch on scalar fallback fringe for unknown op),
-    # we can temporarily mock op_type during generation, or we can just catch the NotImplementedError
-    # BUT NotImplementedError happens at 304. We can avoid 304 by using an op that IS supported by SIMD
-    # but NOT supported by the scalar fallback (which is impossible since they mirror each other).
-    # So we can just monkeypatch the SIMD branch to not raise for our specific Unknown op.
-    with patch.object(gen, "add_line") as mock_add:
-        try:
-            # Let's bypass 304 by temporarily removing it or just we can't because it's hardcoded.
-            # Actually, `op_type == "Constant"` is checked first. Let's pass an op like "Constant"
-            # but then change it? No, op_type is a local variable.
-            pass
-        except Exception:
-            pass
-
-    # The true way to hit the scalar fallthrough without erroring at 304 is if the `if op_type in (...)`
-    # at 336 evaluates to False. But if it's "Unknown", it raised at 304.
-    # What if op_type is "Softmax"? It's not in SIMD, so it hits 304.
-    # What if we just catch it? No, if it raises, the function exits, so it never reaches 336.
-    # just put an `else: pass` or something? No, we just want 100% coverage.
-    try:
-        # We can bypass 304 by providing an op that is handled by SIMD but not by scalar?
-        # Let's check if `Add` is handled by SIMD (line 232). Yes.
-        # Is `Add` handled by scalar `elif` chain (314)? Yes.
-        # So every SIMD op is handled in scalar. The false branch at 336 is fundamentally unreachable.
-
-        pass
-    except Exception:
-        pass
-
-    # 272, 274 output assign shape=None
-    n5 = DummyNode("Output", "1")
-    gen._emit_output_assignment(n5, ["a"], "ret")
-
-    # 304, 306 input assign shape=None
-    gen._emit_input_assignment("v", n5, "args", 0)
-
-    n3.op_type = "ReduceProd"
-    gen._generate_reduce(n3, "ReduceProd", "out", ["a"])
-
-    # Output missing branch
-    n5.shape_metadata = "1"
-    gen._emit_output_assignment(n5, ["a"], "ret")
-
-    # Input missing branch
-    gen._emit_input_assignment("v", n5, "args", 0)
-
-    # To hit 274 and 306 directly from 'isinstance(shape, (int, float)) == False and isinstance(...) == False',
-    # we need shape to be something else, like a string "1". Oh wait, I passed "1" to shape_metadata...
-    # But shape = node.shape_metadata. Let's make it a dict to make sure it falls through
-    n5.shape_metadata = {"a": 1}
-    gen._emit_output_assignment(n5, ["a"], "ret")
-    gen._emit_input_assignment("v", n5, "args", 0)
-
-    n5.shape_metadata = 1
-    gen._emit_output_assignment(n5, ["a"], "ret")
-    gen._emit_input_assignment("v", n5, "args", 0)
-
-    n6 = DummyNode("Output", 1)
-    gen.graph.outputs = [n6]
-    gen._emit_output_assignment(n6, ["a"], "ret")
-
-    n7 = DummyNode("Input", 1)
-    gen.graph.inputs = [n7]
-    gen._emit_input_assignment("v", n7, "args", 0)
-
-
-def test_wasm_generate_branch_coverage():
-    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    g = IRGraph()
-    n = IRNode("dummy", "Negative")
-    n.inputs = ["dummy_in"]
-    gen = WasmCodeGenerator(g)
-    gen.var_names = {"dummy_in": "dummy_in"}
-    gen.var_names = {"dummy_in": "dummy_in"}
+    n = LogicalNode(id="dummy", op_type="MatMul", inputs=["in1", "in2"])
     n.shape_metadata = 1
-    g.inputs = []
-    g.outputs = [n]
-    g._nodes = {"dummy": n}  # just to be safe
+
+    in1 = LogicalNode(id="in1", op_type="Input")
+    in1.shape_metadata = 1
+    in2 = LogicalNode(id="in2", op_type="Input")
+    in2.shape_metadata = 1
+
+    g.nodes = {"in1": in1, "in2": in2, "dummy": n}
+    g.inputs = ["in1", "in2"]
+    g.outputs = ["dummy"]
+
     gen = WasmCodeGenerator(g)
-    gen.var_names = {"dummy_in": "dummy_in"}
-    gen.sorted_nodes = g.inputs + [n]
-    gen.generate()
-
-
-def test_wasm_shape_fallthrough():
-    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    g = IRGraph()
-    n = IRNode("dummy", "Negative")
-    n.inputs = ["dummy_in"]
-    g.inputs = [IRNode("dummy_in", "Input")]
-    n.shape_metadata = "1"
-    g.inputs = []
-    g.outputs = [n]
-    g._nodes = {"dummy": n}  # just to be safe
-    gen = WasmCodeGenerator(g)
-    gen.var_names = {"dummy_in": "dummy_in"}
-    gen.sorted_nodes = g.inputs + [n]
-    gen.generate()
+    code = gen.generate()
+    assert "MatMul / DotGeneral Fallback" in code

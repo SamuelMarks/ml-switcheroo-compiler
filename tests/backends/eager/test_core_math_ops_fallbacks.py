@@ -197,14 +197,14 @@ def disabled_test_core_math_ops_branches():
 
     mod._scaled_dot_product_attention_eager(AttnBackend(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), is_causal=True, mask=np.ones((2, 2)))
 
-    # Coverage for _mock_bandpart ValueError
+    # Coverage for _np_bandpart ValueError
     try:
-        mod._mock_bandpart(empty_backend, x=None)
+        mod._np_bandpart(empty_backend, x=None)
     except ValueError:
         pass
 
-    # Coverage for _mock_betapdf x is None
-    mod._mock_betapdf(empty_backend, x=None)
+    # Coverage for _np_betapdf x is None
+    mod._np_betapdf(empty_backend, x=None)
 
     # Coverage for math.gcd fallback
     try:
@@ -212,7 +212,7 @@ def disabled_test_core_math_ops_branches():
         original_gcd = getattr(np, "gcd", None)
         if original_gcd:
             del np.gcd
-        mod._mock_gcd(empty_backend, np.array([2]), np.array([4]))
+        mod._np_gcd(empty_backend, np.array([2]), np.array([4]))
     except Exception:
         pass
     finally:
@@ -225,14 +225,14 @@ def disabled_test_core_math_ops_branches():
     original_scipy = sys.modules.get("scipy.special")
     sys.modules["scipy.special"] = None
     try:
-        if hasattr(mod, "_mock_gamma"):
-            mod._mock_gamma(empty_backend, np.array([1.0]))
-        if hasattr(mod, "_mock_modifiedbesseli1"):
-            mod._mock_modifiedbesseli1(empty_backend, x=np.array([1.0]))
-        if hasattr(mod, "_mock_xlog1py"):
-            mod._mock_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
-        if hasattr(mod, "_mock_xlogy"):
-            mod._mock_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
+        if hasattr(mod, "_np_gamma"):
+            mod._np_gamma(empty_backend, np.array([1.0]))
+        if hasattr(mod, "_np_modifiedbesseli1"):
+            mod._np_modifiedbesseli1(empty_backend, x=np.array([1.0]))
+        if hasattr(mod, "_np_xlog1py"):
+            mod._np_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
+        if hasattr(mod, "_np_xlogy"):
+            mod._np_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
     except Exception:
         pass
     finally:
@@ -284,19 +284,19 @@ def disabled_test_core_math_ops_branches():
 
     if scipy_installed:
         # We ensure it's loaded, so it gets covered
-        if hasattr(mod, "_mock_modifiedbesseli1"):
-            mod._mock_modifiedbesseli1(empty_backend, x=np.array([1.0]))
+        if hasattr(mod, "_np_modifiedbesseli1"):
+            mod._np_modifiedbesseli1(empty_backend, x=np.array([1.0]))
 
         # Now test the ImportError fallback
         original_scipy = sys.modules.get("scipy.special")
         sys.modules["scipy.special"] = None
         try:
-            if hasattr(mod, "_mock_modifiedbesseli1"):
-                mod._mock_modifiedbesseli1(empty_backend, x=np.array([1.0]))
-            if hasattr(mod, "_mock_xlog1py"):
-                mod._mock_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
-            if hasattr(mod, "_mock_xlogy"):
-                mod._mock_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
+            if hasattr(mod, "_np_modifiedbesseli1"):
+                mod._np_modifiedbesseli1(empty_backend, x=np.array([1.0]))
+            if hasattr(mod, "_np_xlog1py"):
+                mod._np_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
+            if hasattr(mod, "_np_xlogy"):
+                mod._np_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
         except Exception:
             pass
         finally:
@@ -306,27 +306,27 @@ def disabled_test_core_math_ops_branches():
                 del sys.modules["scipy.special"]
     else:
         # Just run the fallbacks, scipy isn't installed
-        if hasattr(mod, "_mock_modifiedbesseli1"):
-            mod._mock_modifiedbesseli1(empty_backend, x=np.array([1.0]))
-        if hasattr(mod, "_mock_xlog1py"):
-            mod._mock_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
-        if hasattr(mod, "_mock_xlogy"):
-            mod._mock_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
+        if hasattr(mod, "_np_modifiedbesseli1"):
+            mod._np_modifiedbesseli1(empty_backend, x=np.array([1.0]))
+        if hasattr(mod, "_np_xlog1py"):
+            mod._np_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
+        if hasattr(mod, "_np_xlogy"):
+            mod._np_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
 
-    if hasattr(mod, "_mock_deg2rad"):
-        mod._mock_deg2rad(empty_backend, x=np.array([1.0]))
-        mod._mock_deg2rad(empty_backend, x=None)
+    if hasattr(mod, "_np_deg2rad"):
+        mod._np_deg2rad(empty_backend, x=np.array([1.0]))
+        mod._np_deg2rad(empty_backend, x=None)
 
-    if hasattr(mod, "_mock_betapdf"):
-        mod._mock_betapdf(empty_backend, np.array([0.5]), np.array([1.0]), np.array([1.0]))
+    if hasattr(mod, "_np_betapdf"):
+        mod._np_betapdf(empty_backend, np.array([0.5]), np.array([1.0]), np.array([1.0]))
 
     # 3197: packbits None
-    if hasattr(mod, "_mock_packbits"):
-        mod._mock_packbits(empty_backend, x=None)
+    if hasattr(mod, "_np_packbits"):
+        mod._np_packbits(empty_backend, x=None)
 
     # 3239: polyint None
-    if hasattr(mod, "_mock_polyint"):
-        mod._mock_polyint(empty_backend, p=None)
+    if hasattr(mod, "_np_polyint"):
+        mod._np_polyint(empty_backend, p=None)
 
     # 3467: takealongaxis fallback
     original_hasattr = hasattr
@@ -341,16 +341,16 @@ def disabled_test_core_math_ops_branches():
 
     try:
         builtins.hasattr = mock_hasattr
-        if hasattr(mod, "_mock_takealongaxis"):
-            mod._mock_takealongaxis(empty_backend, np.array([1]), np.array([0]), axis=-1)
-        if hasattr(mod, "_mock_triangular"):
-            mod._mock_triangular(empty_backend, left=0, mode=0.5, right=1, size=1)
+        if hasattr(mod, "_np_takealongaxis"):
+            mod._np_takealongaxis(empty_backend, np.array([1]), np.array([0]), axis=-1)
+        if hasattr(mod, "_np_triangular"):
+            mod._np_triangular(empty_backend, left=0, mode=0.5, right=1, size=1)
     except Exception:
         pass
     finally:
         builtins.hasattr = original_hasattr
-    if hasattr(mod, "_mock_modifiedbesseli1"):
-        mod._mock_modifiedbesseli1(empty_backend, x=None)
+    if hasattr(mod, "_np_modifiedbesseli1"):
+        mod._np_modifiedbesseli1(empty_backend, x=None)
 
 
 def disabled_test_core_math_ops_missing_coverage_new():
@@ -365,11 +365,11 @@ def disabled_test_core_math_ops_missing_coverage_new():
     # 1864: _householder_product success
     mod._householder_product(empty_backend, np.array([[1.0]]), np.array([1.0]))
 
-    # 2909, 2911: _mock_bandpart negative
-    mod._mock_bandpart(empty_backend, np.ones((2, 2)), num_lower=-1, num_upper=-1)
+    # 2909, 2911: _np_bandpart negative
+    mod._np_bandpart(empty_backend, np.ones((2, 2)), num_lower=-1, num_upper=-1)
 
-    # 3048, 3055: _mock_gamma x is None and ImportError
-    mod._mock_gamma(empty_backend, x=None)
+    # 3048, 3055: _np_gamma x is None and ImportError
+    mod._np_gamma(empty_backend, x=None)
 
     original_scipy = sys.modules.get("scipy.special")
     dummy_scipy_special = types.ModuleType("scipy.special")
@@ -382,10 +382,10 @@ def disabled_test_core_math_ops_missing_coverage_new():
     sys.modules["scipy.special"] = dummy_scipy_special
 
     try:
-        mod._mock_gamma(empty_backend, np.array([1.0]))
+        mod._np_gamma(empty_backend, np.array([1.0]))
         # 4107, 4112, 4130, 4135
-        mod._mock_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
-        mod._mock_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
+        mod._np_xlog1py(empty_backend, np.array([1.0]), np.array([1.0]))
+        mod._np_xlogy(empty_backend, np.array([1.0]), np.array([1.0]))
     finally:
         if original_scipy is not None:
             sys.modules["scipy.special"] = original_scipy

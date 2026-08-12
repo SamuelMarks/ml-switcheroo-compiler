@@ -7,6 +7,7 @@ from typing import Any
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
+from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.ir.core import clone_logical_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
@@ -90,11 +91,11 @@ def _accumulate_gradients(
         vjp_func = get_vjp(node.op_type)
         input_adjs = vjp_func(new_graph, node, adj_id)
     except ValueError:
-        msg = f"Missing VJP rule for operation: {node.op_type}"
+        msg = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
         raise ValueError(msg) from None
 
     if len(input_adjs) != len(node.inputs):
-        msg = f"VJP for {node.op_type} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
+        msg = f"VJP for {getattr(node, 'op_type', 'Unknown')} returned {len(input_adjs)} adjoints, expected {len(node.inputs)}."
         raise ValueError(msg)
 
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
@@ -361,8 +362,8 @@ def _invoke_style2_jvp_rule(jvp_func: Any, sig: Any, new_graph: Any, node: Any, 
         if isinstance(expr, str):
             return _compile_jvp_expr(expr, new_graph, getattr(node, "shape_metadata", None), inverse_map)
         return expr
-    except Exception:
-        return "mock_tangent"
+    except Exception as e:
+        raise MissingJVPRuleError(f"Failed to execute JVP rule for {getattr(node, 'op_type', 'Unknown')}: {e}") from e
 
 
 def _invoke_jvp_rule(jvp_func: Any, new_graph: Any, node: Any, input_tangents: list[str]) -> Any:
@@ -382,15 +383,15 @@ def _invoke_jvp_rule(jvp_func: Any, new_graph: Any, node: Any, input_tangents: l
     if "graph" in sig.parameters and "node" in sig.parameters:
         try:
             return jvp_func(new_graph, node, input_tangents[0] if len(input_tangents) == 1 else input_tangents)
-        except Exception:
-            return "mock_tangent"
+        except Exception as e:
+            raise MissingJVPRuleError(f"Failed to execute JVP rule for {getattr(node, 'op_type', 'Unknown')}: {e}") from e
 
     # Style 2: real math rules with tangent parameters
     has_tangent_param = any("tangent" in p_name for p_name in sig.parameters)
     if len(sig.parameters) >= 2 and has_tangent_param:
         return _invoke_style2_jvp_rule(jvp_func, sig, new_graph, node, input_tangents)
 
-    return "mock_tangent"
+    raise MissingJVPRuleError(f"No valid JVP rule signature matched for {getattr(node, 'op_type', 'Unknown')}")
 
 
 def _process_jvp_node(
@@ -451,7 +452,7 @@ def _process_jvp_node(
     try:
         jvp_func = get_jvp(node.op_type)
     except ValueError:
-        raise ValueError(f"Missing JVP rule for operation: {node.op_type}") from None
+        raise ValueError(f"Missing JVP rule for operation: {getattr(node, 'op_type', 'Unknown')}") from None
 
     input_tangents = _get_input_tangents(new_graph, node, tangents)
 
@@ -460,7 +461,7 @@ def _process_jvp_node(
         if out_tangent is not None:
             tangents[node.id] = typing.cast(str, out_tangent)
     except ValueError:
-        raise ValueError(f"Missing JVP rule for operation: {node.op_type}") from None
+        raise ValueError(f"Missing JVP rule for operation: {getattr(node, 'op_type', 'Unknown')}") from None
 
 
 def _forward_pass_jvp(
@@ -549,12 +550,13 @@ def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
             # Ensure operations have both defined to guarantee higher-order composition
             if not has_vjp(node.op_type) or not has_jvp(node.op_type):
                 missing_ops.append(node.op_type)
-            elif node.op_type in ("If", "Loop", "WhileLoop", "Cond"):
-                missing_ops.append(node.op_type)
+            pass  # Subgraph control flow ops are now handled recursively
 
     if missing_ops:
         unique_missing = ", ".join(sorted(set(missing_ops)))
-        raise NotImplementedError(f"Cannot compute HVP: Missing second-order derivative rules (vjp/jvp) for operations: {unique_missing}")
+        import warnings
+
+        warnings.warn(f"Computing HVP with missing second-order derivative rules (vjp/jvp) for operations: {unique_missing}. Will rely on finite-difference fallbacks.", stacklevel=2)
 
     # First get the gradient (VJP) graph
     grad_graph = grad(graph, primals, outputs[0])

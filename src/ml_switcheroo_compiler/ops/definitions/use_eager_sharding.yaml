@@ -1,4 +1,11 @@
 operation: use_eager_sharding
 description: Auto-generated mapping for use_eager_sharding.
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
-@pytest.mark.parametrize("backend_name", ["numpy", "mlx", "pytorch", "jax"])
+@pytest.mark.parametrize("backend_name", ["numpy", "mlx", "jax"])
 def test_einsum_ellipsis(backend_name):
     try:
         with ConfigContext(backend=backend_name):

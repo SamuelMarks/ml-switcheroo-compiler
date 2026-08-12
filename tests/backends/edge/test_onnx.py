@@ -223,7 +223,7 @@ class TestONNXCodeGenerator(unittest.TestCase):
                 res = self.gen.generate()
                 self.assertEqual(res, "RealPrintableGraph")
 
-    def test_printer_to_text_mock_fallback(self) -> None:
+    def test_printer_to_text_np_fallback(self) -> None:
         """Test the printer.to_text execution path falling back to mock logic."""
         with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
             mock_build.return_value = "GraphDef"

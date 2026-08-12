@@ -2,4 +2,11 @@ operation: values
 description: Auto-generated from numpy_code_defs
 std_args: []
 type: function
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

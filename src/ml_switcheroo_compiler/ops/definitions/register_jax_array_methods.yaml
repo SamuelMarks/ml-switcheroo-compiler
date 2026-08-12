@@ -1,4 +1,11 @@
 operation: register_jax_array_methods
 description: Auto-generated mapping for register_jax_array_methods.
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

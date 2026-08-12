@@ -6,7 +6,7 @@ def test_cpp_generator_tanh_explicit():
     graph = IRGraph()
     gen = CppGenerator(graph)
     node = LogicalNode(id="n1", op_type="Tanh", inputs=["in1"])
-    gen._visit_activation(node, "Tanh")
+    gen._visit_node(node, graph)
     assert "std::tanh" in "".join(gen.lines)
 
 
@@ -22,31 +22,31 @@ def test_cpp_generator_matmul_openmp():
     node.shape_metadata = [2, 2]
 
     gen = CppGenerator(graph, use_openmp=True)
-    gen._visit_matmul(node, graph)
+    gen._visit_node(node, graph)
 
     # Test without openmp
     gen2 = CppGenerator(graph, use_openmp=False)
-    gen2._visit_matmul(node, graph)
+    gen2._visit_node(node, graph)
 
 
 def test_cpp_generator_reduce_min():
     graph = IRGraph()
     gen = CppGenerator(graph)
     node = LogicalNode(id="n1", op_type="ReduceMin", inputs=["in1"])
-    gen._visit_reduce(node, "ReduceMin")
+    gen._visit_node(node, graph)
     assert "std::min" in "".join(gen.lines)
 
     # test unknown reduce
     node2 = LogicalNode(id="n2", op_type="UnknownReduce", inputs=["in1"])
-    gen._visit_reduce(node2, "UnknownReduce")
+    gen._visit_node(node2, graph)
 
 
 def test_cpp_generator_activation_fallback():
     graph = IRGraph()
     gen = CppGenerator(graph)
     node = LogicalNode(id="n1", op_type="UnknownActivation", inputs=["in1"])
-    gen._visit_activation(node, "UnknownActivation")
-    assert "n1.data[i] = in1.data[i];" in "".join(gen.lines)
+    gen._visit_node(node, graph)
+    assert "Fallback Unimplemented UnknownActivation" in "".join(gen.lines)
 
 
 def test_llvm_cpp_strides_num_elem():

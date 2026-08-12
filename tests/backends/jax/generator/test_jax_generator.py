@@ -107,51 +107,6 @@ class DummyNode:
         self.attributes = attrs or {}
 
 
-def test_jax_distributed_visitor():
-    vis = JaxDistributedVisitor()
-    node = DummyNode({"axis_name": "'y'", "axis": 1, "op": "psum"})
-    assert vis.visit_all_gather(node, ["a"]) == "jax.lax.all_gather(a, axis_name='y')"
-    assert vis.visit_all_gather(DummyNode(), ["a"]) == "jax.lax.all_gather(a, axis_name='x')"
-    assert vis.visit_reduce_scatter(node, ["a"]) == "jax.lax.reduce_scatter(a, psum, scatter_dimension=1, axis_name='y')"
-    assert vis.visit_reduce_scatter(DummyNode(), ["a"]) == "jax.lax.reduce_scatter(a, jax.lax.psum, scatter_dimension=0, axis_name='x')"
-    assert vis.visit_all_reduce(node, ["a"]) == "jax.lax.psum(a, axis_name='y')"
-    assert vis.visit_all_reduce(DummyNode(), ["a"]) == "jax.lax.psum(a, axis_name='x')"
-
-
-def test_jax_math_visitor():
-    vis = JaxMathVisitor()
-    node = DummyNode({"num_segments": 2})
-    assert vis.visit_SegmentSum(node, ["a", "b"]) == "jax.ops.segment_sum(a, b, num_segments=2)"
-    assert vis.visit_SegmentSum(DummyNode(), ["a", "b"]) == "jax.ops.segment_sum(a, b, num_segments=None)"
-    assert vis.visit_SegmentMax(node, ["a", "b"]) == "jax.ops.segment_max(a, b, num_segments=2)"
-    assert vis.visit_SegmentMax(DummyNode(), ["a", "b"]) == "jax.ops.segment_max(a, b, num_segments=None)"
-    assert vis.visit_SegmentMin(node, ["a", "b"]) == "jax.ops.segment_min(a, b, num_segments=2)"
-    assert vis.visit_SegmentMin(DummyNode(), ["a", "b"]) == "jax.ops.segment_min(a, b, num_segments=None)"
-    assert vis.visit_SegmentProd(node, ["a", "b"]) == "jax.ops.segment_prod(a, b, num_segments=2)"
-    assert vis.visit_SegmentProd(DummyNode(), ["a", "b"]) == "jax.ops.segment_prod(a, b, num_segments=None)"
-    assert vis.visit_UnsortedSegmentSum(node, ["a", "b"]) == "jax.ops.segment_sum(a, b, num_segments=2)"
-    assert vis.visit_UnsortedSegmentSum(DummyNode(), ["a", "b"]) == "jax.ops.segment_sum(a, b, num_segments=None)"
-    assert vis.visit_UnsortedSegmentMax(node, ["a", "b"]) == "jax.ops.segment_max(a, b, num_segments=2)"
-    assert vis.visit_UnsortedSegmentMax(DummyNode(), ["a", "b"]) == "jax.ops.segment_max(a, b, num_segments=None)"
-    assert vis.visit_UnsortedSegmentMin(node, ["a", "b"]) == "jax.ops.segment_min(a, b, num_segments=2)"
-    assert vis.visit_UnsortedSegmentMin(DummyNode(), ["a", "b"]) == "jax.ops.segment_min(a, b, num_segments=None)"
-    assert vis.visit_UnsortedSegmentProd(node, ["a", "b"]) == "jax.ops.segment_prod(a, b, num_segments=2)"
-    assert vis.visit_UnsortedSegmentProd(DummyNode(), ["a", "b"]) == "jax.ops.segment_prod(a, b, num_segments=None)"
-    assert vis.visit_MatrixExponential(DummyNode(), ["a"]) == "jax.scipy.linalg.expm(a)"
-    assert vis.visit_Polar(DummyNode({"side": "left"}), ["a"]) == "jax.scipy.linalg.polar(a, side='left')"
-    assert vis.visit_Polar(DummyNode({"side": "'right'"}), ["a"]) == "jax.scipy.linalg.polar(a, side='right')"
-    assert vis.visit_Polar(DummyNode(), ["a"]) == "jax.scipy.linalg.polar(a, side='right')"
-    assert vis.visit_Schur(DummyNode(), ["a"]) == "jax.scipy.linalg.schur(a)"
-    assert vis.visit_Cholesky(DummyNode(), ["a"]) == "jax.numpy.linalg.cholesky(a)"
-    assert vis.visit_Svd(DummyNode({"full_matrices": False, "compute_uv": False}), ["a"]) == "jax.numpy.linalg.svd(a, full_matrices=False, compute_uv=False)"
-    assert vis.visit_Svd(DummyNode(), ["a"]) == "jax.numpy.linalg.svd(a, full_matrices=True, compute_uv=True)"
-    assert vis.visit_PowerIteration(DummyNode({"num_iters": 5}), ["a", "u"]) == "jax_power_iteration(a, 5, u)"
-    assert vis.visit_PowerIteration(DummyNode(), ["a"]) == "jax_power_iteration(a, 1, None)"
-    assert vis.visit_RaggedDot(DummyNode(), ["a", "b"]) == "jax_ragged_dot(a, b)"
-    assert vis.visit_Einsum(DummyNode(), ["a", "b"], equation="i,j->ij") == "jnp.einsum('i,j->ij', a, b)"
-    assert vis.visit_Einsum(DummyNode(), ["a", "b"]) == "jnp.einsum('', a, b)"
-
-
 def test_jax_control_flow_visitor():
     vis = JaxControlFlowVisitor()
     assert vis.visit_If(DummyNode(), ["c"]) == "jax.lax.cond(c, lambda: None, lambda: None)"

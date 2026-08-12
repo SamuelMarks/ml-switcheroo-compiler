@@ -1,4 +1,4 @@
-operation: sqrt
+operation: Sqrt
 description: The Sqrt operation.
 std_args:
 - is_variadic: false
@@ -26,6 +26,17 @@ variants:
     eager: jax.numpy.sqrt
   mlx:
     eager: mlx.core.sqrt
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: unary
+    expr: sqrt(buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: wasm_f32x4_sqrt(in0_val)
+    scalar_expr: std::sqrt(in0_val)
+  llvm_cpp:
+    template: unary
+    scalar_expr: std::sqrt(in0_val)
+autodiff:
+  vjp:
+  - Multiply($cotangent, TrueDivide(Constant(0.5), Sqrt($input[0])))
+  jvp: Multiply($tangent[0], TrueDivide(Constant(0.5), Sqrt($input[0])))

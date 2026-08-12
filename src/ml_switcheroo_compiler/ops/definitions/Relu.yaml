@@ -1,4 +1,4 @@
-operation: ReLU
+operation: Relu
 description: The Relu operation.
 std_args: []
 type: function
@@ -21,6 +21,17 @@ variants:
     eager: jax.numpy.relu
   mlx:
     eager: mlx.core.relu
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: unary
+    expr: max(0.0, buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: wasm_f32x4_max(in0_val, wasm_f32x4_splat(0.0f))
+    scalar_expr: std::max(0.0f, in0_val)
+  llvm_cpp:
+    template: unary
+    scalar_expr: std::max(0.0f, in0_val)
+autodiff:
+  vjp:
+  - Multiply($cotangent, Greater($input[0], Constant(0.0)))
+  jvp: Multiply($tangent[0], Greater($input[0], Constant(0.0)))

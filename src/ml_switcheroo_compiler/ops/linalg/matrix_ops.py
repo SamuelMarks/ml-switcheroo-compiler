@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.products import Adjoint, MatrixRank, MatrixTranspose, Trace
 from ml_switcheroo_compiler.ops.linalg.solvers import EighTridiagonal, Sqrtm
+from ml_switcheroo_compiler.ops.registry import get_op
 
 from .utils import _emit_linalg_node
 
@@ -270,7 +271,7 @@ def expm(input: Any, name: Any = None) -> Any:
 
     Returns: Any: The matrix exponential.
     """
-    return __import__("ml_switcheroo_compiler.ops.base").ops.base.get_op("MatrixExponential")()(input)
+    return get_op("MatrixExponential")()(input)
 
 
 def global_norm(t_list: Any, name: Any = None) -> Any:

@@ -30,3 +30,7 @@ class BackendNotSupportedError(SwitcherooError):
 
 class UnimplementedMathError(SwitcherooError):
     """Raised when an operation lacks a mathematical equivalent."""
+
+
+class MissingJVPRuleError(SwitcherooError):
+    """Exception raised when a required JVP/VJP rule is missing for an operation."""

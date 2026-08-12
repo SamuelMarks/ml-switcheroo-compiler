@@ -1,0 +1,79 @@
+templates:
+  unary:
+    body: |
+      // SIMD Unary: {op_type}
+      int limit_{clean_id} = {nelem} - ({nelem} % 4);
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{
+          v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);
+          v128_t res = {simd_expr};
+          wasm_v128_store(&buf_{clean_id}[i], res);
+      }}
+      for (int j = limit_{clean_id}; j < {nelem}; ++j) {{
+          float in0_val = buf_{in0}[j];
+          buf_{clean_id}[j] = {scalar_expr};
+      }}
+
+  binary:
+    body: |
+      // SIMD Binary: {op_type}
+      int limit_{clean_id} = {nelem} - ({nelem} % 4);
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{
+          v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);
+          v128_t in1_val = wasm_v128_load(&buf_{in1}[i]);
+          v128_t res = {simd_expr};
+          wasm_v128_store(&buf_{clean_id}[i], res);
+      }}
+      for (int j = limit_{clean_id}; j < {nelem}; ++j) {{
+          float in0_val = buf_{in0}[j];
+          float in1_val = buf_{in1}[j];
+          buf_{clean_id}[j] = {scalar_expr};
+      }}
+
+  matmul:
+    body: |
+      // MatMul / DotGeneral Fallback
+      for (int m = 0; m < {M}; ++m) {{
+          for (int n = 0; n < {N}; ++n) {{
+              float sum = 0.0f;
+              for (int k = 0; k < {K}; ++k) {{
+                  sum += buf_{in0}[m * {K} + k] * buf_{in1}[k * {N} + n];
+              }}
+              buf_{clean_id}[m * {N} + n] = sum;
+          }}
+      }}
+
+  reduction:
+    body: |
+      // SIMD Reduction: {op_type}
+      v128_t sum_{clean_id} = wasm_f32x4_splat({init_val}f);
+      float scalar_sum_{clean_id} = {init_val}f;
+      int limit_{clean_id} = {nelem_in} - ({nelem_in} % 4);
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{
+          v128_t val = wasm_v128_load(&buf_{in0}[i]);
+          sum_{clean_id} = {simd_expr};
+      }}
+      for (int j = limit_{clean_id}; j < {nelem_in}; ++j) {{
+          float val = buf_{in0}[j];
+          scalar_sum_{clean_id} = {scalar_expr};
+      }}
+      // Final combine across lanes
+      buf_{clean_id}[0] = {final_combine};
+
+  fallback_copy:
+    body: |
+      // SIMD Fallback Copy
+      int limit_{clean_id} = {nelem} - ({nelem} % 4);
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{
+          v128_t val = wasm_v128_load(&buf_{in0}[i]);
+          wasm_v128_store(&buf_{clean_id}[i], val);
+      }}
+      for (int j = limit_{clean_id}; j < {nelem}; ++j) {{
+          buf_{clean_id}[j] = buf_{in0}[j];
+      }}
+
+  conv_pool_1d_flat:
+    body: |
+      // Dummy Pool/Conv (identity) placeholder
+      for (int i = 0; i < {nelem}; ++i) {{
+          buf_{clean_id}[i] = buf_{in0}[0] {math_op};
+      }}

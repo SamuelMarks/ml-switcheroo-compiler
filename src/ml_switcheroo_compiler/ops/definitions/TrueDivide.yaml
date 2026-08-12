@@ -26,12 +26,25 @@ variants:
     generator: np.divide
   pytorch:
     generator: torch.true_divide({0}, {1})
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: binary
+    expr: buf_in0_f32[in0_offset] / buf_in1_f32[in1_offset]
+  edge_wasm_simd:
+    template: binary
+    simd_expr: wasm_f32x4_div(in0_val, in1_val)
+    scalar_expr: in0_val / in1_val
+  llvm_cpp:
+    template: binary
+    scalar_expr: in0_val / in1_val
   tensorflow:
     eager: tf.truedivide
   jax:
     eager: jax.numpy.truedivide
   mlx:
     eager: mlx.core.truedivide
+autodiff:
+  vjp:
+  - TrueDivide($cotangent, $input[1])
+  - Multiply($cotangent, Negative(TrueDivide($input[0], Multiply($input[1], $input[1]))))
+  jvp: TrueDivide(Subtract(Multiply($tangent[0], $input[1]), Multiply($tangent[1],
+    $input[0])), Multiply($input[1], $input[1]))

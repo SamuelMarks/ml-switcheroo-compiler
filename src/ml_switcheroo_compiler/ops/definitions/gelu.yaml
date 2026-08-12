@@ -2,4 +2,25 @@ operation: GELU
 description: Auto-generated mapping for gelu.
 std_args: []
 type: attribute
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val
+autodiff:
+  vjp:
+  - Multiply($cotangent, Add(Multiply(Constant(0.5), Add(Constant(1.0), Tanh(Multiply(Constant(0.7978845608),
+    Add($input[0], Multiply(Constant(0.044715), Power($input[0], Constant(3.0)))))))),
+    Multiply(Multiply(Constant(0.5), $input[0]), Multiply(Subtract(Constant(1.0),
+    Power(Tanh(Multiply(Constant(0.7978845608), Add($input[0], Multiply(Constant(0.044715),
+    Power($input[0], Constant(3.0)))))), Constant(2.0))), Multiply(Constant(0.7978845608),
+    Add(Constant(1.0), Multiply(Constant(0.134145), Power($input[0], Constant(2.0)))))))))
+  jvp: Multiply($tangent[0], Add(Multiply(Constant(0.5), Add(Constant(1.0), Tanh(Multiply(Constant(0.7978845608),
+    Add($input[0], Multiply(Constant(0.044715), Power($input[0], Constant(3.0)))))))),
+    Multiply(Multiply(Constant(0.5), $input[0]), Multiply(Subtract(Constant(1.0),
+    Power(Tanh(Multiply(Constant(0.7978845608), Add($input[0], Multiply(Constant(0.044715),
+    Power($input[0], Constant(3.0)))))), Constant(2.0))), Multiply(Constant(0.7978845608),
+    Add(Constant(1.0), Multiply(Constant(0.134145), Power($input[0], Constant(2.0)))))))))

@@ -22,6 +22,10 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: unary
+    expr: buf_in0_f32[in0_offset]
+  edge_wasm_simd:
+    template: fallback_copy
+  llvm_cpp:
+    template: fallback_copy

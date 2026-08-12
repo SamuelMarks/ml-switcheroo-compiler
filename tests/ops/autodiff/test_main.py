@@ -2,6 +2,7 @@
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.transforms.autodiff import _accumulate_gradients, _add_nodes, _backward_pass, _copy_graph, _extract_gradients, _get_input_tangents, _get_reachable_from_output, _invoke_jvp_rule, _process_jvp_node, grad, hvp, jvp
 
 
@@ -123,19 +124,22 @@ def test_invoke_jvp_rule():
     def mock_jvp_bad():
         pass
 
-    assert _invoke_jvp_rule(mock_jvp_bad, None, None, ["t"]) == "mock_tangent"
+    import pytest
+
+    with pytest.raises(MissingJVPRuleError):
+        _invoke_jvp_rule(mock_jvp_bad, None, None, ["t"])
 
 
 def test_process_jvp_node(mocker):
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
-    mock_get_jvp.return_value = lambda g, n, t: "out_t"
+    mock_get_jvp.return_value = lambda graph, node, tangents: "out_t"
     _process_jvp_node(g, n1, {})
     tangents = {"a": "t1"}
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._get_input_tangents", return_value=["t1", "t2"])
     _process_jvp_node(g, n1, tangents)
-    assert tangents["n1"] == "mock_tangent"
+    assert tangents["n1"] == "out_t"
     mock_get_jvp.side_effect = ValueError
     with pytest.raises(ValueError):
         _process_jvp_node(g, n1, tangents)
@@ -148,7 +152,7 @@ def test_jvp_hvp(mocker):
     g.nodes["n1"] = n1
     g.nodes["n2"] = n2
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
-    mock_get_jvp.return_value = lambda g, n, t: "out_t"
+    mock_get_jvp.return_value = lambda graph, node, tangents: "out_t"
     with pytest.raises(ValueError):
         jvp(g, ["n1"], ["t1", "t2"], ["n2"])
     with pytest.raises(ValueError):
@@ -169,7 +173,7 @@ def test_jvp_zero_output(mocker):
     n2 = LogicalNode("n2", "Mul", inputs=["n1", "n1"])
     g.nodes["n1"] = n1
     g.nodes["n2"] = n2
-    mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda g, n, t: "out_t")
+    mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda graph, node, tangents: "out_t")
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._get_input_tangents", return_value=["t1", "t1"])
     g.nodes["t1"] = LogicalNode("t1", "Input", [])
     g2 = jvp(g, ["n1"], ["t1"], ["n2", "n1"])

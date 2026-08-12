@@ -47,7 +47,7 @@ def _create_all_gather_node(inp_id: str, node_sharding: Any) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_all_gather", op_type="all_gather", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_all_gather", op_type="AllGather", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
 def _create_reduce_scatter_node(inp_id: str, node_sharding: Any) -> IRNode:
@@ -60,7 +60,7 @@ def _create_reduce_scatter_node(inp_id: str, node_sharding: Any) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_reduce_scatter", op_type="reduce_scatter", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_reduce_scatter", op_type="ReduceScatter", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
 def _create_all_reduce_node(inp_id: str, node_sharding: Any) -> IRNode:
@@ -73,7 +73,7 @@ def _create_all_reduce_node(inp_id: str, node_sharding: Any) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_all_reduce", op_type="all_reduce", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_all_reduce", op_type="AllReduce", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
 def _create_all_to_all_node(inp_id: str, node_sharding: Any) -> IRNode:
@@ -86,7 +86,7 @@ def _create_all_to_all_node(inp_id: str, node_sharding: Any) -> IRNode:
     Returns:
         IRNode: Result.
     """
-    return IRNode(id=f"{inp_id}_all_to_all", op_type="all_to_all", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
+    return IRNode(id=f"{inp_id}_all_to_all", op_type="AllToAll", inputs=[inp_id], sharding=node_sharding, attributes={"dispatch_early": True})
 
 
 def _inject_all_gather(node: IRNode, idx: int, inp_id: str, node_sharding: Any) -> IRNode:
@@ -157,60 +157,20 @@ def _inject_all_to_all(node: IRNode, idx: int, inp_id: str, node_sharding: Any) 
     return atoa_node
 
 
-def _handle_inp_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding: Any, is_reduction: bool, is_grad: bool) -> IRNode | None:
-    """Handle communication when only the input is sharded.
+from pathlib import Path
 
-    Args:
-        node (IRNode): The target node.
-        idx (int): The index of the input.
-        inp_id (str): The input ID.
-        node_sharding (Any): The node sharding specification.
-        is_reduction (bool): Whether the node is a reduction.
-        is_grad (bool): Whether the node computes gradients.
+import yaml
 
-    Returns:
-        IRNode | None: The injected communication node if applicable.
-    """
-    if is_reduction or is_grad:
-        return _inject_all_reduce(node, idx, inp_id, node_sharding)
-    return _inject_all_gather(node, idx, inp_id, node_sharding)
+_SPMD_RULES = None
 
 
-def _handle_node_sharded_only(node: IRNode, idx: int, inp_id: str, node_sharding: Any, is_grad: bool) -> IRNode | None:
-    """Handle communication when only the node is sharded.
-
-    Args:
-        node (IRNode): The target node.
-        idx (int): The index of the input.
-        inp_id (str): The input ID.
-        node_sharding (Any): The node sharding specification.
-        is_grad (bool): Whether the node computes gradients.
-
-    Returns:
-        IRNode | None: The injected communication node if applicable.
-    """
-    if is_grad:
-        return _inject_reduce_scatter(node, idx, inp_id, node_sharding)
-    return None
-
-
-def _handle_both_sharded(node: IRNode, idx: int, inp_id: str, node_sharding: Any, inp_axes: list, node_axes: list) -> IRNode | None:
-    """Handle communication when both input and node are sharded.
-
-    Args:
-        node (IRNode): The target node.
-        idx (int): The index of the input.
-        inp_id (str): The input ID.
-        node_sharding (Any): The node sharding specification.
-        inp_axes (list): The input sharded axes.
-        node_axes (list): The node sharded axes.
-
-    Returns:
-        IRNode | None: The injected communication node if applicable.
-    """
-    if inp_axes != node_axes and len(inp_axes) == len(node_axes):
-        return _inject_all_to_all(node, idx, inp_id, node_sharding)
-    return None
+def _get_spmd_rules():
+    global _SPMD_RULES
+    if _SPMD_RULES is None:
+        yaml_path = Path(__file__).parent / "spmd_mappings.yaml"
+        with open(yaml_path) as f:
+            _SPMD_RULES = yaml.safe_load(f)
+    return _SPMD_RULES
 
 
 def _determine_spmd_communication(
@@ -221,31 +181,44 @@ def _determine_spmd_communication(
     inp_axes: list,
     node_axes: list,
 ) -> IRNode | None:
-    """Determine the type of SPMD communication needed.
+    """Determine the type of SPMD communication needed using data-driven rules."""
+    rules = _get_spmd_rules()
 
-    Args:
-        node (IRNode): The target node.
-        idx (int): The index of the input.
-        inp_id (str): The input ID.
-        node_sharding (Any): The node sharding specification.
-        inp_axes (list): The input sharded axes.
-        node_axes (list): The node sharded axes.
-
-    Returns:
-        IRNode | None: The injected communication node if applicable.
-    """
     inp_sharded = bool(inp_axes)
     node_sharded = bool(node_axes)
+    state = [inp_sharded, node_sharded]
 
-    is_grad = node.op_type == "Grad" or node.attributes.get("sync_gradients", False)
-    is_reduction = node.op_type in ["Sum", "Mean", "Max", "Min"]
+    is_reduction = getattr(node, "op_type", "") in rules.get("reductions", [])
+    is_grad = "grad" in getattr(node, "id", "") or "adjoint" in getattr(node, "id", "")
 
-    if inp_sharded and not node_sharded:
-        return _handle_inp_sharded_only(node, idx, inp_id, node_sharding, is_reduction, is_grad)
-    if not inp_sharded and node_sharded:
-        return _handle_node_sharded_only(node, idx, inp_id, node_sharding, is_grad)
-    if inp_sharded and node_sharded:
-        return _handle_both_sharded(node, idx, inp_id, node_sharding, inp_axes, node_axes)
+    injected_op = "none"
+
+    for rule in rules.get("communication_matrix", []):
+        if rule["state"] == state:
+            for cond in rule.get("conditions", []):
+                if cond.get("default", False):
+                    injected_op = cond.get("inject", "none")
+                    break
+                if cond.get("is_reduction", False) and is_reduction:
+                    injected_op = cond.get("inject", "none")
+                    break
+                if cond.get("is_grad", False) and is_grad:
+                    injected_op = cond.get("inject", "none")
+                    break
+                if cond.get("axes_match") is False and cond.get("axes_length_match") is True:
+                    if inp_axes != node_axes and len(inp_axes) == len(node_axes):
+                        injected_op = cond.get("inject", "none")
+                        break
+            break
+
+    if injected_op == "AllReduce":
+        return _inject_all_reduce(node, idx, inp_id, node_sharding)
+    if injected_op == "AllGather":
+        return _inject_all_gather(node, idx, inp_id, node_sharding)
+    if injected_op == "ReduceScatter":
+        return _inject_reduce_scatter(node, idx, inp_id, node_sharding)
+    if injected_op == "AllToAll":
+        return _inject_all_to_all(node, idx, inp_id, node_sharding)
     return None
 
 

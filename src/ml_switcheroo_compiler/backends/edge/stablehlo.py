@@ -125,52 +125,21 @@ class StableHLOCodeGenerator(BaseGenerator):
         if op_type == "Constant":
             return self._emit_constant(node, nid)
 
-        op_map = {
-            "Add": "stablehlo.add",
-            "Subtract": "stablehlo.subtract",
-            "Multiply": "stablehlo.multiply",
-            "TrueDivide": "stablehlo.divide",
-            "Div": "stablehlo.divide",
-            "Exp": "stablehlo.exponential",
-            "Log": "stablehlo.log",
-            "Log1p": "stablehlo.log1p",
-            "Negative": "stablehlo.negate",
-            "Neg": "stablehlo.negate",
-            "MatMul": "stablehlo.dot_general",
-            "Conv2D": "stablehlo.convolution",
-            "Reshape": "stablehlo.reshape",
-            "Transpose": "stablehlo.transpose",
-            "Broadcast": "stablehlo.broadcast_in_dim",
-            "Concat": "stablehlo.concatenate",
-            "Slice": "stablehlo.slice",
-            "Gather": "stablehlo.gather",
-            "Scatter": "stablehlo.scatter",
-            "ReduceSum": "stablehlo.reduce",
-            "ReduceMean": "stablehlo.reduce",
-            "ReduceMax": "stablehlo.reduce",
-            "ReduceMin": "stablehlo.reduce",
-            "Relu": "stablehlo.maximum",  # Will need 0 constant binding later
-            "Sigmoid": "stablehlo.logistic",
-            "Tanh": "stablehlo.tanh",
-            "Abs": "stablehlo.abs",
-            "Sqrt": "stablehlo.sqrt",
-            "Cbrt": "stablehlo.cbrt",
-            "Round": "stablehlo.round_nearest_afz",
-            "Floor": "stablehlo.floor",
-            "Ceil": "stablehlo.ceil",
-            "Sin": "stablehlo.sine",
-            "Cos": "stablehlo.cosine",
-            "Equal": "stablehlo.compare",
-            "Greater": "stablehlo.compare",
-            "Less": "stablehlo.compare",
-            "Where": "stablehlo.select",
-            "Pad": "stablehlo.pad",
-            "Cast": "stablehlo.convert",
-            "If": "stablehlo.if",
-            "WhileLoop": "stablehlo.while",
-        }
+        # Query ops definitions for edge_stablehlo mappings
+        from pathlib import Path
 
-        hlo_op = op_map.get(op_type, "stablehlo.custom_call")
+        from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
+
+        def get_stablehlo_op_name(op_type: str) -> str:
+            op_def = OPS_REGISTRY.get(op_type, {})
+            variants = op_def.get("variants", {})
+            if "edge_stablehlo" in variants:
+                gen = variants["edge_stablehlo"].get("generator")
+                if gen:
+                    return gen
+            return "stablehlo.custom_call"  # Fallback to custom_call if not mapped
+
+        hlo_op = get_stablehlo_op_name(op_type)
         res_var = f"%v_{nid.replace('-', '_')}"
         self.var_map[nid] = res_var
         out_type = self._get_node_type(node)

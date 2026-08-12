@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
-[![Doc Coverage](https://img.shields.io/badge/doc_coverage-94.4%25-green.svg)](#)
+[![Doc Coverage](https://img.shields.io/badge/doc_coverage-93.5%25-green.svg)](#)
 
 The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution. Crucially, this architecture empowers developers to run precise forward and backward passes directly in the browser for exact shape learning, and to empirically benchmark any ML syntax across different execution backends.
 
@@ -32,24 +32,36 @@ Please refer to [`ARCHITECTURE.md`](ARCHITECTURE.md) for an in-depth dive into t
 ```mermaid
 flowchart TD
     subgraph Frontends ["zero-* Frontends (API Shells)"]
+        direction LR
         PT[PyTorch API]
         JX[JAX API]
         KR[Keras API]
+        MLX_F[MLX API]
     end
 
     subgraph Compiler ["ml-switcheroo-compiler"]
-        TR[Tracer & AD Engine] --> IR[Unified IR]
-        IR --> PM[Middle-End Optimizations]
+        TR[Tracer & AD Engine]
+        IR[Unified IR]
+        PM[Middle-End Optimizations]
+
+        TR -->|Captures Graph| IR
+        IR -->|Target-Agnostic Passes| PM
     end
 
     subgraph Backends ["Emitters (Execution Targets)"]
-        PY[Python Source]
-        WG[WebGPU Shaders]
-        WA[WASM SIMD]
+        subgraph S2S ["AST-to-AST Transpilation"]
+            PY[Python Frameworks]
+        end
+        subgraph Edge ["Direct-to-Edge Compilation"]
+            WG[WebGPU / WGSL]
+            WA[WASM SIMD]
+        end
     end
 
-    Frontends -->|Proxy Tensors| Compiler
-    PM -->|Optimized Graph| Backends
+    PT & JX & KR & MLX_F -->|Proxy Tensors| TR
+    PM -->|Optimized IR| PY
+    PM -->|Optimized IR| WG
+    PM -->|Optimized IR| WA
 ```
 
 - **Unified IR:** A strict, framework-agnostic intermediate representation defining precise shape semantics (learned via live forward/backward passes), mathematical primitives, control flow, and state management.

@@ -19,6 +19,25 @@ variants:
     eager: jax.numpy.reducemax
   mlx:
     eager: mlx.core.reducemax
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: reduction
+    init_code: var res = buf_in0_f32[0];
+    start_idx: '1'
+    loop_code: res = max(res, buf_in0_f32[i]);
+    post_loop_code: ''
+    result_var: res
+  edge_wasm_simd:
+    template: reduction
+    init_val: -INFINITY
+    simd_expr: wasm_f32x4_max(sum_{clean_id}, val)
+    scalar_expr: std::max(scalar_sum_{clean_id}, val)
+    final_combine: std::max(_simd_reduce_max(sum_{clean_id}), scalar_sum_{clean_id})
+  llvm_cpp:
+    template: reduction
+    init_val: -INFINITY
+    scalar_expr: std::max(res, val)
+    final_combine: res
+autodiff:
+  vjp:
+  - Multiply(Broadcast($cotangent), Equal($input[0], Broadcast(ReduceMax($input[0]))))
+  jvp: ReduceSum(Multiply($tangent[0], Equal($input[0], Broadcast(ReduceMax($input[0])))))

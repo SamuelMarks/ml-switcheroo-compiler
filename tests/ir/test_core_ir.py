@@ -57,3 +57,12 @@ def test_irblock():
     assert b.nodes == []
     assert b.inputs == []
     assert b.outputs == []
+
+
+def test_tangent_nodes():
+    from ml_switcheroo_compiler.ir.core import NoTangent, ZeroTangent
+
+    zt = ZeroTangent("t1")
+    assert zt.op_type == "ZeroTangent"
+    nt = NoTangent("t2")
+    assert nt.op_type == "NoTangent"

@@ -94,7 +94,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         super().__init__(graph)
         self.vision_visitor = PyTorchVisionVisitor()
         self.audio_visitor = PyTorchAudioVisitor()
-        self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor(), PyTorchDistributedVisitor()])
+        self.visitors.extend([*get_shared_ast_visitors(generator=self), PyTorchScatterVisitor()])
 
     def visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process an IR node and produce the corresponding PyTorch code string.

@@ -94,7 +94,7 @@ def test_even_more_coverage():
     mod._pswapaxes(bk, arg)
     mod._ppermute(bk, arg)
 
-    mod._mock_tridiagonal(bk, arg)
+    mod._np_tridiagonal(bk, arg)
 
     mod._fftn(bk, arg)
     mod._psumscatter(bk, arg)

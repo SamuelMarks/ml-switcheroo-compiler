@@ -2,7 +2,7 @@ import multiprocessing as mp
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_reduce_scatter, set_mock_distributed_context
+from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_reduce_scatter, set_np_distributed_context
 
 
 def _worker_process(rank, world_size, port_queue, queue):
@@ -19,7 +19,7 @@ def _worker_process(rank, world_size, port_queue, queue):
             port = port_queue.get()
             port_queue.put(port)  # put back for others
 
-        set_mock_distributed_context(world_size, rank, "127.0.0.1", port)
+        set_np_distributed_context(world_size, rank, "127.0.0.1", port)
         import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
         # dmod._tcp_dist_ctx.initialize()
 
@@ -96,7 +96,7 @@ def test_tcp_distributed_collectives():
 
 
 def test_tcp_distributed_single_node():
-    set_mock_distributed_context(1, 0, "127.0.0.1", 29506)
+    set_np_distributed_context(1, 0, "127.0.0.1", 29506)
     tensor = np.array([5.0])
     assert _np_all_reduce(np, tensor).item() == 5.0
     assert _np_all_gather(np, tensor).item() == 5.0

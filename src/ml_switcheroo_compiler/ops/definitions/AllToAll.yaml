@@ -1,17 +1,16 @@
 operation: AllToAll
-description: The AllToAll operation.
+description: The AllToAll collective operation.
+std_args:
+- name: input
+  type: Tensor
 variants:
-  numpy:
-    generator: '{0}'
-  cupy: {}
-  dask: {}
-  tensorflow: {}
-  keras: {}
-  pytorch: {}
-  jax: {}
+  pytorch:
+    eager: torch.distributed.all_to_all
+    generator: torch.distributed.all_to_all
+  jax:
+    eager: jax.lax.all_to_all
+    generator: jax.lax.all_to_all
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl: {}
-  edge_wasm_simd: {}
   llvm_cpp: {}
+  edge_wasm_simd: {}
+  edge_wgsl: {}

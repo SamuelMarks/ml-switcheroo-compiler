@@ -1,0 +1,106 @@
+Arange:
+  jvp: ZerosLike($input[0])
+  vjp: []
+BroadcastTo:
+  jvp: BroadcastTo($tangent[0])
+  vjp:
+  - Sum($cotangent)
+Cast:
+  jvp: Cast($tangent[0])
+  vjp:
+  - Cast($cotangent)
+Concat:
+  jvp: Concat($tangent[0], $tangent[1])
+  vjp:
+  - Split($cotangent)
+  - Split($cotangent)
+Conj:
+  jvp: Conj($tangent[0])
+  vjp:
+  - Conj($cotangent)
+ConstantOfShape:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Full:
+  jvp: ZerosLike($input[0])
+  vjp: []
+GetItem:
+  jvp: GetItem($tangent[0])
+  vjp:
+  - SetItem(ZerosLike($input[0]), $cotangent)
+Greater:
+  jvp: Constant(0.0)
+  vjp:
+  - Constant(0.0)
+  - Constant(0.0)
+HammingWindow:
+  jvp: ZerosLike($input[0])
+  vjp: []
+HannWindow:
+  jvp: ZerosLike($input[0])
+  vjp: []
+KaiserWindow:
+  jvp: ZerosLike($input[0])
+  vjp: []
+LogSigmoid:
+  jvp: Multiply($tangent[0], Subtract(Constant(1.0), Sigmoid($input[0])))
+  vjp:
+  - Multiply($cotangent, Subtract(Constant(1.0), Sigmoid($input[0])))
+Logit:
+  jvp: Divide($tangent[0], Multiply($input[0], Subtract(Constant(1.0), $input[0])))
+  vjp:
+  - Divide($cotangent, Multiply($input[0], Subtract(Constant(1.0), $input[0])))
+Logspace:
+  jvp: ZerosLike($input[0])
+  vjp: []
+ManualSeed:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Ones:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Rand:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Randint:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Randn:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Range:
+  jvp: ZerosLike($input[0])
+  vjp: []
+Reshape:
+  jvp: Reshape($tangent[0])
+  vjp:
+  - Reshape($cotangent)
+SetItem:
+  jvp: SetItem($tangent[0], $tangent[1])
+  vjp:
+  - GetItem($cotangent)
+  - GetItem($cotangent)
+Sigmoid:
+  jvp: Multiply($tangent[0], Multiply(Sigmoid($input[0]), Subtract(Constant(1.0),
+    Sigmoid($input[0]))))
+  vjp:
+  - Multiply($cotangent, Multiply(Sigmoid($input[0]), Subtract(Constant(1.0), Sigmoid($input[0]))))
+Slice:
+  jvp: Slice($tangent[0])
+  vjp:
+  - SetItem(ZerosLike($input[0]), $cotangent)
+Split:
+  jvp: Split($tangent[0])
+  vjp:
+  - Concat($cotangent)
+Transpose:
+  jvp: Transpose($tangent[0])
+  vjp:
+  - Transpose($cotangent)
+Zeros:
+  jvp: ZerosLike($input[0])
+  vjp: []
+ZerosLike:
+  jvp: ZerosLike($input[0])
+  vjp:
+  - ZerosLike($cotangent)

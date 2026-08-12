@@ -2,4 +2,11 @@ operation: consume_prefix_in_state_dict_if_present
 description: Auto-generated mapping for consume_prefix_in_state_dict_if_present.
 std_args: []
 type: function
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

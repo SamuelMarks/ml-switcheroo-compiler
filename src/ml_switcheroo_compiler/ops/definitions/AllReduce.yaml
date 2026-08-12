@@ -1,0 +1,19 @@
+operation: AllReduce
+description: The AllReduce collective operation.
+std_args:
+- name: input
+  type: Tensor
+variants:
+  pytorch:
+    eager: torch.distributed.all_reduce
+    generator: torch.distributed.all_reduce
+    macro_template: torch.distributed.all_reduce({input})
+  jax:
+    eager: jax.lax.pmean
+    generator: jax.lax.pmean
+    macro_template: jax.lax.pmean({input}, axis_name='i')
+  mlx:
+    eager: mlx.core.fast.all_reduce
+  llvm_cpp: {}
+  edge_wasm_simd: {}
+  edge_wgsl: {}

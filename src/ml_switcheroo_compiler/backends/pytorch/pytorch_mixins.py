@@ -63,7 +63,7 @@ class PyTorchScatterVisitor:
 class PyTorchDistributedVisitor:
     """Mixin."""
 
-    def visit_all_gather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AllGather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate code for all_gather.
 
         Args:
@@ -75,9 +75,9 @@ class PyTorchDistributedVisitor:
         str: Result.
         """
         tensor = input_vars[0]
-        return f"torch.distributed.all_gather_into_tensor(torch.empty_like({tensor}), {tensor})"
+        return f"torch.distributed.all_gather_into_tensor(output, {tensor})"
 
-    def visit_reduce_scatter(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_ReduceScatter(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate code for reduce_scatter.
 
         Args:
@@ -91,7 +91,7 @@ class PyTorchDistributedVisitor:
         tensor = input_vars[0]
         return f"torch.distributed.reduce_scatter_tensor(torch.empty_like({tensor}), {tensor})"
 
-    def visit_all_reduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+    def visit_AllReduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate code for all_reduce.
 
         Args:

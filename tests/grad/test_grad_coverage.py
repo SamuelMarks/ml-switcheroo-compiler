@@ -130,7 +130,7 @@ def test_get_inputs_dict_none_val():
     graph.nodes = {"test_id": LogicalNode("test_id", "Input", shape_metadata=[])}
     t = Tensor(42.0, TensorConfig((), DType.Float32, Device("cpu")))
     t._data = mock.Mock(id="test_id")
-    with mock.patch("ml_switcheroo_compiler.grad._get_concrete_val", return_value=None):
+    with mock.patch("ml_switcheroo_compiler.grad.utils._get_concrete_val", return_value=None):
         res = _get_inputs_dict(graph)
         assert "test_id" not in res
 
@@ -202,7 +202,7 @@ def test_value_and_grad_default_dtype():
         return x
 
     vg = value_and_grad(f)
-    with mock.patch("ml_switcheroo_compiler.grad.get_active_backend") as mock_backend:
+    with mock.patch("ml_switcheroo_compiler.grad.api.get_active_backend") as mock_backend:
         mock_backend_inst = mock.Mock()
         mock_backend.return_value = mock_backend_inst
 

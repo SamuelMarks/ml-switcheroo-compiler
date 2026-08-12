@@ -1,16 +1,16 @@
 import numpy as np
 
-from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_mock_distributed_context
+from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_np_distributed_context
 
 
-def test_mock_all_reduce_threads():
+def test_np_all_reduce_threads():
     pass
 
 
-def test_all_gather_mock_coverage9():
+def test_all_gather_np_coverage9():
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
-    set_mock_distributed_context(1, 0, "127.0.0.1", 40000)
+    set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
 
@@ -80,10 +80,10 @@ def test_all_gather_mock_coverage9():
     dmod._np_shard_tensor(MockNP(), [2.0])
 
 
-def test_all_gather_mock_coverage10():
+def test_all_gather_np_coverage10():
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
-    set_mock_distributed_context(1, 0, "127.0.0.1", 40000)
+    set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
 
@@ -174,10 +174,10 @@ def test_all_gather_mock_coverage10():
     dmod._np_shard_tensor(MockNP(), ArrayMock(2.0))
 
 
-def test_all_gather_mock_coverage11():
+def test_all_gather_np_coverage11():
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
-    set_mock_distributed_context(1, 0, "127.0.0.1", 40000)
+    set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
 
@@ -264,10 +264,10 @@ def test_all_gather_mock_coverage11():
     dmod._np_shard_tensor(np, np.array([2.0]))
 
 
-def test_all_gather_mock_coverage12():
+def test_all_gather_np_coverage12():
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
-    set_mock_distributed_context(1, 0, "127.0.0.1", 40000)
+    set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
 

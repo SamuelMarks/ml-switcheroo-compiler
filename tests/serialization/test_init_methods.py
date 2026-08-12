@@ -1,4 +1,4 @@
-def test_keras_mock_serialization():
+def test_keras_np_serialization():
     import os
 
     from ml_switcheroo_compiler.serialization import load_model, register_keras_serializable, save_model

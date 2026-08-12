@@ -2,4 +2,10 @@ operation: conv3d_weight
 description: Auto-generated from mlx_code_defs
 std_args: []
 type: function
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

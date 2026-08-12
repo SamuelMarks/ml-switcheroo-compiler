@@ -19,3 +19,15 @@ variants:
     eager: keras_ops.logical_and
   tensorflow:
     eager: tf.logical_and
+  edge_wgsl:
+    template: binary
+    expr: f32((buf_in0_f32[in0_offset] != 0.0) && (buf_in1_f32[in1_offset] != 0.0))
+  edge_wasm_simd:
+    template: binary
+    simd_expr: wasm_v128_bitselect(wasm_f32x4_splat(1.0f), wasm_f32x4_splat(0.0f),
+      wasm_v128_and(wasm_f32x4_ne(in0_val, wasm_f32x4_splat(0.0f)), wasm_f32x4_ne(in1_val,
+      wasm_f32x4_splat(0.0f))))
+    scalar_expr: _scalar_logicaland(in0_val, in1_val)
+  llvm_cpp:
+    template: binary
+    scalar_expr: 'in0_val != 0.0f && in1_val != 0.0f ? 1.0f : 0.0f'

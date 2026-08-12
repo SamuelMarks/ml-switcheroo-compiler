@@ -26,7 +26,7 @@ def test_cpp_generator_generate():
 
     pass
     assert "NDArrayView<float> n1({1}); // Input" in code
-    assert "n2.data[i] = v1 + v2;" in code
+    assert "n2.data[i] = in0_val + in1_val;" in code
     assert "// Output n2" in code
 
     g.nodes["n4"] = n4
@@ -71,12 +71,12 @@ def test_cpp_generator_extra():
     n_loop = IRNode("Loop", op_type="Loop")
 
     gen._visit_node(n_const)
-    gen._visit_node(n_neg)
+    gen._visit_node(n_neg, g)
     gen._visit_node(n_if)
     gen._visit_node(n_loop)
 
     assert "Const.data[i] = 5.0;" in "".join(gen.lines)
-    assert "Neg.data[i] = -a.data[i];" in "".join(gen.lines)
+    assert "Neg.data[i] = -in0_val;" in "".join(gen.lines)
     assert "if (c.data[0] > 0.0f) {" in "".join(gen.lines)
     assert "while (true) {" in "".join(gen.lines)
 
@@ -224,7 +224,7 @@ def test_cpp_reduce_variants():
     code = gen.generate(g)
     assert "std::max" in code
     assert "std::min" in code
-    assert "/= static_cast<float>" in code
+    assert "res / in0.size()" in code
 
 
 def test_cpp_get_shape_scalar():

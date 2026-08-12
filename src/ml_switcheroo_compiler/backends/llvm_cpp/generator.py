@@ -135,150 +135,6 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
         self.lines.append("}")
         return "\n".join(self.lines)
 
-    def _visit_binary_op(self, node: Any, op_sym: str, func: str = "") -> None:
-        """Visit a binary operation node and emit C++ code."""
-        assert len(node.inputs) >= 2
-        in1, in2 = node.inputs[:2]
-        out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-        self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-
-        self.lines.append(f"    std::vector<int> idx_{node.id}({len(self._get_shape(node))}, 0);")
-        self.lines.append(f"    for(size_t i=0; i<{node.id}.size(); ++i) {{")
-        self.lines.append(f"        float v1 = {in1}.get(idx_{node.id});")
-        self.lines.append(f"        float v2 = {in2}.get(idx_{node.id});")
-
-        if func:
-            self.lines.append(f"        {node.id}.data[i] = {func}(v1, v2);")
-        else:
-            if op_sym in ("&&", "||", "!=", "==", ">", "<", ">=", "<="):
-                self.lines.append(f"        {node.id}.data[i] = (v1 {op_sym} v2) ? 1.0f : 0.0f;")
-            elif op_sym == "xor":
-                self.lines.append(f"        {node.id}.data[i] = ((v1 != 0.0f) != (v2 != 0.0f)) ? 1.0f : 0.0f;")
-            else:
-                self.lines.append(f"        {node.id}.data[i] = v1 {op_sym} v2;")
-        self.lines.append(f"        inc_indices(idx_{node.id}, {node.id}.shape);")
-        self.lines.append("    }")
-
-    def _visit_unary_op(self, node: Any, func: str) -> None:
-        """Visit a unary operation node and emit C++ code."""
-        assert len(node.inputs) >= 1
-        in1 = node.inputs[0]
-        out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-        self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-        self.lines.append(f"    for(size_t i=0; i<{node.id}.size(); ++i) {{")
-        if func == "-":
-            self.lines.append(f"        {node.id}.data[i] = -{in1}.data[i];")
-        elif func == "sign":
-            self.lines.append(f"        {node.id}.data[i] = ({in1}.data[i] > 0.0f) ? 1.0f : (({in1}.data[i] < 0.0f) ? -1.0f : 0.0f);")
-        elif func == "rsqrt":
-            self.lines.append(f"        {node.id}.data[i] = 1.0f / std::sqrt({in1}.data[i]);")
-        else:
-            self.lines.append(f"        {node.id}.data[i] = {func}({in1}.data[i]);")
-        self.lines.append("    }")
-
-    def _visit_matmul(self, node: Any, graph_to_use: Any) -> None:
-        assert len(node.inputs) >= 2
-        in1, in2 = node.inputs[:2]
-        out_shape = self._get_shape(node)
-        in0_node = graph_to_use.nodes.get(in1)
-        in0_shape = self._get_shape(in0_node) if in0_node else [1, 1]
-
-        M = out_shape[0] if len(out_shape) > 0 else 1
-        N = out_shape[1] if len(out_shape) > 1 else 1
-        K = in0_shape[1] if len(in0_shape) > 1 else 1
-
-        out_shape_str = "{" + ",".join(map(str, out_shape)) + "}"
-        self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-
-        self.lines.append("    #ifdef USE_BLAS")
-        self.lines.append(f"    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, {M}, {N}, {K}, 1.0f, {in1}.data.data(), {K}, {in2}.data.data(), {N}, 0.0f, {node.id}.data.data(), {N});")
-        self.lines.append("    #else")
-        self.lines.append(f"    for (size_t i = 0; i < {M}; ++i) {{")
-        self.lines.append(f"        for (size_t j = 0; j < {N}; ++j) {{")
-        self.lines.append("            float sum = 0.0f;")
-        self.lines.append(f"            for (size_t k = 0; k < {K}; ++k) {{")
-        self.lines.append(f"                sum += {in1}.data[i * {K} + k] * {in2}.data[k * {N} + j];")
-        self.lines.append("            }")
-        self.lines.append(f"            {node.id}.data[i * {N} + j] = sum;")
-        self.lines.append("        }")
-        self.lines.append("    }")
-        self.lines.append("    #endif")
-
-    def _visit_reduce(self, node: Any, op: str) -> None:
-        in1 = node.inputs[0]
-        out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-        self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-        self.lines.append(f"    if ({in1}.size() > 0) {{")
-        if op == "ReduceProd":
-            self.lines.append("        float res = 1.0f;")
-            self.lines.append(f"        for(size_t i=0; i<{in1}.size(); ++i) {{")
-            self.lines.append(f"            res *= {in1}.data[i];")
-            self.lines.append("        }")
-        elif op in ("ArgMax", "ArgMin"):
-            self.lines.append(f"        float res = 0.0f; float best_val = {in1}.data[0];")
-            self.lines.append(f"        for(size_t i=1; i<{in1}.size(); ++i) {{")
-            if op == "ArgMax":
-                self.lines.append(f"            if ({in1}.data[i] > best_val) {{ best_val = {in1}.data[i]; res = (float)i; }}")
-            else:
-                self.lines.append(f"            if ({in1}.data[i] < best_val) {{ best_val = {in1}.data[i]; res = (float)i; }}")
-            self.lines.append("        }")
-        else:
-            self.lines.append(f"        float res = {in1}.data[0];")
-            self.lines.append(f"        for(size_t i=1; i<{in1}.size(); ++i) {{")
-            if op in ("ReduceSum", "ReduceMean"):
-                self.lines.append(f"            res += {in1}.data[i];")
-            elif op == "ReduceMax":
-                self.lines.append(f"            res = std::max(res, {in1}.data[i]);")
-            elif op == "ReduceMin":
-                self.lines.append(f"            res = std::min(res, {in1}.data[i]);")
-            self.lines.append("        }")
-            if op == "ReduceMean":
-                self.lines.append(f"        res /= static_cast<float>({in1}.size());")
-        self.lines.append(f"        {node.id}.data[0] = res;")
-        self.lines.append("    }")
-
-    def _visit_conv(self, node: Any, op: str) -> None:
-        out_shape = self._get_shape(node)
-        B = out_shape[0] if len(out_shape) > 0 else 1
-        H = out_shape[1] if len(out_shape) > 1 else 1
-        W = out_shape[2] if len(out_shape) > 2 else 1
-        C = out_shape[3] if len(out_shape) > 3 else 1
-
-        out_shape_str = "{" + ",".join(map(str, out_shape)) + "}"
-        self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-        self.lines.append(f"    for (size_t b = 0; b < {B}; ++b) {{")
-        self.lines.append(f"        for (size_t h = 0; h < {H}; ++h) {{")
-        self.lines.append(f"            for (size_t w = 0; w < {W}; ++w) {{")
-        if op == "Conv2D":
-            self.lines.append(f"                for (size_t co = 0; co < {C}; ++co) {{")
-            self.lines.append(f"                    {node.id}.data[((b * {H} + h) * {W} + w) * {C} + co] = 0.0f;")
-            self.lines.append("                }")
-        else:
-            self.lines.append(f"                for (size_t c = 0; c < {C}; ++c) {{")
-            self.lines.append(f"                    {node.id}.data[((b * {H} + h) * {W} + w) * {C} + c] = 0.0f;")
-            self.lines.append("                }")
-        self.lines.append("            }")
-        self.lines.append("        }")
-        self.lines.append("    }")
-
-    def _visit_activation(self, node: Any, op: str) -> None:
-        out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-        self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-        self.lines.append(f"    for(size_t i=0; i<{node.inputs[0]}.size(); ++i) {{")
-        if op == "Relu":
-            self.lines.append(f"        {node.id}.data[i] = std::max(0.0f, {node.inputs[0]}.data[i]);")
-        elif op == "Sigmoid":
-            self.lines.append(f"        {node.id}.data[i] = 1.0f / (1.0f + std::exp(-{node.inputs[0]}.data[i]));")
-        elif op == "Tanh":
-            self.lines.append(f"        {node.id}.data[i] = std::tanh({node.inputs[0]}.data[i]);")
-        elif op == "Swish":
-            self.lines.append(f"        {node.id}.data[i] = {node.inputs[0]}.data[i] / (1.0f + std::exp(-{node.inputs[0]}.data[i]));")
-        elif op == "Gelu":
-            self.lines.append(f"        {node.id}.data[i] = 0.5f * {node.inputs[0]}.data[i] * (1.0f + std::tanh(0.7978845608f * ({node.inputs[0]}.data[i] + 0.044715f * std::pow({node.inputs[0]}.data[i], 3.0f))));")
-        else:
-            self.lines.append(f"        {node.id}.data[i] = {node.inputs[0]}.data[i];")
-        self.lines.append("    }")
-
     def _visit_if_op(self, node: Any, graph_to_use: Any = None) -> None:
         assert len(node.inputs) >= 1
         cond_var = node.inputs[0]
@@ -316,53 +172,6 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
         """
         op = node.op_type
 
-        binary_ops = {
-            "Add": "+",
-            "Subtract": "-",
-            "Multiply": "*",
-            "TrueDivide": "/",
-            "Div": "/",
-            "LogicalAnd": "&&",
-            "LogicalOr": "||",
-            "LogicalXor": "xor",
-            "Equal": "==",
-            "NotEqual": "!=",
-            "Greater": ">",
-            "Less": "<",
-            "GreaterEqual": ">=",
-            "LessEqual": "<=",
-        }
-        binary_func_ops = {
-            "FloorDivide": "std::floor_divide_placeholder",
-            "Power": "std::pow",
-            "Maximum": "std::max",
-            "Minimum": "std::min",
-        }
-        unary_ops = {
-            "Exp": "std::exp",
-            "Log": "std::log",
-            "Log1p": "std::log1p",
-            "Expm1": "std::expm1",
-            "Negative": "-",
-            "Neg": "-",
-            "Abs": "std::abs",
-            "Sign": "sign",
-            "Ceil": "std::ceil",
-            "Floor": "std::floor",
-            "Round": "std::round",
-            "Sqrt": "std::sqrt",
-            "Rsqrt": "rsqrt",
-            "Sin": "std::sin",
-            "Cos": "std::cos",
-            "Tan": "std::tan",
-            "Asin": "std::asin",
-            "Acos": "std::acos",
-            "Atan": "std::atan",
-            "Sinh": "std::sinh",
-            "Cosh": "std::cosh",
-            "Tanh": "std::tanh",
-        }
-
         if op == "Input":
             out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
             self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str}); // Input")
@@ -371,32 +180,6 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
             out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
             self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
             self.lines.append(f"    for(size_t i=0; i<{node.id}.size(); ++i) {node.id}.data[i] = {val};")
-        elif op in binary_ops:
-            self._visit_binary_op(node, binary_ops[op])
-        elif op in binary_func_ops:
-            func = binary_func_ops[op]
-            if op == "FloorDivide":
-                self._visit_binary_op(node, "", func="[](float a, float b){ return std::floor(a/b); }")
-            else:
-                self._visit_binary_op(node, "", func=func)
-        elif op in unary_ops:
-            self._visit_unary_op(node, unary_ops[op])
-        elif op in ("MatMul", "DotGeneral", "Einsum"):
-            self._visit_matmul(node, graph_to_use)
-        elif op in ("Conv1D", "Conv2D", "Conv3D", "ConvTranspose2D", "MaxPool", "AvgPool", "MaxPool2D", "AvgPool2D"):
-            self._visit_conv(node, op)
-        elif op in ("ReduceSum", "ReduceMean", "ReduceMax", "ReduceMin", "ReduceProd", "ArgMax", "ArgMin"):
-            self._visit_reduce(node, op)
-        elif op in ("Relu", "Gelu", "Swish", "Sigmoid", "Tanh"):
-            self._visit_activation(node, op)
-        elif op in ("Softmax", "LogSoftmax", "BatchNorm", "LayerNorm", "GroupNorm", "Cast", "FusedLogExp", "FusedMultiplyAdd", "FlashAttention", "FusedMatMulAdd", "FusedConv2DBatchNorm", "FusedAddRelu"):
-            out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-            self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-            self.lines.append(f"    for(size_t i=0; i<{node.id}.size(); ++i) {node.id}.data[i] = {node.inputs[0]}.data[i];")
-        elif op in ("Pad", "Slice", "Concat", "Gather", "Scatter"):
-            out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-            self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
-            self.lines.append(f"    for(size_t i=0; i<{node.id}.size(); ++i) {node.id}.data[i] = {node.inputs[0]}.data[i];")
         elif op in ("If", "Cond"):
             self._visit_if_op(node, graph_to_use)
         elif op in ("Loop", "WhileLoop"):
@@ -404,8 +187,34 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
         elif op == "Output":
             self.lines.append(f"    // Output {node.inputs[0]}")
         else:
-            out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
-            self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str});")
+            from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+            from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
+
+            op_def = OPS_REGISTRY.get(op, {})
+            mapping = op_def.get("variants", {}).get("llvm_cpp", {})
+
+            if not mapping:
+                out_shape_str = "{" + ",".join(map(str, self._get_shape(node))) + "}"
+                self.lines.append(f"    NDArrayView<float> {node.id}({out_shape_str}); // Fallback Unimplemented {op}")
+            else:
+                template = get_cpp_template(mapping["template"])
+
+                in0_node = graph_to_use.nodes.get(node.inputs[0]) if len(node.inputs) > 0 else None
+                in0_shape = self._get_shape(in0_node) if in0_node else [1, 1]
+                out_shape = self._get_shape(node)
+                out_shape_str = "{" + ",".join(map(str, out_shape)) + "}"
+
+                M = out_shape[0] if len(out_shape) > 0 else 1
+                N = out_shape[1] if len(out_shape) > 1 else 1
+                K = in0_shape[1] if len(in0_shape) > 1 else 1
+
+                expr_format_args = {"clean_id": node.id, "out_shape_str": out_shape_str, "in0": node.inputs[0] if len(node.inputs) > 0 else "dummy", "in1": node.inputs[1] if len(node.inputs) > 1 else "dummy", "rank": len(out_shape), "M": M, "N": N, "K": K}
+                expr_format_args.update(mapping)
+
+                body = template["body"].format(**expr_format_args)
+                for line in body.split("\n"):
+                    if line.strip():
+                        self.lines.append(f"    {line}")
 
     def compile(self, code: str) -> Any:
         """Compile the generated code."""

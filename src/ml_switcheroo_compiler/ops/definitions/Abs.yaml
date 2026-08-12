@@ -23,6 +23,17 @@ variants:
     eager: numpy.abs
   mlx:
     eager: mlx.core.abs
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: unary
+    expr: abs(buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: wasm_f32x4_abs(in0_val)
+    scalar_expr: std::abs(in0_val)
+  llvm_cpp:
+    template: unary
+    scalar_expr: std::abs(in0_val)
+autodiff:
+  vjp:
+  - Multiply($cotangent, Sign($input[0]))
+  jvp: Multiply($tangent[0], Sign($input[0]))

@@ -14,4 +14,28 @@ std_args:
   kind: positional_or_keyword
   name: keepdims
   type: bool
-variants: {}
+variants:
+  edge_wgsl:
+    template: reduction
+    init_code: var res = 1.0;
+    start_idx: '0'
+    loop_code: res = res * buf_in0_f32[i];
+    post_loop_code: ''
+    result_var: res
+  edge_wasm_simd:
+    template: reduction
+    init_val: '1.0'
+    simd_expr: wasm_f32x4_mul(sum_{clean_id}, val)
+    scalar_expr: scalar_sum_{clean_id} * val
+    final_combine: _simd_reduce_mul(sum_{clean_id}) * scalar_sum_{clean_id}
+  llvm_cpp:
+    template: reduction
+    init_val: '1.0'
+    scalar_expr: res * val
+    final_combine: res
+autodiff:
+  vjp:
+  - Multiply(Broadcast(Multiply($cotangent, ReduceProd($input[0]))), TrueDivide(Constant(1.0),
+    $input[0]))
+  jvp: ReduceSum(Multiply($tangent[0], Multiply(Broadcast(ReduceProd($input[0])),
+    TrueDivide(Constant(1.0), $input[0]))))

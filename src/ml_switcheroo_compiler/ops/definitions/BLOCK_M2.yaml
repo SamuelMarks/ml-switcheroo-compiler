@@ -2,4 +2,11 @@ operation: BLOCK_M2
 description: Thread block size for second Q dimension in backward pass. Use as 'bwd_BLOCK_M2'.
 std_args: []
 type: attribute
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

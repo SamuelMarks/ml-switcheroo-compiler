@@ -105,7 +105,13 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
         return _infer_op_shape(node, shapes)
     except KeyError:
         return node.shape_metadata
-    except (ValueError, TypeError, Exception) as e:
+    except ValueError as e:
+        if "Operation" in str(e) and "not found" in str(e):
+            # Known missing
+            return node.shape_metadata
+        msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
+        raise CompilationError(msg) from e
+    except (TypeError, Exception) as e:
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
 

@@ -72,7 +72,7 @@ def test_fallback_load():
         mock_load.return_value = {"a": 1}
         assert _fallback_load("test.safetensors") == {"a": 1}
 
-    with patch("ml_switcheroo_compiler.ops.io.load_npz") as mock_load:
+    with patch("ml_switcheroo_compiler.ops.io.numpy_io.load_npz") as mock_load:
         mock_load.return_value = {"a": 1}
         assert _fallback_load("test.npz") == {"a": 1}
 
@@ -382,7 +382,7 @@ def test_fallback_load_2():
     with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.load", return_value="safetensors"):
         assert _fallback_load("test.safetensors") == "safetensors"
 
-    with patch("ml_switcheroo_compiler.ops.io.load_npz", return_value="npz"):
+    with patch("ml_switcheroo_compiler.ops.io.numpy_io.load_npz", return_value="npz"):
         assert _fallback_load("test.npz") == "npz"
 
     with patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5"):

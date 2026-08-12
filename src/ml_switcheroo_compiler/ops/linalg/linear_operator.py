@@ -3,282 +3,144 @@ from __future__ import annotations
 # ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for linear_operator.py."""
+
 from typing import Any
 
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
-class LinearOperator:
-    """LinearOperator mock."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize.
+class BaseLinearOperator(OpDef):
+    """Base for linear operators."""
 
-        Args:
-            *args (object): Positional args.
-            **kwargs (object): Keyword args.
-        """
-        self.args = args
-        self.kwargs = kwargs
+    def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        # Default shape inference attempts to find a shape or operand
+        operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
+        if hasattr(operand, "shape"):
+            return operand.shape
+        return ()
 
 
-class LinearOperatorAdjoint(LinearOperator):
-    """Configuration class for linear operator adjoint."""
+@register_op("LinearOperator")
+class LinearOperator(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, operator: LinearOperator, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            operator (LinearOperator): The operator parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(operator=operator, **kwargs)
+@register_op("LinearOperatorAdjoint")
+class LinearOperatorAdjoint(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorBlockDiag(LinearOperator):
-    """Configuration class for linear operator block diag."""
+@register_op("LinearOperatorBlockDiag")
+class LinearOperatorBlockDiag(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, operators: list[LinearOperator], **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            operators (list): The operators parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(operators=operators, **kwargs)
+@register_op("LinearOperatorBlockLowerTriangular")
+class LinearOperatorBlockLowerTriangular(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorBlockLowerTriangular(LinearOperator):
-    """Configuration class for linear operator block lower triangular."""
+@register_op("LinearOperatorCirculant")
+class LinearOperatorCirculant(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, operators: list[list[LinearOperator]], **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            operators (list): The operators parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(operators=operators, **kwargs)
+@register_op("LinearOperatorCirculant2D")
+class LinearOperatorCirculant2D(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorCirculant(LinearOperator):
-    """Configuration class for linear operator circulant."""
+@register_op("LinearOperatorCirculant3D")
+class LinearOperatorCirculant3D(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, spectrum: Any, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            spectrum (object): The spectrum parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(spectrum=spectrum, **kwargs)
+@register_op("LinearOperatorComposition")
+class LinearOperatorComposition(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorCirculant2D(LinearOperator):
-    """Configuration class for linear operator circulant2 d."""
+@register_op("LinearOperatorDiag")
+class LinearOperatorDiag(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, spectrum: Any, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            spectrum (object): The spectrum parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(spectrum=spectrum, **kwargs)
+@register_op("LinearOperatorFullMatrix")
+class LinearOperatorFullMatrix(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorCirculant3D(LinearOperator):
-    """Configuration class for linear operator circulant3 d."""
+@register_op("LinearOperatorHouseholder")
+class LinearOperatorHouseholder(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, spectrum: Any, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            spectrum (object): The spectrum parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(spectrum=spectrum, **kwargs)
+@register_op("LinearOperatorIdentity")
+class LinearOperatorIdentity(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorComposition(LinearOperator):
-    """Configuration class for linear operator composition."""
+@register_op("LinearOperatorInversion")
+class LinearOperatorInversion(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, operators: list[LinearOperator], **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            operators (list): The operators parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(operators=operators, **kwargs)
+@register_op("LinearOperatorKronecker")
+class LinearOperatorKronecker(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorDiag(LinearOperator):
-    """Configuration class for linear operator diag."""
+@register_op("LinearOperatorLowRankUpdate")
+class LinearOperatorLowRankUpdate(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, diag: Any, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            diag (object): The diag parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(diag=diag, **kwargs)
+@register_op("LinearOperatorLowerTriangular")
+class LinearOperatorLowerTriangular(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorFullMatrix(LinearOperator):
-    """Configuration class for linear operator full matrix."""
+@register_op("LinearOperatorPermutation")
+class LinearOperatorPermutation(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, matrix: Any, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            matrix (object): The matrix parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(matrix=matrix, **kwargs)
+@register_op("LinearOperatorScaledIdentity")
+class LinearOperatorScaledIdentity(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorHouseholder(LinearOperator):
-    """Configuration class for linear operator householder."""
+@register_op("LinearOperatorToeplitz")
+class LinearOperatorToeplitz(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
-    def __init__(self, reflection_axis: Any, **kwargs: Any) -> None:
-        """Initialize.
 
-        Args:
-            reflection_axis (object): The reflection_axis parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(reflection_axis=reflection_axis, **kwargs)
+@register_op("LinearOperatorTridiag")
+class LinearOperatorTridiag(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass
 
 
-class LinearOperatorIdentity(LinearOperator):
-    """Configuration class for linear operator identity."""
-
-    def __init__(self, num_rows: int, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            num_rows (int): The num_rows parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(num_rows=num_rows, **kwargs)
-
-
-class LinearOperatorInversion(LinearOperator):
-    """Configuration class for linear operator inversion."""
-
-    def __init__(self, operator: LinearOperator, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            operator (LinearOperator): The operator parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(operator=operator, **kwargs)
-
-
-class LinearOperatorKronecker(LinearOperator):
-    """Configuration class for linear operator kronecker."""
-
-    def __init__(self, operators: list[LinearOperator], **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            operators (list): The operators parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(operators=operators, **kwargs)
-
-
-class LinearOperatorLowRankUpdate(LinearOperator):
-    """Configuration class for linear operator low rank update."""
-
-    def __init__(self, base_operator: LinearOperator, u: Any, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            base_operator (LinearOperator): The base_operator parameter.
-            u (object): The u parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(base_operator=base_operator, u=u, **kwargs)
-
-
-class LinearOperatorLowerTriangular(LinearOperator):
-    """Configuration class for linear operator lower triangular."""
-
-    def __init__(self, tril: Any, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            tril (object): The tril parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(tril=tril, **kwargs)
-
-
-class LinearOperatorPermutation(LinearOperator):
-    """Configuration class for linear operator permutation."""
-
-    def __init__(self, perm: Any, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            perm (object): The perm parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(perm=perm, **kwargs)
-
-
-class LinearOperatorScaledIdentity(LinearOperator):
-    """Configuration class for linear operator scaled identity."""
-
-    def __init__(self, num_rows: int, multiplier: Any, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            num_rows (int): The num_rows parameter.
-            multiplier (object): The multiplier parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(num_rows=num_rows, multiplier=multiplier, **kwargs)
-
-
-class LinearOperatorToeplitz(LinearOperator):
-    """Configuration class for linear operator toeplitz."""
-
-    def __init__(self, col: Any, row: Any, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            col (object): The col parameter.
-            row (object): The row parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(col=col, row=row, **kwargs)
-
-
-class LinearOperatorTridiag(LinearOperator):
-    """Configuration class for linear operator tridiag."""
-
-    def __init__(self, diagonals: Any, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            diagonals (object): The diagonals parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(diagonals=diagonals, **kwargs)
-
-
-class LinearOperatorZeros(LinearOperator):
-    """Configuration class for linear operator zeros."""
-
-    def __init__(self, num_rows: int, num_cols: int, **kwargs: Any) -> None:
-        """Initialize.
-
-        Args:
-            num_rows (int): The num_rows parameter.
-            num_cols (int): The num_cols parameter.
-            **kwargs (object): Keyword args.
-        """
-        super().__init__(num_rows=num_rows, num_cols=num_cols, **kwargs)
+@register_op("LinearOperatorZeros")
+class LinearOperatorZeros(BaseLinearOperator):
+    def __init__(self, *args, **kwargs):
+        pass

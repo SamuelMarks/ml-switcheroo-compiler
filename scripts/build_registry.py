@@ -32,12 +32,13 @@ def build() -> None:
         f.write("# Generated from src/ml_switcheroo_compiler/ops/definitions/*.yaml\n\n")
 
         # __all__ definition
+        f.write("from typing import Any\n\n")
         all_list_str = ',\n    "OPS_REGISTRY"'
         f.write(f"__all__ = [\n    {all_list_str.strip(', ')}\n]\n\n")
 
         # Format the dictionary directly into python source
         formatted_dict = pprint.pformat(ops_data, indent=4, sort_dicts=True)
-        f.write(f"OPS_REGISTRY = {formatted_dict}\n")
+        f.write(f"OPS_REGISTRY: dict[str, dict[str, Any]] = {formatted_dict}\n")
 
 
 if __name__ == "__main__":

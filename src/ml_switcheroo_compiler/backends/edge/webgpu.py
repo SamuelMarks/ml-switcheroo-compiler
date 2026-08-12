@@ -118,215 +118,70 @@ class WebGPUCodeGenerator(BaseGenerator):
         in1_shape, in1_strides = self._get_shape_and_strides(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else ([], [])
         _, out_strides = self._get_shape_and_strides(node)
 
-        if op_type in ("MatMul", "DotGeneral", "Einsum"):
-            TILE_SIZE = 16
-            wg_x = TILE_SIZE
-            wg_y = TILE_SIZE
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
+        from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
-            K = in0_shape[1] if len(in0_shape) > 1 else 1
-            N = shape[1] if len(shape) > 1 else 1
-            M = shape[0] if len(shape) > 0 else 1
-
-            global_code_list.append(f"var<workgroup> tileA_{clean_id} : array<array<f32, {TILE_SIZE}>, {TILE_SIZE}>;")
-            global_code_list.append(f"var<workgroup> tileB_{clean_id} : array<array<f32, {TILE_SIZE}>, {TILE_SIZE}>;")
-
-            body_nodes.append(WGSLDecl("let", "row", WGSLRaw("global_id.y")))
-            body_nodes.append(WGSLDecl("let", "col", WGSLRaw("global_id.x")))
-            body_nodes.append(WGSLDecl("let", "local_x", WGSLRaw("local_id.x")))
-            body_nodes.append(WGSLDecl("let", "local_y", WGSLRaw("local_id.y")))
-
-            body_nodes.append(WGSLDecl("var", "sum", WGSLRaw("0.0")))
-            body_nodes.append(WGSLDecl("let", "K", WGSLRaw(f"{K}u")))
-            body_nodes.append(WGSLDecl("let", "N", WGSLRaw(f"{N}u")))
-            body_nodes.append(WGSLDecl("let", "M", WGSLRaw(f"{M}u")))
-
-            body_nodes.append(WGSLDecl("let", "num_tiles", WGSLRaw(f"(K + {TILE_SIZE}u - 1u) / {TILE_SIZE}u")))
-
-            loop_body: list[WGSLNode] = []
-            loop_body.append(WGSLDecl("let", "tiled_k_a", WGSLRaw(f"t * {TILE_SIZE}u + local_x")))
-            loop_body.append(WGSLRaw(f"if (row < M && tiled_k_a < K) {{ tileA_{clean_id}[local_y][local_x] = buf_in0_f32[row * K + tiled_k_a]; }} else {{ tileA_{clean_id}[local_y][local_x] = 0.0; }}"))
-
-            loop_body.append(WGSLDecl("let", "tiled_k_b", WGSLRaw(f"t * {TILE_SIZE}u + local_y")))
-            loop_body.append(WGSLRaw(f"if (tiled_k_b < K && col < N) {{ tileB_{clean_id}[local_y][local_x] = buf_in1_f32[tiled_k_b * N + col]; }} else {{ tileB_{clean_id}[local_y][local_x] = 0.0; }}"))
-
-            loop_body.append(WGSLRaw("workgroupBarrier();"))
-
-            inner_loop: list[WGSLNode] = [WGSLAssign("sum", WGSLRaw(f"sum + tileA_{clean_id}[local_y][k] * tileB_{clean_id}[k][local_x]"))]
-            loop_body.append(WGSLFor(WGSLDecl("var", "k", WGSLRaw("0u"), "u32"), WGSLRaw(f"k < {TILE_SIZE}u"), WGSLRaw("k++"), inner_loop))
-            loop_body.append(WGSLRaw("workgroupBarrier();"))
-
-            body_nodes.append(WGSLFor(WGSLDecl("var", "t", WGSLRaw("0u"), "u32"), WGSLRaw("t < num_tiles"), WGSLRaw("t++"), loop_body))
-            body_nodes.append(WGSLIf(WGSLRaw("row < M && col < N"), [WGSLAssign("buf_out_f32[row * N + col]", WGSLRaw("sum"))]))
-
-            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>", "@builtin(local_invocation_id) local_id: vec3<u32>"], body_nodes, [f"@compute @workgroup_size({wg_x}, {wg_y})"])
-
-            dispatch_x = f"Math.ceil({shape[1] if len(shape) > 1 else 1} / {wg_x})"
-            dispatch_y = f"Math.ceil({shape[0] if len(shape) > 0 else 1} / {wg_y})"
-            dispatch_z = "1"
-        elif op_type in ("Conv1D", "Conv2D", "Conv3D", "ConvTranspose2D"):
-            # Highly naive fallback implementation for convolution/pooling for shape parity
-            # In a real engine, we'd lower this to Im2Col + MatMul.
-            body_nodes.append(WGSLDecl("let", "idx", WGSLRaw("global_id.x + global_id.y * 64u")))
-            body_nodes.append(WGSLIf(WGSLRaw(f"idx >= {nelem}u"), [WGSLRaw("return;")]))
-
-            # Simple identity fallback to avoid compilation errors but note this is fundamentally incomplete for full execution without im2col
-            body_nodes.append(WGSLAssign("buf_out_f32[idx]", WGSLRaw("buf_in0_f32[idx]")))
-
-            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>"], body_nodes, ["@compute @workgroup_size(64, 1)"])
-            dispatch_x = f"Math.ceil({nelem} / 64)"
-            dispatch_y = "1"
-            dispatch_z = "1"
-        elif op_type in ("MaxPool", "AvgPool", "MaxPool2D", "AvgPool2D"):
-            body_nodes.append(WGSLDecl("let", "idx", WGSLRaw("global_id.x + global_id.y * 64u")))
-            body_nodes.append(WGSLIf(WGSLRaw(f"idx >= {nelem}u"), [WGSLRaw("return;")]))
-            body_nodes.append(WGSLAssign("buf_out_f32[idx]", WGSLRaw("buf_in0_f32[idx]")))
-            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>"], body_nodes, ["@compute @workgroup_size(64, 1)"])
-            dispatch_x = f"Math.ceil({nelem} / 64)"
-            dispatch_y = "1"
-            dispatch_z = "1"
-        elif op_type in ("BatchNorm", "LayerNorm", "GroupNorm"):
-            # Naive 1D elementwise scaling fallback
+        op_def = OPS_REGISTRY.get(op_type, {})
+        mapping = op_def.get("variants", {}).get("edge_wgsl", {})
+        if not mapping:
+            # Fallback for ops not in mapping
             wg = min(64, nelem)
             wg = max(1, wg)
             body_nodes.append(WGSLDecl("let", "idx", WGSLRaw("global_id.x")))
             body_nodes.append(WGSLIf(WGSLRaw(f"idx >= {nelem}u"), [WGSLRaw("return;")]))
-            body_nodes.append(WGSLAssign("buf_out_f32[idx]", WGSLRaw("buf_in0_f32[idx]")))
-            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>"], body_nodes, [f"@compute @workgroup_size({wg})"])
-            dispatch_x = f"Math.ceil({nelem} / {wg})"
-            dispatch_y = "1"
-            dispatch_z = "1"
-        elif op_type in ("ReduceSum", "ReduceMean", "ReduceMax", "ReduceMin", "ReduceProd", "ArgMax", "ArgMin"):
-            body_nodes.append(WGSLDecl("let", "idx", WGSLRaw("global_id.x")))
+            body_nodes.append(WGSLRaw(f"// Fallback for unsupported {op_type}"))
 
-            if_body = []
-            if op_type == "ReduceProd":
-                if_body.append(WGSLDecl("var", "res", WGSLRaw("1.0")))
-            elif op_type in ("ArgMax", "ArgMin"):
-                if_body.append(WGSLDecl("var", "best_val", WGSLRaw("buf_in0_f32[0]")))
-                if_body.append(WGSLDecl("var", "best_idx", WGSLRaw("0.0")))
-            else:
-                if_body.append(WGSLDecl("var", "res", WGSLRaw("buf_in0_f32[0]")))
-
-            nelem_in = getattr(node, "inputs_nelem", [1])[0]
-
-            loop_body = []
-            if op_type in ("ReduceSum", "ReduceMean"):
-                loop_body.append(WGSLAssign("res", WGSLRaw("res + buf_in0_f32[i]")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            elif op_type == "ReduceProd":
-                loop_body.append(WGSLAssign("res", WGSLRaw("res * buf_in0_f32[i]")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            elif op_type == "ReduceMax":
-                loop_body.append(WGSLAssign("res", WGSLRaw("max(res, buf_in0_f32[i])")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            elif op_type == "ReduceMin":
-                loop_body.append(WGSLAssign("res", WGSLRaw("min(res, buf_in0_f32[i])")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            elif op_type == "ArgMax":
-                loop_body.append(WGSLIf(WGSLRaw("buf_in0_f32[i] > best_val"), [WGSLAssign("best_val", WGSLRaw("buf_in0_f32[i]")), WGSLAssign("best_idx", WGSLRaw("f32(i)"))]))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            else:
-                loop_body.append(WGSLIf(WGSLRaw("buf_in0_f32[i] < best_val"), [WGSLAssign("best_val", WGSLRaw("buf_in0_f32[i]")), WGSLAssign("best_idx", WGSLRaw("f32(i)"))]))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-
-            # Start loop at 0 for ReduceProd, 1 for others since they initialize with [0]
-            start_idx = "0u" if op_type == "ReduceProd" else "1u"
-            if_body.append(WGSLFor(WGSLDecl("var", "i", WGSLRaw(start_idx), "u32"), WGSLRaw(f"i < {nelem_in}u"), WGSLRaw("i++"), loop_body))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-
-            if op_type == "ReduceMean":
-                if_body.append(WGSLAssign("res", WGSLRaw(f"res / f32({nelem_in}u)")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-
-            if op_type in ("ArgMax", "ArgMin"):
-                if_body.append(WGSLAssign("buf_out_f32[0]", WGSLRaw("best_idx")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            else:
-                if_body.append(WGSLAssign("buf_out_f32[0]", WGSLRaw("res")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-
-            body_nodes.append(WGSLIf(WGSLRaw("idx == 0u"), if_body))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>"], body_nodes, ["@compute @workgroup_size(256)"])
-            dispatch_x = "1"
-            dispatch_y = "1"
-            dispatch_z = "1"
-        elif op_type in ("Softmax", "LogSoftmax", "LayerNorm", "FusedLogExp", "FusedMultiplyAdd", "FlashAttention", "FusedMatMulAdd", "FusedConv2DBatchNorm", "FusedAddRelu"):
-            wg = min(64, nelem)
-            wg = max(1, wg)
-            body_nodes.append(WGSLDecl("let", "idx", WGSLRaw("global_id.x")))
-
-            op_code = WGSLRaw("buf_in0_f32[idx]")
-            if op_type == "FusedAddRelu":
-                op_code = WGSLRaw("max(0.0, buf_in0_f32[idx] + buf_in1_f32[idx])")
-            elif op_type == "FusedMultiplyAdd":
-                op_code = WGSLRaw("buf_in0_f32[idx] * buf_in1_f32[idx] + buf_in2_f32[idx]")
-            elif op_type == "FusedLogExp":
-                op_code = WGSLRaw("log(exp(buf_in0_f32[idx]))")
-
-            body_nodes.append(WGSLIf(WGSLRaw(f"idx < {nelem}u"), [WGSLAssign("buf_out_f32[idx]", op_code)]))
+            # Use offset logic so compiler doesn't complain about undefined offsets
+            body_nodes.extend(self._gen_offset_computation("idx", shape, out_strides, "out_offset"))
+            body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("0.0")))
             func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>"], body_nodes, [f"@compute @workgroup_size({wg})"])
             dispatch_x = f"Math.ceil({nelem} / {wg})"
             dispatch_y = "1"
             dispatch_z = "1"
         else:
-            wg = min(64, nelem)
-            wg = max(1, wg)
-            body_nodes.append(WGSLDecl("let", "idx", WGSLRaw("global_id.x")))
-            body_nodes.append(WGSLIf(WGSLRaw(f"idx >= {nelem}u"), [WGSLRaw("return;")]))
+            template = get_wgsl_template(mapping["template"])
+            wg_size = template.get("workgroup_size", [64, 1, 1])
+            wg_x, wg_y, wg_z = wg_size
 
-            # Robust N-dimensional offset logic based on actual strides
-            body_nodes.extend(self._gen_offset_computation("idx", shape, out_strides, "out_offset"))
-            if len(input_nodes) > 0:
-                body_nodes.extend(self._gen_offset_computation("idx", in0_shape, in0_strides, "in0_offset"))
-            if len(input_nodes) > 1:
-                body_nodes.extend(self._gen_offset_computation("idx", in1_shape, in1_strides, "in1_offset"))
+            # Format expressions
+            expr_format_args = {
+                "nelem": nelem,
+                "TILE_SIZE": 16,  # default tile size
+                "K": in0_shape[1] if len(in0_shape) > 1 else 1,
+                "N": shape[1] if len(shape) > 1 else 1,
+                "M": shape[0] if len(shape) > 0 else 1,
+                "clean_id": clean_id,
+            }
 
-            if op_type in ("Add", "Subtract", "Multiply", "TrueDivide", "Div", "FloorDivide"):
-                op_sym = {"Add": "+", "Subtract": "-", "Multiply": "*", "TrueDivide": "/", "Div": "/", "FloorDivide": "/"}[op_type]
-                expr = f"buf_in0_f32[in0_offset] {op_sym} buf_in1_f32[in1_offset]"
-                if op_type == "FloorDivide":
-                    expr = f"floor({expr})"
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw(expr)))
-            elif op_type == "Power":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("pow(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])")))
-            elif op_type == "Maximum":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("max(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])")))
-            elif op_type == "Minimum":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("min(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])")))
-            elif op_type in ("LogicalAnd", "LogicalOr", "LogicalXor"):
-                op_sym = {"LogicalAnd": "&&", "LogicalOr": "||", "LogicalXor": "!="}[op_type]
-                expr = f"f32((buf_in0_f32[in0_offset] != 0.0) {op_sym} (buf_in1_f32[in1_offset] != 0.0))"
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw(expr)))
-            elif op_type in ("Equal", "NotEqual", "Greater", "Less", "GreaterEqual", "LessEqual"):
-                op_sym = {"Equal": "==", "NotEqual": "!=", "Greater": ">", "Less": "<", "GreaterEqual": ">=", "LessEqual": "<="}[op_type]
-                expr = f"f32(buf_in0_f32[in0_offset] {op_sym} buf_in1_f32[in1_offset])"
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw(expr)))
-            elif op_type in ("Exp", "Log", "Abs", "Ceil", "Floor", "Round", "Sqrt", "Sin", "Cos", "Tan", "Asin", "Acos", "Atan", "Sinh", "Cosh", "Tanh"):
-                func = op_type.lower()  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw(f"{func}(buf_in0_f32[in0_offset])")))
-            elif op_type == "Log1p":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("log(1.0 + buf_in0_f32[in0_offset])")))
-            elif op_type == "Expm1":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("exp(buf_in0_f32[in0_offset]) - 1.0")))
-            elif op_type == "Rsqrt":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("inverseSqrt(buf_in0_f32[in0_offset])")))
-            elif op_type in ("Negative", "Neg"):
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("-buf_in0_f32[in0_offset]")))
-            elif op_type == "Sign":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("sign(buf_in0_f32[in0_offset])")))
-            elif op_type == "Relu":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("max(0.0, buf_in0_f32[in0_offset])")))
-            elif op_type == "Gelu":
-                body_nodes.append(WGSLDecl("let", "x", WGSLRaw("buf_in0_f32[in0_offset]")))
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("0.5 * x * (1.0 + tanh(0.7978845608 * (x + 0.044715 * x * x * x)))")))
-            elif op_type == "Swish":
-                body_nodes.append(WGSLDecl("let", "x", WGSLRaw("buf_in0_f32[in0_offset]")))
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("x / (1.0 + exp(-x))")))
-            elif op_type == "Cast":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("buf_in0_f32[in0_offset]")))
-            elif op_type == "Constant":
-                val = getattr(node, "attributes", {}).get("value", 0.0)
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw(f"{val}")))
-            elif op_type == "Sigmoid":
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("1.0 / (1.0 + exp(-buf_in0_f32[in0_offset]))")))
+            # Add dynamic offset code strings
+            out_offset_code = "\n".join([self.emitter.emit(n) for n in self._gen_offset_computation("idx", shape, out_strides, "out_offset")])
+            in0_offset_code = "\n".join([self.emitter.emit(n) for n in self._gen_offset_computation("idx", in0_shape, in0_strides, "in0_offset")]) if len(input_nodes) > 0 else ""
+            in1_offset_code = "\n".join([self.emitter.emit(n) for n in self._gen_offset_computation("idx", in1_shape, in1_strides, "in1_offset")]) if len(input_nodes) > 1 else ""
+            in2_shape, in2_strides = self._get_shape_and_strides(input_nodes[2]) if len(input_nodes) > 2 and input_nodes[2] else ([], [])
+            in2_offset_code = "\n".join([self.emitter.emit(n) for n in self._gen_offset_computation("idx", in2_shape, in2_strides, "in2_offset")]) if len(input_nodes) > 2 else ""
+
+            expr_format_args.update({"out_offset_code": out_offset_code, "in0_offset_code": in0_offset_code, "in1_offset_code": in1_offset_code, "in2_offset_code": in2_offset_code, "nelem_in": getattr(node, "inputs_nelem", [1])[0], "expr": mapping.get("expr", "0.0")})
+            # Add all keys from mapping into kwargs so that templates can use them (e.g. init_code)
+            expr_format_args.update(mapping)
+
+            # Format the body text and wrap it in WGSLRaw
+            formatted_body = template["body"].format(**expr_format_args)
+            body_nodes.append(WGSLRaw(formatted_body))
+
+            if "global_code" in template:
+                global_code_list.append(template["global_code"].format(**expr_format_args))
+
+            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>", "@builtin(local_invocation_id) local_id: vec3<u32>"], body_nodes, [f"@compute @workgroup_size({wg_x}, {wg_y}, {wg_z})"])
+
+            if mapping["template"] == "matmul":
+                dispatch_x = f"Math.ceil({expr_format_args['N']} / {wg_x})"
+                dispatch_y = f"Math.ceil({expr_format_args['M']} / {wg_y})"
+                dispatch_z = "1"
             else:
-                body_nodes.append(WGSLRaw(f"// Fallback for unsupported {op_type}"))
-                body_nodes.append(WGSLAssign("buf_out_f32[out_offset]", WGSLRaw("0.0")))
-
-            func = WGSLFunction(f"compute_{clean_id}", ["@builtin(global_invocation_id) global_id: vec3<u32>"], body_nodes, [f"@compute @workgroup_size({wg})"])
-            dispatch_x = f"Math.ceil({nelem} / {wg})"
-            dispatch_y = "1"
-            dispatch_z = "1"
+                wg_total = wg_x * wg_y * wg_z
+                dispatch_x = f"Math.ceil({nelem} / {wg_total})"
+                dispatch_y = "1"
+                dispatch_z = "1"
 
         wgsl_str = global_code_list + self.emitter.emit(func).split("\n")
         return wgsl_str, dispatch_x, dispatch_y, dispatch_z

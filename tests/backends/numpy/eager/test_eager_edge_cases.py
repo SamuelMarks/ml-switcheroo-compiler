@@ -3465,7 +3465,7 @@ def test_math_misc_type_calls():
             pass
 
 
-def test_math_misc_mock_ops():
+def test_math_misc_np_ops():
     import numpy as np
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
     import ml_switcheroo_compiler.ops as ops
@@ -3596,7 +3596,7 @@ def test_math_misc_mock_ops():
         ops.RawMatMul = original_rawmatmul
 
 
-def test_math_misc_mock_ops_lower():
+def test_math_misc_np_ops_lower():
     import numpy as np
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
     import ml_switcheroo_compiler.ops as ops

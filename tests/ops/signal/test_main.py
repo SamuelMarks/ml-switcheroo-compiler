@@ -89,9 +89,12 @@ def test_calculate_padding():
 def test_signal_funcs(mocker):
     t = Tensor(MockTensor((10,)).data, TensorConfig((10,), "float32", "cpu"))
     config.eager_mode = False
-    mocker.patch("ml_switcheroo_compiler.ops.signal._emit_signal_node", return_value="node")
-    mocker.patch("ml_switcheroo_compiler.ops.signal._emit_linalg_node", return_value=("node", "node"))
-    mocker.patch("ml_switcheroo_compiler.ops.signal._emit_shape_node", return_value="node")
+    mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops._emit_signal_node", return_value="node")
+    mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops._emit_signal_node", return_value="node")
+    mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops._emit_signal_node", return_value="node")
+    mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops._emit_linalg_node", return_value="node")
+    mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops._emit_linalg_node", return_value=("node", "node"))
+    mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops._emit_shape_node", return_value="node")
     assert convolve2d(t, t) == "node"
     assert fftconvolve(t, t) == "node"
     assert welch(t) == ("node", "node")
@@ -120,7 +123,9 @@ def test_signal_funcs(mocker):
     assert stft(t, 4) == "node"
     assert istft(t, 4) == "node"
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops.get_active_backend").return_value
+    mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops.get_active_backend", return_value=mock_backend)
+    mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops.get_active_backend", return_value=mock_backend)
     mock_backend.execute_op.return_value = MockTensor((10,))
     mock_backend.array.side_effect = lambda x: MockTensor((10,))
     assert fft(t).config.shape == (10,)
@@ -149,7 +154,9 @@ def test_signal_funcs(mocker):
 def test_signal_funcs_eager_extra(mocker):
     t = Tensor(MockTensor((10,)).data, TensorConfig((10,), "float32", "cpu"))
     config.eager_mode = True
-    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.get_active_backend").return_value
+    mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops.get_active_backend").return_value
+    mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops.get_active_backend", return_value=mock_backend)
+    mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops.get_active_backend", return_value=mock_backend)
     mock_backend.execute_op.return_value = MockTensor((10,))
     res1 = convolve2d(t, t)
     assert res1.config.shape == (10,)

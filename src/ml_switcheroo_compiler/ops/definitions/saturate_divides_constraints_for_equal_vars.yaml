@@ -3,4 +3,11 @@ description: Saturates Divides constraints between all transitively equal vars.
 std_args:
 - system
 type: function
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

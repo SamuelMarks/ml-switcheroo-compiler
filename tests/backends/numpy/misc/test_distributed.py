@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.distributed import (
     _np_reduce,
     _np_reduce_scatter,
     _np_shard_tensor,
-    set_mock_distributed_context,
+    set_np_distributed_context,
 )
 
 
@@ -24,7 +24,7 @@ def test_axis_index() -> None:
     assert res == 0
 
 
-def test_mock_distributed_context() -> None:
+def test_np_distributed_context() -> None:
     """Test mock distributed context.
 
     Returns:
@@ -33,7 +33,7 @@ def test_mock_distributed_context() -> None:
     import threading
 
     def run_rank(rank: int) -> None:
-        set_mock_distributed_context(world_size=2, rank=rank)
+        set_np_distributed_context(world_size=2, rank=rank)
         t = np.array([1, 2])
 
         # AllReduce
@@ -74,7 +74,7 @@ def test_mock_distributed_context() -> None:
     t2.join()
 
     # test world_size=1
-    set_mock_distributed_context(world_size=1, rank=0)
+    set_np_distributed_context(world_size=1, rank=0)
     t = np.array([1, 2])
     res_reduce_1 = _np_all_reduce(np, t)
     assert np.array_equal(res_reduce_1, t)
@@ -89,11 +89,11 @@ def test_mock_distributed_context() -> None:
 def test_distributed_initialize_timeout():
     from unittest.mock import patch
 
-    from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_mock_distributed_context
+    from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_np_distributed_context
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client") as mock_client:
         mock_client.side_effect = ConnectionRefusedError
-        set_mock_distributed_context(world_size=2, rank=1, port=39501)
+        set_np_distributed_context(world_size=2, rank=1, port=39501)
         # Should loop 50 times and exit normally
 
 

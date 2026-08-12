@@ -1,0 +1,19 @@
+operation: ReduceScatter
+description: The ReduceScatter collective operation.
+std_args:
+- name: input
+  type: Tensor
+variants:
+  pytorch:
+    eager: torch.distributed.reduce_scatter
+    generator: torch.distributed.reduce_scatter_tensor
+    macro_template: torch.distributed.reduce_scatter_tensor(torch.empty_like({input}),
+      {input})
+  jax:
+    eager: jax.lax.reduce_scatter
+    generator: jax.lax.reduce_scatter
+    macro_template: jax.lax.reduce_scatter({input}, axis={axis})
+  mlx: {}
+  llvm_cpp: {}
+  edge_wasm_simd: {}
+  edge_wgsl: {}

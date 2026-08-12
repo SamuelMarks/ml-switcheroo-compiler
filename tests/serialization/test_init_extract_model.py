@@ -431,7 +431,7 @@ def test_missing_init_real_unmocked():
             os.remove(f)
 
 
-def test_mock_serialization_methods():
+def test_np_serialization_methods():
     import ml_switcheroo_compiler.serialization as s
 
     s._save_as_h5({"a": 1}, "dummy.h5")

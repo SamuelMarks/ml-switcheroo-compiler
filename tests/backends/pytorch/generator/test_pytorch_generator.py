@@ -1,5 +1,5 @@
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchAudioVisitor, PyTorchCodeGenerator, PyTorchVisionVisitor
-from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor
+from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -78,14 +78,6 @@ def test_pytorch_scatter_visitor():
     assert vis.visit_TensorScatterAdd(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u, accumulate=True)"
     assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True)" in vis.visit_TensorScatterMax(node, ["t", "i", "u"])
     assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in vis.visit_TensorScatterMin(node, ["t", "i", "u"])
-
-
-def test_pytorch_distributed_visitor():
-    vis = PyTorchDistributedVisitor()
-    node = DummyNode()
-    assert vis.visit_all_gather(node, ["t"]) == "torch.distributed.all_gather_into_tensor(torch.empty_like(t), t)"
-    assert vis.visit_reduce_scatter(node, ["t"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(t), t)"
-    assert vis.visit_all_reduce(node, ["t"]) == "torch.distributed.all_reduce(t)"
 
 
 def test_pytorch_linalg_mixin():

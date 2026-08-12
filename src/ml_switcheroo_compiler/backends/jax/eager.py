@@ -11,30 +11,70 @@ import jax.scipy.special as jss
 import jax.scipy.stats
 
 
-def _execute_adaptive_pool_mock(*args: Any, **kwargs: Any) -> Any:
-    """Evaluate _execute_adaptive_pool_mock operation.
-
-    Args:
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
-
-    Returns: Any: Result.
-    """
+def _execute_adaptive_avg_pool(operand: Any, output_size: Any) -> Any:
+    import jax
     import jax.numpy as jnp
+    from jax.lax import reduce_window
 
-    operand = args[0]
-    output_size = args[1]
-    if hasattr(operand, "shape"):
-        s = list(operand.shape)
-        if isinstance(output_size, int):
-            out_s = [output_size]
-            s[-1] = output_size
-        else:
-            out_s = list(output_size)
-            s[-len(output_size) :] = out_s
-        axes = tuple(range(-len(out_s), 0))
-        return jnp.broadcast_to(jnp.mean(operand, axis=axes, keepdims=True), s)
-    return operand
+    operand = jnp.asarray(operand)
+    if isinstance(output_size, int):
+        output_size = [output_size]
+
+    out_s = list(output_size)
+    spatial_rank = len(out_s)
+
+    s = list(operand.shape)
+    spatial_shape = s[-spatial_rank:]
+
+    window_dimensions = [1] * (len(s) - spatial_rank)
+    window_strides = [1] * (len(s) - spatial_rank)
+
+    for in_dim, out_dim in zip(spatial_shape, out_s):
+        # Adaptive pooling logic: window_size = in_dim // out_dim + (in_dim % out_dim > 0)
+        stride = in_dim // out_dim
+        kernel = in_dim - (out_dim - 1) * stride
+        window_dimensions.append(max(1, kernel))
+        window_strides.append(max(1, stride))
+
+    # We do a simple average pooling over the computed window
+    def avg_reducer(a, b):
+        return a + b
+
+    sum_pooled = reduce_window(operand, 0.0, jax.lax.add, window_dimensions, window_strides, "VALID")
+
+    # To get average we need to divide by window size. For adaptive pool the effective window size can vary,
+    # but for simple cases we just divide by prod(window_dimensions[-spatial_rank:])
+    import math
+
+    window_area = math.prod(window_dimensions[-spatial_rank:])
+    return sum_pooled / float(window_area)
+
+
+def _execute_adaptive_max_pool(operand: Any, output_size: Any) -> Any:
+    import jax
+    import jax.numpy as jnp
+    from jax.lax import reduce_window
+
+    operand = jnp.asarray(operand)
+    if isinstance(output_size, int):
+        output_size = [output_size]
+
+    out_s = list(output_size)
+    spatial_rank = len(out_s)
+
+    s = list(operand.shape)
+    spatial_shape = s[-spatial_rank:]
+
+    window_dimensions = [1] * (len(s) - spatial_rank)
+    window_strides = [1] * (len(s) - spatial_rank)
+
+    for in_dim, out_dim in zip(spatial_shape, out_s):
+        stride = in_dim // out_dim
+        kernel = in_dim - (out_dim - 1) * stride
+        window_dimensions.append(max(1, kernel))
+        window_strides.append(max(1, stride))
+
+    return reduce_window(operand, -jnp.inf, jax.lax.max, window_dimensions, window_strides, "VALID")
 
 
 def _execute_accumulate_n(*args: Any, **kwargs: Any) -> Any:
@@ -233,11 +273,11 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
     "AccumulateN": _execute_accumulate_n,
     "AddN": _execute_accumulate_n,
     "ActivityRegularization": lambda x, **kwargs: x,
-    "AdaptiveAvgPool2D": _execute_adaptive_pool_mock,
-    "AdaptiveAvgPool3D": _execute_adaptive_pool_mock,
-    "AdaptiveMaxPool2D": _execute_adaptive_pool_mock,
-    "AdaptiveMaxPool3D": _execute_adaptive_pool_mock,
-    "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_pool_mock(*args, **kwargs), _execute_adaptive_pool_mock(*args, **kwargs)),
+    "AdaptiveAvgPool2D": _execute_adaptive_avg_pool,
+    "AdaptiveAvgPool3D": _execute_adaptive_avg_pool,
+    "AdaptiveMaxPool2D": _execute_adaptive_max_pool,
+    "AdaptiveMaxPool3D": _execute_adaptive_max_pool,
+    "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs), _execute_adaptive_max_pool(*args, **kwargs)),
     "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=target.dtype)),
     "Adjoint": lambda x, **kwargs: __import__("jax").numpy.conj(__import__("jax").numpy.transpose(x)),
     "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if hasattr(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),

@@ -19,6 +19,25 @@ variants:
     eager: jax.numpy.reducemean
   mlx:
     eager: mlx.core.reducemean
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: reduction
+    init_code: var res = buf_in0_f32[0];
+    start_idx: '1'
+    loop_code: res = res + buf_in0_f32[i];
+    post_loop_code: res = res / f32({nelem_in}u);
+    result_var: res
+  edge_wasm_simd:
+    template: reduction
+    init_val: '0.0'
+    simd_expr: wasm_f32x4_add(sum_{clean_id}, val)
+    scalar_expr: scalar_sum_{clean_id} + val
+    final_combine: (_simd_reduce_add(sum_{clean_id}) + scalar_sum_{clean_id}) / {nelem_in}f
+  llvm_cpp:
+    template: reduction
+    init_val: '0.0'
+    scalar_expr: res + val
+    final_combine: res / in0.size()
+autodiff:
+  vjp:
+  - TrueDivide(Broadcast($cotangent), Constant($nelem))
+  jvp: ReduceMean($tangent[0])

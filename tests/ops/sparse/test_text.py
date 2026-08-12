@@ -213,7 +213,8 @@ def test_text_opdef_infer_shapes():
 
 
 def test_create_token(monkeypatch):
-    monkeypatch.setattr(CreateToken, "__abstractmethods__", frozenset())
+    if hasattr(CreateToken, "__abstractmethods__"):
+        monkeypatch.setattr(CreateToken, "__abstractmethods__", frozenset())
     monkeypatch.setattr(CreateToken, "infer_shape", lambda self, *args, **kwargs: ())
     monkeypatch.setattr(CreateToken, "__call__", lambda self, *args, **kwargs: args[0])
 

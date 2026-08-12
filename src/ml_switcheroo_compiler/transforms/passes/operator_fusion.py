@@ -241,6 +241,51 @@ class PatternMatchingEngine:
         return optimized
 
 
+def _load_pass_config() -> dict[str, Any]:
+    import os
+
+    import yaml
+
+    yaml_path = os.path.join(os.path.dirname(__file__), "..", "pass_config.yaml")
+    if os.path.exists(yaml_path):
+        with open(yaml_path) as f:
+            return yaml.safe_load(f)
+    return {}
+
+
+class YamlFusionRule(FusionRule):
+    def __init__(self, name: str, config: dict[str, Any]) -> None:
+        self.config = config
+        pattern = self._build_pattern(config["pattern"])
+        super().__init__(name, pattern)
+
+    def _build_pattern(self, p: dict[str, Any]) -> NodePattern:
+        inputs = None
+        if "inputs" in p:
+            inputs = [self._build_pattern(ip) for ip in p["inputs"]]
+        return NodePattern(op_type=p.get("op_type"), capture=p.get("capture"), inputs=inputs)
+
+    def apply(self, graph: IRGraph, match: dict[str, Any]) -> dict[str, IRNode] | None:
+        from ml_switcheroo_compiler.ir.core import clone_logical_node
+
+        replacement = self.config["replacement"]
+        target = match[replacement["capture_to_replace"]]
+        if not isinstance(target, IRNode):
+            return None
+
+        new_inputs = []
+        for inp in replacement["inputs"]:
+            val = match.get(inp)
+            if isinstance(val, IRNode):
+                new_inputs.append(val.id)
+            else:
+                new_inputs.append(val)
+
+        new_node = clone_logical_node(target, inputs=new_inputs)
+        new_node.op_type = replacement["op_type"]
+        return {target.id: new_node}
+
+
 def apply_operator_fusion(graph: IRGraph) -> IRGraph:
     """Apply operator fusion pass.
 
@@ -264,6 +309,13 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
         NormalizationFusion(),
         ConsecutiveElementwiseFusion(),
     ]
+
+    # Load YAML rules
+    config = _load_pass_config()
+    if "fusion_patterns" in config:
+        for name, rule_config in config["fusion_patterns"].items():
+            rules.append(YamlFusionRule(name, rule_config))
+
     engine = PatternMatchingEngine(rules, CostModel(max_cost=50))
     if engine.apply_passes(graph):
         dce_pass(graph)

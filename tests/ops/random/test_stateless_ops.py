@@ -33,7 +33,10 @@ def test_stateless_random_uniform(mocker):
     mocker.patch("ml_switcheroo_compiler.ops.binary.add", return_value="add")
 
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
-    res = stateless_random_uniform((2, 3), seed, 1.0, 5.0, "float32")
+    from ml_switcheroo_compiler.core.config import ConfigContext
+
+    with ConfigContext(eager_mode=True):
+        res = stateless_random_uniform((2, 3), seed, 1.0, 5.0, "float32")
     assert res == "add"
 
     res2 = stateless_random_uniform((2, 3), seed, 1.0, 5.0, DType("float32"))

@@ -16,4 +16,11 @@ description: 'Return a translation table usable for str.translate().
 
   must be a string, whose characters will be mapped to None in the result.'
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

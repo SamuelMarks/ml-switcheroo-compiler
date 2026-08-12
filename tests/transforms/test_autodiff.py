@@ -194,7 +194,12 @@ def test_invoke_jvp_rule():
         return "called3"
 
     assert _invoke_jvp_rule(mock_rule3, None, None, ["t1"]) == "called3"
-    assert _invoke_jvp_rule(mock_rule2, None, None, ["t1"]) == "mock_tangent"
+    import pytest
+
+    from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+
+    with pytest.raises(MissingJVPRuleError):
+        _invoke_jvp_rule(mock_rule2, None, None, ["t1"])
 
 
 @patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
@@ -405,8 +410,12 @@ def test_invoke_jvp_rule_no_graph_node():
     def mock_jvp(a, b):
         return a + b
 
-    res = _invoke_jvp_rule(mock_jvp, None, None, ["t1"])
-    assert res == "mock_tangent"
+    import pytest
+
+    from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+
+    with pytest.raises(MissingJVPRuleError):
+        _invoke_jvp_rule(mock_jvp, None, None, ["t1"])
 
 
 def test_process_jvp_node_unimplemented():
@@ -448,8 +457,9 @@ def test_process_jvp_node_invoke_unimplemented():
 def test_dummy_jvp_execution():
     from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp
 
-    with pytest.raises(ValueError, match="Missing JVP rule for operation: NonExistentOp"):
-        get_jvp("NonExistentOp")
+    # Now falls back to finite difference
+    res = get_jvp("NonExistentOp")
+    assert res is not None
 
 
 def test_autodiff_grad_output_node_and_cotangent():
@@ -506,8 +516,12 @@ def test_jvp_compile_expr_and_style2():
     assert graph.nodes[res].op_type == "Multiply"
 
     # Unsupported
+    import pytest
+
     with pytest.raises(ValueError):
         _compile_jvp_expr("safe_id_0 ** 2", graph, (), inv_map)
+
+    import pytest
 
     with pytest.raises(ValueError):
         _compile_jvp_expr("len(safe_id_0)", graph, (), inv_map)
@@ -526,7 +540,12 @@ def test_jvp_compile_expr_and_style2():
     def my_jvp_exc(x, tangent_x):
         raise ValueError("err")
 
-    assert _invoke_jvp_rule(my_jvp_exc, graph, DummyNode(), ["t1"]) == "mock_tangent"
+    import pytest
+
+    from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+
+    with pytest.raises(MissingJVPRuleError):
+        _invoke_jvp_rule(my_jvp_exc, graph, DummyNode(), ["t1"])
 
 
 def test_process_jvp_node_output():
@@ -555,7 +574,12 @@ def test_jvp_invoke_rule_exc():
     def bad_jvp(graph, node, tangent):
         raise ValueError("err")
 
-    assert _invoke_jvp_rule(bad_jvp, None, None, ["t1"]) == "mock_tangent"
+    import pytest
+
+    from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+
+    with pytest.raises(MissingJVPRuleError):
+        _invoke_jvp_rule(bad_jvp, None, None, ["t1"])
 
 
 def test_jvp_style2_returns_non_string():

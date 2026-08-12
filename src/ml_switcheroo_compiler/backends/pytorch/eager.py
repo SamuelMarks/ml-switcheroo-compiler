@@ -127,6 +127,26 @@ def _execute_broadcast_to(*args: Any, **kwargs: Any) -> Any:
     return cast(Any, args[0]).expand(kwargs["shape"])
 
 
+def _execute_one_hot(*args: Any, **kwargs: Any) -> Any:
+    inputs = args[0] if len(args) > 0 else kwargs.get("indices")
+    depth = args[1] if len(args) > 1 else kwargs.get("depth")
+    import torch
+    import torch.nn.functional as F
+
+    axis = kwargs.get("axis", -1)
+    on_value = kwargs.get("on_value", 1.0)
+    off_value = kwargs.get("off_value", 0.0)
+    dtype_str = kwargs.get("dtype", "float32")
+    res = F.one_hot(inputs.long(), num_classes=depth)
+    dtype_map = {"float32": torch.float32, "float64": torch.float64, "int32": torch.int32, "int64": torch.int64}
+    res = res.to(dtype_map.get(dtype_str, torch.float32))
+    if on_value != 1.0 or off_value != 0.0:
+        res = res * (on_value - off_value) + off_value
+    if axis != -1 and axis != res.ndim - 1:
+        res = res.transpose(axis, res.ndim - 1)
+    return res
+
+
 def _execute_cast(*args: Any, **kwargs: Any) -> Any:
     """Evaluate _execute_cast operation.
 
@@ -230,6 +250,7 @@ def _get_custom_torch_op_map() -> dict:
         "Cummin": _execute_cummin,
         "Cumlogsumexp": _execute_cumlogsumexp,
         "Cast": _execute_cast,
+        "OneHot": _execute_one_hot,
     }
 
 

@@ -17,6 +17,12 @@ class DummyTensor:
 @patch("ml_switcheroo_compiler.ops.linalg.matrix_ops._emit_linalg_node")
 def test_matrix_ops_tracing(mock_emit):
     config.eager_mode = False
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    global_tracing_state.is_tracing = True
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    global_tracing_state.active_graph = IRGraph()
 
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -110,6 +116,12 @@ def test_matrix_ops_eager(mock_get_backend):
     mod.cond(a)
 
     config.eager_mode = False
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    global_tracing_state.is_tracing = True
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    global_tracing_state.active_graph = IRGraph()
 
 
 def test_matrix_ops_opdefs():

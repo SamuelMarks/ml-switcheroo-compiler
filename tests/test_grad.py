@@ -414,7 +414,7 @@ def test_grad_missing_coverage() -> None:
     def dummy_func(x):
         return x * 2.0
 
-    with patch("ml_switcheroo_compiler.grad.vjp") as mock_vjp:
+    with patch("ml_switcheroo_compiler.grad.testing.vjp") as mock_vjp:
         # Mock vjp to return a wrong gradient
         mock_vjp.return_value = (dummy_func(2.0), lambda g: (np.array([999.0]),))
         with pytest.raises(SwitcherooError, match="Gradient check failed"):
@@ -434,7 +434,7 @@ def test_grad_missing_coverage() -> None:
     # force Exception by returning array of size > 1 for float input
     from unittest.mock import patch
 
-    with patch("ml_switcheroo_compiler.grad.vjp") as mock_vjp:
+    with patch("ml_switcheroo_compiler.grad.jvp_vjp.vjp") as mock_vjp:
         mock_vjp.return_value = (1.0, lambda g: (np.array([1.0, 2.0]),))
         res_ex = grad_bool(1.0)
         assert isinstance(res_ex, np.ndarray)

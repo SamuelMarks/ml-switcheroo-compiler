@@ -9,4 +9,8 @@ std_args:
   kind: positional_or_keyword
   name: mat2
   type: Tensor
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: matmul
+  llvm_cpp:
+    template: matmul

@@ -34,3 +34,9 @@ variants:
     eager: keras_ops.conv_transpose
   tensorflow:
     eager: tf.nn.conv_transpose
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

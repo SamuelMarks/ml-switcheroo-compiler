@@ -15,4 +15,10 @@ std_args:
   name: padding
   type: Union[int, Tuple[int, int, int]]
 type: class
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

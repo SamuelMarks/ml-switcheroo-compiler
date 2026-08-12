@@ -31,22 +31,22 @@ def test_create_nodes() -> None:
 
     n1 = _create_all_gather_node("inp1", sharding)
     assert n1.id == "inp1_all_gather"
-    assert n1.op_type == "all_gather"
+    assert n1.op_type == "AllGather"
     assert n1.attributes.get("dispatch_early") is True
 
     n2 = _create_reduce_scatter_node("inp2", sharding)
     assert n2.id == "inp2_reduce_scatter"
-    assert n2.op_type == "reduce_scatter"
+    assert n2.op_type == "ReduceScatter"
     assert n2.attributes.get("dispatch_early") is True
 
     n3 = _create_all_reduce_node("inp3", sharding)
     assert n3.id == "inp3_all_reduce"
-    assert n3.op_type == "all_reduce"
+    assert n3.op_type == "AllReduce"
     assert n3.attributes.get("dispatch_early") is True
 
     n4 = _create_all_to_all_node("inp4", sharding)
     assert n4.id == "inp4_all_to_all"
-    assert n4.op_type == "all_to_all"
+    assert n4.op_type == "AllToAll"
     assert n4.attributes.get("dispatch_early") is True
 
 
@@ -86,24 +86,24 @@ def test_process_spmd_input() -> None:
     # 1. inp_sharded, not node_sharded, not grad/reduction => all_gather
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=sharding_unsharded)
     res_ag = _process_spmd_input(node1, 0, "in1", graph, sharding_unsharded)
-    assert res_ag is not None and res_ag.op_type == "all_gather"
+    assert res_ag is not None and res_ag.op_type == "AllGather"
 
     # 2. inp_sharded, not node_sharded, reduction => all_reduce
-    node2 = IRNode(id="n2", op_type="Sum", inputs=["in1"], sharding=sharding_unsharded)
+    node2 = IRNode(id="n2", op_type="ReduceSum", inputs=["in1"], sharding=sharding_unsharded)
     res_ar = _process_spmd_input(node2, 0, "in1", graph, sharding_unsharded)
-    assert res_ar is not None and res_ar.op_type == "all_reduce"
+    assert res_ar is not None and res_ar.op_type == "AllReduce"
 
     # 3. not inp_sharded, node_sharded, grad => reduce_scatter
     in_node_unsharded = IRNode(id="in_un", op_type="Input", inputs=[], sharding=sharding_unsharded)
     graph.nodes["in_un"] = in_node_unsharded
-    node_grad = IRNode(id="ng", op_type="Grad", inputs=["in_un"], sharding=sharding_sharded_x)
+    node_grad = IRNode(id="grad_node", op_type="Grad", inputs=["in_un"], sharding=sharding_sharded_x)
     res_rs = _process_spmd_input(node_grad, 0, "in_un", graph, sharding_sharded_x)
-    assert res_rs is not None and res_rs.op_type == "reduce_scatter"
+    assert res_rs is not None and res_rs.op_type == "ReduceScatter"
 
     # 4. inp_sharded, node_sharded, different axes => all_to_all
     node3 = IRNode(id="n3", op_type="Add", inputs=["in1"], sharding=sharding_sharded_y)
     res_a2a = _process_spmd_input(node3, 0, "in1", graph, sharding_sharded_y)
-    assert res_a2a is not None and res_a2a.op_type == "all_to_all"
+    assert res_a2a is not None and res_a2a.op_type == "AllToAll"
 
     # Missing input node
     node4 = IRNode(id="n4", op_type="Add", inputs=["missing"], sharding=sharding_sharded_y)
@@ -128,7 +128,7 @@ def test_process_spmd_node() -> None:
     (mod, inj) = _process_spmd_node(node1, graph)
     assert mod is True
     assert len(inj) == 1
-    assert inj[0].op_type == "all_gather"
+    assert inj[0].op_type == "AllGather"
 
 
 def test_inject_spmd_communication_pass() -> None:

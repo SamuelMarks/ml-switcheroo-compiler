@@ -311,9 +311,7 @@ class JAXCodeGenerator(JaxMathVisitor, JaxControlFlowVisitor, JaxVisionVisitor, 
             [
                 *get_shared_ast_visitors(generator=self),
                 JaxAudioVisitor,
-                JaxDistributedVisitor(),
                 JaxControlFlowVisitor(),
-                JaxDistributedVisitor(),
                 JaxMathVisitor(),
                 JaxVisionVisitor(),
             ]

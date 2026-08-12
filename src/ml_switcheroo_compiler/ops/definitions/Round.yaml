@@ -19,3 +19,13 @@ variants:
     eager: keras_ops.round
   tensorflow:
     eager: tf.round
+  edge_wgsl:
+    template: unary
+    expr: round(buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: wasm_f32x4_nearest(in0_val)
+    scalar_expr: std::round(in0_val)
+  llvm_cpp:
+    template: unary
+    scalar_expr: std::round(in0_val)

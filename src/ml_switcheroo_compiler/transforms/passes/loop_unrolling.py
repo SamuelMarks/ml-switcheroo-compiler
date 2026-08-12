@@ -64,7 +64,7 @@ def clone_subgraph(subgraph: IRBlock, id_suffix: str, input_remap: dict[str, str
 
 
 def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state: dict[str, typing.Any], max_iters: int = 100) -> int | None:
-    """Execute detect static bound.
+    """Execute detect static bound using lightweight symbolic execution rather than host evaluator.
 
     Args:
         cond_graph (IRBlock): The cond_graph parameter.
@@ -74,48 +74,82 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
 
     Returns: Any: Result.
     """
-    from ml_switcheroo_compiler.backends.registry import get_active_backend
-    from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
+    # If the state involves dynamic tensors or symbolic variables, host eager evaluation will break.
+    # We must implement pass-through for purely data-dependent conditions and use lightweight static solver.
 
+    # Implement a very lightweight symbolic solver just for constant conditions.
     state = dict(initial_state)
-    backend = get_active_backend()
 
     cond_mock = _block_to_graph(cond_graph)
     body_mock = _block_to_graph(body_graph)
 
-    for i in range(max_iters):
-        try:
-            cond_outputs = evaluate_graph(cond_mock, state)
-            out_node_id = cond_mock.outputs[0]
-            cond_val = cond_outputs[out_node_id]
-            is_true = bool(backend.item(cond_val)) if hasattr(cond_val, "size") else bool(cond_val)
-        except Exception:
-            # print("Cond exc", e)
-            return None
+    from ml_switcheroo_compiler.ir.shape_system import SymInt
 
-        if not is_true:
+    def symbolic_eval(g, local_state):
+        from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+
+        nodes = DAGTopologicalSorter.sort(g)
+        for n in nodes:
+            if n.op_type == "Input":
+                continue
+            elif n.op_type == "Constant":
+                local_state[n.id] = n.attributes["value"]
+            elif n.op_type == "Add":
+                v1 = local_state.get(n.inputs[0], 0)
+                v2 = local_state.get(n.inputs[1], 0)
+                if isinstance(v1, (int, float, SymInt)) and isinstance(v2, (int, float, SymInt)):
+                    local_state[n.id] = v1 + v2
+                else:
+                    return None
+            elif n.op_type == "Sub":
+                v1 = local_state.get(n.inputs[0], 0)
+                v2 = local_state.get(n.inputs[1], 0)
+                if isinstance(v1, (int, float, SymInt)) and isinstance(v2, (int, float, SymInt)):
+                    local_state[n.id] = v1 - v2
+                else:
+                    return None
+            elif n.op_type == "Less":
+                v1 = local_state.get(n.inputs[0], 0)
+                v2 = local_state.get(n.inputs[1], 0)
+                if isinstance(v1, (int, float)) and isinstance(v2, (int, float)):
+                    local_state[n.id] = v1 < v2
+                else:
+                    return None
+            elif n.op_type == "Output":
+                return local_state.get(n.inputs[0], None)
+            else:
+                # Opaque or complex symbolic op, abort unrolling
+                return None
+        return None
+
+    for i in range(max_iters):
+        cond_state = {}
+        for c_inp, outer_inp in zip(cond_graph.inputs, initial_state.keys()):  # approximate
+            cond_state[c_inp] = state.get(c_inp, state.get(outer_inp))
+
+        res = symbolic_eval(cond_mock, cond_state)
+        if res is None:
+            return None  # Graceful pass-through
+        if not bool(res):
             return i
 
-        try:
-            # Map state to body graph inputs
-            body_state: dict[str, typing.Any] = {}
-            for c_inp, b_inp in zip(cond_graph.inputs, body_graph.inputs):
-                body_state[b_inp] = state.get(c_inp, state.get(b_inp))
+        body_state = {}
+        for b_inp, outer_inp in zip(body_graph.inputs, initial_state.keys()):
+            body_state[b_inp] = state.get(b_inp, state.get(outer_inp))
 
-            body_outputs = evaluate_graph(body_mock, body_state)
-            out_node_id = body_mock.outputs[0]
-            out_val = body_outputs[out_node_id]
-
-            next_state: dict[str, typing.Any] = {}
-            if len(cond_graph.inputs) == 1:
-                next_state[cond_graph.inputs[0]] = out_val
-            else:
-                for j, inp_id in enumerate(cond_graph.inputs):
-                    next_state[inp_id] = typing.cast(list[typing.Any], out_val)[j]
-            state = next_state
-        except Exception:
-            # print("Body exc", e)
+        out_val = symbolic_eval(body_mock, body_state)
+        if out_val is None:
             return None
+
+        next_state = {}
+        if len(cond_graph.inputs) == 1:
+            next_state[cond_graph.inputs[0]] = out_val
+        else:
+            for j, inp_id in enumerate(cond_graph.inputs):
+                next_state[inp_id] = out_val[j] if isinstance(out_val, (list, tuple)) else out_val
+        state = next_state
+
+    return None
 
     return None
 

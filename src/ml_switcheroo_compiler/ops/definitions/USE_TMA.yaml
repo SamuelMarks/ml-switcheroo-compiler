@@ -2,4 +2,11 @@ operation: USE_TMA
 description: Whether to use Tensor Memory Accelerator (TMA) on supported hardware.
 std_args: []
 type: attribute
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

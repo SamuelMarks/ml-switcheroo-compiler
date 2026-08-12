@@ -417,7 +417,7 @@ def test_more_math_misc_stuff():
     mm._np_logsumexp(np, np.ones((2, 2)), keepdims=True)
 
 
-def test_mock_remaining_math_misc():
+def test_np_remaining_math_misc():
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -491,7 +491,7 @@ def test_math_misc_scipy_bessels():
             del sys.modules["scipy.special"]
 
 
-def test_mock_remaining_math_misc_2():
+def test_np_remaining_math_misc_2():
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -518,7 +518,7 @@ def test_mock_remaining_math_misc_2():
                 delattr(ops, op_name)
 
 
-def test_mock_remaining_math_misc_3():
+def test_np_remaining_math_misc_3():
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -1381,7 +1381,7 @@ class MockCallableClass:
         return args
 
 
-def test_mock_ops_subclass():
+def test_np_ops_subclass():
     import pytest
 
     with pytest.raises(Exception):
@@ -1446,7 +1446,7 @@ def test_mock_ops_subclass():
             _ops.distributions = original_distributions
 
 
-def test_mock_ops_missing():
+def test_np_ops_missing():
     original_rawmatmul = getattr(_ops, "RawMatMul", None)
     original_sparsedensematmul = getattr(_ops, "SparseDenseMatMul", None)
     original_decode_csv = getattr(_ops, "decode_csv", None)

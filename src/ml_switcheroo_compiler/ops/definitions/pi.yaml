@@ -2,4 +2,11 @@ operation: pi
 description: "IEEE 754 floating-point representation of the mathematical constant\
   \ ``\u03C0``."
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

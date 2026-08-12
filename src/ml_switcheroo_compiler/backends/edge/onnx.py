@@ -181,57 +181,18 @@ class ONNXCodeGenerator(BaseGenerator):
         from onnx import helper
 
         onnx_nodes = []
-        op_map = {
-            "Add": "Add",
-            "Subtract": "Sub",
-            "Multiply": "Mul",
-            "TrueDivide": "Div",
-            "Div": "Div",
-            "Exp": "Exp",
-            "Log": "Log",
-            "Negative": "Neg",
-            "Neg": "Neg",
-            "MatMul": "MatMul",
-            "Conv2D": "Conv",
-            "MaxPool": "MaxPool",
-            "AvgPool": "AveragePool",
-            "MaxPool2D": "MaxPool",
-            "AvgPool2D": "AveragePool",
-            "BatchNorm": "BatchNormalization",
-            "Reshape": "Reshape",
-            "Transpose": "Transpose",
-            "Squeeze": "Squeeze",
-            "Unsqueeze": "Unsqueeze",
-            "Concat": "Concat",
-            "Slice": "Slice",
-            "Gather": "Gather",
-            "ScatterND": "ScatterND",
-            "ReduceSum": "ReduceSum",
-            "ReduceMean": "ReduceMean",
-            "ReduceMax": "ReduceMax",
-            "ReduceMin": "ReduceMin",
-            "Relu": "Relu",
-            "Sigmoid": "Sigmoid",
-            "Tanh": "Tanh",
-            "Softmax": "Softmax",
-            "Abs": "Abs",
-            "Sqrt": "Sqrt",
-            "Round": "Round",
-            "Floor": "Floor",
-            "Ceil": "Ceil",
-            "Sin": "Sin",
-            "Cos": "Cos",
-            "Tan": "Tan",
-            "Where": "Where",
-            "Equal": "Equal",
-            "Greater": "Greater",
-            "Less": "Less",
-            "Cast": "Cast",
-            "Pad": "Pad",
-            "If": "If",
-            "Loop": "Loop",
-            "WhileLoop": "Loop",
-        }
+
+        # We now query ops definitions for edge_onnx mappings
+        from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
+
+        def get_onnx_op_name(op_type: str) -> str:
+            op_def = OPS_REGISTRY.get(op_type, {})
+            variants = op_def.get("variants", {})
+            if "edge_onnx" in variants:
+                gen = variants["edge_onnx"].get("generator")
+                if gen:
+                    return gen
+            return op_type  # Fallback to the op_type itself if not mapped
 
         for node in self.sorted_nodes:
             op_type = getattr(node, "op_type", "")
@@ -255,8 +216,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 )
                 onnx_nodes.append(helper.make_node("Constant", inputs=[], outputs=[nid], name=nid, value=tensor_proto))
             else:
-                onnx_op = op_map.get(op_type, op_type)
-
+                onnx_op = get_onnx_op_name(op_type)
                 kwargs = {}
                 if op_type == "If":
                     if "then_branch" in node.attributes:
@@ -269,6 +229,10 @@ class ONNXCodeGenerator(BaseGenerator):
                         kwargs["else_branch"] = subgen._build_onnx_graph(None)
                         kwargs["else_branch"].name = f"{nid}_else"
                 elif op_type in ("Loop", "WhileLoop"):
+                    if "body" in node.attributes:
+                        subgen = ONNXCodeGenerator(node.attributes["body"])
+                        kwargs["body"] = subgen._build_onnx_graph(None)
+                        kwargs["body"].name = f"{nid}_body"
                     if "body" in node.attributes:
                         subgen = ONNXCodeGenerator(node.attributes["body"])
                         kwargs["body"] = subgen._build_onnx_graph(None)

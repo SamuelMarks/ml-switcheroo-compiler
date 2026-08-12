@@ -1,0 +1,56 @@
+templates:
+  unary:
+    body: |
+      NDArrayView<float> {clean_id}({out_shape_str});
+      for(size_t i=0; i<{clean_id}.size(); ++i) {{
+          {clean_id}.data[i] = {scalar_expr};
+      }}
+  binary:
+    body: |
+      NDArrayView<float> {clean_id}({out_shape_str});
+      std::vector<int> idx_{clean_id}({rank}, 0);
+      for(size_t i=0; i<{clean_id}.size(); ++i) {{
+          float in0_val = {in0}.get(idx_{clean_id});
+          float in1_val = {in1}.get(idx_{clean_id});
+          {clean_id}.data[i] = {scalar_expr};
+
+          // update index
+          for(int d = {rank}-1; d >= 0; --d) {{
+              idx_{clean_id}[d]++;
+              if (idx_{clean_id}[d] < {clean_id}.shape[d]) break;
+              idx_{clean_id}[d] = 0;
+          }}
+      }}
+  matmul:
+    body: |
+      NDArrayView<float> {clean_id}({out_shape_str});
+      #ifdef USE_BLAS
+      cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, {M}, {N}, {K}, 1.0f, {in0}.data.data(), {K}, {in1}.data.data(), {N}, 0.0f, {clean_id}.data.data(), {N});
+      #else
+      for (size_t i = 0; i < {M}; ++i) {{
+          for (size_t j = 0; j < {N}; ++j) {{
+              float sum = 0.0f;
+              for (size_t k = 0; k < {K}; ++k) {{
+                  sum += {in0}.data[i * {K} + k] * {in1}.data[k * {N} + j];
+              }}
+              {clean_id}.data[i * {N} + j] = sum;
+          }}
+      }}
+      #endif
+  reduction:
+    body: |
+      NDArrayView<float> {clean_id}({out_shape_str});
+      if ({in0}.size() > 0) {{
+          float res = {init_val}f;
+          for(size_t i=0; i<{in0}.size(); ++i) {{
+              float val = {in0}.data[i];
+              res = {scalar_expr};
+          }}
+          {clean_id}.data[0] = {final_combine};
+      }}
+  fallback_copy:
+    body: |
+      NDArrayView<float> {clean_id}({out_shape_str});
+      for(size_t i=0; i<{clean_id}.size(); ++i) {{
+          {clean_id}.data[i] = {in0}.data[i];
+      }}

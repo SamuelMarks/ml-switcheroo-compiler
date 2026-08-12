@@ -9,3 +9,13 @@ type: attribute
 variants:
   edge_stablehlo:
     generator: stablehlo.log1p
+  edge_wgsl:
+    template: unary
+    expr: log(1.0 + buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

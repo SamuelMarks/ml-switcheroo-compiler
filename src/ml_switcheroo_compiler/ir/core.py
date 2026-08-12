@@ -159,3 +159,19 @@ class IRBlock:
     nodes: list[IRNode] = field(default_factory=list)
     inputs: list[str] = field(default_factory=list)
     outputs: list[str] = field(default_factory=list)
+
+
+@dataclass
+class ZeroTangent(IRNode):
+    """Represents a mathematically zero tangent (e.g. gradient wrt integer or unconnected)."""
+
+    def __init__(self, id: str, shape_metadata: Any = None, **kwargs: Any):
+        super().__init__(id=id, op_type="ZeroTangent", shape_metadata=shape_metadata, **kwargs)
+
+
+@dataclass
+class NoTangent(IRNode):
+    """Represents a structurally missing or non-differentiable tangent path."""
+
+    def __init__(self, id: str, **kwargs: Any):
+        super().__init__(id=id, op_type="NoTangent", **kwargs)

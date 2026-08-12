@@ -1,12 +1,12 @@
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops import _pmean, _psum
-from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, set_mock_distributed_context
+from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, set_np_distributed_context
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_psum
 
 
 def test_math_misc_distributed():
-    set_mock_distributed_context(world_size=1, rank=0, addr="127.0.0.1", port=40001)
+    set_np_distributed_context(world_size=1, rank=0, addr="127.0.0.1", port=40001)
 
     t = np.array([1, 2])
 

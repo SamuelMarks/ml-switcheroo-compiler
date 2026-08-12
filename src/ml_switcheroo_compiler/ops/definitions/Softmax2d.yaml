@@ -2,4 +2,11 @@ operation: Softmax2d
 description: Auto-generated from mlx_code_defs
 std_args: []
 type: class
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: unary
+    simd_expr: in0_val
+    scalar_expr: in0_val
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

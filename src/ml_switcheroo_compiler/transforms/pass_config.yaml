@@ -1,0 +1,103 @@
+execution_order:
+- type_promotion_explicitizer
+- broadcast_explicitizer
+- constant_folding
+- dead_code_elimination
+- common_subexpression_elimination
+- operator_fusion
+- graph_scheduling
+- buffer_allocation
+- spmd
+cost_model:
+  memory_costs:
+    MatMul: 100
+    Conv2D: 150
+    MultiHeadAttention: 300
+  compute_costs:
+    MatMul: 1000
+    Conv2D: 1500
+    MultiHeadAttention: 5000
+  default_memory_cost: 10
+  default_compute_cost: 10
+fusion_patterns:
+  MHAFusion:
+    pattern:
+      op_type: MatMul
+      capture: matmul2
+      inputs:
+      - op_type: Softmax
+        capture: softmax
+        inputs:
+        - op_type: MatMul
+          capture: matmul1
+          inputs:
+          - capture: q
+          - capture: k
+      - capture: v
+    replacement:
+      op_type: MultiHeadAttention
+      inputs:
+      - q
+      - k
+      - v
+      capture_to_replace: matmul2
+  FMAFusion:
+    pattern:
+      op_type: Add
+      capture: add
+      inputs:
+      - op_type: Multiply
+        capture: mul
+        inputs:
+        - capture: a
+        - capture: b
+      - capture: c
+    replacement:
+      op_type: FusedMultiplyAdd
+      inputs:
+      - a
+      - b
+      - c
+      capture_to_replace: add
+  LinearFusion:
+    pattern:
+      op_type: Add
+      capture: add
+      inputs:
+      - op_type: MatMul
+        capture: matmul
+        inputs:
+        - capture: x
+        - capture: w
+      - capture: b
+    replacement:
+      op_type: Linear
+      inputs:
+      - x
+      - w
+      - b
+      capture_to_replace: add
+  Conv2DBatchNormFusion:
+    pattern:
+      op_type: BatchNorm
+      capture: bn
+      inputs:
+      - op_type: Conv2D
+        capture: conv
+        inputs:
+        - capture: x
+        - capture: w
+      - capture: gamma
+      - capture: beta
+      - capture: mean
+      - capture: var
+    replacement:
+      op_type: Conv2DBatchNorm
+      inputs:
+      - x
+      - w
+      - gamma
+      - beta
+      - mean
+      - var
+      capture_to_replace: bn

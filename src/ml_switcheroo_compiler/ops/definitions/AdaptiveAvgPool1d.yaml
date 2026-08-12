@@ -11,4 +11,10 @@ std_args:
   name: output_size
   type: int
 type: class
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

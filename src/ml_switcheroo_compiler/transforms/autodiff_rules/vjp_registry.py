@@ -41,17 +41,26 @@ def register_vjp(op_name: str) -> Callable:
     return decorator
 
 
+from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
+
+
 def get_vjp(op_name: str) -> Callable:
-    """Retrieve the registered Vector-Jacobian Product (VJP) rule for a given operation.
+    """Get the VJP rule.
 
     Args:
         op_name (str): The op_name parameter.
 
     Returns:
         Callable: Result.
+
+    Raises:
+        ValueError: An exception.
     """
+    data_vjp = get_vjp_from_data(op_name)
+    if data_vjp:
+        return data_vjp
     if op_name not in _VJP_REGISTRY:
-        raise ValueError(f"Missing VJP rule for operation: {op_name}")
+        raise ValueError(f"No VJP rule registered for operation: {op_name}")
     return _VJP_REGISTRY[op_name]
 
 
@@ -64,4 +73,6 @@ def has_vjp(op_name: str) -> bool:
     Returns:
         bool: Result.
     """
+    if get_vjp_from_data(op_name) is not None:
+        return True
     return op_name in _VJP_REGISTRY

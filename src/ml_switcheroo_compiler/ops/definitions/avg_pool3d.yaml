@@ -2,4 +2,10 @@ operation: avg_pool3d
 description: Auto-generated from torch_v2.10.0_map.json
 std_args: []
 type: attribute
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

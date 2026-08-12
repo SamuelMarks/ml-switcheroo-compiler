@@ -41,17 +41,26 @@ def register_jvp(op_name: str) -> Callable:
     return decorator
 
 
+from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
+
+
 def get_jvp(op_name: str) -> Callable:
-    """Retrieve the registered Jacobian-Vector Product (JVP) rule for a given operation.
+    """Get the JVP rule.
 
     Args:
         op_name (str): The op_name parameter.
 
     Returns:
         Callable: Result.
+
+    Raises:
+        ValueError: An exception.
     """
+    data_jvp = get_jvp_from_data(op_name)
+    if data_jvp:
+        return data_jvp
     if op_name not in _JVP_REGISTRY:
-        raise ValueError(f"Missing JVP rule for operation: {op_name}")
+        raise ValueError(f"No JVP rule registered for operation: {op_name}")
     return _JVP_REGISTRY[op_name]
 
 
@@ -64,4 +73,6 @@ def has_jvp(op_name: str) -> bool:
     Returns:
         bool: Result.
     """
+    if get_jvp_from_data(op_name) is not None:
+        return True
     return op_name in _JVP_REGISTRY

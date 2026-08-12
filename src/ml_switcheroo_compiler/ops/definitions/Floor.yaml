@@ -26,6 +26,13 @@ variants:
     eager: jax.numpy.floor
   mlx:
     eager: mlx.core.floor
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: unary
+    expr: floor(buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: wasm_f32x4_floor(in0_val)
+    scalar_expr: std::floor(in0_val)
+  llvm_cpp:
+    template: unary
+    scalar_expr: std::floor(in0_val)

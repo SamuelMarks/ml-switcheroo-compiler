@@ -1,4 +1,4 @@
-operation: multiply
+operation: Multiply
 description: The Multiply operation.
 std_args:
 - name: x1
@@ -41,6 +41,18 @@ variants:
     args:
       args: args
       kwargs: kwargs
-  edge_wgsl: {}
-  edge_wasm_simd: {}
-  llvm_cpp: {}
+  edge_wgsl:
+    template: binary
+    expr: buf_in0_f32[in0_offset] * buf_in1_f32[in1_offset]
+  edge_wasm_simd:
+    template: binary
+    simd_expr: wasm_f32x4_mul(in0_val, in1_val)
+    scalar_expr: in0_val * in1_val
+  llvm_cpp:
+    template: binary
+    scalar_expr: in0_val * in1_val
+autodiff:
+  vjp:
+  - Multiply($cotangent, $input[1])
+  - Multiply($cotangent, $input[0])
+  jvp: Add(Multiply($tangent[0], $input[1]), Multiply($tangent[1], $input[0]))

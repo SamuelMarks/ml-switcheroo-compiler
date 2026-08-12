@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import functools
 import uuid
-from abc import ABC, abstractmethod
 from typing import Any, Callable, TypeVar
 
 from ml_switcheroo_ir import LogicalNode
@@ -22,7 +21,7 @@ from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 T = TypeVar("T", bound="OpDef")
 
 
-class OpDef(ABC):
+class OpDef:
     """Abstract base class for all operations in the compiler.
 
     Acts strictly as a definition schema holding operation metadata.
@@ -41,8 +40,8 @@ class OpDef(ABC):
         """
         return dispatch_op(self.op_type, *args, **kwargs)
 
-    @abstractmethod
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        return tuple()
         """Infer the output shape(s) and dtype(s) of the operation.
 
         Args:

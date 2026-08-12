@@ -1,4 +1,4 @@
-operation: log
+operation: Log
 description: The Log operation.
 std_args:
 - is_variadic: false
@@ -23,3 +23,17 @@ variants:
     generator: np.log
   tensorflow:
     eager: tf.math.log
+  edge_wgsl:
+    template: unary
+    expr: log(buf_in0_f32[in0_offset])
+  edge_wasm_simd:
+    template: unary
+    simd_expr: _wasm_log(in0_val)
+    scalar_expr: std::log(in0_val)
+  llvm_cpp:
+    template: unary
+    scalar_expr: std::log(in0_val)
+autodiff:
+  vjp:
+  - Multiply($cotangent, TrueDivide(Constant(1.0), $input[0]))
+  jvp: Multiply($tangent[0], TrueDivide(Constant(1.0), $input[0]))

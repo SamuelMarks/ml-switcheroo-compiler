@@ -1,4 +1,10 @@
 operation: conv_transpose_shape_tuple
 description: Auto-generated mapping for conv_transpose_shape_tuple.
 std_args: []
-variants: {}
+variants:
+  edge_wasm_simd:
+    template: conv_pool_1d_flat
+    math_op: '* 1.0f'
+  llvm_cpp:
+    template: unary
+    scalar_expr: in0_val

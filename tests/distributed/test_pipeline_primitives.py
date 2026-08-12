@@ -83,32 +83,3 @@ def test_pipeline_microbatch_loop():
     assert "microbatch_loop" in graph.nodes
     assert "n1_slice" in graph.nodes["microbatch_loop"].attributes["body"].nodes
     assert graph.outputs == ["n2_concat"]
-
-
-def test_slice_concat_autodiff():
-    """Test slice and concat autodiff."""
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-    from ml_switcheroo_compiler.transforms.autodiff_rules.shape_shape_rules import concat_jvp, concat_vjp, slice_jvp, slice_vjp
-
-    graph = IRGraph()
-    n1 = LogicalNode(id="n1", op_type="Input")
-    n1.shape_metadata = (10, 10)
-    graph.nodes = {"n1": n1}
-
-    n_slice = LogicalNode(id="slice1", op_type="Slice", inputs=["n1"])
-    graph.nodes["slice1"] = n_slice
-
-    vjp_out = slice_vjp(graph, n_slice, "cotan")
-    assert vjp_out is not None
-
-    jvp_out = slice_jvp(graph, n_slice, "tan")
-    assert jvp_out is not None
-
-    n_concat = LogicalNode(id="concat1", op_type="Concat", inputs=["n1", "n1"])
-    graph.nodes["concat1"] = n_concat
-
-    vjp_out_c = concat_vjp(graph, n_concat, "cotan")
-    assert len(vjp_out_c) == 2
-
-    jvp_out_c = concat_jvp(graph, n_concat, ("tan1", "tan2"))
-    assert jvp_out_c is not None

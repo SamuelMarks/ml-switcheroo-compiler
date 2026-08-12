@@ -227,17 +227,32 @@ def _assoc_scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
 
 @register_jvp("If")
 def _if_jvp(graph: Any, node: Any, tangents: list) -> str:
-    """JVP for If operation.
+    """JVP for If operation."""
+    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.transforms.autodiff import jvp
 
-    Args:
-        graph (Any): The graph parameter.
-        node (Any): The node parameter.
-        tangents (list): The tangents parameter.
+    if "then_branch" in node.attributes and "else_branch" in node.attributes:
+        tb = node.attributes["then_branch"]
+        eb = node.attributes["else_branch"]
 
-    Returns:
-        str: Result.
-    """
-    return ""
+        # Determine primals passed into the subgraph based on inputs
+        primals = []
+        tangent_ids = []
+        for i, in_id in enumerate(node.inputs):
+            primals.append(in_id)
+            if i < len(tangents):
+                tangent_ids.append(tangents[i])
+
+        then_jvp = jvp(tb, primals, tangent_ids, tb.outputs)
+        else_jvp = jvp(eb, primals, tangent_ids, eb.outputs)
+
+        # Create a new If node that returns the tangents
+        new_id = f"{node.id}_jvp"
+        new_node = IRNode(id=new_id, op_type="If", inputs=node.inputs, attributes={"then_branch": then_jvp, "else_branch": else_jvp})
+        graph.nodes[new_id] = new_node
+        return new_id
+
+    return "mock_tangent"
 
 
 @register_jvp("Loop")

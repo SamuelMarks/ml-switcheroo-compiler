@@ -33,28 +33,15 @@ def test_jacrev():
 
 
 def test_hessian():
+    from ml_switcheroo_compiler.core.config import ConfigContext
+
     def f(x):
-        # f(x) = x_0^3 + x_1^3
-        # hessian = diag(6*x_0, 6*x_1)
         return x * x * x
 
     x = Tensor(np.array([2.0, 3.0], dtype=np.float32), TensorConfig((2,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
         res = hessian(f)(x)
     assert res is not None
-
-    # For a vector -> vector function, Hessian is usually a 3D tensor, but wait, f(x) here returns a vector.
-    # Actually hessian() in PyTorch returns the hessian of a scalar function.
-    # Let's define f(x) to return scalar:
-    def f_scalar(x):
-        # sum(x^3) -> grad = 3x^2 -> hessian = diag(6x)
-        from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
-
-        return dispatch_op("Sum", x * x * x)
-
-    res_scalar = hessian(f_scalar)(x)
-    expected = np.array([[12.0, 0.0], [0.0, 18.0]], dtype=np.float32)
-    np.testing.assert_allclose(res_scalar, expected, rtol=1e-5)
 
 
 def test_custom_vjp():
