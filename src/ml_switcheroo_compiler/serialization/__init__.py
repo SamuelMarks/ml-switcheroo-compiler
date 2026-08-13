@@ -23,46 +23,6 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import _extract_numpy_weights, concatenate_arrays, get_npz_bytes, is_numpy_array, load_npz, to_numpy
 
 
-class MsgpackWeightFormat:
-    """MsgpackWeightFormat handles loading and saving msgpack files."""
-
-    def load(self, filepath: str) -> dict:
-        """Load method for SavedModel.
-
-        Args:
-            filepath (str): The filepath parameter.
-
-        Returns:
-            dict: Result.
-
-        Raises:
-            ImportError: An exception.
-        """
-        try:
-            import msgpack
-        except ImportError:
-            raise ImportError("Msgpack is required for this weight format. Please `pip install msgpack`.") from None
-        with open(filepath, "rb") as f:
-            return msgpack.unpackb(f.read())
-
-    def save(self, weights: dict, filepath: str) -> None:
-        """Save method for SavedModel.
-
-        Args:
-            weights (dict): The weights parameter.
-            filepath (str): The filepath parameter.
-
-        Raises:
-            ImportError: An exception.
-        """
-        try:
-            import msgpack
-        except ImportError:
-            raise ImportError("Msgpack is required for this weight format. Please `pip install msgpack`.") from None
-        with open(filepath, "wb") as f:
-            f.write(msgpack.packb(weights))
-
-
 def graph_to_json(graph: Any) -> str:
     """Convert graph to JSON.
 
@@ -91,8 +51,6 @@ def _infer_weight_format(filepath: str) -> str:
         return "h5"
     if filepath.endswith(".safetensors"):
         return "safetensors"
-    if filepath.endswith(".msgpack"):
-        return "msgpack"
     if filepath.endswith(".npz"):
         return "npz"
     return "pickle"
@@ -110,8 +68,6 @@ def _get_format_handler(fmt: str) -> Any:
         return H5WeightFormat()
     if fmt == "safetensors":
         return SafetensorsWeightFormat()
-    if fmt == "msgpack":
-        return MsgpackWeightFormat()
     if fmt == "npz":
         return NpzWeightFormat()
     return PickleWeightFormat()

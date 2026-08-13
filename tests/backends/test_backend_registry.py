@@ -35,8 +35,8 @@ def test_registry_torch_alias() -> object:
         if "torch" in BackendRegistry._registry:
             del BackendRegistry._registry["torch"]
         BackendRegistry._registry["pytorch"] = "mock_class"
-        with patch("importlib.import_module"):
-            assert BackendRegistry.get("torch") == "mock_class"
+
+        assert BackendRegistry.get("torch") == "mock_class"
         del BackendRegistry._registry["pytorch"]
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass

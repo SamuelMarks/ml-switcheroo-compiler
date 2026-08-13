@@ -1,0 +1,26 @@
+default:
+  microbatch_splitting:
+    strategy: "chunk"
+    num_microbatches: 4
+  stage_communication:
+    protocol: "p2p_queue"
+  mesh_mapping:
+    devices_per_stage: 1
+
+gpipe:
+  microbatch_splitting:
+    strategy: "sequential"
+    num_microbatches: 8
+  stage_communication:
+    protocol: "rpc"
+  mesh_mapping:
+    devices_per_stage: 1
+
+pipedream:
+  microbatch_splitting:
+    strategy: "interleaved"
+    num_microbatches: 1F6
+  stage_communication:
+    protocol: "async_rpc"
+  mesh_mapping:
+    devices_per_stage: 1

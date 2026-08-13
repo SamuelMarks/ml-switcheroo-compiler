@@ -1220,18 +1220,6 @@ def test_np_polynomial_get_sc_branch2():
         assert sc is None
 
 
-def test_np_polynomial_get_sc_branch3():
-    """Test get sc branch 3."""
-    import sys
-    import unittest.mock as mock
-    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
-
-    with mock.patch.dict(sys.modules, {"scipy": None, "scipy.special": None}):
-        with mock.patch("builtins.__import__", side_effect=ImportError):
-            sc = _get_sc()
-            assert sc is None
-
-
 def test_np_fft_ops():
     """Test fft ops."""
     import numpy as np

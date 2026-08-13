@@ -62,34 +62,6 @@ def _emit_random_node(
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
 
-def PRNGKey(seed: int) -> Tensor:
-    """Create a PRNG key given an integer seed.
-
-    Args:
-        seed (int): The random seed.
-
-    Returns:
-        Tensor: A tensor containing the result of the operation.
-    """
-    if config.eager_mode:
-        res = _dispatch_random_eager("prng_key", "PRNGKey", seed)
-        return Tensor(res, TensorConfig((2,), dtypes.DType.UInt32, config.default_device))
-
-    # Trace as a creation node
-    out_id = str(uuid.uuid4())
-    node = LogicalNode(
-        id=out_id,
-        op_type="PRNGKey",
-        inputs=[],
-        attributes={"seed": seed},
-        shape_metadata=(2,),
-    )
-    if global_tracing_state.is_tracing:
-        global_tracing_state.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=(2,), dtype="uint32")
-    return Tensor(proxy, TensorConfig((2,), dtypes.DType.UInt32, config.default_device))
-
-
 def split(key: Tensor, num: int = 2) -> Tensor:
     """Split a PRNG key into num new keys.
 

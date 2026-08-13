@@ -1,7 +1,6 @@
 # ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Ahead-of-Time compilation hooks for frontend integrations."""
 
-import importlib
 from collections.abc import Callable
 from typing import Any
 
@@ -121,11 +120,10 @@ def _get_namespace(backend: str, generator_cls: type) -> dict[str, Any]:
     namespace = {}
     if hasattr(generator_cls, "get_module"):
         namespace[backend] = generator_cls.get_module()
-    else:
-        try:
-            namespace[backend] = importlib.import_module(backend)
-        except ImportError:
-            pass
+    elif backend == "numpy":
+        import numpy
+
+        namespace[backend] = numpy
     return namespace
 
 

@@ -34,19 +34,3 @@ def test_file_handler() -> None:
             return "{}"
 
     assert graph_to_json(DummyGraph()) == "{}"
-
-
-def test_msgpack() -> None:
-    """Test msgpack handler."""
-    from unittest.mock import patch
-
-    from ml_switcheroo_compiler.serialization import MsgpackWeightFormat
-
-    fmt = MsgpackWeightFormat()
-    import pytest
-
-    with patch.dict("sys.modules", {"msgpack": None}):
-        with pytest.raises(ImportError):
-            fmt.load("path")
-        with pytest.raises(ImportError):
-            fmt.save({}, "path")

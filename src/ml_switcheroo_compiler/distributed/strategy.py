@@ -1,7 +1,7 @@
 # ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Distributed training strategies for ML Switcheroo Compiler."""
 
-from typing import Any
+from typing import Any, Optional
 
 from ml_switcheroo_compiler.distributed import Distribution
 
@@ -247,16 +247,28 @@ class RemoteValue:
 class PipelineParallelismStrategy(Distribution):
     """Pipeline parallelism strategy for large models."""
 
-    def __init__(self, num_microbatches: int = 1, devices_per_stage: int = 1) -> None:
+    def __init__(self, topology_name: str = "default", num_microbatches: Optional[int] = None, devices_per_stage: Optional[int] = None) -> None:
         """Initialize pipeline parallelism strategy.
 
         Args:
-            num_microbatches (int): Number of microbatches to split the global batch into.
-            devices_per_stage (int): Number of devices to allocate per pipeline stage.
+            topology_name (str): Name of the topology configuration in YAML.
+            num_microbatches (int, optional): Number of microbatches.
+            devices_per_stage (int, optional): Number of devices per stage.
         """
         super().__init__()
-        self.num_microbatches = num_microbatches
-        self.devices_per_stage = devices_per_stage
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "pipeline_topologies.yaml")
+        with open(yaml_path) as f:
+            topologies = yaml.safe_load(f)
+
+        config = topologies.get(topology_name, topologies["default"])
+        self.num_microbatches = num_microbatches if num_microbatches is not None else config.get("microbatch_splitting", {}).get("num_microbatches", 1)
+        self.devices_per_stage = devices_per_stage if devices_per_stage is not None else config.get("mesh_mapping", {}).get("devices_per_stage", 1)
+        self.strategy = config.get("microbatch_splitting", {}).get("strategy", "chunk")
+        self.protocol = config.get("stage_communication", {}).get("protocol", "p2p_queue")
 
     def execute_pipeline(self, graph: Any, inputs: dict[str, Any], num_stages: int) -> dict[str, Any]:
         """Execute a graph using pipeline parallelism over robust async workers.

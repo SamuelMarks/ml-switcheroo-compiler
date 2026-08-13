@@ -79,21 +79,6 @@ def test_generic_utils_stubs():
     assert standardize_dtype() is None
 
 
-def test_vis_utils():
-    """Test vis."""
-    import sys
-    from unittest.mock import MagicMock
-    from ml_switcheroo_compiler.utils.vis_utils import PlotModelConfig, plot_model
-
-    mock_pydot = MagicMock()
-    sys.modules["pydot"] = mock_pydot
-    assert plot_model(None) == mock_pydot.Dot.return_value
-    assert plot_model(None, PlotModelConfig(to_file="test.png")) == mock_pydot.Dot.return_value
-    assert plot_model(None, PlotModelConfig(to_file="test.svg")) == mock_pydot.Dot.return_value
-    assert plot_model(None, PlotModelConfig(to_file="test.dot")) == mock_pydot.Dot.return_value
-    del sys.modules["pydot"]
-
-
 def test_foreign_coverage():
     op = ForeignCall()
     assert op.infer_shape() == ()

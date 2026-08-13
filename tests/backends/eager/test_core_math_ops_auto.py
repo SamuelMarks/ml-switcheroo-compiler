@@ -1,4 +1,3 @@
-import builtins
 import inspect
 import sys
 
@@ -43,13 +42,6 @@ def test_all_core_math_ops_coverage():
 
     hide = [name[1:] for name in dir(cmo) if name.startswith("_") and callable(getattr(cmo, name))]
     fb = FallbackBackend(hide)
-
-    real_import = builtins.__import__
-
-    def mock_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name in ("scipy.special", "scipy.linalg", "math", "numpy", "scipy"):
-            raise ImportError(f"Mocked ImportError for {name}")
-        return real_import(name, globals, locals, fromlist, level)
 
     for op in ops:
         sig = inspect.signature(op)

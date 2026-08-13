@@ -30,12 +30,12 @@ def _np_isotonic_regression(backend_module: Any, y: Any, **kwargs: Any) -> tuple
 
     i = 0
     while i < len(blocks) - 1:
-        v1 = np.sum(res[blocks[i]] * w[blocks[i]]) / np.sum(w[blocks[i]])
-        v2 = np.sum(res[blocks[i + 1]] * w[blocks[i + 1]]) / np.sum(w[blocks[i + 1]])
+        v1: float = float(np.sum(res[blocks[i]] * w[blocks[i]]) / np.sum(w[blocks[i]]))
+        v2: float = float(np.sum(res[blocks[i + 1]] * w[blocks[i + 1]]) / np.sum(w[blocks[i + 1]]))
         if v1 > v2:
             blocks[i] = blocks[i] + blocks[i + 1]
             del blocks[i + 1]
-            new_val = np.sum(res[blocks[i]] * w[blocks[i]]) / np.sum(w[blocks[i]])
+            new_val: float = float(np.sum(res[blocks[i]] * w[blocks[i]]) / np.sum(w[blocks[i]]))
             for idx in blocks[i]:
                 res[idx] = new_val
             i = max(0, i - 1)
@@ -348,7 +348,7 @@ def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_lengt
             probs = arr[t, b]
             # Convert to log probs if they aren't already. Assuming they are logits.
             # But the TF spec says inputs are logits.
-            max_p = np.max(probs)
+            max_p: Any = np.max(probs)
             log_p = probs - max_p - np.log(np.sum(np.exp(probs - max_p)))
 
             beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, beam_width)

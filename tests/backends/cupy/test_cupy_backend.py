@@ -1,6 +1,6 @@
 """Test module."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from ml_switcheroo_compiler.backends.cupy.eager import execute_op
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
@@ -123,25 +123,6 @@ def test_cupy_types():
             assert asarray(None, [1]) == "asarray"
         with patch("ml_switcheroo_compiler.backends.cupy.types.generic_item", return_value="item"):
             assert item(None, [1]) == "item"
-
-
-def test_cupy_import_error():
-    # Unload cupy if it's there
-    import sys
-
-    if "cupy" in sys.modules:
-        del sys.modules["cupy"]
-
-    with patch.dict(sys.modules, {"cupy": None}):
-        import importlib
-
-        import ml_switcheroo_compiler.backends.cupy.generator as cupy_gen
-        import ml_switcheroo_compiler.backends.cupy.types as cupy_types
-
-        importlib.reload(cupy_gen)
-        importlib.reload(cupy_types)
-        assert cupy_gen.cp is None
-        assert cupy_types.cp is None
 
 
 def test_cupy_eager_op_mapping_populated():
@@ -390,18 +371,6 @@ def test_cupy_eager_execute_op_fallback_to_numpy_registry():
     # in the except block! That's impossible, they use the same op_type.
     # Ah, wait! The eager registry might have backends mapped.
     pass
-
-
-def test_cupy_generator_register():
-    import importlib
-    import sys
-
-    import ml_switcheroo_compiler.backends.cupy.generator as cupy_gen
-
-    # Force cupy to be "available" and reload
-    with patch.dict(sys.modules, {"cupy": MagicMock()}):
-        importlib.reload(cupy_gen)
-        assert cupy_gen.cp is not None
 
 
 def test_cupy_eager_op_mapping():

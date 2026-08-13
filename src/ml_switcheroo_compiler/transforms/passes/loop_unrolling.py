@@ -85,7 +85,7 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
 
     from ml_switcheroo_compiler.ir.shape_system import SymInt
 
-    def symbolic_eval(g, local_state):
+    def symbolic_eval(g: Any, local_state: Any) -> Any:
         from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
         nodes = DAGTopologicalSorter.sort(g)
@@ -98,14 +98,14 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
                 v1 = local_state.get(n.inputs[0], 0)
                 v2 = local_state.get(n.inputs[1], 0)
                 if isinstance(v1, (int, float, SymInt)) and isinstance(v2, (int, float, SymInt)):
-                    local_state[n.id] = v1 + v2
+                    local_state[n.id] = v1 + v2  # type: ignore
                 else:
                     return None
             elif n.op_type == "Sub":
                 v1 = local_state.get(n.inputs[0], 0)
                 v2 = local_state.get(n.inputs[1], 0)
                 if isinstance(v1, (int, float, SymInt)) and isinstance(v2, (int, float, SymInt)):
-                    local_state[n.id] = v1 - v2
+                    local_state[n.id] = v1 - v2  # type: ignore
                 else:
                     return None
             elif n.op_type == "Less":

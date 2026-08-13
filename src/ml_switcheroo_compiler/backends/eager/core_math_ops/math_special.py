@@ -93,12 +93,7 @@ def _bessel_i0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "i0", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.i0(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselI0e")
@@ -115,12 +110,7 @@ def _bessel_i0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "i0e", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.i0e(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselI1")
@@ -137,12 +127,7 @@ def _bessel_i1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "i1", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.i1(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselI1e")
@@ -159,12 +144,7 @@ def _bessel_i1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "i1e", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.i1e(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselJ0")
@@ -181,12 +161,7 @@ def _bessel_j0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "j0", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.j0(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselJ1")
@@ -203,12 +178,7 @@ def _bessel_j1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "j1", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.j1(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselJn")
@@ -225,12 +195,7 @@ def _bessel_jn(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "jv", getattr(backend_module, "jn", None))
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.jv(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselK0")
@@ -247,12 +212,7 @@ def _bessel_k0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "k0", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.k0(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselK0e")
@@ -269,12 +229,7 @@ def _bessel_k0e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "k0e", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.k0e(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselK1")
@@ -291,12 +246,7 @@ def _bessel_k1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "k1", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.k1(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselK1e")
@@ -313,12 +263,7 @@ def _bessel_k1e(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "k1e", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.k1e(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselY0")
@@ -335,12 +280,7 @@ def _bessel_y0(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "y0", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.y0(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("BesselY1")
@@ -357,12 +297,7 @@ def _bessel_y1(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "y1", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.y1(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Digamma")
@@ -379,12 +314,7 @@ def _digamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "digamma", getattr(backend_module, "psi", None))
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.digamma(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Igammac")
@@ -401,12 +331,7 @@ def _igammac(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "igammac", getattr(backend_module, "gammaincc", None))
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.gammaincc(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Polygamma")
@@ -423,12 +348,7 @@ def _polygamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "polygamma", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.polygamma(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Igamma")
@@ -445,12 +365,7 @@ def _igamma(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "igamma", getattr(backend_module, "gammainc", None))
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.gammainc(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Gamma")

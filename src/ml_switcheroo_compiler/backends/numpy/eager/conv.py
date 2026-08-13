@@ -389,13 +389,13 @@ def _conv_general_dilated(lhs: object, rhs: object, config: ConvConfig, **kwargs
     Returns:
         object: Result.
     """
-    lhs = np.asarray(lhs)
-    rhs = np.asarray(rhs)
-    spatial_dims = lhs.ndim - 2
-    specs = _parse_conv_dimension_numbers(lhs.ndim, rhs.ndim, spatial_dims, config.dimension_numbers)
-    (lhs_pad, rhs_c) = _preprocess_conv_tensors(lhs, rhs, config, specs)
+    lhs_arr = np.asarray(lhs)
+    rhs_arr = np.asarray(rhs)
+    spatial_dims = lhs_arr.ndim - 2  # type: ignore
+    specs = _parse_conv_dimension_numbers(lhs_arr.ndim, rhs_arr.ndim, spatial_dims, config.dimension_numbers)  # type: ignore
+    (lhs_pad, rhs_c) = _preprocess_conv_tensors(lhs_arr, rhs_arr, config, specs)
     out_shape = _compute_out_shape(lhs_pad.shape, rhs_c.shape, spatial_dims, config.window_strides)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    out = np.zeros(out_shape, dtype=lhs.dtype)
+    out = np.zeros(out_shape, dtype=lhs_arr.dtype)  # type: ignore
     _compute_conv_patches(lhs_pad, rhs_c, out, config)
     inv_out_spec = _get_inv_out_spec(specs.out_spec)
     return np.transpose(out, inv_out_spec)

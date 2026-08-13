@@ -46,7 +46,6 @@ from ml_switcheroo_compiler.random.distributions_discrete import (
     randint,
 )
 from ml_switcheroo_compiler.random.state import (
-    PRNGKey,
     bits,
     clone,
     fold_in,
@@ -61,7 +60,6 @@ from ml_switcheroo_compiler.random.state import (
 from ml_switcheroo_compiler.random.transformations import shuffle
 
 __all__ = [
-    "PRNGKey",
     "ball",
     "bernoulli",
     "beta",

@@ -16,7 +16,7 @@ def check_for_numpy_leaks(directory: str) -> list:
 
     for filepath in set(files_to_check):
         # Whitelisted directories/files
-        if "backends/numpy" in filepath:
+        if "backends/numpy" in filepath or "generator_mixins.py" in filepath:
             continue
         if "backends/eager" in filepath:
             # Eager evaluators are allowed to use numpy for unbacked/fallback math

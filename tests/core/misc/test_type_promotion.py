@@ -1,5 +1,4 @@
 # ruff: noqa: E501
-import importlib
 
 import pytest
 
@@ -114,7 +113,6 @@ def test_type_promotion_129() -> None:
     """
     try:
         "Test type promotion edge cases."
-        importlib.reload(tp)
 
         class FakeType:
             """Configuration class for fake type."""
@@ -210,7 +208,6 @@ def test_type_promotion_129_2() -> None:
     """
     try:
         "Test type promotion edge cases."
-        importlib.reload(tp)
 
         class FakeType:
             """Configuration class for fake type."""

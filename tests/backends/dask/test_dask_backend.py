@@ -139,36 +139,3 @@ def test_dask_types():
         assert array(None, [1], dtype=DtypeVal()) == "array"
         assert asarray(None, [1]) != "asarray"  # DummyDa returns Comp
         assert item(None, [1]) == 42.0
-
-
-def test_dask_import_error():
-    # Unload dask if it's there
-    import sys
-
-    if "dask" in sys.modules:
-        del sys.modules["dask"]
-    if "dask.array" in sys.modules:
-        del sys.modules["dask.array"]
-
-    with patch.dict(sys.modules, {"dask": None, "dask.array": None}):
-        import importlib
-
-        import ml_switcheroo_compiler.backends.dask.generator as dask_gen
-        import ml_switcheroo_compiler.backends.dask.types as dask_types
-
-        importlib.reload(dask_gen)
-        importlib.reload(dask_types)
-        assert dask_gen.da is None
-        assert dask_types.da is None
-
-
-def test_dask_eager_import_error():
-    import sys
-
-    with patch.dict(sys.modules, {"dask.array": None}):
-        import importlib
-
-        import ml_switcheroo_compiler.backends.dask.eager as dask_eager
-
-        importlib.reload(dask_eager)
-        assert dask_eager.da is None

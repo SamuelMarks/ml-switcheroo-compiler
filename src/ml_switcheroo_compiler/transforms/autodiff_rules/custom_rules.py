@@ -298,3 +298,32 @@ def _assoc_scan_jvp(graph: Any, node: Any, tangents: list) -> str:
         str: Result.
     """
     return ""
+
+
+@register_vjp("Recompute")
+def recompute_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+    """VJP for Recompute operation.
+
+    Delegates to the original operation's VJP rule.
+
+    Args:
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
+
+    orig_op = node.attributes.get("original_op", "Unknown")
+
+    # We must construct a dummy node that looks like the original node
+    from ml_switcheroo_compiler.ir.core import clone_logical_node
+
+    dummy = clone_logical_node(node)
+    dummy.op_type = orig_op
+    dummy.attributes = node.attributes.get("original_attrs", {})
+
+    vjp_func = get_vjp(orig_op)
+    return vjp_func(graph, dummy, cotangent)

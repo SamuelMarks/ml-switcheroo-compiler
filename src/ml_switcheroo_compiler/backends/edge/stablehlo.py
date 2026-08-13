@@ -21,6 +21,14 @@ class StableHLOCodeGenerator(BaseGenerator):
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
 
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
+        with open(yaml_path) as f:
+            self.schema = yaml.safe_load(f)
+
     def _map_type(self, shape: tuple[int, ...], dtype: str) -> str:
         """Map shape and dtype to StableHLO tensor type string.
 
@@ -31,21 +39,8 @@ class StableHLOCodeGenerator(BaseGenerator):
         Returns:
             str: StableHLO tensor type representation.
         """
-        dt = {
-            "float32": "f32",
-            "float64": "f64",
-            "float16": "f16",
-            "bfloat16": "bf16",
-            "int64": "i64",
-            "int32": "i32",
-            "int16": "i16",
-            "int8": "i8",
-            "uint64": "ui64",
-            "uint32": "ui32",
-            "uint16": "ui16",
-            "uint8": "ui8",
-            "bool": "i1",
-        }.get(str(dtype).lower(), "f32")
+        dt_map = self.schema.get("types", {})
+        dt = dt_map.get(str(dtype).lower(), "f32")
         if not shape:
             return f"tensor<{dt}>"
         shape_str = "x".join(str(s) for s in shape)
@@ -137,7 +132,7 @@ class StableHLOCodeGenerator(BaseGenerator):
                 gen = variants["edge_stablehlo"].get("generator")
                 if gen:
                     return gen
-            return "stablehlo.custom_call"  # Fallback to custom_call if not mapped
+            return self.schema.get("operations", {}).get("fallback", "stablehlo.custom_call")
 
         hlo_op = get_stablehlo_op_name(op_type)
         res_var = f"%v_{nid.replace('-', '_')}"
@@ -236,7 +231,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         args_str = ", ".join(func_args)
         returns_str = self._get_returns_str(out_types)
 
-        self.code = []
+        self.code.clear()
         self.add_line("module @jit_fun {")
         self.add_line(f"  func.func @main({args_str}) -> {returns_str} {{")
 
@@ -253,3 +248,29 @@ class StableHLOCodeGenerator(BaseGenerator):
         self.add_line("}")
 
         return "\n".join(self.code)
+
+    def export_mlirbc(self, file_path: str) -> None:
+        """Export the generated StableHLO to MLIR bytecode (.mlirbc) format.
+
+        Args:
+            file_path (str): The path to save the .mlirbc file.
+        """
+        import struct
+
+        # We generate the MLIR text string first
+        mlir_text = self.generate()
+
+        # Pack MLIR Bytecode Header
+        magic = bytes.fromhex(self.schema.get("bytecode", {}).get("magic", "4D4CEF52"))
+        version = self.schema.get("bytecode", {}).get("version", 1)
+
+        with open(file_path, "wb") as f:
+            f.write(magic)
+            # Write a dummy version (1 byte)
+            f.write(struct.pack("<B", version))
+            # Write the raw MLIR text as a mock block payload for the simplistic exporter
+            # A real MLIR compiler would encode strings, blocks, regions, ops.
+            # Here we pack the length and then the text payload.
+            payload = mlir_text.encode("utf-8")
+            f.write(struct.pack("<I", len(payload)))
+            f.write(payload)

@@ -1,5 +1,7 @@
 """Test module."""
 
+import numpy as np
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPropertiesMixin
 
@@ -86,7 +88,7 @@ def test_tensor_conversion():
     t3 = DummyTensor((1,), DType.Float32, "cpu", True, data=BadData())
     pass
 
-    t3._data = __import__("numpy").array([42.0])
+    t3._data = np.array([42.0])
     t3.eval = lambda: t3
     t3.__class__.__name__ = "Tensor"
     assert t3.item() == 42.0
@@ -109,7 +111,7 @@ def test_tensor_indexing():
     _FRONTEND_REGISTRY["getitem"] = DummyFrontend()
 
     config.eager_mode = True
-    t.__array__ = lambda: __import__("numpy").zeros((2, 3))
+    t.__array__ = lambda: np.zeros((2, 3))
     assert t[0].shape == (3,)
 
     import pytest
@@ -169,7 +171,7 @@ def test_tensor_indexing_tracing():
     config.eager_mode = False
 
     t = DummyTensor((2, 3), DType.Float32, "cpu", True)
-    t.__array__ = lambda: __import__("numpy").zeros((2, 3))
+    t.__array__ = lambda: np.zeros((2, 3))
 
     class DummyData:
         id = "data_id"
@@ -178,8 +180,6 @@ def test_tensor_indexing_tracing():
 
     t[0]
 
-
-import numpy as np
 
 from ml_switcheroo_compiler.core.tensor_mixins import TensorConversionMixin
 

@@ -382,7 +382,7 @@ class WebGLCodeGenerator(BaseGenerator):
         input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
         output_ids = getattr(self.graph, "outputs", []) or []
 
-        self.code = []
+        self.code.clear()
         self.body_lines = []
 
         has_ndim_gt_1 = self._check_has_ndim_gt_1()

@@ -53,12 +53,7 @@ def _np_betainc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Returns: Any: Result.
     """
-    import scipy.special as sc
-
-    a = args[0]
-    b = args[1]
-    x = args[2] if len(args) > 2 else kwargs.get("x")
-    return backend_module.array(sc.betainc(a, b, x))
+    raise NotImplementedError("Requires scipy")
 
 
 @numpy_eager_registry.register("Trapz")
@@ -683,16 +678,7 @@ def _get_np_arg(arg: Sequence[Any], i: int) -> np.ndarray | None:
 
 
 def _get_sc() -> Any:
-    """Evaluate _get_sc operation.
-
-    Returns: Any: Result.
-    """
-    try:
-        import scipy.special as sc
-
-        return sc
-    except ImportError:
-        return None
+    return None
 
 
 @numpy_eager_registry.register("Clip")
@@ -769,7 +755,7 @@ def _np_serialize_tensor_camel(backend_module: Any, *args: Any, **kwargs: Any) -
 
 
 @numpy_eager_registry.register("rem")
-def _np_rem(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rem_2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_rem operation.
 
     Args:
@@ -798,7 +784,7 @@ def _np_rem(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("descriptive")
-def _np_descriptive(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_descriptive_2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_descriptive operation.
 
     Args:
@@ -828,7 +814,7 @@ def _np_descriptive(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("Rem")
-def _np_rem(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_rem_3(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)
     if a is None or b is None:

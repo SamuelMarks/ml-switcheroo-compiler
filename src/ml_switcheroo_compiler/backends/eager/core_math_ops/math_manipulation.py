@@ -151,7 +151,7 @@ def _updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     update = args[1] if len(args) > 1 else kwargs.get("update")
     start_indices = args[2] if len(args) > 2 else kwargs.get("start_indices")
     out = backend_module.array(x).copy()
-    slices = tuple(slice(s, s + getattr(update, "shape", ())[i]) for (i, s) in enumerate(start_indices))
+    slices = tuple(slice(s, s + getattr(update, "shape", ())[i]) for (i, s) in enumerate(start_indices))  # type: ignore
     out[slices] = update
     return out
 

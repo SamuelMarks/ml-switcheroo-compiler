@@ -1,8 +1,10 @@
+import pytest
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.random.state import PRNGKey, _dispatch_random, _get_numpy_rng, bits, clone, fold_in, key, key_data, key_impl, rng_bit_generator, rng_uniform, split, wrap_key_data
+from ml_switcheroo_compiler.random.state import _dispatch_random, _get_numpy_rng, bits, clone, fold_in, key, key_data, key_impl, rng_bit_generator, rng_uniform, split, wrap_key_data
 
 
 class MockTensor:
@@ -13,20 +15,21 @@ class MockTensor:
         self.data = type("M", (), {"id": "1"})()
 
 
+@pytest.mark.skip(reason="PRNGKey removed")
 def test_prngkey(mocker):
     config.eager_mode = False
     mock_add_node = mocker.patch("ml_switcheroo_compiler.random.state.global_tracing_state.add_node")
     mocker.patch("ml_switcheroo_compiler.random.state.global_tracing_state.is_tracing", True)
-    assert PRNGKey(42).config.shape == (2,)
+    assert (42).config.shape == (2,)
     mocker.patch("ml_switcheroo_compiler.random.state.global_tracing_state.is_tracing", False)
-    assert PRNGKey(42).config.shape == (2,)
+    assert (42).config.shape == (2,)
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.random.state.get_active_backend").return_value
     mock_backend.execute_op.return_value = MockTensor((2,))
     pass
-    assert PRNGKey(42).config.shape == (2,)
+    assert (42).config.shape == (2,)
     mocker.patch("ml_switcheroo_compiler.random.state.global_tracing_state.is_tracing", False)
-    assert PRNGKey(42).config.shape == (2,)
+    assert (42).config.shape == (2,)
 
 
 def test_split_fold_in(mocker):

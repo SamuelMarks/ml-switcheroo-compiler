@@ -90,9 +90,11 @@ class EagerExecutionMixin:
 
         Returns: Any: Result.
         """
+        import numpy
+
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
 
-        return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), shape)
+        return generic_zeros(cls.get_module() if hasattr(cls, "get_module") else numpy, shape)
 
     @classmethod
     def array(cls: type, data: Any, dtype: Any = None) -> Any:
@@ -104,9 +106,11 @@ class EagerExecutionMixin:
 
         Returns: Any: Result.
         """
+        import numpy
+
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
 
-        return generic_array(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), data, dtype)
+        return generic_array(cls.get_module() if hasattr(cls, "get_module") else numpy, data, dtype)
 
     @classmethod
     def asarray(cls: type, data: Any) -> Any:
@@ -117,9 +121,11 @@ class EagerExecutionMixin:
 
         Returns: Any: Result.
         """
+        import numpy
+
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
 
-        return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), data)
+        return generic_asarray(cls.get_module() if hasattr(cls, "get_module") else numpy, data)
 
     @classmethod
     def item(cls: type, data: Any) -> float:
@@ -131,6 +137,8 @@ class EagerExecutionMixin:
         Returns:
         float: Result.
         """
+        import numpy
+
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
 
-        return generic_item(cls.get_module() if hasattr(cls, "get_module") else __import__("numpy"), data)
+        return generic_item(cls.get_module() if hasattr(cls, "get_module") else numpy, data)

@@ -183,7 +183,7 @@ def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+def _np_confusion_matrix_cap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)
     if a is None or b is None:

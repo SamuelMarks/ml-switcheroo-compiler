@@ -1,5 +1,4 @@
 # ruff: noqa: E501
-import builtins
 import os
 import sys
 import tarfile
@@ -150,34 +149,20 @@ def test_get_file(mock_validate_cache: MagicMock, mock_download_remote_file: Mag
 
 
 def test_set_random_seed_full_coverage() -> None:
-    orig_import = builtins.__import__
+    class MockMod:
+        pass
 
-    def mock_import(name: str, *args: object) -> object:
-        if name == "ml_switcheroo_compiler.backends.numpy.utils":
-
-            class MockMod:
-                pass
-
-            return MockMod()
-        return orig_import(name, *args)
-
-    with patch("builtins.__import__", side_effect=mock_import):
+    with patch.dict("sys.modules", {"ml_switcheroo_compiler.backends.numpy.utils": MockMod()}):
         gu.set_random_seed(123)
     with patch.dict("sys.modules", {"ml_switcheroo_compiler.backends.numpy.utils": None}):
         gu.set_random_seed(123)
 
-    def mock_import2(name: str, *args: object) -> object:
-        if name == "ml_switcheroo_compiler.backends.numpy.utils":
+    class MockMod2:
+        @staticmethod
+        def set_numpy_seed(seed: int) -> None:
+            pass
 
-            class MockMod:
-                @staticmethod
-                def set_numpy_seed(seed: int) -> None:
-                    pass
-
-            return MockMod()
-        return orig_import(name, *args)
-
-    with patch("builtins.__import__", side_effect=mock_import2):
+    with patch.dict("sys.modules", {"ml_switcheroo_compiler.backends.numpy.utils": MockMod2()}):
         gu.set_random_seed(123)
 
     class MockRandom:

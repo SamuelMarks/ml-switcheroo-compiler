@@ -21,7 +21,8 @@ repos:
     - --follow-imports=skip
     additional_dependencies:
     - types-requests
-    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)transforms/pass_manager.py
+    - types-PyYAML
+    files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py).*\.py$
 - repo: local
   hooks:
   - id: update-badges

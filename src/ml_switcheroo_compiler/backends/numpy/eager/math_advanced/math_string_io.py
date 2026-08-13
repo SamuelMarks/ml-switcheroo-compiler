@@ -312,14 +312,7 @@ def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
         return np.array([])
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     try:
-        import io
-
-        from PIL import Image
-
-        if isinstance(data, str):
-            data = data.encode("utf-8")
-        img = Image.open(io.BytesIO(data))
-        return np.array(img)
+        raise NotImplementedError("Image decoding requires PIL, which is not permitted.")
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 

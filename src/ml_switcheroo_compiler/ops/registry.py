@@ -9,7 +9,7 @@ _YAML_REGISTRY: dict[str, Any] = {}
 _UTIL_REGISTRY: dict[str, Any] = {}
 
 
-def _load_yaml_registry(force=False):
+def _load_yaml_registry(force: bool = False) -> None:
     global _YAML_REGISTRY
     if force or not _YAML_REGISTRY:
         yaml_path = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
@@ -24,7 +24,7 @@ def register_op(name: str) -> Any:
     def decorator(cls: type) -> type:
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
-        cls.op_type = name
+        cls.op_type = name  # type: ignore
         _REGISTRY[name] = cls
         return cls
 
@@ -69,7 +69,7 @@ def get_op(op_name: str) -> type:
             _yaml_data = op_data
 
             @classmethod
-            def get_yaml_data(cls):
+            def get_yaml_data(cls: Any) -> Any:
                 return cls._yaml_data
 
         # Give it a nice name
@@ -103,10 +103,10 @@ _load_yaml_registry()
 
 # Expose backward compatibility aliases for tests that expect the old structure
 class _RegistryShim:
-    def __init__(self, data):
+    def __init__(self, data: Any) -> None:
         self.operations = data
 
-    def get_generator_mapping(self, prefix, op_name):
+    def get_generator_mapping(self, prefix: str, op_name: str) -> Any:
         op = self.operations.get(op_name, {})
         if not op:
             return None
@@ -117,10 +117,10 @@ class _RegistryShim:
 
 backend_mapping_registry = _RegistryShim(_YAML_REGISTRY)
 _OP_REGISTRY = _REGISTRY
-_FRONTEND_REGISTRY = {}
+_FRONTEND_REGISTRY: dict[str, Any] = {}
 
 
-def get_backend_mapping(op_name):
+def get_backend_mapping(op_name: str) -> dict[str, Any]:
     op = _YAML_REGISTRY.get(op_name)
     if op:
         return op.get("variants", {})
@@ -131,15 +131,15 @@ def get_backend_mapping(op_name):
 _FRONTENDS = {}
 
 
-def register_frontend(name):
-    def decorator(cls):
+def register_frontend(name: str) -> Any:
+    def decorator(cls: Any) -> Any:
         _FRONTENDS[name] = cls
         return cls
 
     return decorator
 
 
-def get_frontend(name):
+def get_frontend(name: str) -> Any:
     if name not in _FRONTENDS:
         raise KeyError(f"Frontend {name} not found")
     return _FRONTENDS.get(name)
@@ -147,10 +147,10 @@ def get_frontend(name):
 
 # Patch _RegistryShim
 class _RegistryShimFix:
-    def __init__(self, data):
+    def __init__(self, data: Any) -> None:
         self.operations = data
 
-    def get_generator_mapping(self, prefix, op_name):
+    def get_generator_mapping(self, prefix: str, op_name: str) -> Any:
         op = self.operations.get(op_name, {})
         if not op:
             return None
@@ -158,7 +158,7 @@ class _RegistryShimFix:
         backend = variants.get(prefix, {})
         return backend.get("generator")
 
-    def get_eager_mapping(self, prefix, op_name):
+    def get_eager_mapping(self, prefix: str, op_name: str) -> Any:
         op = self.operations.get(op_name, {})
         if not op:
             return None
@@ -166,9 +166,9 @@ class _RegistryShimFix:
         backend = variants.get(prefix, {})
         return backend.get("eager")
 
-    def get_op(self, op_name):
+    def get_op(self, op_name: str) -> Any:
         return self.operations.get(op_name)
 
 
-backend_mapping_registry = _RegistryShimFix(_YAML_REGISTRY)
+backend_mapping_registry: Any = _RegistryShimFix(_YAML_REGISTRY)  # type: ignore
 from ml_switcheroo_compiler.ops.base import OpDef

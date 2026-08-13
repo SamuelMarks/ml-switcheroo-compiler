@@ -164,7 +164,7 @@ import yaml
 _SPMD_RULES = None
 
 
-def _get_spmd_rules():
+def _get_spmd_rules() -> dict[str, Any]:
     global _SPMD_RULES
     if _SPMD_RULES is None:
         yaml_path = Path(__file__).parent / "spmd_mappings.yaml"

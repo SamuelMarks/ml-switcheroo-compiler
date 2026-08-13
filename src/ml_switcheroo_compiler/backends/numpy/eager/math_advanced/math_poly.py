@@ -29,7 +29,7 @@ def _poly_recurrence(n: Any, x: Any, p0: float, p1_func: Any, p_next_func: Any) 
     n = np.asarray(n, dtype=int)
     x = np.asarray(x)
     n_b, x_b = np.broadcast_arrays(n, x)
-    max_n = np.max(n_b)
+    max_n: Any = np.max(n_b)
 
     if max_n < 0:
         return np.zeros_like(x_b)

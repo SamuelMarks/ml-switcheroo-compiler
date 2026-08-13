@@ -27826,25 +27826,6 @@ ModuleState:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-ModuleWrapper:
-  description: A subclass of ``torch.nn.Module`` that wraps a C++ frontend module
-    and delegates all access.
-  operation: ModuleWrapper
-  std_args:
-  - self
-  - cpp_module
-  type: class
-  variants:
-    edge_wasm_simd:
-      scalar_expr: in0_val
-      simd_expr: in0_val
-      template: unary
-    edge_wgsl:
-      expr: buf_in0_f32[in0_offset]
-      template: unary
-    llvm_cpp:
-      scalar_expr: in0_val
-      template: unary
 Movedim:
   description: Moves the dimension(s) of input at the position(s) in source to the
     position(s) in destination.
@@ -30367,22 +30348,6 @@ PRESCALE_QK:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-PRNGKeyArray:
-  description: The class representing a Python module/class/instance attribute.
-  operation: PRNGKeyArray
-  std_args: []
-  type: attribute
-  variants:
-    edge_wasm_simd:
-      scalar_expr: in0_val
-      simd_expr: in0_val
-      template: unary
-    edge_wgsl:
-      expr: buf_in0_f32[in0_offset]
-      template: unary
-    llvm_cpp:
-      scalar_expr: in0_val
-      template: unary
 PRUNING_TYPE:
   description: The class representing a Python module/class/instance attribute.
   operation: PRUNING_TYPE
@@ -30565,27 +30530,6 @@ ParameterList:
   description: Auto-generated from flax_nnx_code_defs
   operation: ParameterList
   std_args: []
-  type: class
-  variants:
-    edge_wasm_simd:
-      scalar_expr: in0_val
-      simd_expr: in0_val
-      template: unary
-    edge_wgsl:
-      expr: buf_in0_f32[in0_offset]
-      template: unary
-    llvm_cpp:
-      scalar_expr: in0_val
-      template: unary
-ParametrizationList:
-  description: A sequential container that holds and manages the original parameters
-    or buffers of a parametrized :class:`torch.nn.Module`.
-  operation: ParametrizationList
-  std_args:
-  - self
-  - modules
-  - original
-  - unsafe
   type: class
   variants:
     edge_wasm_simd:

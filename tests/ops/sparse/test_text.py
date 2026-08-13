@@ -1,8 +1,7 @@
-import importlib.util
-
 import numpy as np
 import pytest
 
+import ml_switcheroo_compiler.backends.registry as registry_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -37,6 +36,7 @@ from ml_switcheroo_compiler.ops.sparse.frontend import (
     sparse_to_indicator,
     sparse_transpose,
 )
+from ml_switcheroo_compiler.ops.text import CreateToken, create_token
 from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig, as_string, edit_distance, regex_full_match, regex_replace, string_join, string_length, string_lower, string_split, string_substr, string_to_number, string_upper
 from ml_switcheroo_compiler.ops.text.frontend import lookup as f_lookup
 from ml_switcheroo_compiler.ops.text.frontend import string_to_hash as f_string_to_hash
@@ -45,13 +45,6 @@ from ml_switcheroo_compiler.ops.text.ops import ArrayRepr, ArrayStr, AsString, E
 from ml_switcheroo_compiler.ops.text.ops import lookup as o_lookup
 from ml_switcheroo_compiler.ops.text.ops import string_to_hash as o_string_to_hash
 from ml_switcheroo_compiler.ops.text.ops import text_vectorization as o_text_vectorization
-
-spec = importlib.util.spec_from_file_location("text_py_mod", "src/ml_switcheroo_compiler/ops/text.py")
-text_py_mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(text_py_mod)
-CreateToken = text_py_mod.CreateToken
-create_token = text_py_mod.create_token
-import ml_switcheroo_compiler.backends.registry as registry_mod
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
 

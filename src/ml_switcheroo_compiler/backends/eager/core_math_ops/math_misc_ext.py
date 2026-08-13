@@ -243,12 +243,7 @@ def _zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "zeta", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.zeta(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Beta")
@@ -269,12 +264,7 @@ def _beta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "beta", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.beta(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("Betainc")
@@ -291,12 +281,7 @@ def _betainc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     func = getattr(backend_module, "betainc", None)
     if func:
         return func(*args, **kwargs)
-    try:
-        import scipy.special
-
-        return scipy.special.betainc(*args, **kwargs)
-    except ImportError:
-        return None
+    return None
 
 
 @global_eager_registry.register("AllToAll")
@@ -745,7 +730,7 @@ def _indexindim(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if keepdims and isinstance(index, int):
         slices[axis] = slice(index, index + 1)
     else:
-        slices[axis] = index
+        slices[axis] = index  # type: ignore
     return x[tuple(slices)]
 
 

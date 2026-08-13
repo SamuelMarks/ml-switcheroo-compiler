@@ -22,9 +22,37 @@ from ml_switcheroo_compiler.ops.text.frontend import (
     text_vectorization,
 )
 
+_ = ops
+
+from ml_switcheroo_compiler.ops.base import OpDef, register_op
+
+
+@register_op("CreateToken")
+class CreateToken(OpDef):
+    """CreateToken operation."""
+
+    op_name = "CreateToken"
+
+
+def create_token(*args: Any, **kwargs: Any) -> Any:
+    """Create token.
+
+    Args:
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: Result.
+    """
+    from ml_switcheroo_compiler.ops.base import get_op
+
+    return get_op("CreateToken")()(*args, **kwargs)
+
+
 __all__ = [
     "AsStringConfig",
+    "CreateToken",
     "as_string",
+    "create_token",
     "edit_distance",
     "lookup",
     "regex_full_match",
@@ -39,5 +67,3 @@ __all__ = [
     "string_upper",
     "text_vectorization",
 ]
-
-_ = ops

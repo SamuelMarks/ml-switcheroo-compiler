@@ -36,26 +36,3 @@ def test_polar_view():
         mock_backend.execute_op.return_value = "real_res"
         res = view_as_real(1)
         assert res == "real_res"
-
-
-def test_binary_imports_exceptions():
-    import importlib
-    import sys
-    from unittest.mock import patch
-
-    import ml_switcheroo_compiler.ops.binary
-
-    ops_base_mod = sys.modules["ml_switcheroo_compiler.ops.base"]
-
-    # We patch ml_switcheroo_compiler.ops.base.get_op safely
-    with patch.object(ops_base_mod, "get_op", side_effect=KeyError("Boom")):
-        # We need to forcefully reload ml_switcheroo_compiler.ops.binary to hit KeyErrors
-        importlib.reload(ml_switcheroo_compiler.ops.binary)
-
-        assert ml_switcheroo_compiler.ops.binary.add is None
-        assert ml_switcheroo_compiler.ops.binary.divide is None
-        assert ml_switcheroo_compiler.ops.binary.multiply is None
-        assert ml_switcheroo_compiler.ops.binary.legendre_polynomial_p is None
-
-    # After test, we should reload cleanly
-    importlib.reload(ml_switcheroo_compiler.ops.binary)

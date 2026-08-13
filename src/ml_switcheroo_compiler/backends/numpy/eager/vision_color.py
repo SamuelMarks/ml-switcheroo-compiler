@@ -162,7 +162,7 @@ def _np_rgb_to_grayscale(backend_module: Any, images: Any, **kwargs: Any) -> Any
 
     Returns: Any: Result.
     """
-    np_mod = __import__("numpy")
+    np_mod = np
     data_format = kwargs.get("data_format", "channels_last")
     gray = _to_channels_last(np_mod, images, data_format)
     weights = np_mod.array([0.2989, 0.587, 0.114], dtype=gray.dtype)

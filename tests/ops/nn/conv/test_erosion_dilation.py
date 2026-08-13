@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import numpy as np
+
 
 def test_conv_utils_extras():
     import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
@@ -8,14 +10,14 @@ def test_conv_utils_extras():
         shape = (1, 1, 1, 1)
 
         def __array__(self):
-            return __import__("numpy").ones((1, 1, 1, 1))
+            return np.ones((1, 1, 1, 1))
 
         @property
         def dtype(self):
             return "float32"
 
         def asnumpy(self):
-            return __import__("numpy").ones((1, 1, 1, 1))
+            return np.ones((1, 1, 1, 1))
 
     t = DummyTensor()
 

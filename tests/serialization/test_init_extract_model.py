@@ -1,20 +1,6 @@
 def test_init_classes_extra():
-    import os
 
-    from ml_switcheroo_compiler.serialization import MaxShardSizePolicy, MsgpackWeightFormat, PythonState, SavedModel, ShardByTaskPolicy, TrackableResource
-
-    mwf = MsgpackWeightFormat()
-    test_file = "test_msgpack.msgpack"
-    if os.path.exists(test_file):
-        os.remove(test_file)
-    try:
-        mwf.save({"a": 1}, test_file)
-        loaded = mwf.load(test_file)
-        assert loaded == {"a": 1}
-    except ImportError:
-        pass
-    if os.path.exists(test_file):
-        os.remove(test_file)
+    from ml_switcheroo_compiler.serialization import MaxShardSizePolicy, PythonState, SavedModel, ShardByTaskPolicy, TrackableResource
 
     class DummyRes(TrackableResource):
         def initialize(self):
@@ -51,13 +37,11 @@ def test_init_other_methods():
 
     assert _infer_weight_format("x.h5") == "h5"
     assert _infer_weight_format("x.safetensors") == "safetensors"
-    assert _infer_weight_format("x.msgpack") == "msgpack"
     assert _infer_weight_format("x.npz") == "npz"
     assert _infer_weight_format("x.bin") == "pickle"
 
     assert type(_get_format_handler("h5")).__name__ == "H5WeightFormat"
     assert type(_get_format_handler("safetensors")).__name__ == "SafetensorsWeightFormat"
-    assert type(_get_format_handler("msgpack")).__name__ == "MsgpackWeightFormat"
     assert type(_get_format_handler("npz")).__name__ == "NpzWeightFormat"
     assert type(_get_format_handler("pickle")).__name__ == "PickleWeightFormat"
 

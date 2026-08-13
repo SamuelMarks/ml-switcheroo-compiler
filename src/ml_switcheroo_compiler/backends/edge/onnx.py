@@ -25,6 +25,13 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         super().__init__(graph, delegates)
         self.var_map: dict[str, str] = {}
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
+        with open(yaml_path) as f:
+            self.schema = yaml.safe_load(f)
 
     def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Process a node and return its generated ONNX variable name.
@@ -46,44 +53,10 @@ class ONNXCodeGenerator(BaseGenerator):
 
     # ruff: noqa: PLR0911, PLR0912
     def _get_proto_type(self, dt: str, TensorProto: Any) -> int:
-        """Map data type string to ONNX TensorProto primitive integer code.
-
-        Args:
-            dt (str): The data type.
-            TensorProto (object): ONNX TensorProto namespace.
-
-        Returns:
-            int: ONNX TensorProto type integer code.
-        """
+        """Map data type string to ONNX TensorProto primitive integer code."""
         dt = str(dt).lower()
-        # Access attributes dynamically on the TensorProto object
-        if dt == "float64":
-            return TensorProto.DOUBLE
-        elif dt == "float32":
-            return TensorProto.FLOAT
-        elif dt == "float16":
-            return TensorProto.FLOAT16
-        elif dt == "bfloat16":
-            return TensorProto.BFLOAT16
-        elif dt == "int64":
-            return TensorProto.INT64
-        elif dt == "int32":
-            return TensorProto.INT32
-        elif dt == "int16":
-            return TensorProto.INT16
-        elif dt == "int8":
-            return TensorProto.INT8
-        elif dt == "uint64":
-            return TensorProto.UINT64
-        elif dt == "uint32":
-            return TensorProto.UINT32
-        elif dt == "uint16":
-            return TensorProto.UINT16
-        elif dt == "uint8":
-            return TensorProto.UINT8
-        elif dt == "bool":
-            return TensorProto.BOOL
-        return TensorProto.FLOAT
+        dt_map = self.schema.get("types", {})
+        return dt_map.get(dt, 1)
 
     def _generate_text_fallback(self) -> str:
         """Generate a text-proto fallback string representation in case ONNX is not available.
@@ -192,7 +165,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 gen = variants["edge_onnx"].get("generator")
                 if gen:
                     return gen
-            return op_type  # Fallback to the op_type itself if not mapped
+            return self.schema.get("operations", {}).get("fallback", op_type)
 
         for node in self.sorted_nodes:
             op_type = getattr(node, "op_type", "")

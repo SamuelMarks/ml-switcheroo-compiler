@@ -33,7 +33,7 @@ def dispatch(module_name: str, func_name: str, *args: Any, **kwargs: Any) -> Any
 
     try:
         op_def = get_op(func_name)
-        out_shape = op_def.infer_shape(*args, **kwargs)
+        out_shape = op_def.infer_shape(*args, **kwargs)  # type: ignore
     except Exception:
         out_shape = ()
     out_dtype = getattr(args[0], "dtype", "float32") if args else "float32"

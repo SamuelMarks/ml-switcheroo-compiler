@@ -82,15 +82,11 @@ def execute_op(cls: type, op_type: str, *args: Any, **kwargs: Any) -> Any:
         func = getattr(np, snake)
     except AttributeError:
         try:
-            import scipy.special
-
-            func = getattr(scipy.special, snake)
-        except (ImportError, AttributeError):
+            raise AttributeError()
+        except AttributeError:
             try:
-                import scipy.signal
-
-                func = getattr(scipy.signal, snake)
-            except (ImportError, AttributeError):
+                raise AttributeError()
+            except AttributeError:
                 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
                 msg = f"Operation {op_type} is not implemented in interpreter."

@@ -1,0 +1,21 @@
+# Rematerialization pass configuration
+
+# Op types that are cheap to recompute and usually have large outputs
+target_ops:
+  - Add
+  - Multiply
+  - Relu
+  - Sigmoid
+  - Tanh
+  - Exp
+  - Log
+
+# Op types that are expensive and should never be rematerialized
+high_cost_ops:
+  - MatMul
+  - Conv2D
+
+# Thresholds for rematerialization
+thresholds:
+  min_memory_bytes: 1048576  # 1024 * 1024
+  max_compute_to_memory_ratio: 10.0

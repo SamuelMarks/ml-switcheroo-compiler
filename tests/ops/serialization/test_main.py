@@ -10,7 +10,6 @@ from ml_switcheroo_compiler.serialization import (
     KerasFileEditor,
     KerasSerializationContext,
     MaxShardSizePolicy,
-    MsgpackWeightFormat,
     PythonState,
     SavedModel,
     ShardByTaskPolicy,
@@ -132,26 +131,9 @@ class MockModel:
         return {"conf": "mock"}
 
 
-def test_msgpack_weight_format(mocker):
-    fmt = MsgpackWeightFormat()
-    mocker.patch.dict("sys.modules", {"msgpack": None})
-    with pytest.raises(ImportError):
-        fmt.load("test.msgpack")
-    with pytest.raises(ImportError):
-        fmt.save({}, "test.msgpack")
-    mock_msgpack = mocker.MagicMock()
-    mock_msgpack.unpackb.return_value = {"a": 1}
-    mock_msgpack.packb.return_value = b"pack"
-    mocker.patch.dict("sys.modules", {"msgpack": mock_msgpack})
-    with tempfile.NamedTemporaryFile() as f:
-        fmt.save({"a": 1}, f.name)
-        assert fmt.load(f.name) == {"a": 1}
-
-
 def test_infer_weight_format():
     assert _infer_weight_format("a.h5") == "h5"
     assert _infer_weight_format("a.safetensors") == "safetensors"
-    assert _infer_weight_format("a.msgpack") == "msgpack"
     assert _infer_weight_format("a.npz") == "npz"
     assert _infer_weight_format("a.pkl") == "pickle"
 
@@ -159,7 +141,6 @@ def test_infer_weight_format():
 def test_get_format_handler():
     assert type(_get_format_handler("h5")).__name__ == "H5WeightFormat"
     assert type(_get_format_handler("safetensors")).__name__ == "SafetensorsWeightFormat"
-    assert type(_get_format_handler("msgpack")).__name__ == "MsgpackWeightFormat"
     assert type(_get_format_handler("npz")).__name__ == "NpzWeightFormat"
     assert type(_get_format_handler("pickle")).__name__ == "PickleWeightFormat"
 

@@ -161,7 +161,7 @@ def test_aot_tracing_exception():
         c(t1)
 
 
-def test_aot_importlib_fallback():
+def test_aot_fallback():
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
     class MockBackendNoModule:

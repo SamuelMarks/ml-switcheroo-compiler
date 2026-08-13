@@ -635,7 +635,9 @@ from ml_switcheroo_compiler.ops.tensor_array import (
 )
 from ml_switcheroo_compiler.ops.text import (
     AsStringConfig,
+    CreateToken,
     as_string,
+    create_token,
     edit_distance,
     lookup,
     regex_full_match,
@@ -869,6 +871,7 @@ __all__ = [
     "ConvTranspose",
     "ConvWithGeneralPadding",
     "Convolve2d",
+    "CreateToken",
     "CustomLinearSolve",
     "CustomRoot",
     "DType",
@@ -1158,6 +1161,7 @@ __all__ = [
     "cosh",
     "count_nonzero",
     "cov",
+    "create_token",
     "crop",
     "crop_and_resize",
     "crop_images",

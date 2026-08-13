@@ -8,26 +8,6 @@ from typing import Any
 __all__ = ["OPS_REGISTRY"]
 
 OPS_REGISTRY: dict[str, dict[str, Any]] = {
-    "A": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "A",
-        "std_args": [],
-        "variants": {
-            "cupy": {},
-            "dask": {},
-            "edge_onnx": {},
-            "edge_stablehlo": {},
-            "edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"},
-            "edge_wgsl": {"expr": "buf_in0_f32[in0_offset]", "template": "unary"},
-            "jax": {},
-            "keras": {},
-            "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"},
-            "mlx": {},
-            "numpy": {},
-            "pytorch": {},
-            "tensorflow": {},
-        },
-    },
     "ALiBi": {
         "description": "Attention with Linear Biases (ALiBi) layer.",
         "operation": "ALiBi",
@@ -2597,7 +2577,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.autodiffcheckpointtype"},
         },
     },
-    "AuxOutput": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "AuxOutput", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "AuxRequest": {
         "description": "Request which auxiliary outputs to compute from flex_attention.",
         "operation": "AuxRequest",
@@ -2833,26 +2812,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "numpy": {"generator": "0"},
             "pytorch": {},
             "tensorflow": {},
-        },
-    },
-    "B": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "B",
-        "std_args": [],
-        "variants": {
-            "cupy": {},
-            "dask": {},
-            "edge_onnx": {},
-            "edge_stablehlo": {},
-            "edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"},
-            "edge_wgsl": {"expr": "buf_in0_f32[in0_offset]", "template": "unary"},
-            "jax": {"eager": "jax.numpy.b"},
-            "keras": {"eager": "keras_ops.b"},
-            "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"},
-            "mlx": {"eager": "mlx.core.b"},
-            "numpy": {"eager": "numpy.b"},
-            "pytorch": {"eager": "torch.b"},
-            "tensorflow": {"eager": "tf.b"},
         },
     },
     "BCELoss": {"description": "Auto-generated mapping for BCELoss.", "operation": "BCELoss", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -4373,7 +4332,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "BytesType": {"description": "Byte string type.", "operation": "BytesType", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "C": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "C", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "CALLSITE_REGEX": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "CALLSITE_REGEX",
@@ -5380,7 +5338,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "ConvNet": {"description": "Definition for ConvNet", "operation": "ConvNet", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "latex_dsl": {"eager": "midl.ConvNet"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "ConvT": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "ConvT", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "ConvTranspose": {
         "description": "The ConvTranspose operation.",
         "operation": "ConvTranspose",
@@ -9410,13 +9367,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "LOWER_RIGHT": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "LOWER_RIGHT",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "LPPool1d": {"description": "Auto-generated mapping for LPPool1d.", "operation": "LPPool1d", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "LPPool2d": {"description": "Auto-generated mapping for LPPool2d.", "operation": "LPPool2d", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "LPPool3d": {"description": "Auto-generated mapping for LPPool3d.", "operation": "LPPool3d", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -9729,7 +9679,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         ],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "List": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "List", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "ListAdd": {
         "description": "Functional interface to the Add layer (elementwise sum). Takes a list of tensors.",
         "operation": "ListAdd",
@@ -10230,8 +10179,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "M": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "M", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "MA": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "MA", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "MASK_VALUE": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "MASK_VALUE",
@@ -10344,13 +10291,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "ManualSeed",
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "seed", "type": "int"}],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "Map": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "Map",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_onnx": {"generator": "Map"}, "edge_stablehlo": {"generator": "stablehlo.map"}, "edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "MapState": {
         "description": "Maps a function over a State object.",
@@ -10988,13 +10928,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "ModuleState": {"description": "Auto-generated mapping for ModuleState.", "operation": "ModuleState", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "ModuleWrapper": {
-        "description": "A subclass of ``torch.nn.Module`` that wraps a C++ frontend module and delegates all access.",
-        "operation": "ModuleWrapper",
-        "std_args": ["self", "cpp_module"],
-        "type": "class",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "Movedim": {
         "description": "Moves the dimension(s) of input at the position(s) in source to the position(s) in destination.",
         "operation": "Movedim",
@@ -11215,7 +11148,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "NONE": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "NONE", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "NO_SWIZZLE": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "NO_SWIZZLE",
@@ -11264,7 +11196,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "Names": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "Names", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "NanToNum": {
         "description": "The NanToNum operation.",
         "operation": "NanToNum",
@@ -11547,7 +11478,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "input", "type": "Tensor"}],
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "Normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "Normal", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "Normalization": {
         "description": "A preprocessing layer that normalizes continuous features.",
         "operation": "Normalization",
@@ -11795,13 +11725,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "PRNGKeyArray": {
-        "description": "The class representing a Python module/class/instance attribute.",
-        "operation": "PRNGKeyArray",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "PRUNING_TYPE": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "PRUNING_TYPE",
@@ -11849,25 +11772,10 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "value", "type": "Any"}],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "Parameter": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "Parameter", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "ParameterDict": {
         "description": "Holds parameters in a dictionary.",
         "operation": "ParameterDict",
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "parameters", "type": "Dict[str, Any]"}],
-        "type": "class",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "ParameterList": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "ParameterList",
-        "std_args": [],
-        "type": "class",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "ParametrizationList": {
-        "description": "A sequential container that holds and manages the original parameters or buffers of a parametrized :class:`torch.nn.Module`.",
-        "operation": "ParametrizationList",
-        "std_args": ["self", "modules", "original", "unsafe"],
         "type": "class",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -12106,7 +12014,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "Poisson": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "Poisson", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "PoissonNLLLoss": {
         "description": "Auto-generated mapping for PoissonNLLLoss.",
         "operation": "PoissonNLLLoss",
@@ -12769,7 +12676,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "class",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "RNNBase": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "RNNBase", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "RNNCell": {"description": "Auto-generated mapping for RNNCell.", "operation": "RNNCell", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "RNNCellBase": {"description": "Base class for RNN Cells.", "operation": "RNNCellBase", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "RNNCellDeviceWrapper": {
@@ -16491,7 +16397,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "stream", "type": "Optional[Any]"}],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "T": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "T", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "TCGEN05_COL_LAYOUT": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "TCGEN05_COL_LAYOUT",
@@ -16641,13 +16546,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "T_destination": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "T_destination",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "T_module": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "T_module",
         "std_args": [],
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
@@ -17596,7 +17494,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [{"default": "", "is_variadic": False, "kind": "positional_or_keyword", "name": "value", "type": "Any"}, {"is_variadic": True, "kind": "positional_or_keyword", "name": "args", "type": "Any"}],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "Uniform": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "Uniform", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "UnifyTypeList": {
         "description": "Internal type unification utility. No-op in transpilation contexts.",
         "operation": "UnifyTypeList",
@@ -17945,7 +17842,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "UsingHijax": {"description": "Returns True if Hijax mode is currently enabled.", "operation": "UsingHijax", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "V": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "V", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "VMEM": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "VMEM",
@@ -19113,21 +19009,12 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.concat"},
         },
     },
-    "apply": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "apply", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "apply_along_axis": {"description": "Auto-generated from jax_code_defs", "operation": "apply_along_axis", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "apply_gradients": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "apply_gradients", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "apply_if_finite": {
         "description": "Auto-generated from jax_code_defs",
         "operation": "apply_if_finite",
         "std_args": [],
         "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "apply_mask": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "apply_mask",
-        "std_args": [],
-        "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "apply_over_axes": {"description": "Auto-generated from jax_code_defs", "operation": "apply_over_axes", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -19253,7 +19140,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {},
         },
     },
-    "args": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "args", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "args_specs": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "args_specs",
@@ -19663,7 +19549,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "attr": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "attr", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "attr_element": {
         "description": "Returns `op.attributes[attr_name][index]` if it exists, otherwise None.",
         "operation": "attr_element",
@@ -19758,7 +19643,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "axis": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "axis", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "axis_index": {"description": "Auto-generated mapping for axis_index.", "operation": "axis_index", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "axis_size": {"description": "Auto-generated mapping for axis_size.", "operation": "axis_size", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "backup_keys": {"description": "Auto-generated mapping for backup_keys.", "operation": "backup_keys", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -20232,7 +20116,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {},
         },
     },
-    "bias": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "bias", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "bias_correction": {
         "description": "Auto-generated from jax_code_defs",
         "operation": "bias_correction",
@@ -20240,10 +20123,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "bias_hh": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "bias_hh", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "bias_ih": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "bias_ih", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "bias_k": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "bias_k", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "bias_v": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "bias_v", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "bidirectional": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "bidirectional",
@@ -20328,9 +20207,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "binomial": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "binomial", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "bitcast_convert_type": {"description": "Auto-generated mapping for bitcast_convert_type.", "operation": "bitcast_convert_type", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "bits": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "bits", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "bitwidth": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "bitwidth",
@@ -20693,7 +20570,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "c_void_p": {"description": "Auto-generated mapping for c_void_p.", "operation": "c_void_p", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "cached": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "cached", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "calculate_gain": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "calculate_gain",
@@ -20848,7 +20724,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "capitalize": {"description": "Auto-generated mapping for capitalize.", "operation": "capitalize", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "cast_like": {"description": "Auto-generated from jax_code_defs", "operation": "cast_like", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "categorical": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "categorical", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "categorical_crossentropy": {
         "description": "Computes the categorical crossentropy loss.",
         "operation": "categorical_crossentropy",
@@ -21113,14 +20988,12 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "check_where": {"description": "Auto-generated mapping for check_where.", "operation": "check_where", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "checkify": {"description": "Auto-generated mapping for checkify.", "operation": "checkify", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "children": {"description": "Auto-generated from mlx_code_defs", "operation": "children", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "chisquare": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "chisquare", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "chlo_precision_attr": {
         "description": "Auto-generated mapping for chlo_precision_attr.",
         "operation": "chlo_precision_attr",
         "std_args": [],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "choice": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "choice", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "cholesky_ex": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "cholesky_ex",
@@ -21181,7 +21054,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "clear": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "clear", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "clear_non_graph_nodes": {
         "description": "Auto-generated mapping for clear_non_graph_nodes.",
         "operation": "clear_non_graph_nodes",
@@ -22005,7 +21877,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "count": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "count", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "count_include_pad": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "count_include_pad",
@@ -22083,13 +21954,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "description": "The class representing a Python function.",
         "operation": "create_instr_descriptor",
         "std_args": ["m", "n", "acc_dtype", "input_dtype", "transpose_a", "transpose_b", "sparsity_selector"],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "create_mask": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "create_mask",
-        "std_args": [],
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
@@ -22413,8 +22277,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "d_model": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "d_model", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "data": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "data", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "data_next": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "data_next",
@@ -22847,7 +22709,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         },
     },
     "dilation": {"description": "Auto-generated from mlx_code_defs", "operation": "dilation", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "dim": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "dim", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "dimension_numbers": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "dimension_numbers",
@@ -22965,12 +22826,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "dot_general": {"description": "Auto-generated mapping for dot_general.", "operation": "dot_general", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "dot_product_attention": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "dot_product_attention",
-        "std_args": [],
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "dot_product_attention_weights": {
         "description": "Auto-generated mapping for dot_product_attention_weights.",
         "operation": "dot_product_attention_weights",
@@ -23236,13 +23091,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "embedding_dim": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "embedding_dim",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "emit_tf_embedded_graph_custom_call": {
         "description": "Emits a custom call referencing a tf.Graph embedding of the TF function.",
         "operation": "emit_tf_embedded_graph_custom_call",
@@ -23295,7 +23143,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "encoder": {"description": "Auto-generated from mlx_code_defs", "operation": "encoder", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "end_dim": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "end_dim", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "endswith": {"description": "Auto-generated mapping for endswith.", "operation": "endswith", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "english_capitalize": {
         "description": "Auto-generated mapping for english_capitalize.",
@@ -23435,7 +23282,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "euler_gamma": {"description": "Auto-generated from jax_code_defs", "operation": "euler_gamma", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "eval": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "eval", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "eval_polymorphic_shape": {
         "description": "Evaluates the output shape in presence of shape polymorphism.",
         "operation": "eval_polymorphic_shape",
@@ -23487,7 +23333,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.math.expm1"},
         },
     },
-    "exponential": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "exponential", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "exponential_decay": {
         "description": "Auto-generated from jax_code_defs",
         "operation": "exponential_decay",
@@ -23553,7 +23398,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "eye_": {"description": "Auto-generated from mlx_code_defs", "operation": "eye_", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "f": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "f", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "fa_m64_collective_layout": {
         "description": "The register layout for transfers to/from tmem_m64_collective_layout.",
         "operation": "fa_m64_collective_layout",
@@ -23756,7 +23600,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "filter_state": {"description": "Auto-generated mapping for filter_state.", "operation": "filter_state", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "filters": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "filters", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "filters_to_predicates": {
         "description": "Auto-generated mapping for filters_to_predicates.",
         "operation": "filters_to_predicates",
@@ -23798,7 +23641,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "find_duplicate": {"description": "Auto-generated mapping for find_duplicate.", "operation": "find_duplicate", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "find_duplicates": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "find_duplicates", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "find_functions": {"description": "Auto-generated mapping for find_functions.", "operation": "find_functions", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "find_unused_parameters": {
         "description": "The class representing a Python module/class/instance attribute.",
@@ -23928,13 +23770,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "flatten_mapping": {"description": "Auto-generated mapping for flatten_mapping.", "operation": "flatten_mapping", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "flatten_parameters": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "flatten_parameters",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "flatten_to_sequence": {
         "description": "Auto-generated mapping for flatten_to_sequence.",
         "operation": "flatten_to_sequence",
@@ -24010,7 +23845,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.flipud"},
         },
     },
-    "float": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "float", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "float4_e2m1fn": {"description": "Auto-generated from jax_code_defs", "operation": "float4_e2m1fn", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "float8_e3m4": {"description": "Auto-generated from jax_code_defs", "operation": "float8_e3m4", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "float8_e4m3": {"description": "Auto-generated from jax_code_defs", "operation": "float8_e4m3", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -24116,7 +23950,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.fmod"},
         },
     },
-    "fn": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "fn", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "foreach": {
         "description": "Call a function for each value and index.",
         "operation": "foreach",
@@ -24131,7 +23964,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "fori_loop": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "fori_loop", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "fork_rngs": {"description": "Auto-generated mapping for fork_rngs.", "operation": "fork_rngs", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "format_float_positional": {
         "description": "Auto-generated mapping for format_float_positional.",
@@ -24146,7 +23978,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "format_parser": {"description": "Auto-generated mapping for format_parser.", "operation": "format_parser", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "forward": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "forward", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "fractional_max_pool2d": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "fractional_max_pool2d",
@@ -24629,21 +24460,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.gamma"},
         },
     },
-    "gammainc": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "gammainc",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "gammaincc": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "gammaincc",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "gammaln": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "gammaln", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "gather": {
         "description": "The Gather operation.",
         "operation": "gather",
@@ -24717,7 +24533,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "generic": {"description": "Auto-generated from jax_code_defs", "operation": "generic", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "geometric": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "geometric", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "geomspace": {
         "description": "The Geomspace operation.",
         "operation": "geomspace",
@@ -25139,8 +24954,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "glorot_normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "glorot_normal", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "glorot_uniform": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "glorot_uniform", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "glu": {"description": "Auto-generated mapping for glu.", "operation": "glu", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "gmm": {
         "description": "The class representing a Python module/class/instance attribute.",
@@ -25243,7 +25056,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "group_size": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "group_size", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "grouped_mm": {
         "description": "Auto-generated mapping for grouped_mm.",
         "operation": "grouped_mm",
@@ -25267,7 +25079,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "gumbel": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "gumbel", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "gumbel_softmax": {
         "description": "Auto-generated mapping for gumbel_softmax.",
         "operation": "gumbel_softmax",
@@ -25279,10 +25090,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "hamming": {"description": "Auto-generated from jax_code_defs", "operation": "hamming", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "hanning": {"description": "Auto-generated from jax_code_defs", "operation": "hanning", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "hard_shrink": {"description": "Auto-generated from keras_code_defs", "operation": "hard_shrink", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "hard_sigmoid": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "hard_sigmoid", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "hard_silu": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "hard_silu", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "hard_swish": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "hard_swish", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "hard_tanh": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "hard_tanh", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "hardshrink": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "hardshrink",
@@ -25378,19 +25185,9 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "he_normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "he_normal", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "he_uniform": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "he_uniform", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "head": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "head", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "head_bias": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "head_bias",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "head_dim": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "head_dim",
         "std_args": [],
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
@@ -25902,27 +25699,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         ],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "in1_features": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "in1_features",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "in2_features": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "in2_features",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "in_features": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "in_features",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "in_layout_for_operand": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "in_layout_for_operand",
@@ -25995,7 +25771,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "indent": {"description": "Auto-generated mapping for indent.", "operation": "indent", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "index": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "index", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "index_in_dim": {"description": "Auto-generated mapping for index_in_dim.", "operation": "index_in_dim", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "index_take": {"description": "Auto-generated mapping for index_take.", "operation": "index_take", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "indices": {"description": "Auto-generated from jax_code_defs", "operation": "indices", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -26036,7 +25811,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "init": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "init", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "init_fn": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "init_fn",
@@ -26150,7 +25924,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "instance_norm": {"description": "Auto-generated mapping for instance_norm.", "operation": "instance_norm", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "int": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "int", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "int2": {"description": "Auto-generated from jax_code_defs", "operation": "int2", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "int4": {"description": "Auto-generated from jax_code_defs", "operation": "int4", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "int8": {
@@ -26845,7 +26618,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         },
     },
     "item": {"description": "Auto-generated from jax_code_defs", "operation": "item", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "items": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "items", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "itemsize": {"description": "Auto-generated from mlx_code_defs", "operation": "itemsize", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "iter_bcsr_layouts": {
         "description": "The class representing a Python function.",
@@ -26995,8 +26767,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "jvp": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "jvp", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "k": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "k", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "k_layout": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "k_layout",
@@ -27011,20 +26781,12 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "kaiming_normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "kaiming_normal", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "kaiming_normal_": {
         "description": "Fill the input `Tensor` with values using a Kaiming normal distribution.",
         "operation": "kaiming_normal_",
         "std_args": ["tensor", "a", "mode", "nonlinearity", "generator"],
         "type": "function",
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "kaiming_uniform": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "kaiming_uniform",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "kaiming_uniform_": {
         "description": "Fill the input `Tensor` with values using a Kaiming uniform distribution.",
@@ -27048,13 +26810,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "keepdim": {
-        "description": "The class representing a Python module/class/instance attribute.",
-        "operation": "keepdim",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "kernel": {
         "description": "Auto-generated from flax_nnx_v0.12.5_map.json",
         "operation": "kernel",
@@ -27062,14 +26817,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "kernel_size": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "kernel_size",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "key": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "key", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "keys": {"description": "Auto-generated from keras_code_defs", "operation": "keys", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "kl_div": {"description": "Auto-generated mapping for kl_div.", "operation": "kl_div", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "kl_divergence": {
@@ -27167,7 +26914,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "laplace": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "laplace", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "launch_context": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "launch_context",
@@ -27218,7 +26964,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "layers": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "layers", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "lazy_init": {"description": "Auto-generated mapping for lazy_init.", "operation": "lazy_init", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "lcm": {"description": "Auto-generated from keras_code_defs", "operation": "lcm", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "ldexp": {
@@ -27491,13 +27236,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "load_state_dict": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "load_state_dict",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "load_strided": {
         "description": "The class representing a Python function.",
         "operation": "load_strided",
@@ -27595,7 +27333,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "log_ndtr": {"description": "Auto-generated from mlx_code_defs", "operation": "log_ndtr", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "log_prob": {"description": "Auto-generated from mlx_code_defs", "operation": "log_prob", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "log_sigmoid": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "log_sigmoid", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "log_softmax": {
         "description": "Auto-generated from jax_code_defs",
         "operation": "log_softmax",
@@ -27682,10 +27419,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "x1", "type": "Union[array, bool]"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "x2", "type": "Union[array, bool]"}],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "logistic": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "logistic", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "logistic_impl": {"description": "Auto-generated mapping for logistic_impl.", "operation": "logistic_impl", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "logit": {"description": "Auto-generated from mlx_code_defs", "operation": "logit", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "lognormal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "lognormal", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "logsigmoid": {
         "description": "The LogSigmoid operation.",
         "operation": "logsigmoid",
@@ -27702,7 +27437,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "keras": {"eager": "keras_ops.logsumexp"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "long": {"description": "Auto-generated from numpy_code_defs", "operation": "long", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "lower": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "lower", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "lower_mgpu_dialect": {
         "description": "The class representing a Python function.",
         "operation": "lower_mgpu_dialect",
@@ -28008,22 +27742,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "mask": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "mask", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "mask_check": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "mask_check",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "mask_indices": {"description": "Auto-generated from jax_code_defs", "operation": "mask_indices", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "mask_mod": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "mask_mod",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "mask_next": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "mask_next",
@@ -28316,13 +28035,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "merge_inputs": {"description": "Auto-generated mapping for merge_inputs.", "operation": "merge_inputs", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "merge_masks": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "merge_masks",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "merge_nested_ts_specs": {
         "description": "Merge two ts specs, dict2 takes precedence.",
         "operation": "merge_nested_ts_specs",
@@ -28345,7 +28057,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "indexing", "type": "str"}],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "metadata": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "metadata", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "mha": {
         "description": "The class representing a Python function.",
         "operation": "mha",
@@ -28523,13 +28234,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "modules": {"description": "Auto-generated from mlx_code_defs", "operation": "modules", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "moments": {"description": "Auto-generated from keras_code_defs", "operation": "moments", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "momentum": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "momentum",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "mosaic_gpu_p": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "mosaic_gpu_p",
@@ -28688,8 +28392,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "multivariate_normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "multivariate_normal", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "n": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "n", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "n_batch": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "n_batch",
@@ -28732,7 +28434,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "name": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "name", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "name_stack": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "name_stack",
@@ -29093,13 +28794,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {},
         },
     },
-    "negative_slope": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "negative_slope",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "nesterov": {
         "description": "Auto-generated from mlx_v0.31.0_map.json",
         "operation": "nesterov",
@@ -29330,35 +29024,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "num_embeddings": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "num_embeddings",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "num_features": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "num_features", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "num_groups": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "num_groups",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "num_heads": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "num_heads",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "num_layers": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "num_layers",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "num_parameters": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "num_parameters",
@@ -29526,13 +29191,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "orthogonal": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "orthogonal",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "orthogonal_": {
         "description": "Auto-generated from mlx_code_defs",
         "operation": "orthogonal_",
@@ -29543,13 +29201,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "out_channels": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "out_channels",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "out_features": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "out_features",
         "std_args": [],
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
@@ -29617,28 +29268,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {},
         },
     },
-    "output_device": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "output_device",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "output_ratio": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "output_ratio",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "output_size": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "output_size",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "p": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "p", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "pack_array": {
         "description": "The class representing a Python function.",
         "operation": "pack_array",
@@ -29708,14 +29337,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "pad_sequence",
         "std_args": ["sequences", "batch_first", "padding_value", "padding_side"],
         "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "padding": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "padding", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "padding_idx": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "padding_idx",
-        "std_args": [],
-        "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "padtype_to_pads": {"description": "Auto-generated mapping for padtype_to_pads.", "operation": "padtype_to_pads", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -29840,13 +29461,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "parameters": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "parameters",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "parameters_to_ignore": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "parameters_to_ignore",
@@ -29876,7 +29490,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "pareto": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "pareto", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "pargmax": {"description": "Auto-generated mapping for pargmax.", "operation": "pargmax", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "pargmin": {"description": "Auto-generated mapping for pargmin.", "operation": "pargmin", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "parse_hlo_dump": {
@@ -30012,13 +29625,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "pytorch": {},
             "tensorflow": {},
         },
-    },
-    "permutation": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "permutation",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "permute_dims": {
         "description": "Definition for permute_dims",
@@ -30499,8 +30105,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.math.polyval"},
         },
     },
-    "pop": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "pop", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "popitem": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "popitem", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "population_count": {
         "description": "Auto-generated mapping for population_count.",
         "operation": "population_count",
@@ -31116,7 +30720,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "ravel_multi_index": {"description": "Auto-generated from jax_code_defs", "operation": "ravel_multi_index", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "rayleigh": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "rayleigh", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "reached_preemption_sync_point": {
         "description": "Determine whether all hosts have reached a preemption sync step.",
         "operation": "reached_preemption_sync_point",
@@ -31334,13 +30937,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "register_buffer": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "register_buffer",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "register_comm_hook": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "register_comm_hook",
@@ -31490,13 +31086,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "register_parameter": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "register_parameter",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "register_parametrization": {
         "description": "Register a parametrization to a tensor in a module.",
         "operation": "register_parametrization",
@@ -31611,7 +31200,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "remaining": {"description": "Auto-generated mapping for remaining.", "operation": "remaining", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "remat": {"description": "Auto-generated mapping for remat.", "operation": "remat", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "remove": {"description": "Auto-generated from keras_code_defs", "operation": "remove", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "remove_axis": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "remove_axis", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "remove_dimension": {
         "description": "The class representing a Python function.",
         "operation": "remove_dimension",
@@ -31676,7 +31264,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.repeat"},
         },
     },
-    "replace": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "replace", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "replace_by_pure_dict": {
         "description": "Auto-generated mapping for replace_by_pure_dict.",
         "operation": "replace_by_pure_dict",
@@ -31729,7 +31316,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "reseed": {"description": "Auto-generated mapping for reseed.", "operation": "reseed", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "reset": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "reset", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "reset_parameters": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "reset_parameters",
@@ -33645,13 +33231,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "start_dim": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "start_dim",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "start_transfer_server": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "start_transfer_server",
@@ -33667,23 +33246,8 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "startswith": {"description": "Auto-generated mapping for startswith.", "operation": "startswith", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "state": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "state", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "state_dict": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "state_dict",
-        "std_args": [],
-        "type": "function",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "static": {"description": "Auto-generated mapping for static.", "operation": "static", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "static_cache": {"description": "Auto-generated mapping for static_cache.", "operation": "static_cache", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "static_graph": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "static_graph",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
     "static_validate_inputs": {
         "description": "The class representing a Python function.",
         "operation": "static_validate_inputs",
@@ -33755,7 +33319,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "str_format": {"description": "Auto-generated mapping for str_format.", "operation": "str_format", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "stride": {"description": "Auto-generated from mlx_code_defs", "operation": "stride", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "strides": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "strides", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "strip": {"description": "Auto-generated mapping for strip.", "operation": "strip", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "sub": {"description": "Auto-generated mapping for sub.", "operation": "sub", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "subf": {
@@ -34097,13 +33660,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     "threshold": {
         "description": "The class representing a Python module/class/instance attribute.",
         "operation": "threshold",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "threshold_": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "threshold_",
         "std_args": [],
         "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
@@ -34485,7 +34041,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "train": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "train", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "training": {"description": "Auto-generated from mlx_code_defs", "operation": "training", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "transfer_parametrizations_and_params": {
         "description": "Transfer parametrizations and the parameters they parametrize from :attr:`from_module` to :attr:`to_module`.",
@@ -34682,7 +34237,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "tri": {"description": "Auto-generated from jax_code_defs", "operation": "tri", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "triangular": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "triangular", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "triangular_solve": {
         "description": "Auto-generated mapping for triangular_solve.",
         "operation": "triangular_solve",
@@ -34750,7 +34304,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         },
     },
     "trunc_normal_": {"description": "Auto-generated from mlx_code_defs", "operation": "trunc_normal_", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "truncated_normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "truncated_normal", "std_args": [], "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "try_cluster_cancel": {
         "description": "Atomically cancels a pending cluster launch.",
         "operation": "try_cluster_cancel",
@@ -34770,7 +34323,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         ],
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "type": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "type", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "type_before_parametrizations": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "type_before_parametrizations",
@@ -34848,13 +34400,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "description": "Auto-generated mapping for unflatten_mapping.",
         "operation": "unflatten_mapping",
         "std_args": [],
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "unflattened_size": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "unflattened_size",
-        "std_args": [],
-        "type": "attribute",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "unfold": {"description": "Auto-generated from keras_code_defs", "operation": "unfold", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
@@ -35066,7 +34611,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "update": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "update", "std_args": [], "type": "function", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "update_carry_variables": {
         "description": "Auto-generated mapping for update_carry_variables.",
         "operation": "update_carry_variables",
@@ -35206,14 +34750,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "v_proj_weight",
         "std_args": [],
         "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "value": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "value", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "value_and_grad": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "value_and_grad",
-        "std_args": [],
-        "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "value_sites_for_variable": {
@@ -35422,7 +34958,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "type": "function",
         "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
-    "wald": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "wald", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "warmup_constant_schedule": {
         "description": "Auto-generated from jax_code_defs",
         "operation": "warmup_constant_schedule",
@@ -35569,7 +35104,6 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             "tensorflow": {"eager": "tf.where"},
         },
     },
-    "while_loop": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "while_loop", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "will_sync_module_buffers": {
         "description": "Auto-generated from torch_v2.10.0_map.json",
         "operation": "will_sync_module_buffers",
@@ -35622,20 +35156,12 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
     },
     "write_code": {"description": "Auto-generated mapping for write_code.", "operation": "write_code", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "write_file": {"description": "Auto-generated mapping for write_file.", "operation": "write_file", "std_args": [], "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
-    "xavier_normal": {"description": "Auto-generated from flax_nnx_code_defs", "operation": "xavier_normal", "std_args": [], "type": "attribute", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "xavier_normal_": {
         "description": "Fill the input `Tensor` with values using a Xavier normal distribution.",
         "operation": "xavier_normal_",
         "std_args": ["tensor", "gain", "generator"],
         "type": "function",
         "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
-    },
-    "xavier_uniform": {
-        "description": "Auto-generated from flax_nnx_code_defs",
-        "operation": "xavier_uniform",
-        "std_args": [],
-        "type": "attribute",
-        "variants": {"edge_wasm_simd": {"scalar_expr": "in0_val", "simd_expr": "in0_val", "template": "unary"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "xavier_uniform_": {
         "description": "Fill the input `Tensor` with values using a Xavier uniform distribution.",

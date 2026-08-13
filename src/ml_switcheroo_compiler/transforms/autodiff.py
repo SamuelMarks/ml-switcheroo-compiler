@@ -88,8 +88,21 @@ def _accumulate_gradients(
         ValueError: If VJP rule is missing or returns incorrect number of adjoints.
     """
     try:
+        if node.attributes.get("rematerialize", False):
+            import uuid
+
+            from ml_switcheroo_compiler.ir.core import clone_logical_node
+
+            recompute_node = clone_logical_node(node)
+            recompute_node.id = f"{node.id}_recompute_{uuid.uuid4().hex[:6]}"
+            new_graph.nodes[recompute_node.id] = recompute_node
+            # Ensure inputs are available. In a deep unroll we might need to recursively recompute.
+            # For now, just re-evaluating the single op is sufficient for checkpointing elements.
+            eval_node = recompute_node
+        else:
+            eval_node = node
         vjp_func = get_vjp(node.op_type)
-        input_adjs = vjp_func(new_graph, node, adj_id)
+        input_adjs = vjp_func(new_graph, eval_node, adj_id)
     except ValueError:
         msg = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
         raise ValueError(msg) from None

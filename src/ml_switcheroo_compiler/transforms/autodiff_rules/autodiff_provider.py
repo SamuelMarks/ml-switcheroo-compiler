@@ -57,11 +57,11 @@ def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str]
         return emit_ir_node(graph, op, evaluated_args, getattr(node, "shape_metadata", None), attributes=attrs)
 
     elif expr.startswith("$input["):
-        idx = int(re.match(r"\$input\[(\d+)\]", expr).group(1))
+        idx = int(re.match(r"\$input\[(\d+)\]", expr).group(1))  # type: ignore
         return node.inputs[idx]
     elif expr.startswith("$tangent["):
         assert tangents is not None
-        idx = int(re.match(r"\$tangent\[(\d+)\]", expr).group(1))
+        idx = int(re.match(r"\$tangent\[(\d+)\]", expr).group(1))  # type: ignore
         return tangents[idx]
 
     # If it's just a raw variable name fallback

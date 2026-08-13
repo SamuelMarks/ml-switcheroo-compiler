@@ -137,7 +137,7 @@ def _execute_one_hot(*args: Any, **kwargs: Any) -> Any:
     on_value = kwargs.get("on_value", 1.0)
     off_value = kwargs.get("off_value", 0.0)
     dtype_str = kwargs.get("dtype", "float32")
-    res = F.one_hot(inputs.long(), num_classes=depth)
+    res = F.one_hot(inputs.long(), num_classes=depth)  # type: ignore
     dtype_map = {"float32": torch.float32, "float64": torch.float64, "int32": torch.int32, "int64": torch.int64}
     res = res.to(dtype_map.get(dtype_str, torch.float32))
     if on_value != 1.0 or off_value != 0.0:

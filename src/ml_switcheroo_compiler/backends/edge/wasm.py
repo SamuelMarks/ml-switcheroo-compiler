@@ -165,7 +165,7 @@ class WasmCodeGenerator(BaseGenerator):
         input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
         output_ids = getattr(self.graph, "outputs", []) or []
 
-        self.code = []
+        self.code.clear()
         func_params = []
         for idx, node in enumerate(input_nodes):
             meta_dtype = self._map_type(getattr(node, "dtype", "float32"))

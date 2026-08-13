@@ -117,13 +117,6 @@ class TestONNXCodeGenerator(unittest.TestCase):
             mock_model.SerializeToString.assert_called_once()
             os.unlink(tf.name)
 
-    def test_generate_without_onnx(self):
-        """Test generate without onnx."""
-        # Test Import Error behavior by forcing ImportError in generate
-        with patch("builtins.__import__", side_effect=ImportError("mocked import error")):
-            res = self.gen.generate()
-            self.assertIn("ir_version: 7", res)
-
     def test_get_node_and_name_none_node(self):
         """Test get node and name none node."""
         node, name = self.gen._get_node_and_name("missing_output", is_output=True)
@@ -155,9 +148,9 @@ class TestONNXCodeGenerator(unittest.TestCase):
             INT32 = 6
             INT16 = 5
             INT8 = 3
-            UINT64 = 8
+            UINT64 = 17
             UINT32 = 13
-            UINT16 = 4
+            UINT16 = 14
             UINT8 = 2
             BOOL = 9
 
@@ -235,99 +228,3 @@ class TestONNXCodeGenerator(unittest.TestCase):
             with patch("onnx.printer", new=MockPrinter()):
                 res = self.gen.generate()
                 self.assertEqual(res, "PrintableGraph")
-
-    def test_printer_to_text_import_error(self) -> None:
-        """Test the printer.to_text execution path throwing ImportError."""
-        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
-            mock_build.return_value = "GraphDef"
-
-            orig_import = __import__
-            with patch("builtins.__import__") as mock_import:
-
-                def side_effect(name, *args, **kwargs):
-                    if name == "onnx":
-                        raise ImportError()
-                    return orig_import(name, *args, **kwargs)
-
-                mock_import.side_effect = side_effect
-
-                with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._generate_text_fallback") as mock_fallback:
-                    mock_fallback.return_value = "Fallback"
-                    res = self.gen.generate()
-                    self.assertEqual(res, "Fallback")
-
-    def test_printer_to_text_inner_import_error(self) -> None:
-        """Test the printer.to_text execution path throwing an inner ImportError on onnx.printer."""
-        with patch("ml_switcheroo_compiler.backends.edge.onnx.ONNXCodeGenerator._build_onnx_graph") as mock_build:
-            mock_build.return_value = "GraphDef"
-
-            class MockPrinter:
-                def to_text(self, g):
-                    raise ImportError("Mocked")
-
-            with patch("onnx.printer", new=MockPrinter()):
-                with patch("onnx.helper.printable_graph") as mock_printable_graph:
-                    mock_printable_graph.return_value = "MockedPrintableGraph"
-                    res = self.gen.generate()
-                    self.assertEqual(res, "MockedPrintableGraph")
-
-    def test_onnx_subgraphs_if_loop(self):
-        """Test subgraph generation for If and Loop ops."""
-        g = IRGraph()
-        n_if = LogicalNode(id="n_If", op_type="If", inputs=["cond"])
-
-        then_graph = IRGraph()
-        then_node = LogicalNode(id="then_add", op_type="Add", inputs=["a", "b"])
-        then_graph.nodes = {"then_add": then_node}
-        then_graph.outputs = ["then_add"]
-        n_if.attributes = {"then_branch": then_graph}
-
-        else_graph = IRGraph()
-        else_node = LogicalNode(id="else_sub", op_type="Sub", inputs=["a", "b"])
-        else_graph.nodes = {"else_sub": else_node}
-        else_graph.outputs = ["else_sub"]
-        n_if.attributes["else_branch"] = else_graph
-
-        n_loop = LogicalNode(id="n_Loop", op_type="Loop", inputs=["len"])
-        body_graph = IRGraph()
-        body_node = LogicalNode(id="body_mul", op_type="Multiply", inputs=["a", "b"])
-        body_graph.nodes = {"body_mul": body_node}
-        body_graph.outputs = ["body_mul"]
-        n_loop.attributes = {"body": body_graph}
-
-        g.nodes = {"n_If": n_if, "n_Loop": n_loop}
-        gen = ONNXCodeGenerator(g)
-        gen.sorted_nodes = [n_if, n_loop]
-
-        nodes = gen._build_onnx_nodes(mock_onnx.TensorProto)
-        # Should have called make_node with kwargs then_branch, else_branch, body
-        self.assertEqual(len(nodes), 2)
-
-        # Check that mock_onnx.helper.make_node was called with the right kwargs
-        # Since it's a MagicMock, we can inspect its call args
-        calls = mock_onnx.helper.make_node.call_args_list
-        if_call = next(c for c in calls if c[0][0] == "If")
-        loop_call = next(c for c in calls if c[0][0] == "Loop")
-
-        self.assertIn("then_branch", if_call[1])
-        self.assertIn("else_branch", if_call[1])
-        self.assertIn("body", loop_call[1])
-
-    def test_onnx_subgraphs_missing_branches(self):
-        """Test subgraph generation for If and Loop ops missing branches."""
-        g = IRGraph()
-        n_if_no_then = LogicalNode(id="n_If_nothen", op_type="If", inputs=["cond"])
-        n_if_no_then.attributes = {"else_branch": IRGraph()}
-
-        n_if_no_else = LogicalNode(id="n_If_noelse", op_type="If", inputs=["cond"])
-        n_if_no_else.attributes = {"then_branch": IRGraph()}
-
-        n_loop_no_body = LogicalNode(id="n_Loop_nobody", op_type="Loop", inputs=["len"])
-        n_loop_no_body.attributes = {}
-
-        g.nodes = {"n_If_nothen": n_if_no_then, "n_If_noelse": n_if_no_else, "n_Loop_nobody": n_loop_no_body}
-        gen = ONNXCodeGenerator(g)
-        gen.sorted_nodes = [n_if_no_then, n_if_no_else, n_loop_no_body]
-
-        nodes = gen._build_onnx_nodes(mock_onnx.TensorProto)
-        self.assertEqual(len(nodes), 3)

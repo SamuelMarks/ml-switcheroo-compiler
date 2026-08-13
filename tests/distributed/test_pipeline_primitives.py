@@ -1,85 +1,68 @@
-from unittest.mock import MagicMock, patch
+"""Tests for pipeline parallelism primitives."""
 
-import ml_switcheroo_compiler.ops.distributed_ops as dist_ops
+from ml_switcheroo_compiler.backends.common.mixins.distributed import DistributedASTVisitor
 from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-from ml_switcheroo_compiler.ops.distributed_ops import Recv, Send
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_send_recv_ops() -> None:
-    """Test send and recv ops shape inference and logic."""
-    t = MagicMock()
-    t.shape = (2, 3)
-
-    send_op = Send()
-    assert send_op.infer_shape(t) == ()
-
-    recv_op = Recv()
-    assert recv_op.infer_shape(shape=(5, 5)) == (5, 5)
+class NumpyGenerator:
+    def __init__(self):
+        self.code = []
 
 
-def test_pipeline_strategy_insert() -> None:
-    """Test PipelineParallelismStrategy inserts Send and Recv."""
-    graph = IRGraph()
-    n1 = LogicalNode(id="n1", op_type="Input")
-    n1.shape_metadata = (10, 10)
-    n2 = LogicalNode(id="n2", op_type="Add", inputs=["n1", "n1"])
-    n3 = LogicalNode(id="n3", op_type="Exp", inputs=["n2"])
+def test_distributed_ast_visitor():
+    gen = NumpyGenerator()
+    visitor = DistributedASTVisitor(generator=gen)
 
-    graph.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    send_node = IRNode(id="send", op_type="Send", inputs=["in1"], attributes={"target_stage": 1})
+    code = visitor.visit_Send(send_node, ["x"])
+    assert code == "_numpy_send(x, target=1)"
+    assert "Send tensor to pipeline stage" in gen.code[-1]
 
-    strategy = PipelineParallelismStrategy(num_microbatches=2)
-    stages = [["n1"], ["n2", "n3"]]
+    recv_node = IRNode(id="recv", op_type="Recv", inputs=[], attributes={"source_stage": 0})
+    recv_node.shape_metadata = (10, 10)
+    recv_node.dtype = "float32"
+    code = visitor.visit_Recv(recv_node, [])
+    assert code == "_numpy_recv(source=0, shape=(10, 10), dtype='float32')"
+    assert "Recv tensor from pipeline stage" in gen.code[-1]
 
-    strategy.insert_send_recv(graph, stages)
+    gen.__class__.__name__ = "JaxGenerator"
+    assert visitor.visit_Send(send_node, ["x"]) == "jax.lax.send(x, dst=1)"
+    assert visitor.visit_Recv(recv_node, []) == "jax.lax.recv(src=0)"
 
-    op_types = [n.op_type for n in graph.nodes.values()]
-    assert "Send" in op_types
-    assert "Recv" in op_types
+    gen.__class__.__name__ = "MlxGenerator"
+    assert visitor.visit_Send(send_node, ["x"]) == "mlx.core.distributed.send(x, dst=1)"
+    assert visitor.visit_Recv(recv_node, []) == "mlx.core.distributed.recv(src=0)"
 
-    recv_id = None
-    for nid, n in graph.nodes.items():
-        if n.op_type == "Send":
-            assert n.inputs[0] == "n1"
-            if "dst_rank" in n.attributes:
-                assert n.attributes["dst_rank"] == 1
-        if n.op_type == "Recv":
-            recv_id = nid
-            if "src_rank" in n.attributes:
-                assert n.attributes["src_rank"] == 0
-            if "shape" in n.attributes:
-                assert n.attributes["shape"] == (10, 10)
-
-    assert graph.nodes["n2"].inputs[0] == recv_id
-    assert graph.nodes["n2"].inputs[1] == recv_id
+    gen.__class__.__name__ = "KerasGenerator"
+    assert visitor.visit_Send(send_node, ["x"]) == "keras.distribution.send(x, target=1)"
+    assert visitor.visit_Recv(recv_node, []) == "keras.distribution.recv(source=0)"
 
 
-@patch("ml_switcheroo_compiler.tracing.builder.TracingNodeBuilder.emit_tracing_node")
-def test_send_recv_functions(mock_emit) -> None:
-    """Test send and recv factory functions trace logic."""
-    dist_ops.send("t_in", dst_rank=1, tag=42)
-    mock_emit.assert_called_with("Send", "t_in", dst_rank=1, tag=42)
+def test_pipeline_strategy_topology_loading():
+    strategy = PipelineParallelismStrategy(topology_name="default")
+    assert strategy.num_microbatches == 4
+    assert strategy.devices_per_stage == 1
+    assert strategy.strategy == "chunk"
+    assert strategy.protocol == "p2p_queue"
 
-    dist_ops.recv(shape=(10, 10), dtype="float32", src_rank=0, tag=42)
-    mock_emit.assert_called_with("Recv", shape=(10, 10), dtype="float32", src_rank=0, tag=42)
+    strategy = PipelineParallelismStrategy(topology_name="gpipe")
+    assert strategy.num_microbatches == 8
+    assert strategy.protocol == "rpc"
 
 
-def test_pipeline_microbatch_loop():
-    """Test pipeline generate microbatch loop slicing and concating."""
-    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+def test_pipeline_insert_send_recv():
+    g = IRGraph()
+    n1 = IRNode(id="n1", op_type="Input")
+    n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
+    g.nodes = {"n1": n1, "n2": n2}
 
-    graph = IRGraph()
-    n1 = LogicalNode(id="n1", op_type="Input")
-    n1.shape_metadata = (10, 10)
-    n2 = LogicalNode(id="n2", op_type="Add", inputs=["n1", "n1"])
-    graph.nodes = {"n1": n1, "n2": n2}
-    graph.outputs = ["n2"]
+    strategy = PipelineParallelismStrategy()
+    stages = [["n1"], ["n2"]]
+    strategy.insert_send_recv(g, stages)
 
-    strategy = PipelineParallelismStrategy(num_microbatches=4)
-    strategy.generate_microbatch_loop(graph)
-
-    assert "n2_concat" in graph.nodes
-    assert "microbatch_loop" in graph.nodes
-    assert "n1_slice" in graph.nodes["microbatch_loop"].attributes["body"].nodes
-    assert graph.outputs == ["n2_concat"]
+    assert "n1_send_0_to_1" in g.nodes
+    assert "n1_recv_0_to_1" in g.nodes
+    assert g.nodes["n1_send_0_to_1"].inputs == ["n1"]
+    assert g.nodes["n1_recv_0_to_1"].inputs == []
+    assert g.nodes["n2"].inputs == ["n1_recv_0_to_1"]
