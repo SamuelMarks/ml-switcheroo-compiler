@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define base generator for emitting backend code from IR."""
 
 import re
@@ -45,6 +45,8 @@ class InputContext:
 
 
 class FormatterProxyMixin:
+    """FormatterProxyMixin class."""
+
     formatter: Any
     _formatter: Any
     """Provide mixin for proxying formatter methods."""
@@ -56,7 +58,7 @@ class FormatterProxyMixin:
         Returns:
             dict[str, str]: The variable names map.
         """
-        return self.formatter.var_names
+        return self.formatter.var_names  # type: ignore
 
     @var_names.setter
     def var_names(self, value: dict[str, str]) -> None:
@@ -74,7 +76,7 @@ class FormatterProxyMixin:
         Returns:
             list[str]: The generated code list.
         """
-        return self.formatter.code
+        return self.formatter.code  # type: ignore
 
     @code.setter
     def code(self, value: list[str]) -> None:
@@ -92,7 +94,7 @@ class FormatterProxyMixin:
         Returns:
             int: The current indent level.
         """
-        return self.formatter.indent_level
+        return self.formatter.indent_level  # type: ignore
 
     @indent_level.setter
     def indent_level(self, value: int) -> None:
@@ -110,7 +112,7 @@ class FormatterProxyMixin:
         Returns:
             str: The header string.
         """
-        return self.formatter.header
+        return self.formatter.header  # type: ignore
 
     @header.setter
     def header(self, value: str) -> None:
@@ -127,7 +129,7 @@ class FormatterProxyMixin:
         Returns:
             str: Indentation string.
         """
-        return self.formatter.get_indent()
+        return self.formatter.get_indent()  # type: ignore
 
     def add_line(self: Any, line: str) -> None:
         """Add a line of code.
@@ -147,10 +149,12 @@ class FormatterProxyMixin:
         Returns:
             str: The assigned variable name.
         """
-        return self.formatter.assign_var_name(node_id, prefix)
+        return self.formatter.assign_var_name(node_id, prefix)  # type: ignore
 
 
 class EmitUtilsMixin:
+    """EmitUtilsMixin class."""
+
     add_line: Any
     """Provide mixin for emit utilities."""
 
@@ -221,10 +225,10 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         for visitor in getattr(self, "visitors", []):
             if hasattr(visitor, method_name):
                 method = getattr(visitor, method_name)
-                return method(node, input_vars, **kwargs)
+                return method(node, input_vars, **kwargs)  # type: ignore
         return self.generic_visit(node, input_vars, **kwargs)
 
-    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -242,17 +246,6 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             if fmt is not None:
                 ops[op_name] = fmt
 
-        # Some default fallbacks
-        if "Dct" not in ops:
-            ops["Dct"] = "tf.signal.dct({0})"
-        if "Idct" not in ops:
-            ops["Idct"] = "tf.signal.idct({0})"
-        if "Mdct" not in ops:
-            ops["Mdct"] = "tf.signal.mdct({0})"
-        if "InverseMdct" not in ops:
-            ops["InverseMdct"] = "tf.signal.inverse_mdct({0})"
-        if "Frame" not in ops:
-            ops["Frame"] = "tf.signal.frame({0})"
         if "OverlapAndAdd" not in ops:
             ops["OverlapAndAdd"] = "tf.signal.overlap_and_add({0})"
 
@@ -361,6 +354,8 @@ class PythonStringGenerator(BaseGenerator):
 
 
 class ClassBasedGenerator(BaseGenerator):
+    """ClassBasedGenerator class."""
+
     get_language: Any
     """Provide mixin for class-based string generators to avoid DRY issues in generate()."""
 

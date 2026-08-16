@@ -1,0 +1,13 @@
+All: tf.reduce_all({0}, axis={axis}, keepdims={keepdims})
+AnyOp: tf.reduce_any({0}, axis={axis}, keepdims={keepdims})
+Erfinv: tf.math.erfinv({0})
+Max: tf.reduce_max({0}, axis={axis}, keepdims={keepdims})
+Mean: tf.reduce_mean({0}, axis={axis}, keepdims={keepdims})
+Min: tf.reduce_min({0}, axis={axis}, keepdims={keepdims})
+NanToNum: tf.where(tf.math.is_nan({0}), {nan}, tf.where(tf.math.is_inf({0}) & ({0}
+  > 0), {posinf}, tf.where(tf.math.is_inf({0}) & ({0} < 0), {neginf}, {0})))
+Prod: tf.reduce_prod({0}, axis={axis}, keepdims={keepdims})
+Sum: tf.reduce_sum({0}, axis={axis}, keepdims={keepdims})
+TrueDivide: tf.math.truediv({0}, {1})
+TruncateDiv: tf.math.truncatediv({0}, {1})
+TruncateMod: tf.math.truncatemod({0}, {1})

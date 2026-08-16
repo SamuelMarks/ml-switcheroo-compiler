@@ -19,7 +19,7 @@ gpipe:
 pipedream:
   microbatch_splitting:
     strategy: "interleaved"
-    num_microbatches: 1F6
+    num_microbatches: 16
   stage_communication:
     protocol: "async_rpc"
   mesh_mapping:

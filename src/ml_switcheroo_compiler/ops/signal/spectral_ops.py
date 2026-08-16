@@ -1,6 +1,8 @@
+"""Module spectral_ops.py."""
+
 from .common_ops import _emit_signal_node
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Signal processing operations."""
 
 from dataclasses import dataclass
@@ -62,7 +64,7 @@ class WelchConfig:
 
 
 def welch(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     config_params: Optional[WelchConfig] = None,
 ) -> Any:
     """Evaluate welch operation.
@@ -242,7 +244,7 @@ def window_hamming(length: int) -> Any:
     return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
 
 
-def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:
+def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:  # type: ignore
     """Compute the Short Time Fourier Transform.
 
     Args:
@@ -262,7 +264,7 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:
     return _emit_shape_node("Stft", [x], {"nfft": nfft, "noverlap": noverlap}, out_shape, "complex64")
 
 
-def istft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:
+def istft(x: Tensor, nfft: int, noverlap: int = 0) -> Any:  # type: ignore
     """Compute the Inverse Short Time Fourier Transform.
 
     Args:

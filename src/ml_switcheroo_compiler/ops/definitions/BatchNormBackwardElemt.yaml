@@ -44,8 +44,12 @@ variants:
     eager: jax.numpy.batchnormbackwardelemt
   mlx:
     eager: mlx.core.batchnormbackwardelemt
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: BatchNormBackwardElemt
+  edge_stablehlo:
+
+    opcode: stablehlo.batch_norm_backward_elemt
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

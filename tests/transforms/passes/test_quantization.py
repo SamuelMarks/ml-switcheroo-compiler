@@ -17,19 +17,19 @@ def test_ptq_pass() -> None:
         "input": IRNode(id="input", op_type="Input", inputs=[]),
         "weight": IRNode(id="weight", op_type="Constant", inputs=[]),
         "dot": IRNode(id="dot", op_type="Dot", inputs=["input", "weight"]),
-        "add": IRNode(id="add", op_type="Add", inputs=["dot", "dot"]),
+        "conv": IRNode(id="conv", op_type="Conv2D", inputs=["input", "weight"]),
+        "add": IRNode(id="add", op_type="Add", inputs=["dot", "conv"]),
     }
     graph = IRGraph(name="test", nodes=nodes, outputs=["add"])
 
     ptq = PTQPass(config, dataset)
     optimized_graph = ptq(graph)
 
-    assert "ptq_target_dtype" in optimized_graph.nodes["dot"].attributes
-    assert optimized_graph.nodes["dot"].attributes["ptq_target_dtype"] == "Int8"
-    assert optimized_graph.nodes["dot"].attributes["ptq_per_channel"] is True
-    assert optimized_graph.nodes["dot"].attributes["ptq_symmetric"] is True
+    assert "dtype" in optimized_graph.nodes["dot"].attributes
+    assert optimized_graph.nodes["dot"].attributes["dtype"] == "Int8"
+    assert "q_scale" in optimized_graph.nodes["dot"].attributes
 
-    assert "ptq_target_dtype" not in optimized_graph.nodes["add"].attributes
+    assert "dtype" not in optimized_graph.nodes["add"].attributes
 
 
 def test_ptq_pass_no_op() -> None:

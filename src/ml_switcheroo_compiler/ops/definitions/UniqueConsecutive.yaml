@@ -2,29 +2,25 @@ operation: UniqueConsecutive
 description: Eliminates all but the first element from every consecutive group of
   equivalent elements.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Tensor
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: return_inverse
-  type: bool
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: return_counts
-  type: bool
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Tensor
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: return_inverse
+    type: bool
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: return_counts
+    type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axis
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

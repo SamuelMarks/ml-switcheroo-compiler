@@ -1,6 +1,8 @@
+"""Module solve.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for solve.py."""
 from typing import Any
@@ -43,7 +45,7 @@ class SolveEx(OpDef):
         return ()
 
 
-def solve(a: Tensor, b: Tensor) -> Any:
+def solve(a: Tensor, b: Tensor) -> Any:  # type: ignore
     """Solves a linear matrix equation, or system of linear scalar equations.
 
     Args:
@@ -66,7 +68,7 @@ def solve(a: Tensor, b: Tensor) -> Any:
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
 
 
-def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> Any:
+def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> Any:  # type: ignore
     """Solves a linear matrix equation with info tensor.
 
     Args:
@@ -95,8 +97,8 @@ def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> Any:
 
 
 def solve_triangular(
-    a: Tensor,
-    b: Tensor,
+    a: Tensor,  # type: ignore
+    b: Tensor,  # type: ignore
     lower: bool = False,
     unit_diagonal: bool = False,
 ) -> Any:

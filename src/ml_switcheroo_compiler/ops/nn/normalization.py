@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Apply normalization operations."""
 
 from collections.abc import Sequence
@@ -42,13 +42,13 @@ class LRNConfig:
 class BatchNormConfig:
     """Batch normalization config."""
 
-    offset: Optional[Tensor] = None
-    scale: Optional[Tensor] = None
+    offset: Optional[Tensor] = None  # type: ignore
+    scale: Optional[Tensor] = None  # type: ignore
     epsilon: float = 1e-3
 
 
 def local_response_normalization(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     depth_radius: int = 5,
     bias: float = 1.0,
     alpha: float = 1.0,
@@ -79,9 +79,9 @@ def local_response_normalization(
 
 
 def batch_normalization(
-    x: Tensor,
-    mean: Tensor,
-    variance: Tensor,
+    x: Tensor,  # type: ignore
+    mean: Tensor,  # type: ignore
+    variance: Tensor,  # type: ignore
     axis: Union[int, Sequence[int]],
     config: Optional[BatchNormConfig] = None,
 ) -> Any:
@@ -115,8 +115,8 @@ def batch_normalization(
 
 
 def rms_normalization(
-    x: Tensor,
-    scale: Tensor,
+    x: Tensor,  # type: ignore
+    scale: Tensor,  # type: ignore
     epsilon: float = 1e-3,
 ) -> Any:
     """RMS normalization.
@@ -274,8 +274,8 @@ def normalize_moments(counts: Any, mean_ss: Any, variance_ss: Any, shift: Any, n
     )
     global_tracing_state.add_node(node)
 
-    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
-    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))  # type: ignore
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(counts, "shape", ()), dtype=getattr(counts, "dtype", "float32"))  # type: ignore
 
     return (
         Tensor(proxy_mean, TensorConfig(getattr(counts, "shape", ()), getattr(counts, "dtype", "float32"), "cpu")),
@@ -376,8 +376,8 @@ def weighted_moments(
     )
     global_tracing_state.add_node(node)
 
-    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
-    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))
+    proxy_mean = ProxyTensor(id=out_id_mean, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))  # type: ignore
+    proxy_variance = ProxyTensor(id=out_id_variance, shape=getattr(x, "shape", ()), dtype=getattr(x, "dtype", "float32"))  # type: ignore
 
     return (
         Tensor(proxy_mean, TensorConfig(getattr(x, "shape", ()), getattr(x, "dtype", "float32"), "cpu")),
@@ -398,10 +398,10 @@ def zero_fraction(value: Any, name: Any = None) -> Any:
 
 
 def layer_norm(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     normalized_shape: Sequence[int],
-    scale: Optional[Tensor] = None,
-    offset: Optional[Tensor] = None,
+    scale: Optional[Tensor] = None,  # type: ignore
+    offset: Optional[Tensor] = None,  # type: ignore
     epsilon: float = 1e-5,
 ) -> Any:
     """Layer normalization.
@@ -436,10 +436,10 @@ def layer_norm(
 
 
 def group_norm(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     num_groups: int,
-    scale: Optional[Tensor] = None,
-    offset: Optional[Tensor] = None,
+    scale: Optional[Tensor] = None,  # type: ignore
+    offset: Optional[Tensor] = None,  # type: ignore
     epsilon: float = 1e-5,
 ) -> Any:
     """Group normalization.
@@ -481,9 +481,9 @@ def group_norm(
 
 
 def instance_norm(
-    x: Tensor,
-    scale: Optional[Tensor] = None,
-    offset: Optional[Tensor] = None,
+    x: Tensor,  # type: ignore
+    scale: Optional[Tensor] = None,  # type: ignore
+    offset: Optional[Tensor] = None,  # type: ignore
     epsilon: float = 1e-5,
 ) -> Any:
     """Instance normalization.

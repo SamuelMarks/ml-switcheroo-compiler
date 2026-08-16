@@ -1,10 +1,10 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shared utilities for extracting audio node attributes."""
 
 from typing import Any
 
 
-def extract_stft_attributes(node: Any) -> tuple:
+def extract_stft_attributes(node: Any) -> tuple[Any, ...]:
     """Extract standard STFT attributes from a node.
 
     Args:
@@ -22,7 +22,7 @@ def extract_stft_attributes(node: Any) -> tuple:
     return frame_length, frame_step, fft_length, window, center, fft_len_str
 
 
-def extract_mel_attributes(node: Any) -> tuple:
+def extract_mel_attributes(node: Any) -> tuple[Any, ...]:
     """Extract standard Mel filterbank attributes from a node.
 
     Args:

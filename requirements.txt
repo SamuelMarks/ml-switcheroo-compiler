@@ -2,3 +2,6 @@ numpy
 ml-switcheroo-ir @ file:///Users/samuel/repos/ml-switcheroo-ir
 libcst
 h5py
+pyyaml
+pydantic
+scipy

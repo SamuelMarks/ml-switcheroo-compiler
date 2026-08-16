@@ -26,3 +26,16 @@ def test_configs() -> None:
     RandomAlgorithm()
     RoundingMethod()
     ScatterDimensionNumbers([1], [1], [1])
+
+
+def test_root_registry_config_methods():
+    from ml_switcheroo_compiler.ops.config_models import OpRegistryConfig, OpsRegistry
+
+    cfg = OpsRegistry(root={"TestOp": OpRegistryConfig(variants={})})
+
+    assert "TestOp" in cfg.dict()
+    items = list(cfg.items())
+    assert len(items) == 1
+    assert items[0][0] == "TestOp"
+    assert cfg.get("TestOp") is not None
+    assert cfg.get("MissingOp") is None

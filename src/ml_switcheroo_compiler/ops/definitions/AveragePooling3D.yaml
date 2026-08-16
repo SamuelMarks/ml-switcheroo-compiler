@@ -33,8 +33,12 @@ variants:
     eager: jax.numpy.averagepooling3d
   mlx:
     eager: mlx.core.averagepooling3d
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: AveragePooling3D
+  edge_stablehlo:
+
+    opcode: stablehlo.average_pooling3_d
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

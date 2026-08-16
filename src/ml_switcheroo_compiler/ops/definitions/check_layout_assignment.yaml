@@ -1,14 +1,10 @@
 operation: check_layout_assignment
 description: Raises if the given layout can not be assigned to the given `ValueSite`.
 std_args:
-- v
-- layout
+  - v
+  - layout
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

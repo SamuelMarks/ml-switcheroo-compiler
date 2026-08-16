@@ -1,18 +1,18 @@
 operation: max
 description: The Max operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: Optional[Union[int, Tuple[int, Ellipsis]]]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: keepdims
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axis
+    type: Optional[Union[int, Tuple[int, Ellipsis]]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: keepdims
+    type: bool
 variants:
   cupy:
     eager: cp.max
@@ -29,19 +29,18 @@ variants:
   tensorflow: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: max
+  edge_stablehlo:
+
+    opcode: stablehlo.max
   edge_wgsl:
     template: binary
     expr: max(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
 autodiff:
   vjp:
-  - Multiply(Broadcast($cotangent), Equal($input[0], Broadcast(Max($input[0]))))
+    - Multiply(Broadcast($cotangent), Equal($input[0], Broadcast(Max($input[0]))))
   jvp: Sum(Multiply($tangent[0], Equal($input[0], Broadcast(Max($input[0])))))

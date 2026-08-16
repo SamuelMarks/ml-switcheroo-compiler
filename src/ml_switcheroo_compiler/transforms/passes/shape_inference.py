@@ -1,6 +1,8 @@
+"""Module shape_inference.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape Inference Pass."""
 
@@ -15,7 +17,7 @@ from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _infer_constant_shape(node: Any, shapes: dict) -> tuple:
+def _infer_constant_shape(node: Any, shapes: dict[str, Any]) -> tuple[Any, ...]:
     """Evaluate _infer_constant_shape operation.
 
     Args:
@@ -32,7 +34,7 @@ def _infer_constant_shape(node: Any, shapes: dict) -> tuple:
     return getattr(arr, "shape", ())
 
 
-def _infer_output_shape(node: Any, shapes: dict) -> tuple | None:
+def _infer_output_shape(node: Any, shapes: dict[str, Any]) -> tuple[Any, ...] | None:
     """Evaluate _infer_output_shape operation.
 
     Args:
@@ -46,7 +48,7 @@ def _infer_output_shape(node: Any, shapes: dict) -> tuple | None:
     return None
 
 
-def _prepare_op_kwargs(node: Any) -> dict:
+def _prepare_op_kwargs(node: Any) -> dict[str, Any]:
     """Evaluate _prepare_op_kwargs operation.
 
     Args:
@@ -64,7 +66,7 @@ def _prepare_op_kwargs(node: Any) -> dict:
     return kwargs
 
 
-def _infer_op_shape(node: Any, shapes: dict) -> tuple | None:
+def _infer_op_shape(node: Any, shapes: dict[str, Any]) -> tuple[Any, ...] | None:
     """Evaluate _infer_op_shape operation.
 
     Args:
@@ -77,7 +79,8 @@ def _infer_op_shape(node: Any, shapes: dict) -> tuple | None:
     op = op_cls()
     in_shapes = [shapes.get(inp) for inp in node.inputs]
     kwargs = _prepare_op_kwargs(node)
-    return typing.cast(typing.Optional[tuple[int, ...]], op.infer_shape(*in_shapes, **kwargs))
+    result = op.infer_shape(*in_shapes, **kwargs)
+    return result if isinstance(result, tuple) else None
 
 
 def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None]) -> tuple[int, ...] | None:
@@ -99,16 +102,18 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     }
 
     if node.op_type in handlers:
-        return handlers[node.op_type]()
+        return handlers[node.op_type]()  # type: ignore
 
     try:
         return _infer_op_shape(node, shapes)
     except KeyError:
-        return node.shape_metadata
+        res3 = node.shape_metadata
+        return res3  # type: ignore
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
             # Known missing
-            return node.shape_metadata
+            res3 = node.shape_metadata
+            return res3  # type: ignore
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:

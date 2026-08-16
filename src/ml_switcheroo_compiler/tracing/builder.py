@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Tracing node builder module."""
 
 import uuid
@@ -17,7 +17,7 @@ class TracingNodeBuilder:
     """Build tracing nodes."""
 
     @staticmethod
-    def create_constant_node(val: Any, shape: tuple) -> str:
+    def create_constant_node(val: Any, shape: tuple[Any, ...]) -> str:
         """Create a constant node in the active tracing graph.
 
         Args:
@@ -38,7 +38,7 @@ class TracingNodeBuilder:
         return out_id
 
     @staticmethod
-    def extract_from_tensor(a: Any) -> tuple[str, tuple]:
+    def extract_from_tensor(a: Any) -> tuple[str, tuple]:  # type: ignore
         """Extract the node identifier and shape metadata from a tensor or proxy.
 
         Args:
@@ -90,7 +90,7 @@ class TracingNodeBuilder:
         return out_id, shape
 
     @staticmethod
-    def extract_proxy_inputs(args: tuple[Any, ...]) -> tuple[list[str], list[tuple], Any]:
+    def extract_proxy_inputs(args: tuple[Any, ...]) -> tuple[list[str], list[tuple], Any]:  # type: ignore
         """Extract proxy node IDs and shapes from a list of arguments.
 
         Args:
@@ -118,7 +118,7 @@ class TracingNodeBuilder:
         return input_ids, shapes, first_tensor
 
     @staticmethod
-    def create_tracing_logical_node(op_type: str, input_ids: list[str], kwargs: dict, out_shape: tuple) -> str:
+    def create_tracing_logical_node(op_type: str, input_ids: list[str], kwargs: dict[str, Any], out_shape: tuple[Any, ...]) -> str:
         """Create and add a new logical node to the active tracing graph.
 
         Args:
@@ -160,5 +160,5 @@ class TracingNodeBuilder:
         out_id = TracingNodeBuilder.create_tracing_logical_node(op_type, input_ids, kwargs, out_shape)
 
         dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype)
-        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
+        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)  # type: ignore
         return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))

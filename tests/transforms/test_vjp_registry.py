@@ -12,29 +12,45 @@ def test_vjp_registry_coverage() -> None:
     Returns:
         Any: The inferred shape or computed result.
     """
-    try:
-        "Execute the requested function."
-        if "fake_op" in _VJP_REGISTRY:
-            del _VJP_REGISTRY["fake_op"]
+    "Execute the requested function."
+    if "fake_op" in _VJP_REGISTRY:
+        del _VJP_REGISTRY["fake_op"]
+
+    @register_vjp("fake_op")
+    def fake_vjp() -> None:
+        """Evaluate and process the fake vjp operation.
+
+        Returns:
+            Any: The evaluated or processed output.
+        """
+
+    with pytest.raises(ValueError, match="already registered"):
 
         @register_vjp("fake_op")
-        def fake_vjp() -> None:
-            """Evaluate and process the fake vjp operation.
+        def fake_vjp2() -> None:
+            """Evaluate and process the fake vjp2 operation.
 
             Returns:
                 Any: The evaluated or processed output.
             """
 
-        with pytest.raises(ValueError, match="already registered"):
+    assert get_vjp("fake_op") == fake_vjp
 
-            @register_vjp("fake_op")
-            def fake_vjp2() -> None:
-                """Evaluate and process the fake vjp2 operation.
+    # Test error
+    with pytest.raises(ValueError, match="No VJP rule"):
+        get_vjp("NonExistentOp")
 
-                Returns:
-                    Any: The evaluated or processed output.
-                """
+    # Test data vjp
+    from unittest.mock import patch
 
-        assert get_vjp("fake_op") == fake_vjp
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
-        pass
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="data_vjp"):
+        assert get_vjp("fake_op_2") == "data_vjp"
+
+    # Test get_vjp_from_data and has_vjp
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
+
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value=None):
+        assert has_vjp("fake_op") is True
+        assert has_vjp("NonExistentOp") is False
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="something"):
+        assert has_vjp("fake_op") is True

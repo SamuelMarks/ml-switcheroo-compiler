@@ -2,13 +2,13 @@
 
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
-def _np_ctc_loss_update_alpha(t: int, S: int, augmented: np.ndarray, alpha: np.ndarray, probs: np.ndarray, num_classes: int, blank: int) -> None:
+def _np_ctc_loss_update_alpha(t: int, S: int, augmented: "np.ndarray[Any, Any]", alpha: "np.ndarray[Any, Any]", probs: "np.ndarray[Any, Any]", num_classes: int, blank: int) -> None:
     """Update CTC loss alpha matrix.
 
     Args:
@@ -30,12 +30,12 @@ def _np_ctc_loss_update_alpha(t: int, S: int, augmented: np.ndarray, alpha: np.n
         alpha[t, s] = sum_term * prob_term
 
 
-def _np_ctc_loss_single(probs: np.ndarray, b_labels: np.ndarray, T: int, L: int) -> float:
+def _np_ctc_loss_single(probs: "np.ndarray[Any, Any]", b_labels: "np.ndarray[Any, Any]", T: int, L: int) -> float:
     """Help to compute the CTC loss for a single sequence.
 
     Args:
-        probs (np.ndarray): Probability distribution of logits over time.
-        b_labels (np.ndarray): Target labels for the current sequence.
+        probs ("np.ndarray[Any, Any]"): Probability distribution of logits over time.
+        b_labels ("np.ndarray[Any, Any]"): Target labels for the current sequence.
         T (int): The logit length.
         L (int): The label length.
 

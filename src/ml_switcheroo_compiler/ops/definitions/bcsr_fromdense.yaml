@@ -1,17 +1,13 @@
 operation: bcsr_fromdense
 description: Create BCSR-format sparse matrix from a dense matrix.
 std_args:
-- mat
-- nse
-- n_batch
-- n_dense
-- index_dtype
+  - mat
+  - nse
+  - n_batch
+  - n_dense
+  - index_dtype
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

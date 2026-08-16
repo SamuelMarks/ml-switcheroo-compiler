@@ -1,6 +1,8 @@
+"""Module matrix_ops.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for matrix_ops.py."""
 from typing import Any
 
@@ -15,7 +17,7 @@ from ml_switcheroo_compiler.ops.registry import get_op
 from .utils import _emit_linalg_node
 
 
-def band_part(input: Tensor, num_lower: int, num_upper: int) -> Any:
+def band_part(input: Tensor, num_lower: int, num_upper: int) -> Any:  # type: ignore
     """Copy a tensor setting everything outside a central band in each innermost matrix to zero.
 
     Args:
@@ -39,7 +41,7 @@ def band_part(input: Tensor, num_lower: int, num_upper: int) -> Any:
     )
 
 
-def diag(input: Tensor, k: int = 0) -> Any:
+def diag(input: Tensor, k: int = 0) -> Any:  # type: ignore
     """Extract a diagonal or constructs a diagonal array.
 
     Args:
@@ -64,8 +66,8 @@ def diag(input: Tensor, k: int = 0) -> Any:
 
 
 def cross(
-    a: Tensor,
-    b: Tensor,
+    a: Tensor,  # type: ignore
+    b: Tensor,  # type: ignore
     axes: dict[str, int | None] | None = None,
 ) -> Any:
     """Compute the vector cross product of two arrays.
@@ -93,7 +95,7 @@ def cross(
     )
 
 
-def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:
+def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  # type: ignore
     """Return the sum along diagonals of the array.
 
     Args:
@@ -119,7 +121,7 @@ def trace(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:
     )
 
 
-def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) -> Any:
+def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) -> Any:  # type: ignore
     """Return matrix rank of array using SVD method.
 
     Args:
@@ -138,7 +140,7 @@ def matrix_rank(M: Tensor, tol: (float | None) = None, hermitian: bool = False) 
     return _emit_linalg_node("MatrixRank", [M], {"tol": tol, "hermitian": hermitian}, [tuple(out_shape)], [M.dtype])
 
 
-def matrix_transpose(a: Tensor) -> Any:
+def matrix_transpose(a: Tensor) -> Any:  # type: ignore
     """Transpose last two dimensions of tensor.
 
     Args:
@@ -155,7 +157,7 @@ def matrix_transpose(a: Tensor) -> Any:
     return _emit_linalg_node("MatrixTranspose", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
-def sqrtm(a: Tensor) -> Any:
+def sqrtm(a: Tensor) -> Any:  # type: ignore
     """Compute the matrix square root of a tensor.
 
     Args:
@@ -172,7 +174,7 @@ def sqrtm(a: Tensor) -> Any:
     return _emit_linalg_node("Sqrtm", [a], {}, [tuple(out_shape)], [a.dtype])
 
 
-def tensor_diag(input: Tensor, k: int = 0) -> Any:
+def tensor_diag(input: Tensor, k: int = 0) -> Any:  # type: ignore
     """Provide an alias for the diag operation.
 
     Args:
@@ -185,7 +187,7 @@ def tensor_diag(input: Tensor, k: int = 0) -> Any:
     return diag(input, k)
 
 
-def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:
+def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  # type: ignore
     """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
@@ -200,7 +202,7 @@ def tensor_diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1)
     return diagonal(a, offset, axis1, axis2)
 
 
-def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:
+def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any:  # type: ignore
     """Provide an alias for the diagonal operation, extracting diagonals from a tensor.
 
     Args:
@@ -215,7 +217,7 @@ def diag_part(a: Tensor, offset: int = 0, axis1: int = 0, axis2: int = 1) -> Any
     return diagonal(a, offset, axis1, axis2)
 
 
-def adjoint(matrix: Tensor) -> Any:
+def adjoint(matrix: Tensor) -> Any:  # type: ignore
     """Transpose the last two dimensions of and conjugates tensor matrix.
 
     Args:
@@ -233,8 +235,8 @@ def adjoint(matrix: Tensor) -> Any:
 
 
 def eigh_tridiagonal(
-    alpha: Tensor,
-    beta: Tensor,
+    alpha: Tensor,  # type: ignore
+    beta: Tensor,  # type: ignore
     kwargs: dict[str, bool | str | object | float | None] | None = None,
 ) -> Any:
     """Compute the eigenvalues of a Hermitian tridiagonal matrix.
@@ -337,7 +339,7 @@ def set_diag(input: Any, diagonal: Any, name: Any = None) -> Any:
     return input
 
 
-def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:
+def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:  # type: ignore
     """Multiply tridiagonal matrix by matrix.
 
     Args:
@@ -357,7 +359,7 @@ def tridiagonal_matmul(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:
     return _emit_linalg_node("TridiagonalMatmul", [dl, d, du, b], {}, [tuple(out_shape)], [b.dtype])
 
 
-def matrix_norm(x: Tensor, keepdims: Any = False, name: Any = None) -> Any:
+def matrix_norm(x: Tensor, keepdims: Any = False, name: Any = None) -> Any:  # type: ignore
     """Compute the matrix norm of the input tensor.
 
     Args:
@@ -414,7 +416,7 @@ class Svdvals(OpDef):
         return shape[:-2] + (min(shape[-2], shape[-1]),)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def svdvals(x: Tensor, name: Any = None) -> Any:
+def svdvals(x: Tensor, name: Any = None) -> Any:  # type: ignore
     """Compute the singular values of a matrix.
 
     Args:
@@ -488,7 +490,7 @@ class Cond(OpDef):
         return ()
 
 
-def cond(input: Tensor, p: (str | float | None) = None) -> Any:
+def cond(input: Tensor, p: (str | float | None) = None) -> Any:  # type: ignore
     """Compute the condition number of a matrix.
 
     Args:

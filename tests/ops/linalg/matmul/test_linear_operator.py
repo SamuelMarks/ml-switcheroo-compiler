@@ -48,3 +48,9 @@ def test_linear_operators() -> None:
     LinearOperatorToeplitz(1, 1)
     LinearOperatorTridiag(1)
     LinearOperatorZeros(1, 1)
+
+    class MockOperand:
+        shape = (2, 2)
+
+    assert op.infer_shape(MockOperand()) == (2, 2)
+    assert op.infer_shape(None) == ()

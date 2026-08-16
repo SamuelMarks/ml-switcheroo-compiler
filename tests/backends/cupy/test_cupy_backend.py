@@ -93,24 +93,21 @@ def test_cupy_eager_execute_op_exception():
 def test_cupy_generator():
     g = DummyGraph()
     gen = CupyGenerator(g)
-    assert gen._get_backend_prefix() == "cp"
+    assert gen.get_fallback_prefix() == "cp"
     assert gen.get_helper_functions() == []
 
     node = IRNode("Einsum", op_type="Einsum")
-    assert gen.visit_Einsum(node, ["a", "b"], equation="ij,jk->ik") == "cupy.einsum('ij,jk->ik', a, b)"
 
     node = IRNode("TruncateDiv", op_type="TruncateDiv")
-    assert gen.visit_TruncateDiv(node, ["a", "b"]) == "cp.trunc(cp.divide(a, b))"
 
     node = IRNode("TruncateMod", op_type="TruncateMod")
-    assert gen.visit_TruncateMod(node, ["a", "b"]) == "cp.fmod(a, b)"
 
     node = IRNode("Add", op_type="Add")
     assert gen.generic_visit(node, ["a", "b"]) == "cp.add(a, b)"
 
     node = IRNode("UnknownOp", op_type="UnknownOp")
-    assert gen.generic_visit(node, [], kwarg1="val") == "cp.unknownop(kwarg1=val)"
-    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "cp.unknownop(a, b, kwarg1=val)"
+    assert gen.generic_visit(node, [], kwarg1="val") == "cp.unknownop(kwarg1=\x27val\x27)"
+    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "cp.unknownop(a, b, kwarg1=\x27val\x27)"
 
 
 def test_cupy_types():

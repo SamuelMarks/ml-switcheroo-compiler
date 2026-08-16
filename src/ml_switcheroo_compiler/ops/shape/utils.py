@@ -1,6 +1,8 @@
+"""Module utils.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Utility functions for shape ops."""
@@ -20,12 +22,12 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 
-@register_util("_emit_shape_node")
+@register_util("_emit_shape_node")  # type: ignore
 def _emit_shape_node(
     op_type: str,
-    inputs: Sequence[Tensor],
-    attrs: dict,
-    out_shape: tuple,
+    inputs: Sequence[Tensor],  # type: ignore
+    attrs: dict[str, Any],
+    out_shape: tuple[Any, ...],
     out_dtype: DType,
 ) -> Any:
     """Emit a logical shape node to the tracer and returns a new Tensor.

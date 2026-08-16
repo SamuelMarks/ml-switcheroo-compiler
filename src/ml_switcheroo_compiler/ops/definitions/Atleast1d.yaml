@@ -1,10 +1,10 @@
 operation: Atleast1d
 description: Returns a 1-dimensional view of each input tensor with zero dimensions.
 std_args:
-- is_variadic: true
-  kind: positional_or_keyword
-  name: tensors
-  type: Tensor
+  - is_variadic: true
+    kind: positional_or_keyword
+    name: tensors
+    type: Tensor
 variants:
   numpy:
     eager: numpy.atleast1d
@@ -20,15 +20,11 @@ variants:
     eager: jax.numpy.atleast1d
   mlx:
     eager: mlx.core.atleast1d
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: Atleast1d
+  edge_stablehlo:
+
+    opcode: stablehlo.atleast1d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

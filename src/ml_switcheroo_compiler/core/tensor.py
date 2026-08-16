@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define the unified backend array base class for ml-switcheroo."""
 
 from collections.abc import Sequence
@@ -21,17 +21,17 @@ from .tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPro
 class ArrayAt:
     """Provide a helper object to apply updates at specific indices."""
 
-    def __init__(self, tensor: "Tensor", indices: Any) -> None:
+    def __init__(self, tensor: "Tensor[Any]", indices: object) -> None:
         """Initialize ArrayAt.
 
         Args:
-            tensor (Tensor): The tensor to update
+            tensor (Tensor[Any]): The tensor to update
             indices (object): The indices to update at
         """
         self.tensor = tensor
         self.indices = indices
 
-    def add(self, value: Any) -> "Tensor":
+    def add(self, value: object) -> "Tensor[Any]":
         """Add value at indices.
 
         Args:
@@ -42,7 +42,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def multiply(self, value: Any) -> "Tensor":
+    def multiply(self, value: object) -> "Tensor[Any]":
         """Multiply value at indices.
 
         Args:
@@ -53,7 +53,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def set(self, value: Any) -> "Tensor":
+    def set(self, value: object) -> "Tensor[Any]":
         """Set value at indices.
 
         Args:
@@ -64,7 +64,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def maximum(self, value: Any) -> "Tensor":
+    def maximum(self, value: object) -> "Tensor[Any]":
         """Maximum value at indices.
 
         Args:
@@ -75,7 +75,7 @@ class ArrayAt:
         """
         return self.tensor
 
-    def minimum(self, value: Any) -> "Tensor":
+    def minimum(self, value: object) -> "Tensor[Any]":
         """Minimum value at indices.
 
         Args:
@@ -90,15 +90,15 @@ class ArrayAt:
 class ArrayAtIndexer:
     """Provide a helper object to index a tensor for ArrayAt."""
 
-    def __init__(self, tensor: "Tensor") -> None:
+    def __init__(self, tensor: "Tensor[Any]") -> None:
         """Initialize ArrayAtIndexer.
 
         Args:
-            tensor (Tensor): The tensor to index
+            tensor (Tensor[Any]): The tensor to index
         """
         self.tensor = tensor
 
-    def __getitem__(self, indices: Any) -> ArrayAt:
+    def __getitem__(self, indices: object) -> ArrayAt:
         """Get ArrayAt for indices.
 
         Args:
@@ -130,7 +130,13 @@ class TensorConfig:
             object.__setattr__(self, "device", Device(self.device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
+from typing import Any, Generic, TypeVar
+
+T_Payload = TypeVar("T_Payload")
+
+
 class Tensor(
+    Generic[T_Payload],
     TensorPropertiesMixin,
     TensorConversionMixin,
     TensorIndexingMixin,
@@ -144,7 +150,7 @@ class Tensor(
     data payloads, supporting both eager execution and lazy tracing
     """
 
-    def __init__(self, data: Any, config: TensorConfig) -> None:
+    def __init__(self, data: T_Payload, config: TensorConfig) -> None:
         """Initialize the Tensor.
 
         Args:
@@ -153,13 +159,13 @@ class Tensor(
         """
         self._data = data
 
-        def _parse_dim(s: Any) -> Union[int, str]:
+        def _parse_dim(s: object) -> Union[int, str]:
             """Parse dimension.
 
             Args:
             s (object): The s parameter.
 
-            Returns: Any: Result.
+            Returns: object: Result.
             """
             try:
                 return int(s)  # type: ignore
@@ -172,7 +178,7 @@ class Tensor(
         self._requires_grad = config.requires_grad
         self.config = config
 
-    def eval(self) -> "Tensor":
+    def eval(self) -> "Tensor[Any]":
         """Trigger evaluation of a lazy tensor.
 
         Returns:
@@ -187,7 +193,7 @@ class Tensor(
                 graph.outputs.append(self.data.id)
         return self
 
-    def backward(self, *args: Any, **kwargs: Any) -> None:
+    def backward(self, *args: object, **kwargs: object) -> None:
         """Triggers the reverse-mode auto-differentiation.
 
         Args:
@@ -198,7 +204,7 @@ class Tensor(
 
         get_util("backward")(self, *args, **kwargs)
 
-    def view(self, *shape: int) -> "Tensor":
+    def view(self, *shape: int) -> "Tensor[Any]":
         """Return a new tensor with the same data but different size.
 
         Args:
@@ -215,9 +221,10 @@ class Tensor(
                 flat_shape.append(s)
         from ml_switcheroo_compiler.ops.registry import get_frontend
 
-        return get_frontend("reshape")(self, tuple(flat_shape))
+        res: Tensor[Any] = get_frontend("reshape")(self, tuple(flat_shape))
+        return res
 
-    def contiguous(self) -> "Tensor":
+    def contiguous(self) -> "Tensor[Any]":
         """Return a contiguous in memory tensor.
 
         Returns:
@@ -225,19 +232,19 @@ class Tensor(
         """
         return self
 
-    def detach(self) -> "Tensor":
+    def detach(self) -> "Tensor[Any]":
         """Return a new Tensor, detached from the current graph.
 
         Returns:
             'Tensor': A tensor containing the result of the operation.
         """
-        return Tensor(self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return Tensor[Any](self.eval().data, TensorConfig(self.shape, self.dtype, Device("cpu")))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-class Variable(Tensor):
+class Variable(Tensor[T_Payload]):
     """Provide a mutable variable tensor for tracking state."""
 
-    def __init__(self, data: Any, config: TensorConfig) -> None:
+    def __init__(self, data: T_Payload, config: TensorConfig) -> None:
         """Init.
 
         Args:
@@ -247,11 +254,11 @@ class Variable(Tensor):
         super().__init__(data, config)
         self.trainable = config.trainable
 
-    def assign(self, value: Tensor) -> "Variable":
+    def assign(self, value: "Tensor[Any]") -> "Variable[Any]":
         """Assign a new value to the variable.
 
         Args:
-            value (Tensor): The new value.
+            value (Tensor[Any]): The new value.
 
         Returns:
             Variable: The updated variable.
@@ -268,11 +275,11 @@ class Variable(Tensor):
             _emit_shape_node("Assign", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_add(self, value: Tensor) -> "Variable":
+    def assign_add(self, value: "Tensor[Any]") -> "Variable[Any]":
         """Add a value to the variable in-place.
 
         Args:
-            value (Tensor): The value to add.
+            value (Tensor[Any]): The value to add.
 
         Returns:
             Variable: The updated variable.
@@ -289,11 +296,11 @@ class Variable(Tensor):
             _emit_shape_node("AssignAdd", [self, value], {}, self.shape, self.dtype)
         return self
 
-    def assign_sub(self, value: Tensor) -> "Variable":
+    def assign_sub(self, value: "Tensor[Any]") -> "Variable[Any]":
         """Subtract a value from the variable in-place.
 
         Args:
-            value (Tensor): The value to subtract.
+            value (Tensor[Any]): The value to subtract.
 
         Returns:
             Variable: The updated variable.
@@ -311,10 +318,10 @@ class Variable(Tensor):
         return self
 
 
-class Parameter(Variable):
+class Parameter(Variable[T_Payload]):
     """Provide a trainable parameter tensor."""
 
-    def __init__(self, data: Any, config: TensorConfig) -> None:
+    def __init__(self, data: T_Payload, config: TensorConfig) -> None:
         """Init.
 
         Args:

@@ -2,10 +2,6 @@ operation: CharacterType
 description: Abstract base class of all character string scalar types.
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

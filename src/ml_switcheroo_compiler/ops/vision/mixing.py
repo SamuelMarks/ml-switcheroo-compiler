@@ -1,6 +1,8 @@
+"""Module mixing.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Vision operations."""
@@ -12,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> Any:
+def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None = None) -> Any:  # type: ignore
     """Apply mixup to a pair of batches of images.
 
     Args:
@@ -34,7 +36,7 @@ def mixup(images1: Tensor, images2: Tensor, alpha: float = 0.2, seed: int | None
     return _emit_shape_node("Mixup", [images1, images2], {"alpha": alpha, "seed": seed}, (), images1.dtype)
 
 
-def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> Any:
+def cutmix(images1: Tensor, images2: Tensor, alpha: float = 1.0, seed: int | None = None) -> Any:  # type: ignore
     """Apply cutmix to a pair of batches of images.
 
     Args:

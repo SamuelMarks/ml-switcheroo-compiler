@@ -7,23 +7,19 @@ description: "Samples from a Cauchy (Lorentz) distribution. The distribution of 
   \nArgs:\n    loc (float or Tensor): mode or median of the distribution.\n    scale\
   \ (float or Tensor): half width at half maximum."
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: loc
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: scale
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: validate_args
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: loc
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: scale
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: validate_args
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

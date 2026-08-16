@@ -2,13 +2,9 @@ operation: from_strided_fragmented_layout_attr
 description: 'Constructs a WGStridedFragLayout from a #mosaic_gpu.WGStridedFragLayout
   attribute.'
 std_args:
-- attr
+  - attr
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

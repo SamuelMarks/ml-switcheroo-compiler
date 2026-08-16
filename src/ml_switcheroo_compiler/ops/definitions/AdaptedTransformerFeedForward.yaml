@@ -1,21 +1,21 @@
 operation: AdaptedTransformerFeedForward
 description: A wrapper for MultitaskResidualAdapter inserted before residual connections.
 std_args:
-- default: 0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: input_dims
-  type: int
-- default: 0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: hidden_dims
-  type: int
-- default: 0.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: dropout_prob
-  type: float
+  - default: 0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: input_dims
+    type: int
+  - default: 0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: hidden_dims
+    type: int
+  - default: 0.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: dropout_prob
+    type: float
 variants:
   numpy: {}
   cupy: {}
@@ -25,15 +25,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AdaptedTransformerFeedForward
+  edge_stablehlo:
+
+    opcode: stablehlo.adapted_transformer_feed_forward
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

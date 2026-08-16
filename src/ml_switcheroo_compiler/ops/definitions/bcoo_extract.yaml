@@ -1,15 +1,11 @@
 operation: bcoo_extract
 description: Extract values from a dense array according to the sparse array's indices.
 std_args:
-- sparr
-- arr
-- assume_unique
+  - sparr
+  - arr
+  - assume_unique
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

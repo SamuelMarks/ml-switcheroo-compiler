@@ -1,16 +1,12 @@
 operation: philox_4x32_count
 description: Convenience function to call philox_4x32_kernel with padded shapes.
 std_args:
-- key
-- shape
-- offset
-- fuse_output
+  - key
+  - shape
+  - offset
+  - fuse_output
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

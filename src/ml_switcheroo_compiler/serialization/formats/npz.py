@@ -1,6 +1,8 @@
+"""Module npz.py."""
+
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """NPZ format serialization."""
 
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
@@ -10,7 +12,7 @@ from ml_switcheroo_compiler.serialization.utils import parse_npz
 class NpzWeightFormat(WeightLoader, WeightSaver):
     """NPZ weight format handler."""
 
-    def load(self, filepath: str) -> dict:
+    def load(self, filepath: str) -> dict[str, Any]:
         """Load npz weights.
 
         Args:
@@ -24,7 +26,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         backend = registry.get_active_backend()
         if hasattr(backend, "load_npz"):
             try:
-                return backend.load_npz(filepath)
+                return backend.load_npz(filepath)  # type: ignore
             except Exception as e:
                 import warnings
 
@@ -32,7 +34,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
 
         return parse_npz(filepath)
 
-    def save(self, weights_np: dict, filepath: str) -> None:
+    def save(self, weights_np: dict[str, Any], filepath: str) -> None:
         """Save npz weights.
 
         Args:

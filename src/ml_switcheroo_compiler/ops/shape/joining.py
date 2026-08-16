@@ -1,6 +1,8 @@
+"""Module joining.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape operations for Tensor objects."""
 from collections.abc import Sequence
@@ -19,7 +21,7 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> Any:
+def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> Any:  # type: ignore
     """Concatenate a sequence of tensors along a specified dimension.
 
     Args:
@@ -52,7 +54,7 @@ def concatenate(tensors: Sequence[Tensor], axis: int = 0) -> Any:
     )
 
 
-def stack(tensors: Sequence[Tensor], axis: int = 0) -> Any:
+def stack(tensors: Sequence[Tensor], axis: int = 0) -> Any:  # type: ignore
     """Stack a sequence of tensors along a new dimension.
 
     Args:
@@ -101,7 +103,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> Any:
     )
 
 
-def vstack(tup: Sequence[Tensor]) -> Any:
+def vstack(tup: Sequence[Tensor]) -> Any:  # type: ignore
     """Stack arrays in sequence vertically (row wise).
 
     Args:
@@ -119,7 +121,7 @@ def vstack(tup: Sequence[Tensor]) -> Any:
     return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def hstack(tup: Sequence[Tensor]) -> Any:
+def hstack(tup: Sequence[Tensor]) -> Any:  # type: ignore
     """Stack arrays in sequence horizontally (column wise).
 
     Args:
@@ -137,7 +139,7 @@ def hstack(tup: Sequence[Tensor]) -> Any:
     return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
-def dstack(tup: Sequence[Tensor]) -> Any:
+def dstack(tup: Sequence[Tensor]) -> Any:  # type: ignore
     """Stack arrays in sequence depth wise (along third axis).
 
     Args:

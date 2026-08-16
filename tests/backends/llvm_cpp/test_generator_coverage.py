@@ -56,3 +56,39 @@ def test_llvm_cpp_strides_num_elem():
     gen = CppGenerator(graph=IRGraph())
     assert gen._num_elements([2, 3]) == 6
     assert gen._get_strides([2, 3, 4]) == [12, 4, 1]
+
+
+def test_cpp_generator_if_with_else():
+    graph = IRGraph()
+    gen = CppGenerator(graph)
+
+    then_graph = IRGraph()
+    then_graph.nodes = {"n_then": LogicalNode(id="n_then", op_type="Add", inputs=["a", "b"])}
+
+    else_graph = IRGraph()
+    else_graph.nodes = {"n_else": LogicalNode(id="n_else", op_type="Sub", inputs=["a", "b"])}
+
+    node = LogicalNode(id="n1", op_type="If", inputs=["cond"])
+    node.attributes = {"then_branch": then_graph, "else_branch": else_graph}
+
+    gen._visit_node(node, graph)
+    lines = "".join(gen.lines)
+    assert "Fallback Unimplemented Sub" in lines
+
+
+def test_cpp_generator_while_with_body():
+    graph = IRGraph()
+    gen = CppGenerator(graph)
+
+    cond_graph = IRGraph()
+    cond_graph.nodes = {"n_cond": LogicalNode(id="n_cond", op_type="Equal", inputs=["a", "b"])}
+
+    body_graph = IRGraph()
+    body_graph.nodes = {"n_body": LogicalNode(id="n_body", op_type="Add", inputs=["a", "b"])}
+
+    node = LogicalNode(id="n1", op_type="WhileLoop", inputs=["cond"])
+    node.attributes = {"cond": cond_graph, "body": body_graph}
+
+    gen._visit_node(node, graph)
+    lines = "".join(gen.lines)
+    assert "Fallback Unimplemented Equal" in lines

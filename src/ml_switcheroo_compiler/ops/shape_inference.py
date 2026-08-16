@@ -1,14 +1,14 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shape inference module."""
 
 from typing import Any, Callable
 
 # Fallback to the OpDef's infer_shape method if it still has it
 
-_SHAPE_INFERENCE_REGISTRY: dict[str, Callable] = {}
+_SHAPE_INFERENCE_REGISTRY: dict[str, Callable[..., Any]] = {}
 
 
-def register_shape_inference(op_type: str) -> Callable:
+def register_shape_inference(op_type: str) -> Callable[..., Any]:
     """Decorate to register a shape inference function for an op.
 
     Args:
@@ -18,7 +18,7 @@ def register_shape_inference(op_type: str) -> Callable:
         Callable: Result.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         """Evaluate decorator operation.
 
         Args:

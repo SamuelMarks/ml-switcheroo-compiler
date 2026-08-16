@@ -1,15 +1,11 @@
 operation: PrepareMultiprocessingEnvironment
 description: PyTorch specific utility for multiprocessing setup.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: path
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: path
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

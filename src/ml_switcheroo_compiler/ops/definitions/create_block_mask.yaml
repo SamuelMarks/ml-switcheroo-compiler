@@ -1,20 +1,16 @@
 operation: create_block_mask
 description: This function creates a block mask tuple from a mask_mod function.
 std_args:
-- mask_mod
-- B
-- H
-- Q_LEN
-- KV_LEN
-- device
-- BLOCK_SIZE
-- _compile
+  - mask_mod
+  - B
+  - H
+  - Q_LEN
+  - KV_LEN
+  - device
+  - BLOCK_SIZE
+  - _compile
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,14 +1,10 @@
 operation: traverse_op
 description: Traverses the operation and applies the callback in pre-order fashion.
 std_args:
-- op
-- callback
+  - op
+  - callback
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

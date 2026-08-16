@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
 from dataclasses import dataclass
@@ -32,10 +32,10 @@ class RNNConfig:
 class BidirectionalInputs:
     """Inputs for bidirectional RNN."""
 
-    forward_inputs: Tensor
-    backward_inputs: Tensor
-    forward_initial_state: tuple[Tensor, ...]
-    backward_initial_state: tuple[Tensor, ...]
+    forward_inputs: Tensor  # type: ignore
+    backward_inputs: Tensor  # type: ignore
+    forward_initial_state: tuple[Tensor, ...]  # type: ignore
+    backward_initial_state: tuple[Tensor, ...]  # type: ignore
 
 
 @dataclass
@@ -51,9 +51,9 @@ class BidirectionalConfig:
 class RNNWeights:
     """Weights for RNN cell."""
 
-    kernel: Tensor
-    recurrent_kernel: Tensor
-    bias: Optional[Tensor] = None
+    kernel: Tensor  # type: ignore
+    recurrent_kernel: Tensor  # type: ignore
+    bias: Optional[Tensor] = None  # type: ignore
 
 
 @dataclass
@@ -76,10 +76,10 @@ class ScanConfig:
 
 def scan(
     f: Any,
-    init: tuple[Tensor, ...],
-    xs: Tensor,
+    init: tuple[Tensor, ...],  # type: ignore
+    xs: Tensor,  # type: ignore
     config: Optional[ScanConfig] = None,
-) -> tuple[tuple[Tensor, ...], Tensor]:
+) -> tuple[tuple[Tensor, ...], Tensor]:  # type: ignore
     """Scan loop construct.
 
     Args:
@@ -120,7 +120,7 @@ def bidirectional(
     inputs: BidirectionalInputs,
     cell_fn: Any,
     config: Optional[BidirectionalConfig] = None,
-) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
+) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:  # type: ignore
     """Bidirectional RNN wrapper.
 
     Args:
@@ -164,7 +164,7 @@ def bidirectional(
     return merged_out, forward_state, backward_state
 
 
-def _permute_time_major(inputs: Tensor) -> Any:
+def _permute_time_major(inputs: Tensor) -> Any:  # type: ignore
     """Swap batch and time dimensions.
 
     Args:
@@ -179,11 +179,11 @@ def _permute_time_major(inputs: Tensor) -> Any:
 
 
 def rnn(
-    inputs: Tensor,
-    initial_state: tuple[Tensor, ...],
+    inputs: Tensor,  # type: ignore
+    initial_state: tuple[Tensor, ...],  # type: ignore
     cell_fn: Any,
     config: Optional[RNNConfig] = None,
-) -> tuple[Tensor, tuple[Tensor, ...]]:
+) -> tuple[Tensor, tuple[Tensor, ...]]:  # type: ignore
     """Define base recurrent loop evaluation.
 
     Args:
@@ -199,7 +199,7 @@ def rnn(
     if not conf.time_major:
         inputs = _permute_time_major(inputs)
 
-    def scan_fn(carry: Tensor, x: Tensor) -> Any:
+    def scan_fn(carry: Tensor, x: Tensor) -> Any:  # type: ignore
         """Evaluate scan_fn operation.
 
         Args:
@@ -241,7 +241,7 @@ class RNNCellDeviceWrapper:
         self._cell = cell
         self._device = device
 
-    def __call__(self, inputs: Any, state: Any, **kwargs: Any) -> tuple:
+    def __call__(self, inputs: Any, state: Any, **kwargs: Any) -> tuple[Any, ...]:
         """Call.
 
         Args:
@@ -252,7 +252,7 @@ class RNNCellDeviceWrapper:
         Returns:
         tuple: Result.
         """
-        return self._cell(inputs, state, **kwargs)
+        return self._cell(inputs, state, **kwargs)  # type: ignore
 
 
 @dataclass
@@ -288,7 +288,7 @@ class RNNCellDropoutWrapper:
         self._cell = cell
         self._config = config if config is not None else DropoutWrapperConfig()
 
-    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: Any) -> tuple[Tensor, tuple[Tensor, ...]]:
+    def __call__(self, inputs: Tensor, state: tuple[Tensor, ...], **kwargs: Any) -> tuple[Tensor, tuple[Tensor, ...]]:  # type: ignore
         """Run the cell with dropout.
 
         Args:
@@ -321,7 +321,7 @@ class RNNCellResidualWrapper:
         self._cell = cell
         self._residual_fn = residual_fn
 
-    def __call__(self, inputs: Any, state: Any, **kwargs: Any) -> tuple:
+    def __call__(self, inputs: Any, state: Any, **kwargs: Any) -> tuple[Any, ...]:
         """Call.
 
         Args:

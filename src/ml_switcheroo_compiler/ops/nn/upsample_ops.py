@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module upsample_ops.py."""
+
 from typing import Any
 
 """Upsampling operations."""
@@ -41,7 +43,7 @@ def _resolve_scale_factor(input: Any, scale_factor: Any, spatial_dims: Any) -> A
 
 
 def _upsample_resolve_size(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     size: Optional[Union[int, Sequence[int]]],
     scale_factor: Optional[Union[float, Sequence[float]]],
 ) -> tuple[int, ...]:
@@ -70,7 +72,7 @@ def _upsample_resolve_size(
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1
 
     if has_sf:
-        return _resolve_scale_factor(input, scale_factor, spatial_dims)
+        return _resolve_scale_factor(input, scale_factor, spatial_dims)  # type: ignore
 
     if isinstance(size, int):
         return tuple([size] * spatial_dims)
@@ -79,7 +81,7 @@ def _upsample_resolve_size(
 
 
 def _upsample_dispatch(  # noqa: PLR0911
-    input: Tensor,
+    input: Tensor,  # type: ignore
     mode: str,
     size: Optional[Union[int, Sequence[int]]],
     scale_factor: Optional[Union[float, Sequence[float]]],
@@ -124,7 +126,7 @@ def _upsample_dispatch(  # noqa: PLR0911
 
 
 def upsample(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
     mode: str = "nearest",
@@ -146,7 +148,7 @@ def upsample(
     return _upsample_dispatch(input, mode, size, scale_factor, align_corners)
 
 
-def pixel_shuffle(input: Tensor, upscale_factor: int) -> Any:
+def pixel_shuffle(input: Tensor, upscale_factor: int) -> Any:  # type: ignore
     """Rearranges elements in a tensor of shape (*, C, H, W) to a tensor of shape (*, C/r^2, H*r, W*r).
 
     Args:
@@ -179,7 +181,7 @@ def pixel_shuffle(input: Tensor, upscale_factor: int) -> Any:
 
 
 def upsample_nearest(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
 ) -> Any:
@@ -217,7 +219,7 @@ def upsample_nearest(
 
 
 def upsample_bilinear(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
 ) -> Any:
@@ -255,7 +257,7 @@ def upsample_bilinear(
 
 
 def upsample_bicubic(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     size: Optional[Union[int, Sequence[int]]] = None,
     scale_factor: Optional[Union[float, Sequence[float]]] = None,
 ) -> Any:

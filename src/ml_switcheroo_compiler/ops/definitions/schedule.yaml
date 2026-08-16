@@ -31,35 +31,31 @@ description: 'Returns a callable that can be used as profiler ``schedule`` argum
 
   last active and warmup.'
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: wait
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: warmup
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: active
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: repeat
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: skip_first
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: skip_first_wait
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: wait
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: warmup
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: active
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: repeat
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: skip_first
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: skip_first_wait
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

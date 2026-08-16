@@ -1,18 +1,18 @@
 operation: clip
 description: The Clip operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: min
-  type: Optional[Union[int, float, array]]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: max
-  type: Optional[Union[int, float, array]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: min
+    type: Optional[Union[int, float, array]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: max
+    type: Optional[Union[int, float, array]]
 variants:
   cupy:
     eager: cp.clip
@@ -26,15 +26,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: clip
+  edge_stablehlo:
+
+    opcode: stablehlo.clip
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

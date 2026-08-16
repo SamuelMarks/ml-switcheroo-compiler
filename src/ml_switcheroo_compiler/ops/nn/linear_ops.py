@@ -1,6 +1,8 @@
+"""Module linear_ops.py."""
+
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Linear transformations."""
 
 from typing import Optional
@@ -12,7 +14,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:
+def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:  # type: ignore
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -29,7 +31,7 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Any:  # type: ignore
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).

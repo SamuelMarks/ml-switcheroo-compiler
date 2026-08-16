@@ -1,10 +1,10 @@
 operation: Atleast2d
 description: Returns a 2-dimensional view.
 std_args:
-- is_variadic: true
-  kind: positional_or_keyword
-  name: tensors
-  type: Tensor
+  - is_variadic: true
+    kind: positional_or_keyword
+    name: tensors
+    type: Tensor
 variants:
   numpy:
     eager: numpy.atleast2d
@@ -20,15 +20,11 @@ variants:
     eager: jax.numpy.atleast2d
   mlx:
     eager: mlx.core.atleast2d
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: Atleast2d
+  edge_stablehlo:
+
+    opcode: stablehlo.atleast2d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,14 +1,14 @@
 operation: FloorDivide
 description: The FloorDivide operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: other
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: other
+    type: Tensor
 variants:
   cupy:
     eager: cp.floor_divide
@@ -26,15 +26,14 @@ variants:
     eager: jax.numpy.floordivide
   mlx:
     eager: mlx.core.floordivide
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: FloorDivide
+  edge_stablehlo:
+
+    opcode: stablehlo.floor_divide
   edge_wgsl:
     template: binary
     expr: floor(buf_in0_f32[in0_offset] / buf_in1_f32[in1_offset])
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

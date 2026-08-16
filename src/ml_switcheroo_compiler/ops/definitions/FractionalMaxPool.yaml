@@ -15,8 +15,12 @@ variants:
     eager: jax.numpy.fractionalmaxpool
   mlx:
     eager: mlx.core.fractionalmaxpool
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: FractionalMaxPool
+  edge_stablehlo:
+
+    opcode: stablehlo.fractional_max_pool
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

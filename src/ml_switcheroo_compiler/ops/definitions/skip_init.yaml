@@ -2,15 +2,11 @@ operation: skip_init
 description: Given a module class object and args / kwargs, instantiate the module
   without initializing parameters / buffers.
 std_args:
-- module_cls
-- args
-- kwargs
+  - module_cls
+  - args
+  - kwargs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

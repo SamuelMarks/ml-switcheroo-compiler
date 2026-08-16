@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Ahead-of-Time compilation hooks for frontend integrations."""
 
 from collections.abc import Callable
@@ -14,10 +14,10 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
 
 # Cache for compiled artifacts
-_COMPILATION_CACHE: dict[str, Callable] = {}
+_COMPILATION_CACHE: dict[str, Callable[..., Any]] = {}
 
 
-def _fallback_eager(fn: Callable, args: tuple, kw: dict) -> Any:
+def _fallback_eager(fn: Callable[..., Any], args: tuple[Any, ...], kw: dict[str, Any]) -> Any:
     """Execute function eagerly as a fallback.
 
     Args:
@@ -35,7 +35,7 @@ def _fallback_eager(fn: Callable, args: tuple, kw: dict) -> Any:
         config.eager_mode = was_eager
 
 
-def _build_signature_key(fn: Callable, backend: str, args: tuple) -> str:
+def _build_signature_key(fn: Callable[..., Any], backend: str, args: tuple[Any, ...]) -> str:
     """Build a cache key for the compilation signature.
 
     Args:
@@ -55,7 +55,7 @@ def _build_signature_key(fn: Callable, backend: str, args: tuple) -> str:
     return f"{id(fn)}_{backend}_" + "_".join(sig_parts)
 
 
-def _prepare_proxy_args(args: tuple) -> list[Any]:
+def _prepare_proxy_args(args: tuple[Any, ...]) -> list[Any]:
     """Prepare proxy arguments for tracing.
 
     Args:
@@ -69,7 +69,7 @@ def _prepare_proxy_args(args: tuple) -> list[Any]:
         if hasattr(a, "shape") and hasattr(a, "dtype"):
             arg_id = f"arg_{i}"
             shape = getattr(a, "shape", ())
-            proxy = ProxyTensor(id=arg_id, shape=shape, dtype=str(getattr(a, "dtype", "")))
+            proxy = ProxyTensor(id=arg_id, shape=shape, dtype=str(getattr(a, "dtype", "")))  # type: ignore
             dtype = getattr(a, "dtype", DType.Float32)
             device = getattr(a, "device", "cpu")
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))

@@ -1,31 +1,31 @@
 operation: RavelMultiIndex
 description: The RavelMultiIndex operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: multi_index
-  type: Tuple[Array]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dims
-  type: Tuple[int]
-- default: raise
-  is_variadic: false
-  kind: positional_or_keyword
-  name: mode
-  options:
-  - raise
-  - wrap
-  - clip
-  type: str
-- default: C
-  is_variadic: false
-  kind: positional_or_keyword
-  name: order
-  options:
-  - C
-  - F
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: multi_index
+    type: Tuple[Array]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dims
+    type: Tuple[int]
+  - default: raise
+    is_variadic: false
+    kind: positional_or_keyword
+    name: mode
+    options:
+      - raise
+      - wrap
+      - clip
+    type: str
+  - default: C
+    is_variadic: false
+    kind: positional_or_keyword
+    name: order
+    options:
+      - C
+      - F
+    type: str
 variants:
   cupy:
     eager: cp.ravel_multi_index
@@ -43,15 +43,11 @@ variants:
     eager: jax.numpy.ravelmultiindex
   mlx:
     eager: mlx.core.ravelmultiindex
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: RavelMultiIndex
+  edge_stablehlo:
+
+    opcode: stablehlo.ravel_multi_index
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,16 +1,12 @@
 operation: ChunkedCausalMask
 description: Lazy chunked causal mask.
 std_args:
-- self
-- shape
-- chunk_size
-- shard_count
+  - self
+  - shape
+  - chunk_size
+  - shard_count
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

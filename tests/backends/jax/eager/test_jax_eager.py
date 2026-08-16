@@ -110,6 +110,16 @@ def test_jax_eager_functions():
     res = execute_op(None, "Cumprod", jnp.array([1.0, 2.0, 3.0]))
     assert res is not None
 
+    # test global_eager_registry dispatch
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+
+    @global_eager_registry.register("DummyGlobalOp")
+    def _dummy_global_op(jnp_module, *args, **kwargs):
+        return jnp_module.array([42.0])
+
+    res = execute_op(None, "DummyGlobalOp", jnp.array([1.0]))
+    assert res[0] == 42.0
+
     # test backend not supported error
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -206,13 +216,13 @@ def test_jax_eager_execute_op_fallback():
 
 
 def test_jax_eager_extra():
-    return
     import pytest
 
     from ml_switcheroo_compiler.backends.jax.eager import _execute_accumulate_n, _execute_adaptive_avg_pool
 
     # AdaptivePool without shape
-    assert _execute_adaptive_avg_pool("string_without_shape", 1) == "string_without_shape"
+    # We must pass something that JAX can convert to an array but does not have .shape before conversion
+    assert _execute_adaptive_avg_pool([1, 2], 1) is not None
 
     # AccumulateN empty
     with pytest.raises(ValueError):

@@ -2,10 +2,6 @@ operation: file_in_this_dir
 description: Auto-generated mapping for file_in_this_dir.
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

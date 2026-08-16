@@ -31,7 +31,7 @@ packages = ["src/ml_switcheroo_compiler"]
 [tool.ruff]
 exclude = ["ml-switcheroo-ir"]
 line-length = 300
-lint.select = ["E", "F", "D", "UP", "B", "I", "C901", "PLR09"]
+lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR09", "D"]
 
 [tool.ruff.lint.pylint]
 max-args = 8
@@ -76,3 +76,26 @@ omit = [
     "docs/*",
     "scripts/*",
 ]
+
+[tool.interrogate]
+ignore-init-method = false
+ignore-init-module = false
+ignore-magic = false
+ignore-semiprivate = false
+ignore-private = false
+ignore-property-decorators = false
+ignore-module = false
+ignore-nested-functions = false
+ignore-nested-classes = false
+ignore-setters = false
+fail-under = 100
+exclude = ["tests", "docs", "scripts", "ml-switcheroo-ir"]
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
+# possible values: 0 (minimal output), 1 (-v), 2 (-vv)
+verbose = 0
+quiet = false
+whitelist-regex = []
+color = true
+omit-covered-files = false
+generate-badge = "."
+badge-format = "svg"

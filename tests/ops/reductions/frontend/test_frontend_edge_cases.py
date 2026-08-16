@@ -23,7 +23,7 @@ def test_reductions_frontend_brute():
 
         class DummyBackend:
             def execute_op(self, op_type, *args, **kwargs):
-                if return_indices := kwargs.get("return_indices", False) or op_type == "FractionalMaxPool3D":
+                if return_indices := kwargs.get("return_indices", False) or op_type == "FractionalMaxPool3d":
                     return np.zeros_like(args[0]), np.zeros_like(args[0]).astype(np.int64)
                 return np.zeros_like(args[0])
 

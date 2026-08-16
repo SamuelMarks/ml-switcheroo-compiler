@@ -1,13 +1,9 @@
 operation: derive_relayout_constraints
 description: Derives relayout constraints from the given variable mapping.
 std_args:
-- value_sites_for_variable
+  - value_sites_for_variable
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/ml-switcheroo-compiler/actions)
 [![Test Coverage](https://img.shields.io/badge/test_coverage-100%25-brightgreen.svg)](#)
-[![Doc Coverage](https://img.shields.io/badge/doc_coverage-93.5%25-green.svg)](#)
+[![Doc Coverage](https://img.shields.io/badge/doc_coverage-100%25-brightgreen.svg)](#)
 
 The `ml-switcheroo-compiler` is the universal hub and core execution engine for the ML Switcheroo ecosystem. It provides a robust intermediate representation (IR) and compilation pipeline to seamlessly translate machine learning models between major Python frameworks and compile them directly for highly optimized edge execution. Crucially, this architecture empowers developers to run precise forward and backward passes directly in the browser for exact shape learning, and to empirically benchmark any ML syntax across different execution backends.
 
@@ -115,6 +115,14 @@ graph TD
         CUPY[cupy]
         DASK[dask]
         TORCH_B[torch]
+        KERAS_B[keras]
+        TF_B[tensorflow]
+        EDGE_WGPU[webgpu/wgsl]
+        EDGE_WASM[wasm]
+        EDGE_WEBGL[webgl]
+        LLVM[llvm_cpp]
+        ONNX[onnx]
+        STABLEHLO[stablehlo]
     end
 
     ZZ -.->|Validates Float Equivalence| ZJ
@@ -139,6 +147,14 @@ graph TD
     COMP --> CUPY
     COMP --> DASK
     COMP --> TORCH_B
+    COMP --> KERAS_B
+    COMP --> TF_B
+    COMP --> EDGE_WGPU
+    COMP --> EDGE_WASM
+    COMP --> EDGE_WEBGL
+    COMP --> LLVM
+    COMP --> ONNX
+    COMP --> STABLEHLO
 ```
 
 ## Internal Backends
@@ -152,6 +168,12 @@ The `ml-switcheroo-compiler` serves as the unifying engine for the `zero-*` ecos
 - **`dask`**: Specialized distributed or alternative backend.
 - **`torch`**: Native PyTorch execution backend.
 - **`keras`**: Keras execution backend.
+- **`tensorflow`**: TensorFlow execution backend.
+- **`edge (webgpu/wgsl)`**: In-browser parallel GPU compute backend.
+- **`edge (wasm)`**: In-browser and edge CPU compute backend (WASM SIMD).
+- **`edge (webgl)`**: Legacy in-browser GPU backend.
+- **`edge (onnx / stablehlo)`**: Export targets for standardized ML exchange.
+- **`llvm_cpp`**: C++ fallback and LLVM execution backend.
 
 ---
 

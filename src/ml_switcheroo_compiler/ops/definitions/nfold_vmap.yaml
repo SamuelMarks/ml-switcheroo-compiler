@@ -1,16 +1,12 @@
 operation: nfold_vmap
 description: Convenience function to apply (broadcasted) vmap N times.
 std_args:
-- fun
-- N
-- broadcasted
-- in_axes
+  - fun
+  - N
+  - broadcasted
+  - in_axes
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,17 +1,13 @@
 operation: verify_tensorstore_spec
 description: Verify the minimum requirements for a tensorstore spec.
 std_args:
-- spec
-- arr
-- path
-- ocdbt
-- check_metadata
+  - spec
+  - arr
+  - path
+  - ocdbt
+  - check_metadata
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

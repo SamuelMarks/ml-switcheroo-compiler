@@ -1,21 +1,17 @@
 operation: RooflineRuleContext
 description: The class representing a Python class.
 std_args:
-- self
-- name_stack
-- primitive
-- avals_in
-- avals_out
-- jaxpr_eqn_ctx
-- mesh
-- pin_lhs_in_vmem
-- pin_rhs_in_vmem
+  - self
+  - name_stack
+  - primitive
+  - avals_in
+  - avals_out
+  - jaxpr_eqn_ctx
+  - mesh
+  - pin_lhs_in_vmem
+  - pin_rhs_in_vmem
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

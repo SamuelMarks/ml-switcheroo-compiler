@@ -1,16 +1,12 @@
 operation: CategoricalHinge
 description: Computes the categorical hinge loss.
 std_args:
-- default: sum_over_batch_size
-  is_variadic: false
-  kind: positional_or_keyword
-  name: reduction
-  type: str
+  - default: sum_over_batch_size
+    is_variadic: false
+    kind: positional_or_keyword
+    name: reduction
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

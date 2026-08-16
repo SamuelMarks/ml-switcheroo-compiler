@@ -1,22 +1,18 @@
 operation: mma
 description: The class representing a Python function.
 std_args:
-- d
-- a
-- b
-- a_swizzle
-- b_swizzle
-- a_scale
-- b_scale
-- a_sparse_metadata
-- accumulate
-- collective
+  - d
+  - a
+  - b
+  - a_swizzle
+  - b_swizzle
+  - a_scale
+  - b_scale
+  - a_sparse_metadata
+  - accumulate
+  - collective
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

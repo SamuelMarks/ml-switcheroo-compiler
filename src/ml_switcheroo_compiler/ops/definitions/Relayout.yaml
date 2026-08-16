@@ -1,16 +1,12 @@
 operation: Relayout
 description: States that `source` must be relayout-able to `target`.
 std_args:
-- self
-- source
-- target
-- bitwidth
+  - self
+  - source
+  - target
+  - bitwidth
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

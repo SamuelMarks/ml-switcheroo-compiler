@@ -1,14 +1,10 @@
 operation: split_to_logical_devices
 description: Like TPUMPStrategy.experimental_split_to_logical_devices.
 std_args:
-- tensor
-- partition_dimensions
+  - tensor
+  - partition_dimensions
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

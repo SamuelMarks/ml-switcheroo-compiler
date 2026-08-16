@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module base.py."""
+
 from __future__ import annotations
 
 """Define base definitions for the operation registry."""
@@ -41,6 +43,22 @@ class OpDef:
         return dispatch_op(self.op_type, *args, **kwargs)
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         return tuple()
         """Infer the output shape(s) and dtype(s) of the operation.
 
@@ -72,7 +90,7 @@ def emit_ir_node(
     op_type: str,
     inputs: list[str],
     shape_metadata: Any = None,
-    attributes: dict | None = None,
+    attributes: dict[str, Any] | None = None,
 ) -> str:
     """Emit a new node into the IR graph directly.
 
@@ -103,7 +121,7 @@ def emit_ir_node(
     return nid
 
 
-def dispatch_eager(op_name: str) -> Callable:
+def dispatch_eager(op_name: str) -> Callable[..., Any]:
     """Evaluate dispatch_eager operation.
 
     Args:
@@ -113,7 +131,7 @@ def dispatch_eager(op_name: str) -> Callable:
         Callable: Result.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         """Evaluate decorator operation.
 
         Args:

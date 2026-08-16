@@ -1,6 +1,8 @@
+"""Module qr.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for qr.py."""
 from typing import Any
@@ -104,7 +106,7 @@ class Tridiagonal(OpDef):
         return diag_shape, off_diag_shape, a_shape
 
 
-def qr(input: Tensor, mode: str = "reduced") -> Any:
+def qr(input: Tensor, mode: str = "reduced") -> Any:  # type: ignore
     """Compute the QR decomposition of a matrix.
 
     Args:
@@ -138,7 +140,7 @@ def qr(input: Tensor, mode: str = "reduced") -> Any:
     return _emit_linalg_node("Qr", [input], {"mode": mode}, [q_shape, r_shape], [input.dtype] * 2)
 
 
-def hessenberg(a: Tensor) -> Any:
+def hessenberg(a: Tensor) -> Any:  # type: ignore
     """Compute the Hessenberg decomposition of a matrix.
 
     Args:
@@ -159,7 +161,7 @@ def hessenberg(a: Tensor) -> Any:
     return _emit_linalg_node("Hessenberg", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def householder_product(a: Tensor, tau: Tensor) -> Any:
+def householder_product(a: Tensor, tau: Tensor) -> Any:  # type: ignore
     """Compute the product of Householder reflectors.
 
     Args:
@@ -178,7 +180,7 @@ def householder_product(a: Tensor, tau: Tensor) -> Any:
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
 
-def schur(a: Tensor) -> Any:
+def schur(a: Tensor) -> Any:  # type: ignore
     """Compute the Schur decomposition of a matrix.
 
     Args:
@@ -199,7 +201,7 @@ def schur(a: Tensor) -> Any:
     return _emit_linalg_node("Schur", [a], {}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal(a: Tensor) -> Any:
+def tridiagonal(a: Tensor) -> Any:  # type: ignore
     """Compute the tridiagonal decomposition of a symmetric matrix.
 
     Args:
@@ -239,7 +241,7 @@ class Qdwh(OpDef):
         return args[0].shape, args[0].shape, args[0].shape[:-2], args[0].shape[:-2]
 
 
-def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Any:
+def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Any:  # type: ignore
     """Compute the QR-based dynamically weighted Halley iteration.
 
     Args:

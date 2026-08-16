@@ -1,18 +1,14 @@
 operation: load_reduce_untiled
 description: The class representing a Python function.
 std_args:
-- cls
-- ref
-- layout
-- reduction
-- swizzle
-- is_signed
+  - cls
+  - ref
+  - layout
+  - reduction
+  - swizzle
+  - is_signed
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

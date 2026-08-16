@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_matrix_utils module."""
 
 from __future__ import annotations
@@ -159,10 +159,7 @@ def _np_bandpart(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "bandpart", getattr(backend_module, "bandpart", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.triu(np.tril(args[0], kwargs.get("num_lower", -1)), -kwargs.get("num_upper", -1))
@@ -181,10 +178,7 @@ def _np_geometric(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.random.geometric(*args, **kwargs)
@@ -203,10 +197,7 @@ def _np_triangular(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.random.triangular(*args, **kwargs)
@@ -225,10 +216,7 @@ def _np_tridiagonal(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.diag(args[0])
@@ -247,10 +235,7 @@ def _np_trilindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.tril_indices(*args, **kwargs)
@@ -269,10 +254,7 @@ def _np_trilindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.tril_indices_from(*args, **kwargs)
@@ -291,10 +273,7 @@ def _np_trimzeros(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.trim_zeros(*args, **kwargs)
@@ -313,10 +292,7 @@ def _np_triuindices(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.triu_indices(*args, **kwargs)
@@ -335,10 +311,7 @@ def _np_triuindicesfrom(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.triu_indices_from(*args, **kwargs)

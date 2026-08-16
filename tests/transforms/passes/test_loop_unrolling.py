@@ -178,3 +178,48 @@ def test_get_initial_constants_non_constant():
     # outer_non_const is an Input, not a Constant
     graph = IRGraph(nodes={"outer_non_const": IRNode(id="outer_non_const", op_type="Input"), "loop": node})
     assert _get_initial_constants(node, graph) == {}
+
+
+def test_detect_static_bound_invalid_add():
+    cond_graph = IRBlock(id="c", nodes=[LogicalNode(id="c", op_type="Constant", attributes={"value": True}), LogicalNode(id="out", op_type="Output", inputs=["c"])], outputs=["out"])
+    body_nodes = [LogicalNode(id="b_in", op_type="Input"), LogicalNode(id="const_str", op_type="Constant", attributes={"value": "string"}), LogicalNode(id="add", op_type="Add", inputs=["b_in", "const_str"]), LogicalNode(id="out", op_type="Output", inputs=["add"])]
+    body_graph = IRBlock(id="b", nodes=body_nodes, inputs=["b_in"], outputs=["out"])
+    assert detect_static_bound(cond_graph, body_graph, {"b_in": 1}) is None
+
+
+def test_detect_static_bound_sub_valid():
+    cond_nodes = [LogicalNode(id="c_in", op_type="Input"), LogicalNode(id="const_0", op_type="Constant", attributes={"value": 0}), LogicalNode(id="less", op_type="Less", inputs=["const_0", "c_in"]), LogicalNode(id="out", op_type="Output", inputs=["less"])]
+    cond_graph = IRBlock(id="c", nodes=cond_nodes, inputs=["c_in"], outputs=["out"])
+    body_nodes = [LogicalNode(id="b_in", op_type="Input"), LogicalNode(id="const_1", op_type="Constant", attributes={"value": 1}), LogicalNode(id="sub", op_type="Sub", inputs=["b_in", "const_1"]), LogicalNode(id="out", op_type="Output", inputs=["sub"])]
+    body_graph = IRBlock(id="b", nodes=body_nodes, inputs=["b_in"], outputs=["out"])
+    iters = detect_static_bound(cond_graph, body_graph, {"c_in": 2})
+    assert iters == 2
+
+
+def test_detect_static_bound_invalid_sub():
+    cond_graph = IRBlock(id="c", nodes=[LogicalNode(id="c", op_type="Constant", attributes={"value": True}), LogicalNode(id="out", op_type="Output", inputs=["c"])], outputs=["out"])
+    body_nodes = [LogicalNode(id="b_in", op_type="Input"), LogicalNode(id="const_str", op_type="Constant", attributes={"value": "string"}), LogicalNode(id="sub", op_type="Sub", inputs=["b_in", "const_str"]), LogicalNode(id="out", op_type="Output", inputs=["sub"])]
+    body_graph = IRBlock(id="b", nodes=body_nodes, inputs=["b_in"], outputs=["out"])
+    assert detect_static_bound(cond_graph, body_graph, {"b_in": 1}) is None
+
+
+def test_detect_static_bound_invalid_less():
+    cond_nodes = [LogicalNode(id="c_in", op_type="Input"), LogicalNode(id="const_str", op_type="Constant", attributes={"value": "string"}), LogicalNode(id="less", op_type="Less", inputs=["c_in", "const_str"]), LogicalNode(id="out", op_type="Output", inputs=["less"])]
+    cond_graph = IRBlock(id="c", nodes=cond_nodes, inputs=["c_in"], outputs=["out"])
+    body_graph = IRBlock(id="b", nodes=[], outputs=[])
+    assert detect_static_bound(cond_graph, body_graph, {"c_in": 1}) is None
+
+
+def test_detect_static_bound_opaque_op():
+    cond_graph = IRBlock(id="c", nodes=[LogicalNode(id="c_in", op_type="Input"), LogicalNode(id="opaque", op_type="OpaqueOp", inputs=["c_in"]), LogicalNode(id="out", op_type="Output", inputs=["opaque"])], inputs=["c_in"], outputs=["out"])
+    body_graph = IRBlock(id="b", nodes=[], outputs=[])
+    assert detect_static_bound(cond_graph, body_graph, {"c_in": 1}) is None
+
+
+def test_find_static_trip_count_empty():
+    from ml_switcheroo_compiler.ir.core import IRBlock
+    from ml_switcheroo_compiler.transforms.passes.loop_unrolling import detect_static_bound
+
+    n_loop_empty = IRNode(id="l2", op_type="WhileLoop", inputs=["init"])
+    n_loop_empty.attributes = {"max_iters": 5, "cond": IRGraph(), "body": IRGraph()}
+    assert detect_static_bound(IRBlock(id="1", nodes=[], inputs=[], outputs=[]), IRBlock(id="2", nodes=[], inputs=[], outputs=[]), {}) is None

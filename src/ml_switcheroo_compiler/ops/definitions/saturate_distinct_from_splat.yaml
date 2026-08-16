@@ -1,13 +1,9 @@
 operation: saturate_distinct_from_splat
 description: Adds transitive NotOfType constraints for all non-splat variables.
 std_args:
-- constraint_system
+  - constraint_system
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

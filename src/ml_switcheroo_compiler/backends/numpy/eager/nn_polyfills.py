@@ -1,6 +1,8 @@
+"""Module nn_polyfills.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy eager fallback implementations for stubbed NN operations."""
 from typing import Any
 
@@ -10,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
 @numpy_eager_registry.register("IsotonicRegression")
-def _np_isotonic_regression(backend_module: Any, y: Any, **kwargs: Any) -> tuple:
+def _np_isotonic_regression(backend_module: Any, y: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_isotonic_regression.
 
     Args:
@@ -237,7 +239,7 @@ def _np_log_poisson_loss(backend_module: Any, targets: Any, log_input: Any, **kw
 
 
 @numpy_eager_registry.register("AllCandidateSampler")
-def _np_all_candidate_sampler(backend_module: Any, true_classes: Any, **kwargs: Any) -> tuple:
+def _np_all_candidate_sampler(backend_module: Any, true_classes: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_all_candidate_sampler.
 
     Args:
@@ -257,7 +259,7 @@ def _np_all_candidate_sampler(backend_module: Any, true_classes: Any, **kwargs: 
     return sampled.astype(np.int32), true_expected_count, sampled_expected_count
 
 
-def _np_ctc_beam_step(beam: dict, log_p: Any, num_classes: int, blank: int, beam_width: int) -> dict:
+def _np_ctc_beam_step(beam: dict[tuple[int, ...], tuple[float, float]], log_p: Any, num_classes: int, blank: int, beam_width: int) -> dict[tuple[int, ...], tuple[float, float]]:
     """Eager fallback for _np_ctc_beam_step.
 
     Args:
@@ -270,7 +272,7 @@ def _np_ctc_beam_step(beam: dict, log_p: Any, num_classes: int, blank: int, beam
     Returns:
         dict: Result.
     """
-    next_beam: dict = {}
+    next_beam: dict[tuple[int, ...], tuple[float, float]] = {}
     for path, (p_b, p_nb) in beam.items():
         p_tot = np.logaddexp(p_b, p_nb)
 
@@ -309,7 +311,7 @@ def _np_ctc_beam_step(beam: dict, log_p: Any, num_classes: int, blank: int, beam
 
 
 @numpy_eager_registry.register("CtcBeamSearchDecoder")
-def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_length: Any, **kwargs: Any) -> tuple:
+def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_length: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_ctc_beam_search_decoder.
 
     Args:
@@ -342,7 +344,7 @@ def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_lengt
         T = seq_len[b]
         # beam: dictionary of {tuple(path): (log_prob_blank, log_prob_non_blank)}
         # Initialize with empty path
-        beam = {(): (0.0, -float("inf"))}
+        beam: dict[tuple[int, ...], tuple[float, float]] = {(): (0.0, -float("inf"))}
 
         for t in range(T):
             probs = arr[t, b]
@@ -366,7 +368,7 @@ def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_lengt
     indices = []
     values = []
     for b, seq in enumerate(decoded):
-        for t, val in enumerate(seq):  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        for t, val in enumerate(seq):
             indices.append([b, t])
             values.append(val)
 
@@ -381,7 +383,7 @@ def _np_ctc_beam_search_decoder(backend_module: Any, inputs: Any, sequence_lengt
 
 
 @numpy_eager_registry.register("CtcGreedyDecoder")
-def _np_ctc_greedy_decoder(backend_module: Any, inputs: Any, sequence_length: Any, **kwargs: Any) -> tuple:
+def _np_ctc_greedy_decoder(backend_module: Any, inputs: Any, sequence_length: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_ctc_greedy_decoder.
 
     Args:
@@ -416,7 +418,7 @@ def _np_ctc_greedy_decoder(backend_module: Any, inputs: Any, sequence_length: An
 
 
 @numpy_eager_registry.register("CtcUniqueLabels")
-def _np_ctc_unique_labels(backend_module: Any, labels: Any, **kwargs: Any) -> tuple:
+def _np_ctc_unique_labels(backend_module: Any, labels: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_ctc_unique_labels.
 
     Args:
@@ -433,7 +435,7 @@ def _np_ctc_unique_labels(backend_module: Any, labels: Any, **kwargs: Any) -> tu
 
 
 @numpy_eager_registry.register("NormalizeMoments")
-def _np_normalize_moments(backend_module: Any, counts: Any, mean_ss: Any, variance_ss: Any, shift: Any, **kwargs: Any) -> tuple:
+def _np_normalize_moments(backend_module: Any, counts: Any, mean_ss: Any, variance_ss: Any, shift: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_normalize_moments.
 
     Args:
@@ -457,7 +459,7 @@ def _np_normalize_moments(backend_module: Any, counts: Any, mean_ss: Any, varian
 
 
 @numpy_eager_registry.register("SufficientStatistics")
-def _np_sufficient_statistics(backend_module: Any, x: Any, axes: Any, **kwargs: Any) -> tuple:
+def _np_sufficient_statistics(backend_module: Any, x: Any, axes: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_sufficient_statistics.
 
     Args:
@@ -481,7 +483,7 @@ def _np_sufficient_statistics(backend_module: Any, x: Any, axes: Any, **kwargs: 
 
 
 @numpy_eager_registry.register("WeightedMoments")
-def _np_weighted_moments(backend_module: Any, x: Any, axes: Any, frequency_weights: Any, **kwargs: Any) -> tuple:
+def _np_weighted_moments(backend_module: Any, x: Any, axes: Any, frequency_weights: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_weighted_moments.
 
     Args:
@@ -505,7 +507,7 @@ def _np_weighted_moments(backend_module: Any, x: Any, axes: Any, frequency_weigh
 
 
 @numpy_eager_registry.register("MaxPoolWithArgmax")
-def _np_max_pool_with_argmax(backend_module: Any, input: Any, **kwargs: Any) -> tuple:
+def _np_max_pool_with_argmax(backend_module: Any, input: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_max_pool_with_argmax.
 
     Args:
@@ -528,7 +530,7 @@ def _np_max_pool_with_argmax(backend_module: Any, input: Any, **kwargs: Any) -> 
 
 
 @numpy_eager_registry.register("CollapseRepeated")
-def _np_collapse_repeated(backend_module: Any, labels: Any, **kwargs: Any) -> tuple:
+def _np_collapse_repeated(backend_module: Any, labels: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Eager fallback for _np_collapse_repeated.
 
     Args:

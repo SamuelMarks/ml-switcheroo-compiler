@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for generator.py."""
 
 import os
@@ -114,14 +114,6 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             return self.audio_visitor.visit(node, input_vars, **kwargs)
         return super().visit(node, input_vars, **kwargs)
 
-    def _get_backend_prefix(self) -> str:
-        """Retrieve the short prefix used for backend-specific variables and namespaces.
-
-        Returns:
-            str: The backend prefix string ("pt" for PyTorch).
-        """
-        return "pt"
-
     def visit_PowerIteration(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate PyTorch code for a power iteration operation.
 
@@ -189,7 +181,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         return "keepdim"
 
-    def _get_math_ops(self, kwargs: dict) -> dict[str, str]:
+    def _get_math_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Provide a dictionary mapping math operations to their PyTorch code templates.
 
         Args:
@@ -213,7 +205,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             "NanToNum": "torch.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})",
         }
 
-    def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
+    def _get_creation_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Provide a dictionary mapping tensor creation operations to PyTorch templates.
 
         Args:
@@ -229,7 +221,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             "Full": "torch.full({shape}, {fill_value})" + (", dtype=getattr(torch, '" + str(kwargs.get("dtype")) + "', torch.float32)" if "dtype" in kwargs else ""),
         }
 
-    def _get_array_ops(self, kwargs: dict) -> dict[str, str]:
+    def _get_array_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Provide a dictionary mapping array operations to PyTorch code templates.
 
         Args:
@@ -278,35 +270,6 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             "Cast": "getattr({0}, str('{dtype}'))()",
             "Bitcast": "{0}.view(getattr(torch, str('{dtype}')))",
         }
-
-    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the complete dictionary mapping all supported operations to PyTorch code templates.
-
-        Args:
-            kwargs (dict): The keyword arguments dict for resolving dynamic parameters.
-
-        Returns:
-            dict[str, str]: A dictionary mapping operation type names to format strings.
-        """
-        ops = super().get_ops_map(kwargs)
-        ops["Beta"] = "torch.distributions.beta.Beta({1}, {2}).sample({shape})"
-        ops["Dirichlet"] = "torch.distributions.dirichlet.Dirichlet({1}).sample({shape})"
-        ops["Gamma"] = "torch.distributions.gamma.Gamma({1}, 1.0).sample({shape})"
-        ops["RngBitGenerator"] = "torch.randint(0, 255, {shape})"
-        ops["RngUniform"] = "({1} - {0}) * torch.rand({shape}) + {0}"
-        ops["Infeed"] = "{0}"
-        ops["Outfeed"] = "{0}"
-        ops["AxisIndex"] = "0"
-        ops["AllToAll"] = "{0}"
-        ops["Pmax"] = "{0}"
-        ops["Pmin"] = "{0}"
-        ops["PsumScatter"] = "{0}"
-        ops["Pswapaxes"] = "{0}"
-        ops["Ppermute"] = "{0}"
-        ops["Pshuffle"] = "{0}"
-        ops["CreateToken"] = "0"
-        ops["WithShardingConstraint"] = "{0}"
-        return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
         """Emit the code to assign a constant parameter to a local variable.

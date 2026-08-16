@@ -1,19 +1,15 @@
 operation: GetBigramIds
 description: Generate bi-gram ids from uni-gram ids.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: ids
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: vocab_size
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: ids
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: vocab_size
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

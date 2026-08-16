@@ -10,8 +10,12 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: ConvTransposeShapeTuple
+  edge_stablehlo:
+
+    opcode: stablehlo.conv_transpose_shape_tuple
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

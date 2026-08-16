@@ -1,15 +1,11 @@
 operation: WGStridedFragLayout
 description: Convert the array to 1D and then shard across threads.
 std_args:
-- self
-- shape
-- vec_size
+  - self
+  - shape
+  - vec_size
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

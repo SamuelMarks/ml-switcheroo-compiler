@@ -2,20 +2,16 @@ operation: matrix_rank
 description: Returns the rank (i.e., number of non-zero singular values) of a matrix
   (or a stack of matrices).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: rtol
-  type: Optional[Union[float, array]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: rtol
+    type: Optional[Union[float, array]]
 type: attribute
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

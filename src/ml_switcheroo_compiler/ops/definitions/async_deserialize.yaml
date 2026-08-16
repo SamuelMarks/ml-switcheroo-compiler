@@ -1,20 +1,16 @@
 operation: async_deserialize
 description: Main performant deserialization routine for arrays using tensorstore.
 std_args:
-- in_type
-- tensorstore_spec
-- global_shape
-- dtype
-- byte_limiter
-- context
-- chunk_layout
-- assume_metadata
+  - in_type
+  - tensorstore_spec
+  - global_shape
+  - dtype
+  - byte_limiter
+  - context
+  - chunk_layout
+  - assume_metadata
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

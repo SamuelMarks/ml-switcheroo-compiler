@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: Any = ",", use_quote_delim: Any = True, na_value: Any = "", select_cols: Any = None, name: Any = None) -> list[Tensor]:
+def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: Any = ",", use_quote_delim: Any = True, na_value: Any = "", select_cols: Any = None, name: Any = None) -> list[Tensor]:  # type: ignore
     """Decode csv.
 
     Args:
@@ -37,13 +37,13 @@ def decode_csv(records: Tensor, record_defaults: list[Any], field_delim: Any = "
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("DecodeCsv", records, record_defaults=record_defaults, field_delim=field_delim, use_quote_delim=use_quote_delim, na_value=na_value, select_cols=select_cols, name=name)
+        return get_active_backend().execute_op("DecodeCsv", records, record_defaults=record_defaults, field_delim=field_delim, use_quote_delim=use_quote_delim, na_value=na_value, select_cols=select_cols, name=name)  # type: ignore
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))
+    return _emit_shape_node("DecodeCsv", [records], {"record_defaults": record_defaults, "field_delim": field_delim, "use_quote_delim": use_quote_delim, "na_value": na_value, "select_cols": select_cols, "name": name}, getattr(records, "shape", ()), getattr(records, "dtype", "float32"))  # type: ignore
 
 
-def parse_example(serialized: Tensor, features: dict[str, Any], example_names: Any = None, name: Any = None) -> dict[str, Tensor]:
+def parse_example(serialized: Tensor, features: dict[str, Any], example_names: Any = None, name: Any = None) -> dict[str, Tensor]:  # type: ignore
     """Parse example.
 
     Args:
@@ -60,13 +60,13 @@ def parse_example(serialized: Tensor, features: dict[str, Any], example_names: A
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("ParseExample", serialized, features=features, example_names=example_names, name=name)
+        return get_active_backend().execute_op("ParseExample", serialized, features=features, example_names=example_names, name=name)  # type: ignore
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ParseExample", [serialized], {"features": features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
+    return _emit_shape_node("ParseExample", [serialized], {"features": features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))  # type: ignore
 
 
-def serialize_tensor(tensor: Tensor, name: Any = None) -> Any:
+def serialize_tensor(tensor: Tensor, name: Any = None) -> Any:  # type: ignore
     """Serialize tensor.
 
     Args:
@@ -87,7 +87,7 @@ def serialize_tensor(tensor: Tensor, name: Any = None) -> Any:
     return _emit_shape_node("SerializeTensor", [tensor], {"name": name}, getattr(tensor, "shape", ()), getattr(tensor, "dtype", "float32"))
 
 
-def parse_tensor(serialized: Tensor, out_type: DType, name: Any = None) -> Any:
+def parse_tensor(serialized: Tensor, out_type: DType, name: Any = None) -> Any:  # type: ignore
     """Parse tensor.
 
     Args:
@@ -109,7 +109,7 @@ def parse_tensor(serialized: Tensor, out_type: DType, name: Any = None) -> Any:
     return _emit_shape_node("ParseTensor", [serialized], {"out_type": out_type, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
 
 
-def parse_sequence_example(serialized: Tensor, context_features: Any = None, sequence_features: Any = None, example_names: Any = None, name: Any = None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:
+def parse_sequence_example(serialized: Tensor, context_features: Any = None, sequence_features: Any = None, example_names: Any = None, name: Any = None) -> tuple[dict[str, Tensor], dict[str, Tensor]]:  # type: ignore
     """Parse sequence example.
 
     Args:
@@ -127,10 +127,10 @@ def parse_sequence_example(serialized: Tensor, context_features: Any = None, seq
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("ParseSequenceExample", serialized, context_features=context_features, sequence_features=sequence_features, example_names=example_names, name=name)
+        return get_active_backend().execute_op("ParseSequenceExample", serialized, context_features=context_features, sequence_features=sequence_features, example_names=example_names, name=name)  # type: ignore
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ParseSequenceExample", [serialized], {"context_features": context_features, "sequence_features": sequence_features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))
+    return _emit_shape_node("ParseSequenceExample", [serialized], {"context_features": context_features, "sequence_features": sequence_features, "example_names": example_names, "name": name}, getattr(serialized, "shape", ()), getattr(serialized, "dtype", "float32"))  # type: ignore
 
 
 class TFRecordOptions:

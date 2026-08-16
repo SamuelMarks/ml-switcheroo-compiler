@@ -1,15 +1,11 @@
 operation: generate_sourcemaps
 description: Generates a SourceMapBundle for the specified compiler passes.
 std_args:
-- f
-- passes
-- pass_kwargs
+  - f
+  - passes
+  - pass_kwargs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

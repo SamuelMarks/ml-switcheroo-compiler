@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for quantized_ops.py."""
 
 from dataclasses import dataclass
@@ -142,9 +142,9 @@ class ComputeFloat8ScaleOp(OpDef):
 
 
 def fake_quant_with_min_max_vars(
-    inputs: Tensor,
-    min_val: Tensor,
-    max_val: Tensor,
+    inputs: Tensor,  # type: ignore
+    min_val: Tensor,  # type: ignore
+    max_val: Tensor,  # type: ignore
     num_bits: int = 8,
     narrow_range: bool = False,
 ) -> Any:
@@ -185,9 +185,9 @@ class QuantizationParams:
 
 
 def quantize_and_dequantize(
-    input: Tensor,
-    input_min: Tensor,
-    input_max: Tensor,
+    input: Tensor,  # type: ignore
+    input_min: Tensor,  # type: ignore
+    input_max: Tensor,  # type: ignore
     params: Optional[QuantizationParams] = None,
 ) -> Any:
     """Quantizes and then dequantizes a tensor to simulate lower precision.
@@ -222,7 +222,7 @@ def quantize_and_dequantize(
 
 
 def abs_max_quantize(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     axis: Optional[int] = None,
 ) -> Any:
     """Quantizes an input tensor using absolute maximum quantization scaling.
@@ -249,8 +249,8 @@ def abs_max_quantize(
 
 
 def compute_float8_amax_history(
-    x: Tensor,
-    amax_history: Tensor,
+    x: Tensor,  # type: ignore
+    amax_history: Tensor,  # type: ignore
 ) -> Any:
     """Compute and updates the absolute maximum history for float8 quantization scaling.
 
@@ -270,8 +270,8 @@ def compute_float8_amax_history(
 
 
 def compute_float8_scale(
-    amax_history: Tensor,
-    scale: Tensor,
+    amax_history: Tensor,  # type: ignore
+    scale: Tensor,  # type: ignore
     margin: float = 0.0,
 ) -> Any:
     """Compute the scaling factor for float8 quantization from absolute maximum history.
@@ -294,7 +294,7 @@ def compute_float8_scale(
 
 
 def quantize(
-    w: Tensor,
+    w: Tensor,  # type: ignore
     group_size: int = 64,
     bits: int = 4,
 ) -> Any:
@@ -338,16 +338,16 @@ class QuantizationConfig:
 class QuantizedOpsConfig:
     """Grouped attributes for quantized operations."""
 
-    weight: Tensor
-    scales: Tensor
-    biases: Optional[Tensor] = None
-    zeros: Optional[Tensor] = None
-    indices: Optional[Tensor] = None
+    weight: Tensor  # type: ignore
+    scales: Tensor  # type: ignore
+    biases: Optional[Tensor] = None  # type: ignore
+    zeros: Optional[Tensor] = None  # type: ignore
+    indices: Optional[Tensor] = None  # type: ignore
     q_config: Optional[QuantizationConfig] = None
 
 
 def quantized_matmul(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     config: QuantizedOpsConfig,
 ) -> Any:
     """Perform a matrix multiplication using a quantized weight matrix configuration.
@@ -377,7 +377,7 @@ def quantized_matmul(
 
 
 def gather_qmm(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     config: QuantizedOpsConfig,
 ) -> Any:
     """Gather elements and performs a matrix multiplication with quantized weights.
@@ -408,7 +408,7 @@ def gather_qmm(
 
 
 def quantized_linear(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     config: QuantizedOpsConfig,
 ) -> Any:
     """Apply a linear transformation to incoming data using quantized parameters.
@@ -450,7 +450,7 @@ def quantized_linear(
 
 
 def quantized_embedding(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     config: QuantizedOpsConfig,
 ) -> Any:
     """Look up embeddings from a quantized embedding weight table.
@@ -488,9 +488,9 @@ def quantized_embedding(
 
 
 def dequantize(
-    input: Tensor,
-    scales: Tensor,
-    biases: Optional[Tensor] = None,
+    input: Tensor,  # type: ignore
+    scales: Tensor,  # type: ignore
+    biases: Optional[Tensor] = None,  # type: ignore
     group_size: int = 64,
     bits: int = 4,
 ) -> Any:
@@ -531,7 +531,7 @@ def dequantize(
 
 
 def quantized_conv(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     config: QuantizedOpsConfig,
     stride: int = 1,
     padding: int = 0,

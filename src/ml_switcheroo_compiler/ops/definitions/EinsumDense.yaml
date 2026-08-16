@@ -1,23 +1,19 @@
 operation: EinsumDense
 description: Layer that uses einsum.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: equation
-  type: str
-- is_variadic: false
-  kind: positional_or_keyword
-  name: output_shape
-  type: int | Tuple[int, ...]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: bias_axes
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: equation
+    type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: output_shape
+    type: int | Tuple[int, ...]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: bias_axes
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

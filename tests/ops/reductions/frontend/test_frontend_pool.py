@@ -13,12 +13,17 @@ def test_frontend_pool_coverage():
 
     orig = config.eager_mode
     config.eager_mode = False
+    import ml_switcheroo_compiler.tracing.state as state
+
+    orig_tracing = state.global_tracing_state.is_tracing
+    state.global_tracing_state.is_tracing = True
+    state.global_tracing_state.active_graph = MagicMock()
 
     t = Tensor(np.ones((1, 1, 4, 4)), TensorConfig(shape=(1, 1, 4, 4), dtype=DType("float32"), device=Device("cpu")))
     t_3d = Tensor(np.ones((1, 1, 4, 4, 4)), TensorConfig(shape=(1, 1, 4, 4, 4), dtype=DType("float32"), device=Device("cpu")))
 
     try:
-        with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool._emit_reduction_node", return_value=t):
+        with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node", return_value=t):
             pool.fractional_max_pool2d(t, (2, 2))
             pool.adaptive_avg_pool2d(t, (2, 2))
             pool.adaptive_max_pool2d(t, (2, 2))
@@ -72,4 +77,5 @@ def test_frontend_pool_coverage():
             pool.fractional_max_pool3d(t_3d, (2, 2, 2))
 
     finally:
+        state.global_tracing_state.is_tracing = orig_tracing
         config.eager_mode = orig

@@ -1,19 +1,15 @@
 operation: IntTensor
 description: Legacy constructor for Int32 tensor.
 std_args:
-- is_variadic: true
-  kind: positional_or_keyword
-  name: args
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: kwargs
-  type: Any
+  - is_variadic: true
+    kind: positional_or_keyword
+    name: args
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: kwargs
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

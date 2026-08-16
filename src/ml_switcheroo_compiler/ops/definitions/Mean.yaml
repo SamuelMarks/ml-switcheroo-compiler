@@ -1,7 +1,7 @@
 operation: Mean
 description: The Mean operation.
 std_args:
-- x
+  - x
 variants:
   cupy:
     eager: cp.mean
@@ -21,8 +21,11 @@ variants:
     eager: tf.math.reduce_mean
   mlx:
     eager: mlx.core.mean
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: Mean
+  edge_stablehlo:
+
+    opcode: stablehlo.mean
   edge_wgsl:
     template: reduction
     init_code: var res = 0.0;
@@ -30,14 +33,10 @@ variants:
     loop_code: res = res + buf_in0_f32[i];
     post_loop_code: res = res / f32({nelem_in}u);
     result_var: res
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
 autodiff:
   vjp:
-  - TrueDivide(Broadcast($cotangent), Constant($nelem))
+    - TrueDivide(Broadcast($cotangent), Constant($nelem))
   jvp: Mean($tangent[0])

@@ -1,14 +1,10 @@
 operation: merge_nested_ts_specs
 description: Merge two ts specs, dict2 takes precedence.
 std_args:
-- dict1
-- dict2
+  - dict1
+  - dict2
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,16 +1,16 @@
 operation: Unsqueeze
 description: The Unsqueeze operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  max: 5.0
-  min: -5.0
-  name: axis
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    max: 5.0
+    min: -5.0
+    name: axis
+    type: int
 variants:
   edge_onnx:
     generator: Unsqueeze
@@ -28,14 +28,9 @@ variants:
     eager: jax.numpy.unsqueeze
   mlx:
     eager: mlx.core.unsqueeze
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_stablehlo:
+
+    opcode: stablehlo.unsqueeze
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,16 +1,12 @@
 operation: random_structured
 description: Prune tensor by removing random channels along the specified dimension.
 std_args:
-- module
-- name
-- amount
-- dim
+  - module
+  - name
+  - amount
+  - dim
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

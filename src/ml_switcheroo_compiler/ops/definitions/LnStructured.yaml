@@ -2,16 +2,12 @@ operation: LnStructured
 description: Prune entire (currently unpruned) channels in a tensor based on their
   L\ ``n``-norm.
 std_args:
-- self
-- amount
-- n
-- dim
+  - self
+  - amount
+  - n
+  - dim
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

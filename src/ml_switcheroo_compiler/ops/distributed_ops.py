@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Distributed operations."""
 
 from typing import Any
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def shard_tensor(tensor: Tensor, device_mesh: Any, layout: Any) -> Any:
+def shard_tensor(tensor: Tensor, device_mesh: Any, layout: Any) -> Any:  # type: ignore
     """Shard a tensor across devices.
 
     Args:
@@ -51,7 +51,7 @@ class ShardTensor(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:
+def nccl_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
     """NCCL all-reduce.
 
     Args:
@@ -86,7 +86,7 @@ class NcclAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:
+def hierarchical_copy_all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
     """Hierarchical copy all-reduce.
 
     Args:
@@ -121,7 +121,7 @@ class HierarchicalCopyAllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def broadcast(tensor: Tensor, root_rank: int = 0) -> Any:
+def broadcast(tensor: Tensor, root_rank: int = 0) -> Any:  # type: ignore
     """Broadcast.
 
     Args:
@@ -156,7 +156,7 @@ class Broadcast(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_gather(tensor: Tensor, axis: int = 0) -> Any:
+def all_gather(tensor: Tensor, axis: int = 0) -> Any:  # type: ignore
     """All-gather.
 
     Args:
@@ -191,7 +191,7 @@ class AllGather(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> Any:
+def reduce(tensor: Tensor, root_rank: int = 0, op_type: str = "sum") -> Any:  # type: ignore
     """Reduce.
 
     Args:
@@ -232,7 +232,7 @@ class Reduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:
+def all_reduce(tensor: Tensor, op_type: str = "sum") -> Any:  # type: ignore
     """Provide generic SPMD AllReduce.
 
     Args:
@@ -267,7 +267,7 @@ class AllReduce(OpDef):
         return getattr(tensor, "shape", ())
 
 
-def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Any:
+def reduce_scatter(tensor: Tensor, op_type: str = "sum", axis: int = 0) -> Any:  # type: ignore
     """Provide generic SPMD ReduceScatter.
 
     Args:
@@ -635,7 +635,7 @@ class Pswapaxes(OpDef):
         axis = kwargs.get("axis", args[2] if len(args) > 2 else 0)
         shape = list(getattr(x, "shape", ()))
         if shape and axis < len(shape):
-            shape[axis] = None  # type: ignore[index]
+            shape[axis] = None
         return tuple(shape)
 
 
@@ -677,7 +677,7 @@ class PsumScatter(OpDef):
         scatter_dimension = kwargs.get("scatter_dimension", 0)
         shape = list(getattr(x, "shape", ()))
         if shape and scatter_dimension < len(shape):
-            shape[scatter_dimension] = None  # type: ignore[index]
+            shape[scatter_dimension] = None
         return tuple(shape)
 
 

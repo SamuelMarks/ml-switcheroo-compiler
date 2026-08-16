@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def decode_image(contents: Tensor, channels: Any = 0, dtype: Any = DType.UInt8, name: Any = None, expand_animations: Any = True) -> Any:
+def decode_image(contents: Tensor, channels: Any = 0, dtype: Any = DType.UInt8, name: Any = None, expand_animations: Any = True) -> Any:  # type: ignore
     """Decode image.
 
     Args:

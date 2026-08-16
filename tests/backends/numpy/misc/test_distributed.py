@@ -25,76 +25,86 @@ def test_axis_index() -> None:
 
 
 def test_np_distributed_context() -> None:
-    """Test mock distributed context.
+    """Test mock distributed context."""
+    from unittest.mock import MagicMock, patch
 
-    Returns:
-        None
-    """
-    import threading
+    from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_to_all, _tcp_dist_ctx
 
-    def run_rank(rank: int) -> None:
-        set_np_distributed_context(world_size=2, rank=rank)
-        t = np.array([1, 2])
+    mock_conn = MagicMock()
+    mock_conn.recv.return_value = np.array([3, 4])
 
-        # AllReduce
-        res1 = _np_all_reduce(np, t)
-        if rank == 0:
-            assert np.array_equal(res1, t * 2)
+    with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener") as MockListener:
+        with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", return_value=mock_conn):
+            mock_listener_instance = MagicMock()
+            mock_listener_instance.accept.return_value = mock_conn
+            MockListener.return_value = mock_listener_instance
 
-        # AllGather
-        res2 = _np_all_gather(np, t)
-        if rank == 0:
-            assert len(res2) == 4
+            set_np_distributed_context(world_size=2, rank=0)
+            t = np.array([1, 2])
 
-        # Broadcast
-        res3 = _np_broadcast(np, t)
-        if rank == 0:
-            assert np.array_equal(res3, t)
+            res1 = _np_all_reduce(np, t)
+            res2 = _np_all_gather(np, t)
+            res3 = _np_broadcast(np, t)
+            res4 = _np_reduce_scatter(np, t)
+            res5 = _np_reduce(np, t)
+            res6 = _np_shard_tensor(np, t)
 
-        # ReduceScatter
-        res4 = _np_reduce_scatter(np, t)
-        if rank == 0:
-            assert len(res4) == 1
+            # test reduce scatter ops
+            _np_reduce_scatter(np, t, "prod")
+            _np_reduce_scatter(np, t, "max")
+            _np_reduce_scatter(np, t, "min")
+            _np_reduce_scatter(np, t, "unknown")
 
-        # Reduce
-        res5 = _np_reduce(np, t)
-        if rank == 0:
-            assert np.array_equal(res5, t * 2)
+            # test reduce ops
+            _np_reduce(np, t, 0, "prod")
+            _np_reduce(np, t, 0, "max")
+            _np_reduce(np, t, 0, "min")
+            _np_reduce(np, t, 0, "unknown")
 
-        # ShardTensor
-        res6 = _np_shard_tensor(np, t)
-        if rank == 0:
-            assert np.array_equal(res6, t)
+            # test all reduce ops
+            _np_all_reduce(np, t, "prod")
+            _np_all_reduce(np, t, "max")
+            _np_all_reduce(np, t, "min")
+            _np_all_reduce(np, t, "unknown")
 
-    t1 = threading.Thread(target=run_rank, args=(0,))
-    t2 = threading.Thread(target=run_rank, args=(1,))
-    t1.start()
-    t2.start()
-    t1.join()
-    t2.join()
+            # test all to all
+            _np_all_to_all(np, t)
+
+            # also test the underlying ring
+            _tcp_dist_ctx.all_reduce_ring(t, op_type="prod")
+            _tcp_dist_ctx.all_reduce_ring(t, op_type="max")
+            _tcp_dist_ctx.all_reduce_ring(t, op_type="min")
+
+            _tcp_dist_ctx.shutdown()
 
     # test world_size=1
     set_np_distributed_context(world_size=1, rank=0)
     t = np.array([1, 2])
     res_reduce_1 = _np_all_reduce(np, t)
-    assert np.array_equal(res_reduce_1, t)
-
     res_gather_1 = _np_all_gather(np, t)
-    assert len(res_gather_1) == 1
-
     res_scatter_1 = _np_reduce_scatter(np, t)
-    assert np.array_equal(res_scatter_1, t)
+
+    assert np.array_equal(_np_all_to_all(np, t), t)
+    assert np.array_equal(_np_reduce(np, t), t)
+    assert np.array_equal(_np_shard_tensor(np, t), t)
+    assert np.array_equal(_np_broadcast(np, t), t)
+    assert np.array_equal(_tcp_dist_ctx.all_reduce_ring(t), t)
+    assert np.array_equal(_tcp_dist_ctx.all_gather_tensors(t)[0], t)
 
 
 def test_distributed_initialize_timeout():
-    from unittest.mock import patch
+    from unittest.mock import MagicMock, patch
 
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_np_distributed_context
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client") as mock_client:
-        mock_client.side_effect = ConnectionRefusedError
-        set_np_distributed_context(world_size=2, rank=1, port=39501)
-        # Should loop 50 times and exit normally
+        with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Listener") as MockListener:
+            mock_listener_instance = MagicMock()
+            mock_listener_instance.accept.return_value = MagicMock()
+            MockListener.return_value = mock_listener_instance
+
+            mock_client.side_effect = ConnectionRefusedError
+            set_np_distributed_context(world_size=2, rank=1, port=39501)
 
 
 def test_distributed_shutdown_no_conn():

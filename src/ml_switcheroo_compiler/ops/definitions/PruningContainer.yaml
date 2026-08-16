@@ -1,14 +1,10 @@
 operation: PruningContainer
 description: Container holding a sequence of pruning methods for iterative pruning.
 std_args:
-- self
-- args
+  - self
+  - args
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

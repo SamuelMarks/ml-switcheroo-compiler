@@ -1,14 +1,14 @@
 operation: AsArrayChkFinite
 description: Convert the input to an array, checking for NaNs or Infs.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: a
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: dtype
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: a
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: dtype
 variants:
   numpy:
     eager: numpy.asarraychkfinite
@@ -24,15 +24,11 @@ variants:
     eager: jax.numpy.asarraychkfinite
   mlx:
     eager: mlx.core.asarraychkfinite
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsArrayChkFinite
+  edge_stablehlo:
+
+    opcode: stablehlo.as_array_chk_finite
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
 from __future__ import annotations
@@ -51,7 +51,9 @@ def _accumulate_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
-        return None
+        import numpy as np
+
+        return np.zeros(())
     res = inputs[0]
     for i in range(1, len(inputs)):
         res = res + inputs[i]
@@ -101,7 +103,9 @@ def _add_n(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
-        return None
+        import numpy as np
+
+        return np.zeros(())
     res = inputs[0]
     for i in range(1, len(inputs)):
         res = res + inputs[i]
@@ -149,10 +153,7 @@ def _np_scattermul(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -171,10 +172,7 @@ def _np_stringsubstr(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.asarray(args[0], dtype=str)
@@ -193,10 +191,7 @@ def _np_tensorscattersub(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -215,10 +210,7 @@ def _np_truncatediv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.trunc(np.divide(args[0], args[1]))
@@ -237,10 +229,7 @@ def _np_truncatemod(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.mod(args[0], args[1])
@@ -259,10 +248,7 @@ def _np_xdivy(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.where(args[0] == 0, 0, np.divide(args[0], args[1]))

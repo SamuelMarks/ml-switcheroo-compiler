@@ -1,10 +1,10 @@
 operation: AverageGradients
 description: Average the gradients across distributed processes.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: gradients
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: gradients
+    type: Any
 variants:
   numpy:
     eager: numpy.averagegradients
@@ -20,15 +20,11 @@ variants:
     eager: jax.numpy.averagegradients
   mlx:
     eager: mlx.core.averagegradients
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AverageGradients
+  edge_stablehlo:
+
+    opcode: stablehlo.average_gradients
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

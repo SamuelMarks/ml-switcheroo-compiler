@@ -34,6 +34,10 @@ def test_process_broadcast_node() -> None:
     with pytest.raises(ValueError):
         _process_broadcast_node(graph, node1)
 
+    node1_key = IRNode(id="node1_key", op_type="NonExistentOp", inputs=[])
+    graph_key = IRGraph(name="test_key", nodes={"node1_key": node1_key}, outputs=[])
+    assert _process_broadcast_node(graph_key, node1_key) is False
+
     # Not 2 inputs
     node2 = IRNode(id="node2", op_type="Add", inputs=["in1"])
     graph = IRGraph(name="test", nodes={"node2": node2}, outputs=[])

@@ -1,13 +1,9 @@
 operation: fa_m64_collective_layout
 description: The register layout for transfers to/from tmem_m64_collective_layout.
 std_args:
-- columns
+  - columns
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

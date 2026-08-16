@@ -1,15 +1,11 @@
 operation: SortComplex
 description: Sort a complex array using the real part first, then the imaginary part.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: a
-  type: Array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: a
+    type: Array
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

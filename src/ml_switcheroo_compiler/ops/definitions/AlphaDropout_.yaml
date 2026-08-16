@@ -1,11 +1,11 @@
 operation: AlphaDropout_
 description: In-place version of AlphaDropout.
 std_args:
-- default: 0.5
-  is_variadic: false
-  kind: positional_or_keyword
-  name: p
-  type: float
+  - default: 0.5
+    is_variadic: false
+    kind: positional_or_keyword
+    name: p
+    type: float
 variants:
   numpy: {}
   cupy: {}
@@ -15,15 +15,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AlphaDropout_
+  edge_stablehlo:
+
+    opcode: stablehlo.alpha_dropout_
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

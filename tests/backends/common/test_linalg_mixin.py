@@ -7,7 +7,7 @@ class DummyGenerator:
     def __init__(self):
         self.lines = []
 
-    def _get_backend_prefix(self):
+    def get_fallback_prefix(self):
         return "bk"
 
     def add_line(self, line):
@@ -18,7 +18,7 @@ class DummyGeneratorDotted:
     def __init__(self):
         self.lines = []
 
-    def _get_backend_prefix(self):
+    def get_fallback_prefix(self):
         return "np."
 
     def add_line(self, line):
@@ -29,7 +29,7 @@ class DummyGeneratorMlx:
     def __init__(self):
         self.lines = []
 
-    def _get_backend_prefix(self):
+    def get_fallback_prefix(self):
         return "mlx"
 
     def add_line(self, line):

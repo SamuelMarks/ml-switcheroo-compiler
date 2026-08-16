@@ -1,17 +1,13 @@
 operation: trace_and_lower
 description: The class representing a Python function.
 std_args:
-- work_dir
-- f
-- f_args
-- f_kwargs
-- _
+  - work_dir
+  - f
+  - f_args
+  - f_kwargs
+  - _
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

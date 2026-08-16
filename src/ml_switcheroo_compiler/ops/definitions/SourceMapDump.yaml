@@ -1,16 +1,12 @@
 operation: SourceMapDump
 description: A container for a source map and the paired generated code.
 std_args:
-- self
-- source_map
-- generated_code
-- pass_name
+  - self
+  - source_map
+  - generated_code
+  - pass_name
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

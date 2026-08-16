@@ -1,22 +1,22 @@
 operation: fftn
 description: The Fftn operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: s
-  type: Optional[Sequence[int]]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axes
-  type: Optional[Sequence[int]]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: norm
-  type: Literal[backward, ortho, forward]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: s
+    type: Optional[Sequence[int]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axes
+    type: Optional[Sequence[int]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: norm
+    type: Literal[backward, ortho, forward]
 type: function
 variants:
   cupy:
@@ -30,15 +30,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: fftn
+  edge_stablehlo:
+
+    opcode: stablehlo.fftn
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

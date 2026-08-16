@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Reverse-mode Automatic Differentiation (AD) Engine."""
 
 import typing
@@ -70,6 +70,42 @@ def _get_reachable_from_output(sorted_nodes: list[LogicalNode], output_id: str) 
     return reachable_from_output
 
 
+def _recompute_subgraph(new_graph: LogicalGraph, node: LogicalNode) -> LogicalNode:
+    """Recursively recompute a node and its rematerialized inputs.
+
+    Args:
+        new_graph (LogicalGraph): The new graph.
+        node (LogicalNode): The node to recompute.
+
+    Returns:
+        LogicalNode: The cloned recomputed node.
+    """
+    import uuid
+
+    from ml_switcheroo_compiler.ir.core import clone_logical_node
+
+    recompute_node = clone_logical_node(node)
+    recompute_node.id = f"{node.id}_recompute_{uuid.uuid4().hex[:6]}"
+
+    # Recursively recompute inputs if they are also tagged for rematerialization
+    new_inputs = []
+    for inp_id in getattr(node, "inputs", []):
+        if inp_id in new_graph.nodes:
+            inp_node = new_graph.nodes[inp_id]
+            if inp_node.attributes.get("rematerialize", False):
+                # Need to recompute the input as well
+                recomputed_inp = _recompute_subgraph(new_graph, inp_node)
+                new_inputs.append(recomputed_inp.id)
+            else:
+                new_inputs.append(inp_id)
+        else:
+            new_inputs.append(inp_id)
+
+    recompute_node.inputs = new_inputs
+    new_graph.nodes[recompute_node.id] = recompute_node
+    return recompute_node
+
+
 def _accumulate_gradients(
     new_graph: LogicalGraph,
     node: LogicalNode,
@@ -89,20 +125,12 @@ def _accumulate_gradients(
     """
     try:
         if node.attributes.get("rematerialize", False):
-            import uuid
-
-            from ml_switcheroo_compiler.ir.core import clone_logical_node
-
-            recompute_node = clone_logical_node(node)
-            recompute_node.id = f"{node.id}_recompute_{uuid.uuid4().hex[:6]}"
-            new_graph.nodes[recompute_node.id] = recompute_node
-            # Ensure inputs are available. In a deep unroll we might need to recursively recompute.
-            # For now, just re-evaluating the single op is sufficient for checkpointing elements.
-            eval_node = recompute_node
+            eval_node = _recompute_subgraph(new_graph, node)
         else:
             eval_node = node
         vjp_func = get_vjp(node.op_type)
         input_adjs = vjp_func(new_graph, eval_node, adj_id)
+
     except ValueError:
         msg = f"Missing VJP rule for operation: {getattr(node, 'op_type', 'Unknown')}"
         raise ValueError(msg) from None
@@ -371,7 +399,7 @@ def _invoke_style2_jvp_rule(jvp_func: Any, sig: Any, new_graph: Any, node: Any, 
     safe_call_args = [safe_id_map[orig_id] for orig_id in call_args]
 
     try:
-        expr = jvp_func(*safe_call_args)  # type: ignore
+        expr = jvp_func(*safe_call_args)
         if isinstance(expr, str):
             return _compile_jvp_expr(expr, new_graph, getattr(node, "shape_metadata", None), inverse_map)
         return expr
@@ -472,7 +500,7 @@ def _process_jvp_node(
     try:
         out_tangent = _invoke_jvp_rule(jvp_func, new_graph, node, input_tangents)
         if out_tangent is not None:
-            tangents[node.id] = typing.cast(str, out_tangent)
+            tangents[node.id] = str(out_tangent)
     except ValueError:
         raise ValueError(f"Missing JVP rule for operation: {getattr(node, 'op_type', 'Unknown')}") from None
 

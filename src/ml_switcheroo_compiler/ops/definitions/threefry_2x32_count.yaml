@@ -1,16 +1,12 @@
 operation: threefry_2x32_count
 description: Generates random bits using the Threefry hash function.
 std_args:
-- key
-- shape
-- unpadded_shape
-- block_size
+  - key
+  - shape
+  - unpadded_shape
+  - block_size
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

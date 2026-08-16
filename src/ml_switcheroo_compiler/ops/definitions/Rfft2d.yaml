@@ -15,15 +15,11 @@ variants:
     eager: jax.numpy.rfft2d
   mlx:
     eager: mlx.core.rfft2d
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: Rfft2d
+  edge_stablehlo:
+
+    opcode: stablehlo.rfft2d
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

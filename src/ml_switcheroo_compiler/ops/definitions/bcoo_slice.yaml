@@ -1,16 +1,12 @@
 operation: bcoo_slice
 description: Sparse implementation of :func:`jax.lax.slice`.
 std_args:
-- mat
-- start_indices
-- limit_indices
-- strides
+  - mat
+  - start_indices
+  - limit_indices
+  - strides
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

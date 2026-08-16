@@ -1,10 +1,10 @@
 operation: AsArrayVars
 description: Converts specific variables.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: node
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: node
+    type: Any
 variants:
   numpy:
     eager: numpy.asarrayvars
@@ -20,15 +20,11 @@ variants:
     eager: jax.numpy.asarrayvars
   mlx:
     eager: mlx.core.asarrayvars
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsArrayVars
+  edge_stablehlo:
+
+    opcode: stablehlo.as_array_vars
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

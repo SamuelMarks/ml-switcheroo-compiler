@@ -1,6 +1,8 @@
+"""Module dataset_utils.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Core abstractions and logic definitions for dataset_utils.py."""
@@ -87,8 +89,8 @@ class NumpyDataset:
 
     def __init__(
         self,
-        x: Sequence | Any,
-        y: Sequence | object | None = None,
+        x: Sequence | Any,  # type: ignore
+        y: Sequence | object | None = None,  # type: ignore
         config: BatchConfig | None = None,
     ) -> None:
         """Initialize dataset.
@@ -353,9 +355,9 @@ def _extract_timeseries_windows(
     start, stop, stride = bounds
     seq_len, samp_rate = params["sequence_length"], params["sampling_rate"]
     for i in range(start, stop, stride):
-        x.append(data[i : i + seq_len * samp_rate : samp_rate])  # type: ignore
+        x.append(data[i : i + seq_len * samp_rate : samp_rate])
         if y is not None:
-            y.append(targets[i + seq_len * samp_rate - 1])  # type: ignore
+            y.append(targets[i + seq_len * samp_rate - 1])
     return x, y
 
 
@@ -380,7 +382,7 @@ def timeseries_dataset_from_array(
     sequence_stride = conf.loader.sequence_stride
     sampling_rate = conf.loader.sampling_rate if conf.loader.sampling_rate is not None else 1
     start, stop, stride = _get_timeseries_indices(
-        len(data),  # type: ignore
+        len(data),
         {
             "sequence_length": sequence_length,
             "sampling_rate": sampling_rate,
@@ -482,7 +484,7 @@ def split_dataset(dataset: Any, left_size: float = 0.5, shuffle: bool = False) -
     return dataset, dataset
 
 
-def unpack_x_y_sample_weight(data: Any) -> tuple:
+def unpack_x_y_sample_weight(data: Any) -> tuple[Any, ...]:
     """Unpack x, y, and sample_weight.
 
     Args:

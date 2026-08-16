@@ -1,6 +1,8 @@
+"""Module core.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Unified Intermediate Representation (IR) Schema."""
 
@@ -43,7 +45,7 @@ def clone_logical_node(node: LogicalNode, **kwargs: Any) -> LogicalNode:
 
 
 @dataclass
-class IRNode(LogicalNode):
+class IRNode(LogicalNode):  # type: ignore
     """Extended LogicalNode for ml_switcheroo_compiler compiler internal IR."""
 
     stream: str | None = None
@@ -132,7 +134,7 @@ class TensorSpec:
         if self.is_dynamic:
             msg = f"Cannot get static shape from dynamic tensor shape: {self.shape}"
             raise ValueError(msg)
-        return tuple(int(dim) for dim in self.shape)  # type: ignore
+        return tuple(int(dim) for dim in self.shape)
 
     @property
     def rank(self) -> int:
@@ -166,6 +168,29 @@ class ZeroTangent(IRNode):
     """Represents a mathematically zero tangent (e.g. gradient wrt integer or unconnected)."""
 
     def __init__(self, id: str, shape_metadata: Any = None, **kwargs: Any):
+        """__init__ function.
+
+        Args:
+            id: The node id.
+            kwargs: Additional kwargs.
+
+        Args:
+            id: The node id.
+            shape_metadata: Shape metadata.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        id (Any): The id parameter.
+        shape_metadata (Any): The shape_metadata parameter.
+
+        Returns:
+        Any: Result.
+        """
         super().__init__(id=id, op_type="ZeroTangent", shape_metadata=shape_metadata, **kwargs)
 
 
@@ -174,4 +199,13 @@ class NoTangent(IRNode):
     """Represents a structurally missing or non-differentiable tangent path."""
 
     def __init__(self, id: str, **kwargs: Any):
+        """__init__ function.
+
+        Args:
+            id (str): The node id.
+            **kwargs (Any): Keyword arguments.
+
+        Returns:
+            Any: Result.
+        """
         super().__init__(id=id, op_type="NoTangent", **kwargs)

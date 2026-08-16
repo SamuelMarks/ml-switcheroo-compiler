@@ -1,15 +1,11 @@
 operation: combine_kvstores
 description: Merge a list of kvstores into a single kvstore. NOT multi-process safe.
 std_args:
-- combined_kvstore
-- kvstores
-- context
+  - combined_kvstore
+  - kvstores
+  - context
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

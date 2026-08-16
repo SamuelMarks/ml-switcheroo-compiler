@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Implementations of functional optimizer update steps for various algorithms."""
 
 from dataclasses import dataclass
@@ -102,11 +102,11 @@ class AdamaxHyperparams:
 
 
 def sgd_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     config: SGDConfig,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Stochastic Gradient Descent (SGD) update to a parameter.
 
     Args:
@@ -148,11 +148,11 @@ def sgd_update(
 
 
 def adam_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     hp: AdamHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Adam optimization update to a parameter.
 
     Args:
@@ -202,11 +202,11 @@ def adam_update(
 
 
 def adamw_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     hp: AdamWHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional AdamW optimization update to a parameter.
 
     Args:
@@ -254,11 +254,11 @@ def adamw_update(
 
 
 def adagrad_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     config: AdagradConfig,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Adagrad optimization update to a parameter.
 
     Args:
@@ -293,11 +293,11 @@ def adagrad_update(
 
 
 def rmsprop_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     hp: RMSPropHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional RMSprop optimization update to a parameter.
 
     Args:
@@ -347,11 +347,11 @@ def rmsprop_update(
 
 
 def adadelta_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     config: AdadeltaConfig,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Adadelta optimization update to a parameter.
 
     Args:
@@ -392,11 +392,11 @@ def adadelta_update(
 
 
 def adamax_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     hp: AdamaxHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Adamax optimization update to a parameter.
 
     Args:
@@ -439,11 +439,11 @@ def adamax_update(
 
 
 def lion_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     config: LionConfig,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Lion optimization update to a parameter.
 
     Args:
@@ -480,11 +480,11 @@ def lion_update(
 
 
 def adafactor_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     lr: float,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Adafactor optimization update to a parameter.
 
     Args:
@@ -506,12 +506,12 @@ def adafactor_update(
 
 
 def muon_update(
-    param: Tensor,
-    grad: Tensor,
+    param: Tensor,  # type: ignore
+    grad: Tensor,  # type: ignore
     lr: float,
     momentum: float = 0.95,
-    state: Optional[dict[str, Tensor]] = None,
-) -> tuple[Tensor, dict[str, Tensor]]:
+    state: Optional[dict[str, Tensor]] = None,  # type: ignore
+) -> tuple[Tensor, dict[str, Tensor]]:  # type: ignore
     """Apply a functional Muon optimization update to a parameter.
 
     Args:
@@ -622,7 +622,7 @@ class ApplyRMSProp(OpDef):
         return getattr(param, "shape", ())
 
 
-def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> Any:
+def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> Any:  # type: ignore
     """Apply Adam update.
 
     Args:
@@ -643,7 +643,7 @@ def apply_adam(param: Tensor, m: Tensor, v: Tensor, grad: Tensor, lr: float) -> 
     return out, m, v
 
 
-def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> Any:
+def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> Any:  # type: ignore
     """Apply Adagrad update.
 
     Args:
@@ -662,7 +662,7 @@ def apply_adagrad(param: Tensor, accum: Tensor, grad: Tensor, lr: float) -> Any:
     return out, accum
 
 
-def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> Any:
+def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: float) -> Any:  # type: ignore
     """Apply FTRL update.
 
     Args:
@@ -682,7 +682,7 @@ def apply_ftrl(param: Tensor, accum: Tensor, linear: Tensor, grad: Tensor, lr: f
     return out, accum, linear
 
 
-def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> Any:
+def apply_rmsprop(param: Tensor, ms: Tensor, mom: Tensor, grad: Tensor, lr: float) -> Any:  # type: ignore
     """Apply RMSProp update.
 
     Args:

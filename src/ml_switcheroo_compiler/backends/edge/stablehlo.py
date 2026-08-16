@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """StableHLO edge code generator."""
 
 import uuid
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 class StableHLOCodeGenerator(BaseGenerator):
     """StableHLO Code Generator for emitting MLIR text format from IR Graph."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: Optional[list[Any]] = None) -> None:
         """Initialize StableHLOCodeGenerator.
 
         Args:
@@ -123,16 +123,25 @@ class StableHLOCodeGenerator(BaseGenerator):
         # Query ops definitions for edge_stablehlo mappings
         from pathlib import Path
 
-        from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
+        from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
         def get_stablehlo_op_name(op_type: str) -> str:
+            """get_stablehlo_op_name function.
+
+            Args:
+            op_type (Any): The op_type parameter.
+
+            Returns:
+            Any: Result.
+            """
             op_def = OPS_REGISTRY.get(op_type, {})
             variants = op_def.get("variants", {})
             if "edge_stablehlo" in variants:
-                gen = variants["edge_stablehlo"].get("generator")
+                mapping = variants["edge_stablehlo"]
+                gen = mapping.get("opcode") or mapping.get("generator")
                 if gen:
-                    return gen
-            return self.schema.get("operations", {}).get("fallback", "stablehlo.custom_call")
+                    return gen  # type: ignore
+            return self.schema.get("operations", {}).get("fallback", "stablehlo.custom_call")  # type: ignore
 
         hlo_op = get_stablehlo_op_name(op_type)
         res_var = f"%v_{nid.replace('-', '_')}"
@@ -255,22 +264,36 @@ class StableHLOCodeGenerator(BaseGenerator):
         Args:
             file_path (str): The path to save the .mlirbc file.
         """
-        import struct
+        from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
 
-        # We generate the MLIR text string first
-        mlir_text = self.generate()
+        # Generate MLIR text to populate variables mapping etc.
+        self.generate()
 
-        # Pack MLIR Bytecode Header
-        magic = bytes.fromhex(self.schema.get("bytecode", {}).get("magic", "4D4CEF52"))
-        version = self.schema.get("bytecode", {}).get("version", 1)
+        encoder = MLIRBytecodeEncoder()
+        encoder.add_dialect("stablehlo")
+        encoder.add_dialect("func")
+
+        # Walk through sorted nodes and add them
+        for node in self.sorted_nodes:
+            op_type = getattr(node, "op_type", "")
+            if op_type == "Input":
+                continue
+
+            # Simple conversion for the encoder mock
+            from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+
+            op_def = OPS_REGISTRY.get(op_type, {})
+            variants = op_def.get("variants", {})
+            hlo_op = "stablehlo.custom_call"
+            if "edge_stablehlo" in variants:
+                mapping = variants["edge_stablehlo"]
+                gen = mapping.get("opcode") or mapping.get("generator")
+                if gen:
+                    hlo_op = gen
+
+            in_vars = getattr(node, "inputs", [])
+            out_vars = [getattr(node, "id", "")]
+            encoder.add_op(hlo_op, in_vars, out_vars)
 
         with open(file_path, "wb") as f:
-            f.write(magic)
-            # Write a dummy version (1 byte)
-            f.write(struct.pack("<B", version))
-            # Write the raw MLIR text as a mock block payload for the simplistic exporter
-            # A real MLIR compiler would encode strings, blocks, regions, ops.
-            # Here we pack the length and then the text payload.
-            payload = mlir_text.encode("utf-8")
-            f.write(struct.pack("<I", len(payload)))
-            f.write(payload)
+            f.write(encoder.encode())

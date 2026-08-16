@@ -1,15 +1,11 @@
 operation: make_random_mask
 description: Makes a random attention mask.
 std_args:
-- shape
-- sparsity
-- seed
+  - shape
+  - sparsity
+  - seed
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,28 +1,24 @@
 operation: decode_attn_unbatched
 description: The class representing a Python function.
 std_args:
-- q
-- k
-- v
-- start_idx
-- kv_seq_len
-- sm_scale
-- block_h
-- block_k
-- k_splits
-- num_warps
-- num_stages
-- grid
-- interpret
-- debug
-- return_residuals
-- normalize_output
+  - q
+  - k
+  - v
+  - start_idx
+  - kv_seq_len
+  - sm_scale
+  - block_h
+  - block_k
+  - k_splits
+  - num_warps
+  - num_stages
+  - grid
+  - interpret
+  - debug
+  - return_residuals
+  - normalize_output
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

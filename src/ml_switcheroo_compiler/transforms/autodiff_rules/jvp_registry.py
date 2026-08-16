@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module jvp_registry.py."""
+
 from typing import Any
 
 """Provide a registry for Jacobian-Vector Product (JVP) rules used in forward-mode automatic differentiation.
@@ -10,10 +12,10 @@ operations.
 from typing import Callable
 
 # Registry mapping op_name to JVP function
-_JVP_REGISTRY: dict[str, Callable] = {}
+_JVP_REGISTRY: dict[str, Callable[..., Any]] = {}
 
 
-def register_jvp(op_name: str) -> Callable:
+def register_jvp(op_name: str) -> Callable[..., Any]:
     """Register a Jacobian-Vector Product (JVP) rule for a specific mathematical.
 
     Args:
@@ -23,7 +25,7 @@ def register_jvp(op_name: str) -> Callable:
         Callable: Result.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         """Evaluate decorator operation.
 
         Args:
@@ -44,7 +46,7 @@ def register_jvp(op_name: str) -> Callable:
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_jvp_from_data
 
 
-def get_jvp(op_name: str) -> Callable:
+def get_jvp(op_name: str) -> Callable[..., Any]:
     """Get the JVP rule.
 
     Args:
@@ -58,7 +60,7 @@ def get_jvp(op_name: str) -> Callable:
     """
     data_jvp = get_jvp_from_data(op_name)
     if data_jvp:
-        return data_jvp
+        return data_jvp  # type: ignore
     if op_name not in _JVP_REGISTRY:
         raise ValueError(f"No JVP rule registered for operation: {op_name}")
     return _JVP_REGISTRY[op_name]

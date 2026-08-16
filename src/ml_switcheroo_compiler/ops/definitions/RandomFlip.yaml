@@ -1,16 +1,12 @@
 operation: RandomFlip
 description: A preprocessing layer which randomly flips images during training.
 std_args:
-- default: horizontal_and_vertical
-  is_variadic: false
-  kind: positional_or_keyword
-  name: mode
-  type: str
+  - default: horizontal_and_vertical
+    is_variadic: false
+    kind: positional_or_keyword
+    name: mode
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

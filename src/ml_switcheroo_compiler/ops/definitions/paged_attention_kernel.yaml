@@ -1,25 +1,21 @@
 operation: paged_attention_kernel
 description: The class representing a Python function.
 std_args:
-- q_ref
-- k_pages_ref
-- k_scales_pages_ref
-- v_pages_ref
-- v_scales_pages_ref
-- block_tables_ref
-- lengths_ref
-- o_ref
-- residual_refs
-- num_heads
-- pages_per_compute_block
-- mask_value
-- attn_logits_soft_cap
+  - q_ref
+  - k_pages_ref
+  - k_scales_pages_ref
+  - v_pages_ref
+  - v_scales_pages_ref
+  - block_tables_ref
+  - lengths_ref
+  - o_ref
+  - residual_refs
+  - num_heads
+  - pages_per_compute_block
+  - mask_value
+  - attn_logits_soft_cap
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,17 +1,13 @@
 operation: LeakyReLU
 description: Applies the LeakyReLU activation function.
 std_args:
-- default: 0.01
-  is_variadic: false
-  kind: positional_or_keyword
-  name: negative_slope
-  type: float
+  - default: 0.01
+    is_variadic: false
+    kind: positional_or_keyword
+    name: negative_slope
+    type: float
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

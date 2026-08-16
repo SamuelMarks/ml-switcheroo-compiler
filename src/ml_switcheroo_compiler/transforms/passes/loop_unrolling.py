@@ -1,8 +1,10 @@
+"""Module loop_unrolling.py."""
+
 from __future__ import annotations
 
 """Loop Unrolling pass for edge execution."""
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 import typing
 from typing import Any
@@ -86,6 +88,15 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
     from ml_switcheroo_compiler.ir.shape_system import SymInt
 
     def symbolic_eval(g: Any, local_state: Any) -> Any:
+        """symbolic_eval function.
+
+        Args:
+        g (Any): The g parameter.
+        local_state (Any): The local_state parameter.
+
+        Returns:
+        Any: Result.
+        """
         from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
         nodes = DAGTopologicalSorter.sort(g)
@@ -116,6 +127,8 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
                 else:
                     return None
             elif n.op_type == "Output":
+                if len(n.inputs) > 1:
+                    return tuple(local_state.get(inp, None) for inp in n.inputs)
                 return local_state.get(n.inputs[0], None)
             else:
                 # Opaque or complex symbolic op, abort unrolling
@@ -151,8 +164,6 @@ def detect_static_bound(cond_graph: IRBlock, body_graph: IRBlock, initial_state:
 
     return None
 
-    return None
-
 
 def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any]:
     """Evaluate _get_initial_constants operation.
@@ -176,7 +187,7 @@ def _get_initial_constants(node: IRNode, graph: IRGraph) -> dict[str, typing.Any
     return state
 
 
-def _perform_unroll(node: IRNode, body_graph: Any, unroll_iters: int, new_nodes: dict) -> None:
+def _perform_unroll(node: IRNode, body_graph: Any, unroll_iters: int, new_nodes: dict[str, Any]) -> None:
     """Perform actual unrolling of a loop body.
 
     Args:
@@ -200,7 +211,7 @@ def _perform_unroll(node: IRNode, body_graph: Any, unroll_iters: int, new_nodes:
         new_nodes[node.id] = IRNode(id=node.id, op_type="Tuple", inputs=current_inputs, shape_metadata=node.shape_metadata)
 
 
-def _process_unroll_node(node: IRNode, graph: IRGraph, new_nodes: dict) -> bool:
+def _process_unroll_node(node: IRNode, graph: IRGraph, new_nodes: dict[str, Any]) -> bool:
     """Process a node for potential unrolling.
 
     Args:

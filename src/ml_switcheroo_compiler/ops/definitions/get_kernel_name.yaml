@@ -1,16 +1,12 @@
 operation: get_kernel_name
 description: Returns a unique name for all SplashAttention kernel variants.
 std_args:
-- is_mqa
-- save_residuals
-- is_segmented
-- phase
+  - is_mqa
+  - save_residuals
+  - is_segmented
+  - phase
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

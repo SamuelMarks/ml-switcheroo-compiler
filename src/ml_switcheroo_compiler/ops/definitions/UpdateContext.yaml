@@ -2,16 +2,12 @@ operation: UpdateContext
 description: Context manager/decorator for handling complex state updates with graph
   mutations.
 std_args:
-- default: '''default'''
-  is_variadic: false
-  kind: positional_or_keyword
-  name: tag
-  type: str
+  - default: '''default'''
+    is_variadic: false
+    kind: positional_or_keyword
+    name: tag
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

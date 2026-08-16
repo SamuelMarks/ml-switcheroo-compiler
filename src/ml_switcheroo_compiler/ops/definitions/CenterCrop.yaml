@@ -1,19 +1,15 @@
 operation: CenterCrop
 description: A preprocessing layer which crops images.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: height
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: width
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: height
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: width
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

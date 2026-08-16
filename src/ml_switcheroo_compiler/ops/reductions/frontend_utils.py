@@ -1,8 +1,10 @@
+"""Module frontend_utils.py."""
+
 from __future__ import annotations
 
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Frontend reductions ops."""
 
 
@@ -22,7 +24,7 @@ from ml_switcheroo_compiler.ops.configs import WindowConfig
 class ReduceWindow:
     """ReduceWindow class."""
 
-    def infer_shape(self, *args, **kwargs) -> tuple:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    def infer_shape(self, *args, **kwargs) -> tuple[Any, ...]:  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         """infer_shape function.
 
         Args:
@@ -35,14 +37,14 @@ class ReduceWindow:
         return ()
 
 
-from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state
+from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state  # type: ignore
 
 
 def _emit_reduction_node(
     op_type: str,
-    inputs: Sequence[Tensor],
-    attrs: dict,
-    out_shape: tuple,
+    inputs: Sequence[Tensor],  # type: ignore
+    attrs: dict[str, Any],
+    out_shape: tuple[Any, ...],
     out_dtype: DType,
 ) -> Any:
     """Evaluate _emit_reduction_node operation.
@@ -61,7 +63,7 @@ def _emit_reduction_node(
     node = LogicalNode(
         id=out_id,
         op_type=op_type,
-        inputs=[inp.data.id for inp in inputs],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         attributes=attrs,
         shape_metadata=out_shape,
     )
@@ -72,7 +74,7 @@ def _emit_reduction_node(
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
-def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig) -> Any:
+def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig) -> Any:  # type: ignore
     """Evaluate _reduce_window_eager operation.
 
     Args:
@@ -96,7 +98,7 @@ def _reduce_window_eager(operand: Tensor, init_value: Tensor | float, computatio
     return Tensor(backend.array(data), TensorConfig(backend.array(data).shape, operand.dtype, operand.device))
 
 
-def _build_reduce_window_attributes(init_value: Tensor | float, computation: str, window_config: WindowConfig) -> dict:
+def _build_reduce_window_attributes(init_value: Tensor | float, computation: str, window_config: WindowConfig) -> dict[str, Any]:  # type: ignore
     """Evaluate _build_reduce_window_attributes operation.
 
     Args:
@@ -120,7 +122,7 @@ def _build_reduce_window_attributes(init_value: Tensor | float, computation: str
     return attributes
 
 
-def _reduce_window_trace(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig) -> Any:
+def _reduce_window_trace(operand: Tensor, init_value: Tensor | float, computation: str, window_config: WindowConfig) -> Any:  # type: ignore
     """Evaluate _reduce_window_trace operation.
 
     Args:
@@ -145,8 +147,8 @@ def _reduce_window_trace(operand: Tensor, init_value: Tensor | float, computatio
 
 
 def reduce_window(
-    operand: Tensor,
-    init_value: Tensor | float,
+    operand: Tensor,  # type: ignore
+    init_value: Tensor | float,  # type: ignore
     computation: str,
     window_config: WindowConfig,
 ) -> Any:

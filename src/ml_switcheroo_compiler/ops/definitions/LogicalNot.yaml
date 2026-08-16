@@ -1,10 +1,10 @@
 operation: LogicalNot
 description: The LogicalNot operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
 variants:
   cupy:
     eager: cp.logical_not
@@ -22,15 +22,14 @@ variants:
     eager: jax.numpy.logicalnot
   mlx:
     eager: mlx.core.logicalnot
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: LogicalNot
+  edge_stablehlo:
+
+    opcode: stablehlo.logical_not
   edge_wgsl:
     template: unary
     expr: f32(buf_in0_f32[in0_offset] == 0.0)
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

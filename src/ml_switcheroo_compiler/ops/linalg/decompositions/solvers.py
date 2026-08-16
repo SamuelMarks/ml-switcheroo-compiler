@@ -1,6 +1,8 @@
+"""Module solvers.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for misc.py."""
 from typing import Any
@@ -159,7 +161,7 @@ class TridiagonalSolve(OpDef):
         return args[3].shape
 
 
-def lu(a: Tensor) -> Any:
+def lu(a: Tensor) -> Any:  # type: ignore
     """Compute the LU decomposition of a matrix.
 
     Args:
@@ -181,7 +183,7 @@ def lu(a: Tensor) -> Any:
     return _emit_linalg_node("Lu", [a], {}, [a.shape, a.shape, a.shape], [a.dtype] * 3)
 
 
-def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Any:
+def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Any:  # type: ignore
     """Solve an equation system, a x = b, given the LU factorization of a.
 
     Args:
@@ -201,7 +203,7 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> Any:
     return _emit_linalg_node("LuSolve", [lu, piv, b], {}, [b.shape], [b.dtype])
 
 
-def polar(a: Tensor, side: str = "right") -> Any:
+def polar(a: Tensor, side: str = "right") -> Any:  # type: ignore
     """Compute the polar decomposition of a matrix.
 
     Args:
@@ -223,7 +225,7 @@ def polar(a: Tensor, side: str = "right") -> Any:
     return _emit_linalg_node("Polar", [a], {"side": side}, [a.shape, a.shape], [a.dtype] * 2)
 
 
-def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:
+def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> Any:  # type: ignore
     """Solves a tridiagonal linear system.
 
     Args:

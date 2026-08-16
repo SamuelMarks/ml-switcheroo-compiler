@@ -48,8 +48,12 @@ variants:
     eager: jax.numpy.batchnormgatherstats
   mlx:
     eager: mlx.core.batchnormgatherstats
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: BatchNormGatherStats
+  edge_stablehlo:
+
+    opcode: stablehlo.batch_norm_gather_stats
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

@@ -14,8 +14,12 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: Einsum
+  edge_stablehlo:
+
+    opcode: stablehlo.einsum
   edge_wgsl:
     template: matmul
   edge_wasm_simd:

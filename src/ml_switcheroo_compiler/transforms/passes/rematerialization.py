@@ -1,6 +1,7 @@
 """Rematerialization pass."""
 
 import os
+from typing import Any
 
 import yaml
 
@@ -8,15 +9,17 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _load_rules() -> dict:
+def _load_rules() -> dict[str, Any]:
     """Load rematerialization rules from YAML config.
 
     Returns:
-        dict: The loaded rules.
+        dict[str, Any]: The loaded rules.
     """
     yaml_path = os.path.join(os.path.dirname(__file__), "rematerialization_rules.yaml")
     with open(yaml_path) as f:
-        return yaml.safe_load(f)
+        from ml_switcheroo_compiler.transforms.passes.config_models import RematerializationRulesConfig
+
+        return RematerializationRulesConfig(**yaml.safe_load(f)).model_dump()
 
 
 def _estimate_memory(node: IRNode) -> float:
@@ -39,7 +42,7 @@ def _estimate_memory(node: IRNode) -> float:
     return bytes_val
 
 
-def _estimate_compute(node: IRNode, rules: dict) -> float:
+def _estimate_compute(node: IRNode, rules: dict[str, Any]) -> float:
     """Estimate FLOPs of a node.
 
     Args:
@@ -61,7 +64,7 @@ def _estimate_compute(node: IRNode, rules: dict) -> float:
     return flops
 
 
-def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], node_indices: dict[str, int], rules: dict) -> list[IRNode]:
+def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], node_indices: dict[str, int], rules: dict[str, Any]) -> list[IRNode]:
     """Find nodes suitable for rematerialization.
 
     Args:
@@ -84,7 +87,7 @@ def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], nod
             comp = _estimate_compute(n, rules)
             if mem > min_mem and comp / mem < max_ratio and consumers[n.id]:
                 max_dist = max(node_indices[c] for c in consumers[n.id]) - node_indices[n.id]
-                if max_dist > 10:
+                if max_dist > 10:  # pragma: no branch
                     to_remat.append(n)
     return to_remat
 

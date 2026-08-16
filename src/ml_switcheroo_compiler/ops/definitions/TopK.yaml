@@ -1,29 +1,29 @@
 operation: TopK
 description: The TopK operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: k
-  type: int
-- default: -1
-  is_variadic: false
-  kind: positional_or_keyword
-  name: dim
-  type: int
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: largest
-  type: bool
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: sorted
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: k
+    type: int
+  - default: -1
+    is_variadic: false
+    kind: positional_or_keyword
+    name: dim
+    type: int
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: largest
+    type: bool
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: sorted
+    type: bool
 variants:
   keras:
     eager: keras_ops.top_k
@@ -39,15 +39,11 @@ variants:
     eager: jax.numpy.topk
   mlx:
     eager: mlx.core.topk
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: TopK
+  edge_stablehlo:
+
+    opcode: stablehlo.top_k
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
 from typing import Any
@@ -6,7 +6,7 @@ from typing import Any
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
 
-def _get_reduction_axes(reshaped_dims: list, axis: int) -> tuple:
+def _get_reduction_axes(reshaped_dims: list[Any], axis: int) -> tuple[Any, ...]:
     """Evaluate _get_reduction_axes operation.
 
     Args:
@@ -19,7 +19,7 @@ def _get_reduction_axes(reshaped_dims: list, axis: int) -> tuple:
     return tuple(i for i in range(len(reshaped_dims)) if i not in (0, axis))
 
 
-def _invoke_grouped_op(backend_module: Any, op_name: str, reshaped_x: Any, reduction_axes: tuple) -> Any:
+def _invoke_grouped_op(backend_module: Any, op_name: str, reshaped_x: Any, reduction_axes: tuple[Any, ...]) -> Any:
     """Evaluate _invoke_grouped_op operation.
 
     Args:
@@ -135,7 +135,7 @@ def _apply_affine_transform(backend_module: Any, out: Any, axis: int, **kwargs: 
     return out
 
 
-def _parse_group_norm_args(args: tuple, kwargs: dict) -> tuple:
+def _parse_group_norm_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, ...]:
     """Evaluate _parse_group_norm_args operation.
 
     Args:
@@ -154,7 +154,7 @@ def _parse_group_norm_args(args: tuple, kwargs: dict) -> tuple:
     return (x, groups, weight, bias, axis, epsilon)
 
 
-def _compute_group_norm(backend_module: Any, x: Any, shape: list, group_params: tuple[int, int], stats: tuple[Any, Any, float]) -> Any:
+def _compute_group_norm(backend_module: Any, x: Any, shape: list[Any], group_params: tuple[int, int], stats: tuple[Any, Any, float]) -> Any:
     """Evaluate _compute_group_norm operation.
 
     Args:

@@ -1,6 +1,8 @@
+"""Module pad_and_tile.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape operations for Tensor objects."""
 from collections.abc import Sequence
@@ -16,7 +18,7 @@ from ml_switcheroo_compiler.ops.shape.reshape import Resize
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def tile(input: Tensor, reps: Sequence[int]) -> Any:
+def tile(input: Tensor, reps: Sequence[int]) -> Any:  # type: ignore
     """Construct a new tensor by repeating the input tensor the specified number of times.
 
     Args:
@@ -43,7 +45,7 @@ def tile(input: Tensor, reps: Sequence[int]) -> Any:
 
 
 def repeat(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     repeats: int | Sequence[int],
     dim: int | None = None,
 ) -> Any:
@@ -73,7 +75,7 @@ def repeat(
     )
 
 
-def triu(input: Tensor, diagonal: int = 0) -> Any:
+def triu(input: Tensor, diagonal: int = 0) -> Any:  # type: ignore
     """Return the upper triangular part of a matrix or batch of matrices.
 
     Args:
@@ -99,7 +101,7 @@ def triu(input: Tensor, diagonal: int = 0) -> Any:
     )
 
 
-def tril(input: Tensor, diagonal: int = 0) -> Any:
+def tril(input: Tensor, diagonal: int = 0) -> Any:  # type: ignore
     """Return the lower triangular part of a matrix or batch of matrices.
 
     Args:
@@ -125,7 +127,7 @@ def tril(input: Tensor, diagonal: int = 0) -> Any:
     )
 
 
-def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, ...]:
+def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, ...]:  # type: ignore
     """Compute the shape for a meshgrid.
 
     Args:
@@ -142,7 +144,7 @@ def _compute_meshgrid_shape(inputs: list[Tensor], indexing: str) -> tuple[int, .
     return out_shape
 
 
-def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
+def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:  # type: ignore
     """Create coordinate grids from coordinate vectors.
 
     Args:
@@ -164,7 +166,7 @@ def meshgrid(*tensors: Tensor, indexing: str = "ij") -> Sequence[Tensor]:
     return tuple(_emit_shape_node("Meshgrid", inputs, {"indexing": indexing}, out_shape, dtype) for _ in inputs)
 
 
-def _normalize_pad_width(pad_width: Any, ndim: int) -> tuple:
+def _normalize_pad_width(pad_width: Any, ndim: int) -> tuple[Any, ...]:
     """Normalize pad width representation.
 
     Args:
@@ -194,7 +196,7 @@ def _compute_pad_dim(dim: int, pw: Any) -> int:
     if isinstance(pw, int):
         return dim + pw * 2
     if isinstance(pw, tuple) and len(pw) == 2:
-        return dim + pw[0] + pw[1]
+        return dim + pw[0] + pw[1]  # type: ignore
     return dim
 
 
@@ -254,7 +256,7 @@ def pad(
 
 
 @dispatch_eager("TopK")
-def top_k(operand: Tensor, k: int) -> Any:
+def top_k(operand: Tensor, k: int) -> Any:  # type: ignore
     """Return the top k values and their indices along the last dimension.
 
     Args:
@@ -277,7 +279,7 @@ def top_k(operand: Tensor, k: int) -> Any:
 
 
 def argsort(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     dimension: int = -1,
     is_stable: bool = True,
     axis: int | None = None,
@@ -310,7 +312,7 @@ def argsort(
 
 
 def sort(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     dimension: int = -1,
     is_stable: bool = True,
     axis: int | None = None,
@@ -346,7 +348,7 @@ def sort(
 
 
 @dispatch_eager("Resize")
-def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> Any:
+def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear") -> Any:  # type: ignore
     """Resizes an image to the given target shape using interpolation.
 
     Args:
@@ -566,7 +568,7 @@ def _infer_shape_percentile_quantile(a: Any, q: Any, axis: Any = None, keepdims:
         if keepdims:
             return q_shape + (1,) * len(in_shape)
         return q_shape
-    axis_tup = (axis,) if isinstance(axis, int) else tuple(axis)  # type: ignore[arg-type]
+    axis_tup = (axis,) if isinstance(axis, int) else tuple(axis)
     out_shape = list(in_shape)
     for ax in sorted(axis_tup, reverse=True):
         if keepdims:
@@ -642,7 +644,7 @@ class RavelMultiIndex(OpDef):
         return getattr(multi_index, "shape", ())
 
 
-def _repeat_infer_no_axis(in_shape: tuple, repeats: Any) -> tuple:
+def _repeat_infer_no_axis(in_shape: tuple[Any, ...], repeats: Any) -> tuple[Any, ...]:
     """Infer shape for repeat without an axis.
 
     Args:
@@ -657,7 +659,7 @@ def _repeat_infer_no_axis(in_shape: tuple, repeats: Any) -> tuple:
         if s is None:
             size = None
             break
-        size *= s  # type: ignore[operator]
+        size *= s
     if isinstance(repeats, int) and size is not None:
         return (size * repeats,)
     if isinstance(repeats, (list, tuple)):
@@ -735,7 +737,7 @@ class SortComplex(OpDef):
         return getattr(a, "shape", ())
 
 
-def _compute_tile_shape(in_shape: tuple, reps: tuple) -> tuple:
+def _compute_tile_shape(in_shape: tuple[Any, ...], reps: tuple[Any, ...]) -> tuple[Any, ...]:
     """Evaluate _compute_tile_shape operation.
 
     Args:
@@ -777,11 +779,11 @@ class Tile(OpDef):
         if isinstance(reps, int):
             reps = (reps,)
         else:
-            reps = tuple(reps)  # type: ignore[arg-type]
+            reps = tuple(reps)
         return _compute_tile_shape(in_shape, reps)
 
 
-def _get_unique_inverse_shape(axis: int | None, in_shape: tuple) -> tuple:
+def _get_unique_inverse_shape(axis: int | None, in_shape: tuple[Any, ...]) -> tuple[Any, ...]:
     """Get the inverse shape for the unique operation.
 
     Args:
@@ -798,7 +800,7 @@ def _get_unique_inverse_shape(axis: int | None, in_shape: tuple) -> tuple:
         if s is None:
             size = None
             break
-        size *= s  # type: ignore[operator]
+        size *= s
     return (size,)
 
 

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Calculate loss functions."""
 
 from typing import Any, Optional, Union
@@ -37,8 +37,8 @@ from ml_switcheroo_compiler.ops.unary import abs, exp, log, negative
 
 
 def dice_loss(
-    y_true: Tensor,
-    y_pred: Tensor,
+    y_true: Tensor,  # type: ignore
+    y_pred: Tensor,  # type: ignore
     axis: Optional[Union[tuple[int, ...], int]] = None,
     smooth: float = 1e-5,
 ) -> Any:
@@ -64,7 +64,7 @@ def dice_loss(
     return subtract(1.0, dice_coeff)
 
 
-def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> Any:
+def categorical_generalized_cross_entropy(y_true: Tensor, y_pred: Tensor, q: float = 0.7, axis: int = -1) -> Any:  # type: ignore
     """Evaluate categorical_generalized_cross_entropy operation.
 
     Args:
@@ -101,7 +101,7 @@ def _compute_circle_margins(margin: float) -> tuple[float, float, float, float]:
     return 1.0 + margin, -margin, 1.0 - margin, margin
 
 
-def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> Any:
+def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> Any:  # type: ignore
     """Compute the scaled logits for the positive and negative classes in circle loss.
 
     Args:
@@ -121,7 +121,7 @@ def _compute_circle_logits(y_pred: Tensor, margin: float, gamma: float) -> Any:
     return logit_p, logit_n
 
 
-def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor) -> Any:
+def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Tensor, mask_n: Tensor) -> Any:  # type: ignore
     """Reduce the circle loss logits into the final scalar or per-sample loss.
 
     Args:
@@ -143,7 +143,7 @@ def _compute_circle_loss_reduction(logit_p: Tensor, logit_n: Tensor, mask_p: Ten
     return ops.log(ops.add(1.0, ops.exp(loss)))
 
 
-def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> Any:
+def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: float = 256.0) -> Any:  # type: ignore
     """Evaluate circle_loss operation.
 
     Args:
@@ -161,7 +161,7 @@ def circle_loss(y_true: Tensor, y_pred: Tensor, margin: float = 0.25, gamma: flo
     return _compute_circle_loss_reduction(logit_p, logit_n, mask_p, mask_n)
 
 
-def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> Any:
+def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float = 0.5) -> Any:  # type: ignore
     """Compute the Tversky loss, a generalization of the Dice loss.
 
     Args:
@@ -181,7 +181,7 @@ def tversky_loss(y_true: Tensor, y_pred: Tensor, alpha: float = 0.5, beta: float
     return subtract(1.0, true_divide(intersection, denom))
 
 
-def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Any:
+def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Any:  # type: ignore
     """Clip probabilities if from_logits is False.
 
     Args:
@@ -196,7 +196,7 @@ def _clip_and_convert_logits(y_pred: Tensor, from_logits: bool) -> Any:
     return y_pred
 
 
-def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Any:
+def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Any:  # type: ignore
     """Apply mathematical computation for BCE loss.
 
     Args:
@@ -223,8 +223,8 @@ def _compute_bce_loss(y_true: Tensor, y_pred: Tensor, from_logits: bool) -> Any:
 
 
 def binary_crossentropy(
-    y_true: Tensor,
-    y_pred: Tensor,
+    y_true: Tensor,  # type: ignore
+    y_pred: Tensor,  # type: ignore
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
@@ -251,8 +251,8 @@ def binary_crossentropy(
 
 
 def categorical_crossentropy(
-    y_true: Tensor,
-    y_pred: Tensor,
+    y_true: Tensor,  # type: ignore
+    y_pred: Tensor,  # type: ignore
     from_logits: bool = False,
     label_smoothing: float = 0.0,
     axis: int = -1,
@@ -285,8 +285,8 @@ def categorical_crossentropy(
 
 
 def sparse_categorical_crossentropy(
-    y_true: Tensor,
-    y_pred: Tensor,
+    y_true: Tensor,  # type: ignore
+    y_pred: Tensor,  # type: ignore
     from_logits: bool = False,
     ignore_class: Optional[int] = None,
     axis: int = -1,
@@ -315,12 +315,12 @@ def sparse_categorical_crossentropy(
 
 
 def ctc_decode(
-    inputs: Tensor,
-    sequence_lengths: Tensor,
+    inputs: Tensor,  # type: ignore
+    sequence_lengths: Tensor,  # type: ignore
     greedy: bool = True,
     beam_width: int = 100,
     top_paths: int = 1,
-) -> tuple[list[Tensor], Tensor]:
+) -> tuple[list[Tensor], Tensor]:  # type: ignore
     """Decode CTC predictions.
 
     Args:
@@ -361,7 +361,7 @@ class AdaptiveLogSoftmaxWithLoss(OpDef):
         return (args[1].shape, ())
 
 
-def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs: Any, add_cluster_prob: bool) -> Any:
+def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cutoffs: Any, add_cluster_prob: bool) -> Any:  # type: ignore
     """Emit a logical node representing the adaptive log softmax with loss computation during tracing.
 
     Args:
@@ -408,8 +408,8 @@ def _emit_adaptive_log_softmax_with_loss_node(input: Tensor, target: Tensor, cut
 
 
 def adaptive_log_softmax_with_loss(
-    input: Tensor,
-    target: Tensor,
+    input: Tensor,  # type: ignore
+    target: Tensor,  # type: ignore
     cutoffs: Any,
     add_cluster_prob: bool = True,
 ) -> Any:

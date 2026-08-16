@@ -110,7 +110,7 @@ def vjp(
     fun: Callable[..., Any],
     *primals: Any,
     has_aux: bool = False,
-) -> tuple[Any, Callable]:
+) -> tuple[Any, Callable[..., Any]]:
     """Evaluate vjp operation.
 
     Args:

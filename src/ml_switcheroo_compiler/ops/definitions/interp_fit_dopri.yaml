@@ -1,16 +1,12 @@
 operation: interp_fit_dopri
 description: The class representing a Python function.
 std_args:
-- y0
-- y1
-- k
-- dt
+  - y0
+  - y1
+  - k
+  - dt
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

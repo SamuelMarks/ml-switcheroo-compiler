@@ -1,23 +1,19 @@
 operation: Equalization
 description: Histogram equalization.
 std_args:
-- default:
-  - 0
-  - 255
-  is_variadic: false
-  kind: positional_or_keyword
-  name: value_range
-  type: Tuple[float, float]
-- default: 256
-  is_variadic: false
-  kind: positional_or_keyword
-  name: bins
-  type: int
+  - default:
+      - 0
+      - 255
+    is_variadic: false
+    kind: positional_or_keyword
+    name: value_range
+    type: Tuple[float, float]
+  - default: 256
+    is_variadic: false
+    kind: positional_or_keyword
+    name: bins
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

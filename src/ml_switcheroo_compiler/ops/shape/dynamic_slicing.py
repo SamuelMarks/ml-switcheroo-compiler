@@ -1,6 +1,8 @@
+"""Module dynamic_slicing.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape operations for Tensor objects."""
 import builtins
@@ -18,8 +20,8 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def dynamic_slice(
-    input: Tensor,
-    start_indices: Sequence[Tensor],
+    input: Tensor,  # type: ignore
+    start_indices: Sequence[Tensor],  # type: ignore
     slice_sizes: Sequence[int],
 ) -> Any:
     """Slice the input tensor dynamically using start indices and slice sizes.
@@ -49,13 +51,13 @@ def dynamic_slice(
     return _emit_shape_node(
         "DynamicSlice",
         inputs,
-        {"slice_sizes": tuple(slice_sizes)},
+        {"slice_sizes": tuple[Any, ...](slice_sizes)},
         out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
 
 
-def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> Any:
+def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> Any:  # type: ignore
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:
@@ -74,9 +76,9 @@ def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) ->
 
 @dispatch_eager("DynamicUpdateSlice")
 def dynamic_update_slice(
-    operand: Tensor,
-    update: Tensor,
-    start_indices: Sequence[Tensor],
+    operand: Tensor,  # type: ignore
+    update: Tensor,  # type: ignore
+    start_indices: Sequence[Tensor],  # type: ignore
 ) -> Any:
     """Update a slice of an array at dynamically computed start indices.
 

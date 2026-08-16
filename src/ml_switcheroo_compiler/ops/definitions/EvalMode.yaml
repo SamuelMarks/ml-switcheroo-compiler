@@ -1,15 +1,11 @@
 operation: EvalMode
 description: Creates a new node/module set to evaluation mode (deterministic=True).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: node
-  type: Module
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: node
+    type: Module
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

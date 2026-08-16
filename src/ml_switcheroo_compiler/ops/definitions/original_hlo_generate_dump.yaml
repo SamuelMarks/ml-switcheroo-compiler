@@ -1,14 +1,10 @@
 operation: original_hlo_generate_dump
 description: The class representing a Python function.
 std_args:
-- args
-- _
+  - args
+  - _
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

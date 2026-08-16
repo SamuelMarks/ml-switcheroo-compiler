@@ -1,14 +1,10 @@
 operation: supported_tmem_transfers
 description: Returns the list of supported TMEM <-> Register transfers.
 std_args:
-- self
-- packing
+  - self
+  - packing
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

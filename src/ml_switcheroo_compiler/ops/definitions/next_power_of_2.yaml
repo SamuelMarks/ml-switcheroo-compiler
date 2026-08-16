@@ -1,13 +1,9 @@
 operation: next_power_of_2
 description: Finds the smallest power of 2 >= x using bit manipulation.
 std_args:
-- x
+  - x
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

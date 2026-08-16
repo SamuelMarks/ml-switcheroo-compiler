@@ -1,23 +1,19 @@
 operation: Nadam
 description: 'Auto-discovered via Consensus (Score: 2.0)'
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: eps
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: lr
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: weight_decay
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: eps
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: lr
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: weight_decay
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,13 +1,9 @@
 operation: enumerate_negative
 description: Like built-in enumerate, but returns negative indices into the sequence.
 std_args:
-- elems
+  - elems
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

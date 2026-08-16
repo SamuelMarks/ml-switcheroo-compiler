@@ -4,7 +4,7 @@ from ml_switcheroo_compiler.backends.common.mixins.image import ImageASTVisitor
 
 
 class DummyGenerator:
-    def _get_backend_prefix(self):
+    def get_fallback_prefix(self):
         return "bk"
 
 

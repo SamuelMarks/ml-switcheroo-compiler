@@ -1,5 +1,5 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dataset pipeline primitives for ML Switcheroo Compiler."""
 
 import math
@@ -48,7 +48,7 @@ class Dataset:
     # pylint: disable=too-many-instance-attributes
     """Provide a dataset iterator for data pipeline primitives."""
 
-    def __init__(self, *tensors: Tensor) -> None:
+    def __init__(self, *tensors: Tensor) -> None:  # type: ignore
         """Initialize the dataset with tensors.
 
         Args:
@@ -75,7 +75,7 @@ class Dataset:
         self.options_ = Options()
 
     @classmethod
-    def from_tensor_slices(cls, *tensors: Tensor) -> "Dataset":
+    def from_tensor_slices(cls, *tensors: Tensor) -> "Dataset":  # type: ignore
         """Create a dataset whose elements are slices of the given tensors.
 
         Args:
@@ -95,7 +95,7 @@ class Dataset:
         """Create a dataset from a list of elements.
 
         Args:
-            elements: list to iterate over.
+            elements: list[Any] to iterate over.
 
         Returns:
             Dataset: A dataset.
@@ -174,7 +174,7 @@ class Dataset:
         self._drop_remainder = drop_remainder
         return self
 
-    def map_and_batch(self, map_func: Callable, batch_size: int, num_parallel_batches: Any = None, drop_remainder: Any = False) -> "Dataset":
+    def map_and_batch(self, map_func: Callable[..., Any], batch_size: int, num_parallel_batches: Any = None, drop_remainder: Any = False) -> "Dataset":
         """Fused map and batch operation.
 
         Args:
@@ -193,8 +193,8 @@ class Dataset:
 
     def group_by_window(
         self,
-        key_func: Callable,
-        reduce_func: Callable,
+        key_func: Callable[..., Any],
+        reduce_func: Callable[..., Any],
         window_size: int,
         window_shift: Any = None,
         window_stride: int = 1,
@@ -213,7 +213,7 @@ class Dataset:
         """
         return self
 
-    def rejection_resample(self, class_func: Callable, target_dist: list[float], initial_dist: Any = None, seed: Any = None) -> "Dataset":
+    def rejection_resample(self, class_func: Callable[..., Any], target_dist: list[float], initial_dist: Any = None, seed: Any = None) -> "Dataset":
         """Resample dataset by rejection.
 
         Args:
@@ -229,7 +229,7 @@ class Dataset:
 
     def parallel_interleave(
         self,
-        map_func: Callable,
+        map_func: Callable[..., Any],
         cycle_length: int,
         block_length: int = 1,
         slack: int = 0,
@@ -340,7 +340,7 @@ class Dataset:
         """
         return cls()
 
-    def __iter__(self) -> Iterator[tuple[Tensor, ...]]:
+    def __iter__(self) -> Iterator[tuple[Tensor, ...]]:  # type: ignore
         """Iterate over the dataset batches.
 
         Yields:
@@ -520,7 +520,7 @@ class TFRecordReader(Dataset):
 class ImageDataset(Dataset):
     """Dataset for image ingestion and on-the-fly resizing/preprocessing."""
 
-    def __init__(self, *tensors: Tensor, target_size: Any = None, normalize: Any = False) -> None:
+    def __init__(self, *tensors: Tensor, target_size: Any = None, normalize: Any = False) -> None:  # type: ignore
         """Init.
 
         Args:
@@ -535,7 +535,7 @@ class ImageDataset(Dataset):
         self.target_size = target_size
         self.normalize = normalize
 
-    def __iter__(self) -> Iterator[tuple[Tensor, ...]]:
+    def __iter__(self) -> Iterator[tuple[Tensor, ...]]:  # type: ignore
         """Iterate.
 
         Yields:
@@ -559,7 +559,7 @@ class ImageDataset(Dataset):
 class AudioDataset(Dataset):
     """Dataset for audio ingestion and preprocessing."""
 
-    def __init__(self, *tensors: Tensor, sample_rate: int = 16000) -> None:
+    def __init__(self, *tensors: Tensor, sample_rate: int = 16000) -> None:  # type: ignore
         """Init.
 
         Args:
@@ -576,7 +576,7 @@ class AudioDataset(Dataset):
 class TextDataset(Dataset):
     """Dataset for text pipelines."""
 
-    def __init__(self, *tensors: Tensor, vocab_size: Any = None) -> None:
+    def __init__(self, *tensors: Tensor, vocab_size: Any = None) -> None:  # type: ignore
         """Init.
 
         Args:

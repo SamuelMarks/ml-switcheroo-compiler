@@ -1,10 +1,10 @@
 operation: asin
 description: The Asin operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
 variants:
   cupy:
     generator: cp.arcsin
@@ -24,14 +24,12 @@ variants:
     eager: mlx.core.asin
   edge_onnx:
     generator: Asin
-  edge_stablehlo: {}
+  edge_stablehlo:
+
+    opcode: stablehlo.asin
   edge_wgsl:
     template: unary
     expr: asin(buf_in0_f32[in0_offset])
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

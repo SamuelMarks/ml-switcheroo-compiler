@@ -1,14 +1,14 @@
 operation: BitCast
 description: The Bitcast operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: Dtype
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: Dtype
 type: function
 variants:
   pytorch:
@@ -21,15 +21,11 @@ variants:
   keras: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: BitCast
+  edge_stablehlo:
+
+    opcode: stablehlo.bit_cast
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

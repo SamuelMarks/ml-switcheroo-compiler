@@ -1,6 +1,8 @@
+"""Module vmap.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Provide higher-order control flow primitives for tracing and eager execution.
 
@@ -24,7 +26,7 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
 def _eager_vmap(
-    func: Callable,
+    func: Callable[..., Any],
     in_axes: int | tuple[int, ...],
     out_axes: int | tuple[int, ...],
     args: tuple[Any, ...],
@@ -66,7 +68,7 @@ def _resolve_vmap_axis(in_axes: int | tuple[int, ...], i: int) -> int | None:
     return in_axes if isinstance(in_axes, int) else (in_axes[i] if i < len(in_axes) else 0)
 
 
-def _compute_vmap_shape(a: Tensor, axis: int | None) -> Any:
+def _compute_vmap_shape(a: Tensor, axis: int | None) -> Any:  # type: ignore
     """Evaluate _compute_vmap_shape operation.
 
     Args:
@@ -95,7 +97,7 @@ def _create_vmap_symbolic_args(args: tuple[Any, ...], in_axes: int | tuple[int, 
         if isinstance(a, Tensor):
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
-            proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
+            proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)  # type: ignore
             symbolic_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
             symbolic_args.append(a)
@@ -103,7 +105,7 @@ def _create_vmap_symbolic_args(args: tuple[Any, ...], in_axes: int | tuple[int, 
 
 
 def _trace_vmap(
-    func: Callable,
+    func: Callable[..., Any],
     in_axes: int | tuple[int, ...],
     out_axes: int | tuple[int, ...],
     args: tuple[Any, ...],
@@ -130,15 +132,15 @@ def _trace_vmap(
     )
     global_tracing_state.add_node(node)
     arg = args[0]
-    proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
+    proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)  # type: ignore
     return Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
 
 
 def vmap(
-    func: Callable,
+    func: Callable[..., Any],
     in_axes: int | tuple[int, ...] = 0,
     out_axes: int | tuple[int, ...] = 0,
-) -> Callable:
+) -> Callable[..., Any]:
     """Create a vectorized version of a function mapped over specified axes.
 
     Args:

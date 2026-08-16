@@ -2,15 +2,11 @@ operation: query
 description: "Check if all the work submitted has been completed.\n\nReturns:\n  \
   \  A boolean indicating if all kernels in this stream are completed."
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: self
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: self
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

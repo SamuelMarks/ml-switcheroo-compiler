@@ -1,17 +1,13 @@
 operation: deserialize_and_load
 description: Constructs a jax.stages.Compiled from a serialized executable.
 std_args:
-- serialized
-- in_tree
-- out_tree
-- backend
-- execution_devices
+  - serialized
+  - in_tree
+  - out_tree
+  - backend
+  - execution_devices
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

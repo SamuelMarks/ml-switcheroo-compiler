@@ -1,19 +1,15 @@
 operation: GetNamedSharding
 description: Construct named sharding for distributed computation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: tree
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: mesh
-  type: jax.sharding.Mesh
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: tree
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: mesh
+    type: jax.sharding.Mesh
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

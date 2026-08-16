@@ -1,31 +1,31 @@
 operation: BinaryFocalCrossentropy
 description: Computes focal cross-entropy loss between true labels and predictions.
 std_args:
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: apply_class_balancing
-  type: bool
-- default: 0.25
-  is_variadic: false
-  kind: positional_or_keyword
-  name: alpha
-  type: float
-- default: 2.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: gamma
-  type: float
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: from_logits
-  type: bool
-- default: sum_over_batch_size
-  is_variadic: false
-  kind: positional_or_keyword
-  name: reduction
-  type: str
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: apply_class_balancing
+    type: bool
+  - default: 0.25
+    is_variadic: false
+    kind: positional_or_keyword
+    name: alpha
+    type: float
+  - default: 2.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: gamma
+    type: float
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: from_logits
+    type: bool
+  - default: sum_over_batch_size
+    is_variadic: false
+    kind: positional_or_keyword
+    name: reduction
+    type: str
 variants:
   numpy:
     eager: numpy.binaryfocalcrossentropy
@@ -41,15 +41,11 @@ variants:
     eager: jax.numpy.binaryfocalcrossentropy
   mlx:
     eager: mlx.core.binaryfocalcrossentropy
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: BinaryFocalCrossentropy
+  edge_stablehlo:
+
+    opcode: stablehlo.binary_focal_crossentropy
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,16 +1,12 @@
 operation: jet_fun
 description: The class representing a Python function.
 std_args:
-- f
-- order
-- primals
-- series
+  - f
+  - order
+  - primals
+  - series
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

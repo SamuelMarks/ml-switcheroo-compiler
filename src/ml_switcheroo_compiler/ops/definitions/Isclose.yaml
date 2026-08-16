@@ -18,15 +18,14 @@ variants:
     eager: jax.numpy.isclose
   mlx:
     eager: mlx.core.isclose
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: isclose
+  edge_stablehlo:
+
+    opcode: stablehlo.isclose
   edge_wgsl:
     template: binary
     expr: f32(buf_in0_f32[in0_offset] != 0.0 && buf_in1_f32[in1_offset] != 0.0)
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

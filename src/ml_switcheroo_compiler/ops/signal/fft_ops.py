@@ -1,6 +1,8 @@
+"""Module fft_ops.py."""
+
 from .common_ops import _emit_signal_node
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Signal processing operations."""
 
 from dataclasses import dataclass
@@ -30,7 +32,7 @@ class Fftconvolve(OpDef):
         return args[0].shape
 
 
-def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: Any = None) -> Any:
+def fftconvolve(in1: Tensor, in2: Tensor, mode: str = "full", axes: Any = None) -> Any:  # type: ignore
     """Evaluate fftconvolve operation.
 
     Args:
@@ -74,7 +76,7 @@ class Fft(OpDef):
         return args[0].shape
 
 
-def fft(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def fft(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate fft operation.
 
     Args:
@@ -190,7 +192,7 @@ class Ifft(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifft(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def ifft(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate ifft operation.
 
     Args:
@@ -224,7 +226,7 @@ class Fftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def fftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate fftn operation.
 
     Args:
@@ -258,7 +260,7 @@ class Ifftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def ifftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate ifftn operation.
 
     Args:
@@ -292,7 +294,7 @@ class Rfftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def rfftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate rfftn operation.
 
     Args:
@@ -326,7 +328,7 @@ class Irfftn(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def irfftn(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate irfftn operation.
 
     Args:
@@ -360,7 +362,7 @@ class Ifft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifft2(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def ifft2(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate ifft2 operation.
 
     Args:
@@ -394,7 +396,7 @@ class Rfft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfft2(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def rfft2(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate rfft2 operation.
 
     Args:
@@ -428,7 +430,7 @@ class Irfft2(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfft2(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def irfft2(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate irfft2 operation.
 
     Args:
@@ -462,7 +464,7 @@ class Fftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def fftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate fftnd operation.
 
     Args:
@@ -496,7 +498,7 @@ class Ifftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def ifftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate ifftnd operation.
 
     Args:
@@ -530,7 +532,7 @@ class Rfftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def rfftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def rfftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate rfftnd operation.
 
     Args:
@@ -564,7 +566,7 @@ class Irfftnd(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def irfftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def irfftnd(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate irfftnd operation.
 
     Args:
@@ -598,7 +600,7 @@ class Fftshift(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def fftshift(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def fftshift(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate fftshift operation.
 
     Args:
@@ -632,7 +634,7 @@ class Ifftshift(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def ifftshift(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def ifftshift(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate ifftshift operation.
 
     Args:
@@ -666,7 +668,7 @@ class Hfft(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def hfft(input: Tensor, *args: Any, **kwargs: Any) -> Any:
+def hfft(input: Tensor, *args: Any, **kwargs: Any) -> Any:  # type: ignore
     """Evaluate hfft operation.
 
     Args:

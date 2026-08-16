@@ -1,22 +1,22 @@
 operation: AsStrided_
 description: In-place version of as_strided.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: size
-  type: Sequence[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: stride
-  type: Sequence[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: storage_offset
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: size
+    type: Sequence[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: stride
+    type: Sequence[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: storage_offset
+    type: int
 variants:
   numpy:
     eager: numpy.asstrided_
@@ -32,15 +32,11 @@ variants:
     eager: jax.numpy.asstrided_
   mlx:
     eager: mlx.core.asstrided_
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsStrided_
+  edge_stablehlo:
+
+    opcode: stablehlo.as_strided_
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

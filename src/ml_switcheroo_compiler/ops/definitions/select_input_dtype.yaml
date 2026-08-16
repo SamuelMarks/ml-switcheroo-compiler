@@ -1,14 +1,10 @@
 operation: select_input_dtype
 description: A type to which both input should be adapted to before dot product.
 std_args:
-- lhs
-- rhs
+  - lhs
+  - rhs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

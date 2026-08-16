@@ -2,24 +2,20 @@ operation: cosinesimilarityloss
 description: 'Computes the cosine similarity between labels and predictions. Note:
   Keras defaults to negative similarity (loss).'
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: y_true
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: y_pred
-  type: Tensor
-- default: -1
-  is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: y_true
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: y_pred
+    type: Tensor
+  - default: -1
+    is_variadic: false
+    kind: positional_or_keyword
+    name: axis
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

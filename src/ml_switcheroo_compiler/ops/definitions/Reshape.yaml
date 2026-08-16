@@ -1,18 +1,18 @@
 operation: Reshape
 description: The Reshape operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: shape
-  type: Tuple[int, Ellipsis]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: copy
-  type: Optional[bool]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: shape
+    type: Tuple[int, Ellipsis]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: copy
+    type: Optional[bool]
 variants:
   cupy:
     eager: cp.reshape
@@ -36,9 +36,6 @@ variants:
     eager: jax.numpy.reshape
   mlx:
     eager: mlx.core.reshape
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
   edge_wasm_simd:
     template: fallback_copy
   llvm_cpp:

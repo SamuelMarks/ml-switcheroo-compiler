@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_string_io module."""
 
 from __future__ import annotations
@@ -67,10 +67,7 @@ def _np_decodeimage(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "decodeimage", getattr(backend_module, "decodeimage", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.zeros(kwargs.get("shape", (224, 224, 3)), dtype=np.uint8)
@@ -89,10 +86,7 @@ def _np_fromfile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "fromfile", getattr(backend_module, "fromfile", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.fromfile(*args, **kwargs)
@@ -111,10 +105,7 @@ def _np_fromstring(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "fromstring", getattr(backend_module, "fromstring", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.fromstring(*args, **kwargs)
@@ -133,10 +124,7 @@ def _np_parsetensor(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "parsetensor", getattr(backend_module, "parsetensor", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.array(args[0])
@@ -155,10 +143,7 @@ def _np_stringlower(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "stringlower", getattr(backend_module, "stringlower", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.char.lower(np.asarray(args[0], dtype=str))
@@ -177,10 +162,7 @@ def _np_stringsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "stringsplit", getattr(backend_module, "stringsplit", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.char.split(np.asarray(args[0], dtype=str))
@@ -199,10 +181,7 @@ def _np_stringtohash(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "stringtohash", getattr(backend_module, "stringtohash", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.array([hash(str(x)) for x in np.asarray(args[0]).flatten()]).reshape(np.shape(args[0]))
@@ -221,10 +200,7 @@ def _np_stringtonumber(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "stringtonumber", getattr(backend_module, "stringtonumber", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.asarray(args[0], dtype=float)
@@ -243,10 +219,7 @@ def _np_stringupper(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "stringupper", getattr(backend_module, "stringupper", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.char.upper(np.asarray(args[0], dtype=str))
@@ -265,10 +238,7 @@ def _np_textvectorization(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     """
     func = getattr(backend_module, "textvectorization", getattr(backend_module, "textvectorization", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -287,10 +257,7 @@ def _np_writefile(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "writefile", getattr(backend_module, "writefile", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return None

@@ -1,16 +1,12 @@
 operation: initialize
 description: The class representing a Python function.
 std_args:
-- barrier_memref
-- arrival_count
-- dims
-- cluster_shape
+  - barrier_memref
+  - arrival_count
+  - dims
+  - cluster_shape
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_linalg module."""
 
 from __future__ import annotations
@@ -294,13 +294,10 @@ def _np_schur(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "schur", getattr(backend_module, "schur", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
-    import numpy as np
+        return func(*args, **kwargs)
+    import scipy.linalg
 
-    return (args[0], args[0])
+    return scipy.linalg.schur(*args, **kwargs)
 
 
 @global_eager_registry.register("Svd")
@@ -316,10 +313,7 @@ def _np_svd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "svd", getattr(backend_module, "svd", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.svd(*args, **kwargs)
@@ -338,10 +332,7 @@ def _np_svdvals(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "svdvals", getattr(backend_module, "svdvals", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.svd(*args, **kwargs)[1]
@@ -360,10 +351,7 @@ def _np_tensorinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "tensorinv", getattr(backend_module, "tensorinv", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.tensorinv(*args, **kwargs)
@@ -382,10 +370,7 @@ def _np_triinv(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "triinv", getattr(backend_module, "triinv", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.inv(args[0])
@@ -404,10 +389,7 @@ def _np_uniqueinverse(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "uniqueinverse", getattr(backend_module, "uniqueinverse", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.unique(args[0], return_inverse=True)
@@ -426,10 +408,7 @@ def _np_vander(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "vander", getattr(backend_module, "vander", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.vander(*args, **kwargs)
@@ -448,10 +427,7 @@ def _np_vectornorm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "vectornorm", getattr(backend_module, "vectornorm", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.norm(*args, **kwargs)

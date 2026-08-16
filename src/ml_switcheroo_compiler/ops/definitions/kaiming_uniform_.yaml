@@ -1,17 +1,13 @@
 operation: kaiming_uniform_
 description: Fill the input `Tensor` with values using a Kaiming uniform distribution.
 std_args:
-- tensor
-- a
-- mode
-- nonlinearity
-- generator
+  - tensor
+  - a
+  - mode
+  - nonlinearity
+  - generator
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

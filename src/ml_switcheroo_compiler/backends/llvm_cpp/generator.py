@@ -1,6 +1,8 @@
+"""Module generator.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """LLVM / C++ code generator for CPU fallback."""
 
 
@@ -10,7 +12,7 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 
-@register_backend("llvm_cpp")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+@register_backend("llvm_cpp")
 class CppGenerator(BaseGenerator):
     """C++ backend generator."""
 
@@ -28,6 +30,15 @@ class CppGenerator(BaseGenerator):
         self.lines: list[str] = []
 
     def _get_shape(self, node: Any) -> list[int]:
+        """_get_shape function.
+
+        Args:
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = getattr(node, "shape_metadata", None)
         if not shape:
             return [1]
@@ -39,12 +50,30 @@ class CppGenerator(BaseGenerator):
         return res
 
     def _num_elements(self, shape: list[int]) -> int:
+        """_num_elements function.
+
+        Args:
+        self (Any): The self parameter.
+        shape (Any): The shape parameter.
+
+        Returns:
+        Any: Result.
+        """
         n = 1
         for s in shape:
             n *= s
         return n
 
     def _get_strides(self, shape: list[int]) -> list[int]:
+        """_get_strides function.
+
+        Args:
+        self (Any): The self parameter.
+        shape (Any): The shape parameter.
+
+        Returns:
+        Any: Result.
+        """
         strides = [1] * len(shape)
         for i in range(len(shape) - 2, -1, -1):
             strides[i] = strides[i + 1] * shape[i + 1]
@@ -59,72 +88,15 @@ class CppGenerator(BaseGenerator):
         Returns:
             str: The generated C++ source code.
         """
-        self.lines = ["#include <iostream>", "#include <vector>", "#include <cmath>", "#include <numeric>", "#include <algorithm>", "#include <cassert>", "#ifdef USE_BLAS", "#include <cblas.h>", "#endif"]
+        import os
 
-        self.lines.append("""
-template<typename T>
-struct NDArrayView {
-    std::vector<T> data;
-    std::vector<int> shape;
-    std::vector<int> strides;
+        import yaml
 
-    NDArrayView() = default;
-
-    NDArrayView(const std::vector<int>& s) : shape(s) {
-        int n = 1;
-        for (int dim : s) n *= dim;
-        data.resize(n, 0.0f);
-        strides.resize(s.size(), 1);
-        for (int i = (int)s.size() - 2; i >= 0; --i) {
-            strides[i] = strides[i + 1] * s[i + 1];
-        }
-    }
-
-    // Support broadcasting indexing
-    T& get(const std::vector<int>& indices) {
-        int offset = 0;
-        for (size_t i = 0; i < indices.size(); ++i) {
-            // Broadcasting: if dimension is 1, index is effectively 0 for that dim
-            int idx = (shape[i] == 1) ? 0 : indices[i];
-            offset += idx * strides[i];
-        }
-        return data[offset];
-    }
-
-    const T& get(const std::vector<int>& indices) const {
-        int offset = 0;
-        for (size_t i = 0; i < indices.size(); ++i) {
-            int idx = (shape[i] == 1) ? 0 : indices[i];
-            offset += idx * strides[i];
-        }
-        return data[offset];
-    }
-
-    int size() const { return data.size(); }
-};
-
-// Helper for broadcasting
-inline std::vector<int> broadcast_shape(const std::vector<int>& s1, const std::vector<int>& s2) {
-    std::vector<int> out_shape;
-    int n1 = s1.size(), n2 = s2.size();
-    int ndim = std::max(n1, n2);
-    out_shape.resize(ndim, 1);
-    for (int i = 0; i < ndim; ++i) {
-        int d1 = (n1 - 1 - i >= 0) ? s1[n1 - 1 - i] : 1;
-        int d2 = (n2 - 1 - i >= 0) ? s2[n2 - 1 - i] : 1;
-        out_shape[ndim - 1 - i] = std::max(d1, d2);
-    }
-    return out_shape;
-}
-
-inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape) {
-    for (int i = (int)shape.size() - 1; i >= 0; --i) {
-        indices[i]++;
-        if (indices[i] < shape[i]) break;
-        indices[i] = 0;
-    }
-}
-""")
+        tmpl_path = os.path.join(os.path.dirname(__file__), "cpp_templates.yaml")
+        with open(tmpl_path) as f:
+            data = yaml.safe_load(f)
+        prelude = data.get("prelude", "")
+        self.lines = prelude.strip().split("\n")
 
         self.lines.append("void compute_graph() {")
 
@@ -136,6 +108,16 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
         return "\n".join(self.lines)
 
     def _visit_if_op(self, node: Any, graph_to_use: Any = None) -> None:
+        """_visit_if_op function.
+
+        Args:
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        graph_to_use (Any): The graph_to_use parameter.
+
+        Returns:
+        Any: Result.
+        """
         assert len(node.inputs) >= 1
         cond_var = node.inputs[0]
         self.lines.append(f"    if ({cond_var}.data[0] > 0.0f) {{")
@@ -151,6 +133,16 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
         self.lines.append("    }")
 
     def _visit_loop_op(self, node: Any, graph_to_use: Any = None) -> None:
+        """_visit_loop_op function.
+
+        Args:
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        graph_to_use (Any): The graph_to_use parameter.
+
+        Returns:
+        Any: Result.
+        """
         self.lines.append("    while (true) {")
         cond_graph = node.attributes.get("cond")
         if cond_graph:
@@ -188,7 +180,7 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
             self.lines.append(f"    // Output {node.inputs[0]}")
         else:
             from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
-            from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
+            from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
             op_def = OPS_REGISTRY.get(op, {})
             mapping = op_def.get("variants", {}).get("llvm_cpp", {})
@@ -220,6 +212,11 @@ inline void inc_indices(std::vector<int>& indices, const std::vector<int>& shape
         """Compile the generated code."""
 
         def executable() -> str:
+            """Executable function.
+
+            Returns:
+            Any: Result.
+            """
             return "Execution simulated (compiled)"
 
         return executable

@@ -1,19 +1,15 @@
 operation: SpatialDropout1D
 description: Spatial 1D version of Dropout (drops entire feature maps).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: rate
-  type: float
-- is_variadic: false
-  kind: positional_or_keyword
-  name: seed
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: rate
+    type: float
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: seed
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

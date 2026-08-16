@@ -1,20 +1,16 @@
 operation: GroupInfo
 description: Information regarding the group being processed in a block.
 std_args:
-- self
-- group_id
-- block
-- block_start
-- actual_start
-- actual_end
-- start_within_block
-- actual_size
+  - self
+  - group_id
+  - block
+  - block_start
+  - actual_start
+  - actual_end
+  - start_within_block
+  - actual_size
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

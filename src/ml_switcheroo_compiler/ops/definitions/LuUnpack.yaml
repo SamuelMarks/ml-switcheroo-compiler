@@ -1,29 +1,25 @@
 operation: LuUnpack
 description: Unpacks the LU decomposition into P, L, U matrices.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: LU_data
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: LU_pivots
-  type: Tensor
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: unpack_data
-  type: bool
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: unpack_pivots
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: LU_data
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: LU_pivots
+    type: Tensor
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: unpack_data
+    type: bool
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: unpack_pivots
+    type: bool
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,6 +1,6 @@
 """Quantization passes."""
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 from ml_switcheroo_compiler.core.dataset import Dataset
@@ -50,13 +50,20 @@ class PTQPass:
         optimized = False
         new_nodes = {}
         for node_id, node in graph.nodes.items():
-            if node.op_type in ["Dot", "ConvGeneralDilated"]:
-                # Mark node for quantization
+            if node.op_type in ["Dot", "MatMul"]:
                 new_attrs = dict(node.attributes)
-                new_attrs["ptq_target_dtype"] = self.config.target_dtype.name
-                new_attrs["ptq_per_channel"] = self.config.per_channel
-                new_attrs["ptq_symmetric"] = self.config.symmetric
-                new_node = clone_logical_node(node, attributes=new_attrs)
+                new_attrs["dtype"] = self.config.target_dtype.name
+                new_attrs["q_scale"] = 0.1
+                new_attrs["q_zero_point"] = 0 if self.config.symmetric else 128
+                new_node = clone_logical_node(node, op_type="QuantizedMatMul", attributes=new_attrs)
+                new_nodes[node_id] = new_node
+                optimized = True
+            elif node.op_type in ["Conv2D", "ConvGeneralDilated"]:
+                new_attrs = dict(node.attributes)
+                new_attrs["dtype"] = self.config.target_dtype.name
+                new_attrs["q_scale"] = 0.1
+                new_attrs["q_zero_point"] = 0 if self.config.symmetric else 128
+                new_node = clone_logical_node(node, op_type="QuantizedConv2D", attributes=new_attrs)
                 new_nodes[node_id] = new_node
                 optimized = True
             else:
@@ -143,7 +150,17 @@ class QATFakeQuantizePass:
                 for inp_id in node.inputs:
                     fq_id = f"{inp_id}_fake_quant"
                     if fq_id not in new_nodes:
-                        fq_node = IRNode(id=fq_id, op_type="FakeQuantize", inputs=[inp_id], attributes={"bits": 8 if self.config.target_dtype.name == "Int8" else 4, "symmetric": self.config.symmetric})
+                        fq_node = IRNode(
+                            id=fq_id,
+                            op_type="FakeQuantize",
+                            inputs=[inp_id],
+                            attributes={
+                                "bits": 8 if self.config.target_dtype.name == "Int8" else 4,
+                                "symmetric": self.config.symmetric,
+                                "q_scale": 0.1,  # Injected logic
+                                "q_zero_point": 0 if self.config.symmetric else 128,
+                            },
+                        )
                         new_nodes[fq_id] = fq_node
                         modified = True
                     new_inputs.append(fq_id)

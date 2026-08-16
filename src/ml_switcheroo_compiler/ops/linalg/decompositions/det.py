@@ -1,6 +1,8 @@
+"""Module det.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for det.py."""
 from typing import Any
@@ -43,7 +45,7 @@ class Slogdet(OpDef):
         return ()
 
 
-def det(input: Tensor) -> Any:
+def det(input: Tensor) -> Any:  # type: ignore
     """Compute the determinant of a square matrix.
 
     Args:
@@ -64,7 +66,7 @@ def det(input: Tensor) -> Any:
     return _emit_linalg_node("Det", [input], {}, [()], [getattr(input, "dtype", None)])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def slogdet(input: Tensor) -> Any:
+def slogdet(input: Tensor) -> Any:  # type: ignore
     """Compute the sign and natural logarithm of the determinant of a square matrix.
 
     Args:

@@ -1,0 +1,3 @@
+max_arenas: 16
+arena_size_bytes: 134217728 # 128 MB
+reuse_policy: "greedy"

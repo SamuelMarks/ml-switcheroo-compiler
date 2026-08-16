@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Convolution operations."""
 
 import typing
@@ -21,7 +21,7 @@ class ConvHyperparams:
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID"
 
 
-def conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:
+def conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:  # type: ignore
     """1D Convolution.
 
     Args:
@@ -40,8 +40,8 @@ def conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **
 
 
 def conv1d_transpose(
-    lhs: Tensor,
-    rhs: Tensor,
+    lhs: Tensor,  # type: ignore
+    rhs: Tensor,  # type: ignore
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
 ) -> Any:
@@ -61,7 +61,7 @@ def conv1d_transpose(
     return conv_transpose(lhs, rhs, strides, padding)
 
 
-def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:
+def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] = None, **kwargs: Any) -> Any:  # type: ignore
     """1D Depthwise Convolution.
 
     Args:
@@ -79,9 +79,9 @@ def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: typing.Optional[Any] 
 
 
 def separable_conv1d(
-    lhs: Tensor,
-    depthwise_filter: Tensor,
-    pointwise_filter: Tensor,
+    lhs: Tensor,  # type: ignore
+    depthwise_filter: Tensor,  # type: ignore
+    pointwise_filter: Tensor,  # type: ignore
     config: Any = None,
     **kwargs: Any,
 ) -> Any:

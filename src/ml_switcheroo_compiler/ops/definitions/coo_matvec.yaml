@@ -1,15 +1,11 @@
 operation: coo_matvec
 description: Product of COO sparse matrix and a dense vector.
 std_args:
-- mat
-- v
-- transpose
+  - mat
+  - v
+  - transpose
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

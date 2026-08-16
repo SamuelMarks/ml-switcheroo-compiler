@@ -1,4 +1,7 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module cst_transpiler.py."""
+
+import os
 from typing import Any
 
 """Syntactic Transpilation Engine (Whitespace/Comment Preserving)."""
@@ -6,40 +9,12 @@ from typing import Any
 import libcst as cst
 import libcst.matchers as m
 
-TARGET_CONFIGS: dict[str, tuple[str, list[str]]] = {
-    "jax": ("jax", ["jax", "numpy"]),
-    "mlx": ("mlx.core", ["mlx", "core"]),
-    "pytorch": ("torch", ["torch"]),
-    "keras": ("keras", ["keras", "ops"]),
-    "dask": ("dask.array", ["dask", "array"]),
-    "cupy": ("cupy", ["cupy"]),
-    "numpy": ("numpy", ["numpy"]),
-}
+from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
 
-KWARG_MAP: dict[str, dict[str, str]] = {
-    "jax": {
-        "dim": "axis",
-        "keepdim": "keepdims",
-    },
-    "pytorch": {
-        "axis": "dim",
-        "keepdims": "keepdim",
-    },
-    "mlx": {
-        "dim": "axis",
-        "keepdim": "keepdims",
-    },
-    "numpy": {
-        "dim": "axis",
-        "keepdim": "keepdims",
-    },
-    "keras": {
-        "dim": "axis",
-        "keepdim": "keepdims",
-    },
-}
+_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
+_CONFIG = load_transpiler_config(_CONFIG_PATH)
 
-KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "keras", "tensorflow"}
+KNOWN_SOURCE_FRAMEWORKS = {"torch", "jax", "mlx", "numpy", "cupy", "dask", "keras", "tensorflow", "pytorch"}
 
 
 def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
@@ -74,6 +49,7 @@ class CSTTransformer(cst.CSTTransformer):
         """
         super().__init__()
         self.target_framework = target_framework
+        self.target_config = _CONFIG.frameworks.get(target_framework)
 
     def leave_ImportFrom(
         self,
@@ -89,15 +65,15 @@ class CSTTransformer(cst.CSTTransformer):
             original_node (cst.ImportFrom): The original_node parameter.
             updated_node (cst.ImportFrom): The updated_node parameter.
         """
-        if not updated_node.module:
+        if not updated_node.module or not self.target_config:
             return updated_node
 
         if isinstance(updated_node.module, cst.Name):
             src_module = updated_node.module.value
         elif isinstance(updated_node.module, cst.Attribute):
-            # Extremely basic check: if it's something like mlx.core
-            # We'll just look at the root base value
+
             def _get_base_name(node: cst.BaseExpression) -> str:
+                """Get the base name of a node."""
                 if isinstance(node, cst.Name):
                     return node.value
                 elif isinstance(node, cst.Attribute):
@@ -108,8 +84,8 @@ class CSTTransformer(cst.CSTTransformer):
         else:
             return updated_node
 
-        if src_module in KNOWN_SOURCE_FRAMEWORKS and self.target_framework in TARGET_CONFIGS:
-            target_module = TARGET_CONFIGS[self.target_framework][0]
+        if src_module in KNOWN_SOURCE_FRAMEWORKS:
+            target_module = self.target_config.target_module
             if target_module != src_module:
                 target_parts = target_module.split(".")
                 return updated_node.with_changes(module=_build_attribute_chain(target_parts))
@@ -130,12 +106,12 @@ class CSTTransformer(cst.CSTTransformer):
         Returns:
             cst.Import: The modified import node.
         """
-        if self.target_framework not in TARGET_CONFIGS:
+        if not self.target_config:
             return updated_node
 
         new_names = []
         mutated = False
-        target_module = TARGET_CONFIGS[self.target_framework][0]
+        target_module = self.target_config.target_module
         for alias in updated_node.names:
             if isinstance(alias.name, cst.Name) and alias.name.value in KNOWN_SOURCE_FRAMEWORKS:
                 if alias.name.value != target_module:
@@ -166,10 +142,13 @@ class CSTTransformer(cst.CSTTransformer):
             original_node (cst.Call): The original_node parameter.
             updated_node (cst.Call): The updated_node parameter.
         """
+        if not self.target_config:
+            return updated_node
+
         new_args = []
         mutated_args = False
-        if self.target_framework in KWARG_MAP:
-            kw_map = KWARG_MAP[self.target_framework]
+        kw_map = self.target_config.kwarg_map
+        if kw_map:
             for arg in updated_node.args:
                 if arg.keyword and arg.keyword.value in kw_map:
                     new_kw = arg.keyword.with_changes(value=kw_map[arg.keyword.value])
@@ -187,20 +166,25 @@ class CSTTransformer(cst.CSTTransformer):
         if not isinstance(final_node.func, cst.Attribute):
             return final_node
 
-        # Handle explicit broadcast translations (e.g. x.expand(...) -> jnp.broadcast_to(x, ...))
-        if final_node.func.attr.value == "expand" and self.target_framework in ("jax", "numpy", "mlx"):
-            if self.target_framework == "jax":
-                target_base = _build_attribute_chain(["jnp", "broadcast_to"])
-            elif self.target_framework == "numpy":
-                target_base = _build_attribute_chain(["np", "broadcast_to"])
-            else:
-                target_base = _build_attribute_chain(["mlx", "core", "broadcast_to"])
-            return final_node.with_changes(func=target_base, args=[cst.Arg(value=final_node.func.value)] + list(final_node.args))
+        func_attr_value = final_node.func.attr.value
 
-        if final_node.func.attr.value == "broadcast_to" and self.target_framework == "pytorch":
-            return final_node.with_changes(func=cst.Attribute(value=final_node.args[0].value, attr=cst.Name("expand")), args=list(final_node.args)[1:])
+        # Handle explicit broadcast translations
+        for fw, fw_config in _CONFIG.frameworks.items():
+            if fw_config.broadcast_method == func_attr_value and self.target_framework != fw:
+                # Transpile broadcast call
+                target_base = _build_attribute_chain(self.target_config.module_path + [self.target_config.broadcast_method])
+
+                # Special cases for expand/broadcast_to args
+                if fw_config.broadcast_method == "expand" and self.target_config.broadcast_method == "broadcast_to":
+                    return final_node.with_changes(func=target_base, args=[cst.Arg(value=final_node.func.value)] + list(final_node.args))
+                elif fw_config.broadcast_method == "broadcast_to" and self.target_config.broadcast_method == "expand":
+                    return final_node.with_changes(func=cst.Attribute(value=final_node.args[0].value, attr=cst.Name("expand")), args=list(final_node.args)[1:])
+                else:
+                    # just change the method name
+                    return final_node.with_changes(func=target_base)
 
         def _get_base_name(node: cst.BaseExpression) -> str:
+            """Get the base name of a node."""
             if isinstance(node, cst.Name):
                 return node.value
             elif isinstance(node, cst.Attribute):
@@ -209,8 +193,8 @@ class CSTTransformer(cst.CSTTransformer):
 
         src_call_base = _get_base_name(final_node.func)
 
-        if src_call_base in KNOWN_SOURCE_FRAMEWORKS and self.target_framework in TARGET_CONFIGS:
-            target_chain = TARGET_CONFIGS[self.target_framework][1]
+        if src_call_base in KNOWN_SOURCE_FRAMEWORKS:
+            target_chain = self.target_config.module_path
             if target_chain != [src_call_base]:
                 new_value = _build_attribute_chain(target_chain)
                 new_func = final_node.func.with_changes(value=new_value)
@@ -232,24 +216,44 @@ class CSTTransformer(cst.CSTTransformer):
         Returns:
             cst.ClassDef: The modified class definition.
         """
+        if not self.target_config:
+            return updated_node
+
         new_bases = []
         mutated_bases = False
+        class_bases_map = self.target_config.class_bases
+
+        def get_attr_chain(node: cst.BaseExpression) -> str:
+            """Get the attribute chain."""
+            if isinstance(node, cst.Name):
+                return node.value
+            elif isinstance(node, cst.Attribute):
+                return get_attr_chain(node.value) + "." + node.attr.value
+            return ""
+
         for base in updated_node.bases:
-            if m.matches(base.value, m.Attribute(value=m.Name("nn"), attr=m.Name("Module"))):
-                if self.target_framework == "jax":
-                    new_base = base.with_changes(value=_build_attribute_chain(["flax", "linen", "Module"]))
-                    new_bases.append(new_base)
-                    mutated_bases = True
-                else:
-                    new_bases.append(base)
-            elif m.matches(base.value, m.Attribute(value=m.Attribute(value=m.Name("flax"), attr=m.Name("linen")), attr=m.Name("Module"))):
-                if self.target_framework == "pytorch":
-                    new_base = base.with_changes(value=_build_attribute_chain(["nn", "Module"]))
-                    new_bases.append(new_base)
-                    mutated_bases = True
-                else:
-                    new_bases.append(base)
-            else:
+            chain = get_attr_chain(base.value)
+            found = False
+            for src_fw, src_config in _CONFIG.frameworks.items():
+                if self.target_framework == src_fw:
+                    continue
+                # If the base matches a class_base from another framework, we translate to target's base if any
+                for src_k, src_v in src_config.class_bases.items():
+                    # E.g. "nn.Module" or "flax.linen.Module"
+                    src_full = ".".join(src_v) if src_v else ""
+                    if chain == ".".join(src_v) or chain == src_k:
+                        # Find target base
+                        target_base_parts = next(iter(self.target_config.class_bases.values()), None)
+                        if target_base_parts:
+                            new_base = base.with_changes(value=_build_attribute_chain(target_base_parts))
+                            new_bases.append(new_base)
+                            mutated_bases = True
+                            found = True
+                            break
+                if found:
+                    break
+
+            if not found:
                 new_bases.append(base)
 
         if mutated_bases:
@@ -270,12 +274,17 @@ class CSTTransformer(cst.CSTTransformer):
         Returns:
             cst.FunctionDef: The modified function definition.
         """
-        if updated_node.name.value == "forward" and self.target_framework == "jax":
-            return updated_node.with_changes(name=cst.Name("__call__"))
-        if updated_node.name.value == "__call__" and self.target_framework == "pytorch":
-            # Only change if it seems like a class method (has self)
-            if updated_node.params.params and updated_node.params.params[0].name.value == "self":
-                return updated_node.with_changes(name=cst.Name("forward"))
+        if not self.target_config:
+            return updated_node
+
+        method_map = self.target_config.method_map
+        if updated_node.name.value in method_map:
+            if updated_node.name.value == "__call__" and self.target_framework == "pytorch":
+                if updated_node.params.params and updated_node.params.params[0].name.value == "self":
+                    return updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
+                return updated_node
+            return updated_node.with_changes(name=cst.Name(method_map[updated_node.name.value]))
+
         return updated_node
 
     def leave_Attribute(

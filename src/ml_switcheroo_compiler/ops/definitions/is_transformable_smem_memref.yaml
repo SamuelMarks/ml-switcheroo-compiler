@@ -1,13 +1,9 @@
 operation: is_transformable_smem_memref
 description: Whether the value is a memref in SMEM on which transforms should be applied.
 std_args:
-- v
+  - v
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

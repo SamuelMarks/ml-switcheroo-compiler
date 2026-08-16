@@ -1,6 +1,8 @@
+"""Module image.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Provide mixin module."""
 from typing import Any
 
@@ -22,7 +24,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         delta = kwargs.get("delta", 0.0)
         return f"{pfx}_adjust_brightness({input_vars[0]}, {delta})"
 
@@ -37,7 +39,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         contrast_factor = kwargs.get("contrast_factor", 1.0)
         return f"{pfx}_adjust_contrast({input_vars[0]}, {contrast_factor})"
 
@@ -52,7 +54,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         delta = kwargs.get("delta", 0.0)
         return f"{pfx}_adjust_hue({input_vars[0]}, {delta})"
 
@@ -67,7 +69,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         saturation_factor = kwargs.get("saturation_factor", 1.0)
         return f"{pfx}_adjust_saturation({input_vars[0]}, {saturation_factor})"
 
@@ -82,7 +84,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         batch_size = kwargs.get("batch_size", 1)
         return f"{pfx}_affine_generator({batch_size}, {', '.join(input_vars)})"
 
@@ -97,7 +99,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         size = kwargs.get("size", ())
         align_corners = kwargs.get("align_corners", False)
         return f"{pfx}_affine_grid({input_vars[0]}, size={size}, align_corners={align_corners})"
@@ -113,7 +115,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         interpolation = kwargs.get("interpolation", "nearest")
         return f"{pfx}_affine_transform({input_vars[0]}, {input_vars[1]}, interpolation='{interpolation}')"
 
@@ -128,7 +130,7 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_augmix({input_vars[0]})"
 
     def visit_AutoContrast(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
@@ -142,5 +144,5 @@ class ImageASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_auto_contrast({input_vars[0]})"

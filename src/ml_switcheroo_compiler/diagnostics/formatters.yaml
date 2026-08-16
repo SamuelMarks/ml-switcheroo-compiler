@@ -1,0 +1,10 @@
+markdown_table:
+  header: "| Node | Shape | DType |\n|---|---|---|\n"
+  row: "| {name} | {shape} | {dtype} |\n"
+graphviz:
+  header: "digraph G {\n"
+  node: "  \"{nid}\" [label=\"{op_type}\"];\n"
+  edge: "  \"{inp}\" -> \"{nid}\";\n"
+  footer: "}\n"
+html:
+  template: "<html><body><h1>IR Graph</h1></body></html>"

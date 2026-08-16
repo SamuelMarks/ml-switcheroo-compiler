@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """RNN operations."""
 
 from typing import Any, Optional
@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.ops.unary import tanh
 
 
-def _compute_gru_gates(x_parts: tuple, r_parts: tuple, state: Tensor) -> Any:
+def _compute_gru_gates(x_parts: tuple[Any, ...], r_parts: tuple[Any, ...], state: Tensor) -> Any:  # type: ignore
     """Evaluate _compute_gru_gates operation.
 
     Args:
@@ -35,11 +35,11 @@ def _compute_gru_gates(x_parts: tuple, r_parts: tuple, state: Tensor) -> Any:
 
 
 def gru_cell(
-    inputs: Tensor,
-    state: Tensor,
-    kernel: Tensor,
-    recurrent_kernel: Tensor,
-    bias: Optional[Tensor] = None,
+    inputs: Tensor,  # type: ignore
+    state: Tensor,  # type: ignore
+    kernel: Tensor,  # type: ignore
+    recurrent_kernel: Tensor,  # type: ignore
+    bias: Optional[Tensor] = None,  # type: ignore
 ) -> Any:
     """Fused GRU cell math.
 

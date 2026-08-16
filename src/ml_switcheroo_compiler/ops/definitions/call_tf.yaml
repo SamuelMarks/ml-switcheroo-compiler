@@ -1,17 +1,13 @@
 operation: call_tf
 description: Calls a TensorFlow function from JAX, with support for reverse autodiff.
 std_args:
-- callable_tf
-- has_side_effects
-- ordered
-- output_shape_dtype
-- call_tf_graph
+  - callable_tf
+  - has_side_effects
+  - ordered
+  - output_shape_dtype
+  - call_tf_graph
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

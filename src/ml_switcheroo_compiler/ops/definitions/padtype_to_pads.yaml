@@ -2,10 +2,6 @@ operation: padtype_to_pads
 description: Auto-generated mapping for padtype_to_pads.
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

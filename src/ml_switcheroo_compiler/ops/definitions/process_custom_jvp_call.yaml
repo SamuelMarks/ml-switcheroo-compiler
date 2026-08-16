@@ -1,18 +1,14 @@
 operation: process_custom_jvp_call
 description: The class representing a Python function.
 std_args:
-- self
-- primitive
-- fun
-- jvp
-- tracers
-- symbolic_zeros
+  - self
+  - primitive
+  - fun
+  - jvp
+  - tracers
+  - symbolic_zeros
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

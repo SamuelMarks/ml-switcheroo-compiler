@@ -1,47 +1,47 @@
 operation: AugMix
 description: Performs the AugMix data augmentation technique.
 std_args:
-- default:
-  - 0
-  - 255
-  is_variadic: false
-  kind: positional_or_keyword
-  name: value_range
-  type: Tuple[int, int]
-- default: 3
-  is_variadic: false
-  kind: positional_or_keyword
-  name: num_chains
-  type: int
-- default: 3
-  is_variadic: false
-  kind: positional_or_keyword
-  name: chain_depth
-  type: int
-- default: 0.3
-  is_variadic: false
-  kind: positional_or_keyword
-  name: factor
-  type: float
-- default: 1.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: alpha
-  type: float
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: all_ops
-  type: bool
-- default: bilinear
-  is_variadic: false
-  kind: positional_or_keyword
-  name: interpolation
-  type: str
-- is_variadic: false
-  kind: positional_or_keyword
-  name: seed
-  type: int
+  - default:
+      - 0
+      - 255
+    is_variadic: false
+    kind: positional_or_keyword
+    name: value_range
+    type: Tuple[int, int]
+  - default: 3
+    is_variadic: false
+    kind: positional_or_keyword
+    name: num_chains
+    type: int
+  - default: 3
+    is_variadic: false
+    kind: positional_or_keyword
+    name: chain_depth
+    type: int
+  - default: 0.3
+    is_variadic: false
+    kind: positional_or_keyword
+    name: factor
+    type: float
+  - default: 1.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: alpha
+    type: float
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: all_ops
+    type: bool
+  - default: bilinear
+    is_variadic: false
+    kind: positional_or_keyword
+    name: interpolation
+    type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: seed
+    type: int
 variants:
   numpy:
     eager: numpy.augmix
@@ -57,15 +57,11 @@ variants:
     eager: jax.numpy.augmix
   mlx:
     eager: mlx.core.augmix
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AugMix
+  edge_stablehlo:
+
+    opcode: stablehlo.aug_mix
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

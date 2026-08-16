@@ -1,27 +1,23 @@
 operation: SliceUpdate
 description: Update a sub-array of the input array.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: update
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: start_indices
-  type: Union[List[int], Tensor]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axes
-  type: Optional[List[int]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: update
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: start_indices
+    type: Union[List[int], Tensor]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axes
+    type: Optional[List[int]]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

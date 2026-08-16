@@ -1,6 +1,8 @@
+"""Module frontend_stats.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Frontend reductions ops."""
 from typing import Any
@@ -15,7 +17,7 @@ from .frontend_utils import _emit_reduction_node
 
 
 @dispatch_eager("Psum")
-def psum(x: Tensor, axis_name: str) -> Any:
+def psum(x: Tensor, axis_name: str) -> Any:  # type: ignore
     """Compute an all-reduce sum over the specified mapped axis.
 
     Args:
@@ -29,7 +31,7 @@ def psum(x: Tensor, axis_name: str) -> Any:
 
 
 @dispatch_eager("Pmean")
-def pmean(x: Tensor, axis_name: str) -> Any:
+def pmean(x: Tensor, axis_name: str) -> Any:  # type: ignore
     """Compute an all-reduce mean over the specified mapped axis.
 
     Args:
@@ -43,7 +45,7 @@ def pmean(x: Tensor, axis_name: str) -> Any:
 
 
 @dispatch_eager("ApproxMaxK")
-def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> Any:
+def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> Any:  # type: ignore
     """Compute approximate top-k max elements and their indices.
 
     Args:
@@ -67,7 +69,7 @@ def approx_max_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
 
 
 @dispatch_eager("ApproxMinK")
-def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> Any:
+def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_target: float = 0.95) -> Any:  # type: ignore
     """Compute approximate top-k min elements and their indices.
 
     Args:
@@ -91,10 +93,10 @@ def approx_min_k(operand: Tensor, k: int, reduction_dimension: int = -1, recall_
 
 
 def ctc_loss(
-    log_probs: Tensor,
-    targets: Tensor,
-    input_lengths: Tensor,
-    target_lengths: Tensor,
+    log_probs: Tensor,  # type: ignore
+    targets: Tensor,  # type: ignore
+    input_lengths: Tensor,  # type: ignore
+    target_lengths: Tensor,  # type: ignore
 ) -> Any:
     """Connectionist Temporal Classification Loss.
 

@@ -1,15 +1,11 @@
 operation: sum_duplicates
 description: Return a copy of the array with duplicate indices summed.
 std_args:
-- self
-- nse
-- remove_zeros
+  - self
+  - nse
+  - remove_zeros
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

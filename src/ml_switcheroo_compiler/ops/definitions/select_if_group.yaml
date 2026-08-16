@@ -1,16 +1,12 @@
 operation: select_if_group
 description: The class representing a Python function.
 std_args:
-- self
-- group_idx
-- old
-- new
+  - self
+  - group_idx
+  - old
+  - new
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

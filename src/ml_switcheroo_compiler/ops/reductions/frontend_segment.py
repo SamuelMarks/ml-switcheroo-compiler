@@ -1,6 +1,8 @@
+"""Module frontend_segment.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Frontend reductions ops."""
@@ -14,8 +16,8 @@ from .frontend_utils import _emit_reduction_node
 
 def _emit_segment_op(
     op_type: str,
-    data: Tensor,
-    segment_ids: Tensor,
+    data: Tensor,  # type: ignore
+    segment_ids: Tensor,  # type: ignore
     num_segments: int | None = None,
 ) -> Any:
     """Evaluate _emit_segment_op operation.
@@ -44,7 +46,7 @@ def _emit_segment_op(
 
 
 @dispatch_eager("SegmentSum")
-def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the sum of tensor elements grouped by segment_ids.
 
     Args:
@@ -59,7 +61,7 @@ def segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = No
 
 
 @dispatch_eager("SegmentMax")
-def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the max of tensor elements grouped by segment_ids.
 
     Args:
@@ -74,7 +76,7 @@ def segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = No
 
 
 @dispatch_eager("SegmentMean")
-def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the mean of tensor elements grouped by segment_ids.
 
     Args:
@@ -89,7 +91,7 @@ def segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = N
 
 
 @dispatch_eager("SegmentMin")
-def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the min of tensor elements grouped by segment_ids.
 
     Args:
@@ -104,7 +106,7 @@ def segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = No
 
 
 @dispatch_eager("SegmentProd")
-def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the prod of tensor elements grouped by segment_ids.
 
     Args:
@@ -119,7 +121,7 @@ def segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = N
 
 
 @dispatch_eager("UnsortedSegmentMax")
-def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the max of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -134,7 +136,7 @@ def unsorted_segment_max(data: Tensor, segment_ids: Tensor, num_segments: int | 
 
 
 @dispatch_eager("UnsortedSegmentMean")
-def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the mean of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -149,7 +151,7 @@ def unsorted_segment_mean(data: Tensor, segment_ids: Tensor, num_segments: int |
 
 
 @dispatch_eager("UnsortedSegmentMin")
-def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the min of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -164,7 +166,7 @@ def unsorted_segment_min(data: Tensor, segment_ids: Tensor, num_segments: int | 
 
 
 @dispatch_eager("UnsortedSegmentProd")
-def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the prod of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -179,7 +181,7 @@ def unsorted_segment_prod(data: Tensor, segment_ids: Tensor, num_segments: int |
 
 
 @dispatch_eager("UnsortedSegmentSqrtN")
-def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the sqrt_n of tensor elements grouped by unsorted segment_ids.
 
     Args:
@@ -194,7 +196,7 @@ def unsorted_segment_sqrt_n(data: Tensor, segment_ids: Tensor, num_segments: int
 
 
 @dispatch_eager("UnsortedSegmentSum")
-def unsorted_segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:
+def unsorted_segment_sum(data: Tensor, segment_ids: Tensor, num_segments: int | None = None) -> Any:  # type: ignore
     """Compute the sum of tensor elements grouped by unsorted segment_ids.
 
     Args:

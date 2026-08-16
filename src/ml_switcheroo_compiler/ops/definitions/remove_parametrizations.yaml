@@ -1,15 +1,11 @@
 operation: remove_parametrizations
 description: Remove the parametrizations on a tensor in a module.
 std_args:
-- module
-- tensor_name
-- leave_parametrized
+  - module
+  - tensor_name
+  - leave_parametrized
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

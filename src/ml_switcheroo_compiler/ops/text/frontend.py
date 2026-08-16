@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Text and Categorical operations."""
 
 import uuid
@@ -27,7 +27,7 @@ class AsStringConfig:
     fill: str = ""
 
 
-def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:
+def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:  # type: ignore
     """Hashes string tensors to integer buckets.
 
     Args:
@@ -53,7 +53,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> Any:
     )
 
 
-def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:
+def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:  # type: ignore
     """Replace matches of pattern in input_tensor with rewrite.
 
     Args:
@@ -80,7 +80,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> Any:
     )
 
 
-def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:
+def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:  # type: ignore
     """Check if each string fully matches the regex pattern.
 
     Args:
@@ -106,7 +106,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> Any:
     )
 
 
-def string_join(inputs: list[Tensor], separator: str = "") -> Any:
+def string_join(inputs: list[Tensor], separator: str = "") -> Any:  # type: ignore
     """Join strings in a list of tensors.
 
     Args:
@@ -132,7 +132,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> Any:
     )
 
 
-def string_length(input_tensor: Tensor) -> Any:
+def string_length(input_tensor: Tensor) -> Any:  # type: ignore
     """Compute the length of each string.
 
     Args:
@@ -157,7 +157,7 @@ def string_length(input_tensor: Tensor) -> Any:
     )
 
 
-def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:
+def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:  # type: ignore
     """Return substrings.
 
     Args:
@@ -184,7 +184,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> Any:
     )
 
 
-def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:
+def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:  # type: ignore
     """Evaluate _string_split_eager operation.
 
     Args:
@@ -208,7 +208,7 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> Any:
     )
 
 
-def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:
+def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:  # type: ignore
     """Evaluate _string_split_trace operation.
 
     Args:
@@ -238,8 +238,8 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:
     )
     global_tracing_state.add_node(node)
 
-    proxy_tokens = ProxyTensor(id=out_id_tokens, shape=(), dtype="string")
-    proxy_lengths = ProxyTensor(id=out_id_lengths, shape=(), dtype="int32")
+    proxy_tokens = ProxyTensor(id=out_id_tokens, shape=(), dtype="string")  # type: ignore
+    proxy_lengths = ProxyTensor(id=out_id_lengths, shape=(), dtype="int32")  # type: ignore
 
     return (
         Tensor(proxy_tokens, TensorConfig((), DType.String, input_tensor.device)),
@@ -247,7 +247,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> Any:
     )
 
 
-def string_split(input_tensor: Tensor, delimiter: str = " ") -> Any:
+def string_split(input_tensor: Tensor, delimiter: str = " ") -> Any:  # type: ignore
     """Split string tensors into tokens.
 
     Args:
@@ -262,7 +262,7 @@ def string_split(input_tensor: Tensor, delimiter: str = " ") -> Any:
     return _string_split_trace(input_tensor, delimiter)
 
 
-def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:
+def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:  # type: ignore
     """Map tensor values to integer indices using a vocabulary.
 
     Args:
@@ -288,7 +288,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> Any:
     )
 
 
-def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:
+def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:  # type: ignore
     """Text vectorization.
 
     Args:
@@ -314,7 +314,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: Any) -> Any:
     )
 
 
-def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:
+def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:  # type: ignore
     """Parse numeric values from string tensors.
 
     Args:
@@ -340,7 +340,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Any:
     )
 
 
-def string_lower(input_tensor: Tensor) -> Any:
+def string_lower(input_tensor: Tensor) -> Any:  # type: ignore
     """Convert string tensors to lowercase.
 
     Args:
@@ -365,7 +365,7 @@ def string_lower(input_tensor: Tensor) -> Any:
     )
 
 
-def string_upper(input_tensor: Tensor) -> Any:
+def string_upper(input_tensor: Tensor) -> Any:  # type: ignore
     """Convert string tensors to uppercase.
 
     Args:
@@ -390,7 +390,7 @@ def string_upper(input_tensor: Tensor) -> Any:
     )
 
 
-def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Any:
+def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> Any:  # type: ignore
     """Compute the Levenshtein distance between sequences.
 
     Args:
@@ -436,7 +436,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> dict[str, Any]:
 
 
 def as_string(
-    input_tensor: Tensor,
+    input_tensor: Tensor,  # type: ignore
     config: Optional[AsStringConfig] = None,
 ) -> Any:
     """Convert a numeric tensor to a string tensor.

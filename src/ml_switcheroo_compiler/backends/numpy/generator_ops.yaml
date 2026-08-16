@@ -1,0 +1,211 @@
+Acos: np.arccos
+Acosh: np.arccosh
+Add: np.add
+Adjoint: tf.linalg.adjoint
+AllToAll: '{0}'
+Allclose: np.allclose
+Arange: np.arange
+ArgSort: np.argsort
+Asin: np.arcsin
+Asinh: np.arcsinh
+Atan: np.arctan
+Atan2: np.arctan2
+Atanh: np.arctanh
+AxisIndex: '0'
+BandPart: tf.linalg.band_part
+BesselI0e: getattr(backend_module, 'i0e', None)
+BesselI1e: getattr(backend_module, 'i1e', None)
+Beta: np.random.beta({1}, {2}, size={shape})
+Betainc: getattr(backend_module, 'betainc', None)
+Bincount: np.bincount
+BroadcastTo: np.broadcast_to
+BroadcastToRank: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
+  'ndim') else {0}
+BroadcastedIota: np.broadcasted_iota
+C_: np.c_
+Cholesky: np.linalg.cholesky
+CholeskySolve: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
+Clip: np.clip({0}, a_min={a_min}, a_max={a_max})
+Collapse: np.reshape({0}, (-1,) + {0}.shape[{1}:])
+Cond: np.linalg.cond
+ConvTransposeShapeTuple: ()
+Cos: np.cos
+CreateToken: '0'
+Cross: np.cross
+Cumlogsumexp: np.logaddexp.accumulate
+Cummax: np.maximum.accumulate
+Cummin: np.minimum.accumulate
+Cumprod: np.cumprod
+Cumsum: np.cumsum
+Det: np.linalg.det
+Diagonal: np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+Dirichlet: np.random.dirichlet({1}, size={shape})
+Eig: np.linalg.eig
+Eigh: np.linalg.eigh
+Eigvalsh: np.linalg.eigvalsh
+Equal: np.equal
+Erfinv: getattr(backend_module, 'erfinv', None)
+Exp: np.exp
+Fft: np.fft.fft
+Fftn: np.fft.fftn
+Fftnd: np.fft.fftn({0})
+Fftshift: np.fft.fftshift({0})
+Fromfile: np.fromfile
+Fromfunction: np.fromfunction
+Fromiter: np.fromiter
+Frompyfunc: np.frompyfunc
+Fromstring: np.fromstring
+Full: np.full
+Gamma: np.random.gamma({1}, size={shape})
+Geomspace: np.geomspace
+Gradient: np.gradient
+Greater: np.greater
+Hfft: np.fft.hfft
+Histogram: np.histogram
+Histogram2d: np.histogram2d
+HistogramBinEdges: np.histogram_bin_edges
+Histogramdd: np.histogramdd
+I0: np.i0
+Ifft: np.fft.ifft
+Ifft2: np.fft.ifft2
+Ifftn: np.fft.ifftn
+Ifftnd: np.fft.ifftn({0})
+Ifftshift: np.fft.ifftshift({0})
+Igamma: getattr(backend_module, 'gammainc', None)
+IgammaGradA: 'lambda a, x: a'
+Igammac: getattr(backend_module, 'gammaincc', None)
+IndexInDim: np.take({0}, {1}, axis={2})
+Infeed: '{0}'
+Inv: np.linalg.inv
+Irfft2: np.fft.irfft2
+Irfftn: np.fft.irfftn
+Irfftnd: np.fft.irfftn({0})
+Less: np.less
+Log: np.log
+LogSoftmax: getattr(backend_module, 'log_softmax', None)({0}, axis={axis})
+Logcumsumexp: getattr(backend_module, 'logsumexp', None)
+Lstsq: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
+Lu: getattr(backend_module.linalg, 'lu', None)
+LuFactor: getattr(backend_module.linalg, 'lu_factor', None)
+LuMatrixInverse: np.linalg.inv(np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
+  dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
+  axis=-1), -1), {0}.shape), axis=-2))
+LuReconstruct: np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
+  dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
+  axis=-1), -1), {0}.shape), axis=-2)
+LuSolve: getattr(backend_module.linalg, 'lu_solve', None)
+Matmul: np.matmul
+MatrixExponential: getattr(backend_module.linalg, 'expm', None)
+MatrixNorm: np.linalg.norm({0}, keepdims={keepdims})
+MatrixPower: np.linalg.matrix_power
+MatrixRank: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
+MatrixTranspose: np.swapaxes({0}, -1, -2)
+Max: np.max
+Mean: np.mean
+Mgrid: np.mgrid
+Min: np.min
+MultiDot: np.linalg.multi_dot({0})
+Multiply: np.multiply
+MultivariateNormal: np.random.multivariate_normal({1}, {2}, size={shape}, method="{method}")
+NanToNum: np.nan_to_num
+Negative: np.negative
+Norm: np.linalg.norm
+NotEqual: np.not_equal
+Ogrid: np.ogrid
+OneHot: np.eye({depth})[{0}]
+Ones: np.ones
+Outer: np.outer({0}, {1})
+Outfeed: '{0}'
+Pinv: np.linalg.pinv
+Pmax: '{0}'
+Pmin: '{0}'
+Poly: np.poly
+Polyadd: np.polyadd
+Polyder: np.polyder
+Polydiv: np.polydiv
+Polyfit: np.polyfit
+Polygamma: getattr(backend_module, 'polygamma', None)
+Polyint: np.polyint
+Polymul: np.polymul
+Polysub: np.polysub
+Polyval: np.polyval
+Ppermute: '{0}'
+Pshuffle: '{0}'
+PsumScatter: '{0}'
+Pswapaxes: '{0}'
+Qr: np.linalg.qr
+RNNCellDeviceWrapper: tf.nn.rnn_cell.DeviceWrapper
+RNNCellDropoutWrapper: tf.nn.rnn_cell.DropoutWrapper
+RNNCellResidualWrapper: tf.nn.rnn_cell.ResidualWrapper
+R_: np.r_
+RaggedConstant: tf.ragged.constant
+RaggedCrossHashed: tf.ragged.cross_hashed
+RaggedRange: tf.ragged.range
+RaggedRowSplitsToSegmentIds: tf.ragged.row_splits_to_segment_ids
+RaggedSegmentIdsToRowSplits: tf.ragged.segment_ids_to_row_splits
+RaggedStack: tf.ragged.stack
+RaggedStackDynamicPartitions: tf.ragged.stack_dynamic_partitions
+RandomCategorical: np.argmax({1} + np.random.gumbel(size={1}.shape), axis={axis})
+RandomGammaGrad: 'lambda a, x: a'
+Reshape: np.reshape
+Reverse: np.flip
+Rfft: np.fft.rfft
+Rfft2: np.fft.rfft2
+Rfftfreq: np.fft.rfftfreq({0}, d={d})
+Rfftn: np.fft.rfftn
+Rfftnd: np.fft.rfftn({0})
+RngBitGenerator: np.random.randint(0, 255, size={shape})
+RngUniform: np.random.uniform({0}, {1}, size={shape})
+Roots: np.roots
+Sigmoid: getattr(backend_module, 'expit', None)({0})
+Sin: np.sin
+Slogdet: np.linalg.slogdet
+Softmax: getattr(backend_module, 'softmax', None)({0}, axis={axis})
+Solve: np.linalg.solve
+Sort: np.sort
+SparseBincount: tf.sparse.bincount
+SparseCrossHashed: tf.sparse.cross_hashed
+SparseExpandDims: tf.sparse.expand_dims
+SparseEye: tf.sparse.eye
+SparseFillEmptyRows: tf.sparse.fill_empty_rows
+SparseMapValues: tf.sparse.map_values
+SparseMask: tf.sparse.mask
+SparseMaximum: tf.sparse.maximum
+SparseMinimum: tf.sparse.minimum
+SparseReduceMax: tf.sparse.reduce_max
+SparseReduceSum: tf.sparse.reduce_sum
+SparseReorder: tf.sparse.reorder
+SparseResetShape: tf.sparse.reset_shape
+SparseReshape: tf.sparse.reshape
+SparseRetain: tf.sparse.retain
+SparseSegmentMean: tf.sparse.segment_mean
+SparseSegmentSqrtN: tf.sparse.segment_sqrt_n
+SparseSegmentSum: tf.sparse.segment_sum
+SparseSlice: tf.sparse.slice
+SparseSoftmax: tf.sparse.softmax
+SparseToIndicator: tf.sparse.to_indicator
+SparseTranspose: tf.sparse.transpose
+Subtract: np.subtract
+Sum: np.sum
+Svd: np.linalg.svd
+Svdvals: np.linalg.svd({0}, compute_uv=False)
+Tensordot: np.tensordot({0}, {1}, axes={axes})
+Tensorinv: np.linalg.tensorinv({0}, ind={ind})
+Tensorsolve: np.linalg.tensorsolve({0}, {1}, axes={axes})
+Trace: np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+Transpose: np.transpose
+TriangularSolve: getattr(backend_module.linalg, 'solve_triangular', None)({0}, {1},
+  lower={lower}, unit_diagonal={unit_diagonal}, trans=1 if {adjoint} else 0, check_finite=False)
+TridiagonalMatmul: np.expand_dims({1}, -1) * {3} + np.expand_dims(np.concatenate([np.zeros_like({0}[...,
+  :1]), {0}[..., 1:]], axis=-1), -1) * np.concatenate([np.zeros_like({3}[..., :1,
+  :]), {3}[..., :-1, :]], axis=-2) + np.expand_dims(np.concatenate([{2}[..., :-1],
+  np.zeros_like({2}[..., -1:])], axis=-1), -1) * np.concatenate([{3}[..., 1:, :],
+  np.zeros_like({3}[..., -1:, :])], axis=-2)
+TridiagonalSolve: getattr(backend_module.linalg, 'solve_banded', None)((1, 1), np.stack([{2},
+  {1}, {0}], axis=-2), {3})
+TrueDivide: np.divide
+Vecdot: np.sum({0} * {1}, axis={axis})
+VectorNorm: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
+WithShardingConstraint: '{0}'
+Zeros: np.zeros
+Zeta: getattr(backend_module, 'zeta', None)

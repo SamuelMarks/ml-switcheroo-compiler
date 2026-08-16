@@ -1,6 +1,8 @@
+"""Module control_flow_utils.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Provide higher-order control flow primitives for tracing and eager execution.
 
@@ -99,10 +101,10 @@ def _process_trace_outputs(out: Any, subgraph: IRBlock) -> str:
         shape_metadata=(),
     )
     subgraph.nodes[out_node.id] = out_node
-    return out_node.id
+    return out_node.id  # type: ignore
 
 
-def _trace_function(func: Callable, args: tuple[Tensor, ...], name: str) -> IRBlock:
+def _trace_function(func: Callable[..., Any], args: tuple[Tensor, ...], name: str) -> IRBlock:  # type: ignore
     """Trace a Python function's execution into an IRBlock.
 
     Args:

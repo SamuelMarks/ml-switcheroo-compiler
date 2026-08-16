@@ -1,0 +1,27 @@
+memory_sizes:
+  float64: 8
+  float32: 4
+  float16: 2
+  bfloat16: 2
+  int64: 8
+  int32: 4
+  int16: 2
+  int8: 1
+  uint64: 8
+  uint32: 4
+  uint16: 2
+  uint8: 1
+  bool: 1
+compute_costs:
+  heavy_ops:
+    - MatMul
+    - Conv2D
+    - BatchMatMul
+  heavy_cost: 1000
+  light_ops:
+    - Add
+    - Sub
+    - Mul
+    - Div
+  light_cost: 10
+  default_cost: 50

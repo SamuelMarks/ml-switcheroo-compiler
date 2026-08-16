@@ -1,16 +1,12 @@
 operation: nonblocking_save
 description: Nonblocking alias of save, return an awaitable future with a pytree stub.
 std_args:
-- data
-- directory
-- overwrite
-- ts_specs
+  - data
+  - directory
+  - overwrite
+  - ts_specs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

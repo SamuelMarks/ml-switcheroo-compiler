@@ -1,15 +1,11 @@
 operation: lower_mgpu_dialect
 description: The class representing a Python function.
 std_args:
-- module
-- launch_context
-- auto_barriers
+  - module
+  - launch_context
+  - auto_barriers
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

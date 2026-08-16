@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """NLP operations."""
 
 from dataclasses import dataclass, field
@@ -106,7 +106,7 @@ class VocabConfig:
 
     vocab_file: str = ""
     num_reserved_ids: int = 0
-    unigrams: tuple = ()
+    unigrams: tuple[Any, ...] = ()
 
 
 @dataclass
@@ -351,10 +351,10 @@ class CTCLossOptions:
 
 
 def ctc_loss(
-    labels: Tensor,
-    logits: Tensor,
-    label_length: Tensor,
-    logit_length: Tensor,
+    labels: Tensor,  # type: ignore
+    logits: Tensor,  # type: ignore
+    label_length: Tensor,  # type: ignore
+    logit_length: Tensor,  # type: ignore
     options: Optional[CTCLossOptions] = None,
 ) -> Any:
     """Compute the Connectionist Temporal Classification (CTC) Loss.

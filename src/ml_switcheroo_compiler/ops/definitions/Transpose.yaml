@@ -24,9 +24,6 @@ variants:
     eager: jax.numpy.transpose
   mlx:
     eager: mlx.core.transpose
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
   edge_wasm_simd:
     template: fallback_copy
   llvm_cpp:

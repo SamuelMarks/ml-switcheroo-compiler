@@ -1,16 +1,12 @@
 operation: CategoricalGeneralizedCrossEntropy
 description: Computes the Generalized Cross Entropy loss.
 std_args:
-- default: 0.5
-  is_variadic: false
-  kind: positional_or_keyword
-  name: q
-  type: float
+  - default: 0.5
+    is_variadic: false
+    kind: positional_or_keyword
+    name: q
+    type: float
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

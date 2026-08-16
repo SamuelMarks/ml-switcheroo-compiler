@@ -10,10 +10,6 @@ description: "Wrapper class for quantized operations.\n\nThe instance of this cl
   \ add_relu\n    - add_scalar\n    - mul_scalar"
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,22 +1,18 @@
 operation: paged_attention
 description: Paged grouped query attention.
 std_args:
-- q
-- k_pages
-- v_pages
-- lengths
-- page_indices
-- mask_value
-- attn_logits_soft_cap
-- pages_per_compute_block
-- megacore_mode
-- inline_seq_dim
+  - q
+  - k_pages
+  - v_pages
+  - lengths
+  - page_indices
+  - mask_value
+  - attn_logits_soft_cap
+  - pages_per_compute_block
+  - megacore_mode
+  - inline_seq_dim
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

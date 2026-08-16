@@ -1,20 +1,16 @@
 operation: SplitRngs
 description: Splits RNG keys for stochastic operations.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: key
-  type: Any
-- default: 2
-  is_variadic: false
-  kind: positional_or_keyword
-  name: count
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: key
+    type: Any
+  - default: 2
+    is_variadic: false
+    kind: positional_or_keyword
+    name: count
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

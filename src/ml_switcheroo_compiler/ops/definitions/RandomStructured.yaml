@@ -1,15 +1,11 @@
 operation: RandomStructured
 description: Prune entire (currently unpruned) channels in a tensor at random.
 std_args:
-- self
-- amount
-- dim
+  - self
+  - amount
+  - dim
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

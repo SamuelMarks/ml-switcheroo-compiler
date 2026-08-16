@@ -1,19 +1,15 @@
 operation: create_descriptor
 description: The class representing a Python function.
 std_args:
-- ref
-- swizzle
-- group_size
-- logical_k_major
-- large_tile
-- mma_bytewidth_k
-- split_const
+  - ref
+  - swizzle
+  - group_size
+  - logical_k_major
+  - large_tile
+  - mma_bytewidth_k
+  - split_const
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

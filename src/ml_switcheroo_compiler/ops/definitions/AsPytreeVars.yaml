@@ -1,10 +1,10 @@
 operation: AsPytreeVars
 description: Converts specific variables.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: node
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: node
+    type: Any
 variants:
   numpy:
     eager: numpy.aspytreevars
@@ -20,15 +20,11 @@ variants:
     eager: jax.numpy.aspytreevars
   mlx:
     eager: mlx.core.aspytreevars
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsPytreeVars
+  edge_stablehlo:
+
+    opcode: stablehlo.as_pytree_vars
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

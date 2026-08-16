@@ -21,15 +21,11 @@ description: "Sets the default ``torch.Tensor`` to be allocated on ``device``.  
   \ index=1)\n    >>> torch.set_default_device('cuda:1')\n    >>> torch.get_default_device()\n\
   \    device(type='cuda', index=1)"
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: device
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: device
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

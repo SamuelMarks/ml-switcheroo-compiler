@@ -1,6 +1,8 @@
+"""Module solvers.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for solvers.py."""
 from typing import Any
@@ -15,7 +17,7 @@ from .decompositions.solvers import TriangularSolve
 from .utils import _emit_linalg_node
 
 
-def cholesky_solve(chol: Tensor, rhs: Tensor) -> Any:
+def cholesky_solve(chol: Tensor, rhs: Tensor) -> Any:  # type: ignore
     """Solve systems of linear equations A X = RHS given the Cholesky factorization of A.
 
     Args:
@@ -33,7 +35,7 @@ def cholesky_solve(chol: Tensor, rhs: Tensor) -> Any:
     return _emit_linalg_node("CholeskySolve", [chol, rhs], {}, [tuple(out_shape)], [rhs.dtype])
 
 
-def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjoint: bool = False) -> Any:
+def banded_triangular_solve(bands: Tensor, rhs: Tensor, lower: bool = True, adjoint: bool = False) -> Any:  # type: ignore
     """Solve systems of linear equations for a banded triangular matrix.
 
     Args:
@@ -107,8 +109,8 @@ class Lstsq(OpDef):
 
 
 def lstsq(
-    a: Tensor,
-    b: Tensor,
+    a: Tensor,  # type: ignore
+    b: Tensor,  # type: ignore
     rcond: float | None = None,
 ) -> Any:
     """Evaluate lstsq operation.
@@ -145,7 +147,7 @@ def lu(input: Any, output_idx_type: Any = None, name: Any = None) -> Any:
     return input, input, input
 
 
-def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: Any = False, name: Any = None) -> Any:
+def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: Any = False, name: Any = None) -> Any:  # type: ignore
     """Evaluate lu_matrix_inverse operation.
 
     Args:
@@ -171,7 +173,7 @@ def lu_matrix_inverse(lower_upper: Tensor, perm: Tensor, validate_args: Any = Fa
     )
 
 
-def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: Any = False, name: Any = None) -> Any:
+def lu_reconstruct(lower_upper: Tensor, perm: Tensor, validate_args: Any = False, name: Any = None) -> Any:  # type: ignore
     """Reconstruct a matrix from its LU decomposition and permutation.
 
     Args:
@@ -212,7 +214,7 @@ def lu_solve(
     return rhs
 
 
-def triangular_solve(matrix: Tensor, rhs: Tensor, lower: Any = True, adjoint: Any = False, name: Any = None) -> Any:
+def triangular_solve(matrix: Tensor, rhs: Tensor, lower: Any = True, adjoint: Any = False, name: Any = None) -> Any:  # type: ignore
     """Solve a system of linear equations with a triangular matrix.
 
     Args:
@@ -260,7 +262,7 @@ def tridiagonal_solve(
     return rhs
 
 
-def tensorinv(a: Tensor, ind: Any = 2, name: Any = None) -> Any:
+def tensorinv(a: Tensor, ind: Any = 2, name: Any = None) -> Any:  # type: ignore
     """Evaluate tensorinv operation.
 
     Args:
@@ -278,7 +280,7 @@ def tensorinv(a: Tensor, ind: Any = 2, name: Any = None) -> Any:
     return _emit_linalg_node("Tensorinv", [a], {"ind": ind}, [()], [a.dtype])
 
 
-def tensorsolve(a: Tensor, b: Tensor, axes: Any = None, name: Any = None) -> Any:
+def tensorsolve(a: Tensor, b: Tensor, axes: Any = None, name: Any = None) -> Any:  # type: ignore
     """Solve a tensor equation equation `a x = b` for x.
 
     Args:

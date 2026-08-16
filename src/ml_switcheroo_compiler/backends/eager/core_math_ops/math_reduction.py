@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
 from __future__ import annotations
@@ -313,10 +313,7 @@ def _np_fmax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.fmax(args[0], args[1])
@@ -335,10 +332,7 @@ def _np_scattermax(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -357,10 +351,7 @@ def _np_scattermin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -379,10 +370,7 @@ def _np_weibullmin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.random.weibull(*args, **kwargs)
@@ -401,10 +389,7 @@ def _np_windowhamming(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.hamming(*args, **kwargs)

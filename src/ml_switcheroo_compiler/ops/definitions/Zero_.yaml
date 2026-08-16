@@ -1,17 +1,13 @@
 operation: Zero_
 description: Fills the input tensor with the scalar value 0 in-place.
 std_args:
-- dtype: float32
-  is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  rank: 0
-  type: Tensor
+  - dtype: float32
+    is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    rank: 0
+    type: Tensor
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

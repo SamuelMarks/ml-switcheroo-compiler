@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Common autodiff rules definitions."""
 
 import enum
@@ -12,7 +12,7 @@ class UnconnectedGradients(enum.Enum):
     ZERO = "zero"
 
 
-def make_zero_vjp(name: str) -> Callable:
+def make_zero_vjp(name: str) -> Callable[..., Any]:
     """Create a VJP function that returns zero gradients for a given operation.
 
     Args:
@@ -22,7 +22,7 @@ def make_zero_vjp(name: str) -> Callable:
         Callable: The generated VJP function.
     """
 
-    def vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+    def vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
         """Return zero gradients for all inputs.
 
         Args:
@@ -38,7 +38,7 @@ def make_zero_vjp(name: str) -> Callable:
     return vjp
 
 
-def make_zero_jvp(name: str) -> Callable:
+def make_zero_jvp(name: str) -> Callable[..., Any]:
     """Create a JVP function that returns zero gradients for a given operation.
 
     Args:
@@ -48,7 +48,7 @@ def make_zero_jvp(name: str) -> Callable:
         Callable: The generated JVP function.
     """
 
-    def jvp(graph: Any, node: Any, tangents: tuple) -> str:
+    def jvp(graph: Any, node: Any, tangents: tuple[Any, ...]) -> str:
         """Return None to represent a zero tangent.
 
         Args:

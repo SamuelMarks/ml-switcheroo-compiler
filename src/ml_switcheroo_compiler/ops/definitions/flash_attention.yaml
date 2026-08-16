@@ -1,21 +1,17 @@
 operation: flash_attention
 description: The class representing a Python function.
 std_args:
-- q
-- k
-- v
-- ab
-- segment_ids
-- causal
-- sm_scale
-- block_sizes
-- debug
+  - q
+  - k
+  - v
+  - ab
+  - segment_ids
+  - causal
+  - sm_scale
+  - block_sizes
+  - debug
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

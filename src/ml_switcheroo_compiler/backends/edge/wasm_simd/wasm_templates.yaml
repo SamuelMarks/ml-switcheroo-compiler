@@ -77,3 +77,47 @@ templates:
       for (int i = 0; i < {nelem}; ++i) {{
           buf_{clean_id}[i] = buf_{in0}[0] {math_op};
       }}
+
+  unary_scalar:
+    body: |
+      // Scalar Unary: {op_type}
+      for (int j = 0; j < {nelem}; ++j) {{
+          float in0_val = buf_{in0}[j];
+          buf_{clean_id}[j] = {scalar_expr};
+      }}
+
+  binary_scalar:
+    body: |
+      // Scalar Binary: {op_type}
+      for (int j = 0; j < {nelem}; ++j) {{
+          float in0_val = buf_{in0}[j];
+          float in1_val = buf_{in1}[j];
+          buf_{clean_id}[j] = {scalar_expr};
+      }}
+
+  while_loop:
+    body: |
+      // While Loop
+      int i_{clean_id} = 0;
+      while ({condition_expr} && i_{clean_id} < {max_iters}) {{
+          {loop_body}
+          i_{clean_id}++;
+      }}
+
+  cond:
+    body: |
+      // Conditional
+      if ({condition_expr}) {{
+          {true_body}
+      }} else {{
+          {false_body}
+      }}
+
+  scan:
+    body: |
+      // Scan
+      float acc_{clean_id} = {init_val};
+      for (int i = 0; i < {nelem}; ++i) {{
+          acc_{clean_id} = {scan_op_expr};
+          buf_{clean_id}[i] = acc_{clean_id};
+      }}

@@ -1,6 +1,8 @@
+"""Module bbox.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Vision operations."""
 from dataclasses import dataclass
@@ -24,9 +26,9 @@ class ExtractPatchesOptions:
 
 
 def crop_and_resize(
-    images: Tensor,
-    boxes: Tensor,
-    box_indices: Tensor,
+    images: Tensor,  # type: ignore
+    boxes: Tensor,  # type: ignore
+    box_indices: Tensor,  # type: ignore
     crop_size: tuple[int, int],
     **kwargs: Any,
 ) -> Any:
@@ -69,9 +71,9 @@ def crop_and_resize(
 
 
 def _extract_bounding_boxes_eager(
-    images: Tensor,
-    boxes: Tensor,
-    box_indices: Tensor,
+    images: Tensor,  # type: ignore
+    boxes: Tensor,  # type: ignore
+    box_indices: Tensor,  # type: ignore
     config_obj: Any,
 ) -> Any:
     """Evaluate _extract_bounding_boxes_eager operation.
@@ -99,9 +101,9 @@ def _extract_bounding_boxes_eager(
 
 
 def extract_bounding_boxes(
-    images: Tensor,
-    boxes: Tensor,
-    box_indices: Tensor,
+    images: Tensor,  # type: ignore
+    boxes: Tensor,  # type: ignore
+    box_indices: Tensor,  # type: ignore
     config_obj: Any | None = None,
     **kwargs: Any,
 ) -> Any:
@@ -145,7 +147,7 @@ def extract_bounding_boxes(
 
 
 def crop(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     offset_height: int,
     offset_width: int,
     target_height: int,
@@ -194,7 +196,7 @@ def crop(
 
 
 def pad_to_bounding_box(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     offset_height: int,
     offset_width: int,
     target_height: int,
@@ -243,9 +245,9 @@ def pad_to_bounding_box(
 
 
 def draw_bounding_boxes(
-    images: Tensor,
-    boxes: Tensor,
-    colors: Tensor | None = None,
+    images: Tensor,  # type: ignore
+    boxes: Tensor,  # type: ignore
+    colors: Tensor | None = None,  # type: ignore
     texts: list[str] | None = None,
 ) -> Any:
     """Draw bounding boxes on a batch of images.
@@ -279,7 +281,7 @@ def draw_bounding_boxes(
 
 
 def crop_images(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     cropping: tuple[int, int, int, int],
     data_format: str | None = None,
 ) -> Any:
@@ -326,7 +328,7 @@ def crop_images(
 
 
 def extract_patches(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     size: int | tuple[int, int] | list[int],
     options: ExtractPatchesOptions | None = None,
     **kwargs: Any,
@@ -376,7 +378,7 @@ def extract_patches(
 
 
 def pad_images(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     padding: tuple[int, int, int, int],
     target_shape: tuple[int | None, int | None],
     data_format: str | None = None,

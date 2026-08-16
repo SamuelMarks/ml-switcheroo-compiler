@@ -1,27 +1,23 @@
 operation: UpSampling2d
 description: Upsampling layer for 2D inputs.
 std_args:
-- default:
-  - 2
-  - 2
-  is_variadic: false
-  kind: positional_or_keyword
-  name: size
-  type: Tuple[int, int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: data_format
-  type: str
-- default: nearest
-  is_variadic: false
-  kind: positional_or_keyword
-  name: interpolation
-  type: str
+  - default:
+      - 2
+      - 2
+    is_variadic: false
+    kind: positional_or_keyword
+    name: size
+    type: Tuple[int, int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: data_format
+    type: str
+  - default: nearest
+    is_variadic: false
+    kind: positional_or_keyword
+    name: interpolation
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

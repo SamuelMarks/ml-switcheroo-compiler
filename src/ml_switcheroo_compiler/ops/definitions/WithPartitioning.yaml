@@ -1,19 +1,15 @@
 operation: WithPartitioning
 description: Annotates an initializer with sharding constraints.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: initializer
-  type: Callable
-- is_variadic: false
-  kind: positional_or_keyword
-  name: sharding
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: initializer
+    type: Callable
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: sharding
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

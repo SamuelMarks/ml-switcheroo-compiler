@@ -1,6 +1,8 @@
+"""Module dropout.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Dropout operations."""
 from collections.abc import Sequence
@@ -49,7 +51,7 @@ class Dropout(OpDef):
 
 @dispatch_eager("Dropout")
 def dropout(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     rate: float = 0.5,
     config: DropoutConfig | None = None,
 ) -> Any:
@@ -88,7 +90,7 @@ class AlphaDropout(OpDef):
 
 @dispatch_eager("AlphaDropout")
 def alpha_dropout(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     rate: float = 0.5,
     config: DropoutConfig | None = None,
 ) -> Any:
@@ -129,7 +131,7 @@ class ActivityRegularization(OpDef):
 
 @dispatch_eager("ActivityRegularization")
 def activity_regularization(
-    x: Tensor,
+    x: Tensor,  # type: ignore
     l1: float = 0.0,
     l2: float = 0.0,
 ) -> Any:
@@ -167,7 +169,7 @@ class Dropout1d(OpDef):
         return getattr(x, "shape", ())
 
 
-def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> Any:
+def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> Any:  # type: ignore
     """Apply 1D spatial dropout to the input tensor.
 
     Randomly zeroes out entire channels (1D feature maps) of the input tensor.
@@ -208,7 +210,7 @@ class Dropout2d(OpDef):
         return getattr(x, "shape", ())
 
 
-def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> Any:
+def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> Any:  # type: ignore
     """Apply 2D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 2D feature maps (channels) of the input tensor.
@@ -254,7 +256,7 @@ class Dropout3d(OpDef):
         return getattr(x, "shape", ())
 
 
-def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> Any:
+def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> Any:  # type: ignore
     """Apply 3D spatial dropout to the input tensor.
 
     Randomly zeroes out entire 3D feature maps (channels) of the input tensor.

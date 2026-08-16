@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Distributed ops eager via real multiprocessing TCP sockets."""
 
 import os
@@ -25,7 +25,7 @@ def _np_axis_index(backend_module: Any, **kwargs: Any) -> Any:
 
 
 class TCPDistributedContext:
-    """Real standard-library IPC Context for Collectives."""
+    """Real standard-library IPC Context for Collectives (Ring Topology)."""
 
     def __init__(self, world_size: int = 1, rank: int = 0, addr: str = "localhost", port: int = 29500) -> None:
         """Init."""
@@ -35,61 +35,101 @@ class TCPDistributedContext:
         self.port = port
         self.authkey = b"ml_switcheroo"
         self.listener: Optional[Listener] = None
-        self.connections: list[Any] = []
-        self.conn: Optional[Any] = None
+        self.recv_conn: Optional[Any] = None
+        self.send_conn: Optional[Any] = None
 
     def initialize(self) -> None:
-        """Initialize the collective communication topology."""
+        """Initialize the collective communication ring topology."""
         if self.world_size <= 1:
             return
 
-        if self.rank == 0:
-            self.listener = Listener((self.addr, self.port), authkey=self.authkey)
-            self.connections = []
-            for _ in range(self.world_size - 1):
-                self.connections.append(self.listener.accept())
-        else:
-            for _ in range(50):
-                try:
-                    self.conn = Client((self.addr, self.port), authkey=self.authkey)
-                    break
-                except ConnectionRefusedError:
-                    time.sleep(0.1)
+        import threading
+
+        my_port = self.port + self.rank
+        next_port = self.port + ((self.rank + 1) % self.world_size)
+
+        self.listener = Listener((self.addr, my_port), authkey=self.authkey)
+
+        def accept_conn() -> None:
+            """Accept connection."""
+            if self.listener:
+                self.recv_conn = self.listener.accept()
+
+        t = threading.Thread(target=accept_conn)
+        t.start()
+
+        for _ in range(50):
+            try:
+                self.send_conn = Client((self.addr, next_port), authkey=self.authkey)
+                break
+            except ConnectionRefusedError:
+                time.sleep(0.1)
+
+        t.join()
+
+    def all_reduce_ring(self, tensor: Any, op_type: str = "sum", backend_module: Any = np) -> Any:
+        """Evaluate all_reduce_ring."""
+        if self.world_size <= 1:
+            return tensor
+
+        chunks = backend_module.array_split(tensor, self.world_size)
+
+        # Scatter-reduce phase
+        for step in range(self.world_size - 1):
+            send_chunk_idx = (self.rank - step) % self.world_size
+            recv_chunk_idx = (self.rank - step - 1) % self.world_size
+
+            if self.send_conn:
+                self.send_conn.send(chunks[send_chunk_idx])
+            recv_data = self.recv_conn.recv() if self.recv_conn else None
+
+            if op_type == "sum":
+                chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data
+            elif op_type == "prod":
+                chunks[recv_chunk_idx] = chunks[recv_chunk_idx] * recv_data
+            elif op_type == "max":
+                chunks[recv_chunk_idx] = backend_module.maximum(chunks[recv_chunk_idx], recv_data)
+            elif op_type == "min":
+                chunks[recv_chunk_idx] = backend_module.minimum(chunks[recv_chunk_idx], recv_data)
+
+        # All-gather phase
+        for step in range(self.world_size - 1):
+            send_chunk_idx = (self.rank - step + 1) % self.world_size
+            recv_chunk_idx = (self.rank - step) % self.world_size
+
+            if self.send_conn:
+                self.send_conn.send(chunks[send_chunk_idx])
+            chunks[recv_chunk_idx] = self.recv_conn.recv() if self.recv_conn else None
+
+        return backend_module.concatenate(chunks)
 
     def all_gather_tensors(self, tensor: Any) -> list[Any]:
-        """Perform AllGather over TCP."""
+        """Perform AllGather over TCP Ring."""
         if self.world_size <= 1:
             return [tensor]
 
-        if self.rank == 0:
-            all_tensors = [None] * self.world_size
-            all_tensors[0] = tensor
-            # collect
-            for conn in self.connections:
-                data = conn.recv()
-                r, t = data["rank"], data["tensor"]
-                all_tensors[r] = t
-            # broadcast
-            for conn in self.connections:
-                conn.send(all_tensors)
-            return all_tensors
-        else:
-            if self.conn is None:
-                raise RuntimeError("Not initialized")
-            self.conn.send({"rank": self.rank, "tensor": tensor})
-            return self.conn.recv()
+        all_tensors = [None] * self.world_size
+        all_tensors[self.rank] = tensor
+
+        for step in range(self.world_size - 1):
+            send_idx = (self.rank - step) % self.world_size
+            recv_idx = (self.rank - step - 1) % self.world_size
+
+            if self.send_conn:
+                self.send_conn.send(all_tensors[send_idx])
+            all_tensors[recv_idx] = self.recv_conn.recv() if self.recv_conn else None
+
+        return all_tensors
 
     def shutdown(self) -> None:
         """Shutdown connections."""
         if self.world_size > 1:
-            if self.rank == 0:
-                for c in self.connections:
-                    c.close()
-                if self.listener:
-                    self.listener.close()
-            else:
-                if self.conn:
-                    self.conn.close()
+            if self.recv_conn:
+                self.recv_conn.close()
+            if self.send_conn:
+                self.send_conn.close()
+            if self.listener:
+                self.listener.close()
 
 
 _tcp_dist_ctx = TCPDistributedContext()
@@ -121,20 +161,7 @@ def _np_all_reduce(backend_module: Any, tensor: Any, op_type: str = "sum", *args
 
     all_tensors = _tcp_dist_ctx.all_gather_tensors(tensor)
 
-    if op_type == "sum":
-        res = sum(all_tensors)
-    elif op_type == "prod":
-        res = all_tensors[0].copy() if hasattr(all_tensors[0], "copy") else all_tensors[0]
-        for t in all_tensors[1:]:
-            res = res * t
-    elif op_type == "max":
-        res = backend_module.maximum.reduce(all_tensors)
-    elif op_type == "min":
-        res = backend_module.minimum.reduce(all_tensors)
-    else:
-        res = sum(all_tensors)
-
-    return res
+    return _tcp_dist_ctx.all_reduce_ring(tensor, op_type, backend_module)
 
 
 @numpy_eager_registry.register("AllGather")

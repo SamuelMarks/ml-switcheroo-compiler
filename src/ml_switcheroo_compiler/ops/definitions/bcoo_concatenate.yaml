@@ -1,14 +1,10 @@
 operation: bcoo_concatenate
 description: Sparse implementation of :func:`jax.lax.concatenate`
 std_args:
-- operands
-- dimension
+  - operands
+  - dimension
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

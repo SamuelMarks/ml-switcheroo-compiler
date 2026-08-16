@@ -1,12 +1,15 @@
+"""Shape System."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
+
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Type & Shape System for IR."""
 
 
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Union
 
 from ml_switcheroo_compiler.core.constants import MAGIC_VAL_2
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
@@ -138,7 +141,7 @@ class SymInt:
         """
         return hash(self.expr)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Evaluate __eq__ operation.
 
         Args:
@@ -176,7 +179,7 @@ class SymbolicSolver:
         return sym1 == sym2
 
 
-def _to_str_shape(shape: tuple) -> tuple:
+def _to_str_shape(shape: tuple[Any, ...]) -> tuple[Any, ...]:
     """Convert shape to string representation.
 
     Args:
@@ -188,7 +191,7 @@ def _to_str_shape(shape: tuple) -> tuple:
     return tuple(str(x) if isinstance(x, SymInt) else x for x in shape)
 
 
-def _from_str_shape(shape: tuple) -> tuple:
+def _from_str_shape(shape: tuple[Any, ...]) -> tuple[Any, ...]:
     """Convert shape from string representation.
 
     Args:
@@ -335,7 +338,7 @@ def _matmul_shape_2d(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
     return (shape_a[0], shape_b[1])
 
 
-def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> Any:
+def _get_matmul_dims(shape_a: ShapeType, shape_b: ShapeType) -> tuple[Any, ...]:
     """Evaluate _get_matmul_dims operation.
 
     Args:

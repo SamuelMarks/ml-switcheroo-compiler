@@ -6,24 +6,38 @@ variants:
   numpy:
     eager: numpy.truncatediv
   cupy: {}
+  cp:
+    generator: cp.trunc(cp.divide({0}, {1}))
   dask: {}
+  da:
+    generator: da.trunc(da.divide({0}, {1}))
+  jnp:
+    generator: jnp.trunc(jnp.divide({0}, {1}))
   tensorflow:
     eager: tf.truncatediv
+  tf:
+    generator: tf.trunc(tf.divide({0}, {1}))
   keras:
     eager: keras_ops.truncatediv
+  keras.ops:
+    generator: keras.ops.trunc(keras.ops.divide({0}, {1}))
   jax:
     eager: jax.numpy.truncatediv
   mlx:
     eager: mlx.core.truncatediv
-  edge_onnx: {}
-  edge_stablehlo: {}
+  mx:
+    generator: mx.trunc(mx.divide({0}, {1}))
+  edge_onnx:
+    generator: TruncateDiv
+  edge_stablehlo:
+    opcode: stablehlo.truncate_div
   edge_wgsl:
     template: binary
     expr: buf_in0_f32[in0_offset] / buf_in1_f32[in1_offset]
   edge_wasm_simd:
     template: unary
-    simd_expr: in0_val
     scalar_expr: in0_val
+    simd_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

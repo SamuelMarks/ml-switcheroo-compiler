@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Gradient computation and autodiff utilities."""
 
 import contextlib
@@ -71,7 +71,7 @@ class CustomVJPFunction:
 
         self._tracing_fwd = True
         try:
-            return _trace_function(self.fwd, tuple(tensor_args), "fwd_pass")  # type: ignore
+            return _trace_function(self.fwd, tuple(tensor_args), "fwd_pass")
         finally:
             self._tracing_fwd = False
 
@@ -109,12 +109,12 @@ class CustomVJPFunction:
         node = LogicalNode(
             id=out_id,
             op_type="CustomVJP",
-            inputs=[a.data.id for a in tensor_args],  # type: ignore
+            inputs=[a.data.id for a in tensor_args],
             attributes={"primal_graph": primal_graph, "fwd_graph": fwd_graph, "bwd_fn": self.bwd},
             shape_metadata=meta[0],
         )
         global_tracing_state.add_node(node)
-        proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
+        proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])  # type: ignore
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
@@ -131,7 +131,7 @@ class CustomVJPFunction:
 
         tensor_args = self._extract_tensor_args(args)
         fwd_graph = self._trace_fwd_graph(tensor_args)
-        primal_graph = _trace_function(self.fun, tuple(tensor_args), "primal_pass")  # type: ignore
+        primal_graph = _trace_function(self.fun, tuple(tensor_args), "primal_pass")
         return self._emit_vjp_node(tensor_args, fwd_graph, primal_graph)
 
 

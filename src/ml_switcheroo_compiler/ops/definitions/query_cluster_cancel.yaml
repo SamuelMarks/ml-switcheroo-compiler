@@ -1,13 +1,9 @@
 operation: query_cluster_cancel
 description: Decodes the response of `try_cluster_cancel`.
 std_args:
-- result_ref
+  - result_ref
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

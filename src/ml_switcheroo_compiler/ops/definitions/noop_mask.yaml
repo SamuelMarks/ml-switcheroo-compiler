@@ -1,16 +1,12 @@
 operation: noop_mask
 description: Returns a noop mask_mod
 std_args:
-- batch
-- head
-- token_q
-- token_kv
+  - batch
+  - head
+  - token_q
+  - token_kv
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,20 +1,16 @@
 operation: odeint
 description: Adaptive stepsize (Dormand-Prince) Runge-Kutta odeint implementation.
 std_args:
-- func
-- y0
-- t
-- args
-- rtol
-- atol
-- mxstep
-- hmax
+  - func
+  - y0
+  - t
+  - args
+  - rtol
+  - atol
+  - mxstep
+  - hmax
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

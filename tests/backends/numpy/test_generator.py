@@ -17,3 +17,19 @@ def test_numpy_generator_format_kwargs_dimension():
     assert "axis=2" in res
     assert "other=test" in res
     assert "dimension" not in res
+
+
+def test_numpy_generator_generic_visit_dimension():
+    from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor
+    from ml_switcheroo_compiler.ir.core import LogicalNode
+
+    node = LogicalNode(id="n1", op_type="Sum", inputs=["x"])
+    res = NumpyASTVisitor.generic_visit(node, ["x"], dimension=1)
+    assert res == "np.sum(x, axis=1)"
+
+
+def test_numpy_generator_get_rng():
+    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+
+    rng = NumpyGenerator.get_numpy_rng(42)
+    assert rng is not None

@@ -2,13 +2,9 @@ operation: consumer_operands
 description: Given a result or an argument, returns the corresponding operands in
   its consumers.
 std_args:
-- result
+  - result
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

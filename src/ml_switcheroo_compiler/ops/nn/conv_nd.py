@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Convolution operations."""
 
 import typing
@@ -18,8 +18,8 @@ from .conv_utils import GenericConvConfig
 
 
 def conv_transpose(
-    lhs: Tensor,
-    rhs: Tensor,
+    lhs: Tensor,  # type: ignore
+    rhs: Tensor,  # type: ignore
     strides: Union[Sequence[int], int] = 1,
     padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
 ) -> Any:
@@ -51,8 +51,8 @@ def conv_transpose(
 
 
 def conv(
-    inputs: Tensor,
-    kernel: Tensor,
+    inputs: Tensor,  # type: ignore
+    kernel: Tensor,  # type: ignore
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Any:
     """Evaluate conv operation.
@@ -115,8 +115,8 @@ def conv(
 
 
 def depthwise_conv(
-    inputs: Tensor,
-    kernel: Tensor,
+    inputs: Tensor,  # type: ignore
+    kernel: Tensor,  # type: ignore
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Any:
     """Evaluate depthwise_conv operation.
@@ -171,9 +171,9 @@ def depthwise_conv(
 
 
 def separable_conv(
-    inputs: Tensor,
-    depthwise_kernel: Tensor,
-    pointwise_kernel: Tensor,
+    inputs: Tensor,  # type: ignore
+    depthwise_kernel: Tensor,  # type: ignore
+    pointwise_kernel: Tensor,  # type: ignore
     config: typing.Optional[GenericConvConfig] = None,
 ) -> Any:
     """Evaluate separable_conv operation.

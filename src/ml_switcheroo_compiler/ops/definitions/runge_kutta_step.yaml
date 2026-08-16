@@ -1,17 +1,13 @@
 operation: runge_kutta_step
 description: The class representing a Python function.
 std_args:
-- func
-- y0
-- f0
-- t0
-- dt
+  - func
+  - y0
+  - f0
+  - t0
+  - dt
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

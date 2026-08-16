@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Calculate loss operations."""
 
 from typing import Any
@@ -25,7 +25,7 @@ from ml_switcheroo_compiler.ops.shape.indexing import take_along_axis, where
 from ml_switcheroo_compiler.ops.unary import abs, log, square
 
 
-def l1_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def l1_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """L1 Loss.
 
     Args:
@@ -38,7 +38,7 @@ def l1_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     return mean(abs(subtract(y_true, y_pred)))
 
 
-def mse_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def mse_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """Mean Squared Error Loss.
 
     Args:
@@ -51,7 +51,7 @@ def mse_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     return mean(square(subtract(y_true, y_pred)))
 
 
-def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Any:
+def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Any:  # type: ignore
     """Huber Loss.
 
     Args:
@@ -74,7 +74,7 @@ def huber_loss(y_true: Tensor, y_pred: Tensor, delta: float = 1.0) -> Any:
     return mean(loss)
 
 
-def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Any:
+def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Any:  # type: ignore
     """Smooth L1 Loss (similar to Huber with beta).
 
     Args:
@@ -98,7 +98,7 @@ def smooth_l1_loss(y_true: Tensor, y_pred: Tensor, beta: float = 1.0) -> Any:
     return mean(loss)
 
 
-def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Any:
+def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> Any:  # type: ignore
     """Cosine Similarity Loss.
 
     Args:
@@ -117,7 +117,7 @@ def cosine_similarity_loss(y_true: Tensor, y_pred: Tensor, axis: int = -1) -> An
     return mean(subtract(1.0, cos_sim))
 
 
-def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """Kullback-Leibler divergence loss.
 
     Args:
@@ -135,7 +135,7 @@ def kl_div_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     return mean(kl)
 
 
-def hinge_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def hinge_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """Hinge loss. y_true should be -1 or 1.
 
     Args:
@@ -149,7 +149,7 @@ def hinge_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     return mean(maximum(0.0, margin))
 
 
-def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> Any:
+def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 1e-6) -> Any:  # type: ignore
     """Gaussian Negative Log Likelihood loss.
 
     Args:
@@ -171,7 +171,7 @@ def gaussian_nll_loss(y_pred: Tensor, y_true: Tensor, var: Tensor, eps: float = 
     return mean(loss)
 
 
-def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """Log-Cosh loss.
 
     Args:
@@ -195,7 +195,7 @@ def log_cosh_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     return mean(stable_logcosh)
 
 
-def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> Any:
+def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: float = 0.0) -> Any:  # type: ignore
     """Margin Ranking Loss.
 
     Args:
@@ -213,7 +213,7 @@ def margin_ranking_loss(input1: Tensor, input2: Tensor, target: Tensor, margin: 
     return mean(maximum(0.0, loss))
 
 
-def nll_loss(y_pred: Tensor, y_true: Tensor) -> Any:
+def nll_loss(y_pred: Tensor, y_true: Tensor) -> Any:  # type: ignore
     """Negative log likelihood loss.
 
     Args:
@@ -230,7 +230,7 @@ def nll_loss(y_pred: Tensor, y_true: Tensor) -> Any:
     return mean(multiply(-1.0, gathered))
 
 
-def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> Any:
+def triplet_loss(anchor: Tensor, positive: Tensor, negative: Tensor, margin: float = 1.0, p: float = 2.0) -> Any:  # type: ignore
     """Triplet margin loss.
 
     Args:
@@ -280,7 +280,7 @@ __all__ = [
 ]
 
 
-def msle_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def msle_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """Mean Squared Logarithmic Error.
 
     Args:
@@ -298,7 +298,7 @@ def msle_loss(y_true: Tensor, y_pred: Tensor) -> Any:
     return mean(square(subtract(log_pred, log_true)))
 
 
-def mape_loss(y_true: Tensor, y_pred: Tensor) -> Any:
+def mape_loss(y_true: Tensor, y_pred: Tensor) -> Any:  # type: ignore
     """Mean Absolute Percentage Error.
 
     Args:

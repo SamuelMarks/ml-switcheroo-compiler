@@ -1,6 +1,8 @@
+"""Module graph_scheduling.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Graph scheduling logic for memory-aware and compute-aware execution order."""
@@ -33,8 +35,26 @@ class CostModel(Protocol):
         ...
 
 
+import os
+
+import yaml
+
+
 class DefaultCostModel:
     """Default implementation of the cost model."""
+
+    def __init__(self) -> None:
+        """__init__ function.
+
+        Args:
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
+        yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+        with open(yaml_path) as f:
+            self.config = yaml.safe_load(f)
 
     def get_memory_cost(self, node: IRNode) -> int:
         """Calculate memory cost (byte size of output).
@@ -50,22 +70,8 @@ class DefaultCostModel:
             for dim in node.static_shape:
                 size *= max(1, int(dim))
         dtype = node.attributes.get("dtype", "float32")
-        sizes = {
-            "float64": 8,
-            "float32": 4,
-            "float16": 2,
-            "bfloat16": 2,
-            "int64": 8,
-            "int32": 4,
-            "int16": 2,
-            "int8": 1,
-            "uint64": 8,
-            "uint32": 4,
-            "uint16": 2,
-            "uint8": 1,
-            "bool": 1,
-        }
-        return size * sizes.get(dtype, 4)
+        sizes = self.config.get("memory_sizes", {})
+        return size * sizes.get(dtype, 4)  # type: ignore
 
     def get_compute_cost(self, node: IRNode) -> int:
         """Calculate compute cost.
@@ -76,11 +82,12 @@ class DefaultCostModel:
         Returns:
             int: The compute cost heuristic.
         """
-        if node.op_type in {"MatMul", "Conv2D", "BatchMatMul"}:
-            return 1000
-        if node.op_type in {"Add", "Sub", "Mul", "Div"}:
-            return 10
-        return 50
+        costs = self.config.get("compute_costs", {})
+        if node.op_type in costs.get("heavy_ops", []):
+            return costs.get("heavy_cost", 1000)  # type: ignore
+        if node.op_type in costs.get("light_ops", []):
+            return costs.get("light_cost", 10)  # type: ignore
+        return costs.get("default_cost", 50)  # type: ignore
 
 
 def _build_adjacency_lists(graph: IRGraph) -> tuple[dict[str, list[str]], dict[str, int], dict[str, int]]:

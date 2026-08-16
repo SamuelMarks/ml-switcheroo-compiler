@@ -14,10 +14,8 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
+  edge_onnx:
+    generator: scatter
   edge_wasm_simd:
     template: fallback_copy
   llvm_cpp:

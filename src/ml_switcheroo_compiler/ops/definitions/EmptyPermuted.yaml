@@ -1,19 +1,15 @@
 operation: EmptyPermuted
 description: Creates an uninitialized tensor with a specified physical layout.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: size
-  type: List[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: physical_layout
-  type: List[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: size
+    type: List[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: physical_layout
+    type: List[int]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

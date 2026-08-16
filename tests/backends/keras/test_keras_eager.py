@@ -17,7 +17,21 @@ def test_keras_eager():
         execute_op(None, "UnknownKerasOpThatDoesNotExist")
 
 
-def test_keras_eager_op_mapping():
+def test_keras_eager_extra():
+    from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+    from ml_switcheroo_compiler.backends.keras.eager import _get_op_mapping, execute_op
+
+    # Call it to hit the cached branch
+    _get_op_mapping()
+    _get_op_mapping()
+
+    # global_eager_registry
+    @global_eager_registry.register("KerasGlobalDummy")
+    def _dummy_keras(keras_module, *args, **kwargs):
+        return "keras_global"
+
+    res = execute_op(None, "KerasGlobalDummy")
+    assert res == "keras_global"
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.backends.keras.eager import execute_op

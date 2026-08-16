@@ -2,14 +2,10 @@ operation: L1Unstructured
 description: Prune (currently unpruned) units in a tensor by zeroing out the ones
   with the lowest L1-norm.
 std_args:
-- self
-- amount
+  - self
+  - amount
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

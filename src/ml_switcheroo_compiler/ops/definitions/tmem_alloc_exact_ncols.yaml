@@ -1,14 +1,10 @@
 operation: tmem_alloc_exact_ncols
 description: Returns the exact number of columns to allocate in TMEM.
 std_args:
-- ncols
-- exact
+  - ncols
+  - exact
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

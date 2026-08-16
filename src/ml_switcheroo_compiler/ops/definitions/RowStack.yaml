@@ -1,15 +1,11 @@
 operation: RowStack
 description: Stack arrays in sequence vertically (row wise).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: tensors
-  type: List[Tensor]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: tensors
+    type: List[Tensor]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

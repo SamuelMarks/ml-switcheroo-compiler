@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ def _eager_base64(op: str, data: Any, pad: bool = False) -> Any:
     return _proc(data)
 
 
-def encode_base64(input: Tensor, pad: Any = False, name: Any = None) -> Any:
+def encode_base64(input: Tensor, pad: Any = False, name: Any = None) -> Any:  # type: ignore
     """Encode base64.
 
     Args:
@@ -73,7 +73,7 @@ def encode_base64(input: Tensor, pad: Any = False, name: Any = None) -> Any:
     return _emit_shape_node("EncodeBase64", [input], {"pad": pad, "name": name}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
 
 
-def decode_base64(input: Tensor, name: Any = None) -> Any:
+def decode_base64(input: Tensor, name: Any = None) -> Any:  # type: ignore
     """Decode base64.
 
     Args:

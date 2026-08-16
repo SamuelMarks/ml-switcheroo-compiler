@@ -1,14 +1,14 @@
 operation: flip
 description: The Flip operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: Optional[Union[int, Tuple[int, Ellipsis]]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axis
+    type: Optional[Union[int, Tuple[int, Ellipsis]]]
 variants:
   cupy:
     eager: cp.flip
@@ -26,15 +26,11 @@ variants:
     eager: jax.numpy.flip
   mlx:
     eager: mlx.core.flip
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: flip
+  edge_stablehlo:
+
+    opcode: stablehlo.flip
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

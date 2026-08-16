@@ -48,7 +48,9 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_stablehlo: {}
+  edge_stablehlo:
+
+    opcode: stablehlo.batch_norm
   edge_wgsl:
     template: unary
     expr: buf_in0_f32[idx]

@@ -1,15 +1,11 @@
 operation: pull
 description: Fetches a pytree of arrays from a remote device.
 std_args:
-- self
-- uuid
-- xs
+  - self
+  - uuid
+  - xs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

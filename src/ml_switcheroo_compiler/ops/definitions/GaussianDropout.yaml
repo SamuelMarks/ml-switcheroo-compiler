@@ -1,19 +1,15 @@
 operation: GaussianDropout
 description: Apply multiplicative 1-centered Gaussian noise.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: rate
-  type: float
-- is_variadic: false
-  kind: positional_or_keyword
-  name: seed
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: rate
+    type: float
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: seed
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

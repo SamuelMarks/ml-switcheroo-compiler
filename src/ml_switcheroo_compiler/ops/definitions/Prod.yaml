@@ -1,22 +1,22 @@
 operation: prod
 description: The Prod operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: Optional[Union[int, Tuple[int, Ellipsis]]]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: Optional[dtype]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: keepdims
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axis
+    type: Optional[Union[int, Tuple[int, Ellipsis]]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: Optional[dtype]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: keepdims
+    type: bool
 variants:
   cupy:
     eager: cp.prod
@@ -34,8 +34,11 @@ variants:
     eager: jax.numpy.prod
   mlx:
     eager: mlx.core.prod
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: prod
+  edge_stablehlo:
+
+    opcode: stablehlo.prod
   edge_wgsl:
     template: reduction
     init_code: var res = 1.0;
@@ -43,16 +46,12 @@ variants:
     loop_code: res = res * buf_in0_f32[i];
     post_loop_code: ''
     result_var: res
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
 autodiff:
   vjp:
-  - Multiply(Broadcast(Multiply($cotangent, Prod($input[0]))), TrueDivide(Constant(1.0),
-    $input[0]))
+    - Multiply(Broadcast(Multiply($cotangent, Prod($input[0]))), TrueDivide(Constant(1.0),
+      $input[0]))
   jvp: Sum(Multiply($tangent[0], Multiply(Broadcast(Prod($input[0])), TrueDivide(Constant(1.0),
     $input[0]))))

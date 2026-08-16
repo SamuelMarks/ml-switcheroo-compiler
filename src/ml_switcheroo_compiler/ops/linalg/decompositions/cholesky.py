@@ -1,6 +1,8 @@
+"""Module cholesky.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for cholesky.py."""
 from typing import Any
@@ -27,7 +29,7 @@ class Cholesky(OpDef):
         return ()
 
 
-def cholesky(input: Tensor) -> Any:
+def cholesky(input: Tensor) -> Any:  # type: ignore
     """Compute the Cholesky decomposition of a symmetric/Hermitian positive-definite.
 
     Args:
@@ -61,7 +63,7 @@ class CholeskyEx(OpDef):
         return ()
 
 
-def cholesky_ex(input: Tensor, check_errors: bool = False) -> Any:
+def cholesky_ex(input: Tensor, check_errors: bool = False) -> Any:  # type: ignore
     """Compute the Cholesky decomposition with an info tensor.
 
     Args:

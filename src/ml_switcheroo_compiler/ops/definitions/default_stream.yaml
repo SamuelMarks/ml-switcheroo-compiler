@@ -4,15 +4,11 @@ description: "Return the default :class:`Stream` for a given device.\n\nArgs:\n 
   \ default :class:`Stream` for the current device, given by\n        :func:`~torch.mtia.current_device`,\
   \ if :attr:`device` is ``None``\n        (default)."
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: device
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: device
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

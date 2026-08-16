@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 # pylint: disable=duplicate-code
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.shape import broadcast_shapes
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _get_shape_list(x: Any) -> list:
+def _get_shape_list(x: Any) -> list[Any]:
     """Help to convert shape to list.
 
     Args:
@@ -33,7 +33,7 @@ def _get_shape_list(x: Any) -> list:
     return []
 
 
-def _normalize_axes(axes: Any, length: int) -> list:
+def _normalize_axes(axes: Any, length: int) -> list[Any]:
     """Help to normalize axes.
 
     Args:
@@ -47,7 +47,7 @@ def _normalize_axes(axes: Any, length: int) -> list:
     return [x + length if x < 0 else x for x in a]
 
 
-def _resolve_reshape_minus_one(x_shape: tuple, newshape: list) -> list:
+def _resolve_reshape_minus_one(x_shape: tuple[Any, ...], newshape: list[Any]) -> list[Any]:
     """Resolve the -1 dimension in a reshape operation.
 
     Args:
@@ -437,7 +437,7 @@ class DiagIndicesFrom(OpDef):
         arr = args[0] if args else kwargs.get("arr")
         if arr is None or not hasattr(arr, "shape"):
             return None
-        return tuple([(arr.shape[0],)] * len(arr.shape))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return tuple([(arr.shape[0],)] * len(arr.shape))
 
 
 @register_op("Diagflat")
@@ -531,7 +531,7 @@ class Moveaxis(OpDef):
         destination = args[2] if len(args) > 2 else kwargs.get("destination")
         return self._calc_shape(shape, source, destination)
 
-    def _calc_shape(self, shape: list[int], source: Any, destination: Any) -> tuple:
+    def _calc_shape(self, shape: list[int], source: Any, destination: Any) -> tuple[Any, ...]:
         """Calculate the output shape for a moveaxis operation.
 
         Args:
@@ -619,7 +619,7 @@ class Squeeze(OpDef):
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         return self._calc_shape(shape, axis)
 
-    def _calc_shape(self, shape: list[int], axis: Any) -> tuple:
+    def _calc_shape(self, shape: list[int], axis: Any) -> tuple[Any, ...]:
         """Calculate the output shape for a squeeze operation.
 
         Args:

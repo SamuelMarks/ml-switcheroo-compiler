@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Device and DeviceType classes for the ml-switcheroo compiler."""
 
 from dataclasses import dataclass
@@ -171,7 +171,7 @@ def get_logical_devices(device_type: Any = None) -> list[Device]:
 
     backend = registry.get_active_backend()
     if hasattr(backend, "get_logical_devices"):
-        return backend.get_logical_devices(device_type)
+        return backend.get_logical_devices(device_type)  # type: ignore
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_logical_devices()")
 
 
@@ -192,7 +192,7 @@ def get_physical_devices(device_type: Any = None) -> list[Device]:
 
     backend = registry.get_active_backend()
     if hasattr(backend, "get_physical_devices"):
-        return backend.get_physical_devices(device_type)
+        return backend.get_physical_devices(device_type)  # type: ignore
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_physical_devices()")
 
 
@@ -213,5 +213,5 @@ def get_memory_info(device: Any = None) -> dict[str, int]:
 
     backend = registry.get_active_backend()
     if hasattr(backend, "get_memory_info"):
-        return backend.get_memory_info(device)
+        return backend.get_memory_info(device)  # type: ignore
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_memory_info()")

@@ -72,3 +72,17 @@ repos:
     types: [python]
     files: ^src/ml_switcheroo_compiler/(?!backends/edge/(webgpu|wasm).py)
     additional_dependencies: [xenon]
+- repo: local
+  hooks:
+  - id: check-any
+    name: Check typing.Any usage
+    entry: bash -c "rg -n 'typing\.Any' src/ml_switcheroo_compiler/ | wc -l"
+    language: system
+    always_run: true
+    pass_filenames: false
+- repo: https://github.com/econchick/interrogate
+  rev: 1.7.0
+  hooks:
+  - id: interrogate
+    args: [-c, pyproject.toml, src/]
+    pass_filenames: false

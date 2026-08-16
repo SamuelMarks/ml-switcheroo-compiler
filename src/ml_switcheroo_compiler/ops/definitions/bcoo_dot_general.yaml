@@ -1,18 +1,14 @@
 operation: bcoo_dot_general
 description: A general contraction operation.
 std_args:
-- lhs
-- rhs
-- dimension_numbers
-- precision
-- preferred_element_type
-- out_sharding
+  - lhs
+  - rhs
+  - dimension_numbers
+  - precision
+  - preferred_element_type
+  - out_sharding
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

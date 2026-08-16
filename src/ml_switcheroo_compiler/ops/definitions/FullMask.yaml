@@ -1,14 +1,10 @@
 operation: FullMask
 description: Lazy full mask, allows all tokens to attend to all other tokens.
 std_args:
-- self
-- _shape
+  - self
+  - _shape
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

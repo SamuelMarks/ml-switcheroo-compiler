@@ -1,14 +1,10 @@
 operation: wrap_class
 description: The class representing a Python function.
 std_args:
-- cls
-- cls_sourceinfo
+  - cls
+  - cls_sourceinfo
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

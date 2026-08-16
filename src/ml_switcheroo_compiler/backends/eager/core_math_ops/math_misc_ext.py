@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_misc_ext module."""
 
 from __future__ import annotations
@@ -164,7 +164,11 @@ def _lcm(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "lcm", getattr(backend_module, "least_common_multiple", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.lcm(args[0], args[1])
 
 
 @global_eager_registry.register("Nextafter")
@@ -178,10 +182,12 @@ def _nextafter(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     Returns: Any: Result.
     """
-    import math
+    func = getattr(backend_module, "nextafter", None)
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
 
-    func = getattr(backend_module, "nextafter", getattr(math, "nextafter", None))
-    return func(*args, **kwargs) if func else None
+    return np.nextafter(args[0], args[1])
 
 
 @global_eager_registry.register("Real")
@@ -196,7 +202,11 @@ def _real(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "real", None)
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.real(args[0])
 
 
 @global_eager_registry.register("Spacing")
@@ -211,7 +221,11 @@ def _spacing(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "spacing", None)
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.spacing(args[0])
 
 
 @global_eager_registry.register("Unwrap")
@@ -226,24 +240,11 @@ def _unwrap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "unwrap", None)
-    return func(*args, **kwargs) if func else None
-
-
-@global_eager_registry.register("Zeta")
-def _zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
-    """Evaluate _zeta operation.
-
-    Args:
-        backend_module (object): The backend_module parameter.
-        *args (object): Positional args.
-        **kwargs (object): Keyword args.
-
-    Returns: Any: Result.
-    """
-    func = getattr(backend_module, "zeta", None)
-    if func:
+    if func is not None:
         return func(*args, **kwargs)
-    return None
+    import numpy as np
+
+    return np.unwrap(args[0], **kwargs)
 
 
 @global_eager_registry.register("Beta")
@@ -262,9 +263,11 @@ def _beta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if hasattr(backend_module, "random") and hasattr(backend_module.random, "beta"):
         return backend_module.random.beta(getattr(args[1], "data", args[1]), getattr(args[2], "data", args[2]))
     func = getattr(backend_module, "beta", None)
-    if func:
+    if func is not None:
         return func(*args, **kwargs)
-    return None
+    import scipy.special
+
+    return scipy.special.beta(*args, **kwargs)
 
 
 @global_eager_registry.register("Betainc")
@@ -279,9 +282,11 @@ def _betainc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "betainc", None)
-    if func:
+    if func is not None:
         return func(*args, **kwargs)
-    return None
+    import scipy.special
+
+    return scipy.special.betainc(*args, **kwargs)
 
 
 @global_eager_registry.register("AllToAll")
@@ -831,10 +836,7 @@ def _np_ball(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "ball", getattr(backend_module, "ball", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.zeros(kwargs.get("shape", ()), dtype=np.float32)
@@ -853,13 +855,10 @@ def _np_betapdf(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "betapdf", getattr(backend_module, "betapdf", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
-    import numpy as np
+        return func(*args, **kwargs)
+    import scipy.stats
 
-    return np.power(args[0], args[1] - 1) * np.power(1 - args[0], args[2] - 1)
+    return scipy.stats.beta.pdf(*args, **kwargs)
 
 
 @global_eager_registry.register("Gcd")
@@ -875,10 +874,7 @@ def _np_gcd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "gcd", getattr(backend_module, "gcd", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.gcd(args[0], args[1])
@@ -897,10 +893,7 @@ def _np_inner(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "inner", getattr(backend_module, "inner", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.inner(args[0], args[1])
@@ -919,10 +912,7 @@ def _np_r(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "r", getattr(backend_module, "r", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.r_[args[0]]
@@ -941,10 +931,7 @@ def _np_switch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "switch", getattr(backend_module, "switch", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[1] if args[0] else args[2]
@@ -963,10 +950,7 @@ def _np_t(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "t", getattr(backend_module, "t", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.transpose(args[0])
@@ -985,10 +969,7 @@ def _np_trapezoid(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "trapezoid", getattr(backend_module, "trapezoid", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.trapz(*args, **kwargs)
@@ -1007,10 +988,7 @@ def _np_trapezoidalintegral(backend_module: Any, *args: Any, **kwargs: Any) -> A
     """
     func = getattr(backend_module, "trapezoidalintegral", getattr(backend_module, "trapezoidalintegral", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.trapz(*args, **kwargs)
@@ -1029,10 +1007,7 @@ def _np_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "variance", getattr(backend_module, "variance", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.var(*args, **kwargs)
@@ -1051,10 +1026,7 @@ def _np_vectorize(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "vectorize", getattr(backend_module, "vectorize", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.vectorize(*args, **kwargs)
@@ -1073,10 +1045,7 @@ def _np_welch(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "welch", getattr(backend_module, "welch", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.fft.rfft(args[0])
@@ -1095,10 +1064,7 @@ def _np_wrapkeydata(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "wrapkeydata", getattr(backend_module, "wrapkeydata", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -1117,10 +1083,7 @@ def _np_zerofraction(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "zerofraction", getattr(backend_module, "zerofraction", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.sum(args[0] == 0) / np.size(args[0])
@@ -1139,10 +1102,7 @@ def _np_zeta(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "zeta", getattr(backend_module, "zeta", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
-    import numpy as np
+        return func(*args, **kwargs)
+    import scipy.special
 
-    return args[0]
+    return scipy.special.zeta(*args, **kwargs)

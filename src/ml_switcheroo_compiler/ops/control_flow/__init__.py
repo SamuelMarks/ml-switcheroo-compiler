@@ -1,6 +1,8 @@
+"""Module __init__.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Control flow operators dispatcher."""
 
@@ -40,7 +42,7 @@ from .tracing import (
 )
 
 
-def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:
+def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:  # type: ignore
     """Evaluate cond operation.
 
     Args:
@@ -55,7 +57,7 @@ def cond(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) 
     return cond_tracing(pred, true_fn, false_fn)
 
 
-def while_loop(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:
+def while_loop(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:  # type: ignore
     """Evaluate while_loop operation.
 
     Args:
@@ -86,7 +88,7 @@ def scan(f: Callable[[Any, Any], tuple[Any, Any]], init: Any, xs: Any, length: i
     return scan_tracing(f, init, xs, length)
 
 
-def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) -> Any:
+def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) -> Any:  # type: ignore
     """Evaluate map_fn operation.
 
     Args:
@@ -102,7 +104,7 @@ def map_fn(fn: Callable[[Any], Any], elems: Tensor, dtype: DType | None = None) 
     return map_fn_tracing(fn, elems, dtype)
 
 
-def pmap(func: Callable, axis_name: str | None = None) -> Callable:
+def pmap(func: Callable[..., Any], axis_name: str | None = None) -> Callable[..., Any]:
     """Evaluate pmap operation.
 
     Args:
@@ -197,7 +199,7 @@ def fori_loop(lower: Any, upper: Any, body_fun: Callable[[Any, Any], Any], init_
     return res
 
 
-def map(fn: Callable[[Any], Any], elems: Tensor) -> Any:
+def map(fn: Callable[[Any], Any], elems: Tensor) -> Any:  # type: ignore
     """Apply a function iteratively over elements of a tensor.
 
     Args:
@@ -210,7 +212,7 @@ def map(fn: Callable[[Any], Any], elems: Tensor) -> Any:
     return map_fn(fn, elems)
 
 
-def vectorized_map(fn: Callable[[Any], Any], elems: Tensor) -> Any:
+def vectorized_map(fn: Callable[[Any], Any], elems: Tensor) -> Any:  # type: ignore
     """Apply a function in a vectorized manner over elements of a tensor.
 
     Args:
@@ -223,7 +225,7 @@ def vectorized_map(fn: Callable[[Any], Any], elems: Tensor) -> Any:
     return vmap(fn)(elems)
 
 
-def switch(index: Tensor, branches: list[Callable], *operands: Any) -> Any:
+def switch(index: Tensor, branches: list[Callable[..., Any]], *operands: Any) -> Any:  # type: ignore
     """Select a specific branch function based on an index tensor.
 
     Args:
@@ -272,7 +274,7 @@ def switch(index: Tensor, branches: list[Callable], *operands: Any) -> Any:
     return build_tree(0, len(branches))
 
 
-def custom_gradient(func: Callable) -> Callable:
+def custom_gradient(func: Callable[..., Any]) -> Callable[..., Any]:
     """Create a wrapper that enables custom gradient definitions.
 
     Args:
@@ -321,7 +323,7 @@ def custom_gradient(func: Callable) -> Callable:
                 return getattr(val, "shape", ())
 
         @register_vjp(op_name)
-        def dyn_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+        def dyn_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
             """VJP function for dynamic custom gradient.
 
             Args:
@@ -339,7 +341,7 @@ def custom_gradient(func: Callable) -> Callable:
     return wrapper
 
 
-def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Any = None) -> Any:
+def case(pred_fn_pairs: list[tuple[Tensor, Callable[..., Any]]], default: Any = None) -> Any:  # type: ignore
     """Evaluate case operation.
 
     Args:
@@ -356,7 +358,7 @@ def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Any = None) -> A
             return default()
         raise ValueError("case requires at least one (pred, fn) pair or a default")
 
-    def _build_case(idx: int) -> Callable:
+    def _build_case(idx: int) -> Callable[..., Any]:
         """Evaluate _build_case operation.
 
         Args:
@@ -373,7 +375,7 @@ def case(pred_fn_pairs: list[tuple[Tensor, Callable]], default: Any = None) -> A
     return _build_case(0)()
 
 
-def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable], default: Any = None) -> Any:
+def switch_case(branch_index: Tensor, branch_fns: dict[int, Callable[..., Any]], default: Any = None) -> Any:  # type: ignore
     """Select a specific function based on a dynamic index mapping.
 
     Args:

@@ -241,7 +241,6 @@ from .math_misc_ext import (
     _trapezoid,
     _unwrap,
     _vectorize,
-    _zeta,
 )
 from .math_nn import (
     _activity_regularization,
@@ -331,7 +330,6 @@ from .math_special import (
     _gamma,
     _igamma,
     _igammac,
-    _np_gamma,
     _np_modifiedbesseli1,
     _polygamma,
 )
@@ -558,7 +556,6 @@ __all__ = [
     "_np_fromiter",
     "_np_frompyfunc",
     "_np_fromstring",
-    "_np_gamma",
     "_np_gcd",
     "_np_geometric",
     "_np_gumbel",
@@ -694,5 +691,4 @@ __all__ = [
     "_updateslice",
     "_vander",
     "_vectorize",
-    "_zeta",
 ]

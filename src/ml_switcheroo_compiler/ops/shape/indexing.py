@@ -1,6 +1,8 @@
+"""Module indexing.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape operations for Tensor objects."""
 from dataclasses import dataclass
@@ -32,7 +34,7 @@ class IndexSpec:
     axis: int = 0
 
 
-def gather(input: Tensor, axis: int, index: Tensor) -> Any:
+def gather(input: Tensor, axis: int, index: Tensor) -> Any:  # type: ignore
     """Gather values along an axis specified by axis using index tensor.
 
     Args:
@@ -64,7 +66,7 @@ def gather(input: Tensor, axis: int, index: Tensor) -> Any:
     )
 
 
-def gather_nd(input: Tensor, indices: Tensor) -> Any:
+def gather_nd(input: Tensor, indices: Tensor) -> Any:  # type: ignore
     """Gather slices from input tensor using multi-dimensional indices.
 
     Args:
@@ -95,7 +97,7 @@ def gather_nd(input: Tensor, indices: Tensor) -> Any:
     )
 
 
-def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Any:
+def take(input: Tensor, indices: Tensor, axis: int | None = None) -> Any:  # type: ignore
     """Take elements from the input tensor at the specified flat indices.
 
     Args:
@@ -146,7 +148,7 @@ def take_along_axis(arr: Any, indices: Any, axis: int) -> Any:
     )
 
 
-def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Any:
+def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Any:  # type: ignore
     """Find indices where elements should be inserted to maintain order.
 
     Args:
@@ -176,7 +178,7 @@ def searchsorted(a: Tensor, v: Tensor, side: str = "left") -> Any:
     return _emit_shape_node("SearchSorted", inputs, attributes, v.shape, DType.Int32)
 
 
-def where(condition: Tensor, input: Tensor, other: Tensor) -> Any:
+def where(condition: Tensor, input: Tensor, other: Tensor) -> Any:  # type: ignore
     """Select elements from input or other based on condition.
 
     Args:
@@ -209,7 +211,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> Any:
     )
 
 
-def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Any:
+def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Any:  # type: ignore
     """Select elements from on_true or on_false based on pred.
 
     Args:
@@ -223,7 +225,7 @@ def select(pred: Tensor, on_true: Tensor, on_false: Tensor) -> Any:
     return where(pred, on_true, on_false)
 
 
-def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Any:
+def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Any:  # type: ignore
     """Apply boolean mask to tensor.
 
     Args:
@@ -259,7 +261,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Any:
     )
 
 
-def invert_permutation(x: Tensor) -> Any:
+def invert_permutation(x: Tensor) -> Any:  # type: ignore
     """Compute the inverse permutation of a tensor.
 
     Args:
@@ -627,7 +629,7 @@ class PutAlongAxis(OpDef):
         return getattr(arr, "shape", ())
 
 
-def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> Any:
+def put_along_axis(arr: Tensor, indices: Tensor, values: Tensor, axis: int) -> Any:  # type: ignore
     """Put values into array along axis at given indices.
 
     Args:

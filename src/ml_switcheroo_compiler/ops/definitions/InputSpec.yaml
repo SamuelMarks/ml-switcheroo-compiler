@@ -1,23 +1,19 @@
 operation: InputSpec
 description: Specifies the rank, dtype and shape of every input to a layer.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: str
-- is_variadic: false
-  kind: positional_or_keyword
-  name: shape
-  type: tuple
-- is_variadic: false
-  kind: positional_or_keyword
-  name: ndim
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: shape
+    type: tuple
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: ndim
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

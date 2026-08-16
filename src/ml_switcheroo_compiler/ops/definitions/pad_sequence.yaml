@@ -1,16 +1,12 @@
 operation: pad_sequence
 description: Pad a list of variable length Tensors with :attr:`padding_value`.
 std_args:
-- sequences
-- batch_first
-- padding_value
-- padding_side
+  - sequences
+  - batch_first
+  - padding_value
+  - padding_side
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

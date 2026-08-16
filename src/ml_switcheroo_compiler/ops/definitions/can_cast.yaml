@@ -2,19 +2,15 @@ operation: can_cast
 description: Determines if one data type can be cast to another data type according
   to type promotion rules (see type-promotion).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: from_
-  type: Union[dtype, array]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: to
-  type: dtype
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: from_
+    type: Union[dtype, array]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: to
+    type: dtype
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

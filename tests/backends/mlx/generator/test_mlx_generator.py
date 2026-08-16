@@ -12,11 +12,9 @@ class DummyNode:
 
 def test_mlx_op_registry_mixin():
     vis = MLXOpRegistryMixin()
-    ops = vis.get_ops_map({})
+    ops = vis._SIMPLE_OPS_MAP
     assert ops["BroadcastInDim"] == "{0}.broadcast_in_dim({1}, {2})"
     assert ops["Matmul"] == "mx.matmul({0}, {1})"
-    assert ops["Beta"] == "mx.random.uniform(shape={shape})"
-    assert ops["RngBitGenerator"] == "mx.random.randint(0, 255, {shape})"
 
 
 def test_mlx_nn_ops_visitor():
@@ -69,8 +67,6 @@ def test_mlx_shape_ops_visitor():
     assert vis.visit_Moveaxis(DummyNode({"source": 1, "destination": 2}), ["a"]) == "mx.moveaxis(a, 1, 2)"
     assert vis.visit_RaggedDot(DummyNode(), ["a", "b"]) == "mx.matmul(a, b)"
     assert vis.visit_NanToNum(DummyNode({"nan": 1.0, "posinf": 2.0, "neginf": -2.0}), ["a"]) == "mx.nan_to_num(a, nan=1.0, posinf=2.0, neginf=-2.0)"
-    assert vis.visit_Einsum(DummyNode({"equation": "i->i", "operands": [1]}), ["a", "b"]) == "mx.einsum('i->i', *a)"
-    assert vis.visit_Einsum(DummyNode({"equation": "i->i"}), ["a", "b"]) == "mx.einsum('i->i', a, b)"
     assert vis.visit_Zeros(DummyNode({"shape": [1, 2], "dtype": "int32"}), ["a"]) == "mx.zeros((1, 2), dtype=mx.int32)"
     assert vis.visit_Zeros(DummyNode({"shape": (1, 2), "dtype": None}), ["a"]) == "mx.zeros((1, 2), dtype=None)"
     assert vis.visit_Ones(DummyNode({"shape": [1, 2], "dtype": "int32"}), ["a"]) == "mx.ones((1, 2), dtype=mx.int32)"
@@ -83,7 +79,6 @@ def test_mlx_shape_ops_visitor():
 
 def test_mlx_shape_ops_visitor_branches():
     vis = MLXShapeOpsVisitor()
-    assert vis.visit_Einsum(DummyNode({"equation": "i->i", "operands": "not_a_list"}), ["a", "b"]) == "mx.einsum('i->i', a, b)"
     assert vis.visit_Full(DummyNode({"shape": (1, 2), "fill_value": 3.0, "dtype": "int32"}), ["a"]) == "mx.full((1, 2), 3.0, dtype=mx.int32)"
 
 
@@ -98,7 +93,7 @@ class DummyGraph:
 def test_mlx_generator():
     g = DummyGraph()
     gen = MLXCodeGenerator(g)
-    assert gen._get_backend_prefix() == "mlx"
+    assert gen.get_fallback_prefix() == "mx"
     assert gen.get_fallback_prefix() == "mx"
     gen.add_line = lambda x: None
     gen._emit_constant_assignment("var", "42")

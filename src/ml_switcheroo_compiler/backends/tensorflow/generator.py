@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """TensorFlow Target Emission."""
 
 from typing import Any
@@ -6,11 +6,10 @@ from typing import Any
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.backends.tensorflow.tensorflow_mixins import TensorFlowControlFlowMixin, TensorFlowMathMixin
 
 
 @register_backend("tensorflow")
-class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, BaseGenerator):
+class TensorFlowCodeGenerator(BaseGenerator):
     """Emit TensorFlow-compatible code from IR."""
 
     @classmethod
@@ -86,14 +85,6 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
         """
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
-
-    def _get_backend_prefix(self) -> str:
-        """Retrieve the backend prefix property or mapping.
-
-        Returns:
-            str: The evaluated or processed output.
-        """
-        return "tf"
 
     def _format_zeros_like(self, op: str, kwargs: Any) -> str:
         """Evaluate _format_zeros_like operation.
@@ -173,7 +164,7 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
         """
         return "tf.math"
 
-    def _get_creation_ops(self, kwargs: dict) -> dict[str, str]:
+    def _get_creation_ops(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Evaluate _get_creation_ops operation.
 
         Args:
@@ -188,35 +179,6 @@ class TensorFlowCodeGenerator(TensorFlowMathMixin, TensorFlowControlFlowMixin, B
             "Ones": self._format_zeros_like("ones", kwargs),
             "Full": self._format_full(kwargs),
         }
-
-    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Get the operation mapping dictionary.
-
-        Args:
-            kwargs: Operation kwargs.
-
-        Returns:
-            Dictionary mapping operation type to format string.
-        """
-        ops = super().get_ops_map(kwargs)
-        ops["Beta"] = "tf.random.gamma({shape}, alpha={1}) / (tf.random.gamma({shape}, alpha={1}) + tf.random.gamma({shape}, alpha={2}))"
-        ops["Dirichlet"] = "tf.random.gamma({shape}, alpha={1}) / tf.reduce_sum(tf.random.gamma({shape}, alpha={1}), axis=-1, keepdims=True)"
-        ops["Gamma"] = "tf.random.gamma({shape}, alpha={1})"
-        ops["RngBitGenerator"] = "tf.random.uniform({shape}, minval=0, maxval=255, dtype=tf.int32)"
-        ops["RngUniform"] = "tf.random.uniform({shape}, minval={0}, maxval={1})"
-        ops["Infeed"] = "{0}"
-        ops["Outfeed"] = "{0}"
-        ops["AxisIndex"] = "0"
-        ops["AllToAll"] = "{0}"
-        ops["Pmax"] = "{0}"
-        ops["Pmin"] = "{0}"
-        ops["PsumScatter"] = "{0}"
-        ops["Pswapaxes"] = "{0}"
-        ops["Ppermute"] = "{0}"
-        ops["Pshuffle"] = "{0}"
-        ops["CreateToken"] = "0"
-        ops["WithShardingConstraint"] = "{0}"
-        return ops
 
     def _emit_constant_assignment(self, var_name: str, val_repr: str) -> None:
         """Evaluate _emit_constant_assignment operation.

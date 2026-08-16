@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Extracted reduction functions for numpy eager."""
 
 from typing import Any
@@ -162,7 +162,7 @@ def _np_cumsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("AddN")
-def _np_add_n(backend_module: Any, inputs: list, **kwargs: Any) -> Any:
+def _np_add_n(backend_module: Any, inputs: list[Any], **kwargs: Any) -> Any:
     """Evaluate _np_add_n operation.
 
     Args:
@@ -184,7 +184,7 @@ def _np_add_n(backend_module: Any, inputs: list, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("AccumulateN")
-def _np_accumulate_n(backend_module: Any, inputs: list, **kwargs: Any) -> Any:
+def _np_accumulate_n(backend_module: Any, inputs: list[Any], **kwargs: Any) -> Any:
     """Evaluate _np_accumulate_n operation.
 
     Args:

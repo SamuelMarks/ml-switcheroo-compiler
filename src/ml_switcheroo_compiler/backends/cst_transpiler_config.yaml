@@ -1,0 +1,42 @@
+TARGET_CONFIGS:
+  jax:
+    - jax
+    - - jax
+      - numpy
+  mlx:
+    - mlx.core
+    - - mlx
+      - core
+  pytorch:
+    - torch
+    - - torch
+  keras:
+    - keras
+    - - keras
+      - ops
+  dask:
+    - dask.array
+    - - dask
+      - array
+  cupy:
+    - cupy
+    - - cupy
+  numpy:
+    - numpy
+    - - numpy
+KWARG_MAP:
+  jax:
+    dim: axis
+    keepdim: keepdims
+  pytorch:
+    axis: dim
+    keepdims: keepdim
+  mlx:
+    dim: axis
+    keepdim: keepdims
+  numpy:
+    dim: axis
+    keepdim: keepdims
+  keras:
+    dim: axis
+    keepdim: keepdims

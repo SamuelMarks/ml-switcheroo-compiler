@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Signal processing operations."""
 
 from dataclasses import dataclass
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 def _emit_signal_node(
     op_type: str,
-    inputs: list[Tensor],
+    inputs: list[Tensor],  # type: ignore
     attrs: dict[str, Any],
     out_shape: tuple[int, ...],
     dtype: str,

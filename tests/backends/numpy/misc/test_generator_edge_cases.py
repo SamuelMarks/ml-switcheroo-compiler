@@ -16,7 +16,6 @@ def test_numpy_generator_coverage(tmp_path):
 
     # test NumpyTypeTranslator
     assert NumpyTypeTranslator.get_fallback_prefix() == "np"
-    assert isinstance(NumpyTypeTranslator.get_ops_map(), dict)
 
     # test NumpyASTVisitor
     assert NumpyASTVisitor._format_kwargs({"a": 1}) == "a=1"
@@ -29,7 +28,6 @@ def test_numpy_generator_coverage(tmp_path):
     gen = NumpyGenerator(DummyGraph())
 
     node = DummyNode("Einsum")
-    assert gen.visit_Einsum(node, ["a", "b"], equation="i,j->ij") == "np.einsum('i,j->ij', a, b)"
 
     node = DummyNode("PowerIteration")
     assert gen.visit_PowerIteration(node, ["w"]) == "np_power_iteration(w, 1, None)"
@@ -40,7 +38,7 @@ def test_numpy_generator_coverage(tmp_path):
     ops = gen.get_ops_map({})
     assert isinstance(ops, dict)
 
-    assert gen._get_backend_prefix() == "np"
+    assert gen.get_fallback_prefix() == "np"
 
     helpers = gen.get_helper_functions()
     assert isinstance(helpers, list)

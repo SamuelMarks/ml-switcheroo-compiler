@@ -23,8 +23,36 @@ def test_export_mlirbc(tmp_path):
         version = struct.unpack("<B", f.read(1))[0]
         assert version == 1
 
-        length = struct.unpack("<I", f.read(4))[0]
-        payload = f.read(length)
+        # Parse payload string sections
+        # First byte is producer string ID
+        f.read(1)
+        # Then section ID
+        sec_id = struct.unpack("<B", f.read(1))[0]
+        assert sec_id == 0  # SECTION_STRING
 
-        mlir_text = payload.decode("utf-8")
-        assert "module" in mlir_text
+        # We can just read the rest of the payload and check if our strings are in it
+        payload = f.read()
+
+        # Test it contains stablehlo
+        assert b"stablehlo" in payload
+        assert b"ml_switcheroo_compiler" in payload
+
+    def test_mlir_bytecode_encoder_coverage():
+        from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncoder
+
+        enc = MLIRBytecodeEncoder()
+
+        # Test large varint to cover line 52
+        b = enc._encode_varint(300)
+        assert len(b) > 1
+
+        # Test add_op
+        enc.add_op("my_op", ["arg1"], ["ret1"])
+        assert len(enc.ops) == 1
+
+        # Test add_dialect duplicate
+        enc.add_dialect("func")
+        enc.add_dialect("func")
+
+        out = enc.encode()
+        assert b"my_op" in out

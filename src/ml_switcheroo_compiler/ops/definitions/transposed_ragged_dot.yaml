@@ -1,20 +1,16 @@
 operation: transposed_ragged_dot
 description: The class representing a Python function.
 std_args:
-- lhs
-- rhs
-- group_sizes
-- block_m
-- block_n
-- block_k
-- max_concurrent_steps
-- grid_block_n
+  - lhs
+  - rhs
+  - group_sizes
+  - block_m
+  - block_n
+  - block_k
+  - max_concurrent_steps
+  - grid_block_n
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

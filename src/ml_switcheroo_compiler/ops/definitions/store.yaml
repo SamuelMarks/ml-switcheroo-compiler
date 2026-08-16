@@ -1,15 +1,11 @@
 operation: store
 description: The class representing a Python function.
 std_args:
-- self
-- value
-- indices
+  - self
+  - value
+  - indices
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

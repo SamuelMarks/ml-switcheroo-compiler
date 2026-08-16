@@ -17,14 +17,9 @@ variants:
     eager: jax.numpy.loop
   mlx:
     eager: mlx.core.loop
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_stablehlo:
+
+    opcode: stablehlo.loop
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

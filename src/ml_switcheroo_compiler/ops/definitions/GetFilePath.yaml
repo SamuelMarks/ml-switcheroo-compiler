@@ -1,15 +1,11 @@
 operation: GetFilePath
 description: Returns the path to a file embedded in the binary.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: path
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: path
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

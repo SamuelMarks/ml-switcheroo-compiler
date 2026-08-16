@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Formatting utilities for backend code generators."""
 
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ class FormatterContext:
     prefix: str
     op_type: str
     input_vars: list[str]
-    kwargs: dict
+    kwargs: dict[str, Any]
     axis_kwarg: str = "axis"
     keepdims_kwarg: str = "keepdims"
 
@@ -21,7 +21,7 @@ class OpFormatter:
     """Formatter for backend operation strings."""
 
     @staticmethod
-    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict) -> str:
+    def format_backend_string(fmt: str, input_vars: list[str], kwargs: dict[str, Any]) -> str:
         """Replace format placeholders with variables and kwargs.
 
         Args:
@@ -37,6 +37,8 @@ class OpFormatter:
                 fmt = fmt.replace(f"{{{k}}}", str(v))
         for i, var in enumerate(input_vars):
             fmt = fmt.replace(f"{{{i}}}", var)
+        if "{__inputs__}" in fmt:
+            fmt = fmt.replace("{__inputs__}", ", ".join(input_vars))
         return fmt
 
     @staticmethod

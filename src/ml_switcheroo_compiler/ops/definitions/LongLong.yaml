@@ -2,10 +2,6 @@ operation: LongLong
 description: Signed integer type, compatible with C long long (typically 64-bit).
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

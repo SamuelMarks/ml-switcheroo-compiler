@@ -1,0 +1,86 @@
+frameworks:
+  jax:
+    target_module: "jax"
+    module_path: ["jax", "numpy"]
+    kwarg_map:
+      dim: "axis"
+      keepdim: "keepdims"
+    class_bases:
+      "nn.Module": ["flax", "linen", "Module"]
+    method_map:
+      "forward": "__call__"
+    broadcast_method: "broadcast_to"
+
+  mlx:
+    target_module: "mlx.core"
+    module_path: ["mlx", "core"]
+    kwarg_map:
+      dim: "axis"
+      keepdim: "keepdims"
+    class_bases: {}
+    method_map: {}
+    broadcast_method: "broadcast_to"
+
+  pytorch:
+    target_module: "torch"
+    module_path: ["torch"]
+    kwarg_map:
+      axis: "dim"
+      keepdims: "keepdim"
+    class_bases:
+      "flax.linen.Module": ["nn", "Module"]
+    method_map:
+      "__call__": "forward"
+    broadcast_method: "expand"
+
+  keras:
+    target_module: "keras"
+    module_path: ["keras", "ops"]
+    kwarg_map:
+      dim: "axis"
+      keepdim: "keepdims"
+    class_bases: {}
+    method_map: {}
+    broadcast_method: "broadcast_to"
+
+  dask:
+    target_module: "dask.array"
+    module_path: ["dask", "array"]
+    kwarg_map: {}
+    class_bases: {}
+    method_map: {}
+    broadcast_method: "broadcast_to"
+
+  cupy:
+    target_module: "cupy"
+    module_path: ["cupy"]
+    kwarg_map: {}
+    class_bases: {}
+    method_map: {}
+    broadcast_method: "broadcast_to"
+
+  numpy:
+    target_module: "numpy"
+    module_path: ["numpy"]
+    kwarg_map:
+      dim: "axis"
+      keepdim: "keepdims"
+    class_bases: {}
+    method_map: {}
+    broadcast_method: "broadcast_to"
+
+ast_to_ir_ops:
+  "torch.add": "Add"
+  "jax.numpy.add": "Add"
+  "mlx.core.add": "Add"
+  "keras.ops.add": "Add"
+  "numpy.add": "Add"
+  # Add more as needed
+
+ir_to_ast_ops:
+  "Add":
+    jax: ["jax", "numpy", "add"]
+    pytorch: ["torch", "add"]
+    mlx: ["mlx", "core", "add"]
+    keras: ["keras", "ops", "add"]
+    numpy: ["numpy", "add"]

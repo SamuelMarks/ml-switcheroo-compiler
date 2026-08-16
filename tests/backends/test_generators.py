@@ -131,7 +131,7 @@ def test_coverage_brute() -> None:
         class FakeGenerator(BaseGenerator):
             """Generate code representations for the Fake target."""
 
-            def _get_backend_prefix(self) -> str:
+            def get_fallback_prefix(self) -> str:
                 """Retrieve the backend prefix property or mapping.
 
                 Returns:
@@ -216,7 +216,7 @@ def test_add_n_accumulate_n_generation() -> None:
         class MockGenerator(BaseGenerator):
             """Generate code representations for the Mock target."""
 
-            def _get_backend_prefix(self) -> str:
+            def get_fallback_prefix(self) -> str:
                 """Retrieve the backend prefix property or mapping.
 
                 Returns:

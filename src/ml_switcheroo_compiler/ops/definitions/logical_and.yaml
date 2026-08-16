@@ -2,19 +2,15 @@ operation: logical_and
 description: Computes the logical AND for each element ``x1_i`` of the input array
   ``x1`` with the respective element ``x2_i`` of the input array ``x2``.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x1
-  type: Union[array, bool]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x2
-  type: Union[array, bool]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x1
+    type: Union[array, bool]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x2
+    type: Union[array, bool]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -15,15 +15,14 @@ variants:
     eager: jax.numpy.randomgammagrad
   mlx:
     eager: mlx.core.randomgammagrad
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: RandomGammaGrad
+  edge_stablehlo:
+
+    opcode: stablehlo.random_gamma_grad
   edge_wgsl:
     template: unary
     expr: '0.5'
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

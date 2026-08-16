@@ -2,14 +2,10 @@ operation: manual_sharding_spec
 description: Returns a value that can be used as a shard_map partition spec for the
   kernel.
 std_args:
-- self
-- sharding
+  - self
+  - sharding
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -13,14 +13,10 @@ variants:
     generator: If
   edge_stablehlo:
     generator: stablehlo.cond
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
 autodiff:
   vjp:
-  - $cotangent
+    - $cotangent
   jvp: Cond($tangent[0], $tangent[1], $tangent[2])

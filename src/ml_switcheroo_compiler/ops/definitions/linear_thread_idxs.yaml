@@ -1,13 +1,9 @@
 operation: linear_thread_idxs
 description: The indexes to be used for vector load/store WGStridedFragLayout.
 std_args:
-- self
+  - self
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

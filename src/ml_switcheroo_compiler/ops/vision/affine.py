@@ -1,6 +1,8 @@
+"""Module affine.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Vision operations."""
 from dataclasses import dataclass
@@ -26,7 +28,7 @@ class AffineConfig:
     data_format: Any = None
 
 
-def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Any:
+def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> Any:  # type: ignore
     """Apply the given 2D affine transforms to the given images.
 
     Args:
@@ -44,7 +46,7 @@ def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "n
     return _emit_shape_node("AffineTransform", [images, transforms], {"interpolation": interpolation}, (), DType.Int32)
 
 
-def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Any:
+def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Tensor) -> Any:  # type: ignore
     """Construct 2D/3D affine matrices from angles, shears, and zoom factors.
 
     Args:
@@ -72,7 +74,7 @@ def affine_generator(batch_size: int, angles: Tensor, shears: Tensor, zooms: Ten
     return _emit_shape_node("AffineGenerator", [angles, shears, zooms], {"batch_size": batch_size}, (), angles.dtype)
 
 
-def random_flip(images: Tensor, mode: Any = "horizontal_and_vertical", seed: Any = None, **kwargs: Any) -> Any:
+def random_flip(images: Tensor, mode: Any = "horizontal_and_vertical", seed: Any = None, **kwargs: Any) -> Any:  # type: ignore
     """Randomly flip images horizontally and/or vertically.
 
     Args:
@@ -97,7 +99,7 @@ def random_flip(images: Tensor, mode: Any = "horizontal_and_vertical", seed: Any
 
 
 def random_rotation(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     factor: float,
     config: AffineConfig | None = None,
     **kwargs: Any,
@@ -137,7 +139,7 @@ def random_rotation(
     )
 
 
-def random_crop(images: Tensor, size: tuple, seed: Any = None, **kwargs: Any) -> Any:
+def random_crop(images: Tensor, size: tuple[Any, ...], seed: Any = None, **kwargs: Any) -> Any:  # type: ignore
     """Randomly crop images.
 
     Args:
@@ -160,7 +162,7 @@ def random_crop(images: Tensor, size: tuple, seed: Any = None, **kwargs: Any) ->
 
 
 def random_zoom(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float | None = None,
     **kwargs: Any,
@@ -203,7 +205,7 @@ def random_zoom(
 
 
 def random_translation(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     height_factor: tuple[float, float] | float,
     width_factor: tuple[float, float] | float,
     config: AffineConfig | None = None,
@@ -248,7 +250,7 @@ def random_translation(
 
 
 def random_shear(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     y_factor: float | tuple[float, float],
     x_factor: float | tuple[float, float] | None = None,
     **kwargs: Any,
@@ -291,7 +293,7 @@ def random_shear(
 
 
 def random_perspective(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     factor: float | tuple[float, float],
     **kwargs: Any,
 ) -> Any:
@@ -330,7 +332,7 @@ def random_perspective(
 
 
 def random_elastic_transform(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     alpha: float | tuple[float, float],
     sigma: float | tuple[float, float],
     **kwargs: Any,
@@ -372,7 +374,7 @@ def random_elastic_transform(
     )
 
 
-def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Any:
+def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = False) -> Any:  # type: ignore
     """Generate a 2D or 3D flow field (sampling grid), given a batch of affine matrices theta.
 
     Args:
@@ -391,8 +393,8 @@ def affine_grid(theta: Tensor, size: tuple[int, ...], align_corners: bool = Fals
 
 
 def grid_sample(
-    input: Tensor,
-    grid: Tensor,
+    input: Tensor,  # type: ignore
+    grid: Tensor,  # type: ignore
     mode: str = "bilinear",
     padding_mode: str = "zeros",
     align_corners: bool = False,

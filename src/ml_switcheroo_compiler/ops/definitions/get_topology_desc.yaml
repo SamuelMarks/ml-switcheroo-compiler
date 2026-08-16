@@ -1,15 +1,11 @@
 operation: get_topology_desc
 description: The class representing a Python function.
 std_args:
-- topology_name
-- platform
-- kwargs
+  - topology_name
+  - platform
+  - kwargs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

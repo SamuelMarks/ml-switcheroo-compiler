@@ -1,19 +1,15 @@
 operation: GetAbstractModel
 description: Get Abstract model definition.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: init_fn
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: mesh
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: init_fn
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: mesh
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

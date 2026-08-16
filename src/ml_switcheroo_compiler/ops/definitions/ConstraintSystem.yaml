@@ -1,15 +1,11 @@
 operation: ConstraintSystem
 description: A constraint system contains a set of constraints and assignments.
 std_args:
-- self
-- assignments
-- constraints
+  - self
+  - assignments
+  - constraints
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

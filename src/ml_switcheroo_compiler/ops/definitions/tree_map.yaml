@@ -21,27 +21,23 @@ description: "Map a multi-input function over pytree args to produce a new pytre
   \ given by\n    ``func(x, *xs)`` where ``x`` is the value at the corresponding leaf\
   \ in ``tree`` and ``xs``\n    is the tuple of values at corresponding nodes in ``rests``."
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: func
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: tree
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: rests
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: is_leaf
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: func
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: tree
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: rests
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: is_leaf
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

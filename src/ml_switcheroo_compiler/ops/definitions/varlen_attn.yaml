@@ -1,21 +1,17 @@
 operation: varlen_attn
 description: Compute variable-length attention using Flash Attention.
 std_args:
-- query
-- key
-- value
-- cu_seq_q
-- cu_seq_k
-- max_q
-- max_k
-- is_causal
-- return_aux
+  - query
+  - key
+  - value
+  - cu_seq_q
+  - cu_seq_k
+  - max_q
+  - max_k
+  - is_causal
+  - return_aux
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

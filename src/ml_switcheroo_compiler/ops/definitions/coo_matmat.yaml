@@ -1,15 +1,11 @@
 operation: coo_matmat
 description: Product of COO sparse matrix and a dense matrix.
 std_args:
-- mat
-- B
-- transpose
+  - mat
+  - B
+  - transpose
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -4,19 +4,15 @@ description: Rounds the result of dividing each element ``x1_i`` of the input ar
   (i.e., closest to `+infinity`) integer-value number that is not greater than the
   division result.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x1
-  type: Union[array, int, float]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x2
-  type: Union[array, int, float]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x1
+    type: Union[array, int, float]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x2
+    type: Union[array, int, float]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

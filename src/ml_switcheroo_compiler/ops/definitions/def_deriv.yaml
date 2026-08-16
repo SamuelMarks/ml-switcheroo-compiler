@@ -1,14 +1,10 @@
 operation: def_deriv
 description: Define the jet rule for a primitive in terms of its first derivative.
 std_args:
-- prim
-- deriv
+  - prim
+  - deriv
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

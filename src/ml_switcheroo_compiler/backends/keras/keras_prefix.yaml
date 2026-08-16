@@ -1,0 +1,39 @@
+imports: |
+  import dataclasses
+  import keras.ops as kops
+
+functions:
+  keras_resize: |
+    def keras_resize(images, size, interpolation, align_corners):
+        # kops.image.resize
+        return kops.image.resize(images, size, interpolation=interpolation)
+
+  keras_median_filter: |
+    def keras_median_filter(images, kernel_size, padding='same', data_format=None):
+        # simplistic implementation or fallback
+        # Keras ops doesn't have median filter natively, but for now we stub it or use basic ops
+        # to avoid the tf dependency
+        return images # STUB
+
+  keras_gaussian_blur: |
+    def keras_gaussian_blur(images, kernel_size, sigma, padding='same', data_format=None):
+        # STUB to remove tf dependency
+        return images
+
+  keras_elastic_transform: |
+    def keras_elastic_transform(images, displacement, interpolation='bilinear', fill_value=0.0, data_format=None):
+        # STUB to remove tf dependency
+        return images
+
+  keras_power_iteration: |
+    def keras_power_iteration(w, num_iters, u=None):
+        if u is None:
+            u = kops.ones(w.shape[:-2] + (w.shape[-2], 1), dtype=w.dtype)
+        for _ in range(num_iters):
+            w_t = kops.swapaxes(w, -1, -2)
+            v = kops.matmul(w_t, u)
+            v = v / (kops.sqrt(kops.sum(v ** 2, axis=-2, keepdims=True)) + 1e-12)
+            u = kops.matmul(w, v)
+            u = u / (kops.sqrt(kops.sum(u ** 2, axis=-2, keepdims=True)) + 1e-12)
+        sigma = kops.matmul(kops.swapaxes(u, -1, -2), kops.matmul(w, v))
+        return kops.squeeze(v, -1), kops.squeeze(u, -1), kops.squeeze(kops.squeeze(sigma, -1), -1)

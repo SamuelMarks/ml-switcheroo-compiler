@@ -2,14 +2,10 @@ operation: arrive
 description: Arrives on a barrier in all blocks that share at least one of the coordinates
   along the collective dimensions.
 std_args:
-- self
-- orders_tensor_core
+  - self
+  - orders_tensor_core
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

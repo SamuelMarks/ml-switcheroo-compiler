@@ -2,18 +2,18 @@ operation: AsTensor
 description: Converts data into a tensor, sharing data and preserving autograd history
   if possible.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: data
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: dtype
-- is_variadic: false
-  kind: positional_or_keyword
-  name: device
-  type: Device
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: data
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: dtype
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: device
+    type: Device
 variants:
   numpy:
     eager: numpy.astensor
@@ -29,15 +29,11 @@ variants:
     eager: jax.numpy.astensor
   mlx:
     eager: mlx.core.astensor
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsTensor
+  edge_stablehlo:
+
+    opcode: stablehlo.as_tensor
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

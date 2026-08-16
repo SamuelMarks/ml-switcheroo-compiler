@@ -1,6 +1,8 @@
+"""Module eager.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Eager mode implementations for control flow operations."""
 
@@ -15,7 +17,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 
 
-def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:
+def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:  # type: ignore
     """Evaluate cond_eager operation.
 
     Args:
@@ -30,7 +32,7 @@ def cond_eager(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], 
     return false_fn()
 
 
-def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:
+def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:  # type: ignore
     """Evaluate while_loop_eager operation.
 
     Args:
@@ -49,7 +51,7 @@ def while_loop_eager(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], 
     return val
 
 
-def _stack_scan_outputs(ys: list, init: Any, last_y: Any) -> Any:
+def _stack_scan_outputs(ys: list[Any], init: Any, last_y: Any) -> Any:
     """Evaluate _stack_scan_outputs operation.
 
     Args:
@@ -78,7 +80,7 @@ def _stack_scan_outputs(ys: list, init: Any, last_y: Any) -> Any:
         )
 
 
-def scan_eager(f: Callable, init: Any, xs: Any, length: int | None = None) -> tuple[Any, Any]:
+def scan_eager(f: Callable[..., Any], init: Any, xs: Any, length: int | None = None) -> tuple[Any, Any]:
     """Evaluate scan_eager operation.
 
     Args:
@@ -102,7 +104,7 @@ def scan_eager(f: Callable, init: Any, xs: Any, length: int | None = None) -> tu
     return carry, out_tensor
 
 
-def _map_fn_eager_get_length(elems: Tensor) -> int:
+def _map_fn_eager_get_length(elems: Tensor) -> int:  # type: ignore
     """Evaluate _map_fn_eager_get_length operation.
 
     Args:
@@ -114,7 +116,7 @@ def _map_fn_eager_get_length(elems: Tensor) -> int:
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
 
-def _map_fn_eager_execute(fn: Callable, elems: Tensor, length: int) -> list[Any]:
+def _map_fn_eager_execute(fn: Callable[..., Any], elems: Tensor, length: int) -> list[Any]:  # type: ignore
     """Evaluate _map_fn_eager_execute operation.
 
     Args:
@@ -133,7 +135,7 @@ def _map_fn_eager_execute(fn: Callable, elems: Tensor, length: int) -> list[Any]
     return ys
 
 
-def _map_fn_eager_stack(ys: list[Any], elems: Tensor, dtype: DType | None) -> Any:
+def _map_fn_eager_stack(ys: list[Any], elems: Tensor, dtype: DType | None) -> Any:  # type: ignore
     """Evaluate _map_fn_eager_stack operation.
 
     Args:
@@ -153,7 +155,7 @@ def _map_fn_eager_stack(ys: list[Any], elems: Tensor, dtype: DType | None) -> An
     return Tensor(stacked_ys, TensorConfig(stacked_ys.shape, out_dtype, elems.device))
 
 
-def map_fn_eager(fn: Callable, elems: Tensor, dtype: DType | None = None) -> Any:
+def map_fn_eager(fn: Callable[..., Any], elems: Tensor, dtype: DType | None = None) -> Any:  # type: ignore
     """Evaluate map_fn_eager operation.
 
     Args:
@@ -169,7 +171,7 @@ def map_fn_eager(fn: Callable, elems: Tensor, dtype: DType | None = None) -> Any
     return _map_fn_eager_stack(ys, elems, dtype)
 
 
-def pmap_eager(func: Callable, axis_name: str | None = None) -> Callable:
+def pmap_eager(func: Callable[..., Any], axis_name: str | None = None) -> Callable[..., Any]:
     """Evaluate pmap_eager operation.
 
     Args:

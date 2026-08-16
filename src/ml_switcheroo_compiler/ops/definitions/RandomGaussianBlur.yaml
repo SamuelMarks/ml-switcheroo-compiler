@@ -1,21 +1,17 @@
 operation: RandomGaussianBlur
 description: Applies random Gaussian blur to images for data augmentation.
 std_args:
-- default: 3
-  is_variadic: false
-  kind: positional_or_keyword
-  name: kernel_size
-  type: int
-- default: 1.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: sigma
-  type: float
+  - default: 3
+    is_variadic: false
+    kind: positional_or_keyword
+    name: kernel_size
+    type: int
+  - default: 1.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: sigma
+    type: float
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

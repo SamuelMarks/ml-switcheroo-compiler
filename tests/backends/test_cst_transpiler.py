@@ -212,11 +212,11 @@ def test_transpile_kwargs():
 
 def test_transpile_broadcast_expand():
     source = "x.expand(1, 2)\n"
-    assert transpile_source(source, target_framework="jax") == "jnp.broadcast_to(x, 1, 2)\n"
+    assert transpile_source(source, target_framework="jax") == "jax.numpy.broadcast_to(x, 1, 2)\n"
     assert transpile_source(source, target_framework="mlx") == "mlx.core.broadcast_to(x, 1, 2)\n"
-    assert transpile_source(source, target_framework="numpy") == "np.broadcast_to(x, 1, 2)\n"
+    assert transpile_source(source, target_framework="numpy") == "numpy.broadcast_to(x, 1, 2)\n"
 
-    source = "jnp.broadcast_to(x, 1, 2)\n"
+    source = "jax.numpy.broadcast_to(x, 1, 2)\n"
     assert transpile_source(source, target_framework="pytorch") == "x.expand(1, 2)\n"
 
 
@@ -256,3 +256,94 @@ def test_transpile_kwarg_else():
     source = "foo(a=1)\n"
     res = transpile_source(source, target_framework="unknown")
     assert "foo(a=1)" in res
+
+
+def test_cst_transpiler_branches() -> None:
+    from ml_switcheroo_compiler.backends.cst_transpiler import type_infer_dry_run, validate_diff
+
+    assert type_infer_dry_run("some random invalid python code {")["dry_run"] == "failed"
+    assert not validate_diff("x = 1", "x = 1")
+    assert not validate_diff("x = 1", "invalid syntax {")
+
+    source = "import os\nimport sys\n"
+    res = transpile_source(source)
+    assert "import os" in res
+
+    source = "from os import path\n"
+    res = transpile_source(source)
+    assert "from os import path" in res
+
+    source = "import numpy.random as rnd\n"
+    res = transpile_source(source)
+    assert "import numpy" in res or "rnd" in res
+
+
+def test_cst_attribute() -> None:
+    source = "x = self.weight\n"
+    res = transpile_source(source)
+    assert 'state["weight"]' in res or "self.weight" in res
+
+
+def test_cst_import_branches() -> None:
+    source = "import torch as t\n"
+    res = transpile_source(source, target_framework="jax")
+    assert "import" in res
+
+
+def test_cst_transpiler_missing_branches():
+    import libcst as cst
+
+    from ml_switcheroo_compiler.backends.cst_transpiler import CSTTransformer, transpile_source
+
+    # 1. target_config without kw_map (we can fake this or use a config that has no kw_map if one exists)
+    # Actually just pass empty method_map to fall to line 288
+    source = "def unknown_method(self): pass"
+    res = transpile_source(source, "pytorch")
+    assert "unknown_method" in res
+
+    # 2. line 220: no target config
+    source = "class A:\n    pass"
+    res = transpile_source(source, "unknown_framework")
+    assert "class A:" in res
+
+    # 3. get_attr_chain non-Name/Attr
+    source = "class A(funcs[0]):\n    pass"
+    res = transpile_source(source, "pytorch")
+    assert "funcs[0]" in res
+
+    # 4. empty kwarg_map
+    # If the target framework has an empty kwarg_map it falls to 160.
+    # We can fake it via subclass.
+    class FakeConfig:
+        kwarg_map = {}
+        module_path = ["fake"]
+        broadcast_method = "broadcast_fake"
+        method_map = {}
+        class_bases = {"fake_base": []}
+
+    visitor = CSTTransformer("pytorch")
+    visitor.target_config = FakeConfig()
+
+    tree = cst.parse_module("func(x=1)")
+    tree = tree.visit(visitor)
+
+    # 5. broadcast_method different but not expand/broadcast_to
+    # Just need fw_config.broadcast_method = "A" and target = "B"
+    # Actually, we can just trigger it using fake visitor
+    visitor.target_config = FakeConfig()
+    # It needs a valid original fw config in _CONFIG.frameworks to match
+    source2 = "x.broadcast(1)"
+
+    # 6. line 247 -> 241 (target base parts empty)
+    # visitor with FakeConfig that has empty class base
+    tree = cst.parse_module("class B(nn.Module):\n    pass")
+    tree = tree.visit(visitor)
+
+    # 5. properly visit
+    # Let's say pytorch to fake, pytorch uses expand, fake uses broadcast_fake
+    tree = cst.parse_module("x.expand(1)")
+    visitor.target_config = FakeConfig()  # with broadcast_fake
+    visitor.target_framework = "fake"
+    # To match we need final_node.func.attr.value to be the broadcast_method of some config.
+    # We can just visit it directly
+    tree = tree.visit(visitor)

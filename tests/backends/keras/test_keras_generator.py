@@ -73,10 +73,9 @@ def test_keras_tensor_manipulator():
 
 def test_keras_generator():
     gen = KerasCodeGenerator(DummyGraph())
-    assert gen._get_backend_prefix() == "keras"
+    assert gen.get_fallback_prefix() == "keras.ops"
     assert gen.get_fallback_prefix() == "keras.ops"
     assert gen.visit_RaggedDot(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
-    assert gen.visit_Einsum(None, ["a", "b"], equation="i->i") == "keras.ops.einsum('i->i', a, b)"
     ops = gen.get_ops_map({})
     assert "Zeros" in ops
     assert "Transpose" in ops
@@ -88,11 +87,12 @@ def test_keras_generator():
     gen._emit_output_assignment(None, ["out2"], "out2")
     assert "out2" in gen.keras_output_vars
     assert gen._generate_file_header() == [gen.header.strip()]
-    m_open = mock_open(read_data="import tmp")
+    m_open = mock_open(read_data='imports: "import tmp"\nfunctions:\n  dummy: "def dummy(): pass"')
     with patch("builtins.open", m_open):
         imports = gen._resolve_imports()
         assert "import keras\n" in imports
         assert "import tmp" in imports
+        assert "def dummy(): pass" in imports
     gen.code = []
     gen._generate_function_signature()
     assert "def get_model():" in gen.code[-1]

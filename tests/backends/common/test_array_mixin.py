@@ -4,7 +4,7 @@ from ml_switcheroo_compiler.backends.common.mixins.array import ArrayASTVisitor
 
 
 class DummyGenerator:
-    def _get_backend_prefix(self):
+    def get_fallback_prefix(self):
         return "bk"
 
 
@@ -44,27 +44,27 @@ def test_array_mixin():
     assert vis.visit_TopK(node_topk_expr, ["a"]) == "bk.argsort(a, axis=-1)[..., -(k_val):][..., ::-1]"
 
     # Test topk native dispatch
-    vis._generator._get_backend_prefix = lambda: "jax"
+    vis._generator.get_fallback_prefix = lambda: "jax"
     assert vis.visit_TopK(node_topk, ["a"]) == "jax.lax.top_k(a, 2)[0]"
-    vis._generator._get_backend_prefix = lambda: "torch"
+    vis._generator.get_fallback_prefix = lambda: "torch"
     assert vis.visit_TopK(node_topk, ["a"]) == "torch.topk(a, 2, dim=-1).values"
-    vis._generator._get_backend_prefix = lambda: "tf"
+    vis._generator.get_fallback_prefix = lambda: "tf"
     assert vis.visit_TopK(node_topk_expr, ["a"]) == "tf.math.top_k(a, k=k_val)[1]"
-    vis._generator._get_backend_prefix = lambda: "keras"
+    vis._generator.get_fallback_prefix = lambda: "keras"
     assert vis.visit_TopK(node_topk_expr, ["a"]) == "keras.ops.top_k(a, k_val)[1]"
 
-    vis._generator._get_backend_prefix = lambda: "bk"
+    vis._generator.get_fallback_prefix = lambda: "bk"
 
     node_mesh = DummyNode({"output_index": 1, "indexing": "xy"})
-    assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "numpy.meshgrid(a, b, indexing='xy')[1]"
-    vis._generator._get_backend_prefix = lambda: "mlx"
+    assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "bk.meshgrid(a, b, indexing='xy')[1]"
+    vis._generator.get_fallback_prefix = lambda: "mlx"
     assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "mx.meshgrid(a, b, indexing='xy')[1]"
-    vis._generator._get_backend_prefix = lambda: "jax"
+    vis._generator.get_fallback_prefix = lambda: "jax"
     assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "jnp.meshgrid(a, b, indexing='xy')[1]"
-    vis._generator._get_backend_prefix = lambda: "torch"
+    vis._generator.get_fallback_prefix = lambda: "torch"
     assert vis.visit_Meshgrid(node_mesh, ["a", "b"]) == "torch.meshgrid(a, b, indexing='xy')[1]"
 
-    vis._generator._get_backend_prefix = lambda: "bk"
+    vis._generator.get_fallback_prefix = lambda: "bk"
 
     node_slice_pos = DummyNode({"dim": 1, "start": 0, "end": 2, "step": 1})
     assert vis.visit_Slice(node_slice_pos, ["a"]) == "a[(slice(None),) * (1) + (slice(0, 2, 1),) + (...,)]"
@@ -73,21 +73,21 @@ def test_array_mixin():
 
     node_ds = DummyNode({"slice_sizes": [2, 2]})
     assert vis.visit_DynamicSlice(node_ds, ["a", "s1", "s2"]) == "a[tuple(slice(s, s + sz) for s, sz in zip([s1, s2], [2, 2]))]"
-    vis._generator._get_backend_prefix = lambda: "jax"
+    vis._generator.get_fallback_prefix = lambda: "jax"
     assert vis.visit_DynamicSlice(node_ds, ["a", "s1", "s2"]) == "jax.lax.dynamic_slice(a, (s1, s2,), (2, 2,))"
-    vis._generator._get_backend_prefix = lambda: "tf"
+    vis._generator.get_fallback_prefix = lambda: "tf"
     assert vis.visit_DynamicSlice(node_ds, ["a", "s1", "s2"]) == "tf.slice(a, [s1, s2], [2, 2])"
 
-    vis._generator._get_backend_prefix = lambda: "bk"
+    vis._generator.get_fallback_prefix = lambda: "bk"
     assert vis.visit_DynamicUpdateSlice(node_ds, ["a", "upd", "s1", "s2"]) == "(lambda out: [out.__setitem__(tuple(slice(s, s + sz) for s, sz in zip([s1, s2], upd.shape)), upd), out][1])(a.copy())"
-    vis._generator._get_backend_prefix = lambda: "torch"
+    vis._generator.get_fallback_prefix = lambda: "torch"
     assert vis.visit_DynamicUpdateSlice(node_ds, ["a", "upd", "s1", "s2"]) == "(lambda out: [out.__setitem__(tuple(slice(s, s + sz) for s, sz in zip([s1, s2], upd.shape)), upd), out][1])(a.clone())"
-    vis._generator._get_backend_prefix = lambda: "jax"
+    vis._generator.get_fallback_prefix = lambda: "jax"
     assert vis.visit_DynamicUpdateSlice(node_ds, ["a", "upd", "s1"]) == "jax.lax.dynamic_update_slice(a, upd, (s1,))"
-    vis._generator._get_backend_prefix = lambda: "tf"
+    vis._generator.get_fallback_prefix = lambda: "tf"
     assert vis.visit_DynamicUpdateSlice(node_ds, ["a", "upd", "s1"]) == "tf.tensor_scatter_nd_update(a, tf.stack([s1], axis=-1), upd)"
 
-    vis._generator._get_backend_prefix = lambda: "bk"
+    vis._generator.get_fallback_prefix = lambda: "bk"
     node_getitem = DummyNode({"key": "1:3"})
     assert vis.visit_GetItem(node_getitem, ["a"]) == "a[1:3]"
 

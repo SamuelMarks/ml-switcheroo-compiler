@@ -1,17 +1,13 @@
 operation: attention_with_pipeline_emitter
 description: The class representing a Python function.
 std_args:
-- q
-- k
-- v
-- config
-- save_residuals
+  - q
+  - k
+  - v
+  - config
+  - save_residuals
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

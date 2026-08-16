@@ -1,15 +1,11 @@
 operation: IsValidMmaTiling
 description: States that the `expr` SMEM tiling must be compatible with MMA requirements.
 std_args:
-- self
-- expr
-- bitwidth
+  - self
+  - expr
+  - bitwidth
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,13 +1,9 @@
 operation: to_layout_attr
 description: Constructs an MLIR attribute that corresponds to the given layout.
 std_args:
-- layout
+  - layout
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

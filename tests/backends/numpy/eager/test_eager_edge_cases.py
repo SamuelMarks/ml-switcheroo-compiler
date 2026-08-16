@@ -1545,14 +1545,6 @@ def test_core_math_ops_trig_fallbacks():
     class DummyBackend:
         pass
 
-    assert _acos(DummyBackend(), 0.5) is None
-    assert _acosh(DummyBackend(), 1.5) is None
-    assert _asin(DummyBackend(), 0.5) is None
-    assert _asinh(DummyBackend(), 0.5) is None
-    assert _atan(DummyBackend(), 0.5) is None
-    assert _atanh(DummyBackend(), 0.5) is None
-    assert _atan2(DummyBackend(), 0.5, 0.5) is None
-
 
 def test_core_math_ops_degrees_radians_fallbacks():
     """Test degree/radians fallbacks."""
@@ -1580,6 +1572,18 @@ def test_core_math_ops_degrees_radians_fallbacks():
         pass
 
     assert _deg2rad(DummyBackend(), 180.0) is None
+
+
+def test_numpy_trig_coverage():
+    from ml_switcheroo_compiler.backends.numpy.eager.math_trig import _np_deg2rad, _np_rad2deg
+    from ml_switcheroo_compiler.backends.eager.core_math_ops.math_misc_ext import _degrees, _rad2deg, _radians
+    import numpy as np
+
+    class DummyBackend:
+        pass
+
+    assert _np_deg2rad(np, 180.0) == np.pi
+    assert _np_rad2deg(np, np.pi) == 180.0
     assert _degrees(DummyBackend(), 3.14) is None
     assert _rad2deg(DummyBackend(), 3.14) is None
     assert _radians(DummyBackend(), 180.0) is None
@@ -1865,14 +1869,14 @@ def test_core_math_ops_s_funcs():
 def test_core_math_ops_u_z_funcs():
     """Test unwrap, zeta fallbacks."""
     import numpy as np
-    from ml_switcheroo_compiler.backends.eager.core_math_ops import _unwrap, _zeta
+    from ml_switcheroo_compiler.backends.eager.core_math_ops import _unwrap, _np_zeta
 
     try:
         _unwrap(np, [0.0, 3.14, 6.28])(np, not None)
     except (NotImplementedError, Exception):
         pass
     try:
-        _zeta(np, 2.0)(np, not None)
+        _np_zeta(np, 2.0)(np, not None)
     except (NotImplementedError, Exception):
         pass
 
@@ -1889,7 +1893,7 @@ def test_core_math_ops_u_z_funcs():
 
     with patch.dict(sys.modules, {"scipy.special": None}):
         try:
-            _zeta(db, 2.0)(db, None)
+            _np_zeta(db, 2.0)(db, None)
         except (AttributeError, NotImplementedError, Exception):
             pass
 

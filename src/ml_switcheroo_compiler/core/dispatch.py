@@ -1,13 +1,11 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dispatch utilities for the ml-switcheroo compiler."""
-
-from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
 
 
-def dispatch(module_name: str, func_name: str, *args: Any, **kwargs: Any) -> Any:
+def dispatch(module_name: str, func_name: str, *args: object, **kwargs: object) -> object:
     """Dynamically dispatch a function to the active backend.
 
     Args:
@@ -16,7 +14,7 @@ def dispatch(module_name: str, func_name: str, *args: Any, **kwargs: Any) -> Any
         *args (object): Positional arguments for the function.
         **kwargs (object): Keyword arguments for the function.
 
-    Returns: Any: The result of the function execution.
+    Returns: object: The result of the function execution.
 
     Raises:
         ValueError: If not supported in the active backend or in tracing mode.

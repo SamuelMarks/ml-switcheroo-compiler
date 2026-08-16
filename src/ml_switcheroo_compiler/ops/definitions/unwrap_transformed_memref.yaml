@@ -1,14 +1,10 @@
 operation: unwrap_transformed_memref
 description: Uwraps a memref from an unrealized cast and verifies its transforms.
 std_args:
-- ref
-- expected_transforms
+  - ref
+  - expected_transforms
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

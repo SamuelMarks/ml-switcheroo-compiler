@@ -1,16 +1,12 @@
 operation: get_neighbor
 description: Helper function that computes the mesh indices of a neighbor.
 std_args:
-- idx
-- mesh
-- axis_name
-- direction
+  - idx
+  - mesh
+  - axis_name
+  - direction
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

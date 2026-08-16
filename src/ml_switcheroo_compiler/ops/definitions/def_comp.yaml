@@ -2,15 +2,11 @@ operation: def_comp
 description: Define the jet rule for a primitive in terms of a composition of simpler
   primitives.
 std_args:
-- prim
-- comp
-- kwargs
+  - prim
+  - comp
+  - kwargs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,6 +1,8 @@
+"""Module lookup.py."""
+
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Lookup and hash table ops."""
 
 from ml_switcheroo_compiler.core.dtype import DType
@@ -10,7 +12,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 class MutableHashTable:
     """Mutable hash table backing ops."""
 
-    def __init__(self, key_dtype: DType, value_dtype: DType, default_value: Tensor) -> None:
+    def __init__(self, key_dtype: DType, value_dtype: DType, default_value: Tensor) -> None:  # type: ignore
         """Initialize MutableHashTable.
 
         Args:
@@ -22,7 +24,7 @@ class MutableHashTable:
         self.value_dtype = value_dtype
         self.default_value = default_value
 
-    def lookup(self, keys: Tensor) -> Any:
+    def lookup(self, keys: Tensor) -> Any:  # type: ignore
         """Lookup keys.
 
         Args:
@@ -35,7 +37,7 @@ class MutableHashTable:
 
         return Tensor(None, TensorConfig(getattr(keys, "shape", ()), self.value_dtype, getattr(keys, "device", "cpu")))
 
-    def insert(self, keys: Tensor, values: Tensor) -> None:
+    def insert(self, keys: Tensor, values: Tensor) -> None:  # type: ignore
         """Insert keys and values.
 
         Args:
@@ -49,7 +51,7 @@ class MutableHashTable:
 class DenseHashTable:
     """Dense static hash table ops."""
 
-    def __init__(self, key_dtype: DType, value_dtype: DType, default_value: Tensor, empty_key: Tensor, deleted_key: Tensor) -> None:
+    def __init__(self, key_dtype: DType, value_dtype: DType, default_value: Tensor, empty_key: Tensor, deleted_key: Tensor) -> None:  # type: ignore
         """Initialize DenseHashTable.
 
         Args:
@@ -65,7 +67,7 @@ class DenseHashTable:
         self.empty_key = empty_key
         self.deleted_key = deleted_key
 
-    def lookup(self, keys: Tensor) -> Any:
+    def lookup(self, keys: Tensor) -> Any:  # type: ignore
         """Lookup keys.
 
         Args:
@@ -78,7 +80,7 @@ class DenseHashTable:
 
         return Tensor(None, TensorConfig(getattr(keys, "shape", ()), self.value_dtype, getattr(keys, "device", "cpu")))
 
-    def insert(self, keys: Tensor, values: Tensor) -> None:
+    def insert(self, keys: Tensor, values: Tensor) -> None:  # type: ignore
         """Insert keys and values.
 
         Args:

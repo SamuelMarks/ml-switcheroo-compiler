@@ -1,39 +1,35 @@
 operation: flash_attention_kernel
 description: The class representing a Python function.
 std_args:
-- data_next_ref
-- block_mask_ref
-- mask_next_ref
-- q_ref
-- k_ref
-- v_ref
-- q_segment_ids_ref
-- kv_segment_ids_ref
-- sinks_ref
-- mask_ref
-- q_sequence_ref
-- m_scratch_ref
-- l_scratch_ref
-- o_scratch_ref
-- o_ref
-- logsumexp_ref
-- mask_value
-- grid_width
-- bq
-- bkv
-- bkv_compute
-- head_dim_v
-- q_layout
-- k_layout
-- v_layout
-- attn_logits_soft_cap
-- mask_function
+  - data_next_ref
+  - block_mask_ref
+  - mask_next_ref
+  - q_ref
+  - k_ref
+  - v_ref
+  - q_segment_ids_ref
+  - kv_segment_ids_ref
+  - sinks_ref
+  - mask_ref
+  - q_sequence_ref
+  - m_scratch_ref
+  - l_scratch_ref
+  - o_scratch_ref
+  - o_ref
+  - logsumexp_ref
+  - mask_value
+  - grid_width
+  - bq
+  - bkv
+  - bkv_compute
+  - head_dim_v
+  - q_layout
+  - k_layout
+  - v_layout
+  - attn_logits_soft_cap
+  - mask_function
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

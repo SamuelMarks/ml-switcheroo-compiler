@@ -1,17 +1,13 @@
 operation: compile_with_env
 description: The class representing a Python function.
 std_args:
-- f
-- f_args
-- f_kwargs
-- env_flags
-- compiler_flags
+  - f
+  - f_args
+  - f_kwargs
+  - env_flags
+  - compiler_flags
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

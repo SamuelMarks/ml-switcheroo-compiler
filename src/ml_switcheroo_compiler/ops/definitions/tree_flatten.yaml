@@ -3,20 +3,16 @@ description: 'Flattens a pytree into a list of values and a TreeSpec that can be
 
   to reconstruct the pytree.'
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: tree
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: is_leaf
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: tree
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: is_leaf
+    type: Any
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,24 +1,20 @@
 operation: mha_reference_bwd
 description: The class representing a Python function.
 std_args:
-- q
-- k
-- v
-- ab
-- segment_ids
-- o
-- l
-- m
-- do
-- causal
-- mask_value
-- sm_scale
+  - q
+  - k
+  - v
+  - ab
+  - segment_ids
+  - o
+  - l
+  - m
+  - do
+  - causal
+  - mask_value
+  - sm_scale
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

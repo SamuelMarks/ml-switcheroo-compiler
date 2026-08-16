@@ -1,13 +1,9 @@
 operation: tmem_default_layout
 description: A TMEM layout used for 1CTA MMA with M=128 and 2CTA MMA with M=256.
 std_args:
-- packing
+  - packing
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

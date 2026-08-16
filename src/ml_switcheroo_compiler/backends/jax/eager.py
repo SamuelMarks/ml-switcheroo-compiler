@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
 from typing import Any, Callable
@@ -12,6 +12,15 @@ import jax.scipy.stats
 
 
 def _execute_adaptive_avg_pool(operand: Any, output_size: Any) -> Any:
+    """_execute_adaptive_avg_pool function.
+
+    Args:
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
+
+    Returns:
+        Any: Result.
+    """
     import jax
     import jax.numpy as jnp
     from jax.lax import reduce_window
@@ -37,9 +46,6 @@ def _execute_adaptive_avg_pool(operand: Any, output_size: Any) -> Any:
         window_strides.append(max(1, stride))
 
     # We do a simple average pooling over the computed window
-    def avg_reducer(a: Any, b: Any) -> Any:
-        return a + b
-
     sum_pooled = reduce_window(operand, 0.0, jax.lax.add, window_dimensions, window_strides, "VALID")
 
     # To get average we need to divide by window size. For adaptive pool the effective window size can vary,
@@ -51,6 +57,15 @@ def _execute_adaptive_avg_pool(operand: Any, output_size: Any) -> Any:
 
 
 def _execute_adaptive_max_pool(operand: Any, output_size: Any) -> Any:
+    """_execute_adaptive_max_pool function.
+
+    Args:
+        operand (Any): The operand parameter.
+        output_size (Any): The output_size parameter.
+
+    Returns:
+        Any: Result.
+    """
     import jax
     import jax.numpy as jnp
     from jax.lax import reduce_window
@@ -280,10 +295,10 @@ _OP_DISPATCH: dict[str, Callable[..., Any]] = {
     "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs), _execute_adaptive_max_pool(*args, **kwargs)),
     "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, jax.numpy.zeros((), dtype=target.dtype)),
     "Adjoint": lambda x, **kwargs: jax.numpy.conj(jax.numpy.transpose(x)),
-    "AllGather": lambda tensor, *args, **kwargs: jax.lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if hasattr(jax.lax, "all_gather") else jax.numpy.stack([tensor]),
-    "AllReduce": lambda tensor, *args, **kwargs: jax.lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if kwargs.get("op_type", "sum").lower() == "sum" else jax.lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),
+    "AllGather": lambda tensor, *args, **kwargs: jax.lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if hasattr(jax.lax, "all_gather") else jax.numpy.stack([tensor]),  # type: ignore
+    "AllReduce": lambda tensor, *args, **kwargs: jax.lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if kwargs.get("op_type", "sum").lower() == "sum" else jax.lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),  # type: ignore
     "ReduceScatter": lambda tensor, *args, **kwargs: jax.lax.reduce_scatter(tensor, jax.lax.add if kwargs.get("op_type", "sum").lower() == "sum" else jax.lax.max, scatter_dimension=kwargs.get("axis", 0), axis_name=kwargs.get("axis_name", "i")) if hasattr(jax.lax, "reduce_scatter") else tensor,
-    "AllToAll": lambda tensor, *args, **kwargs: jax.lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if hasattr(jax.lax, "all_to_all") else tensor,
+    "AllToAll": lambda tensor, *args, **kwargs: jax.lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if hasattr(jax.lax, "all_to_all") else tensor,  # type: ignore
     "AlphaDropout": lambda x, **kwargs: jax.numpy.where(jax.random.bernoulli(jax.random.PRNGKey(0), 1.0 - kwargs.get("p", 0.5), x.shape), x, 0.0),
     "AsString": lambda arr, **kwargs: str(arr),
     "Assert": lambda condition, data, summarize=3, **kwargs: None,

@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module conv.py."""
+
 from typing import Any
 
 """Convolution Ops."""
@@ -30,9 +32,9 @@ class ConvDimSpecs:
 class ConvExecutionState:
     """Configuration class for conv execution state."""
 
-    lhs_pad: np.ndarray
-    rhs_c: np.ndarray
-    out: np.ndarray
+    lhs_pad: "np.ndarray[Any, Any]"
+    rhs_c: "np.ndarray[Any, Any]"
+    out: "np.ndarray[Any, Any]"
     config: ConvConfig
     spatial_dims: int
 
@@ -164,7 +166,7 @@ def _calculate_conv_padding(config: ConvConfig, lhs_shape: tuple[int, ...], rhs_
     return [(0, 0)] * spatial_dims
 
 
-def _apply_conv_dilation(tensor: np.ndarray, dilation: list[int], spatial_dims: int) -> np.ndarray:
+def _apply_conv_dilation(tensor: "np.ndarray[Any, Any]", dilation: list[int], spatial_dims: int) -> "np.ndarray[Any, Any]":
     """Apply dilation to a convolution tensor.
 
     Args:
@@ -197,7 +199,7 @@ class PatchConfig:
     feature_group_count: int
 
 
-def _compute_conv_patch_group(lhs_patch: np.ndarray, rhs_c: np.ndarray, config: PatchConfig, g: int) -> np.ndarray:
+def _compute_conv_patch_group(lhs_patch: "np.ndarray[Any, Any]", rhs_c: "np.ndarray[Any, Any]", config: PatchConfig, g: int) -> "np.ndarray[Any, Any]":
     """Evaluate _compute_conv_patch_group operation.
 
     Args:
@@ -216,7 +218,7 @@ def _compute_conv_patch_group(lhs_patch: np.ndarray, rhs_c: np.ndarray, config: 
     return np.tensordot(lp_g, rc_g, axes=(config.axes_lhs, config.axes_rhs))
 
 
-def _compute_single_patch_grouped(lhs_patch: np.ndarray, rhs_c: np.ndarray, out: np.ndarray, spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
+def _compute_single_patch_grouped(lhs_patch: "np.ndarray[Any, Any]", rhs_c: "np.ndarray[Any, Any]", out: "np.ndarray[Any, Any]", spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
     """Evaluate _compute_single_patch_grouped operation.
 
     Args:
@@ -278,7 +280,7 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
         state.out[tuple([slice(None), slice(None)] + list(spatial_indices))] = res
 
 
-def _compute_conv_patches(lhs_pad: np.ndarray, rhs_c: np.ndarray, out: np.ndarray, config: ConvConfig) -> None:
+def _compute_conv_patches(lhs_pad: "np.ndarray[Any, Any]", rhs_c: "np.ndarray[Any, Any]", out: "np.ndarray[Any, Any]", config: ConvConfig) -> None:
     """Evaluate _compute_conv_patches operation.
 
     Args:
@@ -294,7 +296,7 @@ def _compute_conv_patches(lhs_pad: np.ndarray, rhs_c: np.ndarray, out: np.ndarra
         _compute_single_patch(state, spatial_indices)
 
 
-def _apply_conv_padding_helper(lhs_c: np.ndarray, rhs_c: np.ndarray, config: ConvConfig) -> np.ndarray:
+def _apply_conv_padding_helper(lhs_c: "np.ndarray[Any, Any]", rhs_c: "np.ndarray[Any, Any]", config: ConvConfig) -> "np.ndarray[Any, Any]":
     """Evaluate _apply_conv_padding_helper operation.
 
     Args:
@@ -310,7 +312,7 @@ def _apply_conv_padding_helper(lhs_c: np.ndarray, rhs_c: np.ndarray, config: Con
     return np.pad(lhs_c, pad_width, mode="constant", constant_values=0)
 
 
-def _preprocess_conv_tensors(lhs: np.ndarray, rhs: np.ndarray, config: ConvConfig, specs: ConvDimSpecs) -> tuple[np.ndarray, np.ndarray]:
+def _preprocess_conv_tensors(lhs: "np.ndarray[Any, Any]", rhs: "np.ndarray[Any, Any]", config: ConvConfig, specs: ConvDimSpecs) -> tuple["np.ndarray[Any, Any]", "np.ndarray[Any, Any]"]:
     """Evaluate _preprocess_conv_tensors operation.
 
     Args:
@@ -391,11 +393,11 @@ def _conv_general_dilated(lhs: object, rhs: object, config: ConvConfig, **kwargs
     """
     lhs_arr = np.asarray(lhs)
     rhs_arr = np.asarray(rhs)
-    spatial_dims = lhs_arr.ndim - 2  # type: ignore
-    specs = _parse_conv_dimension_numbers(lhs_arr.ndim, rhs_arr.ndim, spatial_dims, config.dimension_numbers)  # type: ignore
+    spatial_dims = lhs_arr.ndim - 2
+    specs = _parse_conv_dimension_numbers(lhs_arr.ndim, rhs_arr.ndim, spatial_dims, config.dimension_numbers)
     (lhs_pad, rhs_c) = _preprocess_conv_tensors(lhs_arr, rhs_arr, config, specs)
     out_shape = _compute_out_shape(lhs_pad.shape, rhs_c.shape, spatial_dims, config.window_strides)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    out = np.zeros(out_shape, dtype=lhs_arr.dtype)  # type: ignore
+    out = np.zeros(out_shape, dtype=lhs_arr.dtype)
     _compute_conv_patches(lhs_pad, rhs_c, out, config)
     inv_out_spec = _get_inv_out_spec(specs.out_spec)
     return np.transpose(out, inv_out_spec)
@@ -422,7 +424,7 @@ def _np_conv_general_dilated(backend_module: object, *args: object, **kwargs: ob
     return _conv_general_dilated(*args, **kwargs)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def _calculate_conv_transpose_padding(spatial_in: tuple, spatial_k: tuple, strides: tuple, padding: str) -> tuple:
+def _calculate_conv_transpose_padding(spatial_in: tuple[Any, ...], spatial_k: tuple[Any, ...], strides: tuple[Any, ...], padding: str) -> tuple[Any, ...]:
     """Calculate output spatial shapes and paddings for transposed convolution.
 
     Args:
@@ -449,7 +451,7 @@ def _calculate_conv_transpose_padding(spatial_in: tuple, spatial_k: tuple, strid
     return out_spatial, pads
 
 
-def _build_conv_transpose_config(spatial_in: tuple, spatial_k: tuple, strides: tuple, pads: list) -> tuple:
+def _build_conv_transpose_config(spatial_in: tuple[Any, ...], spatial_k: tuple[Any, ...], strides: tuple[Any, ...], pads: list[Any]) -> tuple[Any, ...]:
     """Build the configuration and reversed slices for ConvTranspose.
 
     Args:

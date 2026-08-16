@@ -1,16 +1,12 @@
 operation: InferenceMode
 description: Context manager that enables or disables inference mode (gradient isolation).
 std_args:
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: mode
-  type: bool
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: mode
+    type: bool
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

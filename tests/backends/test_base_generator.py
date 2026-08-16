@@ -566,3 +566,10 @@ def test_get_ops_map_fallbacks_coverage():
         assert ops["InverseMdct"] == "mapped_InverseMdct"
         assert ops["Frame"] == "mapped_Frame"
         assert ops["OverlapAndAdd"] == "mapped_OverlapAndAdd"
+
+
+def test_base_generator_get_fallback_prefix():
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    assert BaseGenerator(IRGraph()).get_fallback_prefix() == "np"

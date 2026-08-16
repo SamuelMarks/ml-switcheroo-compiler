@@ -1,22 +1,18 @@
 operation: attention_reference_custom
 description: The class representing a Python function.
 std_args:
-- mask
-- q
-- k
-- v
-- segment_ids
-- sinks
-- mask_value
-- save_residuals
-- custom_type
-- attn_logits_soft_cap
+  - mask
+  - q
+  - k
+  - v
+  - segment_ids
+  - sinks
+  - mask_value
+  - save_residuals
+  - custom_type
+  - attn_logits_soft_cap
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

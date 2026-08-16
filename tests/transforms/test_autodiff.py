@@ -109,6 +109,53 @@ def test_accumulate_gradients():
             assert adjoints["a"] == "adj_a+v2"
 
 
+def test_recompute_subgraph():
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_compiler.transforms.autodiff import _recompute_subgraph
+
+    g = IRGraph()
+    inp = LogicalNode(id="inp", op_type="Input")
+    inp.attributes = {"rematerialize": True}
+    n = LogicalNode(id="n", op_type="Exp", inputs=["inp", "missing_inp"])
+    g.nodes = {"inp": inp, "n": n}
+
+    res = _recompute_subgraph(g, n)
+    assert res is not None
+    assert len(res.inputs) == 2
+    assert "missing_inp" in res.inputs
+
+    # test input not rematerialize
+    inp2 = LogicalNode(id="inp2", op_type="Input")
+    inp2.attributes = {"rematerialize": False}
+    n2 = LogicalNode(id="n2", op_type="Exp", inputs=["inp2"])
+    g.nodes = {"inp2": inp2, "n2": n2}
+    res2 = _recompute_subgraph(g, n2)
+    assert res2.inputs == ["inp2"]
+
+
+def test_hvp_missing_rules():
+    import warnings
+
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_compiler.transforms.autodiff import hvp
+
+    g = IRGraph()
+    n1 = LogicalNode(id="inp", op_type="Input")
+    n2 = LogicalNode(id="out", op_type="OpWithoutRules", inputs=["inp"])
+    g.nodes = {"inp": n1, "out": n2}
+    g.inputs = ["inp"]
+    g.outputs = ["out"]
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        try:
+            hvp(g, ["inp"], ["v"], ["out"])
+        except Exception:
+            pass  # we expect it to fail eventually because of missing rules
+
+        assert any("Computing HVP with missing second-order derivative rules" in str(warn.message) for warn in w)
+
+
 def test_add_nodes_extra():
     g = LogicalGraph()
     g.nodes["a"] = LogicalNode(id="a", op_type="Input", shape_metadata=(2,))
@@ -598,3 +645,64 @@ def test_jvp_style2_returns_non_string():
 
     res = _invoke_style2_jvp_rule(my_jvp, sig, None, DummyNode(), ["t1"])
     assert res == 42
+
+
+def test_autodiff_provider_parser():
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+    from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import _parse_expression, get_jvp_from_data
+
+    g = IRGraph()
+    n = LogicalNode(id="n1", op_type="Exp", inputs=["x", "y"])
+    g.nodes["x"] = LogicalNode(id="x", op_type="Input")
+    g.nodes["y"] = LogicalNode(id="y", op_type="Input")
+
+    # Simple expression
+    res = _parse_expression(g, "Add($cotangent, $input[0])", n, cotangent="cot")
+    assert res is not None
+    assert "cot" in g.nodes[res].inputs
+    assert "x" in g.nodes[res].inputs
+
+    # Constant and tangents
+    res2 = _parse_expression(g, "Multiply(Constant(2.0), $tangent[1])", n, tangents=["t0", "t1"])
+    assert res2 is not None
+    assert "t1" in g.nodes[res2].inputs
+
+    # Test fallback with more inputs than tangents
+    n3 = LogicalNode(id="n3", op_type="Add", inputs=["x", "y", "z"])
+    fallback = get_jvp_from_data("OpWithoutRulesAndData")
+    res3 = fallback(g, n3, ["t_x", "t_y"])  # z has no tangent
+    assert res3 is not None
+
+    # SetItem attrs where node has no attrs
+    n_set = LogicalNode(id="n_set", op_type="SetItem", inputs=["a", "b", "c"])
+    # Do not set attributes initially so we bypass first check
+    n_set.attributes = {"indices": [1]}
+
+    # We need op == "SetItem" but op != node.op_type initially to bypass first `if`
+    n_set.op_type = "NotSetItem"
+    res4 = _parse_expression(g, "SetItem(a, b, c)", n_set)
+    assert g.nodes[res4].attributes == {"indices": [1]}
+
+    # data_jvp
+    with patch("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"TestOp": {"autodiff": {"jvp": "Add($tangent[0], $input[0])"}}}):
+        data_jvp_func = get_jvp_from_data("TestOp")
+        res5 = data_jvp_func(g, n, "t_x")  # single tangent
+        assert res5 is not None
+
+
+def test_accumulate_gradients_rematerialize():
+    from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
+    from ml_switcheroo_compiler.transforms.autodiff import _accumulate_gradients
+
+    g = LogicalGraph()
+    n = LogicalNode(id="n", op_type="Exp", inputs=["x"])
+    n.attributes = {"rematerialize": True}
+    g.nodes = {"x": LogicalNode(id="x", op_type="Input"), "n": n}
+
+    from unittest.mock import patch
+
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp") as mock_vjp:
+        mock_vjp.return_value = lambda g, n, adj: [f"adj_{inp}" for inp in n.inputs]
+        adjoints = {}
+        _accumulate_gradients(g, n, "adj_n", adjoints)
+        assert "x" in adjoints

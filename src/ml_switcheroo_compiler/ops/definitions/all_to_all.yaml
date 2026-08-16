@@ -2,10 +2,6 @@ operation: all_to_all
 description: Auto-generated mapping for all_to_all.
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

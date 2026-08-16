@@ -18,15 +18,11 @@ variants:
     eager: jax.numpy.frompyfunc
   mlx:
     eager: mlx.core.frompyfunc
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: frompyfunc
+  edge_stablehlo:
+
+    opcode: stablehlo.frompyfunc
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

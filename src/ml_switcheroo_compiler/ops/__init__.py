@@ -1,9 +1,8 @@
 # pylint: disable=too-many-lines
+
+
 """Auto-generated module exports."""
 
-from ml_switcheroo_compiler.ops.audio import (
-    Any,
-)
 from ml_switcheroo_compiler.ops.base import (
     OpDef,
     dispatch_eager,
@@ -83,10 +82,9 @@ from ml_switcheroo_compiler.ops.binary import (
     xlogy,
     zeta,
 )
-from ml_switcheroo_compiler.ops.control_flow import (
+from ml_switcheroo_compiler.ops.control_flow import (  # type: ignore
     AssertOp,
     AssociativeScan,
-    Callable,
     DebugInfs,
     DebugNans,
     DType,

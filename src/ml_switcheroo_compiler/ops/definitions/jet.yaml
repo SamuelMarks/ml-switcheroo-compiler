@@ -1,17 +1,13 @@
 operation: jet
 description: Taylor-mode higher-order automatic differentiation.
 std_args:
-- fun
-- primals
-- series
-- factorial_scaled
-- _
+  - fun
+  - primals
+  - series
+  - factorial_scaled
+  - _
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -19,3 +19,14 @@ operations:
 bytecode:
   magic: "4D4CEF52" # MLïR
   version: 1
+
+control_flow:
+  while:
+    op_type: "stablehlo.while"
+    attributes: ["cond", "body"]
+  conditional:
+    op_type: "stablehlo.case"
+    attributes: ["branches"]
+  sort:
+    op_type: "stablehlo.sort"
+    attributes: ["dimension", "is_stable", "comparator"]

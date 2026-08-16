@@ -1,23 +1,23 @@
 operation: AttentionProjection
 description: Layer that computes multi-head projection for dot-product attention.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input_dim
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: num_heads
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dim_per_head
-  type: int
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: is_output
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input_dim
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: num_heads
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dim_per_head
+    type: int
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: is_output
+    type: bool
 variants:
   numpy:
     eager: numpy.attentionprojection
@@ -33,15 +33,11 @@ variants:
     eager: jax.numpy.attentionprojection
   mlx:
     eager: mlx.core.attentionprojection
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AttentionProjection
+  edge_stablehlo:
+
+    opcode: stablehlo.attention_projection
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -18,16 +18,15 @@ variants:
     eager: jax.numpy.fmod
   mlx:
     eager: mlx.core.fmod
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: fmod
+  edge_stablehlo:
+
+    opcode: stablehlo.fmod
   edge_wgsl:
     template: binary
     expr: buf_in0_f32[in0_offset] - buf_in1_f32[in1_offset] * floor(buf_in0_f32[in0_offset]
       / buf_in1_f32[in1_offset])
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

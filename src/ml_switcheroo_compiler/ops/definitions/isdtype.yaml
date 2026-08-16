@@ -2,19 +2,15 @@ operation: isdtype
 description: Returns a boolean indicating whether a provided dtype is of a specified
   data type "kind".
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: dtype
-- is_variadic: false
-  kind: positional_or_keyword
-  name: kind
-  type: Union[dtype, str, Tuple[Union[dtype, str], Ellipsis]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: dtype
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: kind
+    type: Union[dtype, str, Tuple[Union[dtype, str], Ellipsis]]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,6 +1,8 @@
+"""Module frontend_pool.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Frontend reductions ops."""
@@ -20,14 +22,14 @@ from .frontend_utils import _emit_reduction_node
 class UnpoolOptions:
     """Options for unpooling."""
 
-    kernel_size: int | tuple
-    stride: int | tuple | None = None
-    padding: int | tuple = 0
-    output_size: tuple | None = None
+    kernel_size: int | tuple  # type: ignore
+    stride: int | tuple | None = None  # type: ignore
+    padding: int | tuple = 0  # type: ignore
+    output_size: tuple[Any, ...] | None = None
 
 
 def fractional_max_pool2d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int],
 ) -> Any:
     """Fractional max pooling 2D.
@@ -53,7 +55,7 @@ def fractional_max_pool2d(
 
 
 def adaptive_avg_pool2d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int],
 ) -> Any:
     """Adaptive average pooling 2D.
@@ -89,7 +91,7 @@ def adaptive_avg_pool2d(
 
 
 def adaptive_max_pool2d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int],
 ) -> Any:
     """Adaptive max pooling 2D.
@@ -125,7 +127,7 @@ def adaptive_max_pool2d(
 
 
 def unfold(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     kernel_size: tuple[int, int],
 ) -> Any:
     """Unfold (Im2Col) operator.
@@ -141,7 +143,7 @@ def unfold(
 
 
 def fold(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int],
     kernel_size: tuple[int, int],
 ) -> Any:
@@ -165,7 +167,7 @@ def fold(
 
 
 def fractional_max_pool3d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int, int],
     output_ratio: Any = None,
     random_samples: Any = None,
@@ -216,7 +218,7 @@ def fractional_max_pool3d(
 
 
 def adaptive_avg_pool3d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int, int],
 ) -> Any:
     """Adaptive average pooling 3D.
@@ -253,10 +255,10 @@ def adaptive_avg_pool3d(
 
 
 def adaptive_max_pool3d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     output_size: tuple[int, int, int],
     return_indices: bool = False,
-) -> Tensor | tuple[Tensor, Tensor]:
+) -> Tensor | tuple[Tensor, Tensor]:  # type: ignore
     """Adaptive max pooling 3D.
 
     Args:
@@ -308,12 +310,12 @@ def adaptive_max_pool3d(
             "int64",  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         )
         return pooled, indices_tensor
-    return pooled
+    return pooled  # type: ignore
 
 
 def max_unpool1d(
-    operand: Tensor,
-    indices: Tensor,
+    operand: Tensor,  # type: ignore
+    indices: Tensor,  # type: ignore
     options: UnpoolOptions,
 ) -> Any:
     """Max unpooling 1D.
@@ -358,8 +360,8 @@ def max_unpool1d(
 
 
 def max_unpool2d(
-    operand: Tensor,
-    indices: Tensor,
+    operand: Tensor,  # type: ignore
+    indices: Tensor,  # type: ignore
     options: UnpoolOptions,
 ) -> Any:
     """Max unpooling 2D.
@@ -405,8 +407,8 @@ def max_unpool2d(
 
 
 def max_unpool3d(
-    operand: Tensor,
-    indices: Tensor,
+    operand: Tensor,  # type: ignore
+    indices: Tensor,  # type: ignore
     options: UnpoolOptions,
 ) -> Any:
     """Max unpooling 3D.

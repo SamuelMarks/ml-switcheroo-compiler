@@ -1,15 +1,11 @@
 operation: ref_transposed_ragged_dot
 description: The class representing a Python function.
 std_args:
-- lhs
-- rhs
-- group_sizes
+  - lhs
+  - rhs
+  - group_sizes
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

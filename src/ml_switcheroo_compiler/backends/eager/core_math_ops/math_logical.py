@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
 from __future__ import annotations
@@ -26,7 +26,9 @@ def _nan_to_num(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     neginf = kwargs.get("neginf", None)
     if hasattr(backend_module, "nan_to_num"):
         return backend_module.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
-    return None
+    import numpy as np
+
+    return np.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
 
 
 @global_eager_registry.register("Isclose")
@@ -408,10 +410,7 @@ def _np_heaviside(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "heaviside", getattr(backend_module, "heaviside", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.heaviside(args[0], args[1])
@@ -430,10 +429,7 @@ def _np_takealongaxis(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "takealongaxis", getattr(backend_module, "takealongaxis", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.take_along_axis(*args, **kwargs)

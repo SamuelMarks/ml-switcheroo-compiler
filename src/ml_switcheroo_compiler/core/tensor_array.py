@@ -1,6 +1,8 @@
+"""Module tensor_array.py."""
+
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Tensor Array."""
 import uuid
 
@@ -29,7 +31,7 @@ class TensorArray:
         self.id = str(uuid.uuid4())
         self._data = [None] * size
 
-    def read(self, index: Tensor) -> Tensor:
+    def read(self, index: Tensor) -> Tensor:  # type: ignore
         """Read from the TensorArray.
 
         Args:
@@ -56,10 +58,10 @@ class TensorArray:
             shape_metadata=self.element_shape,
         )
         global_tracing_state.add_node(node)
-        proxy = ProxyTensor(id=out_id, shape=self.element_shape, dtype=self.dtype)
+        proxy = ProxyTensor(id=out_id, shape=self.element_shape, dtype=self.dtype)  # type: ignore
         return Tensor(proxy, TensorConfig(self.element_shape, self.dtype, Device(DeviceType.CPU)))
 
-    def write(self, index: Tensor, value: Tensor) -> "TensorArray":
+    def write(self, index: Tensor, value: Tensor) -> "TensorArray":  # type: ignore
         """Write to the TensorArray.
 
         Args:
@@ -86,7 +88,7 @@ class TensorArray:
         global_tracing_state.add_node(node)
         return self
 
-    def stack(self) -> Tensor:
+    def stack(self) -> Tensor:  # type: ignore
         """Stack the TensorArray.
 
         Returns:
@@ -109,5 +111,5 @@ class TensorArray:
             shape_metadata=out_shape,
         )
         global_tracing_state.add_node(node)
-        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=self.dtype)
+        proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=self.dtype)  # type: ignore
         return Tensor(proxy, TensorConfig(out_shape, self.dtype, Device(DeviceType.CPU)))

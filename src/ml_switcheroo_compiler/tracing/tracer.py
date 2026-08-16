@@ -1,13 +1,17 @@
+"""Module tracer.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 """Tracing engine for constructing LogicalGraphs via operator overloading."""
 
 
 import threading
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+T_Payload = TypeVar("T_Payload")
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -22,7 +26,7 @@ if TYPE_CHECKING:
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
 
-T = TypeVar("T", bound="ProxyTensor")
+T = TypeVar("T", bound="ProxyTensor[Any]")
 
 
 _TRACE_COUNTS: dict[int, int] = {}
@@ -98,7 +102,7 @@ class TracerTape(threading.local):
 _tracer = TracerTape()
 
 
-class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
+class ProxyTensor(Generic[T_Payload], ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin):
     """Provide a proxy object that intercepts mathematical operations and builds the IR graph.
 
     Attributes:

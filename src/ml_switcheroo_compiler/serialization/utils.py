@@ -1,10 +1,10 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Serialization utilities."""
 
 from typing import Any
 
 
-def _extract_numpy_weights(weights: dict) -> dict:
+def _extract_numpy_weights(weights: dict[str, Any]) -> dict[str, Any]:
     """Extract numpy weights.
 
     Args:
@@ -49,7 +49,7 @@ def to_numpy(tensor: Any) -> Any:
         return tensor
 
 
-def concatenate_arrays(arrays: list) -> Any:
+def concatenate_arrays(arrays: list[Any]) -> Any:
     """Concatenate numpy arrays.
 
     Args:
@@ -108,7 +108,7 @@ def _dtype_to_descr(dtype: Any) -> str:
     return "<f4"
 
 
-def _extract_arr_shape_dtype(arr: Any) -> tuple:
+def _extract_arr_shape_dtype(arr: Any) -> tuple[Any, ...]:
     """Extract shape and dtype string from an array object.
 
     Args:
@@ -121,7 +121,7 @@ def _extract_arr_shape_dtype(arr: Any) -> tuple:
     return getattr(arr, "shape", ()), dtype
 
 
-def _get_shape_and_dtype(tensor: Any) -> tuple:
+def _get_shape_and_dtype(tensor: Any) -> tuple[Any, ...]:
     """Get shape and dtype from a generic tensor object.
 
     Args:
@@ -149,9 +149,9 @@ def _extract_arr_bytes(arr: Any) -> bytes:
         bytes: The raw data bytes.
     """
     if hasattr(arr, "tobytes"):
-        return arr.tobytes()
+        return arr.tobytes()  # type: ignore
     if hasattr(arr, "data") and hasattr(arr.data, "tobytes"):
-        return arr.data.tobytes()
+        return arr.data.tobytes()  # type: ignore
     return b""
 
 
@@ -167,9 +167,9 @@ def _get_data_bytes(tensor: Any) -> bytes:
     if hasattr(tensor, "eval"):
         return _extract_arr_bytes(tensor.eval())
     if hasattr(tensor, "numpy"):
-        return tensor.numpy().tobytes()
+        return tensor.numpy().tobytes()  # type: ignore
     if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
-        return tensor.data.numpy().tobytes()
+        return tensor.data.numpy().tobytes()  # type: ignore
     return b""
 
 
@@ -199,7 +199,7 @@ def _tensor_to_npy_bytes(tensor: Any) -> bytes:
     return header + data_bytes
 
 
-def get_npz_bytes(weights: dict) -> bytes:
+def get_npz_bytes(weights: dict[str, Any]) -> bytes:
     """Get npz bytes.
 
     Args:
@@ -215,7 +215,7 @@ def get_npz_bytes(weights: dict) -> bytes:
 
     backend = get_active_backend()
     if hasattr(backend, "get_npz_bytes"):
-        return backend.get_npz_bytes(weights)
+        return backend.get_npz_bytes(weights)  # type: ignore
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_STORED) as zf:
@@ -225,7 +225,7 @@ def get_npz_bytes(weights: dict) -> bytes:
     return buf.getvalue()
 
 
-def parse_npz(file_obj: Any) -> dict:
+def parse_npz(file_obj: Any) -> dict[str, Any]:
     """Parse npz file.
 
     Args:
@@ -244,7 +244,7 @@ def parse_npz(file_obj: Any) -> dict:
         return {}
 
 
-def load_npz(file_obj: Any) -> list:
+def load_npz(file_obj: Any) -> list[Any]:
     """Load weights from a .npz file object.
 
     Args:
@@ -258,7 +258,7 @@ def load_npz(file_obj: Any) -> list:
     backend = get_active_backend()
     if hasattr(backend, "load_npz"):
         try:
-            return backend.load_npz(file_obj)
+            return backend.load_npz(file_obj)  # type: ignore
         except Exception as e:
             import logging
 
@@ -266,7 +266,7 @@ def load_npz(file_obj: Any) -> list:
 
     parsed = parse_npz(file_obj)
     # the original load_npz returned a list of weights (assuming ordered arrays or dict?)
-    # Wait, the signature says -> list. Let's return list of values
+    # Wait, the signature says -> list[Any]. Let's return list of values
     return list(parsed.values())
 
 

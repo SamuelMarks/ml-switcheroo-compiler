@@ -1,24 +1,20 @@
 operation: GenFromTxt
 description: Load data from a text file, with missing values handled as specified.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: fname
-  type: str
-- default: float
-  is_variadic: false
-  kind: positional_or_keyword
-  name: dtype
-  type: type
-- is_variadic: false
-  kind: positional_or_keyword
-  name: delimiter
-  type: Optional[str]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: fname
+    type: str
+  - default: float
+    is_variadic: false
+    kind: positional_or_keyword
+    name: dtype
+    type: type
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: delimiter
+    type: Optional[str]
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

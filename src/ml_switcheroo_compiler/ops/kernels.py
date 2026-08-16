@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for kernels.py."""
 
 from dataclasses import dataclass
@@ -87,9 +87,9 @@ class KernelContext:
 
 
 def _eager_custom_kernel(
-    inputs: list[Tensor],
+    inputs: list[Tensor],  # type: ignore
     ctx: KernelContext,
-) -> list[Tensor]:
+) -> list[Tensor]:  # type: ignore
     """Execute a custom kernel eagerly.
 
     Args:
@@ -115,11 +115,11 @@ def _eager_custom_kernel(
 
 def cuda_kernel(
     source: str,
-    inputs: list[Tensor],
+    inputs: list[Tensor],  # type: ignore
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
     launch_config: Optional[KernelLaunchConfig] = None,
-) -> list[Tensor]:
+) -> list[Tensor]:  # type: ignore
     """Injects and compiles an inline CUDA kernel.
 
     Args:
@@ -152,11 +152,11 @@ def cuda_kernel(
 
 def metal_kernel(
     source: str,
-    inputs: list[Tensor],
+    inputs: list[Tensor],  # type: ignore
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
     launch_config: Optional[KernelLaunchConfig] = None,
-) -> list[Tensor]:
+) -> list[Tensor]:  # type: ignore
     """Injects and compiles an inline Metal kernel.
 
     Args:
@@ -189,11 +189,11 @@ def metal_kernel(
 
 def precompiled_cuda_kernel(
     binary: bytes,
-    inputs: list[Tensor],
+    inputs: list[Tensor],  # type: ignore
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
     launch_config: Optional[KernelLaunchConfig] = None,
-) -> list[Tensor]:
+) -> list[Tensor]:  # type: ignore
     """Injects and executes a precompiled CUDA binary (PTX/CUBIN).
 
     Args:

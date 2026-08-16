@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """I/O and memory operations."""
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.serialization.formats.safetensors import Safetensors
 from ml_switcheroo_compiler.serialization.utils import load_npz
 
 
-def read_file(filename: str | Tensor, name: Any = None) -> Any:
+def read_file(filename: str | Tensor, name: Any = None) -> Any:  # type: ignore
     """Read file.
 
     Args:
@@ -38,7 +38,7 @@ def read_file(filename: str | Tensor, name: Any = None) -> Any:
     return _emit_shape_node("ReadFile", [filename], {"name": name}, getattr(filename, "shape", ()), getattr(filename, "dtype", "float32"))
 
 
-def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> None:
+def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> None:  # type: ignore
     """Write file.
 
     Args:
@@ -53,10 +53,10 @@ def write_file(filename: str | Tensor, contents: Tensor, name: Any = None) -> No
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return get_active_backend().execute_op("WriteFile", filename, contents, name=name)
+        return get_active_backend().execute_op("WriteFile", filename, contents, name=name)  # type: ignore
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")
+    return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")  # type: ignore
 
 
 def gfile_copy(src: str, dst: str, overwrite: bool = False) -> None:

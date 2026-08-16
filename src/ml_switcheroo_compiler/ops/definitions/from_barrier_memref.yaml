@@ -1,14 +1,10 @@
 operation: from_barrier_memref
 description: Creates a DialectBarrierRef from a memref of a dialect barrier.
 std_args:
-- cls
-- barrier
+  - cls
+  - barrier
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

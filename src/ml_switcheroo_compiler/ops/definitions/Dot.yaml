@@ -13,8 +13,12 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: Dot
+  edge_stablehlo:
+
+    opcode: stablehlo.dot
   edge_wgsl:
     template: matmul
   edge_wasm_simd:

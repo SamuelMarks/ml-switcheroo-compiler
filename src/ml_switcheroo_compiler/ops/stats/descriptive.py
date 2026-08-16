@@ -1,6 +1,8 @@
+"""Module descriptive.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Reductions."""
 from typing import Any
@@ -174,7 +176,7 @@ class TrapezoidalIntegral(OpDef):
 
 
 @dispatch_eager("TrapezoidalIntegral")
-def trapezoidal_integral(y: Tensor, x: Any = None, dx: Any = 1.0, axis: Any = -1) -> Any:
+def trapezoidal_integral(y: Tensor, x: Any = None, dx: Any = 1.0, axis: Any = -1) -> Any:  # type: ignore
     """Evaluate trapezoidal_integral operation.
 
     Args:
@@ -207,7 +209,7 @@ class ConfusionMatrix(OpDef):
 
 
 @dispatch_eager("ConfusionMatrix")
-def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights: Any = None) -> Any:
+def confusion_matrix(labels: Tensor, predictions: Tensor, num_classes: int, weights: Any = None) -> Any:  # type: ignore
     """Evaluate confusion_matrix operation.
 
     Args:

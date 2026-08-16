@@ -1,15 +1,11 @@
 operation: flatten_fun_for_sparse_ad
 description: The class representing a Python function.
 std_args:
-- fun
-- argnums
-- args
+  - fun
+  - argnums
+  - args
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

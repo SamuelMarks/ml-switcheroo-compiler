@@ -6,7 +6,7 @@ from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisito
 def test_common_ast_visitor():
     vis = CommonASTVisitor()
     assert vis.generator is vis
-    assert vis._get_backend_prefix() == ""
+    assert vis.get_fallback_prefix() == ""
 
     class DummyGenerator:
         pass

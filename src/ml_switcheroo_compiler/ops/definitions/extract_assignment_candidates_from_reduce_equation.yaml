@@ -2,15 +2,11 @@ operation: extract_assignment_candidates_from_reduce_equation
 description: Yields layout candidates for the reduce equation `small = reduce(large,
   reduction_dims).
 std_args:
-- small
-- large
-- reduction_dims
+  - small
+  - large
+  - reduction_dims
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

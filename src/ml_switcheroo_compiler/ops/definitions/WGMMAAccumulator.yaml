@@ -1,16 +1,12 @@
 operation: WGMMAAccumulator
 description: A FragmentedArray that has is synchronized with the async proxy.
 std_args:
-- self
-- _value
-- _original_layout
-- _sync
+  - self
+  - _value
+  - _original_layout
+  - _sync
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

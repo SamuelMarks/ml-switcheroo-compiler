@@ -1,31 +1,31 @@
 operation: BlockMaskedMM
 description: Matrix multiplication with block masking.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: a
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: b
-  type: Tensor
-- default: 64
-  is_variadic: false
-  kind: positional_or_keyword
-  name: block_size
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: mask_out
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: mask_lhs
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: mask_rhs
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: a
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: b
+    type: Tensor
+  - default: 64
+    is_variadic: false
+    kind: positional_or_keyword
+    name: block_size
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: mask_out
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: mask_lhs
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: mask_rhs
+    type: Tensor
 variants:
   numpy:
     eager: numpy.blockmaskedmm
@@ -41,15 +41,11 @@ variants:
     eager: jax.numpy.blockmaskedmm
   mlx:
     eager: mlx.core.blockmaskedmm
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: BlockMaskedMM
+  edge_stablehlo:
+
+    opcode: stablehlo.block_masked_m_m
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

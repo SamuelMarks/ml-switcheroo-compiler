@@ -1,14 +1,10 @@
 operation: tf_wrap_with_input_names
 description: The class representing a Python function.
 std_args:
-- f
-- input_shapes
+  - f
+  - input_shapes
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

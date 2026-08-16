@@ -1,10 +1,10 @@
 operation: ZeroFraction
 description: The ZeroFraction operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: value
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: value
+    type: Tensor
 variants:
   tensorflow:
     eager: tf.math.zero_fraction
@@ -15,15 +15,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: ZeroFraction
+  edge_stablehlo:
+
+    opcode: stablehlo.zero_fraction
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

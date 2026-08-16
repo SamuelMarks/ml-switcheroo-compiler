@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
 from typing import Any, cast
@@ -128,6 +128,11 @@ def _execute_broadcast_to(*args: Any, **kwargs: Any) -> Any:
 
 
 def _execute_one_hot(*args: Any, **kwargs: Any) -> Any:
+    """_execute_one_hot function.
+
+    Returns:
+        Any: Result.
+    """
     inputs = args[0] if len(args) > 0 else kwargs.get("indices")
     depth = args[1] if len(args) > 1 else kwargs.get("depth")
     import torch
@@ -232,7 +237,7 @@ def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
     return rt
 
 
-def _get_custom_torch_op_map() -> dict:
+def _get_custom_torch_op_map() -> dict[str, Any]:
     """Retrieve the custom torch op map property or mapping.
 
     Returns:
@@ -497,9 +502,9 @@ _TORCH_EAGER_OP_MAP = {
     "AssignSub": lambda ref, value, **kwargs: ref - value,
     "AssignVariable": lambda ref, value, **kwargs: value,
     "AssociativeScan": lambda *args, **kwargs: args[1] if len(args) > 1 and callable(args[0]) else args[0],
-    "Atleast1d": lambda *args, **kwargs: torch.atleast_1d(*args),
-    "Atleast2d": lambda *args, **kwargs: torch.atleast_2d(*args),
-    "Atleast3d": lambda *args, **kwargs: torch.atleast_3d(*args),
+    "Atleast1d": lambda *args, **kwargs: torch.atleast_1d(*args),  # type: ignore
+    "Atleast2d": lambda *args, **kwargs: torch.atleast_2d(*args),  # type: ignore
+    "Atleast3d": lambda *args, **kwargs: torch.atleast_3d(*args),  # type: ignore
     "Average": lambda a, *args, **kwargs: torch.mean(a),
     "AxisIndex": lambda *args, **kwargs: torch.tensor(0),
     "BesselI0": torch.special.i0,

@@ -1,15 +1,11 @@
 operation: parse_indices
 description: The class representing a Python function.
 std_args:
-- index
-- shape
-- check_oob
+  - index
+  - shape
+  - check_oob
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

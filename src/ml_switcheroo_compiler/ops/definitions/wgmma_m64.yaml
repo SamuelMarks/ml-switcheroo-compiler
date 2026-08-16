@@ -1,22 +1,18 @@
 operation: wgmma_m64
 description: The class representing a Python function.
 std_args:
-- acc
-- a
-- b_descriptor
-- a_transpose
-- b_transpose
-- a_k_stride
-- b_k_stride
-- n
-- swizzle
-- element_type
+  - acc
+  - a
+  - b_descriptor
+  - a_transpose
+  - b_transpose
+  - a_k_stride
+  - b_k_stride
+  - n
+  - swizzle
+  - element_type
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

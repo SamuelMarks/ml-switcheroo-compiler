@@ -1,3 +1,6 @@
+import warnings
+
+warnings.filterwarnings("ignore")
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.core_math_ops as mod

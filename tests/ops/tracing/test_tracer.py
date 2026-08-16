@@ -5,9 +5,11 @@ def test_tracer_coverage():
     def mock_func():
         pass
 
+    reset_trace_count(mock_func)
     assert get_trace_count(mock_func) == 0
     increment_trace_count(mock_func)
     assert get_trace_count(mock_func) == 1
+    reset_trace_count(mock_func)
     reset_trace_count(mock_func)
     assert get_trace_count(mock_func) == 0
     reset_trace_count(mock_func)

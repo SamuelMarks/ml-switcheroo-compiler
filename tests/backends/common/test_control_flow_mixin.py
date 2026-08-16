@@ -4,7 +4,7 @@ from ml_switcheroo_compiler.backends.common.mixins.control_flow import ControlFl
 
 
 class DummyGenerator:
-    def _get_backend_prefix(self):
+    def get_fallback_prefix(self):
         return "bk"
 
 
@@ -45,7 +45,7 @@ def test_control_flow_mixin_advanced():
             self.indent_level = 0
             self.formatter = type("Formatter", (), {"indent_level": 0})()
 
-        def _get_backend_prefix(self):
+        def get_fallback_prefix(self):
             return "bk"
 
         def add_line(self, line):

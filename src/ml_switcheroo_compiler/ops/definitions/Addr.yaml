@@ -2,28 +2,28 @@ operation: Addr
 description: Performs the outer-product of vectors vec1 and vec2 and adds it to the
   matrix input.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: vec1
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: vec2
-  type: Tensor
-- default: 1.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: beta
-  type: float
-- default: 1.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: alpha
-  type: float
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: vec1
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: vec2
+    type: Tensor
+  - default: 1.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: beta
+    type: float
+  - default: 1.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: alpha
+    type: float
 variants:
   numpy: {}
   cupy: {}
@@ -33,15 +33,14 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: Addr
+  edge_stablehlo:
+
+    opcode: stablehlo.addr
   edge_wgsl:
     template: binary
     expr: buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_string_io module."""
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 
 
-def _parse_scanop_args(args: tuple, kwargs: dict) -> tuple:
+def _parse_scanop_args(args: tuple[Any, ...], kwargs: dict[str, Any]) -> tuple[Any, ...]:
     """Parse ScanOp arguments.
 
     Args:
@@ -254,7 +254,7 @@ def _get_csv_defaults(args: tuple[Any, ...], kwargs: dict[str, Any]) -> list[Any
     Returns:
         A list of record default values.
     """
-    return kwargs.get("record_defaults", args[1] if len(args) > 1 else [])
+    return kwargs.get("record_defaults", args[1] if len(args) > 1 else [])  # type: ignore
 
 
 @numpy_eager_registry.register("DecodeCsv")

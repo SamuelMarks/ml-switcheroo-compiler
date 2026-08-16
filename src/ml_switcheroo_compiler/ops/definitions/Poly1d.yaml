@@ -1,25 +1,21 @@
 operation: Poly1d
 description: A one-dimensional polynomial class.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: c_or_r
-  type: Array
-- default: 'False'
-  is_variadic: false
-  kind: positional_or_keyword
-  name: r
-  type: bool
-- default: None
-  is_variadic: false
-  kind: positional_or_keyword
-  name: variable
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: c_or_r
+    type: Array
+  - default: 'False'
+    is_variadic: false
+    kind: positional_or_keyword
+    name: r
+    type: bool
+  - default: None
+    is_variadic: false
+    kind: positional_or_keyword
+    name: variable
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

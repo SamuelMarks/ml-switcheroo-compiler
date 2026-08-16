@@ -1,14 +1,10 @@
 operation: JoinPoint
 description: Marks the boundary between two joined (nested) pytrees.
 std_args:
-- self
-- subtree
+  - self
+  - subtree
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

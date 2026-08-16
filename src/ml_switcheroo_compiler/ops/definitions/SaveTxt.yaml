@@ -1,19 +1,15 @@
 operation: SaveTxt
 description: Save an array to a text file.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: fname
-  type: str
-- is_variadic: false
-  kind: positional_or_keyword
-  name: X
-  type: Array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: fname
+    type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: X
+    type: Array
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

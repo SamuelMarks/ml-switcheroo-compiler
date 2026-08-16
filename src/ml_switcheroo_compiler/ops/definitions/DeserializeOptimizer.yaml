@@ -1,19 +1,15 @@
 operation: DeserializeOptimizer
 description: Returns a Keras optimizer object via its configuration.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: config
-  type: Dict
-- is_variadic: false
-  kind: positional_or_keyword
-  name: custom_objects
-  type: Dict
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: config
+    type: Dict
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: custom_objects
+    type: Dict
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

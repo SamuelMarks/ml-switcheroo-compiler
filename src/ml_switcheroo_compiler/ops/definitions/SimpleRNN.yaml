@@ -1,30 +1,26 @@
 operation: SimpleRNN
 description: Fully-connected RNN where output is fed back as input.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: units
-  type: int
-- default: tanh
-  is_variadic: false
-  kind: positional_or_keyword
-  name: activation
-  type: str
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: return_sequences
-  type: bool
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: return_state
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: units
+    type: int
+  - default: tanh
+    is_variadic: false
+    kind: positional_or_keyword
+    name: activation
+    type: str
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: return_sequences
+    type: bool
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: return_state
+    type: bool
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

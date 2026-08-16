@@ -1,13 +1,9 @@
 operation: shape_dependent
 description: Combinator to delay layer constructor pair until input shapes are known.
 std_args:
-- make_layer
+  - make_layer
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

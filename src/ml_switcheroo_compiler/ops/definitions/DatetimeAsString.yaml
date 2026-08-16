@@ -1,24 +1,20 @@
 operation: DatetimeAsString
 description: Convert an array of datetimes into an array of strings.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: arr
-  type: Array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: unit
-  type: str
-- default: naive
-  is_variadic: false
-  kind: positional_or_keyword
-  name: timezone
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: arr
+    type: Array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: unit
+    type: str
+  - default: naive
+    is_variadic: false
+    kind: positional_or_keyword
+    name: timezone
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

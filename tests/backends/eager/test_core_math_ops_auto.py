@@ -1,3 +1,6 @@
+import warnings
+
+warnings.filterwarnings("ignore")
 import inspect
 import sys
 
@@ -34,7 +37,11 @@ class FallbackBackend:
         return getattr(self.np, name)
 
 
+import warnings
+
+
 def test_all_core_math_ops_coverage():
+    warnings.filterwarnings("ignore")
     ops = [getattr(cmo, name) for name in dir(cmo) if name.startswith("_") and callable(getattr(cmo, name))]
     all_bk = AllBackend()
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])

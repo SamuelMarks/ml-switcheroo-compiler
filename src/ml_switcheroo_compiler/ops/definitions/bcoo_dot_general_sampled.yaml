@@ -1,16 +1,12 @@
 operation: bcoo_dot_general_sampled
 description: A contraction operation with output computed at given sparse indices.
 std_args:
-- A
-- B
-- indices
-- dimension_numbers
+  - A
+  - B
+  - indices
+  - dimension_numbers
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

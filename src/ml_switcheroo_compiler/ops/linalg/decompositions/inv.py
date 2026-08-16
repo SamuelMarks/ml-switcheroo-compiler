@@ -1,6 +1,8 @@
+"""Module inv.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for inv.py."""
 from typing import Any
@@ -59,7 +61,7 @@ class TriInv(OpDef):
         return ()
 
 
-def inv(input: Tensor) -> Any:
+def inv(input: Tensor) -> Any:  # type: ignore
     """Compute the multiplicative inverse of a square matrix.
 
     Args:
@@ -77,7 +79,7 @@ def inv(input: Tensor) -> Any:
     return _emit_linalg_node("Inv", [input], {}, [input.shape], [input.dtype])
 
 
-def inv_ex(input: Tensor, check_errors: bool = False) -> Any:
+def inv_ex(input: Tensor, check_errors: bool = False) -> Any:  # type: ignore
     """Compute the multiplicative inverse of a square matrix with info tensor.
 
     Args:
@@ -99,7 +101,7 @@ def inv_ex(input: Tensor, check_errors: bool = False) -> Any:
     return _emit_linalg_node("InvEx", [input], {"check_errors": check_errors}, [input.shape, input.shape[:-2]], [input.dtype, "int32"])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def pinv(input: Tensor, rcond: float = 1e-15) -> Any:
+def pinv(input: Tensor, rcond: float = 1e-15) -> Any:  # type: ignore
     """Compute the Moore-Penrose pseudo-inverse of a matrix.
 
     Args:
@@ -118,7 +120,7 @@ def pinv(input: Tensor, rcond: float = 1e-15) -> Any:
     return _emit_linalg_node("Pinv", [input], {"rcond": rcond}, [input.shape], [input.dtype])
 
 
-def tri_inv(a: Tensor, lower: bool = False) -> Any:
+def tri_inv(a: Tensor, lower: bool = False) -> Any:  # type: ignore
     """Compute the inverse of a triangular matrix.
 
     Args:

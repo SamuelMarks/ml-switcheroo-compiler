@@ -1,13 +1,9 @@
 operation: unpack_optimizer_state
 description: Converts an OptimizerState to a marked pytree.
 std_args:
-- opt_state
+  - opt_state
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

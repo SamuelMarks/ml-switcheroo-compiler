@@ -128,6 +128,7 @@ def test_geometric(mock_prepare):
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_zoom_grid", return_value=(0, 0)):
         random_zoom_eager(np, imgs, height_factor=0.1)
         random_zoom_eager(np, imgs, height_factor=(0.1, 0.2), width_factor=None)
+        random_zoom_eager(np, imgs, height_factor=0.1, width_factor=0.2)
 
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_translation_grid", return_value=(0, 0)):
         random_translation_eager(np, imgs, height_factor=0.1, width_factor=0.1)

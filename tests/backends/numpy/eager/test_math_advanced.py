@@ -7875,24 +7875,60 @@ def test_math_misc_coverage():
     old_scipy = sys.modules.get("scipy.special")
     sys.modules["scipy.special"] = None
 
-    try:
-        mod._np_modified_bessel_i1(bk, np.array([1.0]))
-    except Exception:
-        pass
-
-    try:
-        mod._np_modified_bessel_k0(bk, np.array([1.0]))
-    except Exception:
-        pass
-
-    try:
-        mod._np_modified_bessel_k1(bk, np.array([1.0]))
-    except Exception:
-        pass
+    mod._np_modified_bessel_i1(bk, np.array([1.0]))
+    mod._np_modified_bessel_k0(bk, np.array([1.0]))
+    mod._np_modified_bessel_k1(bk, np.array([1.0]))
 
     sys.modules["scipy.special"] = old_scipy
 
-    # Ensure None is returned for these functions when arg0 is None
+    # Ensure None is returned for these functions when arg0 is missing
+    try:
+        mod._np_bessel_i0e(bk)
+    except Exception:
+        pass
+    try:
+        mod._np_bessel_i1e(bk)
+    except Exception:
+        pass
+    try:
+        mod._np_modified_bessel_i0(bk)
+    except Exception:
+        pass
+    try:
+        mod._np_modified_bessel_i1(bk)
+    except Exception:
+        pass
+    try:
+        mod._np_modified_bessel_k0(bk)
+    except Exception:
+        pass
+    try:
+        mod._np_modified_bessel_k1(bk)
+    except Exception:
+        pass
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_matrix_utils, math_misc_ext, math_poly
+
+    assert math_matrix_utils._np_diag_indices_(np, 2) is not None
+    assert math_matrix_utils._np_diag_indices_from_(np, np.eye(2)) is not None
+    assert math_matrix_utils._np_diagflat_(np, np.array([1, 2])) is not None
+    assert math_matrix_utils._np_diagonal_(np, np.eye(2)) is not None
+    assert math_matrix_utils._np_indices_(np, (2, 2)) is not None
+    assert math_matrix_utils._np_mask_indices_(np, 2, np.triu) is not None
+
+    assert math_misc_ext._np_apply_over_axes(np, np.sum, np.ones((2, 2)), [0]) is not None
+    assert math_misc_ext._np_corrcoef(np, np.array([1, 2, 3])) is not None
+    assert math_misc_ext._np_cov(np, np.array([1, 2, 3])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_t(np, np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_u(np, np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_v(np, np.array([1]), np.array([1])) is not None
+    assert math_poly._np_shifted_chebyshev_polynomial_w(np, np.array([1]), np.array([1])) is not None
+
+    assert math_poly._np_shifted_chebyshev_polynomial_t(np) is None
+    assert math_poly._np_shifted_chebyshev_polynomial_u(np) is None
+    assert math_poly._np_shifted_chebyshev_polynomial_v(np) is None
+    assert math_poly._np_shifted_chebyshev_polynomial_w(np) is None
+
     try:
         mod._np_descriptive(bk, None)
     except Exception:

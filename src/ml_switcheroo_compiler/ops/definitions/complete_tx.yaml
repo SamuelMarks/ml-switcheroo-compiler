@@ -1,15 +1,11 @@
 operation: complete_tx
 description: The class representing a Python function.
 std_args:
-- self
-- bytes
-- predicate
+  - self
+  - bytes
+  - predicate
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,15 +1,11 @@
 operation: SegmentMask
 description: Computes (non-causal) segment mask.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: segment_ids
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: segment_ids
+    type: Tensor
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

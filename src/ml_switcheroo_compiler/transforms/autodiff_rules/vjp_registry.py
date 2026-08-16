@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module vjp_registry.py."""
+
 from typing import Any
 
 """Provide a registry for Vector-Jacobian Product (VJP) rules used in reverse-mode automatic differentiation.
@@ -10,10 +12,10 @@ operations, enabling the computation of gradients during the backward pass.
 from typing import Callable
 
 # Registry mapping op_name to VJP function
-_VJP_REGISTRY: dict[str, Callable] = {}
+_VJP_REGISTRY: dict[str, Callable[..., Any]] = {}
 
 
-def register_vjp(op_name: str) -> Callable:
+def register_vjp(op_name: str) -> Callable[..., Any]:
     """Register a Vector-Jacobian Product (VJP) rule for a specific operation.
 
     Args:
@@ -23,7 +25,7 @@ def register_vjp(op_name: str) -> Callable:
         Callable: Result.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         """Evaluate decorator operation.
 
         Args:
@@ -44,7 +46,7 @@ def register_vjp(op_name: str) -> Callable:
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import get_vjp_from_data
 
 
-def get_vjp(op_name: str) -> Callable:
+def get_vjp(op_name: str) -> Callable[..., Any]:
     """Get the VJP rule.
 
     Args:
@@ -58,7 +60,7 @@ def get_vjp(op_name: str) -> Callable:
     """
     data_vjp = get_vjp_from_data(op_name)
     if data_vjp:
-        return data_vjp
+        return data_vjp  # type: ignore
     if op_name not in _VJP_REGISTRY:
         raise ValueError(f"No VJP rule registered for operation: {op_name}")
     return _VJP_REGISTRY[op_name]

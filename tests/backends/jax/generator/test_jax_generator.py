@@ -137,6 +137,63 @@ def test_jax_vision_visitor():
     assert vis.visit_PerspectiveTransform(DummyNode(), ["a", "b", "c"]) == "jax_perspective_transform(a, b, c, 'bilinear', 0.0, None)"
 
 
+def test_jax_distributed_visitor():
+    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedVisitor
+
+    class DummyGenerator(JaxDistributedVisitor):
+        def __init__(self):
+            self.code = []
+
+    gen = DummyGenerator()
+
+    # Send
+    node_send = IRNode("send", "Send", inputs=["in1"], attributes={"dst_rank": 1})
+    res = gen.visit_Send(node_send, ["in1"])
+    assert res == ""
+    assert "Send to 1" in gen.code[0]
+
+    # Recv
+    node_recv = IRNode("recv", "Recv", inputs=[], attributes={"src_rank": 2, "shape": (2, 2), "dtype": "float32"})
+    res = gen.visit_Recv(node_recv, [])
+    assert res == "v_recv"
+    assert "Recv from 2" in gen.code[1]
+
+    # AllGather
+    node_allgather = IRNode("ag", "AllGather", inputs=["in1"], attributes={"axis_name": "'x'"})
+    res = gen.visit_AllGather(node_allgather, ["in1"])
+    assert res == "jax.lax.all_gather(in1, axis_name='x')"
+
+    # ReduceScatter
+    node_rs = IRNode("rs", "ReduceScatter", inputs=["in1"], attributes={"axis": 0, "axis_name": "'x'", "op": "jax.lax.psum"})
+    res = gen.visit_ReduceScatter(node_rs, ["in1"])
+    assert res == "jax.lax.reduce_scatter(in1, jax.lax.psum, scatter_dimension=0, axis_name='x')"
+
+    # AllReduce
+    node_ar = IRNode("ar", "AllReduce", inputs=["in1"], attributes={"axis_name": "'x'", "op": "psum"})
+    res = gen.visit_AllReduce(node_ar, ["in1"])
+    assert res == "jax.lax.psum(in1, axis_name='x')"
+
+
+def test_jax_math_visitor_extra():
+    from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxMathVisitor
+
+    class DummyGenerator(JaxMathVisitor):
+        def __init__(self):
+            pass
+
+    gen = DummyGenerator()
+
+    # RaggedDot
+    node_rd = IRNode("rd", "RaggedDot", inputs=["in1", "in2"])
+    res = gen.visit_RaggedDot(node_rd, ["in1", "in2"])
+    assert res == "jax_ragged_dot(in1, in2)"
+
+    # Einsum
+    node_einsum = IRNode("einsum", "Einsum", inputs=["in1", "in2"])
+    res = gen.visit_Einsum(node_einsum, ["in1", "in2"], equation="ij,jk->ik")
+    assert res == "jnp.einsum('ij,jk->ik', in1, in2)"
+
+
 def test_jax_audio_visitor():
     vis = JaxAudioVisitor()
     assert vis.visit_Istft(DummyNode({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "jax_istft(a, 2048, 512, None, 'hann', False)"
@@ -167,7 +224,7 @@ class DummyGraph:
 def test_jax_generator():
     g = DummyGraph()
     gen = JAXCodeGenerator(g)
-    assert gen._get_backend_prefix() == "jax"
+    assert gen.get_fallback_prefix() == "jnp"
     assert gen.get_fallback_prefix() == "jnp"
     assert gen._format_zeros_like("zeros", {}) == "jnp.zeros({shape})"
     assert gen._format_zeros_like("ones", {"dtype": "int32"}) == "jnp.ones({shape}), dtype='int32'"

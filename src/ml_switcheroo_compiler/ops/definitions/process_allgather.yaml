@@ -1,14 +1,10 @@
 operation: process_allgather
 description: Gather data from across processes.
 std_args:
-- in_tree
-- tiled
+  - in_tree
+  - tiled
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

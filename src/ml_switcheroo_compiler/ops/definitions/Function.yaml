@@ -14,19 +14,15 @@ description: "Base class to create custom autograd.Function.\n\nTo create a cust
   \ * result\n    >>>\n    >>> # Use it by calling the apply method:\n    >>> # xdoctest:\
   \ +SKIP\n    >>> output = Exp.apply(input)"
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: args
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: kwargs
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: args
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: kwargs
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,13 +1,13 @@
 operation: AutoContrast
 description: Performs the auto-contrast operation on an image.
 std_args:
-- default:
-  - 0
-  - 255
-  is_variadic: false
-  kind: positional_or_keyword
-  name: value_range
-  type: Tuple[int, int]
+  - default:
+      - 0
+      - 255
+    is_variadic: false
+    kind: positional_or_keyword
+    name: value_range
+    type: Tuple[int, int]
 variants:
   numpy:
     eager: numpy.autocontrast
@@ -23,15 +23,11 @@ variants:
     eager: jax.numpy.autocontrast
   mlx:
     eager: mlx.core.autocontrast
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AutoContrast
+  edge_stablehlo:
+
+    opcode: stablehlo.auto_contrast
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

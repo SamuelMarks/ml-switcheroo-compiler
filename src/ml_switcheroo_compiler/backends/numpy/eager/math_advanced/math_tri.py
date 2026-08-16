@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Math Ops."""
 
 from collections.abc import Sequence
@@ -204,7 +204,7 @@ def _np_linearoperatortridiag(backend_module: Any, *args: Any, **kwargs: Any) ->
     return LinearOperatorTridiag(*args, **kwargs)
 
 
-@numpy_eager_registry.register("ConfusionMatrix")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+@numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_confusion_matrix operation.
 
@@ -225,7 +225,7 @@ def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return np.bincount(y_true * num_classes + y_pred, minlength=num_classes**2).reshape((num_classes, num_classes))
 
 
-@numpy_eager_registry.register("Distributions")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+@numpy_eager_registry.register("Distributions")
 def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_distributions operation.
 

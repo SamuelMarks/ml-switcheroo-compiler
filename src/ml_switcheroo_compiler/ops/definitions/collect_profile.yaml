@@ -1,18 +1,14 @@
 operation: collect_profile
 description: The class representing a Python function.
 std_args:
-- port
-- duration_in_ms
-- host
-- log_dir
-- no_perfetto_link
-- xprof_options
+  - port
+  - duration_in_ms
+  - host
+  - log_dir
+  - no_perfetto_link
+  - xprof_options
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -4,10 +4,6 @@ description: Number of warps to use in the CUDA kernel. Higher values may improv
 std_args: []
 type: attribute
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

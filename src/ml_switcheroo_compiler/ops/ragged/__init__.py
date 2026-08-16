@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Ragged tensor operations for handling variable-length sequential data.
 
 This module provides operations for working with ragged tensors, which are
@@ -59,12 +59,12 @@ class RaggedTensorToDense(OpDef):
 
 
 def ragged_tensor_to_dense(
-    rt_input: "Tensor",
+    rt_input: "Tensor",  # type: ignore
     default_value: Any = None,
     row_partition_tensors: Any = None,
     row_partition_types: Any = None,
     shape: Any = None,
-) -> "Tensor":
+) -> "Tensor":  # type: ignore
     """Convert a ragged tensor representation into a regular dense tensor.
 
     Pads the variable-length dimensions of the input ragged tensor with the
@@ -96,7 +96,7 @@ def ragged_tensor_to_dense(
 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node(
+    return _emit_shape_node(  # type: ignore
         "RaggedTensorToDense",
         [rt_input],
         {

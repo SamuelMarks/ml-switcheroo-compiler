@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Gradient computation and autodiff utilities."""
 
 import contextlib
@@ -27,7 +27,7 @@ from .options import GradOptions, JitOptions
 from .utils import _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
 
 
-@register_util("backward")
+@register_util("backward")  # type: ignore
 def backward(tensor: Any, *args: Any, **kwargs: Any) -> None:
     """Triggers the reverse-mode auto-differentiation.
 
@@ -42,7 +42,7 @@ def backward(tensor: Any, *args: Any, **kwargs: Any) -> None:
     # 1. Fallback to dummy behavior if not a Tensor, or if tracing is not active
     if not isinstance(tensor, Tensor) or not global_tracing_state.is_tracing or global_tracing_state.active_graph is None:
         if hasattr(tensor, "grad"):
-            tensor.grad = 1.0  # type: ignore
+            tensor.grad = 1.0
         else:
             tensor.grad = 1.0
         return
@@ -88,7 +88,7 @@ def backward(tensor: Any, *args: Any, **kwargs: Any) -> None:
             t.grad = grad_val
 
 
-def RegisterGradient(op_type: str) -> typing.Callable:
+def RegisterGradient(op_type: str) -> typing.Callable:  # type: ignore
     """Register a custom gradient for an operation.
 
     Args:

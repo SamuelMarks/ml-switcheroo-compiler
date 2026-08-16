@@ -1,19 +1,15 @@
 operation: initial_step_size
 description: The class representing a Python function.
 std_args:
-- fun
-- t0
-- y0
-- order
-- rtol
-- atol
-- f0
+  - fun
+  - t0
+  - y0
+  - order
+  - rtol
+  - atol
+  - f0
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

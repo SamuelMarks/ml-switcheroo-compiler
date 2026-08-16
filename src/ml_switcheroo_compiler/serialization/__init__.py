@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module __init__.py."""
+
 from typing import Any
 
 """Serialization package."""
@@ -32,7 +34,7 @@ def graph_to_json(graph: Any) -> str:
     Returns:
         str: Result.
     """
-    return graph.to_json()
+    return graph.to_json()  # type: ignore
 
 
 T = TypeVar("T")
@@ -73,7 +75,7 @@ def _get_format_handler(fmt: str) -> Any:
     return PickleWeightFormat()
 
 
-def _save_as_h5(weights_np: dict, filepath: str) -> None:
+def _save_as_h5(weights_np: dict[str, Any], filepath: str) -> None:
     """Save the given weights dictionary to an HDF5 file.
 
     Args:
@@ -83,7 +85,7 @@ def _save_as_h5(weights_np: dict, filepath: str) -> None:
     H5WeightFormat().save(weights_np, filepath)
 
 
-def _save_as_safetensors(weights_np: dict, filepath: str) -> None:
+def _save_as_safetensors(weights_np: dict[str, Any], filepath: str) -> None:
     """Save the given weights dictionary to a safetensors file.
 
     Args:
@@ -93,7 +95,7 @@ def _save_as_safetensors(weights_np: dict, filepath: str) -> None:
     SafetensorsWeightFormat().save(weights_np, filepath)
 
 
-def _load_h5_weights(filepath: str) -> dict:
+def _load_h5_weights(filepath: str) -> dict[str, Any]:
     """Load weights from an HDF5 file.
 
     Args:
@@ -105,7 +107,7 @@ def _load_h5_weights(filepath: str) -> dict:
     return H5WeightFormat().load(filepath)
 
 
-def _load_safetensors_weights(filepath: str) -> dict:
+def _load_safetensors_weights(filepath: str) -> dict[str, Any]:
     """Load weights from a safetensors file.
 
     Args:
@@ -117,7 +119,7 @@ def _load_safetensors_weights(filepath: str) -> dict:
     return SafetensorsWeightFormat().load(filepath)
 
 
-def _load_npz_weights(filepath: str) -> dict:
+def _load_npz_weights(filepath: str) -> dict[str, Any]:
     """Load weights from an NPZ (numpy zip) file.
 
     Args:
@@ -129,7 +131,7 @@ def _load_npz_weights(filepath: str) -> dict:
     return NpzWeightFormat().load(filepath)
 
 
-def _load_pickle_weights(filepath: str) -> dict:
+def _load_pickle_weights(filepath: str) -> dict[str, Any]:
     """Load weights from a pickle file.
 
     Args:
@@ -141,7 +143,7 @@ def _load_pickle_weights(filepath: str) -> dict:
     return PickleWeightFormat().load(filepath)
 
 
-def _validate_and_map_weights(weights_dict: dict, target_model: Any = None) -> dict:
+def _validate_and_map_weights(weights_dict: dict[str, Any], target_model: Any = None) -> dict[str, Any]:
     """Validate the loaded weights and map them to the target model if provided.
 
     Args:
@@ -154,7 +156,7 @@ def _validate_and_map_weights(weights_dict: dict, target_model: Any = None) -> d
     return weights_dict
 
 
-def load_weights(filepath: str, target_model: Any = None) -> dict:
+def load_weights(filepath: str, target_model: Any = None) -> dict[str, Any]:
     """Load weights from a specified file path and map them to a target model.
 
     Args:
@@ -403,7 +405,7 @@ def load_model(filepath: str, custom_objects: Any = None, compile: bool = True, 
         class LoadedModel:
             """LoadedModel operation class."""
 
-            def __init__(self, cfg: dict) -> None:
+            def __init__(self, cfg: dict[str, Any]) -> None:
                 """__init__ method for LoadedModel.
 
                 Args:
@@ -568,7 +570,7 @@ def get_registered_name(*args: Any, **kwargs: Any) -> str:
         str: The registered name of the object.
     """
     if args and hasattr(args[0], "__name__"):
-        return args[0].__name__
+        return args[0].__name__  # type: ignore
     return "CustomObject"
 
 
@@ -688,7 +690,7 @@ def read_fingerprint(path: str) -> str:
     return "fingerprint"
 
 
-def load_variable(path: str, name: str) -> "Tensor":
+def load_variable(path: str, name: str) -> "Tensor":  # type: ignore
     """Load variable from V2 checkpoint.
 
     Args:

@@ -1,7 +1,7 @@
 operation: TorchLoad
 description: Definition for TorchLoad
 std_args:
-- f
+  - f
 variants:
   pytorch:
     eager: torch.load
@@ -19,15 +19,11 @@ variants:
     eager: keras_ops.torchload
   mlx:
     eager: mlx.core.torchload
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: TorchLoad
+  edge_stablehlo:
+
+    opcode: stablehlo.torch_load
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

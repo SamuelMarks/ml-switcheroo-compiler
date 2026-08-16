@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
 import os
@@ -92,83 +92,6 @@ class KerasTensorManipulator:
         if "axes" in kwargs:
             return "keras.ops.transpose({0}, {axes})"
         return "keras.ops.transpose({0})"
-
-
-_KERAS_OP_REGISTRY = {
-    "BroadcastInDim": "{0}.broadcast_in_dim({1}, {2})",
-    "ConvGeneralDilated": "{0}.conv_general_dilated({1}, {2})",
-    "DotGeneral": "{0}.dot_general({1}, {2})",
-    "DynamicSlice": "{0}.dynamic_slice({1}, {2})",
-    "DynamicUpdateSlice": "{0}.dynamic_update_slice({1}, {2})",
-    "Pmean": "{0}.pmean({1})",
-    "Psum": "{0}.psum({1})",
-    "Infeed": "{0}",
-    "Outfeed": "{0}",
-    "AxisIndex": "0",
-    "AllToAll": "{0}",
-    "Pmax": "{0}",
-    "Pmin": "{0}",
-    "PsumScatter": "{0}",
-    "Pswapaxes": "{0}",
-    "Ppermute": "{0}",
-    "Pshuffle": "{0}",
-    "CreateToken": "0",
-    "WithShardingConstraint": "{0}",
-    "Beta": "keras.random.beta({shape}, {1}, {2})",
-    "Dirichlet": "keras.random.dirichlet({shape}, {1})",
-    "Gamma": "keras.random.gamma({shape}, {1})",
-    "RngBitGenerator": "keras.random.randint({shape}, 0, 255)",
-    "RngUniform": "keras.random.uniform({shape}, minval={0}, maxval={1})",
-    "Matmul": "keras.ops.matmul({0}, {1})",
-    "Trace": "tf.linalg.trace",
-    "Adjoint": "tf.linalg.adjoint",
-    "LuMatrixInverse": "tf.linalg.lu_matrix_inverse({0}, {1})",
-    "LuReconstruct": "tf.linalg.lu_reconstruct({0}, {1})",
-    "BandPart": "tf.linalg.band_part",
-    "TriangularSolve": "tf.linalg.triangular_solve({0}, {1}, lower={lower}, adjoint={adjoint})",
-    "TridiagonalSolve": "tf.linalg.tridiagonal_solve(({2}, {1}, {0}), {3}, diagonals_format='sequence')",
-    "TridiagonalMatmul": "tf.linalg.tridiagonal_matmul(({2}, {1}, {0}), {3}, diagonals_format='sequence')",
-    "CholeskySolve": "keras.ops.solve(keras.ops.matmul({0}, keras.ops.swapaxes({0}, -1, -2)), {1})",
-    "TriInv": "tf.linalg.inv({0})",
-    "Dot": "keras.ops.dot({0}, {1})",
-    "BroadcastTo": "keras.ops.broadcast_to({0}, {shape})",
-    "Reshape": "keras.ops.reshape({0}, {shape})",
-    "TruncateDiv": "keras.ops.trunc(keras.ops.divide({0}, {1}))",
-    "TruncateMod": "keras.ops.mod({0}, {1})",
-    "TrueDivide": "keras.ops.true_divide({0}, {1})",
-    "Arange": "keras.ops.arange({0})",
-    "Sort": "keras.ops.sort({0}, axis={dimension})",
-    "ArgSort": "keras.ops.argsort({0}, axis={dimension})",
-    "Allclose": "keras.ops.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})",
-    "Fftnd": "keras.ops.fft.fftn({0})",
-    "Ifftnd": "keras.ops.fft.ifftn({0})",
-    "Rfftnd": "keras.ops.fft.rfftn({0})",
-    "Irfftnd": "keras.ops.fft.irfftn({0})",
-    "Fftshift": "keras.ops.fft.fftshift({0})",
-    "Ifftshift": "keras.ops.fft.ifftshift({0})",
-    "Fft": "keras.ops.fft.fft({0})",
-    "Rfft": "keras.ops.fft.rfft({0})",
-    "Fftn": "keras.ops.fft.fftn({0})",
-    "Erfinv": "keras.ops.erfinv({0})",
-    "NanToNum": "keras.ops.where(keras.ops.isnan({0}), {nan}, keras.ops.where(keras.ops.isinf({0}) & ({0} > 0), {posinf}, keras.ops.where(keras.ops.isinf({0}) & ({0} < 0), {neginf}, {0})))",
-    "AssignVariable": "{0}",
-    "StopGradient": "kops.stop_gradient({0})",
-    "Resize": "kops.image.resize({0}, {size}, method={method}, antialias={antialias})",
-    "AffineGrid": "kops.image.affine_grid({0}, {size}, align_corners={align_corners})",
-    "GridSample": "kops.image.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode}, align_corners={align_corners})",
-    "DrawBoundingBoxes": "{0}",
-    "RgbToYiq": "kops.image.rgb_to_yiq({0})",
-    "YiqToRgb": "kops.image.yiq_to_rgb({0})",
-    "RgbToYuv": "kops.image.rgb_to_yuv({0})",
-    "YuvToRgb": "kops.image.yuv_to_rgb({0})",
-    "Ifft": "kops.fft.ifft({0})",
-    "Fft2d": "kops.fft.fft2({0})",
-    "Ifft2d": "kops.fft.ifft2({0})",
-    "Rfft2d": "kops.fft.rfft2({0})",
-    "Irfft": "kops.fft.irfft({0})",
-    "Irfft2d": "kops.fft.irfft2({0})",
-    "ReadVariable": "{0}",
-}
 
 
 @register_backend("keras")
@@ -286,21 +209,6 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return f"keras_ragged_dot({input_vars[0]}, {input_vars[1]})"
 
-    def visit_Einsum(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
-        """Visit an Einsum node.
-
-        Args:
-            node (object): The IR node.
-            input_vars (list[str]): The inputs.
-            **kwargs (object): Additional kwargs.
-
-        Returns:
-            str: The generated code string.
-        """
-        args_str = ", ".join(input_vars)
-        eq = kwargs.get("equation", "")
-        return f"keras.ops.einsum('{eq}', {args_str})"
-
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
 
@@ -309,7 +217,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras.ops"
 
-    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, Any]) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -319,7 +227,6 @@ class KerasCodeGenerator(BaseGenerator):
             dict[str, str]: The ops map.
         """
         ops = super().get_ops_map(kwargs)
-        ops.update(_KERAS_OP_REGISTRY)
         ops["Zeros"] = KerasTensorManipulator.format_zeros_like("zeros", kwargs)
         ops["Ones"] = KerasTensorManipulator.format_zeros_like("ones", kwargs)
         ops["Full"] = KerasTensorManipulator.format_full(kwargs)
@@ -368,10 +275,19 @@ class KerasCodeGenerator(BaseGenerator):
 
         Returns: Any: Result.
         """
-        tmpl_path = os.path.join(os.path.dirname(__file__), "keras_prefix.py.tmpl")
+        import yaml
+
+        tmpl_path = os.path.join(os.path.dirname(__file__), "keras_prefix.yaml")
         with open(tmpl_path) as f:
-            keras_prefix_template = f.read()
-        return ["import keras\n", *keras_prefix_template.split("\n")]
+            data = yaml.safe_load(f)
+
+        lines = ["import keras\n"]
+        if "imports" in data and data["imports"]:
+            lines.extend(data["imports"].split("\n"))
+        if "functions" in data and data["functions"]:
+            for func_code in data["functions"].values():
+                lines.extend(func_code.split("\n"))
+        return lines
 
     def _generate_function_signature(self) -> None:
         """Generate the model function signature."""

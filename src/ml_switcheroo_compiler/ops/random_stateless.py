@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for random_stateless.py."""
 
 import typing
@@ -36,7 +36,7 @@ class UniformConfig:
 
 def stateless_random_uniform(
     shape: Sequence[int],
-    seed: Tensor,
+    seed: Tensor,  # type: ignore
     minval: float = 0.0,
     maxval: float = 1.0,
     dtype: str = "float32",
@@ -66,7 +66,7 @@ def stateless_random_uniform(
 
 def stateless_random_normal(
     shape: Sequence[int],
-    seed: Tensor,
+    seed: Tensor,  # type: ignore
     mean: float = 0.0,
     stddev: float = 1.0,
     dtype: str = "float32",
@@ -96,9 +96,9 @@ def stateless_random_normal(
 
 def stateless_random_binomial(
     shape: Sequence[int],
-    seed: Tensor,
-    counts: Union[float, Tensor],
-    probabilities: Union[float, Tensor],
+    seed: Tensor,  # type: ignore
+    counts: Union[float, Tensor],  # type: ignore
+    probabilities: Union[float, Tensor],  # type: ignore
     dtype: str = "int32",
 ) -> Any:
     """Generate random values from a binomial distribution without maintaining state.
@@ -122,7 +122,7 @@ def stateless_random_binomial(
 
 def stateless_truncated_normal(
     shape: Sequence[int],
-    seed: Tensor,
+    seed: Tensor,  # type: ignore
     mean: float = 0.0,
     stddev: float = 1.0,
     dtype: str = "float32",
@@ -155,9 +155,9 @@ def stateless_truncated_normal(
 
 
 def stateless_categorical(
-    logits: Tensor,
+    logits: Tensor,  # type: ignore
     num_samples: int,
-    seed: Tensor,
+    seed: Tensor,  # type: ignore
     dtype: str = "int32",
 ) -> Any:
     """Generate random values from a categorical distribution without maintaining state.
@@ -186,8 +186,8 @@ def stateless_categorical(
 
 def stateless_gamma(
     shape: Sequence[int],
-    seed: Tensor,
-    alpha: Tensor,
+    seed: Tensor,  # type: ignore
+    alpha: Tensor,  # type: ignore
     dtype: str = "float32",
 ) -> Any:
     """Generate random values from a gamma distribution without maintaining state.
@@ -210,9 +210,9 @@ def stateless_gamma(
 
 def stateless_beta(
     shape: Sequence[int],
-    seed: Tensor,
-    alpha: Tensor,
-    beta_param: Tensor,
+    seed: Tensor,  # type: ignore
+    alpha: Tensor,  # type: ignore
+    beta_param: Tensor,  # type: ignore
     dtype: str = "float32",
 ) -> Any:
     """Generate random values from a beta distribution without maintaining state.
@@ -235,8 +235,8 @@ def stateless_beta(
 
 
 def stateless_shuffle(
-    x: Tensor,
-    seed: Tensor,
+    x: Tensor,  # type: ignore
+    seed: Tensor,  # type: ignore
     axis: int = 0,
 ) -> Any:
     """Shuffles the input tensor randomly along a given axis without maintaining state.
@@ -460,8 +460,8 @@ def stateless_split(seed: Any, num: Any = 2) -> Any:
 
 def stateless_poisson(
     shape: Sequence[int],
-    seed: Tensor,
-    lam: Tensor,
+    seed: Tensor,  # type: ignore
+    lam: Tensor,  # type: ignore
     dtype: str = "int32",
 ) -> Any:
     """Generate random values from a poisson distribution without maintaining state.

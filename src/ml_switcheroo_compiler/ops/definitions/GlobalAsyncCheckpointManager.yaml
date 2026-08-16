@@ -1,14 +1,10 @@
 operation: GlobalAsyncCheckpointManager
 description: Responsible for serializing GDAs via TensorStore.
 std_args:
-- self
-- timeout_secs
+  - self
+  - timeout_secs
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

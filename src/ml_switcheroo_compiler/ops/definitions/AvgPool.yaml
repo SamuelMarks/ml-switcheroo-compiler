@@ -12,7 +12,9 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_stablehlo: {}
+  edge_stablehlo:
+
+    opcode: stablehlo.avgpool
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

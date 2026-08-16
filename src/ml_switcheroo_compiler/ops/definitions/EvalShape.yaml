@@ -1,19 +1,15 @@
 operation: EvalShape
 description: Computes the shape/dtype of a function without performing actual computation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: f
-  type: Callable
-- is_variadic: true
-  kind: positional_or_keyword
-  name: args
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: f
+    type: Callable
+  - is_variadic: true
+    kind: positional_or_keyword
+    name: args
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Backend utilities."""
 
 from typing import Any
@@ -12,7 +12,7 @@ except ImportError:
 _OP_MAPPING = None
 
 
-def _get_op_mapping() -> dict:
+def _get_op_mapping() -> dict[str, Any]:
     """Retrieve the operation mapping for the Dask backend.
 
     Returns:
@@ -24,201 +24,201 @@ def _get_op_mapping() -> dict:
     import dask.array as da
 
     _OP_MAPPING = {
-        "Abs": da.abs,
-        "Add": da.add,
-        "All": da.all,
-        "Allclose": da.allclose,
-        "Angle": da.angle,
-        "Any": da.any,
-        "Append": da.append,
-        "ApplyOverAxes": da.apply_over_axes,
-        "Argmax": da.argmax,
-        "Argmin": da.argmin,
-        "Argwhere": da.argwhere,
-        "Average": da.average,
-        "Bincount": da.bincount,
-        "BitwiseAnd": da.bitwise_and,
-        "BitwiseNot": da.bitwise_not,
-        "BitwiseOr": da.bitwise_or,
-        "BitwiseXor": da.bitwise_xor,
-        "Block": da.block,
-        "BroadcastTo": da.broadcast_to,
-        "Cbrt": da.cbrt,
-        "Ceil": da.ceil,
+        "Abs": da.abs,  # type: ignore
+        "Add": da.add,  # type: ignore
+        "All": da.all,  # type: ignore
+        "Allclose": da.allclose,  # type: ignore
+        "Angle": da.angle,  # type: ignore
+        "Any": da.any,  # type: ignore
+        "Append": da.append,  # type: ignore
+        "ApplyOverAxes": da.apply_over_axes,  # type: ignore
+        "Argmax": da.argmax,  # type: ignore
+        "Argmin": da.argmin,  # type: ignore
+        "Argwhere": da.argwhere,  # type: ignore
+        "Average": da.average,  # type: ignore
+        "Bincount": da.bincount,  # type: ignore
+        "BitwiseAnd": da.bitwise_and,  # type: ignore
+        "BitwiseNot": da.bitwise_not,  # type: ignore
+        "BitwiseOr": da.bitwise_or,  # type: ignore
+        "BitwiseXor": da.bitwise_xor,  # type: ignore
+        "Block": da.block,  # type: ignore
+        "BroadcastTo": da.broadcast_to,  # type: ignore
+        "Cbrt": da.cbrt,  # type: ignore
+        "Ceil": da.ceil,  # type: ignore
         "Cholesky": da.linalg.cholesky,
-        "Choose": da.choose,
-        "Clip": da.clip,
-        "Compress": da.compress,
-        "Concatenate": da.concatenate,
-        "Conj": da.conj,
-        "Copysign": da.copysign,
-        "Corrcoef": da.corrcoef,
-        "Cos": da.cos,
-        "Cosh": da.cosh,
-        "CountNonzero": da.count_nonzero,
-        "Cov": da.cov,
-        "Cumprod": da.cumprod,
-        "Cumsum": da.cumsum,
-        "Degrees": da.degrees,
-        "Delete": da.delete,
-        "Diag": da.diag,
-        "Diagonal": da.diagonal,
-        "Diff": da.diff,
-        "Digitize": da.digitize,
-        "Divide": da.divide,
-        "Divmod": da.divmod,
-        "Dot": da.dot,
-        "Dstack": da.dstack,
-        "Ediff1d": da.ediff1d,
-        "Einsum": da.einsum,
-        "Equal": da.equal,
-        "Exp": da.exp,
-        "Exp2": da.exp2,
-        "ExpandDims": da.expand_dims,
-        "Expm1": da.expm1,
-        "Extract": da.extract,
-        "Fabs": da.fabs,
+        "Choose": da.choose,  # type: ignore
+        "Clip": da.clip,  # type: ignore
+        "Compress": da.compress,  # type: ignore
+        "Concatenate": da.concatenate,  # type: ignore
+        "Conj": da.conj,  # type: ignore
+        "Copysign": da.copysign,  # type: ignore
+        "Corrcoef": da.corrcoef,  # type: ignore
+        "Cos": da.cos,  # type: ignore
+        "Cosh": da.cosh,  # type: ignore
+        "CountNonzero": da.count_nonzero,  # type: ignore
+        "Cov": da.cov,  # type: ignore
+        "Cumprod": da.cumprod,  # type: ignore
+        "Cumsum": da.cumsum,  # type: ignore
+        "Degrees": da.degrees,  # type: ignore
+        "Delete": da.delete,  # type: ignore
+        "Diag": da.diag,  # type: ignore
+        "Diagonal": da.diagonal,  # type: ignore
+        "Diff": da.diff,  # type: ignore
+        "Digitize": da.digitize,  # type: ignore
+        "Divide": da.divide,  # type: ignore
+        "Divmod": da.divmod,  # type: ignore
+        "Dot": da.dot,  # type: ignore
+        "Dstack": da.dstack,  # type: ignore
+        "Ediff1d": da.ediff1d,  # type: ignore
+        "Einsum": da.einsum,  # type: ignore
+        "Equal": da.equal,  # type: ignore
+        "Exp": da.exp,  # type: ignore
+        "Exp2": da.exp2,  # type: ignore
+        "ExpandDims": da.expand_dims,  # type: ignore
+        "Expm1": da.expm1,  # type: ignore
+        "Extract": da.extract,  # type: ignore
+        "Fabs": da.fabs,  # type: ignore
         "Fft": da.fft,
         "Fft2": da.fft.fft2,
         "Fftfreq": da.fft.fftfreq,
         "Fftn": da.fft.fftn,
         "Fftshift": da.fft.fftshift,
-        "Fix": da.fix,
-        "Flatnonzero": da.flatnonzero,
-        "Flip": da.flip,
-        "Fliplr": da.fliplr,
-        "Flipud": da.flipud,
-        "FloatPower": da.float_power,
-        "Floor": da.floor,
-        "FloorDivide": da.floor_divide,
-        "Fmax": da.fmax,
-        "Fmin": da.fmin,
-        "Fmod": da.fmod,
-        "Frexp": da.frexp,
-        "Fromfunction": da.fromfunction,
-        "Frompyfunc": da.frompyfunc,
-        "Greater": da.greater,
-        "GreaterEqual": da.greater_equal,
+        "Fix": da.fix,  # type: ignore
+        "Flatnonzero": da.flatnonzero,  # type: ignore
+        "Flip": da.flip,  # type: ignore
+        "Fliplr": da.fliplr,  # type: ignore
+        "Flipud": da.flipud,  # type: ignore
+        "FloatPower": da.float_power,  # type: ignore
+        "Floor": da.floor,  # type: ignore
+        "FloorDivide": da.floor_divide,  # type: ignore
+        "Fmax": da.fmax,  # type: ignore
+        "Fmin": da.fmin,  # type: ignore
+        "Fmod": da.fmod,  # type: ignore
+        "Frexp": da.frexp,  # type: ignore
+        "Fromfunction": da.fromfunction,  # type: ignore
+        "Frompyfunc": da.frompyfunc,  # type: ignore
+        "Greater": da.greater,  # type: ignore
+        "GreaterEqual": da.greater_equal,  # type: ignore
         "Hfft": da.fft.hfft,
-        "Hstack": da.hstack,
-        "Hypot": da.hypot,
+        "Hstack": da.hstack,  # type: ignore
+        "Hypot": da.hypot,  # type: ignore
         "Ifft": da.fft.ifft,
         "Ifft2": da.fft.ifft2,
         "Ifftn": da.fft.ifftn,
         "Ifftshift": da.fft.ifftshift,
         "Ihfft": da.fft.ihfft,
-        "Imag": da.imag,
-        "Insert": da.insert,
+        "Imag": da.imag,  # type: ignore
+        "Insert": da.insert,  # type: ignore
         "Inv": da.linalg.inv,
-        "Invert": da.invert,
+        "Invert": da.invert,  # type: ignore
         "Irfft": da.fft.irfft,
         "Irfft2": da.fft.irfft2,
         "Irfftn": da.fft.irfftn,
-        "Isclose": da.isclose,
-        "Iscomplex": da.iscomplex,
-        "Isfinite": da.isfinite,
-        "Isin": da.isin,
-        "Isinf": da.isinf,
-        "Isnan": da.isnan,
-        "Isneginf": da.isneginf,
-        "Isposinf": da.isposinf,
-        "Isreal": da.isreal,
-        "Ldexp": da.ldexp,
-        "LeftShift": da.left_shift,
-        "Less": da.less,
-        "LessEqual": da.less_equal,
-        "Log": da.log,
-        "Log10": da.log10,
-        "Log2": da.log2,
-        "Logaddexp": da.logaddexp,
-        "Logaddexp2": da.logaddexp2,
-        "LogicalAnd": da.logical_and,
-        "LogicalNot": da.logical_not,
-        "LogicalOr": da.logical_or,
-        "LogicalXor": da.logical_xor,
+        "Isclose": da.isclose,  # type: ignore
+        "Iscomplex": da.iscomplex,  # type: ignore
+        "Isfinite": da.isfinite,  # type: ignore
+        "Isin": da.isin,  # type: ignore
+        "Isinf": da.isinf,  # type: ignore
+        "Isnan": da.isnan,  # type: ignore
+        "Isneginf": da.isneginf,  # type: ignore
+        "Isposinf": da.isposinf,  # type: ignore
+        "Isreal": da.isreal,  # type: ignore
+        "Ldexp": da.ldexp,  # type: ignore
+        "LeftShift": da.left_shift,  # type: ignore
+        "Less": da.less,  # type: ignore
+        "LessEqual": da.less_equal,  # type: ignore
+        "Log": da.log,  # type: ignore
+        "Log10": da.log10,  # type: ignore
+        "Log2": da.log2,  # type: ignore
+        "Logaddexp": da.logaddexp,  # type: ignore
+        "Logaddexp2": da.logaddexp2,  # type: ignore
+        "LogicalAnd": da.logical_and,  # type: ignore
+        "LogicalNot": da.logical_not,  # type: ignore
+        "LogicalOr": da.logical_or,  # type: ignore
+        "LogicalXor": da.logical_xor,  # type: ignore
         "Lstsq": da.linalg.lstsq,
         "Lu": da.linalg.lu,
-        "Matmul": da.matmul,
-        "Max": da.max,
-        "Maximum": da.maximum,
-        "Mean": da.mean,
-        "Min": da.min,
-        "Minimum": da.minimum,
-        "Mod": da.mod,
-        "Moveaxis": da.moveaxis,
-        "Multiply": da.multiply,
-        "NanToNum": da.nan_to_num,
-        "Nanargmax": da.nanargmax,
-        "Nanargmin": da.nanargmin,
-        "Nancumprod": da.nancumprod,
-        "Nancumsum": da.nancumsum,
-        "Nanmax": da.nanmax,
-        "Nanmean": da.nanmean,
-        "Nanmedian": da.nanmedian,
-        "Nanmin": da.nanmin,
-        "Nanprod": da.nanprod,
-        "Nanstd": da.nanstd,
-        "Nansum": da.nansum,
-        "Nanvar": da.nanvar,
-        "Negative": da.negative,
-        "Nextafter": da.nextafter,
-        "Nonzero": da.nonzero,
+        "Matmul": da.matmul,  # type: ignore
+        "Max": da.max,  # type: ignore
+        "Maximum": da.maximum,  # type: ignore
+        "Mean": da.mean,  # type: ignore
+        "Min": da.min,  # type: ignore
+        "Minimum": da.minimum,  # type: ignore
+        "Mod": da.mod,  # type: ignore
+        "Moveaxis": da.moveaxis,  # type: ignore
+        "Multiply": da.multiply,  # type: ignore
+        "NanToNum": da.nan_to_num,  # type: ignore
+        "Nanargmax": da.nanargmax,  # type: ignore
+        "Nanargmin": da.nanargmin,  # type: ignore
+        "Nancumprod": da.nancumprod,  # type: ignore
+        "Nancumsum": da.nancumsum,  # type: ignore
+        "Nanmax": da.nanmax,  # type: ignore
+        "Nanmean": da.nanmean,  # type: ignore
+        "Nanmedian": da.nanmedian,  # type: ignore
+        "Nanmin": da.nanmin,  # type: ignore
+        "Nanprod": da.nanprod,  # type: ignore
+        "Nanstd": da.nanstd,  # type: ignore
+        "Nansum": da.nansum,  # type: ignore
+        "Nanvar": da.nanvar,  # type: ignore
+        "Negative": da.negative,  # type: ignore
+        "Nextafter": da.nextafter,  # type: ignore
+        "Nonzero": da.nonzero,  # type: ignore
         "Norm": da.linalg.norm,
-        "NotEqual": da.not_equal,
-        "Outer": da.outer,
-        "Pad": da.pad,
-        "Percentile": da.percentile,
-        "Positive": da.positive,
-        "Power": da.power,
-        "Prod": da.prod,
+        "NotEqual": da.not_equal,  # type: ignore
+        "Outer": da.outer,  # type: ignore
+        "Pad": da.pad,  # type: ignore
+        "Percentile": da.percentile,  # type: ignore
+        "Positive": da.positive,  # type: ignore
+        "Power": da.power,  # type: ignore
+        "Prod": da.prod,  # type: ignore
         "Qr": da.linalg.qr,
-        "Radians": da.radians,
-        "RavelMultiIndex": da.ravel_multi_index,
-        "Real": da.real,
-        "Reciprocal": da.reciprocal,
-        "Remainder": da.remainder,
-        "Repeat": da.repeat,
-        "Reshape": da.reshape,
+        "Radians": da.radians,  # type: ignore
+        "RavelMultiIndex": da.ravel_multi_index,  # type: ignore
+        "Real": da.real,  # type: ignore
+        "Reciprocal": da.reciprocal,  # type: ignore
+        "Remainder": da.remainder,  # type: ignore
+        "Repeat": da.repeat,  # type: ignore
+        "Reshape": da.reshape,  # type: ignore
         "Rfft": da.fft.rfft,
         "Rfft2": da.fft.rfft2,
         "Rfftfreq": da.fft.rfftfreq,
         "Rfftn": da.fft.rfftn,
-        "RightShift": da.right_shift,
-        "Rint": da.rint,
-        "Roll": da.roll,
-        "Round": da.round,
-        "Searchsorted": da.searchsorted,
-        "Select": da.select,
-        "Sign": da.sign,
-        "Signbit": da.signbit,
-        "Sin": da.sin,
-        "Sinc": da.sinc,
-        "Sinh": da.sinh,
+        "RightShift": da.right_shift,  # type: ignore
+        "Rint": da.rint,  # type: ignore
+        "Roll": da.roll,  # type: ignore
+        "Round": da.round,  # type: ignore
+        "Searchsorted": da.searchsorted,  # type: ignore
+        "Select": da.select,  # type: ignore
+        "Sign": da.sign,  # type: ignore
+        "Signbit": da.signbit,  # type: ignore
+        "Sin": da.sin,  # type: ignore
+        "Sinc": da.sinc,  # type: ignore
+        "Sinh": da.sinh,  # type: ignore
         "Solve": da.linalg.solve,
-        "Sqrt": da.sqrt,
-        "Square": da.square,
-        "Squeeze": da.squeeze,
-        "Stack": da.stack,
-        "Std": da.std,
-        "Subtract": da.subtract,
-        "Sum": da.sum,
+        "Sqrt": da.sqrt,  # type: ignore
+        "Square": da.square,  # type: ignore
+        "Squeeze": da.squeeze,  # type: ignore
+        "Stack": da.stack,  # type: ignore
+        "Std": da.std,  # type: ignore
+        "Subtract": da.subtract,  # type: ignore
+        "Sum": da.sum,  # type: ignore
         "Svd": da.linalg.svd,
-        "Swapaxes": da.swapaxes,
-        "Take": da.take,
-        "Tan": da.tan,
-        "Tanh": da.tanh,
-        "Tensordot": da.tensordot,
-        "Tile": da.tile,
-        "Trace": da.trace,
-        "Transpose": da.transpose,
-        "TrueDivide": da.true_divide,
-        "Trunc": da.trunc,
-        "Union1d": da.union1d,
-        "Unique": da.unique,
-        "UnravelIndex": da.unravel_index,
-        "Vdot": da.vdot,
-        "Vstack": da.vstack,
-        "Where": da.where,
+        "Swapaxes": da.swapaxes,  # type: ignore
+        "Take": da.take,  # type: ignore
+        "Tan": da.tan,  # type: ignore
+        "Tanh": da.tanh,  # type: ignore
+        "Tensordot": da.tensordot,  # type: ignore
+        "Tile": da.tile,  # type: ignore
+        "Trace": da.trace,  # type: ignore
+        "Transpose": da.transpose,  # type: ignore
+        "TrueDivide": da.true_divide,  # type: ignore
+        "Trunc": da.trunc,  # type: ignore
+        "Union1d": da.union1d,  # type: ignore
+        "Unique": da.unique,  # type: ignore
+        "UnravelIndex": da.unravel_index,  # type: ignore
+        "Vdot": da.vdot,  # type: ignore
+        "Vstack": da.vstack,  # type: ignore
+        "Where": da.where,  # type: ignore
     }
     return _OP_MAPPING
 

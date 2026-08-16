@@ -2,14 +2,10 @@ operation: reduce_expression
 description: Reduces an expression as much as is possible given a set of known variable
   assignments.
 std_args:
-- expr
-- assignments
+  - expr
+  - assignments
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

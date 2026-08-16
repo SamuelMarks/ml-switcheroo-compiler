@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Mixins for MLX."""
 
 from typing import Any
@@ -173,40 +173,6 @@ class MLXOpRegistryMixin:
         "RandomRandint": "mx.random.randint(low={minval}, high={maxval}, shape={shape}, key={0})",
         "RandomBernoulli": "mx.random.bernoulli(p={p}, shape={shape}, key={0})",
     }
-
-    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Retrieve the dictionary mapping operation names to their corresponding MLX format strings.
-
-        Args:
-            kwargs: A dictionary of operation keyword arguments.
-
-        Returns:
-            A dictionary mapping operation type names to format strings.
-        """
-        ops_map = {}
-        try:
-            ops_map.update(super().get_ops_map(kwargs))  # type: ignore[misc]
-        except AttributeError:
-            pass
-        ops_map.update(self._SIMPLE_OPS_MAP)
-        ops_map["Beta"] = "mx.random.uniform(shape={shape})"
-        ops_map["Dirichlet"] = "mx.random.uniform(shape={shape})"
-        ops_map["Gamma"] = "mx.random.uniform(shape={shape})"
-        ops_map["RngBitGenerator"] = "mx.random.randint(0, 255, {shape})"
-        ops_map["RngUniform"] = "mx.random.uniform(low={0}, high={1}, shape={shape})"
-        ops_map["Infeed"] = "{0}"
-        ops_map["Outfeed"] = "{0}"
-        ops_map["AxisIndex"] = "0"
-        ops_map["AllToAll"] = "{0}"
-        ops_map["Pmax"] = "{0}"
-        ops_map["Pmin"] = "{0}"
-        ops_map["PsumScatter"] = "{0}"
-        ops_map["Pswapaxes"] = "{0}"
-        ops_map["Ppermute"] = "{0}"
-        ops_map["Pshuffle"] = "{0}"
-        ops_map["CreateToken"] = "0"
-        ops_map["WithShardingConstraint"] = "{0}"
-        return ops_map
 
 
 class MLXNNOpsVisitor:
@@ -444,24 +410,6 @@ class MLXAudioVisitor:
 class MLXShapeOpsVisitor:
     """Visitor for MLX shape operations."""
 
-    def _format_einsum(self, input_vars: list[str], kwargs: dict[str, Any]) -> str:
-        """Format the MLX code for the einsum operation.
-
-        Args:
-            input_vars (list): The input_vars parameter.
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            str: Result.
-        """
-        equation = kwargs.get("equation", "")
-        if "operands" in kwargs:
-            operands = kwargs["operands"]
-            if isinstance(operands, list):
-                # Unpack operands
-                return f"mx.einsum('{equation}', *{input_vars[0]})"
-        return f"mx.einsum('{equation}', {', '.join(input_vars)})"
-
     def _format_zeros_ones(self, op: str, kwargs: dict[str, Any]) -> str:
         """Format the MLX code for the zeros_ones operation.
 
@@ -681,19 +629,6 @@ class MLXShapeOpsVisitor:
         posinf = node.attributes.get("posinf", None)
         neginf = node.attributes.get("neginf", None)
         return f"mx.nan_to_num({input_vars[0]}, nan={nan}, posinf={posinf}, neginf={neginf})"
-
-    def visit_Einsum(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
-        """Generate MLX code for the Einsum operation.
-
-        Args:
-            node: The AST node representing the operation.
-            input_vars: A list of input variable names.
-            kwargs: Additional keyword arguments.
-
-        Returns:
-            A string containing the MLX code for the Einsum operation.
-        """
-        return self._format_einsum(input_vars, node.attributes)
 
     def visit_Zeros(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Generate MLX code for the Zeros operation.

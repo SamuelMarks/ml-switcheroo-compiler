@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """IR evaluator using the OpRegistry."""
 
 import ast
@@ -264,7 +264,7 @@ def _handle_meshgrid(
     env.set(node.id, result[idx])
 
 
-def _dispatch_op(node: LogicalNode, env: Environment, backend: Any, target_op: str, in_vals: list, kwargs: dict) -> None:
+def _dispatch_op(node: LogicalNode, env: Environment, backend: Any, target_op: str, in_vals: list[Any], kwargs: dict[str, Any]) -> None:
     """Dispatch the execution of an operation to the appropriate handler.
 
     Args:
@@ -289,6 +289,16 @@ def _dispatch_op(node: LogicalNode, env: Environment, backend: Any, target_op: s
 
 
 def _evaluate_if_node(node: LogicalNode, env: Environment, backend: Any) -> None:
+    """_evaluate_if_node function.
+
+    Args:
+        node (Any): The node parameter.
+        env (Any): The env parameter.
+        backend (Any): The backend parameter.
+
+    Returns:
+        Any: Result.
+    """
     cond_val = env.get(node.inputs[0])
     is_true = bool(cond_val) if isinstance(cond_val, (bool, int, float)) else bool(getattr(cond_val, "item", lambda cr=cond_val: cr)())
     branch = node.attributes.get("then_branch" if is_true else "else_branch")
@@ -309,6 +319,16 @@ def _evaluate_if_node(node: LogicalNode, env: Environment, backend: Any) -> None
 
 
 def _evaluate_loop_node(node: LogicalNode, env: Environment, backend: Any) -> None:
+    """_evaluate_loop_node function.
+
+    Args:
+        node (Any): The node parameter.
+        env (Any): The env parameter.
+        backend (Any): The backend parameter.
+
+    Returns:
+        Any: Result.
+    """
     cond_graph = node.attributes.get("cond")
     body_graph = node.attributes.get("body")
     curr_val = env.get(node.inputs[0])

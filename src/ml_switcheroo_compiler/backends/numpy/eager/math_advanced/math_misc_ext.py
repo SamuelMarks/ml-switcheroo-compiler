@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_misc_ext module."""
 
 from __future__ import annotations
@@ -518,7 +518,7 @@ def _np_debugnans(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return x
 
 
-def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_numbers: tuple) -> str:
+def _build_dot_general_einsum_str(lhs_ndim: int, rhs_ndim: int, dimension_numbers: tuple[Any, ...]) -> str:
     """Evaluate _build_dot_general_einsum_str operation.
 
     Args:
@@ -665,7 +665,7 @@ def _np_key(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return np.array([0, 0], dtype=np.uint32)
 
 
-def _get_np_arg(arg: Sequence[Any], i: int) -> np.ndarray | None:
+def _get_np_arg(arg: Sequence[Any], i: int) -> np.ndarray | None:  # type: ignore
     """Get numpy arg.
 
     Args:
@@ -678,7 +678,17 @@ def _get_np_arg(arg: Sequence[Any], i: int) -> np.ndarray | None:
 
 
 def _get_sc() -> Any:
-    return None
+    """_get_sc function.
+
+    Returns:
+        Any: Result.
+    """
+    try:
+        import scipy.special as sc
+
+        return sc
+    except ImportError:
+        return None
 
 
 @numpy_eager_registry.register("Clip")
@@ -815,6 +825,23 @@ def _np_descriptive_2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 @numpy_eager_registry.register("Rem")
 def _np_rem_3(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """_np_rem_3 function.
+
+    Args:
+        backend_module: The backend.
+        args: Positional args.
+        kwargs: Keyword args.
+
+    Args:
+        message (str): The message.
+        input_vars (list): The input vars.
+        node (Any): The node.
+        **kwargs (Any): Keyword arguments.
+        backend_module (Any): The backend_module parameter.
+
+    Returns:
+        Any: Result.
+    """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)
     if a is None or b is None:

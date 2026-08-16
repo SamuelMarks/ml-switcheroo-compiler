@@ -2,15 +2,11 @@ operation: transfer_parametrizations_and_params
 description: Transfer parametrizations and the parameters they parametrize from :attr:`from_module`
   to :attr:`to_module`.
 std_args:
-- from_module
-- to_module
-- tensor_name
+  - from_module
+  - to_module
+  - tensor_name
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

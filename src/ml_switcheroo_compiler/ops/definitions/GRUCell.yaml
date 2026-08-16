@@ -1,25 +1,21 @@
 operation: GRUCell
 description: Cell class for the GRU layer.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input_size
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: hidden_size
-  type: int
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: bias
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input_size
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: hidden_size
+    type: int
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: bias
+    type: bool
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

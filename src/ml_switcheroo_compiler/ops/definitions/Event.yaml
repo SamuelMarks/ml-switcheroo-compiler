@@ -1,26 +1,22 @@
 operation: Event
 description: CUDA event wrapper for synchronization and timing.
 std_args:
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: enable_timing
-  type: bool
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: blocking
-  type: bool
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: interprocess
-  type: bool
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: enable_timing
+    type: bool
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: blocking
+    type: bool
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: interprocess
+    type: bool
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

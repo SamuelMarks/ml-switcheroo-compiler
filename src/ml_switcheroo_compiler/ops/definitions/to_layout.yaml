@@ -1,14 +1,10 @@
 operation: to_layout
 description: Converts the fragmented array to the given layout.
 std_args:
-- self
-- new_layout
+  - self
+  - new_layout
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

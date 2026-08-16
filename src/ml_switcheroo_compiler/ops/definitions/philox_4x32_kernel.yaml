@@ -1,18 +1,14 @@
 operation: philox_4x32_kernel
 description: Generates random bits using the Philox keyed hash function.
 std_args:
-- key
-- shape
-- unpadded_shape
-- block_size
-- offset
-- fuse_output
+  - key
+  - shape
+  - unpadded_shape
+  - block_size
+  - offset
+  - fuse_output
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

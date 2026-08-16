@@ -101,3 +101,107 @@ fusion_patterns:
       - mean
       - var
       capture_to_replace: bn
+  ElementwiseFusion:
+    pattern:
+      op_type: Relu
+      capture: relu
+      inputs:
+      - op_type: Add
+        capture: add
+        inputs:
+        - capture: in1
+        - capture: in2
+    replacement:
+      op_type: AddRelu
+      inputs:
+      - in1
+      - in2
+      capture_to_replace: relu
+  NormalizationFusion:
+    pattern:
+      op_type: Divide
+      capture: div
+      inputs:
+      - op_type: Subtract
+        capture: sub
+        inputs:
+        - capture: in
+        - op_type: ReduceMean
+          capture: mean1
+      - op_type: Sqrt
+        capture: sqrt
+        inputs:
+        - op_type: Add
+          capture: add_eps
+          inputs:
+          - op_type: ReduceMean
+            capture: mean2
+          - capture: eps
+    replacement:
+      op_type: LayerNorm
+      inputs:
+      - in
+      capture_to_replace: div
+  ConsecutiveElementwiseFusion:
+    pattern:
+      op_type: Exp
+      capture: op2
+      inputs:
+      - op_type: Log
+        capture: op1
+        inputs:
+        - capture: in
+    replacement:
+      op_type: FusedLogExp
+      inputs:
+      - in
+      capture_to_replace: op2
+  ReshapeReshapeFusion:
+    pattern:
+      op_type: Reshape
+      capture: reshape2
+      inputs:
+      - op_type: Reshape
+        capture: reshape1
+        inputs:
+        - capture: input
+        - capture: shape1
+      - capture: shape2
+    replacement:
+      op_type: Reshape
+      inputs:
+      - input
+      - shape2
+      capture_to_replace: reshape2
+  DotReluFusion:
+    pattern:
+      op_type: Relu
+      capture: relu
+      inputs:
+      - op_type: Dot
+        capture: dot
+        inputs:
+        - capture: x
+        - capture: y
+    replacement:
+      op_type: DotRelu
+      inputs:
+      - x
+      - y
+      capture_to_replace: relu
+  DotGeluFusion:
+    pattern:
+      op_type: Gelu
+      capture: gelu
+      inputs:
+      - op_type: Dot
+        capture: dot
+        inputs:
+        - capture: x
+        - capture: y
+    replacement:
+      op_type: DotGelu
+      inputs:
+      - x
+      - y
+      capture_to_replace: gelu

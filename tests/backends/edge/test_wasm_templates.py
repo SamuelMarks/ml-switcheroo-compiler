@@ -28,6 +28,13 @@ def test_wasm_templates_validity():
         "init_val": "0.0",
         "final_combine": "scalar_sum_test_id",
         "math_op": "+ 1.0f",
+        "condition_expr": "cond()",
+        "body_expr": "body()",
+        "max_iters": 10,
+        "loop_body": "loop_body()",
+        "true_body": "true_body()",
+        "false_body": "false_body()",
+        "scan_op_expr": "scan_op()",
     }
 
     for name, tpl in templates.items():

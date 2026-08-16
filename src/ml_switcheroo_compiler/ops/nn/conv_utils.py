@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Convolution operations."""
 
 import math
@@ -90,7 +90,7 @@ def _calculate_conv_transpose_padding(
     return pads
 
 
-def _build_conv_config(kwargs: dict, dimension_numbers: tuple) -> Any:
+def _build_conv_config(kwargs: dict[str, Any], dimension_numbers: tuple[Any, ...]) -> Any:
     """Evaluate _build_conv_config operation.
 
     Args:
@@ -118,13 +118,13 @@ def _build_conv_config(kwargs: dict, dimension_numbers: tuple) -> Any:
 
 
 def _prepare_depthwise_conv(
-    lhs: Tensor,
-    rhs: Tensor,
+    lhs: Tensor,  # type: ignore
+    rhs: Tensor,  # type: ignore
     spatial_dims: int,
     dimension_numbers: tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
     config_obj: typing.Optional[Any] = None,
     **kwargs: Any,
-) -> tuple[Tensor, Any]:
+) -> tuple[Tensor, Any]:  # type: ignore
     """Prepare configuration and reshape weights for depthwise convolution.
 
     Args:
@@ -264,8 +264,8 @@ def compute_average_loss(per_example_loss: Any, sample_weight: Any = None, globa
 
 
 def depthwise_conv2d(
-    input: Tensor,
-    filter: Tensor,
+    input: Tensor,  # type: ignore
+    filter: Tensor,  # type: ignore
     config: typing.Optional[GenericConvConfig] = None,
     name: typing.Optional[str] = None,
 ) -> Any:

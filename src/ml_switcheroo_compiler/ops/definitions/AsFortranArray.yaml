@@ -1,10 +1,10 @@
 operation: AsFortranArray
 description: Return an array (ndim >= 1) laid out in Fortran order in memory.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: a
-  type: Array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: a
+    type: Array
 variants:
   numpy:
     eager: numpy.asfortranarray
@@ -20,15 +20,11 @@ variants:
     eager: jax.numpy.asfortranarray
   mlx:
     eager: mlx.core.asfortranarray
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsFortranArray
+  edge_stablehlo:
+
+    opcode: stablehlo.as_fortran_array
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

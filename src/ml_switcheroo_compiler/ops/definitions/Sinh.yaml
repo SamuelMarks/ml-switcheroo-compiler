@@ -1,10 +1,10 @@
 operation: sinh
 description: The Sinh operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
 variants:
   cupy:
     eager: cp.sinh
@@ -18,19 +18,18 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: sinh
+  edge_stablehlo:
+
+    opcode: stablehlo.sinh
   edge_wgsl:
     template: unary
     expr: sinh(buf_in0_f32[in0_offset])
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
 autodiff:
   vjp:
-  - Multiply($cotangent, Cosh($input[0]))
+    - Multiply($cotangent, Cosh($input[0]))
   jvp: Multiply($tangent[0], Cosh($input[0]))

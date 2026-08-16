@@ -1,15 +1,11 @@
 operation: check_tf_result
 description: The class representing a Python function.
 std_args:
-- idx
-- r_tf
-- r_aval
+  - idx
+  - r_tf
+  - r_aval
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

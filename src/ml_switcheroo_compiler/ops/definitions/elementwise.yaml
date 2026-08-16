@@ -1,14 +1,10 @@
 operation: elementwise
 description: Layer that applies a scalar function elementwise on its inputs.
 std_args:
-- fun
-- fun_kwargs
+  - fun
+  - fun_kwargs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

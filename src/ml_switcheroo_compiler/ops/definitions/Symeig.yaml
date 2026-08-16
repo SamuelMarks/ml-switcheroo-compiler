@@ -1,25 +1,21 @@
 operation: Symeig
 description: Computes eigenvalues and eigenvectors of a real symmetric matrix (Deprecated).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: eigenvectors
-  type: bool
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: upper
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: eigenvectors
+    type: bool
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: upper
+    type: bool
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

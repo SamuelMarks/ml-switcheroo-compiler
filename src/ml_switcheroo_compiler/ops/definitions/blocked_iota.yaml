@@ -1,14 +1,10 @@
 operation: blocked_iota
 description: Computes a sub-block of a larger shaped iota.
 std_args:
-- block_shape
-- total_shape
+  - block_shape
+  - total_shape
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

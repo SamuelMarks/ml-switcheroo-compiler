@@ -1,20 +1,16 @@
 operation: TFSMLayer
 description: Reload a Keras model/layer that was saved via SavedModel / ExportArchive.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: filepath
-  type: str
-- default: serve
-  is_variadic: false
-  kind: positional_or_keyword
-  name: call_endpoint
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: filepath
+    type: str
+  - default: serve
+    is_variadic: false
+    kind: positional_or_keyword
+    name: call_endpoint
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

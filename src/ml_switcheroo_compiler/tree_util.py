@@ -1,10 +1,8 @@
+"""PyTree utilities for structural manipulations."""
+
 from __future__ import annotations
 
 # ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
-
-"""PyTree utilities for structural manipulations."""
-
-
 import builtins
 import functools
 from collections.abc import Iterator
@@ -187,7 +185,7 @@ def tree_unflatten(treedef: TreeDef, leaves: list[Any]) -> Any:
     return res
 
 
-def tree_map(f: Callable, tree: Any, *rest: Any) -> Any:
+def tree_map(f: Callable[..., Any], tree: Any, *rest: Any) -> Any:
     """Map a function over the leaves of a PyTree.
 
     Args:
@@ -253,7 +251,7 @@ def tree_all(tree: Any) -> bool:
     return builtins.all(tree_leaves(tree))
 
 
-def tree_reduce(f: Callable, tree: Any, initializer: Any = None) -> Any:
+def tree_reduce(f: Callable[..., Any], tree: Any, initializer: Any = None) -> Any:
     """Reduce a PyTree by applying a function over its leaves.
 
     Args:

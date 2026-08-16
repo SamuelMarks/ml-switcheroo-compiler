@@ -1,23 +1,23 @@
 operation: AllToShardedLinear
 description: Distributed linear layer where result is sharded across the group.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: in_features
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: out_features
-  type: int
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: bias
-  type: bool
-- is_variadic: false
-  kind: positional_or_keyword
-  name: group
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: in_features
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: out_features
+    type: int
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: bias
+    type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: group
+    type: Any
 variants:
   numpy: {}
   cupy: {}
@@ -27,15 +27,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AllToShardedLinear
+  edge_stablehlo:
+
+    opcode: stablehlo.all_to_sharded_linear
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Extra audio ops for eager numpy execution."""
 
 from typing import Any
@@ -8,7 +8,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
 
-def _dct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:
+def _dct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:  # type: ignore
     """Evaluate _dct_1d_matrix operation.
 
     Args:
@@ -31,7 +31,7 @@ def _dct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:
             m[:, 0] *= np.sqrt(0.5)
             m[:, -1] *= np.sqrt(0.5)
             m *= np.sqrt(2 / (N - 1))
-        return m
+        return m  # type: ignore
     elif type == 2:
         m = np.cos(np.pi * k * (2 * n + 1) / (2 * N))
         if norm == "ortho":
@@ -39,7 +39,7 @@ def _dct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:
             m *= np.sqrt(2 / N)
         else:
             m *= 2.0
-        return m
+        return m  # type: ignore
     elif type == 3:
         m = np.cos(np.pi * (2 * k + 1) * n / (2 * N))
         if norm == "ortho":
@@ -48,14 +48,14 @@ def _dct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:
         else:
             m[:, 0] *= 0.5
             m *= 2.0
-        return m
+        return m  # type: ignore
     elif type == 4:
         m = np.cos(np.pi * (2 * k + 1) * (2 * n + 1) / (4 * N))
         if norm == "ortho":
             m *= np.sqrt(2 / N)
         else:
             m *= 2.0
-        return m
+        return m  # type: ignore
     raise ValueError("Unsupported DCT type")
 
 
@@ -82,7 +82,7 @@ def _np_dct(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return res
 
 
-def _idct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:
+def _idct_1d_matrix(N: int, type: int, norm: Any = None) -> np.ndarray:  # type: ignore
     """Evaluate _idct_1d_matrix operation.
 
     Args:

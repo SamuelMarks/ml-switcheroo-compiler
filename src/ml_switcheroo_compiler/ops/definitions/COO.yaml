@@ -1,17 +1,13 @@
 operation: COO
 description: Experimental COO matrix implemented in JAX.
 std_args:
-- self
-- args
-- shape
-- rows_sorted
-- cols_sorted
+  - self
+  - args
+  - shape
+  - rows_sorted
+  - cols_sorted
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

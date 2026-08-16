@@ -59,3 +59,23 @@ def test_execute_power_iteration() -> None:
         _execute_power_iteration(mock_w, u=mock_u)
     except Exception:
         pass
+
+
+def test_execute_one_hot():
+    from ml_switcheroo_compiler.backends.pytorch.eager import _execute_one_hot
+    import torch
+
+    indices = torch.tensor([0, 1, 2])
+    res = _execute_one_hot(indices, 3)
+    assert res.shape == (3, 3)
+    res2 = _execute_one_hot(indices, 3, on_value=2.0, off_value=1.0, axis=0)
+    assert res2.shape == (3, 3)
+
+
+def test_execute_ragged_tensor_to_dense():
+    from ml_switcheroo_compiler.backends.pytorch.eager import _execute_ragged_tensor_to_dense
+    import torch
+
+    rt = [torch.tensor([1, 2]), torch.tensor([1])]
+    res = _execute_ragged_tensor_to_dense(rt)
+    assert res.shape == (2, 2)

@@ -1,29 +1,25 @@
 operation: BusDayCount
 description: Counts the number of valid days between begindates and enddates.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: begindates
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: enddates
-  type: Any
-- default: '1111100'
-  is_variadic: false
-  kind: positional_or_keyword
-  name: weekmask
-  type: Any
-- default: []
-  is_variadic: false
-  kind: positional_or_keyword
-  name: holidays
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: begindates
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: enddates
+    type: Any
+  - default: '1111100'
+    is_variadic: false
+    kind: positional_or_keyword
+    name: weekmask
+    type: Any
+  - default: []
+    is_variadic: false
+    kind: positional_or_keyword
+    name: holidays
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

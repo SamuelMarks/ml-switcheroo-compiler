@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Shared vision utilities and ops."""
 
 from dataclasses import dataclass
@@ -87,7 +87,7 @@ def _np_random_color_jitter(backend_module: Any, images: Any, **kwargs: Any) -> 
 
 
 @numpy_eager_registry.register("RandomCrop")
-def _np_random_crop(backend_module: Any, images: Any, size: tuple, seed: Any = None) -> Any:
+def _np_random_crop(backend_module: Any, images: Any, size: tuple[Any, ...], seed: Any = None) -> Any:
     """Evaluate _np_random_crop operation.
 
     Args:
@@ -205,7 +205,7 @@ class RotationConfig:
     y: Any
 
 
-def _calculate_rotation_matrix(np: Any, cfg: RotationConfig) -> tuple:
+def _calculate_rotation_matrix(np: Any, cfg: RotationConfig) -> tuple[Any, ...]:
     """Calculate rotation matrix coordinates.
 
     Args:
@@ -223,7 +223,7 @@ def _calculate_rotation_matrix(np: Any, cfg: RotationConfig) -> tuple:
     return src_x, src_y
 
 
-def _nearest_interpolation(np: Any, images: Any, coords: tuple, shape: tuple, b_c: tuple) -> Any:
+def _nearest_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape: tuple[Any, ...], b_c: tuple[Any, ...]) -> Any:
     """Nearest neighbor interpolation.
 
     Args:
@@ -254,10 +254,10 @@ class InterpPixelsConfig:
     x1: Any
     H: int
     W: int
-    b_c: tuple
+    b_c: tuple[Any, ...]
 
 
-def _get_interp_pixels(np: Any, cfg: InterpPixelsConfig) -> tuple:
+def _get_interp_pixels(np: Any, cfg: InterpPixelsConfig) -> tuple[Any, ...]:
     """Gather pixels.
 
     Args:
@@ -279,7 +279,7 @@ def _get_interp_pixels(np: Any, cfg: InterpPixelsConfig) -> tuple:
     return Ia, Ib, Ic, Id
 
 
-def _get_interp_weights(src_coords: tuple, bounds: tuple) -> tuple:
+def _get_interp_weights(src_coords: tuple[Any, ...], bounds: tuple[Any, ...]) -> tuple[Any, ...]:
     """Evaluate _get_interp_weights operation.
 
     Args:
@@ -298,7 +298,7 @@ def _get_interp_weights(src_coords: tuple, bounds: tuple) -> tuple:
     return wa, wb, wc, wd
 
 
-def _bilinear_interpolation(np: Any, images: Any, coords: tuple, shape: tuple, b_c: tuple) -> Any:
+def _bilinear_interpolation(np: Any, images: Any, coords: tuple[Any, ...], shape: tuple[Any, ...], b_c: tuple[Any, ...]) -> Any:
     """Bilinear interpolation.
 
     Args:
@@ -326,10 +326,10 @@ def _bilinear_interpolation(np: Any, images: Any, coords: tuple, shape: tuple, b
 class AffineConfig:
     """Affine configuration."""
 
-    coords: tuple
-    shape: tuple
-    b_c: tuple
-    options: tuple
+    coords: tuple[Any, ...]
+    shape: tuple[Any, ...]
+    b_c: tuple[Any, ...]
+    options: tuple[Any, ...]
 
 
 def _apply_affine_grid(np: Any, images: Any, cfg: AffineConfig) -> Any:
@@ -364,7 +364,7 @@ class BatchRotationConfig:
     W: int
     x: Any
     y: Any
-    options: tuple
+    options: tuple[Any, ...]
 
 
 def _process_batch_item(np: Any, cfg: BatchRotationConfig, b: int, out: Any) -> None:
@@ -401,7 +401,7 @@ def _apply_rotation_batch(np: Any, cfg: BatchRotationConfig) -> Any:
     return out
 
 
-def _resolve_rotation_factor(factor: Any) -> tuple:
+def _resolve_rotation_factor(factor: Any) -> tuple[Any, ...]:
     """Resolve rotation bounds.
 
     Args:
@@ -415,7 +415,7 @@ def _resolve_rotation_factor(factor: Any) -> tuple:
     return -factor, factor
 
 
-def _create_rotation_mesh(np: Any, H: int, W: int) -> tuple:
+def _create_rotation_mesh(np: Any, H: int, W: int) -> tuple[Any, ...]:
     """Create mesh grid for rotation.
 
     Args:

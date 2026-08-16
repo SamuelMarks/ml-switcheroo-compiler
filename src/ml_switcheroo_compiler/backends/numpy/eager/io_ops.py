@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Numpy I/O operations."""
 
 from typing import Any
@@ -152,7 +152,7 @@ def _np_decode_image(backend_module: Any, contents: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("DecodeCsv")
-def _np_decode_csv(backend_module: Any, records: Any, **kwargs: Any) -> list:
+def _np_decode_csv(backend_module: Any, records: Any, **kwargs: Any) -> list[Any]:
     """Evaluate _np_decode_csv operation.
 
     Args:
@@ -170,7 +170,7 @@ def _np_decode_csv(backend_module: Any, records: Any, **kwargs: Any) -> list:
 
 
 @numpy_eager_registry.register("ParseExample")
-def _np_parse_example(backend_module: Any, serialized: Any, **kwargs: Any) -> dict:
+def _np_parse_example(backend_module: Any, serialized: Any, **kwargs: Any) -> dict[str, Any]:
     """Evaluate _np_parse_example operation.
 
     Args:
@@ -264,7 +264,7 @@ def _np_decode_base64(backend_module: Any, input: Any, **kwargs: Any) -> Any:
 
 
 @numpy_eager_registry.register("ParseSequenceExample")
-def _np_parse_sequence_example(backend_module: Any, serialized: Any, **kwargs: Any) -> tuple:
+def _np_parse_sequence_example(backend_module: Any, serialized: Any, **kwargs: Any) -> tuple[Any, ...]:
     """Evaluate _np_parse_sequence_example operation.
 
     Args:

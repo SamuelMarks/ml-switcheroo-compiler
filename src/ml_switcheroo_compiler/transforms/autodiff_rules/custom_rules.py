@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Autodiff rules for custom and platform-specific kernel operations."""
 
 from typing import Any
@@ -116,7 +116,7 @@ def _inline_grad_subgraph(graph: Any, sg_grad: Any, sg: Any, node: Any, cotangen
 
 
 @register_vjp("Checkpoint")
-def checkpoint_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+def checkpoint_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     """VJP for Checkpoint operation.
 
     Args:
@@ -158,7 +158,7 @@ def checkpoint_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
 
 
 @register_vjp("If")
-def _if_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+def _if_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     """VJP for If operation.
 
     Args:
@@ -175,7 +175,7 @@ def _if_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
 
 
 @register_vjp("Loop")
-def _loop_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+def _loop_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     """VJP for Loop operation.
 
     Args:
@@ -192,7 +192,7 @@ def _loop_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
 
 
 @register_vjp("Scan")
-def _scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+def _scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     """VJP for Scan operation.
 
     Args:
@@ -209,7 +209,7 @@ def _scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
 
 
 @register_vjp("AssociativeScan")
-def _assoc_scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+def _assoc_scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     """VJP for AssociativeScan operation.
 
     Args:
@@ -226,7 +226,7 @@ def _assoc_scan_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
 
 
 @register_jvp("If")
-def _if_jvp(graph: Any, node: Any, tangents: list) -> str:
+def _if_jvp(graph: Any, node: Any, tangents: list[Any]) -> str:
     """JVP for If operation."""
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.autodiff import jvp
@@ -256,7 +256,7 @@ def _if_jvp(graph: Any, node: Any, tangents: list) -> str:
 
 
 @register_jvp("Loop")
-def _loop_jvp(graph: Any, node: Any, tangents: list) -> str:
+def _loop_jvp(graph: Any, node: Any, tangents: list[Any]) -> str:
     """JVP for Loop operation.
 
     Args:
@@ -271,7 +271,7 @@ def _loop_jvp(graph: Any, node: Any, tangents: list) -> str:
 
 
 @register_jvp("Scan")
-def _scan_jvp(graph: Any, node: Any, tangents: list) -> str:
+def _scan_jvp(graph: Any, node: Any, tangents: list[Any]) -> str:
     """JVP for Scan operation.
 
     Args:
@@ -286,7 +286,7 @@ def _scan_jvp(graph: Any, node: Any, tangents: list) -> str:
 
 
 @register_jvp("AssociativeScan")
-def _assoc_scan_jvp(graph: Any, node: Any, tangents: list) -> str:
+def _assoc_scan_jvp(graph: Any, node: Any, tangents: list[Any]) -> str:
     """JVP for AssociativeScan operation.
 
     Args:
@@ -301,7 +301,7 @@ def _assoc_scan_jvp(graph: Any, node: Any, tangents: list) -> str:
 
 
 @register_vjp("Recompute")
-def recompute_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+def recompute_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     """VJP for Recompute operation.
 
     Delegates to the original operation's VJP rule.
@@ -326,4 +326,5 @@ def recompute_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
     dummy.attributes = node.attributes.get("original_attrs", {})
 
     vjp_func = get_vjp(orig_op)
-    return vjp_func(graph, dummy, cotangent)
+    res: tuple[Any, ...] = vjp_func(graph, dummy, cotangent)
+    return res  # type: ignore

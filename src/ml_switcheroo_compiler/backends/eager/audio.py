@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Audio utilities."""
 
 import typing
@@ -107,7 +107,7 @@ def _mel_to_hz(mel: float) -> float:
     Returns:
         float: Result.
     """
-    return MEL_SCALE_DIVISOR * (10.0 ** (mel / MEL_SCALE_MULTIPLIER) - 1.0)
+    return MEL_SCALE_DIVISOR * (10.0 ** (mel / MEL_SCALE_MULTIPLIER) - 1.0)  # type: ignore
 
 
 def _compute_filterbank_weights(np_mod: Any, num_spectrogram_bins: int, num_mel_bins: int, bin_freqs: Any, hz_pts: Any) -> Any:

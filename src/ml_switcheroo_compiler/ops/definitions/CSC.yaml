@@ -1,15 +1,11 @@
 operation: CSC
 description: Experimental CSC matrix implemented in JAX; API subject to change.
 std_args:
-- self
-- args
-- shape
+  - self
+  - args
+  - shape
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 from typing import Any
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 from .frontend_utils import _emit_creation_node
 
 
-def _unpack_shape(shape: tuple) -> tuple:
+def _unpack_shape(shape: tuple[Any, ...]) -> tuple[Any, ...]:
     """Evaluate _unpack_shape operation.
 
     Args:
@@ -120,7 +120,7 @@ def _create_backend_array(object: object, dtype: object) -> object:
 def array(
     object: object,
     dtype: DType | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Create an array.
 
     Args:
@@ -147,7 +147,7 @@ def array(
 def asarray(
     a: object,
     dtype: DType | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Convert the input to an array.
 
     Args:
@@ -159,7 +159,7 @@ def asarray(
     """
     if isinstance(a, Tensor):
         if dtype is not None and a.dtype != dtype:
-            return cast(a, dtype)
+            return cast(a, dtype)  # type: ignore
         return a
     return array(a, dtype=dtype)
 
@@ -167,7 +167,7 @@ def asarray(
 def convert_to_tensor(
     x: object,
     dtype: DType | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Convert the given object to a Tensor.
 
     Args:
@@ -184,7 +184,7 @@ def zeros(
     shape: int | Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with the scalar value 0.
 
     Args:
@@ -206,14 +206,14 @@ def zeros(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return _emit_creation_node("Zeros", shape, dtype, {})
+    return _emit_creation_node("Zeros", shape, dtype, {})  # type: ignore
 
 
 def ones(
     shape: int | Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with the scalar value 1.
 
     Args:
@@ -235,7 +235,7 @@ def ones(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return _emit_creation_node("Ones", shape, dtype, {})
+    return _emit_creation_node("Ones", shape, dtype, {})  # type: ignore
 
 
 def _extract_fill_value(fill_value: object) -> object:
@@ -254,7 +254,7 @@ def _extract_fill_value(fill_value: object) -> object:
     return fill_value
 
 
-def _full_eager(shape: tuple[int, ...], fill_value: object, dtype: DType, device: Device) -> Tensor:
+def _full_eager(shape: tuple[int, ...], fill_value: object, dtype: DType, device: Device) -> Tensor:  # type: ignore
     """Full eager.
 
     Args:
@@ -276,7 +276,7 @@ def full(
     fill_value: float,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with `fill_value`.
 
     Args:
@@ -296,7 +296,7 @@ def full(
     if config.eager_mode:
         return _full_eager(shape, fill_value, dtype, device)
 
-    return _emit_creation_node(
+    return _emit_creation_node(  # type: ignore
         "Full",
         shape,
         dtype,
@@ -305,10 +305,10 @@ def full(
 
 
 def zeros_like(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with scalar 0, with the same size as `input`.
 
     Args:
@@ -328,14 +328,14 @@ def zeros_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0})
+    return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0})  # type: ignore
 
 
 def ones_like(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with scalar 1, with the same size as `input`.
 
     Args:
@@ -355,15 +355,15 @@ def ones_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1})
+    return _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1})  # type: ignore
 
 
 def full_like(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     fill_value: float,
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with `fill_value`, with the same size as `input`.
 
     Args:
@@ -385,7 +385,7 @@ def full_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
-    return _emit_creation_node(
+    return _emit_creation_node(  # type: ignore
         "ConstantOfShape",
         input.shape,
         dtype,
@@ -397,7 +397,7 @@ def empty(
     shape: int | Sequence[int],
     dtype: DType | None = None,
     device: Device | None = None,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Return a tensor filled with uninitialized data.
 
     Args:
@@ -419,10 +419,10 @@ def empty(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return _emit_creation_node("Zeros", shape, dtype, {})
+    return _emit_creation_node("Zeros", shape, dtype, {})  # type: ignore
 
 
-def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
+def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:  # type: ignore
     """Return a new array with the same shape and type as a given array.
 
     Args:
@@ -435,7 +435,7 @@ def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
     return empty(x.shape, dtype=dtype if dtype is not None else x.dtype)
 
 
-def convert_to_numpy(x: Tensor) -> object:
+def convert_to_numpy(x: Tensor) -> object:  # type: ignore
     """Convert a tensor to a numpy array.
 
     Args:
@@ -456,7 +456,7 @@ def frombuffer(
     dtype: DType | None = None,
     count: int = -1,
     offset: int = 0,
-) -> Tensor:
+) -> Tensor:  # type: ignore
     """Create a 1-D tensor from a buffer.
 
     Args:
@@ -479,4 +479,4 @@ def frombuffer(
         )
         shape = data.shape if hasattr(data, "shape") else ()
         return Tensor(data, TensorConfig(shape, dtype, config.default_device))
-    return _emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset})
+    return _emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset})  # type: ignore

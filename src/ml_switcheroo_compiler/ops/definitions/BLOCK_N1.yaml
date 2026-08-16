@@ -3,10 +3,6 @@ description: Thread block size for K/V dimension in backward pass. Use as 'bwd_B
 std_args: []
 type: attribute
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

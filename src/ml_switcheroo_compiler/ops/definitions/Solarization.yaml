@@ -1,21 +1,17 @@
 operation: Solarization
 description: Applies max_value - pixel + min_value inversion above a threshold.
 std_args:
-- default: 0.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: threshold_factor
-  type: float
-- default: 0.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: addition_factor
-  type: float
+  - default: 0.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: threshold_factor
+    type: float
+  - default: 0.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: addition_factor
+    type: float
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

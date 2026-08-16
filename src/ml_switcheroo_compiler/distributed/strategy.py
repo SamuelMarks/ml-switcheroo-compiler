@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Distributed training strategies for ML Switcheroo Compiler."""
 
 from typing import Any, Optional
@@ -84,6 +84,9 @@ class Server:
         self._server = None
         self._thread = None
         self._running = False
+        import queue
+
+        self.inbox: queue.Queue[Any] = queue.Queue()
 
     def start(self) -> None:
         """Start the server."""
@@ -109,10 +112,35 @@ class Server:
 
     def _run_server(self) -> None:
         """Run the server loop to accept connections and handle basic RPC."""
-        import time
+        import io
+        import select
 
+        import numpy as np
+
+        self._server.setblocking(False)  # type: ignore
         while self._running:
-            time.sleep(0.1)
+            try:
+                ready, _, _ = select.select([self._server], [], [], 0.1)
+                if ready:
+                    conn, _ = self._server.accept()  # type: ignore
+                    with conn:
+                        id_len_b = conn.recv(4)
+                        if not id_len_b:
+                            continue
+                        id_len = int.from_bytes(id_len_b, "big")
+                        tensor_id = conn.recv(id_len).decode("utf-8")
+                        data_len = int.from_bytes(conn.recv(8), "big")
+                        data = bytearray()
+                        while len(data) < data_len:
+                            chunk = conn.recv(min(4096, data_len - len(data)))
+                            if not chunk:
+                                break
+                            data.extend(chunk)
+                        bio = io.BytesIO(data)
+                        arr = np.load(bio, allow_pickle=False)
+                        self.inbox.put((tensor_id, arr))
+            except Exception:
+                pass
 
     def join(self) -> None:
         """Block until the server terminates."""
@@ -260,15 +288,20 @@ class PipelineParallelismStrategy(Distribution):
 
         import yaml
 
+        from ml_switcheroo_compiler.distributed.config_models import PipelineTopologiesConfig
+
         yaml_path = os.path.join(os.path.dirname(__file__), "pipeline_topologies.yaml")
         with open(yaml_path) as f:
-            topologies = yaml.safe_load(f)
+            raw_topologies = yaml.safe_load(f)
+            topologies = PipelineTopologiesConfig(root=raw_topologies)
 
-        config = topologies.get(topology_name, topologies["default"])
-        self.num_microbatches = num_microbatches if num_microbatches is not None else config.get("microbatch_splitting", {}).get("num_microbatches", 1)
-        self.devices_per_stage = devices_per_stage if devices_per_stage is not None else config.get("mesh_mapping", {}).get("devices_per_stage", 1)
-        self.strategy = config.get("microbatch_splitting", {}).get("strategy", "chunk")
-        self.protocol = config.get("stage_communication", {}).get("protocol", "p2p_queue")
+        config = topologies.get(topology_name) or topologies.get("default")
+
+        # Pydantic models use dot notation
+        self.num_microbatches = num_microbatches if num_microbatches is not None else config.microbatch_splitting.num_microbatches
+        self.devices_per_stage = devices_per_stage if devices_per_stage is not None else config.mesh_mapping.devices_per_stage
+        self.strategy = config.microbatch_splitting.strategy
+        self.protocol = config.stage_communication.protocol
 
     def execute_pipeline(self, graph: Any, inputs: dict[str, Any], num_stages: int) -> dict[str, Any]:
         """Execute a graph using pipeline parallelism over robust async workers.
@@ -287,7 +320,7 @@ class PipelineParallelismStrategy(Distribution):
         from ml_switcheroo_compiler.ops.registry import get_op
 
         # Map: (source_stage, target_stage) -> Queue
-        comm_queues: dict[tuple[int, int], queue.Queue] = {}
+        comm_queues: dict[tuple[int, int], queue.Queue] = {}  # type: ignore
         for i in range(num_stages):
             for j in range(num_stages):
                 if i != j:
@@ -378,6 +411,15 @@ class PipelineParallelismStrategy(Distribution):
         import contextvars
 
         def thread_wrapper(stage_idx: int, ctx: contextvars.Context) -> None:
+            """thread_wrapper function.
+
+            Args:
+            stage_idx (Any): The stage_idx parameter.
+            ctx (Any): The ctx parameter.
+
+            Returns:
+            Any: Result.
+            """
             ctx.run(stage_worker, stage_idx)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_stages) as executor:

@@ -1,28 +1,24 @@
 operation: FeedForward
 description: Feedforward layer with activation (usually Linear -> Act -> Linear).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: in_features
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: out_features
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: hidden_dims
-  type: int
-- default: relu
-  is_variadic: false
-  kind: positional_or_keyword
-  name: activation
-  type: str
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: in_features
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: out_features
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: hidden_dims
+    type: int
+  - default: relu
+    is_variadic: false
+    kind: positional_or_keyword
+    name: activation
+    type: str
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -15,3 +15,20 @@ types:
 
 operations:
   fallback: "CustomOp"
+
+control_flow:
+  If:
+    op_type: "If"
+    domain: ""
+    inputs: ["cond"]
+    attributes: ["then_branch", "else_branch"]
+  Loop:
+    op_type: "Loop"
+    domain: ""
+    inputs: ["M", "cond", "v_initial"]
+    attributes: ["body"]
+  Scan:
+    op_type: "Scan"
+    domain: ""
+    inputs: ["sequence_lens", "initial_state_and_scan_inputs"]
+    attributes: ["body", "num_scan_inputs"]

@@ -1,6 +1,8 @@
+"""Module control_flow.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Provide mixin module."""
 from typing import Any
 
@@ -22,7 +24,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         # Natively, backends implement this as a specific scan.
         return f"{pfx}_scan({', '.join(input_vars)})"
 
@@ -37,7 +39,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         # Fallback to a custom runner
         return f"{pfx}_switch({', '.join(input_vars)})"
 
@@ -55,7 +57,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Fallback implementation: we assume the frontend has provided a TimeDistributed node.
         # Natively, backends might want to generate a loop or a vmap.
         # For simplicity in this mixin, we return a function call to a backend-specific time_distributed utility.
-        return f"{self.generator._get_backend_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
+        return f"{self.generator.get_fallback_prefix()}_time_distributed({input_vars[0]}, '{node.attributes.get('wrapped_op_name', '')}')"
 
     def visit_Assert(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
         """Evaluate visit_Assert operation.
@@ -68,7 +70,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         data = kwargs.get("data", ["Assertion failed."])
         return f"{pfx}_assert({input_vars[0]}, data={data})"
 
@@ -83,10 +85,27 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
         str: Result.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_associative_scan({', '.join(input_vars)})"
 
     def visit_WhileLoop(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """visit_WhileLoop function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
         cond_graph = node.attributes.get("cond")
@@ -124,6 +143,23 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"loop_val_{node.id}"
 
     def visit_Cond(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """visit_Cond function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
         cond_val = input_vars[0]
@@ -155,6 +191,23 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"true_fn_{node.id}() if {cond_val} else false_fn_{node.id}()"
 
     def visit_ForiLoop(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """visit_ForiLoop function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
         lower_bound = input_vars[0]
@@ -183,6 +236,23 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"loop_val_{node.id}"
 
     def visit_Map(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """visit_Map function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
         xs = input_vars[0]
@@ -198,11 +268,28 @@ class ControlFlowASTVisitor(CommonASTVisitor):
             self.generator.add_line(line)
         self.generator.indent_level -= 1
 
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         # map usually means array mapping over first dimension
         return f"{pfx}.stack([map_fn_{node.id}(x) for x in {xs}])"
 
     def visit_Fold(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """visit_Fold function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
         init = input_vars[0]
@@ -228,9 +315,43 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         return f"fold_val_{node.id}"
 
     def visit_Vmap(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
-        pfx = self.generator._get_backend_prefix()
+        """visit_Vmap function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_vmap({', '.join(input_vars)})"
 
     def visit_Pmap(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
-        pfx = self.generator._get_backend_prefix()
+        """visit_Pmap function.
+
+        Args:
+            node: The node.
+            input_vars: The input variables.
+            kwargs: Additional kwargs.
+
+        Args:
+            message (str): The message.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+        node (Any): The node parameter.
+        input_vars (Any): The input_vars parameter.
+
+        Returns:
+        Any: Result.
+        """
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_pmap({', '.join(input_vars)})"

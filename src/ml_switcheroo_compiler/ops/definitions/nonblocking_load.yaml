@@ -1,16 +1,12 @@
 operation: nonblocking_load
 description: Nonblocking alias of load, return an awaitable future with a pytree stub.
 std_args:
-- directory
-- shardings
-- mask
-- ts_specs
+  - directory
+  - shardings
+  - mask
+  - ts_specs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

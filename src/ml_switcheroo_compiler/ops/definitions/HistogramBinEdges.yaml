@@ -1,23 +1,23 @@
 operation: HistogramBinEdges
 description: The HistogramBinEdges operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: a
-  type: Array
-- default: 10
-  is_variadic: false
-  kind: positional_or_keyword
-  name: bins
-  type: Union[int, str]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: range
-  type: Optional[Tuple[float, float]]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: weights
-  type: Optional[Array]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: a
+    type: Array
+  - default: 10
+    is_variadic: false
+    kind: positional_or_keyword
+    name: bins
+    type: Union[int, str]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: range
+    type: Optional[Tuple[float, float]]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: weights
+    type: Optional[Array]
 variants:
   numpy:
     generator: np.histogram_bin_edges
@@ -33,15 +33,14 @@ variants:
     eager: jax.numpy.histogrambinedges
   mlx:
     eager: mlx.core.histogrambinedges
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: HistogramBinEdges
+  edge_stablehlo:
+
+    opcode: stablehlo.histogram_bin_edges
   edge_wgsl:
     template: binary
     expr: f32(buf_in0_f32[in0_offset] != 0.0 && buf_in1_f32[in1_offset] != 0.0)
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

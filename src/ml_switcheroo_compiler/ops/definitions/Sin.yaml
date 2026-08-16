@@ -1,10 +1,10 @@
 operation: sin
 description: The Sin operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: array
 variants:
   cupy:
     eager: cp.sin
@@ -28,14 +28,10 @@ variants:
   edge_wgsl:
     template: unary
     expr: sin(buf_in0_f32[in0_offset])
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
 autodiff:
   vjp:
-  - Multiply($cotangent, Cos($input[0]))
+    - Multiply($cotangent, Cos($input[0]))
   jvp: Multiply($tangent[0], Cos($input[0]))

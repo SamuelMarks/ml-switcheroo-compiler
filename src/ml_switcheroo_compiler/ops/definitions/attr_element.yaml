@@ -1,15 +1,11 @@
 operation: attr_element
 description: Returns `op.attributes[attr_name][index]` if it exists, otherwise None.
 std_args:
-- attr_name
-- op
-- index
+  - attr_name
+  - op
+  - index
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

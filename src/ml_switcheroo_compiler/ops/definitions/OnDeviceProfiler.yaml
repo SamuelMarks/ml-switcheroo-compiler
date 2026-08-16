@@ -1,17 +1,13 @@
 operation: OnDeviceProfiler
 description: The class representing a Python class.
 std_args:
-- self
-- spec
-- smem_buffer
-- gmem_buffer
-- wrap_in_custom_primitive
+  - self
+  - spec
+  - smem_buffer
+  - gmem_buffer
+  - wrap_in_custom_primitive
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

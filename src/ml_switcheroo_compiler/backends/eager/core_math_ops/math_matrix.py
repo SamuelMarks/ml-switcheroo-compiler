@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
 from __future__ import annotations
@@ -26,7 +26,9 @@ def _einsum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     op_args = args[1:] if len(args) > 0 and isinstance(args[0], str) else args
     if hasattr(backend_module, "einsum"):
         return backend_module.einsum(eq, *op_args, **kwargs)
-    return None
+    import numpy as np
+
+    return np.einsum(eq, *op_args, **kwargs)
 
 
 @global_eager_registry.register("ScaledDotProductAttention")
@@ -220,10 +222,7 @@ def _np_tensorsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.tensorsolve(*args, **kwargs)
@@ -242,10 +241,7 @@ def _np_triangularsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.solve(*args)
@@ -264,10 +260,7 @@ def _np_tridiagonalmatmul(backend_module: Any, *args: Any, **kwargs: Any) -> Any
     """
     func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.matmul(args[0], args[1])
@@ -286,10 +279,7 @@ def _np_tridiagonalsolve(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.linalg.solve(*args)
@@ -308,10 +298,7 @@ def _np_vecdot(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.vdot(args[0], args[1])

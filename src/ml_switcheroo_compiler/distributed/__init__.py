@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Distributed execution and sharding primitives."""
 
 import contextlib
@@ -41,7 +41,7 @@ class Distribution:
             .
             """
             _old = _DIST_STATE["dist"]
-            _DIST_STATE["dist"] = self  # type: ignore
+            _DIST_STATE["dist"] = self
             try:
                 yield
             finally:
@@ -89,7 +89,7 @@ class ModelParallel(Distribution):
 class TensorLayoutClass:
     """Class representing TensorLayout."""
 
-    def __init__(self, axes: tuple) -> None:
+    def __init__(self, axes: tuple[Any, ...]) -> None:
         """Initialize TensorLayoutClass.
 
         Args:
@@ -129,7 +129,7 @@ def initialize(*args: Any, **kwargs: Any) -> None:
         raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support initialize_distributed()")
 
 
-def list_devices(*args: Any, **kwargs: Any) -> list:
+def list_devices(*args: Any, **kwargs: Any) -> list[Any]:
     """List available devices.
 
     Args:
@@ -145,7 +145,7 @@ def list_devices(*args: Any, **kwargs: Any) -> list:
 
 
 _dist = None
-_DIST_STATE: dict = {"dist": None}
+_DIST_STATE: dict[str, Any] = {"dist": None}
 
 
 def distribution(*args: Any, **kwargs: Any) -> Optional[Distribution]:
@@ -158,7 +158,7 @@ def distribution(*args: Any, **kwargs: Any) -> Optional[Distribution]:
     Returns:
         Optional[Distribution]: current active distribution.
     """
-    return _DIST_STATE["dist"]
+    return _DIST_STATE["dist"]  # type: ignore
 
 
 def set_distribution(dist: Distribution, *args: Any, **kwargs: Any) -> None:

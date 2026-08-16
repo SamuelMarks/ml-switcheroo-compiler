@@ -1,14 +1,10 @@
 operation: broadcast_one_to_all
 description: Broadcast data from a source host (host 0 by default) to all other hosts.
 std_args:
-- in_tree
-- is_source
+  - in_tree
+  - is_source
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

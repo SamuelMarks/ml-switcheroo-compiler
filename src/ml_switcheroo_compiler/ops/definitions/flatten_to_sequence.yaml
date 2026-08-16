@@ -2,10 +2,6 @@ operation: flatten_to_sequence
 description: Auto-generated mapping for flatten_to_sequence.
 std_args: []
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,10 +1,10 @@
 operation: BitwiseCount
 description: Computes the number of 1-bits in the absolute value of x.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Array
 variants:
   numpy:
     eager: numpy.bitwisecount
@@ -20,15 +20,14 @@ variants:
     eager: jax.numpy.bitwisecount
   mlx:
     eager: mlx.core.bitwisecount
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+    generator: BitwiseCount
+  edge_stablehlo:
+
+    opcode: stablehlo.bitwise_count
   edge_wgsl:
     template: binary
     expr: f32(buf_in0_f32[in0_offset] != 0.0 && buf_in1_f32[in1_offset] != 0.0)
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

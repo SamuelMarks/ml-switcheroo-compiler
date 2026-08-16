@@ -15,8 +15,12 @@ variants:
     eager: jax.numpy.reduceeuclideannorm
   mlx:
     eager: mlx.core.reduceeuclideannorm
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: ReduceEuclideanNorm
+  edge_stablehlo:
+
+    opcode: stablehlo.reduce_euclidean_norm
   edge_wgsl:
     template: conv_pool_1d_flat
     expr: buf_in0_f32[idx]

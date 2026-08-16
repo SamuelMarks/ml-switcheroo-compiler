@@ -1,26 +1,26 @@
 operation: AsStridedScatter
 description: Embeds values into input using strides.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: src
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: size
-  type: Sequence[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: stride
-  type: Sequence[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: storage_offset
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: src
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: size
+    type: Sequence[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: stride
+    type: Sequence[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: storage_offset
+    type: int
 variants:
   numpy:
     eager: numpy.asstridedscatter
@@ -36,15 +36,11 @@ variants:
     eager: jax.numpy.asstridedscatter
   mlx:
     eager: mlx.core.asstridedscatter
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AsStridedScatter
+  edge_stablehlo:
+
+    opcode: stablehlo.as_strided_scatter
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for reductions.py."""
 
 import typing
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
-def _calc_same_padding(operand_ndim: int, window_dimensions: list) -> list:
+def _calc_same_padding(operand_ndim: int, window_dimensions: list[Any]) -> list[Any]:
     """Evaluate _calc_same_padding operation.
 
     Args:
@@ -28,7 +28,7 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: list) -> list:
     return [(p // 2, p - p // 2) for p in pad_total]
 
 
-def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list) -> list:
+def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim: int, window_dimensions: list[Any]) -> list[Any]:  # type: ignore
     """Evaluate _calculate_padding_for_window operation.
 
     Args:
@@ -48,7 +48,7 @@ def _calculate_padding_for_window(padding: typing.Union[str, list], operand_ndim
     return [(p[0], p[1]) for p in padding]
 
 
-def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tuple[np.ndarray, tuple[int, ...]]:
+def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tuple[np.ndarray, tuple[int, ...]]:  # type: ignore
     """Evaluate _create_sliding_window_view operation.
 
     Args:
@@ -80,7 +80,7 @@ def _create_sliding_window_view(operand: np.ndarray, config: WindowConfig) -> tu
     return (view, axis_to_reduce)
 
 
-def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: Any) -> np.ndarray:
+def _apply_base_dilation(operand: np.ndarray, base_dilation: typing.Optional[list[int]], init_value: Any) -> np.ndarray:  # type: ignore
     """Evaluate _apply_base_dilation operation.
 
     Args:

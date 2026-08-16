@@ -16,15 +16,11 @@ variants:
     eager: jax.numpy.benchmarkexecutionstats
   mlx:
     eager: mlx.core.benchmarkexecutionstats
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: BenchmarkExecutionStats
+  edge_stablehlo:
+
+    opcode: stablehlo.benchmark_execution_stats
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

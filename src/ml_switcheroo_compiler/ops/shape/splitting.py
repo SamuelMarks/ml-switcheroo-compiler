@@ -1,6 +1,8 @@
+"""Module splitting.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape operations for Tensor objects."""
 from collections.abc import Sequence
@@ -16,7 +18,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 from ml_switcheroo_compiler.tracing import builder
 
 
-def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[int], axis: int) -> int:
+def _calculate_num_splits(input: Any, split_size_or_sections: int | Sequence[int], axis: int) -> Any:  #
     """Calculate the number of splits for a tensor.
 
     Args:
@@ -42,7 +44,7 @@ def _calculate_num_splits(input: Tensor, split_size_or_sections: int | Sequence[
     return split_size_or_sections
 
 
-def _validate_split_axis(input: Tensor, axis: int) -> int:
+def _validate_split_axis(input: Any, axis: int) -> Any:  #
     """Validate the split axis against the input tensor shape.
 
     Args:
@@ -67,7 +69,7 @@ def _validate_split_axis(input: Tensor, axis: int) -> int:
 # pylint: disable=too-many-locals
 
 
-def _split_even(input: Tensor, split_size: int, axis: int, num_splits: int) -> Sequence[Tensor]:
+def _split_even(input: Any, split_size: int, axis: int, num_splits: int) -> Sequence[Any]:
     """Handle splitting when an integer split_size_or_sections is provided.
 
     Args:
@@ -105,8 +107,11 @@ def _split_even(input: Tensor, split_size: int, axis: int, num_splits: int) -> S
 
 
 def _split_sections(  # pylint: disable=too-many-locals
-    input: Tensor, sections: Sequence[int], axis: int, num_splits: int
-) -> Sequence[Tensor]:
+    input: Any,
+    sections: Sequence[int],
+    axis: int,
+    num_splits: int,  #
+) -> Sequence[Any]:
     """Handle splitting when a sequence of sections is provided.
 
     Args:
@@ -144,10 +149,10 @@ def _split_sections(  # pylint: disable=too-many-locals
 
 
 def split(
-    input: Tensor,
+    input: Any,  #
     split_size_or_sections: int | Sequence[int],
     axis: int = 0,
-) -> Sequence[Tensor]:
+) -> Sequence[Any]:
     """Split the input tensor into multiple sub-tensors.
 
     Args:
@@ -166,7 +171,7 @@ def split(
     return _split_sections(input, split_size_or_sections, valid_axis, num_splits)
 
 
-def unstack(input: Tensor, axis: int = 0) -> Sequence[Tensor]:
+def unstack(input: Any, axis: int = 0) -> Sequence[Any]:
     """Unstack the input tensor along a specified dimension into a sequence of tensors.
 
     Args:
@@ -198,10 +203,10 @@ def unstack(input: Tensor, axis: int = 0) -> Sequence[Tensor]:
 
 
 def array_split(
-    ary: Tensor,
+    ary: Any,  #
     indices_or_sections: int | Sequence[int],
     axis: int = 0,
-) -> Sequence[Tensor]:
+) -> Sequence[Any]:
     """Split an array into multiple sub-arrays.
 
     Args:
@@ -227,7 +232,7 @@ def array_split(
     )
 
 
-def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
+def vsplit(ary: Any, indices_or_sections: int | Sequence[int]) -> Sequence[Any]:
     """Split an array into multiple sub-arrays vertically (row-wise).
 
     Args:
@@ -255,7 +260,7 @@ def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
         out_shapes = [tuple(s)] * num_splits
     else:
         # Just approximate
-        out_shapes = [ary.shape] * num_splits  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shapes = [ary.shape] * num_splits  #   # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -265,7 +270,7 @@ def vsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
     return tuple(out_tensors)
 
 
-def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
+def hsplit(ary: Any, indices_or_sections: int | Sequence[int]) -> Sequence[Any]:
     """Split an array into multiple sub-arrays horizontally (column-wise).
 
     Args:
@@ -291,7 +296,7 @@ def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
             s[1] = s[1] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
-        out_shapes = [ary.shape] * num_splits  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shapes = [ary.shape] * num_splits  #   # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -301,7 +306,7 @@ def hsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
     return tuple(out_tensors)
 
 
-def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Tensor]:
+def dsplit(ary: Any, indices_or_sections: int | Sequence[int]) -> Sequence[Any]:
     """Split array into multiple sub-arrays along the 3rd axis (depth).
 
     Args:
@@ -327,7 +332,7 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
             s[2] = s[2] // indices_or_sections
         out_shapes = [tuple(s)] * num_splits
     else:
-        out_shapes = [ary.shape] * num_splits  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        out_shapes = [ary.shape] * num_splits  #   # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
     for i in range(num_splits):
         item_node = builder.TracingNodeBuilder.emit_tracing_node("GetItem", node, output_index=i, key=str(i))
@@ -341,7 +346,7 @@ def dsplit(ary: Tensor, indices_or_sections: int | Sequence[int]) -> Sequence[Te
 class GetItemOp(OpDef):
     """Operation to retrieve an item from a tensor."""
 
-    def infer_shape(self, x: Any, output_index: int = 0, **kwargs: Any) -> tuple[int, ...]:
+    def infer_shape(self, x: Any, output_index: int = 0, **kwargs: Any) -> Sequence[int]:
         """Infer shape for Unstack.
 
         Args:

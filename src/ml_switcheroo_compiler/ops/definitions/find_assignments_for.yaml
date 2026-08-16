@@ -1,15 +1,11 @@
 operation: find_assignments_for
 description: Attempts to find assignments that satisfy `constraint_system` for `unknowns`.
 std_args:
-- unknowns
-- constraint_system
-- fuel
+  - unknowns
+  - constraint_system
+  - fuel
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

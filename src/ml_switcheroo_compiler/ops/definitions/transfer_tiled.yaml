@@ -1,18 +1,14 @@
 operation: transfer_tiled
 description: Generate a transfer schedule for a tiled layout.
 std_args:
-- ref
-- swizzle
-- layout
-- shape
-- optimized
-- ref_tiling_rank
+  - ref
+  - swizzle
+  - layout
+  - shape
+  - optimized
+  - ref_tiling_rank
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

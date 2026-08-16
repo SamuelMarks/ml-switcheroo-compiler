@@ -1,16 +1,12 @@
 operation: pack_padded_sequence
 description: Packs a Tensor containing padded sequences of variable length.
 std_args:
-- input
-- lengths
-- batch_first
-- enforce_sorted
+  - input
+  - lengths
+  - batch_first
+  - enforce_sorted
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

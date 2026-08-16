@@ -1,15 +1,11 @@
 operation: SetNumInteropThreads
 description: Sets the number of threads used for interop parallelism.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: int
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: int
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

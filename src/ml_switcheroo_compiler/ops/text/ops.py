@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Text operations class definitions.
 
 Provides operations and node definitions related to text manipulation and processing.
@@ -85,7 +85,7 @@ class Lookup(OpDef):
         """
         # The first argument is input_tensor. The shape should be the same as input_tensor.
         if args and hasattr(args[0], "shape"):
-            return args[0].shape
+            return args[0].shape  # type: ignore
         return ()
 
 
@@ -276,7 +276,7 @@ class RegexFullMatch(OpDef):
         return args[0].shape if args and hasattr(args[0], "shape") else ()
 
 
-def string_to_hash(inputs: "Tensor", **kwargs: Any) -> "Tensor":
+def string_to_hash(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
     """Apply a hashing algorithm to map input string tensors to hash representations.
 
     Args:
@@ -295,10 +295,10 @@ def string_to_hash(inputs: "Tensor", **kwargs: Any) -> "Tensor":
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
 
-    return get_op("Hashing")()(inputs, **kwargs)
+    return get_op("Hashing")()(inputs, **kwargs)  # type: ignore
 
 
-def lookup(inputs: "Tensor", **kwargs: Any) -> "Tensor":
+def lookup(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
     """Map the given input strings or numbers into corresponding vocabulary indices or strings.
 
     Args:
@@ -317,10 +317,10 @@ def lookup(inputs: "Tensor", **kwargs: Any) -> "Tensor":
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
 
-    return get_op("StringLookup")()(inputs, **kwargs)
+    return get_op("StringLookup")()(inputs, **kwargs)  # type: ignore
 
 
-def text_vectorization(inputs: "Tensor", **kwargs: Any) -> "Tensor":
+def text_vectorization(inputs: "Tensor", **kwargs: Any) -> "Tensor":  # type: ignore
     """Transform textual data into numerical tensor sequences based on pre-computed vocabularies.
 
     Args:
@@ -339,7 +339,7 @@ def text_vectorization(inputs: "Tensor", **kwargs: Any) -> "Tensor":
             TensorConfig(backend.array(data).shape, inputs.dtype, inputs.device),
         )
 
-    return get_op("TextVectorization")()(inputs, **kwargs)
+    return get_op("TextVectorization")()(inputs, **kwargs)  # type: ignore
 
 
 @register_op("EditDistance")

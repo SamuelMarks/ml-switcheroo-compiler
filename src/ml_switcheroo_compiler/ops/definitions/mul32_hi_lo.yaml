@@ -1,14 +1,10 @@
 operation: mul32_hi_lo
 description: Multiplies 2 32-bit values and returns the hi+low bits of the result.
 std_args:
-- x
-- y
+  - x
+  - y
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -55,4 +55,13 @@ def test_get_op_not_found():
 
 
 def test_registry_files_load():
-    pass
+    from ml_switcheroo_compiler.ops.registry import backend_mapping_registry, get_all_ops, get_backend_mapping, get_op
+
+    ops = get_all_ops()
+    assert len(ops) > 0
+    op = get_op("Conv2D")
+    assert op.get_yaml_data() is not None
+    assert backend_mapping_registry.get_generator_mapping("numpy", "NonExistentOp") is None
+    assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is None or backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
+    assert get_backend_mapping("NonExistentOp") == {}
+    assert get_backend_mapping("Add") != {}

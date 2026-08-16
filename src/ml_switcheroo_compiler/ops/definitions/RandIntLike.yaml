@@ -2,24 +2,20 @@ operation: RandIntLike
 description: Returns a tensor with the same shape as Tensor input filled with random
   integers.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- default: 0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: low
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: high
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - default: 0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: low
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: high
+    type: int
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

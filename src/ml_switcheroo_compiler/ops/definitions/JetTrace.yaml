@@ -1,16 +1,12 @@
 operation: JetTrace
 description: The class representing a Python class.
 std_args:
-- self
-- tag
-- parent_trace
-- order
+  - self
+  - tag
+  - parent_trace
+  - order
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -22,8 +22,12 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: Minimum
+  edge_stablehlo:
+
+    opcode: stablehlo.minimum
   edge_wgsl:
     template: binary
     expr: min(buf_in0_f32[in0_offset], buf_in1_f32[in1_offset])

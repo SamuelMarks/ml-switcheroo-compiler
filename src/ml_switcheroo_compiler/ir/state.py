@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module state.py."""
+
 from typing import Any
 
 """State Mutation & Aliasing Representation for IR."""
@@ -8,7 +10,7 @@ import uuid
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
-def create_read_variable(variable_name: str, shape: tuple, dtype: str) -> IRNode:
+def create_read_variable(variable_name: str, shape: tuple[Any, ...], dtype: str) -> IRNode:
     """Create a ReadVariable node.
 
     Args:
@@ -28,7 +30,7 @@ def create_read_variable(variable_name: str, shape: tuple, dtype: str) -> IRNode
     )
 
 
-def create_assign_variable(variable_name: str, value_id: str, shape: tuple) -> IRNode:
+def create_assign_variable(variable_name: str, value_id: str, shape: tuple[Any, ...]) -> IRNode:
     """Create an AssignVariable node.
 
     Args:
@@ -52,7 +54,7 @@ def create_scatter_update(
     tensor_id: str,
     indices_id: str,
     updates_id: str,
-    shape: tuple,
+    shape: tuple[Any, ...],
 ) -> IRNode:
     """Create a ScatterUpdate node.
 

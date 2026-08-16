@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Linalg extras module."""
 
 from typing import Any
@@ -22,7 +22,7 @@ def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[
     return [dims[i] for i in range(len(dims)) if i not in skip_set]
 
 
-def _parse_dot_dimension_numbers(dimension_numbers: Any) -> tuple:
+def _parse_dot_dimension_numbers(dimension_numbers: Any) -> tuple[Any, ...]:
     """Evaluate _parse_dot_dimension_numbers operation.
 
     Args:

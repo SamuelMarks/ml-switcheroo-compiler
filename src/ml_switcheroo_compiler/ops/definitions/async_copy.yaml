@@ -1,26 +1,22 @@
 operation: async_copy
 description: Initiates an async copy between GMEM and SMEM.
 std_args:
-- self
-- src_ref
-- dst_ref
-- gmem_slice
-- gmem_transform
-- gmem_peer_id
-- barrier
-- swizzle
-- arrive
-- collective
-- partitioned
-- predicate
-- reduction_op
-- implementation
+  - self
+  - src_ref
+  - dst_ref
+  - gmem_slice
+  - gmem_transform
+  - gmem_peer_id
+  - barrier
+  - swizzle
+  - arrive
+  - collective
+  - partitioned
+  - predicate
+  - reduction_op
+  - implementation
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

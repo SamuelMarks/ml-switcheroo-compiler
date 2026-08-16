@@ -15,15 +15,11 @@ variants:
     eager: jax.numpy.rnncellresidualwrapper
   mlx:
     eager: mlx.core.rnncellresidualwrapper
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: RNNCellResidualWrapper
+  edge_stablehlo:
+
+    opcode: stablehlo.r_n_n_cell_residual_wrapper
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

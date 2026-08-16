@@ -1,28 +1,28 @@
 operation: AttentionLayer
 description: Dot-product attention layer, a.k.a. Luong-style attention.
 std_args:
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: use_scale
-  type: bool
-- default: dot
-  is_variadic: false
-  kind: positional_or_keyword
-  name: score_mode
-  options:
-  - dot
-  - concat
-  type: str
-- default: 0.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: dropout
-  type: float
-- is_variadic: false
-  kind: positional_or_keyword
-  name: seed
-  type: int
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: use_scale
+    type: bool
+  - default: dot
+    is_variadic: false
+    kind: positional_or_keyword
+    name: score_mode
+    options:
+      - dot
+      - concat
+    type: str
+  - default: 0.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: dropout
+    type: float
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: seed
+    type: int
 variants:
   numpy:
     eager: numpy.attentionlayer
@@ -38,15 +38,11 @@ variants:
     eager: jax.numpy.attentionlayer
   mlx:
     eager: mlx.core.attentionlayer
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: AttentionLayer
+  edge_stablehlo:
+
+    opcode: stablehlo.attention_layer
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

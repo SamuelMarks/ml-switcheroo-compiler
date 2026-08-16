@@ -1,18 +1,14 @@
 operation: make_group_metadata
 description: Create the metadata needed for grouped matmul computation.
 std_args:
-- group_sizes
-- m
-- tm
-- start_group
-- num_nonzero_groups
-- visit_empty_groups
+  - group_sizes
+  - m
+  - tm
+  - start_group
+  - num_nonzero_groups
+  - visit_empty_groups
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

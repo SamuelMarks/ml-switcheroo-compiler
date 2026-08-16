@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_manipulation module."""
 
 from __future__ import annotations
@@ -56,7 +56,9 @@ def _extract(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if func:
         return func(*args, **kwargs)
     (condition, arr) = (args[0], args[1])
-    return backend_module.extract(backend_module.asarray(condition), backend_module.asarray(arr))
+    import numpy as np
+
+    return np.extract(np.asarray(condition), np.asarray(arr))
 
 
 @global_eager_registry.register("Pswapaxes")
@@ -220,10 +222,7 @@ def _np_hsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.hsplit(args[0], args[1])
@@ -245,10 +244,7 @@ def _np_scatterapply(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "scatterapply", getattr(backend_module, "scatterapply", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -267,10 +263,7 @@ def _np_scatternd(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "scatternd", getattr(backend_module, "scatternd", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -289,10 +282,7 @@ def _np_tensorarraystack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.stack(args[0])
@@ -311,10 +301,7 @@ def _np_tensorscatterupdate(backend_module: Any, *args: Any, **kwargs: Any) -> A
     """
     func = getattr(backend_module, "tensorscatterupdate", getattr(backend_module, "tensorscatterupdate", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -333,10 +320,7 @@ def _np_unfold(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "unfold", getattr(backend_module, "unfold", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return args[0]
@@ -355,10 +339,7 @@ def _np_unstack(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "unstack", getattr(backend_module, "unstack", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.split(args[0], args[0].shape[kwargs.get("axis", 0)], axis=kwargs.get("axis", 0))
@@ -380,10 +361,7 @@ def _np_updateslice(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "updateslice", getattr(backend_module, "updateslice", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     args[0][args[1]] = args[2]
@@ -403,10 +381,7 @@ def _np_vsplit(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     func = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
     if func is not None:
-        try:
-            return func(*args, **kwargs)
-        except Exception:
-            pass
+        return func(*args, **kwargs)
     import numpy as np
 
     return np.vsplit(args[0], args[1])

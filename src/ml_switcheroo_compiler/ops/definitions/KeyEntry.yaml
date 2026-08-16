@@ -11,19 +11,15 @@ description: "Base class for protocol classes.\n\nProtocol classes are defined a
   \ as::\n\n    class GenProto[T](Protocol):\n        def meth(self) -> T:\n     \
   \       ..."
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: args
-  type: Any
-- is_variadic: false
-  kind: positional_or_keyword
-  name: kwargs
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: args
+    type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: kwargs
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

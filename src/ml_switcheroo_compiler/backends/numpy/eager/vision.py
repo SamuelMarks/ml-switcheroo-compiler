@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision operations for the numpy backend."""
 
 from dataclasses import dataclass
@@ -45,7 +45,7 @@ class InterpolationConfig:
     W: int
 
 
-def _calculate_bilinear_coords(np: Any, cfg: ResizeConfig) -> tuple:
+def _calculate_bilinear_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
     """Calculate coords for bilinear resize.
 
     Args:
@@ -82,7 +82,7 @@ class BilinearCoords:
     x1: Any
 
 
-def _compute_bilinear_pixels(np: Any, images: Any, coords: BilinearCoords) -> tuple:
+def _compute_bilinear_pixels(np: Any, images: Any, coords: BilinearCoords) -> tuple[Any, ...]:
     """Fetch pixels for bilinear interpolation.
 
     Args:
@@ -101,7 +101,7 @@ def _compute_bilinear_pixels(np: Any, images: Any, coords: BilinearCoords) -> tu
     return Ia, Ib, Ic, Id
 
 
-def _compute_bilinear_weights(dy: Any, dx: Any) -> tuple:
+def _compute_bilinear_weights(dy: Any, dx: Any) -> tuple[Any, ...]:
     """Evaluate _compute_bilinear_weights operation.
 
     Args:
@@ -170,7 +170,7 @@ def resize_bilinear(np_mod: Any, images: Any, size: tuple[int, int], align_corne
     return out[0] if rank == 3 else out
 
 
-def _calculate_nearest_coords(np: Any, cfg: ResizeConfig) -> tuple:
+def _calculate_nearest_coords(np: Any, cfg: ResizeConfig) -> tuple[Any, ...]:
     """Calculate coords for nearest resize.
 
     Args:
@@ -292,7 +292,7 @@ def random_flip_numpy(np_mod: Any, images: Any, mode: Any = "horizontal_and_vert
     return out
 
 
-def _compute_rotation_coords(np: Any, H: int, W: int, angle: float) -> tuple:
+def _compute_rotation_coords(np: Any, H: int, W: int, angle: float) -> tuple[Any, ...]:
     """Evaluate _compute_rotation_coords operation.
 
     Args:
@@ -334,7 +334,7 @@ class RotationInterpolationConfig:
     fill_value: float
 
 
-def _get_rotation_coords(np: Any, src_x_clip: Any, src_y_clip: Any, W: int, H: int) -> tuple:
+def _get_rotation_coords(np: Any, src_x_clip: Any, src_y_clip: Any, W: int, H: int) -> tuple[Any, ...]:
     """Get the bounding coordinates for rotation interpolation.
 
     Args:
@@ -354,7 +354,7 @@ def _get_rotation_coords(np: Any, src_x_clip: Any, src_y_clip: Any, W: int, H: i
     return x0, x1, y0, y1
 
 
-def _gather_rotation_pixels(img: Any, coords: tuple) -> tuple:
+def _gather_rotation_pixels(img: Any, coords: tuple[Any, ...]) -> tuple[Any, ...]:
     """Gather pixels for rotation.
 
     Args:
@@ -370,7 +370,7 @@ def _gather_rotation_pixels(img: Any, coords: tuple) -> tuple:
     return Ia, Ib, Ic, Id
 
 
-def _compute_rotation_weights(dx: Any, dy: Any) -> tuple:
+def _compute_rotation_weights(dx: Any, dy: Any) -> tuple[Any, ...]:
     """Evaluate _compute_rotation_weights operation.
 
     Args:

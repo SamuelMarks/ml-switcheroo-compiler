@@ -1,13 +1,9 @@
 operation: wgmma_fence
 description: Fences the array construction from WGMMA instructions.
 std_args:
-- array
+  - array
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

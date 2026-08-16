@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for generator.py."""
 
 from typing import Any
@@ -22,35 +22,6 @@ class NumpyTypeTranslator:
             str: The fallback prefix string 'np'.
         """
         return "np"
-
-    @staticmethod
-    def get_ops_map() -> dict:
-        """Evaluate get_ops_map operation.
-
-        Returns:
-        dict: Result.
-        """
-        return {
-            "Infeed": "{0}",
-            "Outfeed": "{0}",
-            "AxisIndex": "0",
-            "AllToAll": "{0}",
-            "Pmax": "{0}",
-            "Pmin": "{0}",
-            "PsumScatter": "{0}",
-            "Pswapaxes": "{0}",
-            "Ppermute": "{0}",
-            "Pshuffle": "{0}",
-            "CreateToken": "0",
-            "WithShardingConstraint": "{0}",
-            "RandomCategorical": "np.argmax({1} + np.random.gumbel(size={1}.shape), axis={axis})",
-            "MultivariateNormal": 'np.random.multivariate_normal({1}, {2}, size={shape}, method="{method}")',
-            "Beta": "np.random.beta({1}, {2}, size={shape})",
-            "Dirichlet": "np.random.dirichlet({1}, size={shape})",
-            "Gamma": "np.random.gamma({1}, size={shape})",
-            "RngBitGenerator": "np.random.randint(0, 255, size={shape})",
-            "RngUniform": "np.random.uniform({0}, {1}, size={shape})",
-        }
 
 
 class NumpyASTVisitor:
@@ -524,21 +495,6 @@ class NumpyGenerator(
         u_var = input_vars[1] if len(input_vars) > 1 else "None"
         return f"np_power_iteration({input_vars[0]}, {num_iters}, {u_var})"
 
-    def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
-        """Generate Python code for Einstein summation convention.
-
-        Args:
-            node (IRNode): The IR node representing the Einsum operation.
-            input_vars (list[str]): The names of the input variables.
-            **kwargs (object): Additional keyword arguments.
-
-        Returns:
-            str: The generated NumPy code string for the einsum operation.
-        """
-        args_str = ", ".join(input_vars)
-        eq = kwargs.get("equation", "")
-        return f"np.einsum('{eq}', {args_str})"
-
     def get_fallback_prefix(self) -> str:
         """Retrieve the default fallback prefix string for NumPy operations from the generator.
 
@@ -546,16 +502,3 @@ class NumpyGenerator(
             str: The fallback prefix string 'np'.
         """
         return NumpyTypeTranslator.get_fallback_prefix()
-
-    def get_ops_map(self, kwargs: dict) -> dict[str, str]:
-        """Evaluate get_ops_map operation.
-
-        Args:
-            kwargs (dict): The kwargs parameter.
-
-        Returns:
-            dict: Result.
-        """
-        res = super().get_ops_map(kwargs)
-        res.update(NumpyTypeTranslator.get_ops_map())
-        return res

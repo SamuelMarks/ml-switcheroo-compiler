@@ -16,15 +16,11 @@ variants:
     eager: jax.numpy.split
   mlx:
     eager: mlx.core.split
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: split
+  edge_stablehlo:
+
+    opcode: stablehlo.split
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

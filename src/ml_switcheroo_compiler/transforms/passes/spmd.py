@@ -1,6 +1,8 @@
+"""Module spmd.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """SPMD compiler pass."""
 
@@ -165,12 +167,17 @@ _SPMD_RULES = None
 
 
 def _get_spmd_rules() -> dict[str, Any]:
+    """_get_spmd_rules function.
+
+    Returns:
+        Any: Result.
+    """
     global _SPMD_RULES
     if _SPMD_RULES is None:
         yaml_path = Path(__file__).parent / "spmd_mappings.yaml"
         with open(yaml_path) as f:
             _SPMD_RULES = yaml.safe_load(f)
-    return _SPMD_RULES
+    return _SPMD_RULES  # type: ignore
 
 
 def _determine_spmd_communication(
@@ -178,8 +185,8 @@ def _determine_spmd_communication(
     idx: int,
     inp_id: str,
     node_sharding: Any,
-    inp_axes: list,
-    node_axes: list,
+    inp_axes: list[Any],
+    node_axes: list[Any],
 ) -> IRNode | None:
     """Determine the type of SPMD communication needed using data-driven rules."""
     rules = _get_spmd_rules()

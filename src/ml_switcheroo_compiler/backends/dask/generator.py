@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Dask code generator and eager execution backend."""
 
 from typing import Any
@@ -27,7 +27,7 @@ class DaskGenerator(PythonStringGenerator):
         super().__init__(graph)
         self.visitors.extend([*get_shared_ast_visitors(generator=self)])
 
-    def _get_backend_prefix(self) -> str:
+    def get_fallback_prefix(self) -> str:
         """Get the library prefix string used when emitting Dask array operations.
 
         Returns:
@@ -46,49 +46,6 @@ class DaskGenerator(PythonStringGenerator):
     _import_header = "import dask.array as da"
     _func_name = "evaluate"
 
-    def visit_Einsum(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
-        """Handle Einsum nodes.
-
-        Args:
-            node (IRNode): The node parameter.
-            input_vars (list): The input_vars parameter.
-            **kwargs (object): Keyword args.
-
-        Returns:
-            str: Result.
-        """
-        args_str = ", ".join(input_vars)
-        eq = kwargs.get("equation", "")
-        return f"dask.einsum('{eq}', {args_str})"
-
-    def visit_TruncateDiv(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
-        """Generate code for TruncateDiv.
-
-        Args:
-            node (IRNode): The node parameter.
-            input_vars (list): The input_vars parameter.
-            **kwargs (object): Keyword args.
-
-        Returns:
-            str: Result.
-        """
-        (x, y) = input_vars
-        return f"da.trunc(da.divide({x}, {y}))"
-
-    def visit_TruncateMod(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
-        """Generate code for TruncateMod.
-
-        Args:
-            node (IRNode): The node parameter.
-            input_vars (list): The input_vars parameter.
-            **kwargs (object): Keyword args.
-
-        Returns:
-            str: Result.
-        """
-        (x, y) = input_vars
-        return f"da.fmod({x}, {y})"
-
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: Any) -> str:
         """Fallback for generic nodes.
 
@@ -100,46 +57,7 @@ class DaskGenerator(PythonStringGenerator):
         Returns:
             str: Generated code.
         """
-        op_type = node.op_type
-        op_map = {
-            "Add": "da.add",
-            "Subtract": "da.subtract",
-            "Multiply": "da.multiply",
-            "TrueDivide": "da.divide",
-            "Exp": "da.exp",
-            "Log": "da.log",
-            "Matmul": "da.matmul",
-            "Sin": "da.sin",
-            "Acos": "da.arccos",
-            "Acosh": "da.arccosh",
-            "Asin": "da.arcsin",
-            "Asinh": "da.arcsinh",
-            "Atan": "da.arctan",
-            "Atan2": "da.arctan2",
-            "Atanh": "da.arctanh",
-            "Cos": "da.cos",
-            "Sum": "da.sum",
-            "Mean": "da.mean",
-            "Max": "da.max",
-            "Min": "da.min",
-            "BroadcastTo": "da.broadcast_to",
-            "Reshape": "da.reshape",
-            "Transpose": "da.transpose",
-            "Equal": "da.equal",
-            "NotEqual": "da.not_equal",
-            "Greater": "da.greater",
-            "Less": "da.less",
-            "Negative": "da.negative",
-        }
-        np_func = op_map.get(op_type, f"da.{op_type.lower()}")
-        args_str = ", ".join(input_vars)
-        kwargs_str = ", ".join(f"{k}={v}" for (k, v) in kwargs.items())
-        if kwargs_str:
-            if args_str:
-                args_str += f", {kwargs_str}"
-            else:
-                args_str = kwargs_str
-        return f"{np_func}({args_str})"
+        return super().generic_visit(node, input_vars, **kwargs)
 
 
 if da is not None:

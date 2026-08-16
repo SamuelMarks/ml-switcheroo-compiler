@@ -287,6 +287,11 @@ AccuracyMode:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+Acos:
+  operation: Acos
+  variants:
+    np:
+      generator: np.arccos
 Acos_:
   description: Computes the inverse cosine (arccosine) in-place.
   operation: Acos_
@@ -316,6 +321,11 @@ Acos_:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+Acosh:
+  operation: Acosh
+  variants:
+    np:
+      generator: np.arccosh
 Acosh_:
   description: Computes the inverse hyperbolic cosine in-place.
   operation: Acosh_
@@ -1033,6 +1043,8 @@ Add:
         kwargs: kwargs
       eager: mlx.core.add
       macro_template: mlx.core.add({input}, {other} * {alpha})
+    np:
+      generator: np.add
     numpy:
       generator: np.add
       macro_template: numpy.add({input}, {other} * {alpha})
@@ -1520,11 +1532,19 @@ Adjoint:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: tf.linalg.adjoint
     keras: {}
+    keras.ops:
+      generator: tf.linalg.adjoint
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: tf.linalg.adjoint
+    np:
+      generator: tf.linalg.adjoint
     numpy:
       generator: tf.linalg.adjoint
     pytorch: {}
@@ -1546,11 +1566,17 @@ AffineGrid:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.image.affine_grid({0}, {size}, align_corners={align_corners})
     keras: {}
+    keras.ops:
+      generator: kops.image.affine_grid({0}, {size}, align_corners={align_corners})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.image.affine_grid({0}, {size})
     numpy: {}
     pytorch:
       generator: torch.nn.functional.affine_grid({0}, {size}, align_corners={align_corners})
@@ -1757,11 +1783,26 @@ AllToAll:
     jax:
       eager: jax.lax.all_to_all
       generator: jax.lax.all_to_all
+    jnp:
+      generator: jax.lax.all_to_all({0}, split_axis={split_axis}, concat_axis={concat_axis},
+        axis_name={axis_name})
+    keras.ops:
+      generator: '{0}'
     llvm_cpp: {}
     mlx: {}
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
     pytorch:
       eager: torch.distributed.all_to_all
       generator: torch.distributed.all_to_all
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
 AllToShardedLinear:
   description: Distributed linear layer where result is sharded across the group.
   operation: AllToShardedLinear
@@ -1804,6 +1845,17 @@ AllToShardedLinear:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+Allclose:
+  operation: Allclose
+  variants:
+    jnp:
+      generator: jnp.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})
+    keras.ops:
+      generator: keras.ops.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})
+    mx:
+      generator: mx.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})
+    np:
+      generator: np.allclose
 AlphaDropout:
   description: Applies Alpha Dropout to the input.
   operation: AlphaDropout
@@ -2137,6 +2189,17 @@ ApproxMinK:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+Arange:
+  operation: Arange
+  variants:
+    jnp:
+      generator: jnp.arange({0})
+    keras.ops:
+      generator: keras.ops.arange({0})
+    mx:
+      generator: mx.arange({0})
+    np:
+      generator: np.arange
 Arccos_:
   description: In-place version of Arccos.
   operation: Arccos_
@@ -2373,6 +2436,17 @@ AreDeterministicAlgorithmsEnabled:
       eager: torch.aredeterministicalgorithmsenabled
     tensorflow:
       eager: tf.aredeterministicalgorithmsenabled
+ArgSort:
+  operation: ArgSort
+  variants:
+    jnp:
+      generator: jnp.argsort({0}, axis={dimension})
+    keras.ops:
+      generator: keras.ops.argsort({0}, axis={dimension})
+    mx:
+      generator: mx.argsort({0}, axis={dimension})
+    np:
+      generator: np.argsort
 Argument:
   description: JIT Argument specification.
   operation: Argument
@@ -3498,6 +3572,11 @@ AsTensor:
       eager: torch.astensor
     tensorflow:
       eager: tf.astensor
+Asin:
+  operation: Asin
+  variants:
+    np:
+      generator: np.arcsin
 Asin_:
   description: In-place version of Asin.
   operation: Asin_
@@ -3533,6 +3612,11 @@ Asin_:
       eager: torch.asin_
     tensorflow:
       eager: tf.asin_
+Asinh:
+  operation: Asinh
+  variants:
+    np:
+      generator: np.arcsinh
 Asinh_:
   description: In-place version of Asinh.
   operation: Asinh_
@@ -3615,11 +3699,17 @@ AssignVariable:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: '{0}'
     keras: {}
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: '{0}'
     numpy: {}
     pytorch:
       generator: '{0}'
@@ -3640,6 +3730,8 @@ AssociativeScan:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.lax.associative_scan({0}, {1}, reverse={reverse}, axis={axis})
     keras:
       eager: keras_ops.associative_scan
     llvm_cpp:
@@ -3718,6 +3810,16 @@ AsyncManager:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Atan:
+  operation: Atan
+  variants:
+    np:
+      generator: np.arctan
+Atan2:
+  operation: Atan2
+  variants:
+    np:
+      generator: np.arctan2
 Atan_:
   description: In-place version of Atan.
   operation: Atan_
@@ -3753,6 +3855,11 @@ Atan_:
       eager: torch.atan_
     tensorflow:
       eager: tf.atan_
+Atanh:
+  operation: Atanh
+  variants:
+    np:
+      generator: np.arctanh
 Atanh_:
   description: In-place version of Atanh.
   operation: Atanh_
@@ -4906,15 +5013,29 @@ AxisIndex:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.lax.axis_index({axis_name})
     keras: {}
+    keras.ops:
+      generator: '0'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: '0'
+    np:
+      generator: '0'
     numpy:
       generator: '0'
     pytorch: {}
     tensorflow: {}
+    tf:
+      generator: '0'
+    tf.math:
+      generator: '0'
+    torch:
+      generator: '0'
 B:
   description: Auto-generated from flax_nnx_code_defs
   operation: B
@@ -5365,11 +5486,19 @@ BandPart:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: tf.linalg.band_part
     keras: {}
+    keras.ops:
+      generator: tf.linalg.band_part
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: tf.linalg.band_part
+    np:
+      generator: tf.linalg.band_part
     numpy:
       generator: tf.linalg.band_part
     pytorch: {}
@@ -6373,11 +6502,15 @@ BesselI0e:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.scipy.special.i0e({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: getattr(backend_module, 'i0e', None)
     numpy:
       generator: scipy.special.i0e
     pytorch: {}
@@ -6434,16 +6567,59 @@ BesselI1e:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.scipy.special.i1e({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: getattr(backend_module, 'i1e', None)
     numpy:
       generator: scipy.special.i1e
     pytorch: {}
     tensorflow:
       eager: tf.math.bessel_i1e
+BesselJn:
+  operation: BesselJn
+  variants:
+    jnp:
+      generator: jax.scipy.special.bessel_jn({1}, v={0})
+Beta:
+  operation: Beta
+  variants:
+    jnp:
+      generator: jax.random.beta({0}, {1}, {2}, {shape})
+    keras.ops:
+      generator: keras.random.beta({shape}, {1}, {2})
+    np:
+      generator: np.random.beta({1}, {2}, size={shape})
+    tf:
+      generator: tf.random.gamma({shape}, alpha={1}) / (tf.random.gamma({shape}, alpha={1})
+        + tf.random.gamma({shape}, alpha={2}))
+    tf.math:
+      generator: tf.random.gamma({shape}, alpha={1}) / (tf.random.gamma({shape}, alpha={1})
+        + tf.random.gamma({shape}, alpha={2}))
+    torch:
+      generator: torch.distributions.beta.Beta({1}, {2}).sample({shape})
+BetaCdf:
+  operation: BetaCdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.beta.cdf({0}, {1}, {2}, loc={3}, scale={4})
+BetaPdf:
+  operation: BetaPdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.beta.pdf({0}, {1}, {2}, loc={3}, scale={4})
+Betainc:
+  operation: Betainc
+  variants:
+    jnp:
+      generator: jax.scipy.special.betainc({0}, {1}, {2})
+    np:
+      generator: getattr(backend_module, 'betainc', None)
 BiTemperedLoss:
   description: Bi-tempered logistic loss for noisy labels.
   operation: BiTemperedLoss
@@ -6692,6 +6868,31 @@ BinaryRepr:
       eager: torch.binaryrepr
     tensorflow:
       eager: tf.binaryrepr
+Bincount:
+  operation: Bincount
+  variants:
+    jnp:
+      generator: jnp.bincount({0})
+    mx:
+      generator: mx.bincount({0})
+    np:
+      generator: np.bincount
+BinomCdf:
+  operation: BinomCdf
+  variants:
+    jnp:
+      generator: jax.scipy.special.betainc({1} - ({0} - {3}), ({0} - {3}) + 1, 1 -
+        {2})
+BinomPmf:
+  operation: BinomPmf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.binom.pmf({0}, {1}, {2}, loc={3})
+Binomial:
+  operation: Binomial
+  variants:
+    jnp:
+      generator: jax.random.binomial({0}, {1}, {2}, {shape})
 Bit:
   description: Internal bit casting/representation.
   operation: Bit
@@ -6763,6 +6964,11 @@ BitCast:
       generator: '{0}.view(getattr(torch, str(''{dtype}'')))'
     tensorflow:
       eager: tf.bitcast
+Bits:
+  operation: Bits
+  variants:
+    jnp:
+      generator: jax.random.bits({0}, {shape})
 Bits16:
   description: Internal bit casting.
   operation: Bits16
@@ -7737,9 +7943,15 @@ BroadcastInDim:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: '{0}.broadcast_in_dim({1}, {2})'
+    keras.ops:
+      generator: '{0}.broadcast_in_dim({1}, {2})'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: '{0}.broadcast_in_dim({1}, {2})'
 BroadcastLike:
   description: Produce an object that mimics broadcasting.
   operation: BroadcastLike
@@ -7830,12 +8042,20 @@ BroadcastTo:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.broadcast_to({0}, {shape})
     keras:
       eager: keras_ops.broadcast_to
+    keras.ops:
+      generator: keras.ops.broadcast_to({0}, {shape})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.broadcast_to({0}, {shape})
+    np:
+      generator: np.broadcast_to
     numpy:
       generator: np.broadcast_to
     pytorch:
@@ -7863,6 +8083,9 @@ BroadcastToRank:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
+        'ndim') else {0}
     numpy:
       generator: np.expand_dims({0}, axis=tuple(range({0}.ndim, {1}))) if hasattr({0},
         'ndim') else {0}
@@ -7899,11 +8122,17 @@ BroadcastedIota:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.broadcasted_iota({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.broadcasted_iota({0})
+    np:
+      generator: np.broadcasted_iota
     numpy:
       generator: np.broadcasted_iota
     pytorch: {}
@@ -8481,11 +8710,17 @@ C_:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.c_({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.c_({0})
+    np:
+      generator: np.c_
     numpy:
       generator: np.c_
     pytorch: {}
@@ -9071,6 +9306,8 @@ Cauchy:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jax.random.cauchy({0}, {shape})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
@@ -9443,6 +9680,11 @@ Checkpoint:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Chisquare:
+  operation: Chisquare
+  variants:
+    jnp:
+      generator: jax.random.chisquare({0}, {1}, {shape})
 Cholesky:
   autodiff:
     jvp: MatMul($tangent[0], Transpose($input[0]))
@@ -9472,11 +9714,17 @@ Cholesky:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.cholesky({0})
     keras:
       eager: keras_ops.cholesky
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.cholesky({0})
+    np:
+      generator: np.linalg.cholesky
     numpy:
       generator: np.linalg.cholesky
     tensorflow:
@@ -9536,11 +9784,20 @@ CholeskySolve:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.scipy.linalg.cho_solve(({0}, True), {1})
     keras: {}
+    keras.ops:
+      generator: keras.ops.solve(keras.ops.matmul({0}, keras.ops.swapaxes({0}, -1,
+        -2)), {1})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.solve(mx.matmul({0}, mx.swapaxes({0}, -1, -2)), {1})
+    np:
+      generator: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
     numpy:
       generator: np.linalg.solve(np.matmul({0}, np.swapaxes({0}, -1, -2)), {1})
     pytorch: {}
@@ -9934,6 +10191,15 @@ ClearCache:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Clip:
+  operation: Clip
+  variants:
+    jnp:
+      generator: jnp.clip({0}, a_min={a_min}, a_max={a_max})
+    mx:
+      generator: mx.clip({0}, a_min={a_min}, a_max={a_max})
+    np:
+      generator: np.clip({0}, a_min={a_min}, a_max={a_max})
 ClipByGlobalNormState:
   description: Auto-generated from jax_code_defs
   operation: ClipByGlobalNormState
@@ -10006,6 +10272,11 @@ Clip_:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Clone:
+  operation: Clone
+  variants:
+    jnp:
+      generator: jax.random.clone({0})
 ClusterBarrier:
   description: The class representing a Python class.
   operation: ClusterBarrier
@@ -10060,6 +10331,11 @@ ColIndicesCopy:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Collapse:
+  operation: Collapse
+  variants:
+    np:
+      generator: np.reshape({0}, (-1,) + {0}.shape[{1}:])
 CollapseLeadingIndicesTransform:
   description: Collapses leading indices into one.
   operation: CollapseLeadingIndicesTransform
@@ -10625,11 +10901,17 @@ Cond:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.cond({0}, p={p})
     keras:
       eager: keras_ops.cond
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.cond({0}, p={p})
+    np:
+      generator: np.linalg.cond
     numpy:
       generator: np.linalg.cond
     tensorflow:
@@ -11319,6 +11601,15 @@ ConvDimensionNumbers:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+ConvGeneralDilated:
+  operation: ConvGeneralDilated
+  variants:
+    jnp:
+      generator: '{0}.conv_general_dilated({1}, {2})'
+    keras.ops:
+      generator: '{0}.conv_general_dilated({1}, {2})'
+    mx:
+      generator: '{0}.conv_general_dilated({1}, {2})'
 ConvLSTM1d:
   description: 1D Convolutional LSTM.
   operation: ConvLSTM1d
@@ -11667,6 +11958,8 @@ ConvTransposeShapeTuple:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: ()
     numpy:
       generator: ()
     pytorch: {}
@@ -11843,6 +12136,22 @@ Convolution3dTranspose:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Convolve:
+  operation: Convolve
+  variants:
+    jnp:
+      generator: jax.scipy.signal.convolve({0}, {1}, mode='{mode}')
+Convolve2d:
+  operation: Convolve2d
+  variants:
+    jnp:
+      generator: jax.scipy.signal.convolve2d({0}, {1}, mode='{mode}', boundary='{boundary}',
+        fillvalue={fillvalue})
+Cos:
+  operation: Cos
+  variants:
+    np:
+      generator: np.cos
 Cos_:
   description: In-place cosine operation.
   operation: Cos_
@@ -12022,15 +12331,29 @@ CreateToken:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.lax.create_token()
     keras: {}
+    keras.ops:
+      generator: '0'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: '0'
+    np:
+      generator: '0'
     numpy:
       generator: '0'
     pytorch: {}
     tensorflow: {}
+    tf:
+      generator: '0'
+    tf.math:
+      generator: '0'
+    torch:
+      generator: '0'
 Cropping1d:
   description: Cropping layer for 1D input.
   operation: Cropping1d
@@ -12116,11 +12439,18 @@ Cross:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.cross({0}, {1}, axisa={axisa}, axisb={axisb}, axisc={axisc},
+        axis={axis})
     keras:
       eager: keras_ops.cross
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.cross({0}, {1}, axis={axis})
+    np:
+      generator: np.cross
     numpy:
       generator: np.cross
     tensorflow:
@@ -12380,6 +12710,31 @@ CudnnIsAcceptable:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Cumlogsumexp:
+  operation: Cumlogsumexp
+  variants:
+    np:
+      generator: np.logaddexp.accumulate
+Cummax:
+  operation: Cummax
+  variants:
+    np:
+      generator: np.maximum.accumulate
+Cummin:
+  operation: Cummin
+  variants:
+    np:
+      generator: np.minimum.accumulate
+Cumprod:
+  operation: Cumprod
+  variants:
+    np:
+      generator: np.cumprod
+Cumsum:
+  operation: Cumsum
+  variants:
+    np:
+      generator: np.cumsum
 CumulativeLogsumexp:
   description: The CumulativeLogsumexp operation.
   operation: CumulativeLogsumexp
@@ -12588,6 +12943,11 @@ CustomFromMask:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+CustomLinearSolve:
+  operation: CustomLinearSolve
+  variants:
+    jnp:
+      generator: jax.scipy.linalg.solve({0}, {1})
 CustomVjp:
   description: Define custom Vision-Jacobian Product (backward pass) for valid differentiation.
   operation: CustomVjp
@@ -12926,6 +13286,33 @@ DatetimeFormat:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Dct:
+  operation: Dct
+  variants:
+    jnp:
+      generator: tf.signal.dct({0})
+    keras.ops:
+      generator: tf.signal.dct({0})
+    mx:
+      generator: tf.signal.dct({0})
+    np:
+      generator: tf.signal.dct({0})
+    tf:
+      generator: tf.signal.dct({0})
+    tf.math:
+      generator: tf.signal.dct({0})
+    torch:
+      generator: tf.signal.dct({0})
+DebugInfs:
+  operation: DebugInfs
+  variants:
+    jnp:
+      generator: jax.debug.visualize_array_updates({0})
+DebugNans:
+  operation: DebugNans
+  variants:
+    jnp:
+      generator: jax.debug.visualize_array_updates({0})
 DeepCopyMemoTable:
   description: Internal helper for deepcopy operations in PyTorch.
   operation: DeepCopyMemoTable
@@ -13189,11 +13576,17 @@ Det:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.det({0})
     keras:
       eager: keras_ops.det
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.det({0})
+    np:
+      generator: np.linalg.det
     numpy:
       generator: np.linalg.det
     tensorflow:
@@ -13302,6 +13695,16 @@ DeviceObjType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+DevicePutReplicated:
+  operation: DevicePutReplicated
+  variants:
+    jnp:
+      generator: jax.device_put_replicated({0}, {devices})
+DevicePutSharded:
+  operation: DevicePutSharded
+  variants:
+    jnp:
+      generator: jax.device_put_sharded({0}, {devices})
 DeviceType:
   description: Enumeration of device types.
   operation: DeviceType
@@ -13400,6 +13803,15 @@ DiagIndicesFrom:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Diagonal:
+  operation: Diagonal
+  variants:
+    jnp:
+      generator: jnp.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+    mx:
+      generator: mx.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+    np:
+      generator: np.diagonal({0}, offset={offset}, axis1={axis1}, axis2={axis2})
 DiagonalCopy:
   description: Returns a fresh copy of the diagonal view.
   operation: DiagonalCopy
@@ -13535,6 +13947,30 @@ DiffState:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Digamma:
+  operation: Digamma
+  variants:
+    jnp:
+      generator: jax.scipy.special.digamma({0})
+Dirichlet:
+  operation: Dirichlet
+  variants:
+    jnp:
+      generator: jax.random.dirichlet({0}, {1}, {shape})
+    keras.ops:
+      generator: keras.random.dirichlet({shape}, {1})
+    mx:
+      generator: mx.random.uniform(shape={shape})
+    np:
+      generator: np.random.dirichlet({1}, size={shape})
+    tf:
+      generator: tf.random.gamma({shape}, alpha={1}) / tf.reduce_sum(tf.random.gamma({shape},
+        alpha={1}), axis=-1, keepdims=True)
+    tf.math:
+      generator: tf.random.gamma({shape}, alpha={1}) / tf.reduce_sum(tf.random.gamma({shape},
+        alpha={1}), axis=-1, keepdims=True)
+    torch:
+      generator: torch.distributions.dirichlet.Dirichlet({1}).sample({shape})
 DisableCompile:
   description: Globally disable compilation.
   operation: DisableCompile
@@ -13832,11 +14268,17 @@ Dot:
     edge_wgsl:
       template: matmul
     jax: {}
+    jnp:
+      generator: jnp.dot({0}, {1})
     keras:
       eager: keras_ops.dot
+    keras.ops:
+      generator: keras.ops.dot({0}, {1})
     llvm_cpp:
       template: matmul
     mlx: {}
+    mx:
+      generator: mx.dot({0}, {1})
     numpy: {}
     pytorch: {}
     tensorflow: {}
@@ -13870,6 +14312,15 @@ DotAlgorithmPreset:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+DotGeneral:
+  operation: DotGeneral
+  variants:
+    jnp:
+      generator: '{0}.dot_general({1}, {2})'
+    keras.ops:
+      generator: '{0}.dot_general({1}, {2})'
+    mx:
+      generator: '{0}.dot_general({1}, {2})'
 DotList:
   description: Functional interface to the Dot layer.
   operation: DotList
@@ -14001,6 +14452,11 @@ DotProductAttentionXL:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+DoubleSidedMaxwell:
+  operation: DoubleSidedMaxwell
+  variants:
+    jnp:
+      generator: jax.random.double_sided_maxwell({0}, {1}, {shape})
 DoubleStorage:
   description: Storage class for float64 data.
   operation: DoubleStorage
@@ -14047,11 +14503,17 @@ DrawBoundingBoxes:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: '{0}'
     keras: {}
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: '{0}'
     numpy: {}
     pytorch:
       generator: torchvision.utils.draw_bounding_boxes({0}, {1}, colors={colors},
@@ -14222,9 +14684,15 @@ DynamicSlice:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: '{0}.dynamic_slice({1}, {2})'
+    keras.ops:
+      generator: '{0}.dynamic_slice({1}, {2})'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: '{0}.dynamic_slice({1}, {2})'
 DynamicStitch:
   description: The DynamicStitch operation.
   operation: DynamicStitch
@@ -14250,6 +14718,15 @@ DynamicStitch:
     pytorch: {}
     tensorflow:
       eager: tf.dynamic_stitch
+DynamicUpdateSlice:
+  operation: DynamicUpdateSlice
+  variants:
+    jnp:
+      generator: '{0}.dynamic_update_slice({1}, {2})'
+    keras.ops:
+      generator: '{0}.dynamic_update_slice({1}, {2})'
+    mx:
+      generator: '{0}.dynamic_update_slice({1}, {2})'
 ELU:
   description: Auto-generated mapping for elu.
   operation: ELU
@@ -14320,11 +14797,17 @@ Eig:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.eig({0})
     keras:
       eager: keras_ops.eig
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.eig({0})
+    np:
+      generator: np.linalg.eig
     numpy:
       generator: np.linalg.eig
     tensorflow:
@@ -14376,11 +14859,17 @@ Eigh:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.eigh({0})
     keras:
       eager: keras_ops.eigh
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.eigh({0})
+    np:
+      generator: np.linalg.eigh
     numpy:
       generator: np.linalg.eigh
     tensorflow:
@@ -14440,13 +14929,26 @@ EighTridiagonal:
     pytorch: {}
     tensorflow:
       eager: tf.linalg.eigh_tridiagonal
+Eigvalsh:
+  operation: Eigvalsh
+  variants:
+    jnp:
+      generator: jnp.linalg.eigvalsh({0})
+    mx:
+      generator: mx.linalg.eigvalsh({0})
+    np:
+      generator: np.linalg.eigvalsh
 Einsum:
   description: The Einsum operation.
   operation: Einsum
   std_args: []
   variants:
+    cp:
+      generator: cp.einsum('{equation}', {__args_str__})
     cupy:
       eager: cp.einsum
+    da:
+      generator: da.einsum('{equation}', {__args_str__})
     dask:
       eager: da.einsum
     edge_onnx: {}
@@ -14456,15 +14958,27 @@ Einsum:
     edge_wgsl:
       template: matmul
     jax: {}
+    jnp:
+      generator: jnp.einsum('{equation}', {__args_str__})
     keras:
       eager: keras_ops.einsum
+    keras.ops:
+      generator: keras.ops.einsum('{equation}', {__args_str__})
     llvm_cpp:
       template: matmul
     mlx: {}
+    mx:
+      generator: mx.einsum('{equation}', {__args_str__})
+    np:
+      generator: np.einsum('{equation}', {__args_str__})
     numpy: {}
     pytorch: {}
     tensorflow:
       eager: tf.einsum
+    tf:
+      generator: tf.einsum('{equation}', {__args_str__})
+    torch:
+      generator: torch.einsum('{equation}', {__args_str__})
 EinsumDense:
   description: Layer that uses einsum.
   operation: EinsumDense
@@ -14838,6 +15352,11 @@ EnumType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Equal:
+  operation: Equal
+  variants:
+    np:
+      generator: np.equal
 EqualAggregate:
   description: True if two tensors have the same size and elements, False otherwise.
   operation: EqualAggregate
@@ -14930,6 +15449,11 @@ Equals:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Erf:
+  operation: Erf
+  variants:
+    jnp:
+      generator: jax.scipy.special.erf({0})
 Erf_:
   description: In-place Erf.
   operation: Erf_
@@ -14998,6 +15522,17 @@ Erfc_:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Erfinv:
+  operation: Erfinv
+  variants:
+    jnp:
+      generator: jax.scipy.special.erfinv({0})
+    keras.ops:
+      generator: keras.ops.erfinv({0})
+    mx:
+      generator: mx.erfinv({0})
+    np:
+      generator: getattr(backend_module, 'erfinv', None)
 ErrorReport:
   description: Internal wrapper for error reporting.
   operation: ErrorReport
@@ -15225,6 +15760,8 @@ Exp:
       scalar_expr: std::exp(in0_val)
       template: unary
     mlx: {}
+    np:
+      generator: np.exp
     numpy:
       generator: np.exp
     pytorch: {}
@@ -15362,6 +15899,11 @@ Expm1_:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Exponential:
+  operation: Exponential
+  variants:
+    jnp:
+      generator: jax.random.exponential({0}, {shape})
 ExportFunction:
   description: Export an MLX function (MLX Specific).
   operation: ExportFunction
@@ -15476,6 +16018,11 @@ ExtractVolumePatches:
     pytorch: {}
     tensorflow:
       eager: tf.extract_volume_patches
+F:
+  operation: F
+  variants:
+    jnp:
+      generator: jax.random.f({0}, {1}, {2}, {shape})
 FORCE_USE_FLEX_ATTENTION:
   description: If True, forces the use of the flex attention kernel instead of potentially
     using
@@ -15976,6 +16523,17 @@ FeedForward:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Fft:
+  operation: Fft
+  variants:
+    jnp:
+      generator: jnp.fft.fft({0})
+    keras.ops:
+      generator: keras.ops.fft.fft({0})
+    mx:
+      generator: mx.fft.fft({0})
+    np:
+      generator: np.fft.fft
 Fft2d:
   description: The Fft2d operation.
   operation: Fft2d
@@ -15992,11 +16550,17 @@ Fft2d:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.fft.fft2({0}, s={s}, axes={axes})
     keras: {}
+    keras.ops:
+      generator: kops.fft.fft2({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.fft.fft2({0}, s={s}, axes={axes})
     numpy: {}
     pytorch:
       generator: torch.fft.fft2({0}, s={s}, dim={axes})
@@ -16017,11 +16581,15 @@ Fft3d:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.fft.fftn({0}, s={s}, axes={axes})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.fft.fftn({0}, s={s}, axes={axes})
     numpy: {}
     pytorch:
       generator: torch.fft.fftn({0}, s={s}, dim={axes})
@@ -16041,6 +16609,22 @@ FftType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Fftconvolve:
+  operation: Fftconvolve
+  variants:
+    jnp:
+      generator: jax.scipy.signal.fftconvolve({0}, {1}, mode='{mode}', axes={axes})
+Fftn:
+  operation: Fftn
+  variants:
+    jnp:
+      generator: jnp.fft.fftn({0})
+    keras.ops:
+      generator: keras.ops.fft.fftn({0})
+    mx:
+      generator: mx.fft.fftn({0})
+    np:
+      generator: np.fft.fftn
 Fftnd:
   description: The Fftnd operation.
   operation: Fftnd
@@ -16057,16 +16641,35 @@ Fftnd:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.fft.fftn({0})
     keras: {}
+    keras.ops:
+      generator: keras.ops.fft.fftn({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.fft.fftn({0})
+    np:
+      generator: np.fft.fftn({0})
     numpy:
       generator: np.fft.fftn({0})
     pytorch: {}
     tensorflow:
       eager: tf.fftnd
+Fftshift:
+  operation: Fftshift
+  variants:
+    jnp:
+      generator: jnp.fft.fftshift({0})
+    keras.ops:
+      generator: keras.ops.fft.fftshift({0})
+    mx:
+      generator: mx.fft.fftshift({0})
+    np:
+      generator: np.fft.fftshift({0})
 FileCheck:
   description: Testing utility for verifying file contents.
   operation: FileCheck
@@ -17068,6 +17671,23 @@ FragmentedLayout:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Frame:
+  operation: Frame
+  variants:
+    jnp:
+      generator: tf.signal.frame({0})
+    keras.ops:
+      generator: tf.signal.frame({0})
+    mx:
+      generator: tf.signal.frame({0})
+    np:
+      generator: tf.signal.frame({0})
+    tf:
+      generator: tf.signal.frame({0})
+    tf.math:
+      generator: tf.signal.frame({0})
+    torch:
+      generator: tf.signal.frame({0})
 FrobeniusNorm:
   description: Calculates the Frobenius norm of a matrix.
   operation: FrobeniusNorm
@@ -17230,6 +17850,58 @@ FromTree:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Frombuffer:
+  operation: Frombuffer
+  variants:
+    jnp:
+      generator: jnp.frombuffer({0}, dtype={dtype}, count={count}, offset={offset})
+    mx:
+      generator: mx.frombuffer({0}, dtype={dtype}, count={count}, offset={offset})
+Fromfile:
+  operation: Fromfile
+  variants:
+    jnp:
+      generator: jnp.fromfile({0})
+    mx:
+      generator: mx.fromfile({0})
+    np:
+      generator: np.fromfile
+Fromfunction:
+  operation: Fromfunction
+  variants:
+    jnp:
+      generator: jnp.fromfunction({0})
+    mx:
+      generator: mx.fromfunction({0})
+    np:
+      generator: np.fromfunction
+Fromiter:
+  operation: Fromiter
+  variants:
+    jnp:
+      generator: jnp.fromiter({0})
+    mx:
+      generator: mx.fromiter({0})
+    np:
+      generator: np.fromiter
+Frompyfunc:
+  operation: Frompyfunc
+  variants:
+    jnp:
+      generator: jnp.frompyfunc({0})
+    mx:
+      generator: mx.frompyfunc({0})
+    np:
+      generator: np.frompyfunc
+Fromstring:
+  operation: Fromstring
+  variants:
+    jnp:
+      generator: jnp.fromstring({0})
+    mx:
+      generator: mx.fromstring({0})
+    np:
+      generator: np.fromstring
 Ftrl:
   description: Optimizer that implements the FTRL algorithm.
   operation: Ftrl
@@ -17270,6 +17942,11 @@ Ftrl:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Full:
+  operation: Full
+  variants:
+    np:
+      generator: np.full
 FullLike:
   description: Returns a tensor with the same size as input filled with fill_value.
   operation: FullLike
@@ -17768,6 +18445,38 @@ GShardSharedEmbeddingSoftmax:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Gamma:
+  operation: Gamma
+  variants:
+    jnp:
+      generator: jax.random.gamma({0}, {1}, {shape})
+    keras.ops:
+      generator: keras.random.gamma({shape}, {1})
+    mx:
+      generator: mx.random.uniform(shape={shape})
+    np:
+      generator: np.random.gamma({1}, size={shape})
+    tf:
+      generator: tf.random.gamma({shape}, alpha={1})
+    tf.math:
+      generator: tf.random.gamma({shape}, alpha={1})
+    torch:
+      generator: torch.distributions.gamma.Gamma({1}, 1.0).sample({shape})
+GammaCdf:
+  operation: GammaCdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.gamma.cdf({0}, {1}, loc={2}, scale={3})
+GammaPdf:
+  operation: GammaPdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.gamma.pdf({0}, {1}, loc={2}, scale={3})
+Gather:
+  operation: Gather
+  variants:
+    mx:
+      generator: mx.take({0}, {1}, {dim})
 GatherDimensionNumbers:
   description: Auto-generated mapping for GatherDimensionNumbers.
   operation: GatherDimensionNumbers
@@ -17838,6 +18547,8 @@ GatherNd:
       template: unary
     mlx:
       eager: mlx.core.gathernd
+    mx:
+      generator: mx.gather_nd({0}, {1})
     numpy:
       eager: numpy.gathernd
     pytorch:
@@ -18139,6 +18850,11 @@ GeneralConvTranspose:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+GeneralizedNormal:
+  operation: GeneralizedNormal
+  variants:
+    jnp:
+      generator: jax.random.generalized_normal({0}, {1}, {shape})
 GenerateDumpFn:
   description: The class representing a Python class.
   operation: GenerateDumpFn
@@ -18185,6 +18901,15 @@ GenericPytree:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Geomspace:
+  operation: Geomspace
+  variants:
+    jnp:
+      generator: jnp.geomspace({0})
+    mx:
+      generator: mx.geomspace({0})
+    np:
+      generator: np.geomspace
 Ger:
   description: Outer product of two vectors.
   operation: Ger
@@ -19170,6 +19895,15 @@ GradScaler:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Gradient:
+  operation: Gradient
+  variants:
+    jnp:
+      generator: jnp.gradient({0})
+    mx:
+      generator: mx.gradient({0})
+    np:
+      generator: np.gradient
 Graph:
   description: Internal representation of a TorchScript graph.
   operation: Graph
@@ -19320,6 +20054,8 @@ Greater:
       template: binary
     mlx:
       eager: mlx.core.greater
+    np:
+      generator: np.greater
     numpy:
       generator: np.greater
     pytorch:
@@ -19385,13 +20121,21 @@ GridSample:
       template: unary
     jax:
       eager: jax.numpy.gridsample
+    jnp:
+      generator: jax.image.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
+        align_corners={align_corners})
     keras:
       eager: keras_ops.gridsample
+    keras.ops:
+      generator: kops.image.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
+        align_corners={align_corners})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.gridsample
+    mx:
+      generator: mx.image.grid_sample({0}, {1})
     numpy:
       eager: numpy.gridsample
     pytorch:
@@ -19687,6 +20431,11 @@ GroupedQueryAttention:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Gumbel:
+  operation: Gumbel
+  variants:
+    jnp:
+      generator: jax.random.gumbel({0}, {shape})
 HBM:
   description: The class representing a Python module/class/instance attribute.
   operation: HBM
@@ -19860,6 +20609,8 @@ HammingWindow:
       template: unary
     jax:
       eager: jax.numpy.hammingwindow
+    jnp:
+      generator: jnp.hamming({window_length})
     keras:
       eager: keras_ops.hammingwindow
     llvm_cpp:
@@ -19907,6 +20658,8 @@ HannWindow:
       template: unary
     jax:
       eager: jax.numpy.hannwindow
+    jnp:
+      generator: jnp.hanning({window_length})
     keras:
       eager: keras_ops.hannwindow
     llvm_cpp:
@@ -19914,6 +20667,8 @@ HannWindow:
       template: unary
     mlx:
       eager: mlx.core.hannwindow
+    mx:
+      generator: mx.linalg.hann_window({window_length})
     numpy:
       eager: numpy.hannwindow
     pytorch:
@@ -20133,6 +20888,15 @@ Hashing:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Hfft:
+  operation: Hfft
+  variants:
+    jnp:
+      generator: jnp.fft.hfft({0})
+    mx:
+      generator: mx.fft.hfft({0})
+    np:
+      generator: np.fft.hfft
 HijaxVariable:
   description: Auto-generated mapping for HijaxVariable.
   operation: HijaxVariable
@@ -20232,6 +20996,24 @@ Histc:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Histogram:
+  operation: Histogram
+  variants:
+    jnp:
+      generator: jnp.histogram({0})
+    mx:
+      generator: mx.histogram({0})
+    np:
+      generator: np.histogram
+Histogram2d:
+  operation: Histogram2d
+  variants:
+    jnp:
+      generator: jnp.histogram2d({0})
+    mx:
+      generator: mx.histogram2d({0})
+    np:
+      generator: np.histogram2d
 HistogramBinEdges:
   description: The HistogramBinEdges operation.
   operation: HistogramBinEdges
@@ -20267,6 +21049,8 @@ HistogramBinEdges:
       template: binary
     jax:
       eager: jax.numpy.histogrambinedges
+    jnp:
+      generator: jnp.histogram_bin_edges({0})
     keras:
       eager: keras_ops.histogrambinedges
     llvm_cpp:
@@ -20274,12 +21058,25 @@ HistogramBinEdges:
       template: unary
     mlx:
       eager: mlx.core.histogrambinedges
+    mx:
+      generator: mx.histogram_bin_edges({0})
+    np:
+      generator: np.histogram_bin_edges
     numpy:
       generator: np.histogram_bin_edges
     pytorch:
       eager: torch.histogrambinedges
     tensorflow:
       eager: tf.histogrambinedges
+Histogramdd:
+  operation: Histogramdd
+  variants:
+    jnp:
+      generator: jnp.histogramdd({0})
+    mx:
+      generator: mx.histogramdd({0})
+    np:
+      generator: np.histogramdd
 HloPass:
   description: The class representing a Python class.
   operation: HloPass
@@ -20362,6 +21159,15 @@ HuberLoss:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+I0:
+  operation: I0
+  variants:
+    jnp:
+      generator: jnp.i0({0})
+    mx:
+      generator: mx.i0({0})
+    np:
+      generator: np.i0
 I0_:
   description: In-place version of I0.
   operation: I0_
@@ -20396,6 +21202,23 @@ IODescriptor:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Idct:
+  operation: Idct
+  variants:
+    jnp:
+      generator: tf.signal.idct({0})
+    keras.ops:
+      generator: tf.signal.idct({0})
+    mx:
+      generator: tf.signal.idct({0})
+    np:
+      generator: tf.signal.idct({0})
+    tf:
+      generator: tf.signal.idct({0})
+    tf.math:
+      generator: tf.signal.idct({0})
+    torch:
+      generator: tf.signal.idct({0})
 IdentityNorm:
   description: Return the input as-is with BaseNormalization-compatible HParams.
   operation: IdentityNorm
@@ -20442,6 +21265,26 @@ If:
       eager: torch.if
     tensorflow:
       eager: tf.if
+Ifft:
+  operation: Ifft
+  variants:
+    jnp:
+      generator: jnp.fft.ifft({0})
+    keras.ops:
+      generator: kops.fft.ifft({0})
+    mx:
+      generator: mx.fft.ifft({0})
+    np:
+      generator: np.fft.ifft
+Ifft2:
+  operation: Ifft2
+  variants:
+    jnp:
+      generator: jnp.fft.ifft2({0})
+    mx:
+      generator: mx.fft.ifft2({0})
+    np:
+      generator: np.fft.ifft2
 Ifft2d:
   description: The Ifft2d operation.
   operation: Ifft2d
@@ -20459,13 +21302,19 @@ Ifft2d:
       template: unary
     jax:
       eager: jax.numpy.ifft2d
+    jnp:
+      generator: jnp.fft.ifft2({0}, s={s}, axes={axes})
     keras:
       eager: keras_ops.ifft2d
+    keras.ops:
+      generator: kops.fft.ifft2({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.ifft2d
+    mx:
+      generator: mx.fft.ifft2({0}, s={s}, axes={axes})
     numpy:
       eager: numpy.ifft2d
     pytorch:
@@ -20489,6 +21338,8 @@ Ifft3d:
       template: unary
     jax:
       eager: jax.numpy.ifft3d
+    jnp:
+      generator: jnp.fft.ifftn({0}, s={s}, axes={axes})
     keras:
       eager: keras_ops.ifft3d
     llvm_cpp:
@@ -20496,12 +21347,23 @@ Ifft3d:
       template: unary
     mlx:
       eager: mlx.core.ifft3d
+    mx:
+      generator: mx.fft.ifftn({0}, s={s}, axes={axes})
     numpy:
       eager: numpy.ifft3d
     pytorch:
       generator: torch.fft.ifftn({0}, s={s}, dim={axes})
     tensorflow:
       eager: tf.ifft3d
+Ifftn:
+  operation: Ifftn
+  variants:
+    jnp:
+      generator: jnp.fft.ifftn({0})
+    mx:
+      generator: mx.fft.ifftn({0})
+    np:
+      generator: np.fft.ifftn
 Ifftnd:
   description: The Ifftnd operation.
   operation: Ifftnd
@@ -20519,19 +21381,45 @@ Ifftnd:
       template: unary
     jax:
       eager: jax.numpy.ifftnd
+    jnp:
+      generator: jnp.fft.ifftn({0})
     keras:
       eager: keras_ops.ifftnd
+    keras.ops:
+      generator: keras.ops.fft.ifftn({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.ifftnd
+    mx:
+      generator: mx.fft.ifftn({0})
+    np:
+      generator: np.fft.ifftn({0})
     numpy:
       generator: np.fft.ifftn({0})
     pytorch:
       eager: torch.ifftnd
     tensorflow:
       eager: tf.ifftnd
+Ifftshift:
+  operation: Ifftshift
+  variants:
+    jnp:
+      generator: jnp.fft.ifftshift({0})
+    keras.ops:
+      generator: keras.ops.fft.ifftshift({0})
+    mx:
+      generator: mx.fft.ifftshift({0})
+    np:
+      generator: np.fft.ifftshift({0})
+Igamma:
+  operation: Igamma
+  variants:
+    jnp:
+      generator: jax.scipy.special.gammainc({0}, {1})
+    np:
+      generator: getattr(backend_module, 'gammainc', None)
 IgammaGradA:
   description: The IgammaGradA operation.
   operation: IgammaGradA
@@ -20549,6 +21437,8 @@ IgammaGradA:
       template: unary
     jax:
       eager: jax.numpy.igammagrada
+    jnp:
+      generator: jax.lax.igamma_grad_a({0}, {1})
     keras:
       eager: keras_ops.igammagrada
     llvm_cpp:
@@ -20556,6 +21446,8 @@ IgammaGradA:
       template: unary
     mlx:
       eager: mlx.core.igammagrada
+    np:
+      generator: 'lambda a, x: a'
     numpy:
       generator: 'lambda a, x: a'
     pytorch:
@@ -20577,6 +21469,13 @@ IgammaMode:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Igammac:
+  operation: Igammac
+  variants:
+    jnp:
+      generator: jax.scipy.special.gammaincc({0}, {1})
+    np:
+      generator: getattr(backend_module, 'gammaincc', None)
 ImportFunction:
   description: Import a function from a serialized file format (MLX specific, mapping
     to JIT/SavedModel load).
@@ -20820,6 +21719,8 @@ IndexInDim:
       template: unary
     mlx:
       eager: mlx.core.indexindim
+    np:
+      generator: np.take({0}, {1}, axis={2})
     numpy:
       generator: np.take({0}, {1}, axis={2})
     pytorch:
@@ -21046,19 +21947,33 @@ Infeed:
       template: unary
     jax:
       eager: jax.numpy.infeed
+    jnp:
+      generator: jax.lax.infeed(shape={shape})
     keras:
       eager: keras_ops.infeed
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.infeed
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
     numpy:
       generator: '{0}'
     pytorch:
       eager: torch.infeed
     tensorflow:
       eager: tf.infeed
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
 InferenceMode:
   description: Context manager that enables or disables inference mode (gradient isolation).
   operation: InferenceMode
@@ -21790,11 +22705,17 @@ Inv:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.inv({0})
     keras:
       eager: keras_ops.inv
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.inv({0})
+    np:
+      generator: np.linalg.inv
     numpy:
       generator: np.linalg.inv
     tensorflow:
@@ -21819,6 +22740,23 @@ Inverse:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+InverseMdct:
+  operation: InverseMdct
+  variants:
+    jnp:
+      generator: tf.signal.inverse_mdct({0})
+    keras.ops:
+      generator: tf.signal.inverse_mdct({0})
+    mx:
+      generator: tf.signal.inverse_mdct({0})
+    np:
+      generator: tf.signal.inverse_mdct({0})
+    tf:
+      generator: tf.signal.inverse_mdct({0})
+    tf.math:
+      generator: tf.signal.inverse_mdct({0})
+    torch:
+      generator: tf.signal.inverse_mdct({0})
 InverseShortTimeFourierTransform:
   description: Inverse short time Fourier Transform.
   operation: InverseShortTimeFourierTransform
@@ -21913,6 +22851,24 @@ InvertPermutation:
       eager: torch.invertpermutation
     tensorflow:
       eager: tf.math.invert_permutation
+Irfft:
+  operation: Irfft
+  variants:
+    jnp:
+      generator: jnp.fft.irfft({0}, n={n}, axis={axis})
+    keras.ops:
+      generator: kops.fft.irfft({0})
+    mx:
+      generator: mx.fft.irfft({0}, n={n}, axis={axis})
+Irfft2:
+  operation: Irfft2
+  variants:
+    jnp:
+      generator: jnp.fft.irfft2({0})
+    mx:
+      generator: mx.fft.irfft2({0})
+    np:
+      generator: np.fft.irfft2
 Irfft2d:
   description: The Irfft2d operation.
   operation: Irfft2d
@@ -21930,13 +22886,19 @@ Irfft2d:
       template: unary
     jax:
       eager: jax.numpy.irfft2d
+    jnp:
+      generator: jnp.fft.irfft2({0}, s={s}, axes={axes})
     keras:
       eager: keras_ops.irfft2d
+    keras.ops:
+      generator: kops.fft.irfft2({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.irfft2d
+    mx:
+      generator: mx.fft.irfft2({0}, s={s}, axes={axes})
     numpy:
       eager: numpy.irfft2d
     pytorch:
@@ -21960,6 +22922,8 @@ Irfft3d:
       template: unary
     jax:
       eager: jax.numpy.irfft3d
+    jnp:
+      generator: jnp.fft.irfftn({0}, s={s}, axes={axes})
     keras:
       eager: keras_ops.irfft3d
     llvm_cpp:
@@ -21967,12 +22931,23 @@ Irfft3d:
       template: unary
     mlx:
       eager: mlx.core.irfft3d
+    mx:
+      generator: mx.fft.irfftn({0}, s={s}, axes={axes})
     numpy:
       eager: numpy.irfft3d
     pytorch:
       generator: torch.fft.irfftn({0}, s={s}, dim={axes})
     tensorflow:
       eager: tf.irfft3d
+Irfftn:
+  operation: Irfftn
+  variants:
+    jnp:
+      generator: jnp.fft.irfftn({0})
+    mx:
+      generator: mx.fft.irfftn({0})
+    np:
+      generator: np.fft.irfftn
 Irfftnd:
   description: The Irfftnd operation.
   operation: Irfftnd
@@ -21990,13 +22965,21 @@ Irfftnd:
       template: unary
     jax:
       eager: jax.numpy.irfftnd
+    jnp:
+      generator: jnp.fft.irfftn({0})
     keras:
       eager: keras_ops.irfftnd
+    keras.ops:
+      generator: keras.ops.fft.irfftn({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.irfftnd
+    mx:
+      generator: mx.fft.irfftn({0})
+    np:
+      generator: np.fft.irfftn({0})
     numpy:
       generator: np.fft.irfftn({0})
     pytorch:
@@ -22572,6 +23555,11 @@ IsWarnAlwaysEnabled:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Istft:
+  operation: Istft
+  variants:
+    jnp:
+      generator: jax.scipy.signal.istft({0})
 IterChildren:
   description: Iterates over immediate children modules/layers.
   operation: IterChildren
@@ -22935,6 +23923,8 @@ KaiserWindow:
       template: binary
     jax:
       eager: jax.numpy.kaiserwindow
+    jnp:
+      generator: jnp.kaiser({window_length}, beta={beta})
     keras:
       eager: keras_ops.kaiserwindow
     llvm_cpp:
@@ -22964,6 +23954,11 @@ KernelType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+KeyData:
+  operation: KeyData
+  variants:
+    jnp:
+      generator: jax.random.key_data({0})
 KeyEntry:
   description: "Base class for protocol classes.\n\nProtocol classes are defined as::\n\
     \n    class Proto(Protocol):\n        def meth(self) -> int:\n            ...\n\
@@ -22997,6 +23992,11 @@ KeyEntry:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+KeyImpl:
+  operation: KeyImpl
+  variants:
+    jnp:
+      generator: jax.random.key_impl({0})
 KeylessInitializer:
   description: Auto-generated mapping for KeylessInitializer.
   operation: KeylessInitializer
@@ -23495,6 +24495,11 @@ LanguageModelType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Laplace:
+  operation: Laplace
+  variants:
+    jnp:
+      generator: jax.random.laplace({0}, {shape})
 LaunchContext:
   description: The class representing a Python class.
   operation: LaunchContext
@@ -24058,6 +25063,11 @@ Lerp:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Less:
+  operation: Less
+  variants:
+    np:
+      generator: np.less
 LessEqual:
   description: The LessEqual operation.
   operation: LessEqual
@@ -24783,6 +25793,8 @@ Log:
     llvm_cpp:
       scalar_expr: std::log(in0_val)
       template: unary
+    np:
+      generator: np.log
     numpy:
       generator: np.log
     tensorflow:
@@ -24905,11 +25917,17 @@ LogSoftmax:
     edge_wgsl:
       expr: buf_in0_f32[idx]
       template: unary
+    jnp:
+      generator: jax.nn.log_softmax({0}, axis={axis})
     keras:
       eager: keras_ops.log_softmax
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.log_softmax({0}, axis={axis})
+    np:
+      generator: getattr(backend_module, 'log_softmax', None)({0}, axis={axis})
     numpy:
       generator: scipy.special.log_softmax({0}, axis={axis})
     tensorflow:
@@ -24948,6 +25966,16 @@ Logcosh:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Logcumsumexp:
+  operation: Logcumsumexp
+  variants:
+    np:
+      generator: getattr(backend_module, 'logsumexp', None)
+Loggamma:
+  operation: Loggamma
+  variants:
+    jnp:
+      generator: jax.random.loggamma({0}, {1}, {shape})
 LoggerBase:
   description: Base class for loggers.
   operation: LoggerBase
@@ -25130,6 +26158,11 @@ LogicalXor:
       eager: torch.logicalxor
     tensorflow:
       eager: tf.math.logical_xor
+Logistic:
+  operation: Logistic
+  variants:
+    jnp:
+      generator: jax.random.logistic({0}, {shape})
 Logit_:
   description: In-place logit.
   operation: Logit_
@@ -25153,6 +26186,11 @@ Logit_:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Lognormal:
+  operation: Lognormal
+  variants:
+    jnp:
+      generator: jax.random.lognormal({0}, {shape})
 LongLong:
   description: Signed integer type, compatible with C long long (typically 64-bit).
   operation: LongLong
@@ -25447,15 +26485,30 @@ Lstsq:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.lstsq({0}, {1}, rcond={rcond})[0]
     keras:
       eager: keras_ops.lstsq
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.lstsq({0}, {1}, rcond={rcond})[0]
+    np:
+      generator: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
     numpy:
       generator: np.linalg.lstsq({0}, {1}, rcond={rcond})[0]
     tensorflow:
       eager: tf.linalg.lstsq
+Lu:
+  operation: Lu
+  variants:
+    jnp:
+      generator: jax.scipy.linalg.lu({0})
+    mx:
+      generator: mx.linalg.lu({0})
+    np:
+      generator: getattr(backend_module.linalg, 'lu', None)
 LuFactor:
   description: The LuFactor operation.
   operation: LuFactor
@@ -25473,6 +26526,8 @@ LuFactor:
       template: unary
     jax:
       eager: jax.numpy.lufactor
+    jnp:
+      generator: jax.scipy.linalg.lu_factor({0})
     keras:
       eager: keras_ops.lu_factor
     llvm_cpp:
@@ -25480,6 +26535,10 @@ LuFactor:
       template: unary
     mlx:
       eager: mlx.core.lufactor
+    mx:
+      generator: mx.linalg.lu_factor({0})
+    np:
+      generator: getattr(backend_module.linalg, 'lu_factor', None)
     numpy:
       generator: scipy.linalg.lu_factor
     pytorch:
@@ -25503,13 +26562,27 @@ LuMatrixInverse:
       template: unary
     jax:
       eager: jax.numpy.lumatrixinverse
+    jnp:
+      generator: jnp.linalg.inv(jnp.take_along_axis(jnp.matmul(jnp.tril({0}, -1) +
+        jnp.eye({0}.shape[-1], dtype={0}.dtype), jnp.triu({0})), jnp.broadcast_to(jnp.expand_dims(jnp.argsort({1},
+        axis=-1), -1), {0}.shape), axis=-2))
     keras:
       eager: keras_ops.lumatrixinverse
+    keras.ops:
+      generator: tf.linalg.lu_matrix_inverse({0}, {1})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.lumatrixinverse
+    mx:
+      generator: mx.linalg.inv(mx.take_along_axis(mx.matmul(mx.tril({0}, -1) + mx.eye({0}.shape[-1],
+        dtype={0}.dtype), mx.triu({0})), mx.broadcast_to(mx.expand_dims(mx.argsort({1},
+        axis=-1), -1), {0}.shape), axis=-2))
+    np:
+      generator: np.linalg.inv(np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
+        dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
+        axis=-1), -1), {0}.shape), axis=-2))
     numpy:
       generator: np.linalg.inv(np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
         dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
@@ -25535,13 +26608,27 @@ LuReconstruct:
       template: unary
     jax:
       eager: jax.numpy.lureconstruct
+    jnp:
+      generator: jnp.take_along_axis(jnp.matmul(jnp.tril({0}, -1) + jnp.eye({0}.shape[-1],
+        dtype={0}.dtype), jnp.triu({0})), jnp.broadcast_to(jnp.expand_dims(jnp.argsort({1},
+        axis=-1), -1), {0}.shape), axis=-2)
     keras:
       eager: keras_ops.lureconstruct
+    keras.ops:
+      generator: tf.linalg.lu_reconstruct({0}, {1})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.lureconstruct
+    mx:
+      generator: mx.take_along_axis(mx.matmul(mx.tril({0}, -1) + mx.eye({0}.shape[-1],
+        dtype={0}.dtype), mx.triu({0})), mx.broadcast_to(mx.expand_dims(mx.argsort({1},
+        axis=-1), -1), {0}.shape), axis=-2)
+    np:
+      generator: np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
+        dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
+        axis=-1), -1), {0}.shape), axis=-2)
     numpy:
       generator: np.take_along_axis(np.matmul(np.tril({0}, -1) + np.eye({0}.shape[-1],
         dtype={0}.dtype), np.triu({0})), np.broadcast_to(np.expand_dims(np.argsort({1},
@@ -25550,6 +26637,15 @@ LuReconstruct:
       eager: torch.lureconstruct
     tensorflow:
       eager: tf.linalg.lu_reconstruct
+LuSolve:
+  operation: LuSolve
+  variants:
+    jnp:
+      generator: jax.scipy.linalg.lu_solve(({0}, {1}), {2})
+    mx:
+      generator: mx.linalg.lu_solve({0}, {1})
+    np:
+      generator: getattr(backend_module.linalg, 'lu_solve', None)
 LuUnpack:
   description: Unpacks the LU decomposition into P, L, U matrices.
   operation: LuUnpack
@@ -26294,6 +27390,17 @@ MatMul:
       template: matmul
     llvm_cpp:
       template: matmul
+Matmul:
+  operation: Matmul
+  variants:
+    jnp:
+      generator: jnp.matmul({0}, {1})
+    keras.ops:
+      generator: keras.ops.matmul({0}, {1})
+    mx:
+      generator: mx.matmul({0}, {1})
+    np:
+      generator: np.matmul
 MatmulDimension:
   description: The class representing a Python class.
   operation: MatmulDimension
@@ -26365,11 +27472,17 @@ MatrixExponential:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.scipy.linalg.expm({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.matrix_exp({0})
+    np:
+      generator: getattr(backend_module.linalg, 'expm', None)
     numpy:
       generator: scipy.linalg.expm
     pytorch: {}
@@ -26389,11 +27502,17 @@ MatrixNorm:
       expr: buf_in0_f32[idx]
       template: conv_pool_1d_flat
     jax: {}
+    jnp:
+      generator: jnp.linalg.norm({0}, keepdims={keepdims})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.norm({0}, keepdims={keepdims})
+    np:
+      generator: np.linalg.norm({0}, keepdims={keepdims})
     numpy:
       generator: np.linalg.norm({0}, keepdims={keepdims})
     pytorch: {}
@@ -26423,11 +27542,17 @@ MatrixPower:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.linalg.matrix_power({0}, {n})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.matrix_power({0}, {n})
+    np:
+      generator: np.linalg.matrix_power
     numpy:
       generator: np.linalg.matrix_power
     pytorch: {}
@@ -26462,11 +27587,17 @@ MatrixRank:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
+    np:
+      generator: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
     numpy:
       generator: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
     pytorch: {}
@@ -26493,16 +27624,27 @@ MatrixTranspose:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.swapaxes({0}, -1, -2)
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.swapaxes({0}, -1, -2)
+    np:
+      generator: np.swapaxes({0}, -1, -2)
     numpy:
       generator: np.swapaxes({0}, -1, -2)
     pytorch: {}
     tensorflow:
       eager: tf.linalg.matrix_transpose
+Max:
+  operation: Max
+  variants:
+    np:
+      generator: np.max
 MaxNumBoundingBoxes:
   description: Ensure the maximum number of bounding boxes.
   operation: MaxNumBoundingBoxes
@@ -26827,6 +27969,11 @@ Maxpool:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+Maxwell:
+  operation: Maxwell
+  variants:
+    jnp:
+      generator: jax.random.maxwell({0}, {shape})
 MayShareMemory:
   description: Determine if two arrays might share memory.
   operation: MayShareMemory
@@ -26850,6 +27997,23 @@ MayShareMemory:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Mdct:
+  operation: Mdct
+  variants:
+    jnp:
+      generator: tf.signal.mdct({0})
+    keras.ops:
+      generator: tf.signal.mdct({0})
+    mx:
+      generator: tf.signal.mdct({0})
+    np:
+      generator: tf.signal.mdct({0})
+    tf:
+      generator: tf.signal.mdct({0})
+    tf.math:
+      generator: tf.signal.mdct({0})
+    torch:
+      generator: tf.signal.mdct({0})
 Mean:
   autodiff:
     jvp: Mean($tangent[0])
@@ -26888,6 +28052,8 @@ Mean:
       template: unary
     mlx:
       eager: mlx.core.mean
+    np:
+      generator: np.mean
     numpy:
       generator: np.mean
     pytorch:
@@ -27129,15 +28295,26 @@ Mgrid:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.mgrid({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.mgrid({0})
+    np:
+      generator: np.mgrid
     numpy:
       generator: np.mgrid
     pytorch: {}
     tensorflow: {}
+Min:
+  operation: Min
+  variants:
+    np:
+      generator: np.min
 MinPool:
   description: Pools the input by taking the minimum of a window slice.
   operation: MinPool
@@ -27905,11 +29082,17 @@ MultiDot:
       expr: buf_in0_f32[in0_offset] * buf_in1_f32[in1_offset]
       template: binary
     jax: {}
+    jnp:
+      generator: jnp.linalg.multi_dot({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.multi_dot({0})
+    np:
+      generator: np.linalg.multi_dot({0})
     numpy:
       generator: np.linalg.multi_dot({0})
     pytorch: {}
@@ -28211,6 +29394,8 @@ Multiply:
         args: args
         kwargs: kwargs
       eager: mlx.core.multiply
+    np:
+      generator: np.multiply
     numpy:
       args: {}
       generator: np.multiply
@@ -28269,6 +29454,13 @@ MultitaskResidualAdapter:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+MultivariateNormal:
+  operation: MultivariateNormal
+  variants:
+    jnp:
+      generator: jax.random.multivariate_normal({0}, {1}, {2}, {shape})
+    np:
+      generator: np.random.multivariate_normal({1}, {2}, size={shape}, method="{method}")
 Muon:
   description: 'Auto-discovered via Consensus (Score: 2.0)'
   operation: Muon
@@ -28652,12 +29844,23 @@ NanToNum:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.nan_to_num({0}, nan={nan}, posinf={posinf}, neginf={neginf})
     keras:
       eager: keras_ops.nan_to_num
+    keras.ops:
+      generator: keras.ops.where(keras.ops.isnan({0}), {nan}, keras.ops.where(keras.ops.isinf({0})
+        & ({0} > 0), {posinf}, keras.ops.where(keras.ops.isinf({0}) & ({0} < 0), {neginf},
+        {0})))
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.where(mx.isnan({0}), {nan}, mx.where(mx.isposinf({0}), {posinf},
+        mx.where(mx.isneginf({0}), {neginf}, {0})))
+    np:
+      generator: np.nan_to_num
     numpy:
       generator: np.nan_to_num
     pytorch:
@@ -29076,6 +30279,8 @@ Negative:
       scalar_expr: -in0_val
       template: unary
     mlx: {}
+    np:
+      generator: np.negative
     numpy:
       generator: np.negative
     pytorch: {}
@@ -29554,15 +30759,26 @@ Norm:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.norm({0}, ord={ord}, axis={axis}, keepdims={keepdims})
     keras:
       eager: keras_ops.norm
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.norm({0}, ord={ord}, axis={axis}, keepdims={keepdims})
+    np:
+      generator: np.linalg.norm
     numpy:
       generator: np.linalg.norm
     tensorflow:
       eager: tf.norm
+NormCdf:
+  operation: NormCdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.norm.cdf({0}, loc={1}, scale={2})
 NormExceptDim:
   description: Calculates norm over all dimensions except dim.
   operation: NormExceptDim
@@ -29581,6 +30797,11 @@ NormExceptDim:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+NormPdf:
+  operation: NormPdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.norm.pdf({0}, loc={1}, scale={2})
 Normal:
   description: Auto-generated from flax_nnx_code_defs
   operation: Normal
@@ -29678,6 +30899,8 @@ NotEqual:
       scalar_expr: 'in0_val != in1_val ? 1.0f : 0.0f'
       template: binary
     mlx: {}
+    np:
+      generator: np.not_equal
     numpy:
       generator: np.not_equal
     pytorch: {}
@@ -29945,6 +31168,15 @@ OfType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Ogrid:
+  operation: Ogrid
+  variants:
+    jnp:
+      generator: jnp.ogrid({0})
+    mx:
+      generator: mx.ogrid({0})
+    np:
+      generator: np.ogrid
 OnDeviceProfiler:
   description: The class representing a Python class.
   operation: OnDeviceProfiler
@@ -29991,17 +31223,28 @@ OneHot:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.nn.one_hot({0}, {depth})
     keras:
       eager: keras_ops.one_hot
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.eye({depth})[{0}]
+    np:
+      generator: np.eye({depth})[{0}]
     numpy:
       generator: np.eye({depth})[{0}]
     pytorch: {}
     tensorflow:
       eager: tf.one_hot
+Ones:
+  operation: Ones
+  variants:
+    np:
+      generator: np.ones
 OnesLike:
   description: Returns a tensor filled with the scalar value 1, with the same size
     as input.
@@ -30291,6 +31534,11 @@ OrmQr:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Orthogonal:
+  operation: Orthogonal
+  variants:
+    jnp:
+      generator: jax.random.orthogonal({0}, {1}, {shape})
 OutOfMemoryError:
   description: Exception raised when device is out of memory.
   operation: OutOfMemoryError
@@ -30306,6 +31554,15 @@ OutOfMemoryError:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Outer:
+  operation: Outer
+  variants:
+    jnp:
+      generator: jnp.outer({0}, {1})
+    mx:
+      generator: mx.outer({0}, {1})
+    np:
+      generator: np.outer({0}, {1})
 Outfeed:
   description: The Outfeed operation.
   operation: Outfeed
@@ -30322,15 +31579,46 @@ Outfeed:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.lax.outfeed({0})
     keras: {}
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
     numpy:
       generator: '{0}'
     pytorch: {}
     tensorflow: {}
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
+OverlapAndAdd:
+  operation: OverlapAndAdd
+  variants:
+    jnp:
+      generator: tf.signal.overlap_and_add({0})
+    keras.ops:
+      generator: tf.signal.overlap_and_add({0})
+    mx:
+      generator: tf.signal.overlap_and_add({0})
+    np:
+      generator: tf.signal.overlap_and_add({0})
+    tf:
+      generator: tf.signal.overlap_and_add({0})
+    tf.math:
+      generator: tf.signal.overlap_and_add({0})
+    torch:
+      generator: tf.signal.overlap_and_add({0})
 PRESCALE_QK:
   description: Whether to pre-scale QK by 1/sqrt(d) and change of base. This is slightly
     faster but
@@ -30348,6 +31636,11 @@ PRESCALE_QK:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+PRNGKey:
+  operation: PRNGKey
+  variants:
+    mx:
+      generator: mx.random.key({seed})
 PRUNING_TYPE:
   description: The class representing a Python module/class/instance attribute.
   operation: PRUNING_TYPE
@@ -30558,6 +31851,11 @@ ParamsFn:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Pareto:
+  operation: Pareto
+  variants:
+    jnp:
+      generator: jax.random.pareto({0}, {1}, {shape})
 ParseError:
   description: Auto-generated mapping for ParseError.
   operation: ParseError
@@ -30820,6 +32118,11 @@ PcaLowRank:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Pdot:
+  operation: Pdot
+  variants:
+    jnp:
+      generator: jax.lax.pdot({0}, {1})
 PerChannelAffine:
   description: Per channel affine quantization (internal).
   operation: PerChannelAffine
@@ -31065,11 +32368,17 @@ Pinv:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.linalg.pinv({0})
     keras: {}
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.linalg.pinv({0})
+    np:
+      generator: np.linalg.pinv
     numpy:
       generator: np.linalg.pinv
     pytorch: {}
@@ -31264,6 +32573,49 @@ PmapSharding:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Pmax:
+  operation: Pmax
+  variants:
+    jnp:
+      generator: jax.lax.pmax({0}, axis_name={axis_name})
+    keras.ops:
+      generator: '{0}'
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
+Pmean:
+  operation: Pmean
+  variants:
+    jnp:
+      generator: '{0}.pmean({1})'
+    keras.ops:
+      generator: '{0}.pmean({1})'
+    mx:
+      generator: '{0}.pmean({1})'
+Pmin:
+  operation: Pmin
+  variants:
+    jnp:
+      generator: jax.lax.pmin({0}, axis_name={axis_name})
+    keras.ops:
+      generator: '{0}'
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
 Poisson:
   description: Auto-generated from flax_nnx_code_defs
   operation: Poisson
@@ -31276,9 +32628,16 @@ Poisson:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jax.random.poisson({0}, {1}, {shape})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+PoissonCdf:
+  operation: PoissonCdf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.poisson.cdf({0}, {1}, loc={2})
 PoissonNLLLoss:
   description: Auto-generated mapping for PoissonNLLLoss.
   operation: PoissonNLLLoss
@@ -31295,6 +32654,20 @@ PoissonNLLLoss:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+PoissonPmf:
+  operation: PoissonPmf
+  variants:
+    jnp:
+      generator: jax.scipy.stats.poisson.pmf({0}, {1}, loc={2})
+Poly:
+  operation: Poly
+  variants:
+    jnp:
+      generator: jnp.poly({0})
+    mx:
+      generator: mx.poly({0})
+    np:
+      generator: np.poly
 Poly1d:
   description: A one-dimensional polynomial class.
   operation: Poly1d
@@ -31340,6 +32713,85 @@ PolyShape:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Polyadd:
+  operation: Polyadd
+  variants:
+    jnp:
+      generator: jnp.polyadd({0})
+    mx:
+      generator: mx.polyadd({0})
+    np:
+      generator: np.polyadd
+Polyder:
+  operation: Polyder
+  variants:
+    jnp:
+      generator: jnp.polyder({0})
+    mx:
+      generator: mx.polyder({0})
+    np:
+      generator: np.polyder
+Polydiv:
+  operation: Polydiv
+  variants:
+    jnp:
+      generator: jnp.polydiv({0})
+    mx:
+      generator: mx.polydiv({0})
+    np:
+      generator: np.polydiv
+Polyfit:
+  operation: Polyfit
+  variants:
+    jnp:
+      generator: jnp.polyfit({0})
+    mx:
+      generator: mx.polyfit({0})
+    np:
+      generator: np.polyfit
+Polygamma:
+  operation: Polygamma
+  variants:
+    jnp:
+      generator: jax.scipy.special.polygamma({0}, {1})
+    np:
+      generator: getattr(backend_module, 'polygamma', None)
+Polyint:
+  operation: Polyint
+  variants:
+    jnp:
+      generator: jnp.polyint({0})
+    mx:
+      generator: mx.polyint({0})
+    np:
+      generator: np.polyint
+Polymul:
+  operation: Polymul
+  variants:
+    jnp:
+      generator: jnp.polymul({0})
+    mx:
+      generator: mx.polymul({0})
+    np:
+      generator: np.polymul
+Polysub:
+  operation: Polysub
+  variants:
+    jnp:
+      generator: jnp.polysub({0})
+    mx:
+      generator: mx.polysub({0})
+    np:
+      generator: np.polysub
+Polyval:
+  operation: Polyval
+  variants:
+    jnp:
+      generator: jnp.polyval({0})
+    mx:
+      generator: mx.polyval({0})
+    np:
+      generator: np.polyval
 Pool:
   description: Helper function to define pooling functions.
   operation: Pool
@@ -31517,6 +32969,23 @@ Power:
       eager: torch.power
     tensorflow:
       eager: tf.power
+Ppermute:
+  operation: Ppermute
+  variants:
+    jnp:
+      generator: jax.lax.ppermute({0}, axis_name={axis_name}, perm={perm})
+    keras.ops:
+      generator: '{0}'
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
 Precision:
   description: Auto-generated mapping for Precision.
   operation: Precision
@@ -31772,6 +33241,32 @@ PruningContainer:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Pshuffle:
+  operation: Pshuffle
+  variants:
+    jnp:
+      generator: jax.lax.pshuffle({0}, axis_name={axis_name}, perm={perm})
+    keras.ops:
+      generator: '{0}'
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
+Psum:
+  operation: Psum
+  variants:
+    jnp:
+      generator: '{0}.psum({1})'
+    keras.ops:
+      generator: '{0}.psum({1})'
+    mx:
+      generator: '{0}.psum({1})'
 PsumScatter:
   description: The PsumScatter operation.
   operation: PsumScatter
@@ -31789,19 +33284,51 @@ PsumScatter:
       template: unary
     jax:
       eager: jax.numpy.psumscatter
+    jnp:
+      generator: jax.lax.psum_scatter({0}, scatter_dimension={scatter_dimension},
+        axis_name={axis_name})
     keras:
       eager: keras_ops.psumscatter
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.psumscatter
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
     numpy:
       generator: '{0}'
     pytorch:
       eager: torch.psumscatter
     tensorflow:
       eager: tf.psumscatter
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
+Pswapaxes:
+  operation: Pswapaxes
+  variants:
+    jnp:
+      generator: jax.lax.pswapaxes({0}, axis_name={axis_name}, axis={axis})
+    keras.ops:
+      generator: '{0}'
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
 PureState:
   description: Helper for tuple/state construction.
   operation: PureState
@@ -32404,6 +33931,15 @@ Qqmm:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Qr:
+  operation: Qr
+  variants:
+    jnp:
+      generator: jnp.linalg.qr({0})
+    mx:
+      generator: mx.linalg.qr({0})
+    np:
+      generator: np.linalg.qr
 QuantizePerChannel:
   description: Converts a float tensor to a per-channel quantized tensor with given
     scales and zero points.
@@ -33500,6 +35036,8 @@ RNNCellDeviceWrapper:
       template: unary
     mlx:
       eager: mlx.core.rnncelldevicewrapper
+    np:
+      generator: tf.nn.rnn_cell.DeviceWrapper
     numpy:
       generator: tf.nn.rnn_cell.DeviceWrapper
     pytorch:
@@ -33530,6 +35068,8 @@ RNNCellDropoutWrapper:
       template: unary
     mlx:
       eager: mlx.core.rnncelldropoutwrapper
+    np:
+      generator: tf.nn.rnn_cell.DropoutWrapper
     numpy:
       generator: tf.nn.rnn_cell.DropoutWrapper
     pytorch:
@@ -33560,6 +35100,8 @@ RNNCellResidualWrapper:
       template: unary
     mlx:
       eager: mlx.core.rnncellresidualwrapper
+    np:
+      generator: tf.nn.rnn_cell.ResidualWrapper
     numpy:
       generator: tf.nn.rnn_cell.ResidualWrapper
     pytorch:
@@ -33664,6 +35206,8 @@ R_:
       template: unary
     jax:
       eager: jax.numpy.r_
+    jnp:
+      generator: jnp.r_({0})
     keras:
       eager: keras_ops.r_
     llvm_cpp:
@@ -33671,6 +35215,10 @@ R_:
       template: unary
     mlx:
       eager: mlx.core.r_
+    mx:
+      generator: mx.r_({0})
+    np:
+      generator: np.r_
     numpy:
       generator: np.r_
     pytorch:
@@ -33720,6 +35268,8 @@ RaggedConstant:
       template: unary
     mlx:
       eager: mlx.core.raggedconstant
+    np:
+      generator: tf.ragged.constant
     numpy:
       generator: tf.ragged.constant
     pytorch:
@@ -33750,6 +35300,8 @@ RaggedCrossHashed:
       template: unary
     mlx:
       eager: mlx.core.raggedcrosshashed
+    np:
+      generator: tf.ragged.cross_hashed
     numpy:
       generator: tf.ragged.cross_hashed
     pytorch:
@@ -33810,6 +35362,8 @@ RaggedRange:
       template: unary
     mlx:
       eager: mlx.core.raggedrange
+    np:
+      generator: tf.ragged.range
     numpy:
       generator: tf.ragged.range
     pytorch:
@@ -33840,6 +35394,8 @@ RaggedRowSplitsToSegmentIds:
       template: unary
     mlx:
       eager: mlx.core.raggedrowsplitstosegmentids
+    np:
+      generator: tf.ragged.row_splits_to_segment_ids
     numpy:
       generator: tf.ragged.row_splits_to_segment_ids
     pytorch:
@@ -33870,6 +35426,8 @@ RaggedSegmentIdsToRowSplits:
       template: unary
     mlx:
       eager: mlx.core.raggedsegmentidstorowsplits
+    np:
+      generator: tf.ragged.segment_ids_to_row_splits
     numpy:
       generator: tf.ragged.segment_ids_to_row_splits
     pytorch:
@@ -33900,6 +35458,8 @@ RaggedStack:
       template: unary
     mlx:
       eager: mlx.core.raggedstack
+    np:
+      generator: tf.ragged.stack
     numpy:
       generator: tf.ragged.stack
     pytorch:
@@ -33930,6 +35490,8 @@ RaggedStackDynamicPartitions:
       template: unary
     mlx:
       eager: mlx.core.raggedstackdynamicpartitions
+    np:
+      generator: tf.ragged.stack_dynamic_partitions
     numpy:
       generator: tf.ragged.stack_dynamic_partitions
     pytorch:
@@ -34142,6 +35704,11 @@ RandomAlgorithm:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+RandomBernoulli:
+  operation: RandomBernoulli
+  variants:
+    mx:
+      generator: mx.random.bernoulli(p={p}, shape={shape}, key={0})
 RandomBrightness:
   description: A preprocessing layer which randomly adjusts brightness during training.
   operation: RandomBrightness
@@ -34178,6 +35745,8 @@ RandomCategorical:
       template: unary
     jax:
       eager: jax.numpy.randomcategorical
+    jnp:
+      generator: jax.random.categorical({0}, {1}, axis={axis}, shape={shape})
     keras:
       eager: keras_ops.randomcategorical
     llvm_cpp:
@@ -34185,6 +35754,8 @@ RandomCategorical:
       template: unary
     mlx:
       eager: mlx.core.randomcategorical
+    np:
+      generator: np.argmax({1} + np.random.gumbel(size={1}.shape), axis={axis})
     numpy:
       generator: np.argmax({1} + np.random.gumbel(size={1}.shape), axis={axis})
     pytorch:
@@ -34362,6 +35933,8 @@ RandomGammaGrad:
       template: unary
     jax:
       eager: jax.numpy.randomgammagrad
+    jnp:
+      generator: jax.lax.random_gamma_grad({0}, {1})
     keras:
       eager: keras_ops.randomgammagrad
     llvm_cpp:
@@ -34369,12 +35942,19 @@ RandomGammaGrad:
       template: unary
     mlx:
       eager: mlx.core.randomgammagrad
+    np:
+      generator: 'lambda a, x: a'
     numpy:
       generator: 'lambda a, x: a'
     pytorch:
       eager: torch.randomgammagrad
     tensorflow:
       eager: tf.randomgammagrad
+RandomGammaP:
+  operation: RandomGammaP
+  variants:
+    jnp:
+      generator: jax.random.gamma_p({0}, {1})
 RandomGaussianBlur:
   description: Applies random Gaussian blur to images for data augmentation.
   operation: RandomGaussianBlur
@@ -34496,6 +36076,11 @@ RandomInvert:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+RandomNormal:
+  operation: RandomNormal
+  variants:
+    mx:
+      generator: mx.random.normal(shape={shape}, key={0})
 RandomPerspective:
   description: A preprocessing layer that applies random perspective transformations.
   operation: RandomPerspective
@@ -34560,6 +36145,11 @@ RandomPosterization:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+RandomRandint:
+  operation: RandomRandint
+  variants:
+    mx:
+      generator: mx.random.randint(low={minval}, high={maxval}, shape={shape}, key={0})
 RandomRotation:
   description: Randomly rotates images during training.
   operation: RandomRotation
@@ -34687,6 +36277,11 @@ RandomShear:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+RandomSplit:
+  operation: RandomSplit
+  variants:
+    mx:
+      generator: mx.random.split({0}, {num})
 RandomStructured:
   description: Prune entire (currently unpruned) channels in a tensor at random.
   operation: RandomStructured
@@ -34738,6 +36333,11 @@ RandomTranslation:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+RandomUniform:
+  operation: RandomUniform
+  variants:
+    mx:
+      generator: mx.random.uniform(low={minval}, high={maxval}, shape={shape}, key={0})
 RandomUnstructured:
   description: Prune (currently unpruned) units in a tensor at random.
   operation: RandomUnstructured
@@ -34912,6 +36512,11 @@ RavelMultiIndex:
       eager: torch.ravelmultiindex
     tensorflow:
       eager: tf.ravelmultiindex
+Rayleigh:
+  operation: Rayleigh
+  variants:
+    jnp:
+      generator: jax.random.rayleigh({0}, {shape})
 ReadVariable:
   description: The ReadVariable operation.
   operation: ReadVariable
@@ -34929,13 +36534,19 @@ ReadVariable:
       template: unary
     jax:
       eager: jax.numpy.readvariable
+    jnp:
+      generator: '{0}'
     keras:
       eager: keras_ops.readvariable
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.readvariable
+    mx:
+      generator: '{0}'
     numpy:
       eager: numpy.readvariable
     pytorch:
@@ -36037,18 +37648,35 @@ Reshape:
       template: unary
     jax:
       eager: jax.numpy.reshape
+    jnp:
+      generator: jnp.reshape({0}, {shape})
     keras:
       eager: keras_ops.reshape
+    keras.ops:
+      generator: keras.ops.reshape({0}, {shape})
     llvm_cpp:
       template: fallback_copy
     mlx:
       eager: mlx.core.reshape
+    mx:
+      generator: mx.reshape({0}, {shape})
+    np:
+      generator: np.reshape
     numpy:
       generator: np.reshape
     pytorch:
       generator: torch.reshape({0}, {shape})
     tensorflow:
       eager: tf.reshape
+Resize:
+  operation: Resize
+  variants:
+    jnp:
+      generator: jax.image.resize({0}, shape={size}, method={method}, antialias={antialias})
+    keras.ops:
+      generator: kops.image.resize({0}, {size}, method={method}, antialias={antialias})
+    mx:
+      generator: mx.image.resize({0}, {size})
 ResizeAsSparse_:
   description: Resizes the tensor to match another (sparse).
   operation: ResizeAsSparse_
@@ -36222,6 +37850,11 @@ ResultType:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Reverse:
+  operation: Reverse
+  variants:
+    np:
+      generator: np.flip
 ReversibleEmbedding:
   description: Embedding layer that can project backwards to the input dim.
   operation: ReversibleEmbedding
@@ -36250,6 +37883,26 @@ ReversibleEmbedding:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Rfft:
+  operation: Rfft
+  variants:
+    jnp:
+      generator: jnp.fft.rfft({0})
+    keras.ops:
+      generator: keras.ops.fft.rfft({0})
+    mx:
+      generator: mx.fft.rfft({0})
+    np:
+      generator: np.fft.rfft
+Rfft2:
+  operation: Rfft2
+  variants:
+    jnp:
+      generator: jnp.fft.rfft2({0})
+    mx:
+      generator: mx.fft.rfft2({0})
+    np:
+      generator: np.fft.rfft2
 Rfft2d:
   description: The Rfft2d operation.
   operation: Rfft2d
@@ -36267,13 +37920,19 @@ Rfft2d:
       template: unary
     jax:
       eager: jax.numpy.rfft2d
+    jnp:
+      generator: jnp.fft.rfft2({0}, s={s}, axes={axes})
     keras:
       eager: keras_ops.rfft2d
+    keras.ops:
+      generator: kops.fft.rfft2({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.rfft2d
+    mx:
+      generator: mx.fft.rfft2({0}, s={s}, axes={axes})
     numpy:
       eager: numpy.rfft2d
     pytorch:
@@ -36297,6 +37956,8 @@ Rfft3d:
       template: unary
     jax:
       eager: jax.numpy.rfft3d
+    jnp:
+      generator: jnp.fft.rfftn({0}, s={s}, axes={axes})
     keras:
       eager: keras_ops.rfft3d
     llvm_cpp:
@@ -36304,12 +37965,32 @@ Rfft3d:
       template: unary
     mlx:
       eager: mlx.core.rfft3d
+    mx:
+      generator: mx.fft.rfftn({0}, s={s}, axes={axes})
     numpy:
       eager: numpy.rfft3d
     pytorch:
       generator: torch.fft.rfftn({0}, s={s}, dim={axes})
     tensorflow:
       eager: tf.rfft3d
+Rfftfreq:
+  operation: Rfftfreq
+  variants:
+    jnp:
+      generator: jnp.fft.rfftfreq({0}, d={d})
+    mx:
+      generator: mx.fft.rfftfreq({0}, d={d})
+    np:
+      generator: np.fft.rfftfreq({0}, d={d})
+Rfftn:
+  operation: Rfftn
+  variants:
+    jnp:
+      generator: jnp.fft.rfftn({0})
+    mx:
+      generator: mx.fft.rfftn({0})
+    np:
+      generator: np.fft.rfftn
 Rfftnd:
   description: The Rfftnd operation.
   operation: Rfftnd
@@ -36326,11 +38007,19 @@ Rfftnd:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jnp.fft.rfftn({0})
     keras: {}
+    keras.ops:
+      generator: keras.ops.fft.rfftn({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.fft.rfftn({0})
+    np:
+      generator: np.fft.rfftn({0})
     numpy:
       generator: np.fft.rfftn({0})
     pytorch: {}
@@ -36352,11 +38041,17 @@ RgbToYiq:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.image.rgb_to_yiq({0})
     keras: {}
+    keras.ops:
+      generator: kops.image.rgb_to_yiq({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.image.rgb_to_yiq({0})
     numpy: {}
     pytorch:
       generator: '{0}'
@@ -36377,11 +38072,17 @@ RgbToYuv:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.image.rgb_to_yuv({0})
     keras: {}
+    keras.ops:
+      generator: kops.image.rgb_to_yuv({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.image.rgb_to_yuv({0})
     numpy: {}
     pytorch:
       generator: '{0}'
@@ -36456,15 +38157,29 @@ RngBitGenerator:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.random.bits({0}, {shape})
     keras: {}
+    keras.ops:
+      generator: keras.random.randint({shape}, 0, 255)
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.random.randint(0, 255, {shape})
+    np:
+      generator: np.random.randint(0, 255, size={shape})
     numpy:
       generator: np.random.randint(0, 255, size={shape})
     pytorch: {}
     tensorflow: {}
+    tf:
+      generator: tf.random.uniform({shape}, minval=0, maxval=255, dtype=tf.int32)
+    tf.math:
+      generator: tf.random.uniform({shape}, minval=0, maxval=255, dtype=tf.int32)
+    torch:
+      generator: torch.randint(0, 255, {shape})
 RngCount:
   description: Auto-generated mapping for RngCount.
   operation: RngCount
@@ -36541,15 +38256,29 @@ RngUniform:
       expr: '0.5'
       template: unary
     jax: {}
+    jnp:
+      generator: jax.random.uniform(jax.random.PRNGKey(0), {shape}, minval={0}, maxval={1})
     keras: {}
+    keras.ops:
+      generator: keras.random.uniform({shape}, minval={0}, maxval={1})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.random.uniform(low={0}, high={1}, shape={shape})
+    np:
+      generator: np.random.uniform({0}, {1}, size={shape})
     numpy:
       generator: np.random.uniform({0}, {1}, size={shape})
     pytorch: {}
     tensorflow: {}
+    tf:
+      generator: tf.random.uniform({shape}, minval={0}, maxval={1})
+    tf.math:
+      generator: tf.random.uniform({shape}, minval={0}, maxval={1})
+    torch:
+      generator: ({1} - {0}) * torch.rand({shape}) + {0}
 Rngs:
   description: A small abstraction to manage RNG state.
   operation: Rngs
@@ -36789,6 +38518,15 @@ RooflineShape:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Roots:
+  operation: Roots
+  variants:
+    jnp:
+      generator: jnp.roots({0})
+    mx:
+      generator: mx.roots({0})
+    np:
+      generator: np.roots
 Round_:
   description: In-place version of Round.
   operation: Round_
@@ -37684,6 +39422,11 @@ ScanFn:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Scatter:
+  operation: Scatter
+  variants:
+    mx:
+      generator: mx.scatter({0}, {1}, {2}, {dim})
 ScatterAdd:
   description: Adds values into a tensor at indices specified by index.
   operation: ScatterAdd
@@ -37715,6 +39458,8 @@ ScatterAdd:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.scatter_add({0}, {1}, {2}, {dim})
 ScatterDimensionNumbers:
   description: Auto-generated mapping for ScatterDimensionNumbers.
   operation: ScatterDimensionNumbers
@@ -37755,6 +39500,11 @@ ScatterND:
     numpy: {}
     pytorch: {}
     tensorflow: {}
+ScatterNd:
+  operation: ScatterNd
+  variants:
+    mx:
+      generator: mx.scatter_nd({0}, {1}, {shape})
 ScatterReduce:
   description: Reduces values into a tensor at indices specified by index using a
     reduction operation.
@@ -39524,12 +41274,18 @@ Sigmoid:
       expr: 1.0 / (1.0 + exp(-buf_in0_f32[in0_offset]))
       template: unary
     jax: {}
+    jnp:
+      generator: jax.nn.sigmoid({0})
     keras:
       eager: keras_ops.sigmoid
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.sigmoid({0})
+    np:
+      generator: getattr(backend_module, 'expit', None)({0})
     numpy:
       generator: scipy.special.expit({0})
     pytorch: {}
@@ -39674,6 +41430,11 @@ SimpleRNNCell:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Sin:
+  operation: Sin
+  variants:
+    np:
+      generator: np.sin
 Sin_:
   description: In-place sine.
   operation: Sin_
@@ -39912,11 +41673,17 @@ Slogdet:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.slogdet({0})
     keras:
       eager: keras_ops.slogdet
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.slogdet({0})
+    np:
+      generator: np.linalg.slogdet
     numpy:
       generator: np.linalg.slogdet
     tensorflow:
@@ -40082,11 +41849,17 @@ Softmax:
     edge_wgsl:
       expr: buf_in0_f32[idx]
       template: unary
+    jnp:
+      generator: jax.nn.softmax({0}, axis={axis})
     keras:
       eager: keras_ops.softmax
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.softmax({0}, axis={axis})
+    np:
+      generator: getattr(backend_module, 'softmax', None)({0}, axis={axis})
     numpy:
       generator: scipy.special.softmax({0}, axis={axis})
     tensorflow:
@@ -40173,15 +41946,32 @@ Solve:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jnp.linalg.solve({0}, {1})
     keras:
       eager: keras_ops.solve
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    mx:
+      generator: mx.linalg.solve({0}, {1})
+    np:
+      generator: np.linalg.solve
     numpy:
       generator: np.linalg.solve
     tensorflow:
       eager: tf.linalg.solve
+Sort:
+  operation: Sort
+  variants:
+    jnp:
+      generator: jnp.sort({0}, axis={dimension})
+    keras.ops:
+      generator: keras.ops.sort({0}, axis={dimension})
+    mx:
+      generator: mx.sort({0}, axis={dimension})
+    np:
+      generator: np.sort
 SortComplex:
   description: Sort a complex array using the real part first, then the imaginary
     part.
@@ -40309,6 +42099,8 @@ SparseBincount:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.bincount
     numpy:
       generator: tf.sparse.bincount
     pytorch: {}
@@ -40538,6 +42330,8 @@ SparseCrossHashed:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.cross_hashed
     numpy:
       generator: tf.sparse.cross_hashed
     pytorch: {}
@@ -40687,6 +42481,8 @@ SparseExpandDims:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.expand_dims
     numpy:
       generator: tf.sparse.expand_dims
     pytorch: {}
@@ -40712,6 +42508,8 @@ SparseEye:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.eye
     numpy:
       generator: tf.sparse.eye
     pytorch: {}
@@ -40737,6 +42535,8 @@ SparseFillEmptyRows:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.fill_empty_rows
     numpy:
       generator: tf.sparse.fill_empty_rows
     pytorch: {}
@@ -40794,6 +42594,8 @@ SparseMapValues:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.map_values
     numpy:
       generator: tf.sparse.map_values
     pytorch: {}
@@ -40819,6 +42621,8 @@ SparseMask:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.mask
     numpy:
       generator: tf.sparse.mask
     pytorch: {}
@@ -40844,6 +42648,8 @@ SparseMaximum:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.maximum
     numpy:
       generator: tf.sparse.maximum
     pytorch: {}
@@ -40869,6 +42675,8 @@ SparseMinimum:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.minimum
     numpy:
       generator: tf.sparse.minimum
     pytorch: {}
@@ -40919,6 +42727,8 @@ SparseReduceMax:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.reduce_max
     numpy:
       generator: tf.sparse.reduce_max
     pytorch: {}
@@ -40944,6 +42754,8 @@ SparseReduceSum:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.reduce_sum
     numpy:
       generator: tf.sparse.reduce_sum
     pytorch: {}
@@ -40969,6 +42781,8 @@ SparseReorder:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.reorder
     numpy:
       generator: tf.sparse.reorder
     pytorch: {}
@@ -40994,6 +42808,8 @@ SparseResetShape:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.reset_shape
     numpy:
       generator: tf.sparse.reset_shape
     pytorch: {}
@@ -41019,6 +42835,8 @@ SparseReshape:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.reshape
     numpy:
       generator: tf.sparse.reshape
     pytorch: {}
@@ -41044,6 +42862,8 @@ SparseRetain:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.retain
     numpy:
       generator: tf.sparse.retain
     pytorch: {}
@@ -41069,6 +42889,8 @@ SparseSegmentMean:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.segment_mean
     numpy:
       generator: tf.sparse.segment_mean
     pytorch: {}
@@ -41094,6 +42916,8 @@ SparseSegmentSqrtN:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.segment_sqrt_n
     numpy:
       generator: tf.sparse.segment_sqrt_n
     pytorch: {}
@@ -41119,6 +42943,8 @@ SparseSegmentSum:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.segment_sum
     numpy:
       generator: tf.sparse.segment_sum
     pytorch: {}
@@ -41169,6 +42995,8 @@ SparseSlice:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.slice
     numpy:
       generator: tf.sparse.slice
     pytorch: {}
@@ -41194,6 +43022,8 @@ SparseSoftmax:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.softmax
     numpy:
       generator: tf.sparse.softmax
     pytorch: {}
@@ -41235,6 +43065,8 @@ SparseToIndicator:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    np:
+      generator: tf.sparse.to_indicator
     numpy:
       generator: tf.sparse.to_indicator
     pytorch: {}
@@ -41302,6 +43134,8 @@ SparseTranspose:
       template: unary
     mlx:
       eager: mlx.core.sparsetranspose
+    np:
+      generator: tf.sparse.transpose
     numpy:
       generator: tf.sparse.transpose
     pytorch:
@@ -41442,6 +43276,11 @@ SpatialDropout3D:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+SpecialGamma:
+  operation: SpecialGamma
+  variants:
+    jnp:
+      generator: jax.scipy.special.gamma({0})
 Specialization:
   description: Specialization for a colocated_python function.
   operation: Specialization
@@ -42504,6 +44343,8 @@ Stft:
       template: unary
     jax:
       eager: jax.numpy.stft
+    jnp:
+      generator: jax.scipy.signal.stft({0})
     keras:
       eager: keras_ops.stft
     llvm_cpp:
@@ -42566,13 +44407,19 @@ StopGradient:
       template: unary
     jax:
       eager: jax.numpy.stopgradient
+    jnp:
+      generator: jax.lax.stop_gradient({0})
     keras:
       eager: keras_ops.stopgradient
+    keras.ops:
+      generator: kops.stop_gradient({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.stopgradient
+    mx:
+      generator: mx.stop_gradient({0})
     numpy:
       eager: numpy.stopgradient
     pytorch:
@@ -42913,6 +44760,8 @@ Subtract:
       template: binary
     mlx:
       eager: mlx.core.subtract
+    np:
+      generator: np.subtract
     numpy:
       generator: np.subtract
     pytorch:
@@ -42987,6 +44836,8 @@ Sum:
       template: unary
     mlx:
       eager: mlx.core.sum
+    np:
+      generator: np.sum
     numpy:
       generator: np.sum
     pytorch:
@@ -43008,6 +44859,15 @@ SumPool:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Svd:
+  operation: Svd
+  variants:
+    jnp:
+      generator: jnp.linalg.svd({0})
+    mx:
+      generator: mx.linalg.svd({0})
+    np:
+      generator: np.linalg.svd
 SvdAlgorithm:
   description: Auto-generated mapping for SvdAlgorithm.
   operation: SvdAlgorithm
@@ -43056,6 +44916,15 @@ SvdLowrank:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Svdvals:
+  operation: Svdvals
+  variants:
+    jnp:
+      generator: jnp.linalg.svdvals({0})
+    mx:
+      generator: mx.linalg.svd({0}, compute_uv=False)
+    np:
+      generator: np.linalg.svd({0}, compute_uv=False)
 Swapdims:
   description: Interchange two dimensions of a tensor (Alias for Swapaxes).
   operation: Swapdims
@@ -43523,6 +45392,8 @@ T:
     edge_wgsl:
       expr: buf_in0_f32[in0_offset]
       template: unary
+    jnp:
+      generator: jax.random.t({0}, {1}, {shape})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
@@ -44190,6 +46061,8 @@ TensorScatterAdd:
       template: unary
     jax:
       eager: jax.numpy.tensorscatteradd
+    jnp:
+      generator: '{0}.at[tuple(jnp.moveaxis({1}, -1, 0))].add({2})'
     keras:
       eager: keras_ops.tensorscatteradd
     llvm_cpp:
@@ -44197,12 +46070,34 @@ TensorScatterAdd:
       template: unary
     mlx:
       eager: mlx.core.tensorscatteradd
+    mx:
+      generator: '(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+        c[tuple(i[..., d] for d in range(i.shape[-1]))] + u), c][1])(mx.array({0}),
+        {1}, {2})'
     numpy:
       eager: numpy.tensorscatteradd
     pytorch:
       generator: '{0}.clone().index_put_(tuple({1}.unbind(-1)), {2}, accumulate=True)'
     tensorflow:
       eager: tf.tensorscatteradd
+TensorScatterMax:
+  operation: TensorScatterMax
+  variants:
+    jnp:
+      generator: '{0}.at[tuple(jnp.moveaxis({1}, -1, 0))].max({2})'
+    mx:
+      generator: '(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+        mx.maximum(c[tuple(i[..., d] for d in range(i.shape[-1]))], u)), c][1])(mx.array({0}),
+        {1}, {2})'
+TensorScatterMin:
+  operation: TensorScatterMin
+  variants:
+    jnp:
+      generator: '{0}.at[tuple(jnp.moveaxis({1}, -1, 0))].min({2})'
+    mx:
+      generator: '(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+        mx.minimum(c[tuple(i[..., d] for d in range(i.shape[-1]))], u)), c][1])(mx.array({0}),
+        {1}, {2})'
 TensorScatterUpdate:
   description: The TensorScatterUpdate operation.
   operation: TensorScatterUpdate
@@ -44220,6 +46115,8 @@ TensorScatterUpdate:
       template: unary
     jax:
       eager: jax.numpy.tensorscatterupdate
+    jnp:
+      generator: '{0}.at[tuple(jnp.moveaxis({1}, -1, 0))].set({2})'
     keras:
       eager: keras_ops.tensorscatterupdate
     llvm_cpp:
@@ -44227,6 +46124,9 @@ TensorScatterUpdate:
       template: unary
     mlx:
       eager: mlx.core.tensorscatterupdate
+    mx:
+      generator: '(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
+        u), c][1])(mx.array({0}), {1}, {2})'
     numpy:
       eager: numpy.tensorscatterupdate
     pytorch:
@@ -44324,6 +46224,8 @@ Tensordot:
       template: unary
     jax:
       eager: jax.numpy.tensordot
+    jnp:
+      generator: jnp.tensordot({0}, {1}, axes={axes})
     keras:
       eager: keras_ops.tensordot
     llvm_cpp:
@@ -44331,12 +46233,34 @@ Tensordot:
       template: unary
     mlx:
       eager: mlx.core.tensordot
+    mx:
+      generator: mx.tensordot({0}, {1}, axes={axes})
+    np:
+      generator: np.tensordot({0}, {1}, axes={axes})
     numpy:
       generator: np.tensordot({0}, {1}, axes={axes})
     pytorch:
       eager: torch.tensordot
     tensorflow:
       eager: tf.tensordot
+Tensorinv:
+  operation: Tensorinv
+  variants:
+    jnp:
+      generator: jnp.linalg.tensorinv({0}, ind={ind})
+    mx:
+      generator: mx.linalg.tensorinv({0}, ind={ind})
+    np:
+      generator: np.linalg.tensorinv({0}, ind={ind})
+Tensorsolve:
+  operation: Tensorsolve
+  variants:
+    jnp:
+      generator: jnp.linalg.tensorsolve({0}, {1}, axes={axes})
+    mx:
+      generator: mx.linalg.tensorsolve({0}, {1}, axes={axes})
+    np:
+      generator: np.linalg.tensorsolve({0}, {1}, axes={axes})
 Test:
   description: Pytest test runner.
   operation: Test
@@ -44973,13 +46897,21 @@ Trace:
       template: unary
     jax:
       eager: jax.numpy.trace
+    jnp:
+      generator: jnp.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
     keras:
       eager: keras_ops.trace
+    keras.ops:
+      generator: tf.linalg.trace
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.trace
+    mx:
+      generator: mx.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
+    np:
+      generator: np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
     numpy:
       generator: np.trace({0}, offset={offset}, axis1={axis1}, axis2={axis2})
     pytorch:
@@ -45385,6 +47317,8 @@ Transpose:
       template: fallback_copy
     mlx:
       eager: mlx.core.transpose
+    np:
+      generator: np.transpose
     numpy:
       generator: np.transpose
     pytorch:
@@ -45832,6 +47766,20 @@ TreeWhileLoopBodyFn:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+TriInv:
+  operation: TriInv
+  variants:
+    jnp:
+      generator: jnp.linalg.inv({0})
+    keras.ops:
+      generator: tf.linalg.inv({0})
+    mx:
+      generator: mx.linalg.inv({0})
+Triangular:
+  operation: Triangular
+  variants:
+    jnp:
+      generator: jax.random.triangular({0}, {1}, {2}, {shape})
 TriangularSolve:
   description: The TriangularSolve operation.
   operation: TriangularSolve
@@ -45873,13 +47821,25 @@ TriangularSolve:
       template: unary
     jax:
       eager: jax.numpy.triangularsolve
+    jnp:
+      generator: jax.scipy.linalg.solve_triangular({0}, {1}, lower={lower}, unit_diagonal={unit_diagonal},
+        trans=2 if {adjoint} else 0)
     keras:
       eager: keras_ops.triangularsolve
+    keras.ops:
+      generator: tf.linalg.triangular_solve({0}, {1}, lower={lower}, adjoint={adjoint})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.triangularsolve
+    mx:
+      generator: mx.linalg.solve_triangular({0}.swapaxes(-1, -2).conjugate() if {adjoint}
+        else {0}, {1}, upper=not {lower} if not {adjoint} else {lower})
+    np:
+      generator: getattr(backend_module.linalg, 'solve_triangular', None)({0}, {1},
+        lower={lower}, unit_diagonal={unit_diagonal}, trans=1 if {adjoint} else 0,
+        check_finite=False)
     numpy:
       generator: scipy.linalg.solve_triangular({0}, {1}, lower={lower}, unit_diagonal={unit_diagonal},
         trans=1 if {adjoint} else 0, check_finite=False)
@@ -45906,11 +47866,25 @@ TridiagonalMatmul:
       eager: jax.numpy.tridiagonalmatmul
     keras:
       eager: keras_ops.tridiagonalmatmul
+    keras.ops:
+      generator: tf.linalg.tridiagonal_matmul(({2}, {1}, {0}), {3}, diagonals_format='sequence')
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.tridiagonalmatmul
+    mx:
+      generator: mx.expand_dims({1}, -1) * {3} + mx.expand_dims(mx.concatenate([mx.zeros_like({0}[...,
+        :1]), {0}[..., 1:]], axis=-1), -1) * mx.concatenate([mx.zeros_like({3}[...,
+        :1, :]), {3}[..., :-1, :]], axis=-2) + mx.expand_dims(mx.concatenate([{2}[...,
+        :-1], mx.zeros_like({2}[..., -1:])], axis=-1), -1) * mx.concatenate([{3}[...,
+        1:, :], mx.zeros_like({3}[..., -1:, :])], axis=-2)
+    np:
+      generator: np.expand_dims({1}, -1) * {3} + np.expand_dims(np.concatenate([np.zeros_like({0}[...,
+        :1]), {0}[..., 1:]], axis=-1), -1) * np.concatenate([np.zeros_like({3}[...,
+        :1, :]), {3}[..., :-1, :]], axis=-2) + np.expand_dims(np.concatenate([{2}[...,
+        :-1], np.zeros_like({2}[..., -1:])], axis=-1), -1) * np.concatenate([{3}[...,
+        1:, :], np.zeros_like({3}[..., -1:, :])], axis=-2)
     numpy:
       eager: numpy.tridiagonalmatmul
     pytorch:
@@ -45936,11 +47910,19 @@ TridiagonalSolve:
       eager: jax.numpy.tridiagonalsolve
     keras:
       eager: keras_ops.tridiagonalsolve
+    keras.ops:
+      generator: tf.linalg.tridiagonal_solve(({2}, {1}, {0}), {3}, diagonals_format='sequence')
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.tridiagonalsolve
+    mx:
+      generator: mx.linalg.solve(mx.diag({1}) + mx.diag({0}[..., 1:], k=-1) + mx.diag({2}[...,
+        :-1], k=1), {3})
+    np:
+      generator: getattr(backend_module.linalg, 'solve_banded', None)((1, 1), np.stack([{2},
+        {1}, {0}], axis=-2), {3})
     numpy:
       generator: scipy.linalg.solve_banded((1, 1), np.stack([{2}, {1}, {0}], axis=-2),
         {3})
@@ -46238,13 +48220,21 @@ TrueDivide:
       template: binary
     jax:
       eager: jax.numpy.truedivide
+    jnp:
+      generator: jnp.true_divide({0}, {1})
     keras:
       eager: keras_ops.true_divide
+    keras.ops:
+      generator: keras.ops.true_divide({0}, {1})
     llvm_cpp:
       scalar_expr: in0_val / in1_val
       template: binary
     mlx:
       eager: mlx.core.truedivide
+    mx:
+      generator: mx.divide({0}, {1})
+    np:
+      generator: np.divide
     numpy:
       generator: np.divide
     pytorch:
@@ -46294,7 +48284,11 @@ TruncateDiv:
   description: The TruncateDiv operation.
   operation: TruncateDiv
   variants:
+    cp:
+      generator: cp.trunc(cp.divide({0}, {1}))
     cupy: {}
+    da:
+      generator: da.trunc(da.divide({0}, {1}))
     dask: {}
     edge_onnx: {}
     edge_stablehlo: {}
@@ -46307,13 +48301,19 @@ TruncateDiv:
       template: binary
     jax:
       eager: jax.numpy.truncatediv
+    jnp:
+      generator: jnp.trunc(jnp.divide({0}, {1}))
     keras:
       eager: keras_ops.truncatediv
+    keras.ops:
+      generator: keras.ops.trunc(keras.ops.divide({0}, {1}))
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.truncatediv
+    mx:
+      generator: mx.trunc(mx.divide({0}, {1}))
     numpy:
       eager: numpy.truncatediv
     pytorch:
@@ -46324,7 +48324,11 @@ TruncateMod:
   description: The TruncateMod operation.
   operation: TruncateMod
   variants:
+    cp:
+      generator: cp.fmod({0}, {1})
     cupy: {}
+    da:
+      generator: da.fmod({0}, {1})
     dask: {}
     edge_onnx: {}
     edge_stablehlo: {}
@@ -46337,13 +48341,19 @@ TruncateMod:
       template: unary
     jax:
       eager: jax.numpy.truncatemod
+    jnp:
+      generator: jnp.fmod({0}, {1})
     keras:
       eager: keras_ops.truncatemod
+    keras.ops:
+      generator: keras.ops.mod({0}, {1})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx:
       eager: mlx.core.truncatemod
+    mx:
+      generator: mx.remainder({0}, {1})
     numpy:
       eager: numpy.truncatemod
     pytorch:
@@ -48525,6 +50535,15 @@ Vdot:
       eager: torch.vdot
     tensorflow:
       eager: tf.vdot
+Vecdot:
+  operation: Vecdot
+  variants:
+    jnp:
+      generator: jnp.vecdot({0}, {1}, axis={axis})
+    mx:
+      generator: mx.sum({0} * {1}, axis={axis})
+    np:
+      generator: np.sum({0} * {1}, axis={axis})
 VectorNorm:
   description: The VectorNorm operation.
   operation: VectorNorm
@@ -48541,6 +50560,8 @@ VectorNorm:
       template: conv_pool_1d_flat
     jax:
       eager: jax.numpy.vectornorm
+    jnp:
+      generator: jnp.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
     keras:
       eager: keras_ops.vectornorm
     llvm_cpp:
@@ -48548,6 +50569,10 @@ VectorNorm:
       template: unary
     mlx:
       eager: mlx.core.vectornorm
+    mx:
+      generator: mx.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
+    np:
+      generator: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
     numpy:
       generator: np.linalg.norm({0}, axis={axis}, keepdims={keepdims}, ord={ord})
     pytorch:
@@ -49208,6 +51233,11 @@ Wait:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Wald:
+  operation: Wald
+  variants:
+    jnp:
+      generator: jax.random.wald({0}, {1}, {2}, {shape})
 Warpgroup:
   description: Auto-generated from sass_vunknown_map.json
   operation: Warpgroup
@@ -49257,6 +51287,11 @@ Weibull:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+WeibullMin:
+  operation: WeibullMin
+  variants:
+    jnp:
+      generator: jax.random.weibull_min({0}, {1}, {2}, {shape})
 WeightNorm:
   description: L2 weight normalization.
   operation: WeightNorm
@@ -49276,6 +51311,13 @@ WeightNorm:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Welch:
+  operation: Welch
+  variants:
+    jnp:
+      generator: jax.scipy.signal.welch({0}, fs={fs}, window='{window}', nperseg={nperseg},
+        noverlap={noverlap}, nfft={nfft}, detrend='{detrend}', return_onesided={return_onesided},
+        scaling='{scaling}', axis={axis}, average='{average}')
 Welford:
   description: Auto-generated mapping for Welford.
   operation: Welford
@@ -49422,15 +51464,29 @@ WithShardingConstraint:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.lax.with_sharding_constraint({0}, {sharding})
     keras: {}
+    keras.ops:
+      generator: '{0}'
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: '{0}'
+    np:
+      generator: '{0}'
     numpy:
       generator: '{0}'
     pytorch: {}
     tensorflow: {}
+    tf:
+      generator: '{0}'
+    tf.math:
+      generator: '{0}'
+    torch:
+      generator: '{0}'
 WithTag:
   description: Auto-generated mapping for WithTag.
   operation: WithTag
@@ -49446,6 +51502,11 @@ WithTag:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+WrapKeyData:
+  operation: WrapKeyData
+  variants:
+    jnp:
+      generator: jax.random.wrap_key_data({0})
 WrappedSchedule:
   description: Auto-generated from jax_code_defs
   operation: WrappedSchedule
@@ -49550,11 +51611,17 @@ YiqToRgb:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.image.yiq_to_rgb({0})
     keras: {}
+    keras.ops:
+      generator: kops.image.yiq_to_rgb({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.image.yiq_to_rgb({0})
     numpy: {}
     pytorch:
       generator: '{0}'
@@ -49575,11 +51642,17 @@ YuvToRgb:
       expr: buf_in0_f32[in0_offset]
       template: unary
     jax: {}
+    jnp:
+      generator: jax.image.yuv_to_rgb({0})
     keras: {}
+    keras.ops:
+      generator: kops.image.yuv_to_rgb({0})
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
     mlx: {}
+    mx:
+      generator: mx.image.yuv_to_rgb({0})
     numpy: {}
     pytorch:
       generator: '{0}'
@@ -49796,6 +51869,11 @@ Zero_:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Zeros:
+  operation: Zeros
+  variants:
+    np:
+      generator: np.zeros
 ZerosLike:
   autodiff:
     jvp: ZerosLike($input[0])
@@ -49841,6 +51919,13 @@ ZerosLike:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+Zeta:
+  operation: Zeta
+  variants:
+    jnp:
+      generator: jax.scipy.special.zeta({0}, {1})
+    np:
+      generator: getattr(backend_module, 'zeta', None)
 __array_namespace_info__:
   description: Returns a namespace with Array API namespace inspection utilities.
   operation: __array_namespace_info__

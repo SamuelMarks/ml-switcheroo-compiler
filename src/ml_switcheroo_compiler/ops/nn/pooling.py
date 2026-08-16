@@ -1,6 +1,8 @@
+"""Module pooling.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for pooling.py."""
 import math
@@ -19,9 +21,9 @@ from ml_switcheroo_compiler.ops.reductions import reduce_window
 def _prepare_pool_config(
     rank: int,
     spatial_rank: int,
-    window_shape: tuple,
-    strides: tuple,
-    padding: str | tuple,
+    window_shape: tuple[Any, ...],
+    strides: tuple[Any, ...],
+    padding: str | tuple,  # type: ignore
 ) -> WindowConfig:
     """Prepare and validates the window configuration for pooling operations.
 
@@ -80,7 +82,7 @@ def _compute_pool_out_shape(in_shape: tuple[int, ...], config: WindowConfig) -> 
 
 
 def _max_pool_with_indices(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     window_shape: tuple[int, ...],
     strides: tuple[int, ...],
     padding: str | tuple[tuple[int, int], ...],
@@ -133,12 +135,12 @@ def _max_pool_with_indices(
 
 
 def max_pool(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     window_shape: tuple[int, ...],
     strides: tuple[int, ...] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
     return_indices: bool = False,
-) -> Tensor | tuple[Tensor, Tensor]:
+) -> Tensor | tuple[Tensor, Tensor]:  # type: ignore
     """Apply a max pooling operation over the input tensor.
 
     Args:
@@ -157,14 +159,14 @@ def max_pool(
     config = _prepare_pool_config(len(operand.shape), len(window_shape), window_shape, strides, padding)
 
     if return_indices:
-        return _max_pool_with_indices(operand, window_shape, strides, padding, config)
+        return _max_pool_with_indices(operand, window_shape, strides, padding, config)  # type: ignore
 
     init_val = -math.inf
-    return reduce_window(operand, init_val, "max", config)
+    return reduce_window(operand, init_val, "max", config)  # type: ignore
 
 
 def avg_pool(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     window_shape: tuple[int, ...],
     strides: tuple[int, ...] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
@@ -195,7 +197,7 @@ def avg_pool(
 
 
 def pool1d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     window_shape: int,
     strides: int | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
@@ -226,7 +228,7 @@ def pool1d(
 
 
 def pool2d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     window_shape: tuple[int, int],
     strides: tuple[int, int] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
@@ -255,7 +257,7 @@ def pool2d(
 
 
 def pool3d(
-    operand: Tensor,
+    operand: Tensor,  # type: ignore
     window_shape: tuple[int, int, int],
     strides: tuple[int, int, int] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
@@ -284,7 +286,7 @@ def pool3d(
 
 
 def average_pool(
-    inputs: Tensor,
+    inputs: Tensor,  # type: ignore
     pool_size: tuple[int, ...],
     strides: tuple[int, ...] | None = None,
     padding: str | tuple[tuple[int, int], ...] = "VALID",
@@ -491,7 +493,7 @@ def max_pool_with_argmax(
 
 
 def fractional_avg_pool(
-    value: Tensor,
+    value: Tensor,  # type: ignore
     config: PoolingConfig,
 ) -> Any:
     """Perform fractional average pooling on the input tensor based on the given configuration.
@@ -527,7 +529,7 @@ def fractional_avg_pool(
 
 
 def fractional_max_pool(
-    value: Tensor,
+    value: Tensor,  # type: ignore
     config: PoolingConfig,
 ) -> Any:
     """Perform fractional max pooling on the input tensor based on the given configuration.

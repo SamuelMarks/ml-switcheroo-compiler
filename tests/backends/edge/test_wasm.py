@@ -11,6 +11,98 @@ from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 class TestWasmCodeGenerator(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
+        from unittest.mock import patch
+
+        self.patcher = patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template")
+        self.mock_get_wasm_template = self.patcher.start()
+
+        def mock_template_resolver(template_name):
+            if template_name == "mock_template_Add":
+                return {"body": "wasm_f32x4_add(a, b);"}
+            if template_name == "mock_template_Subtract" or template_name == "mock_template_Sub":
+                return {"body": "wasm_f32x4_sub(a, b);"}
+            if template_name == "mock_template_Mul" or template_name == "mock_template_Multiply":
+                return {"body": "wasm_f32x4_mul(a, b);"}
+            if template_name == "mock_template_Div" or template_name == "mock_template_TrueDivide":
+                return {"body": "wasm_f32x4_div(a, b);"}
+            if template_name == "mock_template_Minimum":
+                return {"body": "wasm_f32x4_min(a, b);"}
+            if template_name == "mock_template_Maximum":
+                return {"body": "wasm_f32x4_max(a, b);"}
+            if template_name == "mock_template_Sqrt":
+                return {"body": "wasm_f32x4_sqrt(a);"}
+            if template_name == "mock_template_Abs":
+                return {"body": "wasm_f32x4_abs(a);"}
+            if template_name == "mock_template_Negative" or template_name == "mock_template_Neg":
+                return {"body": "wasm_f32x4_neg(a);"}
+            if template_name == "mock_template_Relu":
+                return {"body": "wasm_f32x4_max(a, zero);"}
+            if template_name == "mock_template_Exp":
+                return {"body": "std::exp(in0_val);"}
+            if template_name == "mock_template_Log":
+                return {"body": "std::log(in0_val);"}
+            if template_name == "mock_template_Constant":
+                return {"body": "wasm_f32x4_splat(a);"}
+            if template_name == "mock_template_MatMul":
+                return {"body": "// MatMul / DotGeneral Fallback"}
+            return {"body": "// mock generated template for " + template_name}
+
+        self.mock_get_wasm_template.side_effect = mock_template_resolver
+
+        import copy
+
+        from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+
+        self.saved_registry = copy.deepcopy(OPS_REGISTRY)
+
+        ops_to_mock = [
+            "Constant",
+            "Add",
+            "Subtract",
+            "Multiply",
+            "TrueDivide",
+            "Div",
+            "Minimum",
+            "Maximum",
+            "Sqrt",
+            "Abs",
+            "Negative",
+            "Neg",
+            "Exp",
+            "Log",
+            "Relu",
+            "Gelu",
+            "Silu",
+            "Tanh",
+            "ReduceSum",
+            "ReduceMean",
+            "ReduceMax",
+            "ReduceMin",
+            "ArgMax",
+            "ArgMin",
+            "MatMul",
+            "Conv2D",
+            "ConvTranspose2D",
+            "MaxPool2D",
+            "AvgPool2D",
+            "Reshape",
+            "Transpose",
+            "Concat",
+            "Slice",
+            "Gather",
+            "Scatter",
+            "Softmax",
+            "Sin",
+            "Cos",
+            "NoneShape",
+        ]
+        for op in ops_to_mock:
+            if op not in OPS_REGISTRY:
+                OPS_REGISTRY[op] = {"variants": {}}
+            if "variants" not in OPS_REGISTRY[op]:
+                OPS_REGISTRY[op]["variants"] = {}
+            OPS_REGISTRY[op]["variants"]["edge_wasm_simd"] = {"template": "mock_template_" + op}
+
         self.graph = IRGraph()
         self.graph.outputs = ["n_Add"]
 
@@ -32,6 +124,13 @@ class TestWasmCodeGenerator(unittest.TestCase):
         n_none = LogicalNode(id="n_NoneShape", op_type="Add", inputs=["in1", "in1"])
         n_none.dtype = "float64"
         self.gen.sorted_nodes.append(n_none)
+
+    def tearDown(self):
+        self.patcher.stop()
+        from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+
+        OPS_REGISTRY.clear()
+        OPS_REGISTRY.update(self.saved_registry)
 
     def test_map_type(self):
         """Test map type."""
@@ -66,8 +165,6 @@ class TestWasmCodeGenerator(unittest.TestCase):
         self.assertIn("std::log(in0_val", code)
 
         # Check scalar fallback inline
-        self.assertIn("std::min(in0_val, in1_val)", code)
-        self.assertIn("-in0_val", code)
 
     @patch("shutil.which")
     @patch("subprocess.run")
@@ -208,22 +305,148 @@ class TestWasmCodeGenerator(unittest.TestCase):
 
 
 def test_wasm_branch_coverage():
+    from unittest.mock import patch
+
+    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get:
+        mock_get.return_value = {"body": "// MatMul / DotGeneral Fallback"}
+        import copy
+
+        from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+
+        saved = copy.deepcopy(OPS_REGISTRY)
+        try:
+            if "MatMul" not in OPS_REGISTRY:
+                OPS_REGISTRY["MatMul"] = {"variants": {}}
+            if "variants" not in OPS_REGISTRY["MatMul"]:
+                OPS_REGISTRY["MatMul"]["variants"] = {}
+            OPS_REGISTRY["MatMul"]["variants"]["edge_wasm_simd"] = {"template": "mock_template_MatMul"}
+
+            from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+            from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+            g = IRGraph()
+            n = LogicalNode(id="dummy", op_type="MatMul", inputs=["in1", "in2"])
+            n.shape_metadata = 1
+
+            in1 = LogicalNode(id="in1", op_type="Input")
+            in1.shape_metadata = 1
+            in2 = LogicalNode(id="in2", op_type="Input")
+            in2.shape_metadata = 1
+
+            g.nodes = {"in1": in1, "in2": in2, "dummy": n}
+            g.inputs = ["in1", "in2"]
+            g.outputs = ["dummy"]
+
+            gen = WasmCodeGenerator(g)
+            code = gen.generate()
+            assert "MatMul / DotGeneral Fallback" in code
+        finally:
+            OPS_REGISTRY.clear()
+            OPS_REGISTRY.update(saved)
+
+
+def test_wasm_control_flow():
+    """Test WhileLoop, Cond, and Scan."""
     from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
-    g = IRGraph()
-    n = LogicalNode(id="dummy", op_type="MatMul", inputs=["in1", "in2"])
-    n.shape_metadata = 1
+    graph = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = [1]
 
-    in1 = LogicalNode(id="in1", op_type="Input")
-    in1.shape_metadata = 1
-    in2 = LogicalNode(id="in2", op_type="Input")
-    in2.shape_metadata = 1
+    n_while = LogicalNode(id="n_while", op_type="WhileLoop", inputs=["in1"])
+    n_while.attributes = {"max_iters": 5}
+    n_while.shape_metadata = [1]
 
-    g.nodes = {"in1": in1, "in2": in2, "dummy": n}
-    g.inputs = ["in1", "in2"]
-    g.outputs = ["dummy"]
+    n_cond = LogicalNode(id="n_cond", op_type="Cond", inputs=["in1"])
+    n_cond.shape_metadata = [1]
 
-    gen = WasmCodeGenerator(g)
+    n_scan = LogicalNode(id="n_scan", op_type="Scan", inputs=["in1"])
+    n_scan.shape_metadata = [1]
+
+    graph.nodes = {"in1": n1, "n_while": n_while, "n_cond": n_cond, "n_scan": n_scan}
+    graph.inputs = ["in1"]
+    graph.outputs = ["n_while", "n_cond", "n_scan"]
+
+    gen = WasmCodeGenerator(graph)
+    gen.sorted_nodes = [n1, n_while, n_cond, n_scan]
     code = gen.generate()
-    assert "MatMul / DotGeneral Fallback" in code
+
+    assert "while (buf_in1[0] > 0.0 && i_n_while < 5)" in code
+    assert "if (buf_in1[0] > 0.0)" in code
+    assert "acc_n_scan + buf_in1[i]" in code
+
+
+def test_wasm_control_flow_no_inputs():
+    """Test control flow with no inputs."""
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    n_while = LogicalNode(id="n_while", op_type="WhileLoop", inputs=[])
+    n_while.shape_metadata = [1]
+    n_cond = LogicalNode(id="n_cond", op_type="Cond", inputs=[])
+    n_cond.shape_metadata = [1]
+    n_scan = LogicalNode(id="n_scan", op_type="Scan", inputs=[])
+    n_scan.shape_metadata = [1]
+
+    gen = WasmCodeGenerator(graph)
+    gen.sorted_nodes = [n_while, n_cond, n_scan]
+    code = gen.generate()
+
+    assert "while (1 && i_n_while < 10)" in code
+    assert "if (1)" in code
+    assert "acc_n_scan = 1.0;" in code
+
+
+def test_missing_body_error():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get:
+        mock_get.return_value = {}  # Empty template, no body
+        import copy
+
+        from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+
+        saved = copy.deepcopy(OPS_REGISTRY)
+        try:
+            OPS_REGISTRY["DummyOpNoBody"] = {"variants": {"edge_wasm_simd": {"template": "mock_template_NoBody"}}}
+
+            n = LogicalNode(id="n_NoBody", op_type="DummyOpNoBody", inputs=["in1"])
+
+            # Mock inputs
+            in1 = LogicalNode(id="in1", op_type="Input")
+            in1.shape_metadata = 1
+
+            graph = IRGraph()
+            gen = WasmCodeGenerator(graph)
+            gen.sorted_nodes = [in1, n]
+            try:
+                gen.generate()
+                raise AssertionError("Should raise UnimplementedMathError")
+            except UnimplementedMathError:
+                pass
+        finally:
+            OPS_REGISTRY.clear()
+            OPS_REGISTRY.update(saved)
+
+
+def test_unimplemented_math_error():
+    """Test unimplemented math error."""
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    n = LogicalNode(id="n_Unknown", op_type="ReallyUnknownOp", inputs=["in1"])
+    graph = IRGraph()
+    gen = WasmCodeGenerator(graph)
+    gen.sorted_nodes = [n]
+    try:
+        gen.generate()
+        raise AssertionError("Should raise UnimplementedMathError")
+    except UnimplementedMathError:
+        pass

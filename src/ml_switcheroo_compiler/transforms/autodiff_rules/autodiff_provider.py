@@ -45,7 +45,7 @@ def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str]
             val = float(args[0])
             node_id = f"cst_ad_{id(node)}_{val}".replace(".", "_")
             if node_id not in graph.nodes:
-                from ml_switcheroo_compiler.ir.core import LogicalNode
+                from ml_switcheroo_compiler.ir.core import LogicalNode  # type: ignore
 
                 new_node = LogicalNode(id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=getattr(node, "shape_metadata", None))
                 graph.nodes[node_id] = new_node
@@ -58,7 +58,7 @@ def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str]
 
     elif expr.startswith("$input["):
         idx = int(re.match(r"\$input\[(\d+)\]", expr).group(1))  # type: ignore
-        return node.inputs[idx]
+        return node.inputs[idx]  # type: ignore
     elif expr.startswith("$tangent["):
         assert tangents is not None
         idx = int(re.match(r"\$tangent\[(\d+)\]", expr).group(1))  # type: ignore
@@ -68,7 +68,7 @@ def _parse_expression(graph: Any, expr: str, node: Any, cotangent: Optional[str]
     return expr
 
 
-def _fallback_finite_difference_jvp(graph: Any, node: Any, tangents: tuple) -> str:
+def _fallback_finite_difference_jvp(graph: Any, node: Any, tangents: tuple[Any, ...]) -> str:
     """Implement a generic finite difference fallback for JVP."""
     # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
@@ -106,7 +106,17 @@ def get_vjp_from_data(op_type: str) -> Optional[Any]:
 
     vjp_exprs = ad_rules["vjp"]
 
-    def data_vjp(graph: Any, node: Any, cotangent: str) -> tuple:
+    def data_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
+        """data_vjp function.
+
+        Args:
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
+        cotangent (Any): The cotangent parameter.
+
+        Returns:
+        Any: Result.
+        """
         adjs = []
         for expr in vjp_exprs:
             adjs.append(_parse_expression(graph, expr, node, cotangent=cotangent))
@@ -126,7 +136,17 @@ def get_jvp_from_data(op_type: str) -> Optional[Any]:
 
     jvp_expr = ad_rules["jvp"]
 
-    def data_jvp(graph: Any, node: Any, tangents: tuple) -> str:
+    def data_jvp(graph: Any, node: Any, tangents: tuple[Any, ...]) -> str:
+        """data_jvp function.
+
+        Args:
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
+        tangents (Any): The tangents parameter.
+
+        Returns:
+        Any: Result.
+        """
         tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
         return _parse_expression(graph, jvp_expr, node, tangents=tangents_list)
 

@@ -1,6 +1,8 @@
+"""Module eig.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for eig.py."""
 from typing import Any
@@ -59,7 +61,7 @@ class Eigvalsh(OpDef):
         return ()
 
 
-def eigh(input: Tensor, UPLO: str = "L") -> Any:
+def eigh(input: Tensor, UPLO: str = "L") -> Any:  # type: ignore
     """Compute the eigenvalues and eigenvectors of a complex Hermitian or real symmetric.
 
     Args:
@@ -81,7 +83,7 @@ def eigh(input: Tensor, UPLO: str = "L") -> Any:
     return _emit_linalg_node("Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [getattr(input, "dtype", None)] * 2)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def eigvalsh(input: Tensor, UPLO: str = "L") -> Any:
+def eigvalsh(input: Tensor, UPLO: str = "L") -> Any:  # type: ignore
     """Compute the eigenvalues of a complex Hermitian or real symmetric matrix.
 
     Args:
@@ -119,7 +121,7 @@ class Eigvals(OpDef):
         return ()
 
 
-def eigvals(input: Tensor) -> Any:
+def eigvals(input: Tensor) -> Any:  # type: ignore
     """Compute the eigenvalues of a general matrix.
 
     Args:
@@ -140,7 +142,7 @@ def eigvals(input: Tensor) -> Any:
     return _emit_linalg_node("Eigvals", [input], {}, [input.shape[:-1]], [getattr(input, "dtype", None)])  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
-def eig(input: Tensor) -> Any:
+def eig(input: Tensor) -> Any:  # type: ignore
     """Compute the eigenvalues and eigenvectors of a square matrix.
 
     Args:

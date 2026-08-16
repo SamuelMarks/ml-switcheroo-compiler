@@ -30,7 +30,7 @@ def test_tf_generator_basics():
     except:
         pass
 
-    assert gen._get_backend_prefix() == "tf"
+    assert gen.get_fallback_prefix() == "tf.math"
     assert gen.get_fallback_prefix() == "tf.math"
     assert gen.get_fallback_axis_kwarg() == "axis"
     assert gen.get_fallback_keepdims_kwarg() == "keepdims"

@@ -1,19 +1,15 @@
 operation: process_custom_vjp_call
 description: The class representing a Python function.
 std_args:
-- self
-- primitive
-- fun
-- fwd
-- bwd
-- tracers
-- out_trees
+  - self
+  - primitive
+  - fun
+  - fwd
+  - bwd
+  - tracers
+  - out_trees
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

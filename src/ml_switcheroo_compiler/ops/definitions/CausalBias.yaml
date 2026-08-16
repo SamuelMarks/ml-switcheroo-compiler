@@ -2,16 +2,12 @@ operation: CausalBias
 description: A bias representing causal attention patterns. For an overview of the
   bias structure, see the :class:`CausalVariant` enum.
 std_args:
-- self
-- variant
-- seq_len_q
-- seq_len_kv
+  - self
+  - variant
+  - seq_len_q
+  - seq_len_kv
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

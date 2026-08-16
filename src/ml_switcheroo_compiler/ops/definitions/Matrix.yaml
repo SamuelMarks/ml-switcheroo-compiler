@@ -2,15 +2,11 @@ operation: Matrix
 description: Returns a matrix from an array-like object. (Deprecated in NumPy, maps
   to Array creation).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: data
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: data
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

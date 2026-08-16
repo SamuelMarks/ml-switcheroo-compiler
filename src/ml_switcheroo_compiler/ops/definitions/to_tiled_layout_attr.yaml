@@ -1,13 +1,9 @@
 operation: to_tiled_layout_attr
 description: 'Constructs a #mosaic_gpu.TiledLayout attribute from a TiledLayout.'
 std_args:
-- layout
+  - layout
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

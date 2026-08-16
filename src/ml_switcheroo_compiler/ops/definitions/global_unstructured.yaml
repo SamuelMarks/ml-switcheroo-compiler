@@ -2,16 +2,12 @@ operation: global_unstructured
 description: Globally prunes tensors corresponding to all parameters in ``parameters``
   by applying the specified ``pruning_method``.
 std_args:
-- parameters
-- pruning_method
-- importance_scores
-- kwargs
+  - parameters
+  - pruning_method
+  - importance_scores
+  - kwargs
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

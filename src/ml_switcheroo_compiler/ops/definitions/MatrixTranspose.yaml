@@ -1,10 +1,10 @@
 operation: MatrixTranspose
 description: The MatrixTranspose operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x
+    type: Tensor
 variants:
   numpy:
     generator: np.swapaxes({0}, -1, -2)
@@ -16,15 +16,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: MatrixTranspose
+  edge_stablehlo:
+
+    opcode: stablehlo.matrix_transpose
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

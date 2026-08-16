@@ -1,6 +1,8 @@
+"""Module filtering.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Vision operations."""
 from typing import Any
@@ -14,7 +16,7 @@ from ml_switcheroo_compiler.ops.configs import BlurConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-def gaussian_blur(images: Tensor, config_obj: Any | None = None, **kwargs: Any) -> Any:
+def gaussian_blur(images: Tensor, config_obj: Any | None = None, **kwargs: Any) -> Any:  # type: ignore
     """Apply Gaussian blur to the image(s).
 
     Args:
@@ -55,7 +57,7 @@ def gaussian_blur(images: Tensor, config_obj: Any | None = None, **kwargs: Any) 
 
 
 def median_filter(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     kernel_size: int | tuple[int, int],
     padding: str = "same",
     data_format: str | None = None,
@@ -98,8 +100,8 @@ def median_filter(
 
 
 def iou(
-    boxes1: Tensor,
-    boxes2: Tensor,
+    boxes1: Tensor,  # type: ignore
+    boxes2: Tensor,  # type: ignore
     bounding_box_format: str = "xyxy",
 ) -> Any:
     """Compute Intersection-Over-Union between two sets of bounding boxes.
@@ -134,8 +136,8 @@ def iou(
 
 
 def non_max_suppression(
-    boxes: Tensor,
-    scores: Tensor,
+    boxes: Tensor,  # type: ignore
+    scores: Tensor,  # type: ignore
     max_output_size: int,
     iou_threshold: float = 0.5,
     score_threshold: float = float("-inf"),
@@ -177,7 +179,7 @@ def non_max_suppression(
     )
 
 
-def sharpen(images: Tensor, factor: float = 1.0) -> Any:
+def sharpen(images: Tensor, factor: float = 1.0) -> Any:  # type: ignore
     """Sharpen images.
 
     Args:
@@ -199,7 +201,7 @@ def sharpen(images: Tensor, factor: float = 1.0) -> Any:
 
 
 def random_gaussian_blur(
-    images: Tensor,
+    images: Tensor,  # type: ignore
     kernel_size: int | tuple[int, int],
     sigma: float | tuple[float, float],
     **kwargs: Any,
@@ -241,7 +243,7 @@ def random_gaussian_blur(
     )
 
 
-def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: Any) -> Any:
+def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwargs: Any) -> Any:  # type: ignore
     """Randomly adjust sharpness.
 
     Args:

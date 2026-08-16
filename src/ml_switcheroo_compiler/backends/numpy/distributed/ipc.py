@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Real multi-process IPC distributed primitives for Numpy backend."""
 
 import os
@@ -10,7 +10,7 @@ import numpy as np
 BASE_PORT = 15200
 
 
-def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:
+def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:  # type: ignore
     """Exchange IPC data as coordinator.
 
     Args:
@@ -63,7 +63,7 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: np.ndarray, timeout: 
         return [tensor_data] * size
 
 
-def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:
+def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, timeout: float, retry_interval: float) -> list[np.ndarray]:  # type: ignore
     """Exchange IPC data as worker.
 
     Args:
@@ -99,13 +99,13 @@ def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: np.ndarray, tim
             # Receive broadcasted data
             with listener.accept() as conn:
                 res = conn.recv()
-        return res
+        return res  # type: ignore
     except Exception:
         # Fallback if connection fails
         return [tensor_data] * size
 
 
-def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np.ndarray]:
+def _exchange_ipc_data(rank: int, size: int, tensor_data: np.ndarray) -> list[np.ndarray]:  # type: ignore
     """Exchanges and synchronizes numpy arrays across local workers using standard multiprocessing IPC.
 
     Args:

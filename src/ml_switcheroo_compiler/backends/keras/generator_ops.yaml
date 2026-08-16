@@ -1,0 +1,77 @@
+Adjoint: tf.linalg.adjoint
+AffineGrid: kops.image.affine_grid({0}, {size}, align_corners={align_corners})
+AllToAll: '{0}'
+Allclose: keras.ops.allclose({0}, {1}, rtol={rtol}, atol={atol}, equal_nan={equal_nan})
+Arange: keras.ops.arange({0})
+ArgSort: keras.ops.argsort({0}, axis={dimension})
+AssignVariable: '{0}'
+AxisIndex: '0'
+BandPart: tf.linalg.band_part
+Beta: keras.random.beta({shape}, {1}, {2})
+BroadcastInDim: '{0}.broadcast_in_dim({1}, {2})'
+BroadcastTo: keras.ops.broadcast_to({0}, {shape})
+CholeskySolve: keras.ops.solve(keras.ops.matmul({0}, keras.ops.swapaxes({0}, -1, -2)),
+  {1})
+ConvGeneralDilated: '{0}.conv_general_dilated({1}, {2})'
+CreateToken: '0'
+Dirichlet: keras.random.dirichlet({shape}, {1})
+Dot: keras.ops.dot({0}, {1})
+DotGeneral: '{0}.dot_general({1}, {2})'
+DrawBoundingBoxes: '{0}'
+DynamicSlice: '{0}.dynamic_slice({1}, {2})'
+DynamicUpdateSlice: '{0}.dynamic_update_slice({1}, {2})'
+Erfinv: keras.ops.erfinv({0})
+Fft: keras.ops.fft.fft({0})
+Fft2d: kops.fft.fft2({0})
+Fftn: keras.ops.fft.fftn({0})
+Fftnd: keras.ops.fft.fftn({0})
+Fftshift: keras.ops.fft.fftshift({0})
+Gamma: keras.random.gamma({shape}, {1})
+GridSample: kops.image.grid_sample({0}, {1}, mode={mode}, padding_mode={padding_mode},
+  align_corners={align_corners})
+Ifft: kops.fft.ifft({0})
+Ifft2d: kops.fft.ifft2({0})
+Ifftnd: keras.ops.fft.ifftn({0})
+Ifftshift: keras.ops.fft.ifftshift({0})
+Infeed: '{0}'
+Irfft: kops.fft.irfft({0})
+Irfft2d: kops.fft.irfft2({0})
+Irfftnd: keras.ops.fft.irfftn({0})
+LuMatrixInverse: tf.linalg.lu_matrix_inverse({0}, {1})
+LuReconstruct: tf.linalg.lu_reconstruct({0}, {1})
+Matmul: keras.ops.matmul({0}, {1})
+NanToNum: keras.ops.where(keras.ops.isnan({0}), {nan}, keras.ops.where(keras.ops.isinf({0})
+  & ({0} > 0), {posinf}, keras.ops.where(keras.ops.isinf({0}) & ({0} < 0), {neginf},
+  {0})))
+Outfeed: '{0}'
+Pmax: '{0}'
+Pmean: '{0}.pmean({1})'
+Pmin: '{0}'
+Ppermute: '{0}'
+Pshuffle: '{0}'
+Psum: '{0}.psum({1})'
+PsumScatter: '{0}'
+Pswapaxes: '{0}'
+ReadVariable: '{0}'
+Reshape: keras.ops.reshape({0}, {shape})
+Resize: kops.image.resize({0}, {size}, method={method}, antialias={antialias})
+Rfft: keras.ops.fft.rfft({0})
+Rfft2d: kops.fft.rfft2({0})
+Rfftnd: keras.ops.fft.rfftn({0})
+RgbToYiq: kops.image.rgb_to_yiq({0})
+RgbToYuv: kops.image.rgb_to_yuv({0})
+RngBitGenerator: keras.random.randint({shape}, 0, 255)
+RngUniform: keras.random.uniform({shape}, minval={0}, maxval={1})
+Sort: keras.ops.sort({0}, axis={dimension})
+StopGradient: kops.stop_gradient({0})
+Trace: tf.linalg.trace
+TriInv: tf.linalg.inv({0})
+TriangularSolve: tf.linalg.triangular_solve({0}, {1}, lower={lower}, adjoint={adjoint})
+TridiagonalMatmul: tf.linalg.tridiagonal_matmul(({2}, {1}, {0}), {3}, diagonals_format='sequence')
+TridiagonalSolve: tf.linalg.tridiagonal_solve(({2}, {1}, {0}), {3}, diagonals_format='sequence')
+TrueDivide: keras.ops.true_divide({0}, {1})
+TruncateDiv: keras.ops.trunc(keras.ops.divide({0}, {1}))
+TruncateMod: keras.ops.mod({0}, {1})
+WithShardingConstraint: '{0}'
+YiqToRgb: kops.image.yiq_to_rgb({0})
+YuvToRgb: kops.image.yuv_to_rgb({0})

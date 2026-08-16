@@ -1,19 +1,19 @@
 operation: MatrixRank
 description: The MatrixRank operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: tol
-  type: float
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: symmetric
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: tol
+    type: float
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: symmetric
+    type: bool
 variants:
   numpy:
     generator: np.linalg.matrix_rank({0}, tol={tol}, hermitian={hermitian})
@@ -25,15 +25,11 @@ variants:
   pytorch: {}
   jax: {}
   mlx: {}
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: MatrixRank
+  edge_stablehlo:
+
+    opcode: stablehlo.matrix_rank
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

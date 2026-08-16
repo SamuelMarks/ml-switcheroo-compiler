@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_matrix_utils module."""
 
 from __future__ import annotations
@@ -166,6 +166,23 @@ def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 @numpy_eager_registry.register("distributions")
 def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """_np_distributions function.
+
+    Args:
+        backend_module: The backend.
+        args: Positional args.
+        kwargs: Keyword args.
+
+    Args:
+        message (str): The message.
+        input_vars (list): The input vars.
+        node (Any): The node.
+        **kwargs (Any): Keyword arguments.
+        backend_module (Any): The backend_module parameter.
+
+    Returns:
+        Any: Result.
+    """
     try:
         import ml_switcheroo_compiler.ops as _ops
 
@@ -184,6 +201,23 @@ def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
 @numpy_eager_registry.register("ConfusionMatrix")
 def _np_confusion_matrix_cap(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """_np_confusion_matrix_cap function.
+
+    Args:
+        backend_module: The backend.
+        args: Positional args.
+        kwargs: Keyword args.
+
+    Args:
+        message (str): The message.
+        input_vars (list): The input vars.
+        node (Any): The node.
+        **kwargs (Any): Keyword arguments.
+        backend_module (Any): The backend_module parameter.
+
+    Returns:
+        Any: Result.
+    """
     a = _get_np_arg(args, 0)
     b = _get_np_arg(args, 1)
     if a is None or b is None:

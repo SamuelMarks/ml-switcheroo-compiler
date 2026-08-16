@@ -1,0 +1,7 @@
+TracingError: "Control flow broke proxy tensor tracing. Node {node_id} failed."
+CompilationError: "Failed during IR generation or pass failure."
+ShapeMismatchError: "Shape mismatch during static inference: {shape1} != {shape2}"
+DTypePromotionError: "Invalid automatic type casting: {dtype1} and {dtype2}"
+BackendNotSupportedError: "Backend {backend} does not support operation {op_type}."
+UnimplementedMathError: "Operation {op_type} lacks a mathematical equivalent."
+MissingJVPRuleError: "Required JVP/VJP rule is missing for operation {op_type}."

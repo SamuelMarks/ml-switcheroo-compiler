@@ -12,6 +12,25 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
 
 
+def test_load_from_config():
+    from unittest.mock import mock_open, patch
+
+    import yaml
+
+    from ml_switcheroo_compiler.transforms.pass_manager import PassManager
+
+    pm = PassManager()
+    with patch("os.path.exists", return_value=True):
+        with patch("builtins.open", mock_open(read_data=yaml.dump({"execution_order": ["dead_code_elimination"], "cost_model": {"memory_costs": {}, "compute_costs": {}, "default_memory_cost": 0, "default_compute_cost": 0}, "fusion_patterns": {}}))):
+            pm.load_from_config()
+            assert "dead_code_elimination" in pm.pass_names
+
+    with patch("os.path.exists", return_value=False):
+        pm2 = PassManager()
+        pm2.load_from_config()
+        assert len(pm2.passes) == 0
+
+
 def test_dag_cycle() -> None:
     """Test the dag cycle behavior.
 

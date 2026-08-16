@@ -1,15 +1,15 @@
 operation: BaseRepr
 description: Return a string representation of a number in the given base system.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: number
-  type: int
-- default: 2
-  is_variadic: false
-  kind: positional_or_keyword
-  name: base
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: number
+    type: int
+  - default: 2
+    is_variadic: false
+    kind: positional_or_keyword
+    name: base
+    type: int
 variants:
   numpy:
     eager: numpy.baserepr
@@ -25,15 +25,11 @@ variants:
     eager: jax.numpy.baserepr
   mlx:
     eager: mlx.core.baserepr
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: BaseRepr
+  edge_stablehlo:
+
+    opcode: stablehlo.base_repr
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -1,16 +1,12 @@
 operation: BroadcastInDim
 description: The class representing a Python class.
 std_args:
-- self
-- expression
-- axes
-- shape
+  - self
+  - expression
+  - axes
+  - shape
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

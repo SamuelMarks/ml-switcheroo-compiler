@@ -1,19 +1,15 @@
 operation: MakeAttentionMask
 description: Creates mask for attention weights (Flax utility).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: query_input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: key_input
-  type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: query_input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: key_input
+    type: Tensor
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

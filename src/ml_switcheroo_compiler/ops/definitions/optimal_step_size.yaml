@@ -1,18 +1,14 @@
 operation: optimal_step_size
 description: Compute optimal Runge-Kutta stepsize.
 std_args:
-- last_step
-- mean_error_ratio
-- safety
-- ifactor
-- dfactor
-- order
+  - last_step
+  - mean_error_ratio
+  - safety
+  - ifactor
+  - dfactor
+  - order
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

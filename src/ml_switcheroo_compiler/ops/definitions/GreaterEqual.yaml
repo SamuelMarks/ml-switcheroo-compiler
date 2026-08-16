@@ -26,8 +26,12 @@ variants:
     eager: jax.numpy.greaterequal
   mlx:
     eager: mlx.core.greaterequal
-  edge_onnx: {}
-  edge_stablehlo: {}
+  edge_onnx:
+
+    generator: GreaterEqual
+  edge_stablehlo:
+
+    opcode: stablehlo.greater_equal
   edge_wgsl:
     template: binary
     expr: f32(buf_in0_f32[in0_offset] >= buf_in1_f32[in1_offset])

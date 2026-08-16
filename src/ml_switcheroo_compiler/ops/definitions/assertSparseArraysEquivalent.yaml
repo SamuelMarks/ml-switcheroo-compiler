@@ -1,20 +1,16 @@
 operation: assertSparseArraysEquivalent
 description: The class representing a Python function.
 std_args:
-- self
-- x
-- y
-- check_dtypes
-- atol
-- rtol
-- canonicalize_dtypes
-- err_msg
+  - self
+  - x
+  - y
+  - check_dtypes
+  - atol
+  - rtol
+  - canonicalize_dtypes
+  - err_msg
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

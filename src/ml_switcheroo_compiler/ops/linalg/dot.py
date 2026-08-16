@@ -1,6 +1,8 @@
+"""Module dot.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Dot product operations."""
 from typing import Any
@@ -68,7 +70,7 @@ class DotGeneral(OpDef):
             res = broadcast_shapes(res, s)
         return res
 
-    def _compute_out_shape(self, lhs_shape: tuple, rhs_shape: tuple, dimension_numbers: tuple) -> tuple:
+    def _compute_out_shape(self, lhs_shape: tuple[Any, ...], rhs_shape: tuple[Any, ...], dimension_numbers: tuple[Any, ...]) -> tuple[Any, ...]:
         """Evaluate _compute_out_shape operation.
 
         Args:
@@ -150,7 +152,7 @@ class Outer(OpDef):
         return ()
 
 
-def _compute_pdot_shape(lhs_shape: tuple, rhs_shape: tuple) -> tuple:
+def _compute_pdot_shape(lhs_shape: tuple[Any, ...], rhs_shape: tuple[Any, ...]) -> tuple[Any, ...]:
     """Evaluate _compute_pdot_shape operation.
 
     Args:

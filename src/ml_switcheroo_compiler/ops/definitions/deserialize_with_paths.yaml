@@ -1,18 +1,14 @@
 operation: deserialize_with_paths
 description: The class representing a Python function.
 std_args:
-- self
-- shardings
-- paths
-- global_shapes
-- dtypes
-- concurrent_gb
+  - self
+  - shardings
+  - paths
+  - global_shapes
+  - dtypes
+  - concurrent_gb
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

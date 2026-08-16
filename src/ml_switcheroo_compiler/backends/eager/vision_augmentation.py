@@ -1,6 +1,8 @@
+"""Module vision_augmentation.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Vision utilities."""
 from dataclasses import dataclass
 from typing import Any
@@ -219,7 +221,7 @@ def _compute_random_crop(np_mod: Any, imgs: Any, config: RandomCropConfig | None
     return (0, 0)
 
 
-def random_crop_eager(backend_module: Any, images: Any, size: tuple, seed: Any = None) -> Any:
+def random_crop_eager(backend_module: Any, images: Any, size: tuple[Any, ...], seed: Any = None) -> Any:
     """Execute a random spatial crop on a batch of images eagerly.
 
     Args:
@@ -287,7 +289,7 @@ def _get_elastic_factor(rng: Any, f: Any) -> float:
         float: The sampled configuration parameter for elastic distortion.
     """
     if isinstance(f, (tuple, list)):
-        return rng.uniform(f[0], f[1])
+        return rng.uniform(f[0], f[1])  # type: ignore
     return float(f)
 
 
@@ -362,8 +364,8 @@ def _get_shear_factor(rng: Any, factor: Any) -> float:
         float: The sampled shear magnitude.
     """
     if isinstance(factor, (tuple, list)):
-        return rng.uniform(factor[0], factor[1])
-    return rng.uniform(-factor, factor)
+        return rng.uniform(factor[0], factor[1])  # type: ignore
+    return rng.uniform(-factor, factor)  # type: ignore
 
 
 def _compute_shear_grid(np_mod: Any, config: GeometricGridConfig) -> tuple[Any, Any]:

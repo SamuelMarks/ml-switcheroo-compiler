@@ -2,14 +2,10 @@ operation: cluster_idx
 description: Returns the linear index of a block within a subset of the cluster spanned
   by the given dimensions.
 std_args:
-- dim
-- dim_idx
+  - dim
+  - dim_idx
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

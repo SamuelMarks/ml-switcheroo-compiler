@@ -6,24 +6,38 @@ variants:
   numpy:
     eager: numpy.truncatemod
   cupy: {}
+  cp:
+    generator: cp.fmod({0}, {1})
   dask: {}
+  da:
+    generator: da.fmod({0}, {1})
+  jnp:
+    generator: jnp.fmod({0}, {1})
   tensorflow:
     eager: tf.truncatemod
+  tf:
+    generator: tf.math.floormod({0}, {1})
   keras:
     eager: keras_ops.truncatemod
+  keras.ops:
+    generator: keras.ops.fmod({0}, {1})
   jax:
     eager: jax.numpy.truncatemod
   mlx:
     eager: mlx.core.truncatemod
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  mx:
+    generator: mx.fmod({0}, {1})
+  edge_onnx:
+    generator: TruncateMod
+  edge_stablehlo:
+    opcode: stablehlo.truncate_mod
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
+  edge_wgsl:
+    template: binary
+    expr: buf_in0_f32[in0_offset] % buf_in1_f32[in1_offset]
+  edge_wasm_simd:
+    template: unary
+    scalar_expr: in0_val
+    simd_expr: in0_val

@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core abstractions and logic definitions for nn.py."""
 
 import math
@@ -138,7 +138,7 @@ def _np_rope(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     Returns: Any: Output tensor.
     """
     x_np = backend_module.asarray(x)
-    half_dim = kwargs.get("axis", kwargs.get("dim", x_np.shape[-1])) // 2  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+    half_dim = kwargs.get("axis", kwargs.get("dim", x_np.shape[-1])) // 2
     position = backend_module.arange(kwargs.get("offset", 0), kwargs.get("offset", 0) + x_np.shape[-2], dtype=x_np.dtype)
     freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(kwargs.get("base", 10000.0)) / half_dim))
     angles = position[:, None] * freqs[None, :]

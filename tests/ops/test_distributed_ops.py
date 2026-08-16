@@ -32,8 +32,10 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
     hierarchical_copy_all_reduce,
     nccl_all_reduce,
     pbroadcast,
+    recv,
     reduce,
     reduce_scatter,
+    send,
     shard_tensor,
 )
 
@@ -198,3 +200,7 @@ def test_distributed_ops_tracing():
         assert broadcast_to_rank(t, t) == "dummy_node"
         assert broadcasted_iota(t, t) == "dummy_node"
         assert pbroadcast(t, t) == "dummy_node"
+
+        with patch("ml_switcheroo_compiler.tracing.builder.TracingNodeBuilder.emit_tracing_node", return_value="dummy_send_recv"):
+            assert send(t, 1) == "dummy_send_recv"
+            assert recv((2,), "float32", 0) == "dummy_send_recv"

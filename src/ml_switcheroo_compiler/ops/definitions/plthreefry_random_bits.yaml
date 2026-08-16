@@ -1,15 +1,11 @@
 operation: plthreefry_random_bits
 description: The class representing a Python function.
 std_args:
-- key
-- bit_width
-- shape
+  - key
+  - bit_width
+  - shape
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

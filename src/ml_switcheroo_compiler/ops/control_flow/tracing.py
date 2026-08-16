@@ -1,6 +1,8 @@
+"""Module tracing.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Tracing implementations for control flow operations."""
 
@@ -19,7 +21,7 @@ from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
 
-def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:
+def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[], Any]) -> Any:  # type: ignore
     """Evaluate cond_tracing operation.
 
     Args:
@@ -44,11 +46,11 @@ def cond_tracing(pred: Tensor, true_fn: Callable[[], Any], false_fn: Callable[[]
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=(), dtype="float32")
+    proxy = ProxyTensor(id=out_id, shape=(), dtype="float32")  # type: ignore
     return Tensor(proxy, TensorConfig((), DType.Float32, pred.device))
 
 
-def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:
+def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any], Any], init_val: Any) -> Any:  # type: ignore
     """Evaluate while_loop_tracing operation.
 
     Args:
@@ -62,14 +64,14 @@ def while_loop_tracing(cond_fn: Callable[[Any], Tensor], body_fn: Callable[[Any]
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit While node outside of a tracing context.")
-    args = (init_val,) if isinstance(init_val, Tensor) else tuple(typing.cast(typing.Iterable[Tensor], init_val))
+    args: tuple[Any, ...] = (init_val,) if isinstance(init_val, Tensor) else tuple(init_val)
     cond_graph = _trace_function(cond_fn, args, "cond")
     body_graph = _trace_function(body_fn, args, "body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Loop",
-        inputs=[a.data.id for a in args],  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        inputs=[a.data.id for a in args],
         attributes={"body": body_graph, "cond": cond_graph},
         shape_metadata=(),
     )
@@ -98,7 +100,7 @@ def _flatten_inputs(obj: Any) -> list[str]:
     return []
 
 
-def scan_tracing(f: Callable, init: Any, xs: Any, length: int | None = None) -> tuple[Any, Any]:
+def scan_tracing(f: Callable[..., Any], init: Any, xs: Any, length: int | None = None) -> tuple[Any, Any]:
     """Evaluate scan_tracing operation.
 
     Args:
@@ -115,7 +117,7 @@ def scan_tracing(f: Callable, init: Any, xs: Any, length: int | None = None) -> 
 
         raise TracingError("Cannot emit Scan node outside of a tracing context.")
     x_shape = xs.shape[1:] if xs is not None and len(xs.shape) > 0 else ()
-    proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=xs.dtype.value)
+    proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=xs.dtype.value)  # type: ignore
     proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, xs.dtype, xs.device))
     body_graph = _trace_function(f, (init, proxy_x_tensor), "scan_body")
     init_ids = _flatten_inputs(init)
@@ -128,12 +130,12 @@ def scan_tracing(f: Callable, init: Any, xs: Any, length: int | None = None) -> 
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-    proxy = ProxyTensor(id=out_id, shape=xs.shape, dtype=xs.dtype.value)
+    proxy = ProxyTensor(id=out_id, shape=xs.shape, dtype=xs.dtype.value)  # type: ignore
     out_tensor = Tensor(proxy, TensorConfig(xs.shape, xs.dtype, xs.device))
     return init, out_tensor
 
 
-def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> Any:
+def map_fn_tracing(fn: Callable[..., Any], elems: Tensor, dtype: DType | None = None) -> Any:  # type: ignore
     """Evaluate map_fn_tracing operation.
 
     Args:
@@ -163,11 +165,11 @@ def map_fn_tracing(fn: Callable, elems: Tensor, dtype: DType | None = None) -> A
     global_tracing_state.add_node(node)
     out_dtype = dtype if dtype is not None else elems.dtype
     out_shape = (elems.shape[0],)
-    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)
+    proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype.value)  # type: ignore
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, elems.device))
 
 
-def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
+def pmap_tracing(func: Callable[..., Any], axis_name: str | None = None) -> Callable[..., Any]:
     """Evaluate pmap_tracing operation.
 
     Args:
@@ -203,12 +205,12 @@ def pmap_tracing(func: Callable, axis_name: str | None = None) -> Callable:
         node = LogicalNode(
             id=out_id,
             op_type="Pmap",
-            inputs=[typing.cast(typing.Any, a).data.id for a in args if isinstance(a, Tensor)],
+            inputs=[str(getattr(getattr(a, "data", None), "id", "")) for a in args if isinstance(a, Tensor)],
             attributes={"axis_name": axis_name, "body": body_graph},
             shape_metadata=(),
         )
         global_tracing_state.add_node(node)
-        arg = typing.cast(typing.Any, args[0])
+        arg = args[0]
         proxy = ProxyTensor(id=out_id, shape=arg.shape, dtype=arg.dtype.value)
         return Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
 

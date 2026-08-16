@@ -1,15 +1,11 @@
 operation: LogicalAxisRules
 description: Context manager for setting logical to mesh axis bindings.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: rules
-  type: Sequence
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: rules
+    type: Sequence
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

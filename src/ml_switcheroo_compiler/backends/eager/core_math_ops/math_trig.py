@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Core utilities."""
 
 from __future__ import annotations
@@ -20,7 +20,11 @@ def _acos(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arccos", getattr(backend_module, "acos", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arccos(*args, **kwargs)
 
 
 @global_eager_registry.register("Acosh")
@@ -35,7 +39,11 @@ def _acosh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arccosh", getattr(backend_module, "acosh", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arccos(*args, **kwargs)
 
 
 @global_eager_registry.register("Asin")
@@ -50,7 +58,11 @@ def _asin(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arcsin", getattr(backend_module, "asin", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arcsin(*args, **kwargs)
 
 
 @global_eager_registry.register("Asinh")
@@ -65,7 +77,11 @@ def _asinh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arcsinh", getattr(backend_module, "asinh", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arcsin(*args, **kwargs)
 
 
 @global_eager_registry.register("Atan")
@@ -80,7 +96,11 @@ def _atan(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arctan", getattr(backend_module, "atan", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arctan(*args, **kwargs)
 
 
 @global_eager_registry.register("Atanh")
@@ -95,7 +115,11 @@ def _atanh(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arctanh", getattr(backend_module, "atanh", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arctan(*args, **kwargs)
 
 
 @global_eager_registry.register("Atan2")
@@ -110,7 +134,11 @@ def _atan2(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "arctan2", getattr(backend_module, "atan2", None))
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.arctan(*args, **kwargs)
 
 
 @global_eager_registry.register("Sinc")
@@ -125,7 +153,11 @@ def _sinc(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     Returns: Any: Result.
     """
     func = getattr(backend_module, "sinc", None)
-    return func(*args, **kwargs) if func else None
+    if func is not None:
+        return func(*args, **kwargs)
+    import numpy as np
+
+    return np.sinc(*args, **kwargs)
 
 
 @global_eager_registry.register("Isin")

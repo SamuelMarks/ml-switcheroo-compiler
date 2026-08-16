@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """math_testing module."""
 
 from __future__ import annotations
@@ -42,7 +42,9 @@ def _allclose(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
     if hasattr(backend_module, "allclose"):
         return backend_module.allclose(a, b, rtol=float(_val(rtol)), atol=float(_val(atol)), equal_nan=bool(_val(equal_nan)))
-    return None
+    import numpy as np
+
+    return np.allclose(a, b, rtol=float(_val(rtol)), atol=float(_val(atol)), equal_nan=bool(_val(equal_nan)))
 
 
 @global_eager_registry.register("ArrayEquiv")

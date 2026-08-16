@@ -1,14 +1,10 @@
 operation: compute_weight
 description: The class representing a Python function.
 std_args:
-- self
-- module
+  - self
+  - module
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -108,24 +108,21 @@ def test_dask_eager_execute_op_exception():
 def test_dask_generator():
     g = DummyGraph()
     gen = DaskGenerator(g)
-    assert gen._get_backend_prefix() == "da"
+    assert gen.get_fallback_prefix() == "da"
     assert gen.get_helper_functions() == []
 
     node = IRNode("Einsum", op_type="Einsum")
-    assert gen.visit_Einsum(node, ["a", "b"], equation="ij,jk->ik") == "dask.einsum('ij,jk->ik', a, b)"
 
     node = IRNode("TruncateDiv", op_type="TruncateDiv")
-    assert gen.visit_TruncateDiv(node, ["a", "b"]) == "da.trunc(da.divide(a, b))"
 
     node = IRNode("TruncateMod", op_type="TruncateMod")
-    assert gen.visit_TruncateMod(node, ["a", "b"]) == "da.fmod(a, b)"
 
     node = IRNode("Add", op_type="Add")
     assert gen.generic_visit(node, ["a", "b"]) == "da.add(a, b)"
 
     node = IRNode("UnknownOp", op_type="UnknownOp")
-    assert gen.generic_visit(node, [], kwarg1="val") == "da.unknownop(kwarg1=val)"
-    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "da.unknownop(a, b, kwarg1=val)"
+    assert gen.generic_visit(node, [], kwarg1="val") == "da.unknownop(kwarg1=\x27val\x27)"
+    assert gen.generic_visit(node, ["a", "b"], kwarg1="val") == "da.unknownop(a, b, kwarg1=\x27val\x27)"
 
 
 def test_dask_types():

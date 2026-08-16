@@ -1,6 +1,8 @@
+"""Module array.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Provide mixin module."""
 from typing import Any
 
@@ -22,7 +24,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the approximate max k operation.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
@@ -38,7 +40,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code to get the indices of the approximate max k elements.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_max_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
@@ -54,7 +56,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the approximate min k operation.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[0]"
@@ -70,7 +72,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code to get the indices of the approximate min k elements.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         k = kwargs.get("k", 1)
         reduction_dimension = kwargs.get("reduction_dimension", -1)
         return f"{pfx}_approx_min_k({input_vars[0]}, k={k}, reduction_dimension={reduction_dimension})[1]"
@@ -86,7 +88,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the argsort operation.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         dimension = kwargs.get("dimension", -1)
         return f"{pfx}_argsort({input_vars[0]}, dimension={dimension})"
 
@@ -101,7 +103,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the argwhere operation.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_argwhere({input_vars[0]})"
 
     def visit_Argpartition(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
@@ -115,7 +117,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the argpartition operation.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         kth = kwargs.get("kth")
         axis = kwargs.get("axis", -1)
         return f"{pfx}_argpartition({input_vars[0]}, kth={kth}, axis={axis})"
@@ -131,7 +133,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for string conversion.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         return f"{pfx}_as_string({input_vars[0]})"
 
     def visit_AxisIndex(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
@@ -145,7 +147,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for retrieving the axis index.
         """
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         axis_name = kwargs.get("axis_name", "")
         return f"{pfx}_axis_index(axis_name='{axis_name}')"
 
@@ -163,7 +165,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         k = node.attributes.get("k", 1)
         k_val = k.expr if hasattr(k, "expr") else str(k)
         is_idx = node.attributes.get("return_indices", False)
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         var = input_vars[0]
 
         native = self._topk_native_dispatch(pfx, var, k_val, is_idx)
@@ -226,7 +228,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         """
         idx = node.attributes.get("output_index", 0)
         indexing = node.attributes.get("indexing", "ij")
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
         inputs_str = ", ".join(input_vars)
         if pfx == "mlx":
             return f"mx.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
@@ -235,7 +237,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         elif pfx == "torch" or pfx == "pt":
             return f"torch.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
         else:
-            fallback = getattr(self, "get_fallback_prefix", lambda: "numpy")()
+            fallback = getattr(self.generator, "get_fallback_prefix", lambda: "numpy")()
             return f"{fallback}.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
     def visit_Slice(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
@@ -277,7 +279,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         operand = input_vars[0]
         starts = input_vars[1:]
         slice_sizes = node.attributes.get("slice_sizes", [])
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
 
         starts_str = ", ".join(starts)
         if pfx == "jax":
@@ -303,7 +305,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         operand = input_vars[0]
         update = input_vars[1]
         starts = input_vars[2:]
-        pfx = self.generator._get_backend_prefix()
+        pfx = self.generator.get_fallback_prefix()
 
         starts_str = ", ".join(starts)
         if pfx == "jax":
@@ -339,4 +341,4 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for putting elements along a specified axis.
         """
-        return f"{self.generator._get_backend_prefix()}.put_along_axis({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, axis={node.attributes.get('axis', None)})"
+        return f"{self.generator.get_fallback_prefix()}.put_along_axis({input_vars[0]}, {input_vars[1]}, {input_vars[2]}, axis={node.attributes.get('axis', None)})"

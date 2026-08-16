@@ -1,21 +1,17 @@
 operation: LaunchContext
 description: The class representing a Python class.
 std_args:
-- self
-- module
-- scratch
-- cluster_size
-- profiler
-- device_collective_metadata
-- host_collective_metadata
-- num_peers
-- is_device_collective
+  - self
+  - module
+  - scratch
+  - cluster_size
+  - profiler
+  - device_collective_metadata
+  - host_collective_metadata
+  - num_peers
+  - is_device_collective
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

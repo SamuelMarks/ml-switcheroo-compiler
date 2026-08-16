@@ -39,6 +39,27 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         n_const_none.attributes = {"value": 1.0}
         self.gen.sorted_nodes.append(n_const_none)
 
+    def test_empty_edge_stablehlo_variant(self):
+        """Test fallback when edge_stablehlo exists but lacks opcode/generator."""
+        from unittest.mock import patch
+
+        mock_registry = {"EmptyVariantOp": {"variants": {"edge_stablehlo": {}}}}
+
+        n = LogicalNode(id="n_empty", op_type="EmptyVariantOp", inputs=["in1"])
+        self.gen.sorted_nodes.append(n)
+
+        with patch("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", mock_registry):
+            code = self.gen.generate()
+            self.assertIn("stablehlo.custom_call", code)
+
+            import os
+            import tempfile
+
+            with tempfile.NamedTemporaryFile(delete=False) as tf:
+                tf.close()
+                self.gen.export_mlirbc(tf.name)
+                os.unlink(tf.name)
+
     def test_map_type(self):
         """Test map type."""
         self.assertEqual(self.gen._map_type((2, 3), "float32"), "tensor<2x3xf32>")
@@ -58,6 +79,20 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         """Test generic visit input."""
         name = self.gen.generic_visit(self.input_node, [])
         self.assertTrue(name.startswith("%arg"))
+
+    def test_export_mlirbc(self):
+        """Test export to MLIR bytecode."""
+        import os
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(delete=False) as tf:
+            tf.close()
+            self.gen.export_mlirbc(tf.name)
+
+            with open(tf.name, "rb") as f:
+                content = f.read()
+            self.assertTrue(content.startswith(b"ML\xefR\x01"))
+            os.unlink(tf.name)
 
     def test_generate(self):
         """Test generate."""

@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module ragged_tensor.py."""
+
 from typing import Any
 
 """Ragged tensor."""
@@ -14,7 +16,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor
 class RaggedTensor:
     """Represents a ragged tensor."""
 
-    def __init__(self, values: Tensor, row_splits: Tensor) -> None:
+    def __init__(self, values: Tensor, row_splits: Tensor) -> None:  # type: ignore
         """Init.
 
         Args:
@@ -37,7 +39,7 @@ class RaggedTensor:
         batch_size = max(0, len(self.row_splits) - 1)
         val_shape = list(self.values.shape)
         if val_shape:
-            val_shape[0] = -1  # type: ignore
+            val_shape[0] = -1
         return tuple([batch_size] + val_shape)
 
     @property

@@ -1,45 +1,45 @@
 operation: Stft
 description: The Stft operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: input
-  type: Tensor
-- is_variadic: false
-  kind: positional_or_keyword
-  name: n_fft
-  type: int
-- is_variadic: false
-  kind: positional_or_keyword
-  name: hop_length
-  type: Optional[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: win_length
-  type: Optional[int]
-- is_variadic: false
-  kind: positional_or_keyword
-  name: window
-  type: Optional[Tensor]
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: center
-  type: bool
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: normalized
-  type: bool
-- default: true
-  is_variadic: false
-  kind: positional_or_keyword
-  name: onesided
-  type: bool
-- is_variadic: false
-  kind: positional_or_keyword
-  name: return_complex
-  type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: input
+    type: Tensor
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: n_fft
+    type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: hop_length
+    type: Optional[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: win_length
+    type: Optional[int]
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: window
+    type: Optional[Tensor]
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: center
+    type: bool
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: normalized
+    type: bool
+  - default: true
+    is_variadic: false
+    kind: positional_or_keyword
+    name: onesided
+    type: bool
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: return_complex
+    type: bool
 variants:
   keras:
     eager: keras_ops.stft
@@ -57,15 +57,11 @@ variants:
     eager: jax.numpy.stft
   mlx:
     eager: mlx.core.stft
-  edge_onnx: {}
-  edge_stablehlo: {}
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
+  edge_onnx:
+    generator: Stft
+  edge_stablehlo:
+
+    opcode: stablehlo.stft
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

@@ -9,9 +9,9 @@ from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
 
-def test_jax_get_backend_prefix():
+def test_jaxget_fallback_prefix():
     gen = JAXCodeGenerator(LogicalGraph())
-    assert gen._get_backend_prefix() == "jax"
+    assert gen.get_fallback_prefix() == "jnp"
 
 
 def test_jax_format_zeros_like():

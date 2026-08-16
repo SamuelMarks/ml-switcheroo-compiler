@@ -1,14 +1,10 @@
 operation: pack_sequence
 description: Packs a list of variable length Tensors.
 std_args:
-- sequences
-- enforce_sorted
+  - sequences
+  - enforce_sorted
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

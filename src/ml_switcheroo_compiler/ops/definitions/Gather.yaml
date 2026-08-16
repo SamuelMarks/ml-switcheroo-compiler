@@ -21,9 +21,6 @@ variants:
     eager: jax.numpy.gather
   mlx:
     eager: mlx.core.gather
-  edge_wgsl:
-    template: unary
-    expr: buf_in0_f32[in0_offset]
   edge_wasm_simd:
     template: fallback_copy
   llvm_cpp:

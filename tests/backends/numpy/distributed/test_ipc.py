@@ -208,8 +208,13 @@ def test_ipc_collectives_no_mesh():
     res_gather_no_axis = _ipc_all_gather(t, axis=None, mesh=None)
     assert np.array_equal(res_gather_no_axis, t)
 
-    res_reduce_scatter = _ipc_reduce_scatter(t, "sum", axis=0, mesh=None)
+    res_reduce_scatter = _ipc_reduce_scatter(t, "sum", 0, mesh=None)
     assert np.array_equal(res_reduce_scatter, t)
+
+    # string fallback
+    assert _ipc_all_gather("string_tensor", 0, mesh=None) == "string_tensor"
+    assert _ipc_reduce_scatter("string_tensor", "sum", 0, mesh=None) == "string_tensor"
+    assert _ipc_all_reduce("string_tensor", "sum", mesh=None) == "string_tensor"
 
     res_all_reduce = _ipc_all_reduce(t, "sum", mesh=None)
     assert np.array_equal(res_all_reduce, t)

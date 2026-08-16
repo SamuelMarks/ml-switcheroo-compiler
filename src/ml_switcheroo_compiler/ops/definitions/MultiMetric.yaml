@@ -1,15 +1,11 @@
 operation: MultiMetric
 description: Container for multiple metrics.
 std_args:
-- is_variadic: true
-  kind: positional_or_keyword
-  name: metrics
-  type: Any
+  - is_variadic: true
+    kind: positional_or_keyword
+    name: metrics
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

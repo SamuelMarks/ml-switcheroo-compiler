@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module buffer_allocation.py."""
+
 from typing import Any
 
 """Buffer Allocation pass for edge execution."""
@@ -203,6 +205,7 @@ def buffer_allocation_pass(graph: IRGraph) -> bool:
 
         if node.attributes.get("buffer_offset") != assigned_offset:
             node.attributes["buffer_offset"] = assigned_offset
+            node.attributes["buffer_id"] = 0
             node.attributes["buffer_size"] = size
             modified = True
 

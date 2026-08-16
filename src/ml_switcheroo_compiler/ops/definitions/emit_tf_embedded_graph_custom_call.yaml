@@ -1,18 +1,14 @@
 operation: emit_tf_embedded_graph_custom_call
 description: Emits a custom call referencing a tf.Graph embedding of the TF function.
 std_args:
-- ctx
-- concrete_function_flat_tf
-- operands
-- has_side_effects
-- ordered
-- output_avals
+  - ctx
+  - concrete_function_flat_tf
+  - operands
+  - has_side_effects
+  - ordered
+  - output_avals
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

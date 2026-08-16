@@ -1,4 +1,4 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 """Define tensor creation operations for the ML Switcheroo framework.
 
 This module contains operations that generate new tensors, such as zeros, ones, full,
@@ -21,6 +21,22 @@ class CreationOp(OpDef):
     op_name: str = ""
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
@@ -57,6 +73,22 @@ class Full(CreationOp):
     op_name = "Full"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
@@ -81,6 +113,22 @@ class Arange(OpDef):
     """
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
@@ -101,6 +149,22 @@ class Rand(CreationOp):
     op_name = "Rand"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
@@ -132,6 +196,22 @@ class Randint(CreationOp):
     op_name = "Randint"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer the output shape of the operation.
 
@@ -290,6 +370,22 @@ class TrilIndices(OpDef):
     op_name = "TrilIndices"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
@@ -309,6 +405,22 @@ class TrilIndicesFrom(OpDef):
     op_name = "TrilIndicesFrom"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
@@ -328,6 +440,22 @@ class TriuIndices(OpDef):
     op_name = "TriuIndices"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
@@ -347,6 +475,22 @@ class TriuIndicesFrom(OpDef):
     op_name = "TriuIndicesFrom"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
@@ -366,6 +510,22 @@ class Logspace(CreationOp):
     op_name = "Logspace"
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 
@@ -383,6 +543,22 @@ class Frombuffer(OpDef):
     """Operator Frombuffer."""
 
     def infer_shape(self, *args: Any, **kwargs: Any) -> Any:
+        """infer_shape function.
+
+        Args:
+            args: Positional args.
+            kwargs: Keyword args.
+
+        Args:
+            message (str): The message.
+            input_vars (list): The input vars.
+            node (Any): The node.
+            **kwargs (Any): Keyword arguments.
+        self (Any): The self parameter.
+
+        Returns:
+        Any: Result.
+        """
         shape = args[0] if len(args) > 0 else kwargs.get("shape")
         """Infer shape.
 

@@ -1,21 +1,17 @@
 operation: load_tiled
 description: The class representing a Python function.
 std_args:
-- cls
-- ref
-- swizzle
-- is_signed
-- layout
-- optimized
-- tiling_rank
-- _load_fun
-- _narrow_float_as_int
+  - cls
+  - ref
+  - swizzle
+  - is_signed
+  - layout
+  - optimized
+  - tiling_rank
+  - _load_fun
+  - _narrow_float_as_int
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

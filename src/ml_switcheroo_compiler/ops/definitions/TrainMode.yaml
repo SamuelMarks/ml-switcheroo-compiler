@@ -2,15 +2,11 @@ operation: TrainMode
 description: Puts the model or node into training mode (enabling dropout, batch norm
   updating).
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: node
-  type: Any
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: node
+    type: Any
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

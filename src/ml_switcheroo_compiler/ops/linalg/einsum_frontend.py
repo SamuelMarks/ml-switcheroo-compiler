@@ -1,8 +1,10 @@
+"""Module einsum_frontend.py."""
+
 from __future__ import annotations
 
 from typing import Any
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Core abstractions and logic definitions for einsum_frontend.py."""
 
@@ -84,7 +86,7 @@ def _generate_tensordot_einsum_strings(shape_a: Sequence[int], shape_b: Sequence
     return a_str, b_str, out_str
 
 
-def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> Any:
+def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], Sequence[int]]) -> Any:  # type: ignore
     """Evaluate _tensordot_einsum_routing operation.
 
     Args:
@@ -101,7 +103,7 @@ def _tensordot_einsum_routing(a: Tensor, b: Tensor, axes: tuple[Sequence[int], S
     return einsum(eq, a, b)
 
 
-def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> Any:
+def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[int]]) = 2) -> Any:  # type: ignore
     """Compute the tensor dot product along specified axes.
 
     Args:
@@ -123,7 +125,7 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
-def einsum(equation: str, *operands: Tensor) -> Any:
+def einsum(equation: str, *operands: Tensor) -> Any:  # type: ignore
     """Evaluate the Einstein summation convention on the operands.
 
     Args:

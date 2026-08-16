@@ -1,16 +1,12 @@
 operation: l1_unstructured
 description: Prune tensor by removing units with the lowest L1-norm.
 std_args:
-- module
-- name
-- amount
-- importance_scores
+  - module
+  - name
+  - amount
+  - importance_scores
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

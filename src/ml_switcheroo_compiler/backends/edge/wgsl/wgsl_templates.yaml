@@ -1,105 +1,111 @@
-# wgsl_templates.yaml
-
 templates:
-  # Unary Ops
-  unary:
-    workgroup_size: [64, 1, 1]
-    body: |
-      let idx = global_id.x;
-      if (idx >= {nelem}u) {{
-          return;
-      }}
-      {out_offset_code}
-      {in0_offset_code}
-      buf_out_f32[out_offset] = {expr};
-
-
-  # Ternary Ops
-  ternary:
-    workgroup_size: [64, 1, 1]
-    body: |
-      let idx = global_id.x;
-      if (idx >= {nelem}u) {{
-          return;
-      }}
-      {out_offset_code}
-      {in0_offset_code}
-      {in1_offset_code}
-      {in2_offset_code}
-      buf_out_f32[out_offset] = {expr};
-
-  # Binary Ops
   binary:
-    workgroup_size: [64, 1, 1]
-    body: |
-      let idx = global_id.x;
-      if (idx >= {nelem}u) {{
-          return;
-      }}
-      {out_offset_code}
-      {in0_offset_code}
-      {in1_offset_code}
-      buf_out_f32[out_offset] = {expr};
-
-  # Matrix Multiplication (MatMul, DotGeneral, Einsum)
-  matmul:
-    workgroup_size: [16, 16, 1]
-    global_code: |
-      var<workgroup> tileA_{clean_id} : array<array<f32, {TILE_SIZE}>, {TILE_SIZE}>;
-      var<workgroup> tileB_{clean_id} : array<array<f32, {TILE_SIZE}>, {TILE_SIZE}>;
-    body: |
-      let row = global_id.y;
-      let col = global_id.x;
-      let local_x = local_id.x;
-      let local_y = local_id.y;
-      var sum = 0.0;
-      let K = {K}u;
-      let N = {N}u;
-      let M = {M}u;
-      let num_tiles = (K + {TILE_SIZE}u - 1u) / {TILE_SIZE}u;
-      for (var t = 0u; t < num_tiles; t++) {{
-          let tiled_k_a = t * {TILE_SIZE}u + local_x;
-          if (row < M && tiled_k_a < K) {{
-              tileA_{clean_id}[local_y][local_x] = buf_in0_f32[row * K + tiled_k_a];
-          }} else {{
-              tileA_{clean_id}[local_y][local_x] = 0.0;
-          }}
-          let tiled_k_b = t * {TILE_SIZE}u + local_y;
-          if (tiled_k_b < K && col < N) {{
-              tileB_{clean_id}[local_y][local_x] = buf_in1_f32[tiled_k_b * N + col];
-          }} else {{
-              tileB_{clean_id}[local_y][local_x] = 0.0;
-          }}
-          workgroupBarrier();
-          for (var k = 0u; k < {TILE_SIZE}u; k++) {{
-              sum = sum + tileA_{clean_id}[local_y][k] * tileB_{clean_id}[k][local_x];
-          }}
-          workgroupBarrier();
-      }}
-      if (row < M && col < N) {{
-          buf_out_f32[row * N + col] = sum;
-      }}
-
-  # Simple Elementwise Pooling/Conv (Fallback)
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n\
+      {out_offset_code}\n{in0_offset_code}\n{in1_offset_code}\nbuf_out_f32[out_offset]\
+      \ = {expr};\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+  cond:
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n\
+      if ({condition_expr}) {{{{\n    {true_body}\n}}}} else {{{{\n    {false_body}\n\
+      }}}}\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+  conv2d:
+    body: "\n      let out_x = global_id.x;\n      let out_y = global_id.y;\n    \
+      \  \n      let out_width = {out_width}u;\n      let out_height = {out_height}u;\n\
+      \      let in_channels = {in_channels}u;\n      let out_channels = {out_channels}u;\n\
+      \      \n      if (out_x >= out_width || out_y >= out_height) {{\n         \
+      \ return;\n      }}\n      \n      let stride_h = {stride_h}u;\n      let stride_w\
+      \ = {stride_w}u;\n      let filter_h = {filter_h}u;\n      let filter_w = {filter_w}u;\n\
+      \      \n      for (var oc = 0u; oc < out_channels; oc++) {{\n          var\
+      \ sum = 0.0;\n          for (var ic = 0u; ic < in_channels; ic++) {{\n     \
+      \         for (var fy = 0u; fy < filter_h; fy++) {{\n                  for (var\
+      \ fx = 0u; fx < filter_w; fx++) {{\n                      let in_y = out_y *\
+      \ stride_h + fy;\n                      let in_x = out_x * stride_w + fx;\n\
+      \                      \n                      let in_idx = (in_y * {in_width}u\
+      \ + in_x) * in_channels + ic;\n                      let w_idx = ((fy * filter_w\
+      \ + fx) * in_channels + ic) * out_channels + oc;\n                      \n \
+      \                     sum = sum + buf_in0_f32[in_idx] * buf_in1_f32[w_idx];\n\
+      \                  }}\n              }}\n          }}\n          let out_idx\
+      \ = (out_y * out_width + out_x) * out_channels + oc;\n          buf_out_f32[out_idx]\
+      \ = sum;\n      }}\n    "
+    workgroup_size:
+    - 16
+    - 16
+    - 1
   conv_pool_1d_flat:
-    workgroup_size: [64, 1, 1]
-    body: |
-      let idx = global_id.x + global_id.y * 64u;
-      if (idx >= {nelem}u) {{
-          return;
-      }}
-      buf_out_f32[idx] = {expr};
+    body: "let idx = global_id.x + global_id.y * 64u;\nif (idx >= {nelem}u) {{{{\n\
+      \    return;\n}}}}\nbuf_out_f32[idx] = {expr};\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+  matmul:
+    body: "let row = global_id.y;\nlet col = global_id.x;\nlet local_x = local_id.x;\n\
+      let local_y = local_id.y;\nvar sum = 0.0;\nlet K = {K}u;\nlet N = {N}u;\nlet\
+      \ M = {M}u;\nlet num_tiles = (K + {TILE_SIZE}u - 1u) / {TILE_SIZE}u;\nfor (var\
+      \ t = 0u; t < num_tiles; t++) {{{{\n    let tiled_k_a = t * {TILE_SIZE}u + local_x;\n\
+      \    if (row < M && tiled_k_a < K) {{{{\n        tileA_{clean_id}[local_y][local_x]\
+      \ = buf_in0_f32[row * K + tiled_k_a];\n    }}}} else {{{{\n        tileA_{clean_id}[local_y][local_x]\
+      \ = 0.0;\n    }}}}\n    let tiled_k_b = t * {TILE_SIZE}u + local_y;\n    if\
+      \ (tiled_k_b < K && col < N) {{{{\n        tileB_{clean_id}[local_y][local_x]\
+      \ = buf_in1_f32[tiled_k_b * N + col];\n    }}}} else {{{{\n        tileB_{clean_id}[local_y][local_x]\
+      \ = 0.0;\n    }}}}\n    workgroupBarrier();\n    for (var k = 0u; k < {TILE_SIZE}u;\
+      \ k++) {{{{\n        sum = sum + tileA_{clean_id}[local_y][k] * tileB_{clean_id}[k][local_x];\n\
+      \    }}}}\n    workgroupBarrier();\n}}}}\nif (row < M && col < N) {{{{\n   \
+      \ buf_out_f32[row * N + col] = sum;\n}}}}\n"
+    global_code: 'var<workgroup> tileA_{clean_id} : array<array<f32, {TILE_SIZE}>,
+      {TILE_SIZE}>;
 
-  # Reductions
+      var<workgroup> tileB_{clean_id} : array<array<f32, {TILE_SIZE}>, {TILE_SIZE}>;
+
+      '
+    workgroup_size:
+    - 16
+    - 16
+    - 1
   reduction:
-    workgroup_size: [256, 1, 1]
-    body: |
-      let idx = global_id.x;
-      if (idx == 0u) {{
-          {init_code}
-          for (var i = {start_idx}u; i < {nelem_in}u; i++) {{
-              {loop_code}
-          }}
-          {post_loop_code}
-          buf_out_f32[0] = {result_var};
-      }}
+    body: "let idx = global_id.x;\nif (idx == 0u) {{{{\n    {init_code}\n    for (var\
+      \ i = {start_idx}u; i < {nelem_in}u; i++) {{{{\n        {loop_code}\n    }}}}\n\
+      \    {post_loop_code}\n    buf_out_f32[0] = {result_var};\n}}}}\n"
+    workgroup_size:
+    - 256
+    - 1
+    - 1
+  scan:
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n\
+      var acc = {init_val};\nfor (var i = 0u; i <= idx; i++) {{{{\n    acc = {scan_op_expr};\n\
+      }}}}\nbuf_out_f32[idx] = acc;\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+  ternary:
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n\
+      {out_offset_code}\n{in0_offset_code}\n{in1_offset_code}\n{in2_offset_code}\n\
+      buf_out_f32[out_offset] = {expr};\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+  unary:
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n\
+      {out_offset_code}\n{in0_offset_code}\nbuf_out_f32[out_offset] = {expr};\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1
+  while_loop:
+    body: "let idx = global_id.x;\nif (idx >= {nelem}u) {{{{\n    return;\n}}}}\n\
+      var current_state = {init_state};\nvar i = 0u;\nwhile ({condition_expr} && i\
+      \ < {max_iters}u) {{{{\n    {loop_body}\n    i = i + 1u;\n}}}}\nbuf_out_f32[idx]\
+      \ = current_state;\n"
+    workgroup_size:
+    - 64
+    - 1
+    - 1

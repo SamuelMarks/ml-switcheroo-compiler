@@ -1,15 +1,11 @@
 operation: try_cluster_cancel
 description: Atomically cancels a pending cluster launch.
 std_args:
-- result_ref
-- barrier
-- predicate
+  - result_ref
+  - barrier
+  - predicate
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

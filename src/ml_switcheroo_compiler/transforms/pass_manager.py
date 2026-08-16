@@ -1,4 +1,6 @@
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
+"""Module pass_manager.py."""
+
 from typing import Any
 
 """Pass Manager Infrastructure for Middle-End Transformations.
@@ -77,20 +79,53 @@ class PassManager:
     def __init__(self) -> None:
         """Initialize the PassManager."""
         self.passes: list[Callable[[IRGraph], bool]] = []
+        self.pass_names: list[str] = []
         self.validators: list[Callable[[IRGraph], None]] = [
             IRValidator.check_cycles,
             IRValidator.check_shapes,
         ]
 
-    def add_pass(self, ir_pass: Callable[[IRGraph], bool]) -> None:
+    def add_pass(self, ir_pass: Callable[[IRGraph], bool], name: Any = None) -> None:
         """Add a pass to the manager.
 
         A pass should return True if it modified the graph
 
         Args:
             ir_pass (Callable[[IRGraph], bool]): The transformation pass.
+            name (str, optional): The name of the pass.
         """
         self.passes.append(ir_pass)
+        self.pass_names.append(name or ir_pass.__name__)
+
+    def load_from_config(self) -> None:
+        """Load passes based on pass_config.yaml execution_order."""
+        import os
+
+        import yaml
+
+        from ml_switcheroo_compiler.transforms.passes.config_models import PassConfig
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "pass_config.yaml")
+        if not os.path.exists(yaml_path):
+            return
+
+        with open(yaml_path) as f:
+            res = yaml.safe_load(f)
+            config = PassConfig(**res)
+
+        import importlib
+
+        import ml_switcheroo_compiler.transforms.passes as passes_module
+
+        self.passes = []
+        self.pass_names = []
+
+        # Keep a mapping of known passes, normally this would use a registry
+        # We will dynamically look them up from the passes package
+        for pass_name in config.execution_order:
+            pass_func = getattr(passes_module, f"{pass_name}_pass", None)
+            if pass_func and callable(pass_func):
+                self.add_pass(pass_func, name=pass_name)
 
     def validate(self, graph: IRGraph) -> None:
         """Run all validators on the graph.
@@ -113,7 +148,7 @@ class PassManager:
         self.validate(graph)
         for ir_pass in self.passes:
             ir_pass(graph)
-        self.validate(graph)
+            self.validate(graph)
         return graph
 
     def run_until_converged(self, graph: IRGraph, max_iterations: int = 10) -> IRGraph:
@@ -138,12 +173,12 @@ class PassManager:
 
                     shape_inference_pass(graph)
                     dtype_inference_pass(graph)
+                self.validate(graph)
 
             new_hash = _graph_hash(graph)
             if new_hash == prev_hash:
                 break
 
-        self.validate(graph)
         return graph
 
 
@@ -162,4 +197,4 @@ class DAGTopologicalSorter:
         """
         import typing
 
-        return typing.cast(list[IRNode], topological_sort(graph))
+        return list(topological_sort(graph))

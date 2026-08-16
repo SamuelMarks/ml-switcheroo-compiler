@@ -1,14 +1,10 @@
 operation: spvalues_to_avals
 description: Convert a pytree of spvalues to an equivalent pytree of abstract values.
 std_args:
-- spenv
-- spvalues
+  - spenv
+  - spvalues
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

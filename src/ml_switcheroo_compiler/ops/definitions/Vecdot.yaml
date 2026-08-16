@@ -1,26 +1,22 @@
 operation: vecdot
 description: The Vecdot operation.
 std_args:
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x1
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: x2
-  type: array
-- is_variadic: false
-  kind: positional_or_keyword
-  name: axis
-  type: int
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x1
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: x2
+    type: array
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: axis
+    type: int
 type: attribute
 variants:
   numpy:
     generator: np.sum({0} * {1}, axis={axis})
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

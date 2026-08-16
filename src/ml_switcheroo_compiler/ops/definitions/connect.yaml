@@ -1,14 +1,10 @@
 operation: connect
 description: Creates a connection to a remote server.
 std_args:
-- self
-- address
+  - self
+  - address
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

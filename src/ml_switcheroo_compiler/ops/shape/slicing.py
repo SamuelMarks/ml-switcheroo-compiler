@@ -1,6 +1,8 @@
+"""Module slicing.py."""
+
 from __future__ import annotations
 
-# ruff: noqa: E402, D100, D103, D104, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, D101, D102, D107, E701, E722, F403, E711, E712, PLR0913, PLR0915
+# ruff: noqa: E402, F401, E501, C901, PLR0911, PLR0912, F841, PLR0917, F811, B018, E701, E722, F403, E711, E712, PLR0913, PLR0915
 
 """Shape operations for Tensor objects."""
 import builtins
@@ -16,7 +18,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
 def slice(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     axis: int,
     start: int | None = None,
     end: int | None = None,
@@ -52,7 +54,7 @@ def slice(
 
 
 def strided_slice(
-    input: Tensor,
+    input: Tensor,  # type: ignore
     begin: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
@@ -164,7 +166,7 @@ class IndexInDim(OpDef):
 
         index_shape = getattr(index, "shape", ())
         if keepdims:
-            shape[axis] = index_shape[0] if index_shape else 1  # type: ignore[index]
+            shape[axis] = index_shape[0] if index_shape else 1
         else:
             if index_shape:
                 shape.pop(axis)

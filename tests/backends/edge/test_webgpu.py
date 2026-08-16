@@ -121,6 +121,82 @@ def test_generic_visit_no_id():
     assert gen.generic_visit(DummyNode(), []) == ""
 
 
+def test_webgpu_control_flow():
+    """Test WhileLoop, Cond, and Scan."""
+    graph = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input", inputs=[])
+    n1.shape_metadata = [1]
+
+    n_while = LogicalNode(id="n_while", op_type="WhileLoop", inputs=["in1"])
+    n_while.attributes = {"max_iters": 5}
+    n_while.shape_metadata = [1]
+
+    n_cond = LogicalNode(id="n_cond", op_type="Cond", inputs=["in1"])
+    n_cond.shape_metadata = [1]
+
+    n_scan = LogicalNode(id="n_scan", op_type="Scan", inputs=["in1"])
+    n_scan.shape_metadata = [1]
+
+    graph.nodes = {"in1": n1, "n_while": n_while, "n_cond": n_cond, "n_scan": n_scan}
+    graph.inputs = ["in1"]
+    graph.outputs = ["n_while", "n_cond", "n_scan"]
+
+    gen = WebGPUCodeGenerator(graph)
+    gen.sorted_nodes = [n1, n_while, n_cond, n_scan]
+    code = gen.generate()
+
+    assert "current_state < 10.0" in code
+    assert "buf_in0_f32[idx] > 0.0" in code
+    assert "acc + buf_in0_f32[i]" in code
+
+
+def test_webgpu_unimplemented():
+    """Test unimplemented math error."""
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    n = LogicalNode(id="n_Unknown", op_type="UnknownOpWGSL", inputs=["in1"])
+    graph = IRGraph()
+    gen = WebGPUCodeGenerator(graph)
+    gen.sorted_nodes = [n]
+    try:
+        gen.generate()
+        raise AssertionError("Should raise UnimplementedMathError")
+    except UnimplementedMathError:
+        pass
+
+
+def test_webgpu_none_shape():
+    """Test None shape metadata."""
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    n = LogicalNode(id="n1", op_type="Input")
+    n.shape_metadata = None
+    graph = IRGraph()
+    gen = WebGPUCodeGenerator(graph)
+    s, strd = gen._get_shape_and_strides(n)
+    assert s == []
+    assert strd == []
+
+
+def test_webgpu_control_flow_no_inputs():
+    """Test WhileLoop without inputs."""
+    graph = IRGraph()
+    n_while = LogicalNode(id="n_while", op_type="WhileLoop", inputs=[])
+    n_while.shape_metadata = [1]
+
+    graph.nodes = {"n_while": n_while}
+    graph.outputs = ["n_while"]
+
+    gen = WebGPUCodeGenerator(graph)
+    gen.sorted_nodes = [n_while]
+    code = gen.generate()
+
+    assert "current_state < 10.0" in code
+
+
 def test_webgpu_fused_ops():
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode

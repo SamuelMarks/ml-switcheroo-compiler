@@ -1,5 +1,5 @@
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchAudioVisitor, PyTorchCodeGenerator, PyTorchVisionVisitor
-from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor
+from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchScatterVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -16,7 +16,7 @@ def test_generator_basics(monkeypatch):
 
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)
-    assert gen._get_backend_prefix() == "pt"
+    assert gen.get_fallback_prefix() == "torch"
 
     # visit_PowerIteration
     n_power = DummyNode({"num_iters": 2}, "PowerIteration")
@@ -78,18 +78,6 @@ def test_pytorch_scatter_visitor():
     assert vis.visit_TensorScatterAdd(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u, accumulate=True)"
     assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True)" in vis.visit_TensorScatterMax(node, ["t", "i", "u"])
     assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in vis.visit_TensorScatterMin(node, ["t", "i", "u"])
-
-
-def test_pytorch_linalg_mixin():
-    vis = PyTorchLinalgMixin()
-    ops = vis._get_linalg_ops({})
-    assert "Matmul" in ops
-    assert ops["Matmul"] == "torch.matmul({0}, {1})"
-
-
-def test_pytorch_nn_mixin():
-    vis = PyTorchNNMixin()
-    assert vis._get_nn_ops({}) == {}
 
 
 def test_missing_methods():

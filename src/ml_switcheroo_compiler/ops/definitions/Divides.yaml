@@ -1,15 +1,11 @@
 operation: Divides
 description: States that the `expr` tiling is a divisor of `tiling_multiple`.
 std_args:
-- self
-- expr
-- tiling_multiple
+  - self
+  - expr
+  - tiling_multiple
 type: class
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

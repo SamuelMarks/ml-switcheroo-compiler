@@ -2,15 +2,11 @@ operation: custom_from_mask
 description: Prune tensor corresponding to parameter called ``name`` in ``module``
   by applying the pre-computed mask in ``mask``.
 std_args:
-- module
-- name
-- mask
+  - module
+  - name
+  - mask
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val

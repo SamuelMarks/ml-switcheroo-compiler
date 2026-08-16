@@ -1,41 +1,37 @@
 operation: RMSprop
 description: Optimizer that implements the RMSprop algorithm.
 std_args:
-- default: 0.001
-  is_variadic: false
-  kind: positional_or_keyword
-  name: learning_rate
-  type: float
-- default: 0.9
-  is_variadic: false
-  kind: positional_or_keyword
-  name: rho
-  type: float
-- default: 0.0
-  is_variadic: false
-  kind: positional_or_keyword
-  name: momentum
-  type: float
-- default: 1e-07
-  is_variadic: false
-  kind: positional_or_keyword
-  name: epsilon
-  type: float
-- default: false
-  is_variadic: false
-  kind: positional_or_keyword
-  name: centered
-  type: boolean
-- is_variadic: false
-  kind: positional_or_keyword
-  name: weight_decay
-  type: float
+  - default: 0.001
+    is_variadic: false
+    kind: positional_or_keyword
+    name: learning_rate
+    type: float
+  - default: 0.9
+    is_variadic: false
+    kind: positional_or_keyword
+    name: rho
+    type: float
+  - default: 0.0
+    is_variadic: false
+    kind: positional_or_keyword
+    name: momentum
+    type: float
+  - default: 1e-07
+    is_variadic: false
+    kind: positional_or_keyword
+    name: epsilon
+    type: float
+  - default: false
+    is_variadic: false
+    kind: positional_or_keyword
+    name: centered
+    type: boolean
+  - is_variadic: false
+    kind: positional_or_keyword
+    name: weight_decay
+    type: float
 type: function
 variants:
-  edge_wasm_simd:
-    template: unary
-    simd_expr: in0_val
-    scalar_expr: in0_val
   llvm_cpp:
     template: unary
     scalar_expr: in0_val
