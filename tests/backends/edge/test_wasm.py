@@ -17,6 +17,10 @@ class TestWasmCodeGenerator(unittest.TestCase):
         self.mock_get_wasm_template = self.patcher.start()
 
         def mock_template_resolver(template_name):
+            if template_name == "kernel_headers":
+                return {"body": "#include <wasm_simd128.h>\n#include <cmath>\n#include <cstdlib>\n#include <algorithm>\n"}
+            if template_name == "kernel_main_start":
+                return {"body": 'extern "C" {{\nvoid main_kernel({params_str}) {{\n'}
             if template_name == "mock_template_Add":
                 return {"body": "wasm_f32x4_add(a, b);"}
             if template_name == "mock_template_Subtract" or template_name == "mock_template_Sub":
@@ -205,18 +209,26 @@ class TestWasmCodeGenerator(unittest.TestCase):
     @patch("shutil.which")
     def test_compile_wasm_none(self, mock_which):
         """Test compile wasm none."""
+        from ml_switcheroo_compiler.core.errors import CompilationError
+
         mock_which.return_value = None
-        res = self.gen.compile_wasm()
-        self.assertIsNone(res)
+        try:
+            self.gen.compile_wasm()
+        except CompilationError:
+            pass
+        with self.assertRaises(CompilationError):
+            self.gen.compile_wasm()
 
     @patch("shutil.which")
     @patch("subprocess.run")
     def test_compile_wasm_exception(self, mock_subprocess, mock_which):
         """Test compile wasm exception."""
+        from ml_switcheroo_compiler.core.errors import CompilationError
+
         mock_which.return_value = "/usr/bin/emcc"
         mock_subprocess.side_effect = Exception("compile error")
-        res = self.gen.compile_wasm()
-        self.assertIsNone(res)
+        with self.assertRaises(CompilationError):
+            self.gen.compile_wasm()
 
     def test_output_node(self):
         """Test output node."""
@@ -245,8 +257,11 @@ class TestWasmCodeGenerator(unittest.TestCase):
     @patch("subprocess.run")
     def test_compile_wasm_exception_and_deleted(self, mock_subprocess, mock_which):
         """Test compile wasm exception and deleted."""
+        from ml_switcheroo_compiler.core.errors import CompilationError
 
         def mock_run_side_effect(cmd, **kwargs):
+            import os
+
             for arg in cmd:
                 if arg.endswith(".cpp"):
                     os.remove(arg)
@@ -254,8 +269,8 @@ class TestWasmCodeGenerator(unittest.TestCase):
 
         mock_which.return_value = "/usr/bin/emcc"
         mock_subprocess.side_effect = mock_run_side_effect
-        res = self.gen.compile_wasm()
-        self.assertIsNone(res)
+        with self.assertRaises(CompilationError):
+            self.gen.compile_wasm()
 
     def test_wasm_neural_networks_and_reductions(self) -> None:
         """Test wasm neural networks and reductions operations generation."""
@@ -372,7 +387,8 @@ def test_wasm_control_flow():
     gen.sorted_nodes = [n1, n_while, n_cond, n_scan]
     code = gen.generate()
 
-    assert "while (buf_in1[0] > 0.0 && i_n_while < 5)" in code
+    assert "for (int i = 0; i < 5; ++i)" in code
+    assert "if (!(buf_in1[0] > 0.0)) break;" in code
     assert "if (buf_in1[0] > 0.0)" in code
     assert "acc_n_scan + buf_in1[i]" in code
 
@@ -394,9 +410,10 @@ def test_wasm_control_flow_no_inputs():
     gen.sorted_nodes = [n_while, n_cond, n_scan]
     code = gen.generate()
 
-    assert "while (1 && i_n_while < 10)" in code
+    assert "for (int i = 0; i < 10; ++i)" in code
+    assert "if (!(1)) break;" in code
     assert "if (1)" in code
-    assert "acc_n_scan = 1.0;" in code
+    assert "acc = 1.0;" in code
 
 
 def test_missing_body_error():
@@ -450,3 +467,114 @@ def test_unimplemented_math_error():
         raise AssertionError("Should raise UnimplementedMathError")
     except UnimplementedMathError:
         pass
+
+
+def test_wasm_compile_finally_missing_file():
+    from ml_switcheroo_ir import LogicalGraph
+
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+
+    g = LogicalGraph()
+    gen = WasmCodeGenerator(g)
+
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.core.errors import CompilationError
+
+    # We patch tempfile.NamedTemporaryFile to return a mock whose name we immediately delete
+    with patch("tempfile.NamedTemporaryFile") as mock_temp, patch("shutil.which") as mock_which:
+
+        class MockFile:
+            def __init__(self):
+                self.name = "fake_deleted_file.cpp"
+
+            def write(self, data):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                pass
+
+        mock_temp.return_value = MockFile()
+        mock_which.return_value = None
+        try:
+            gen.compile_wasm()
+        except CompilationError:
+            pass
+
+    def test_wasm_conv2d_scalar_shapes(self) -> None:
+        """Test wasm conv2d with scalar shapes to hit branches 179-196."""
+        graph = IRGraph()
+        in1 = LogicalNode(id="in1", op_type="Input")
+        in1.shape_metadata = 5
+        in2 = LogicalNode(id="in2", op_type="Input")
+        in2.shape_metadata = 3
+
+        n_conv = LogicalNode(id="n_conv", op_type="Conv2D", inputs=["in1", "in2"])
+        n_conv.shape_metadata = 4
+        graph.nodes = {"in1": in1, "in2": in2, "n_conv": n_conv}
+        gen = WasmCodeGenerator(graph)
+        gen.sorted_nodes = [in1, in2, n_conv]
+        gen.generate()
+
+    def test_wasm_conv2d_short_tuple_shapes(self) -> None:
+        """Test wasm conv2d with short tuple shapes."""
+        graph = IRGraph()
+        in1 = LogicalNode(id="in1", op_type="Input")
+        in1.shape_metadata = (5, 5)
+        in2 = LogicalNode(id="in2", op_type="Input")
+        in2.shape_metadata = (3, 3)
+
+        n_conv = LogicalNode(id="n_conv", op_type="Conv2D", inputs=["in1", "in2"])
+        n_conv.shape_metadata = (4, 4)
+        graph.nodes = {"in1": in1, "in2": in2, "n_conv": n_conv}
+        gen = WasmCodeGenerator(graph)
+        gen.sorted_nodes = [in1, in2, n_conv]
+        gen.generate()
+
+    def test_wasm_conv2d_none_shapes(self) -> None:
+        """Test wasm conv2d with None shapes."""
+        graph = IRGraph()
+        in1 = LogicalNode(id="in1", op_type="Input")
+        in1.shape_metadata = None
+        in2 = LogicalNode(id="in2", op_type="Input")
+        in2.shape_metadata = None
+
+        n_conv = LogicalNode(id="n_conv", op_type="Conv2D", inputs=["in1", "in2"])
+        n_conv.shape_metadata = None
+        graph.nodes = {"in1": in1, "in2": in2, "n_conv": n_conv}
+        gen = WasmCodeGenerator(graph)
+        gen.sorted_nodes = [in1, in2, n_conv]
+        gen.generate()
+
+    def test_wasm_compile_subprocess_error_has_stderr():
+        from ml_switcheroo_ir import LogicalGraph
+
+        from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+        from ml_switcheroo_compiler.core.errors import CompilationError
+
+        g = LogicalGraph()
+        gen = WasmCodeGenerator(g)
+
+        import subprocess
+        from unittest.mock import patch
+
+        with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
+            mock_which.return_value = "/usr/bin/emcc"
+            mock_run.side_effect = subprocess.CalledProcessError(returncode=1, cmd="cmd", stderr=b"detailed syntax error")
+            try:
+                gen.compile_wasm()
+                raise AssertionError("Should have raised CompilationError")
+            except CompilationError as e:
+                assert "detailed syntax error" in str(e)
+
+        with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
+            mock_which.return_value = "/usr/bin/emcc"
+            mock_run.side_effect = subprocess.CalledProcessError(returncode=1, cmd="cmd", stderr=None)
+            try:
+                gen.compile_wasm()
+                raise AssertionError("Should have raised CompilationError")
+            except CompilationError as e:
+                assert "WASM compilation failed" in str(e)

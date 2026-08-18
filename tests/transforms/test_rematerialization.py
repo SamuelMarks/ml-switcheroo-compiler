@@ -59,7 +59,7 @@ def test_rematerialization_already_exists():
 
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input")
-    n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
+    n2 = IRNode(id="n2", op_type="Add", inputs=["n1", "missing_node"])  # Hit 113->112
     n2.shape_metadata = (1024, 1024)
 
     nodes = {"n1": n1, "n2": n2}
@@ -70,7 +70,8 @@ def test_rematerialization_already_exists():
         nodes[nid] = node
         prev = nid
 
-    n3 = IRNode(id="n3", op_type="MatMul", inputs=[prev, "n2"])
+    # Add prev twice to hit 133->129
+    n3 = IRNode(id="n3", op_type="MatMul", inputs=[prev, "n2", "n2"])
     nodes["n3"] = n3
 
     # simulate what happens if we already have the recompute node in graph

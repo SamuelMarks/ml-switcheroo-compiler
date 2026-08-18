@@ -1,32 +1,54 @@
 types:
-  float32: "f32"
-  float64: "f64"
-  float16: "f16"
-  bfloat16: "bf16"
-  int64: "i64"
-  int32: "i32"
-  int16: "i16"
-  int8: "i8"
-  uint64: "ui64"
-  uint32: "ui32"
-  uint16: "ui16"
-  uint8: "ui8"
-  bool: "i1"
-
+  float32: f32
+  float64: f64
+  float16: f16
+  bfloat16: bf16
+  int64: i64
+  int32: i32
+  int16: i16
+  int8: i8
+  uint64: ui64
+  uint32: ui32
+  uint16: ui16
+  uint8: ui8
+  bool: i1
 operations:
-  fallback: "stablehlo.custom_call"
-
+  fallback: stablehlo.custom_call
+  stablehlo.cholesky: stablehlo.cholesky
+  stablehlo.svd: stablehlo.svd
+  stablehlo.lu_solve: stablehlo.lu_solve
 bytecode:
-  magic: "4D4CEF52" # MLïR
+  magic: 4D4CEF52
   version: 1
-
 control_flow:
   while:
-    op_type: "stablehlo.while"
-    attributes: ["cond", "body"]
+    op_type: stablehlo.while
+    attributes:
+    - cond
+    - body
   conditional:
-    op_type: "stablehlo.case"
-    attributes: ["branches"]
+    op_type: stablehlo.case
+    attributes:
+    - branches
   sort:
-    op_type: "stablehlo.sort"
-    attributes: ["dimension", "is_stable", "comparator"]
+    op_type: stablehlo.sort
+    attributes:
+    - dimension
+    - is_stable
+    - comparator
+op_mapping:
+  Add: stablehlo.add
+  Subtract: stablehlo.subtract
+  Multiply: stablehlo.multiply
+  Div: stablehlo.divide
+  TrueDivide: stablehlo.divide
+  MatMul: stablehlo.dot_general
+  Dot: stablehlo.dot_general
+  Conv2D: stablehlo.convolution
+  ReduceSum: stablehlo.reduce
+  ReduceMean: stablehlo.reduce
+  BroadcastTo: stablehlo.broadcast_in_dim
+  Reshape: stablehlo.reshape
+  Transpose: stablehlo.transpose
+  Slice: stablehlo.slice
+  Concat: stablehlo.concatenate

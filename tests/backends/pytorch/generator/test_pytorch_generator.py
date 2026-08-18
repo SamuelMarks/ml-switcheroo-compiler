@@ -80,6 +80,36 @@ def test_pytorch_scatter_visitor():
     assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in vis.visit_TensorScatterMin(node, ["t", "i", "u"])
 
 
+def test_pytorch_generator_distributed_visitor():
+    from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchDistributedVisitor
+
+    vis = PyTorchDistributedVisitor()
+    assert vis.visit_AllGather(None, ["tensor"]) == "torch.distributed.all_gather_into_tensor(output, tensor)"
+    assert vis.visit_ReduceScatter(None, ["tensor"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(tensor), tensor)"
+    assert vis.visit_AllReduce(None, ["tensor"]) == "torch.distributed.all_reduce(tensor)"
+
+    from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchNNMixin
+
+    nn_vis = PyTorchNNMixin()
+    # Need to give it an add_line method for the mixin to work
+    lines = []
+    nn_vis.add_line = lines.append
+
+    class DummyNode:
+        def __init__(self, attrs=None):
+            self.attributes = attrs or {}
+            self.id = "n1"
+
+    res_send = nn_vis.visit_Send(DummyNode({"dst_rank": 1, "tag": 2}), ["tensor"])
+    assert res_send == ""
+    assert "torch.distributed.isend(tensor, dst=1, tag=2)" in lines[0]
+
+    res_recv = nn_vis.visit_Recv(DummyNode({"src_rank": 1, "tag": 2, "shape": (2, 2), "dtype": "float32"}), [])
+    assert res_recv == "v_n1"
+    assert "v_n1 = torch.empty([2, 2], dtype=torch.float32, device=self.device)" in lines[1]
+    assert "torch.distributed.irecv(v_n1, src=1, tag=2)" in lines[2]
+
+
 def test_missing_methods():
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)

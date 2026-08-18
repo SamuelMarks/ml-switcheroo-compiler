@@ -113,6 +113,7 @@ def ctc_loss(
     return _emit_reduction_node("CTCLoss", inputs, {}, (), log_probs.dtype)
 
 
+@dispatch_eager("Corrcoef")
 def corrcoef(x: Any, y: Any = None, rowvar: bool = True, bias: Any = None, ddof: Any = None) -> Any:
     """Return Pearson product-moment correlation coefficients.
 
@@ -126,16 +127,6 @@ def corrcoef(x: Any, y: Any = None, rowvar: bool = True, bias: Any = None, ddof:
     Returns:
         Tensor: Result.
     """
-    if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "Corrcoef",
-            getattr(x, "data", x),
-            getattr(y, "data", y) if y is not None else None,
-            rowvar=rowvar,
-            bias=bias,
-            ddof=ddof,
-        )
-        return Tensor(data, TensorConfig(data.shape, "float32", getattr(x, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     return _emit_reduction_node(
         "Corrcoef",
         [x, y] if y is not None else [x],
@@ -145,6 +136,7 @@ def corrcoef(x: Any, y: Any = None, rowvar: bool = True, bias: Any = None, ddof:
     )
 
 
+@dispatch_eager("Correlate")
 def correlate(a: Any, v: Any, mode: str = "valid") -> Any:
     """Cross-correlation of two 1-dimensional sequences.
 
@@ -156,12 +148,10 @@ def correlate(a: Any, v: Any, mode: str = "valid") -> Any:
     Returns:
         Tensor: Result.
     """
-    if config.eager_mode:
-        data = get_active_backend().execute_op("Correlate", getattr(a, "data", a), getattr(v, "data", v), mode=mode)
-        return Tensor(data, TensorConfig(data.shape, "float32", getattr(a, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), "float32")  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
 
 
+@dispatch_eager("Cov")
 def cov(
     m: Any,
     y: Any = None,
@@ -191,18 +181,6 @@ def cov(
     fweights = kwargs.get("fweights", None)
     aweights = kwargs.get("aweights", None)
 
-    if config.eager_mode:
-        data = get_active_backend().execute_op(
-            "Cov",
-            getattr(m, "data", m),
-            getattr(y, "data", y) if y is not None else None,
-            rowvar=rowvar,
-            bias=bias,
-            ddof=ddof,
-            fweights=fweights,
-            aweights=aweights,
-        )
-        return Tensor(data, TensorConfig(data.shape, "float32", getattr(m, "device", None)))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
     return _emit_reduction_node(
         "Cov",
         [m, y] if y is not None else [m],

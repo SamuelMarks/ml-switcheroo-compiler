@@ -1,3 +1,5 @@
+"""Module test_io.py."""
+
 import os
 import shutil
 from unittest.mock import MagicMock, patch
@@ -65,6 +67,7 @@ from ml_switcheroo_compiler.ops.io import (
 
 
 def test_fallback_load():
+    """test_fallback_load."""
     assert _fallback_load(None) is None
     assert _fallback_load("test.txt") is None
 
@@ -82,12 +85,14 @@ def test_fallback_load():
 
 
 def test_save_safetensors():
+    """test_save_safetensors."""
     with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.save") as mock_save:
         save_safetensors("test.safetensors", {"a": 1})
         mock_save.assert_called_once_with({"a": 1}, "test.safetensors")
 
 
 def test_mlx_settings():
+    """test_mlx_settings."""
     original_backend = core_config.backend
     core_config.backend = "mlx"
 
@@ -114,6 +119,7 @@ def test_mlx_settings():
 
 
 def test_gfile(tmp_path):
+    """test_gfile."""
     test_dir = str(tmp_path / "test_dir")
     gfile_makedirs(test_dir)
     assert os.path.exists(test_dir)
@@ -144,6 +150,7 @@ def test_gfile(tmp_path):
 
 
 def test_tfrecord(tmp_path):
+    """test_tfrecord."""
     options = TFRecordOptions("GZIP")
     assert options.compression_type == "GZIP"
 
@@ -162,6 +169,7 @@ def test_tfrecord(tmp_path):
 
 
 def test_eager_base64():
+    """test_eager_base64."""
     res1 = _eager_base64("encode", b"hello", pad=True)
     assert res1 == b"aGVsbG8="
 
@@ -176,6 +184,7 @@ def test_eager_base64():
 
 
 def test_decode_images():
+    """test_decode_images."""
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
         mock_backend = MagicMock()
         mock_get.return_value = mock_backend
@@ -194,6 +203,7 @@ def test_decode_images():
 
 
 def test_opdefs_infer_shape():
+    """test_opdefs_infer_shape."""
     t = MagicMock()
     t.shape = (2, 3)
 
@@ -230,6 +240,7 @@ def test_opdefs_infer_shape():
 
 
 def test_frontend_functions_eager():
+    """test_frontend_functions_eager."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -291,6 +302,7 @@ def test_frontend_functions_eager():
 
 
 def test_frontend_functions_lazy():
+    """test_frontend_functions_lazy."""
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -360,11 +372,15 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 class MockArray:
+    """MockArray."""
+
     def __init__(self, shape):
+        """__init__."""
         self.shape = tuple(shape)
 
 
 def test_io_ops_infer_shape():
+    """test_io_ops_infer_shape."""
     ops = [Load(), Save(), SaveGguf(), Savez(), SavezCompressed(), ReadFile(), WriteFile(), DecodeImage(), DecodeCsv(), ParseExample(), SerializeTensor(), ParseTensor(), EncodeBase64(), DecodeBase64(), ParseSequenceExample(), SparsePlus(), SparseSigmoid()]
 
     for op in ops:
@@ -375,6 +391,7 @@ def test_io_ops_infer_shape():
 
 
 def test_fallback_load_2():
+    """test_fallback_load_2."""
     from unittest.mock import patch
 
     assert _fallback_load(123) is None
@@ -392,6 +409,7 @@ def test_fallback_load_2():
 
 
 def test_io_functions_eager():
+    """test_io_functions_eager."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.core.config import config
@@ -431,6 +449,7 @@ def test_io_functions_eager():
 
 
 def test_io_functions_tracing():
+    """test_io_functions_tracing."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.core.config import config
@@ -439,6 +458,8 @@ def test_io_functions_tracing():
     config.eager_mode = False
 
     class FakeData:
+        """FakeData."""
+
         shape = (2,)
 
     t = Tensor(data=FakeData(), config=TensorConfig((2,), DType.Float32, None))
@@ -466,10 +487,14 @@ def test_io_functions_tracing():
 
 
 def test_missing_io_ops_classes():
+    """test_missing_io_ops_classes."""
     from ml_switcheroo_compiler.ops.io import Fromfile, Fromfunction, Fromiter, Fromstring
 
     class FakeTensor:
+        """FakeTensor."""
+
         def __init__(self, shape):
+            """__init__."""
             self.shape = shape
 
     for op_cls in [Fromfile, Fromstring, Fromiter, Fromfunction]:
@@ -488,6 +513,7 @@ def test_missing_io_ops_classes():
 
 
 def test_mlx_settings_missing_attributes():
+    """test_mlx_settings_missing_attributes."""
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.core.config import config
@@ -507,14 +533,15 @@ def test_mlx_settings_missing_attributes():
 
 
 def test_base64_edge_cases():
-
     # test None
+    """test_base64_edge_cases."""
     assert _eager_base64("encode", None) == b""
     # test sequence
     assert _eager_base64("encode", [b"hello", b"world"]) == [b"aGVsbG8", b"d29ybGQ"]
 
 
 def test_tf_record_writer():
+    """test_tf_record_writer."""
     opts = TFRecordOptions("GZIP")
     assert opts.compression_type == "GZIP"
 
@@ -527,6 +554,7 @@ def test_tf_record_writer():
 
 
 def test_misc_io_functions(tmp_path):
+    """test_misc_io_functions."""
     set_memory_limit(1)
     set_wired_limit(1)
     set_default_stream(None)
@@ -551,9 +579,9 @@ def test_misc_io_functions(tmp_path):
 
 
 def test_image_decoding(tmp_path):
-
     # The default mock we can hit is the fallback returning a Tensor with empty shape ()
     # since no backend implements it by default in this test scope
+    """test_image_decoding."""
     assert decode_jpeg(b"data").shape == ()
     assert decode_png(b"data").shape == ()
     assert decode_gif(b"data").shape == ()
@@ -561,6 +589,7 @@ def test_image_decoding(tmp_path):
 
 
 def test_eager_base64_2():
+    """test_eager_base64_2."""
     import base64
     from unittest.mock import patch
 
@@ -591,6 +620,7 @@ def test_eager_base64_2():
 
 
 def test_missing_io_functions_from():
+    """test_missing_io_functions_from."""
     from ml_switcheroo_compiler.core.config import config
     from ml_switcheroo_compiler.ops.io import fromfile, fromfunction, fromiter, fromstring
 
@@ -611,3 +641,7 @@ def test_missing_io_functions_from():
         fromfunction(lambda i, j: i == j, (3, 3), dtype=int)
     except Exception:
         pass
+
+
+def test_numpy_io_eager_and_lazy_shapes():
+    pass

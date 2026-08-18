@@ -92,6 +92,7 @@ def test_solvers_opdefs():
     # Pinv
     op2 = mod.Pinv()
     assert op2.infer_shape(DummyTensor((2, 3))) == (3, 2)
+    assert op2.infer_shape(DummyTensor((2,))) == (2,)
     assert op2.infer_shape("not_tensor") == ()
 
     # Sqrtm

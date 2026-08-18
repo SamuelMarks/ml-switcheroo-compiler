@@ -1,0 +1,42 @@
+# WASM SIMD v128 Intrinsic Mappings for Math Ops
+# Uses standard wasm_f32x4 intrinsics
+
+intrinsics:
+  Exp:
+    macro_name: "WASM_EXP_F32X4"
+    simd_expr: |
+      // Fast polynomial approximation for exp(x) in SIMD
+      v128_t y = wasm_f32x4_mul(x, wasm_f32x4_splat(1.4426950408889634f)); // x * log2(e)
+      v128_t y_floor = wasm_f32x4_floor(y);
+      v128_t z = wasm_f32x4_sub(y, y_floor);
+      // Approximation for 2^z ...
+      // e^x = 2^(y_floor) * 2^z
+      // For simplicity in this demo snippet, we use a basic Taylor series
+      v128_t sum = wasm_f32x4_add(wasm_f32x4_splat(1.0f), x);
+      return sum; // REPLACE WITH FULL POLY APPROX
+    scalar_fallback: "std::exp({0})"
+  Log:
+    macro_name: "WASM_LOG_F32X4"
+    simd_expr: |
+      // Placeholder for full SIMD Log approx
+      return x;
+    scalar_fallback: "std::log({0})"
+  Tanh:
+    macro_name: "WASM_TANH_F32X4"
+    simd_expr: |
+      // Fast Tanh approx
+      v128_t x2 = wasm_f32x4_mul(x, x);
+      v128_t num = wasm_f32x4_add(x, wasm_f32x4_mul(x2, x));
+      v128_t den = wasm_f32x4_add(wasm_f32x4_splat(1.0f), x2);
+      return wasm_f32x4_div(num, den);
+    scalar_fallback: "std::tanh({0})"
+  Sigmoid:
+    macro_name: "WASM_SIGMOID_F32X4"
+    simd_expr: |
+      // 1 / (1 + exp(-x))
+      // Relies on WASM_EXP_F32X4
+      v128_t neg_x = wasm_f32x4_neg(x);
+      v128_t exp_nx = WASM_EXP_F32X4(neg_x);
+      v128_t den = wasm_f32x4_add(wasm_f32x4_splat(1.0f), exp_nx);
+      return wasm_f32x4_div(wasm_f32x4_splat(1.0f), den);
+    scalar_fallback: "1.0f / (1.0f + std::exp(-{0}))"

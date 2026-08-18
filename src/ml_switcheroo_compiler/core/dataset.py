@@ -415,7 +415,7 @@ class NumpyIterator:
             tuple[Any, ...]: Batch arrays.
         """
         batch = next(self._iterator)
-        return tuple(t.data for t in batch) if batch else ()
+        return tuple(t.data for t in batch) if len(batch) > 0 else ()
 
 
 class ArrayIterator:
@@ -444,7 +444,7 @@ class ArrayIterator:
             tuple[Any, ...]: Batch native arrays.
         """
         batch = next(self._iterator)
-        return tuple(t.data for t in batch) if batch else ()
+        return tuple(t.data for t in batch) if len(batch) > 0 else ()
 
 
 class CsvDataset(Dataset):

@@ -151,3 +151,20 @@ def test_keras_generator_conv_transpose():
 
     assert gen.visit_ConvTranspose(DummyNode(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
     assert gen.visit_RaggedDot(DummyNode(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
+
+
+def test_keras_generator_empty_prefix_yaml():
+    from unittest.mock import patch, mock_open
+    from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    g = IRGraph()
+    gen = KerasCodeGenerator(g)
+
+    # Test _get_backend_prefix
+    assert gen._get_backend_prefix() == "keras"
+
+    # Test _resolve_imports with empty yaml
+    with patch("yaml.safe_load", return_value={}):
+        lines = gen._resolve_imports()
+        assert lines == ["import keras\n"]

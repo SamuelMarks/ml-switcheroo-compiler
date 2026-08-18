@@ -1735,10 +1735,10 @@ AllGather:
   - name: input
     type: Tensor
   variants:
-    edge_wasm_simd: {}
+    edge_wasm_simd:
+      template: reduction
     edge_wgsl:
-      expr: '0.0'
-      template: unsupported
+      template: reduction
     jax:
       eager: jax.lax.all_gather
       generator: jax.lax.all_gather
@@ -1754,10 +1754,10 @@ AllReduce:
   - name: input
     type: Tensor
   variants:
-    edge_wasm_simd: {}
+    edge_wasm_simd:
+      template: reduction
     edge_wgsl:
-      expr: '0.0'
-      template: unsupported
+      template: reduction
     jax:
       eager: jax.lax.pmean
       generator: jax.lax.pmean
@@ -1776,10 +1776,10 @@ AllToAll:
   - name: input
     type: Tensor
   variants:
-    edge_wasm_simd: {}
+    edge_wasm_simd:
+      template: reduction
     edge_wgsl:
-      expr: '0.0'
-      template: unsupported
+      template: reduction
     jax:
       eager: jax.lax.all_to_all
       generator: jax.lax.all_to_all
@@ -7700,8 +7700,7 @@ Bmm:
     edge_wasm_simd:
       template: matmul
     edge_wgsl:
-      expr: '0.0'
-      template: unsupported
+      template: reduction
     llvm_cpp:
       template: matmul
 Bool:
@@ -9729,6 +9728,8 @@ Cholesky:
       generator: np.linalg.cholesky
     tensorflow:
       eager: tf.linalg.cholesky
+    edge_stablehlo:
+      generator: stablehlo.cholesky
 CholeskyInverse:
   description: Computes the inverse of a symmetric positive-definite matrix using
     its Cholesky factor.
@@ -11476,14 +11477,11 @@ Conv2D:
     edge_stablehlo:
       generator: stablehlo.convolution
     edge_wasm_simd:
-      math_op: '* 1.0f'
-      template: conv_pool_1d_flat
+      template: conv2d
     edge_wgsl:
-      expr: buf_in0_f32[0] * buf_in1_f32[0]
-      template: conv_pool_1d_flat
+      template: conv2d
     llvm_cpp:
-      scalar_expr: in0_val
-      template: unary
+      template: conv2d
 Conv2DTranspose:
   description: 2D transposed convolution layer.
   operation: Conv2DTranspose
@@ -24576,6 +24574,8 @@ LayerNorm:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
+    edge_onnx:
+      generator: LayerNormalization
 LayerNormalization:
   description: Layer normalization layer.
   operation: LayerNormalization
@@ -26646,6 +26646,8 @@ LuSolve:
       generator: mx.linalg.lu_solve({0}, {1})
     np:
       generator: getattr(backend_module.linalg, 'lu_solve', None)
+    edge_stablehlo:
+      generator: stablehlo.lu_solve
 LuUnpack:
   description: Unpacks the LU decomposition into P, L, U matrices.
   operation: LuUnpack
@@ -28831,8 +28833,7 @@ Mm:
     edge_wasm_simd:
       template: matmul
     edge_wgsl:
-      expr: '0.0'
-      template: unsupported
+      template: reduction
     llvm_cpp:
       template: matmul
 Model:
@@ -36927,10 +36928,10 @@ ReduceScatter:
   - name: input
     type: Tensor
   variants:
-    edge_wasm_simd: {}
+    edge_wasm_simd:
+      template: reduction
     edge_wgsl:
-      expr: '0.0'
-      template: unsupported
+      template: reduction
     jax:
       eager: jax.lax.reduce_scatter
       generator: jax.lax.reduce_scatter
@@ -39055,6 +39056,8 @@ SVD:
       generator: np.linalg.svd
     tensorflow:
       eager: tf.linalg.svd
+    edge_stablehlo:
+      generator: stablehlo.svd
 SVDResult:
   description: Auto-generated mapping for SVDResult.
   operation: SVDResult

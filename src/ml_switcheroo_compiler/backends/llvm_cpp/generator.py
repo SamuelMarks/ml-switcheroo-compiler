@@ -155,6 +155,52 @@ class CppGenerator(BaseGenerator):
         self.lines.append("        break;")
         self.lines.append("    }")
 
+    def visit_Conv2D(self, node: Any, graph_to_use: Any = None) -> None:
+        """Generate Conv2D LLVM CPP."""
+        from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_template
+
+        template = get_cpp_template("conv2d")
+
+        inputs_list = getattr(node, "inputs", [])
+        input_nodes = [graph_to_use.nodes.get(inp) for inp in inputs_list]
+        in0_shape = self._get_shape(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
+        w_shape = self._get_shape(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1, 1, 1]
+        shape = self._get_shape(node)
+
+        if len(in0_shape) < 4:
+            in0_shape = [1] * (4 - len(in0_shape)) + in0_shape
+        if len(w_shape) < 4:
+            w_shape = [1] * (4 - len(w_shape)) + w_shape
+        if len(shape) < 4:
+            shape = [1] * (4 - len(shape)) + shape
+
+        attrs = getattr(node, "attributes", {})
+        stride = attrs.get("stride", 1)
+        stride_h = stride[0] if isinstance(stride, (tuple, list)) else stride
+        stride_w = stride[1] if isinstance(stride, (tuple, list)) else stride
+
+        expr_args = {
+            "B": shape[0],
+            "out_channels": shape[1],
+            "out_height": shape[2],
+            "out_width": shape[3],
+            "in_channels": in0_shape[1],
+            "in_height": in0_shape[2],
+            "in_width": in0_shape[3],
+            "filter_h": w_shape[2],
+            "filter_w": w_shape[3],
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "clean_id": node.id.replace("-", "_"),
+            "in0": inputs_list[0] if len(inputs_list) > 0 else "dummy",
+            "in1": inputs_list[1] if len(inputs_list) > 1 else "dummy",
+            "out_shape_str": "{" + ", ".join(map(str, shape)) + "}",
+        }
+        body = template["body"].format(**expr_args)
+
+        for line in body.split("\n"):
+            self.lines.append(f"    {line}")
+
     def _visit_node(self, node: Any, graph_to_use: Any = None) -> None:
         """Visit a node and emit C++ code.
 
@@ -176,6 +222,8 @@ class CppGenerator(BaseGenerator):
             self._visit_if_op(node, graph_to_use)
         elif op in ("Loop", "WhileLoop"):
             self._visit_loop_op(node, graph_to_use)
+        elif op == "Conv2D":
+            self.visit_Conv2D(node, graph_to_use)
         elif op == "Output":
             self.lines.append(f"    // Output {node.inputs[0]}")
         else:

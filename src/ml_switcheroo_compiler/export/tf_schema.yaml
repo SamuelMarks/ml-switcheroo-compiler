@@ -1,0 +1,45 @@
+# TensorFlow Protobuf structural rules and Op mappings
+
+# Mapping of Unified IR data types to TensorFlow DT_* enums
+types:
+  float32: 1 # DT_FLOAT
+  float64: 2 # DT_DOUBLE
+  int32: 3   # DT_INT32
+  uint8: 4   # DT_UINT8
+  int16: 5   # DT_INT16
+  int8: 6    # DT_INT8
+  string: 7  # DT_STRING
+  complex64: 8 # DT_COMPLEX64
+  int64: 9   # DT_INT64
+  bool: 10   # DT_BOOL
+  qint8: 11  # DT_QINT8
+  quint8: 12 # DT_QUINT8
+  qint32: 13 # DT_QINT32
+  bfloat16: 14 # DT_BFLOAT16
+  qint16: 15 # DT_QINT16
+  quint16: 16 # DT_QUINT16
+  uint16: 17 # DT_UINT16
+  complex128: 18 # DT_COMPLEX128
+  half: 19   # DT_HALF
+  uint32: 22 # DT_UINT32
+  uint64: 23 # DT_UINT64
+
+# Mapping of Unified IR ops to TensorFlow NodeDef ops
+operations:
+  fallback: "Placeholder" # Default op if not found
+  Add: "AddV2"
+  Sub: "Sub"
+  Multiply: "Mul"
+  Divide: "RealDiv"
+  MatMul: "MatMul"
+  Conv2D: "Conv2D"
+  Relu: "Relu"
+  Softmax: "Softmax"
+  Reshape: "Reshape"
+  Transpose: "Transpose"
+  Identity: "Identity"
+  AssignVariable: "AssignVariableOp"
+  ReadVariable: "ReadVariableOp"
+  Constant: "Const"
+  Input: "Placeholder"
+  Tuple: "Pack" # Approximation

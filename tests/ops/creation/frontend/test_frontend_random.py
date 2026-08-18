@@ -32,7 +32,7 @@ def test_frontend_random():
 
     config.eager_mode = False
 
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_random._emit_creation_node", return_value="emitted"):
+    with patch.object(rand_mod, "_emit_creation_node", return_value="emitted"):
         assert rand(1) == "emitted"
         assert randn(1) == "emitted"
         assert randint(0, 10, (1,)) == "emitted"

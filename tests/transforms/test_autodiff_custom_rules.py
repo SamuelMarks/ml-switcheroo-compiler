@@ -1,44 +1,90 @@
 """Coverage tests for custom rules autodiff."""
 
-from ml_switcheroo_ir import LogicalNode
+import pytest
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
+    _assoc_scan_jvp,
     _assoc_scan_vjp,
+    _if_jvp,
     _if_vjp,
+    _inline_grad_subgraph,
+    _inline_subgraph,
+    _loop_jvp,
     _loop_vjp,
+    _scan_jvp,
     _scan_vjp,
 )
 
 
+def test_inline_subgraph():
+    g = LogicalGraph()
+    sg = LogicalGraph()
+    n = LogicalNode(id="n", op_type="Custom")
+    sg.nodes["i"] = LogicalNode(id="i", op_type="Input")
+    sg.nodes["a"] = LogicalNode(id="a", op_type="Add", inputs=["i"])
+    _inline_subgraph(g, sg, n, {"i": "x", "a": "new_a"})
+    assert "new_a" in g.nodes
+
+
+def test_inline_grad_subgraph():
+    g = LogicalGraph()
+    sg = LogicalGraph()
+    sg.inputs = ["i"]
+    sg_grad = LogicalGraph()
+    sg_grad.nodes["a"] = LogicalNode(id="a", op_type="Add", inputs=["i"])
+    sg_grad.outputs = ["a"]
+    n = LogicalNode(id="n", op_type="Custom", inputs=["i"])
+    res = _inline_grad_subgraph(g, sg_grad, sg, n, {})
+    assert len(res) == 1
+
+
 def test_if_vjp():
-    assert _if_vjp(None, None, None) == (UnconnectedGradients.ZERO,)
-
-
-def test_make_zero():
-    from ml_switcheroo_compiler.transforms.autodiff_rules.common import make_zero_jvp, make_zero_vjp
-
-    node = LogicalNode(id="n1", op_type="Loop", inputs=["a", "b"])
-    vjp = make_zero_vjp("Test")
-    assert vjp(None, node, None) == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
-
-    jvp = make_zero_jvp("Test")
-    assert jvp(None, node, None) == ""
+    g = LogicalGraph()
+    n = LogicalNode(id="n", op_type="If", inputs=["cond", "a", "b"], attributes={"true_branch": LogicalGraph(), "false_branch": LogicalGraph()})
+    res = _if_vjp(g, n, "cot")
+    assert len(res) >= 1
 
 
 def test_loop_vjp():
-    node = LogicalNode(id="n1", op_type="Loop", inputs=["a", "b"])
-    assert _loop_vjp(None, node, None) == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
+    g = LogicalGraph()
+    n = LogicalNode(id="n", op_type="Loop", inputs=["init", "n_iter"], attributes={"body": LogicalGraph()})
+    res = _loop_vjp(g, n, "cot")
+    assert len(res) >= 1
 
 
 def test_scan_vjp():
-    node = LogicalNode(id="n1", op_type="Scan", inputs=["a"])
-    assert _scan_vjp(None, node, None) == (UnconnectedGradients.ZERO,)
+    g = LogicalGraph()
+    n = LogicalNode(id="n", op_type="Scan", inputs=["a", "b"], attributes={"body": LogicalGraph()})
+    res = _scan_vjp(g, n, "cot")
+    assert len(res) >= 1
 
 
 def test_assoc_scan_vjp():
-    node = LogicalNode(id="n1", op_type="AssociativeScan", inputs=["a", "b", "c"])
-    assert _assoc_scan_vjp(None, node, None) == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
+    g = LogicalGraph()
+    n = LogicalNode(id="n", op_type="AssociativeScan", inputs=["a", "b", "c"], attributes={"combine_fn": LogicalGraph()})
+    res = _assoc_scan_vjp(g, n, "cot")
+    assert len(res) >= 1
+
+
+def test_jvps():
+    g = LogicalGraph()
+    n1 = LogicalNode(id="n1", op_type="If", inputs=["cond", "a", "b"], attributes={"then_branch": LogicalGraph(), "else_branch": LogicalGraph()})
+    assert _if_jvp(g, n1, ["t1", "t2", "t3"]) == "n1_jvp"
+    with pytest.raises(ValueError):
+        _if_jvp(g, n1, ["t1", "t2"])
+
+    n2 = LogicalNode(id="n2", op_type="Loop", inputs=["init", "n_iter"], attributes={"body": LogicalGraph()})
+    assert _loop_jvp(g, n2, ["t1", "t2"]) == ""
+    assert _loop_jvp(g, n2, ["t1"]) == ""
+
+    n3 = LogicalNode(id="n3", op_type="Scan", inputs=["a", "b"], attributes={"body": LogicalGraph()})
+    assert _scan_jvp(g, n3, ["t1", "t2"]) == ""
+    assert _scan_jvp(g, n3, ["t1"]) == ""
+
+    n4 = LogicalNode(id="n4", op_type="AssociativeScan", inputs=["a", "b", "c"], attributes={"combine_fn": LogicalGraph()})
+    assert _assoc_scan_jvp(g, n4, ["t1", "t2", "t3"]) == ""
+    assert _assoc_scan_jvp(g, n4, ["t1", "t2"]) == ""
 
 
 def test_jvp_nulls():

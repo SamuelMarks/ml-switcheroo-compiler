@@ -42,9 +42,8 @@ def _np_psum(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     from ml_switcheroo_compiler.backends.numpy.eager.distributed import _tcp_dist_ctx
 
     if _tcp_dist_ctx.world_size > 1:
-        # In a real mock, this would reduce across mailboxes.
-        # Here we just multiply by world size to simulate a sum of identical arrays.
-        return backend_module.array(args[0]) * _tcp_dist_ctx.world_size
+        tensor = backend_module.array(args[0])
+        return _tcp_dist_ctx.all_reduce_ring(tensor, op_type="sum", backend_module=backend_module)
     return backend_module.array(args[0])
 
 

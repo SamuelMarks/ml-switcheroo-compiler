@@ -512,3 +512,189 @@ def test_new_control_flow_custom_gradient() -> object:
 
     res_custom = my_fn(arg)
     assert res_custom is not None
+
+
+def test_switch_empty():
+    """Test switch_empty."""
+    import pytest
+
+    from ml_switcheroo_compiler.ops.control_flow import switch
+
+    with pytest.raises(ValueError, match="branches cannot be empty"):
+        switch(0, [])
+
+
+def test_map_fn_lazy():
+    """Test map_fn_lazy."""
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.control_flow import map_fn
+
+    orig = config.eager_mode
+    try:
+        config.eager_mode = False
+        import numpy as np
+
+        from ml_switcheroo_compiler.core.device import Device, DeviceType
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        t = Tensor(np.array([1.0]), TensorConfig((1,), "float32", Device(DeviceType.CPU)))
+
+        try:
+            map_fn(lambda x: x, t)
+        except Exception:
+            pass
+    finally:
+        config.eager_mode = orig
+
+
+def test_dyn_custom_grad_infer_shape_and_vjp():
+    """Test dyn_custom_grad_infer_shape_and_vjp."""
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.control_flow import custom_gradient
+
+    @custom_gradient
+    def my_op(x):
+        class Val:
+            shape = (1,)
+            dtype = "float32"
+
+        return Val(), lambda g: g
+
+    orig = config.eager_mode
+    try:
+        config.eager_mode = False
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state
+
+        graph = global_tracing_state.start_tracing()
+        try:
+            pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
+            out = my_op(pt)
+            assert out is not None
+
+            node = graph.nodes[out._data.id]
+            op_obj = getattr(node, "op", getattr(node, "op_type", None))
+
+            from ml_switcheroo_compiler.ops.registry import get_op
+
+            OpCls = get_op(op_obj)
+            inst = OpCls()
+            assert inst.infer_shape() == (1,)
+
+            from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
+
+            vjp_fn = get_vjp(op_obj)
+            assert vjp_fn(graph, None, "cot") == tuple()
+
+        finally:
+            global_tracing_state.stop_tracing()
+    finally:
+        config.eager_mode = orig
+
+
+def test_case_and_switch_case():
+    """Test case_and_switch_case."""
+    import pytest
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.control_flow import case, switch_case
+
+    orig = config.eager_mode
+    try:
+        config.eager_mode = True
+
+        with pytest.raises(ValueError, match="case requires at least one"):
+            case([])
+
+        assert case([], default=lambda: 42) == 42
+
+        with pytest.raises(ValueError, match="switch_case requires at least one branch"):
+            from ml_switcheroo_compiler.core.device import Device, DeviceType
+            from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+            t = Tensor(0, TensorConfig((), "int32", Device(DeviceType.CPU)))
+            switch_case(t, {})
+
+        from ml_switcheroo_compiler.core.device import Device, DeviceType
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        t = Tensor(0, TensorConfig((), "int32", Device(DeviceType.CPU)))
+        assert switch_case(t, {}, default=lambda: 42) == 42
+
+        import numpy as np
+
+        t_index = Tensor(np.array(1), TensorConfig((), "int32", Device(DeviceType.CPU)))
+        switch_case(t_index, {0: lambda: 10, 1: lambda: 20})
+
+    finally:
+        config.eager_mode = orig
+
+
+def test_infer_shapes():
+    """Test infer_shapes."""
+    from ml_switcheroo_compiler.ops.control_flow import AssociativeScan, DebugInfs, DebugNans, ScanOp, SwitchOp
+
+    assert DebugInfs().infer_shape() == ()
+    assert DebugInfs().infer_shape(1) == 1
+
+    assert DebugNans().infer_shape() == ()
+    assert DebugNans().infer_shape(2) == 2
+
+    assert SwitchOp().infer_shape(None, None) == ()
+
+    assert ScanOp().infer_shape() == ()
+
+    assert AssociativeScan().infer_shape() == ()
+    assert AssociativeScan().infer_shape(3) == 3
+
+
+def test_associative_scan_eager():
+    """Test associative_scan_eager."""
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.control_flow import associative_scan
+
+    orig = config.eager_mode
+    try:
+        config.eager_mode = True
+        import numpy as np
+
+        from ml_switcheroo_compiler.core.device import Device, DeviceType
+        from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+        t = Tensor(np.array([1.0]), TensorConfig((1,), "float32", Device(DeviceType.CPU)))
+
+        try:
+            associative_scan(t)
+        except Exception:
+            pass
+    finally:
+        config.eager_mode = orig
+
+
+def test_associative_scan_lazy():
+    """Test associative_scan_lazy."""
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.control_flow import associative_scan
+
+    orig = config.eager_mode
+    try:
+        config.eager_mode = False
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_state
+
+        global_tracing_state.start_tracing()
+        try:
+            pt = ProxyTensor(id="pt", shape=(2, 2), dtype="float32")
+            out = associative_scan(pt)
+            assert getattr(out, "shape", out._data.shape) == (2, 2)
+        finally:
+            global_tracing_state.stop_tracing()
+    finally:
+        config.eager_mode = orig
+
+
+def test_scan_bind():
+    """Test scan_bind."""
+    from ml_switcheroo_compiler.ops.control_flow import scan_bind
+
+    f, xs = scan_bind(lambda x: x, [1, 2], 3, kw=4)
+    assert xs == [1, 2]

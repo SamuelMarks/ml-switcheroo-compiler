@@ -19,8 +19,10 @@ class WasmTemplatesConfig(BaseModel):
     """Configuration for all WASM templates."""
 
     templates: dict[str, WasmTemplateConfig]
+    js_orchestration: dict[str, str] = {}
+    cpp_helpers: list[str] = []
 
     def model_dump(self, *args: Any, **kwargs: Any) -> Any:
         """Return dict representation."""
         res = super().model_dump(*args, **kwargs)
-        return res["templates"]
+        return res

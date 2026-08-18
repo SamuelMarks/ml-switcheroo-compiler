@@ -9,90 +9,53 @@ class DummyNode:
         self.id = "n1"
 
 
-def test_tf_generator_basics():
+def test_tf_generator_basics(tmp_path):
     g = IRGraph()
     gen = TensorFlowCodeGenerator(g)
 
-    try:
-        TensorFlowCodeGenerator.save("path", None)
-    except:
-        pass
-    try:
-        TensorFlowCodeGenerator.savez("path")
-    except:
-        pass
-    try:
-        TensorFlowCodeGenerator.savez_compressed("path")
-    except:
-        pass
-    try:
-        TensorFlowCodeGenerator.load("path")
-    except:
-        pass
+    import numpy as np
+
+    arr = np.array([1, 2, 3])
+    file_npy = tmp_path / "test.npy"
+    TensorFlowCodeGenerator.save(str(file_npy), arr)
+    res_npy = TensorFlowCodeGenerator.load(str(file_npy))
+    np.testing.assert_array_equal(res_npy, arr)
+
+    file_npz = tmp_path / "test.npz"
+    TensorFlowCodeGenerator.savez(str(file_npz), a=arr)
+    res_npz = TensorFlowCodeGenerator.load(str(file_npz))
+    np.testing.assert_array_equal(res_npz["a"], arr)
+
+    file_comp = tmp_path / "test_comp.npz"
+    TensorFlowCodeGenerator.savez_compressed(str(file_comp), a=arr)
+    import gzip
+    import pickle
+
+    with gzip.open(str(file_comp), "rb") as f:
+        res_comp = pickle.load(f)
+    np.testing.assert_array_equal(res_comp["a"], arr)
+
+    assert gen._format_zeros_like("zeros", {}) == "tf.zeros({shape})"
+    assert gen._format_zeros_like("zeros", {"dtype": "float32"}) == "tf.zeros({shape}), dtype='float32'"
+
+    assert gen._format_full({}) == "tf.full({shape}, {fill_value})"
+    assert gen._format_full({"dtype": "float32"}) == "tf.full({shape}, {fill_value}), dtype='float32'"
+
+    assert gen._format_transpose({}) == "tf.transpose({0})"
+    assert gen._format_transpose({"axes": [0, 1]}) == "tf.transpose({0}, perm={axes})"
+
+    assert gen.visit_RaggedDot(DummyNode(), ["x", "y"]) == "tf_ragged_dot(x, y)"
+    assert gen.visit_Einsum(DummyNode(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
 
     assert gen.get_fallback_prefix() == "tf.math"
-    assert gen.get_fallback_prefix() == "tf.math"
-    assert gen.get_fallback_axis_kwarg() == "axis"
-    assert gen.get_fallback_keepdims_kwarg() == "keepdims"
+    assert "Zeros" in gen._get_creation_ops({})
 
-    try:
-        gen._get_math_ops({})
-    except:
-        pass
-    try:
-        gen._get_creation_ops({})
-    except:
-        pass
-    try:
-        gen._get_array_ops({})
-    except:
-        pass
-    try:
-        gen.get_ops_map({})
-    except:
-        pass
-    try:
-        gen.visit(DummyNode(), [])
-    except:
-        pass
+    gen._emit_constant_assignment("c", "5")
+    assert "c = tf.constant(5)" in gen.code[-1]
 
-    gen._emit_constant_assignment("var", "val")
-    gen._generate_file_header()
-    gen._resolve_imports()
+    assert gen._generate_file_header() == [gen.header.strip()]
+    assert gen._resolve_imports() == ["import tensorflow as tf\n"]
+
+    gen.code = []
     gen._generate_function_signature()
-
-    try:
-        gen._format_creation_op("test", {})
-    except:
-        pass
-    try:
-        gen._format_creation_op("test", {"dtype": "float32"})
-    except:
-        pass
-
-    try:
-        gen._format_full({})
-    except:
-        pass
-    try:
-        gen._format_full({"dtype": "float32"})
-    except:
-        pass
-
-    try:
-        gen._format_transpose({})
-    except:
-        pass
-    try:
-        gen._format_transpose({"axes": [0, 1]})
-    except:
-        pass
-
-    try:
-        gen.visit_RaggedDot(DummyNode(), ["x", "y"])
-    except:
-        pass
-    try:
-        gen.visit_Einsum(DummyNode(), ["x", "y"], equation="i,j->ij")
-    except:
-        pass
+    assert "def apply_model(*args, **kwargs):" in gen.code[-1]

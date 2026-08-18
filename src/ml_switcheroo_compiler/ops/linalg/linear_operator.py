@@ -42,501 +42,102 @@ class BaseLinearOperator(OpDef):
 class LinearOperator(BaseLinearOperator):
     """LinearOperator class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorAdjoint")
 class LinearOperatorAdjoint(BaseLinearOperator):
     """LinearOperatorAdjoint class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorBlockDiag")
 class LinearOperatorBlockDiag(BaseLinearOperator):
     """LinearOperatorBlockDiag class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorBlockLowerTriangular")
 class LinearOperatorBlockLowerTriangular(BaseLinearOperator):
     """LinearOperatorBlockLowerTriangular class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorCirculant")
 class LinearOperatorCirculant(BaseLinearOperator):
     """LinearOperatorCirculant class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorCirculant2D")
 class LinearOperatorCirculant2D(BaseLinearOperator):
     """LinearOperatorCirculant2D class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorCirculant3D")
 class LinearOperatorCirculant3D(BaseLinearOperator):
     """LinearOperatorCirculant3D class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorComposition")
 class LinearOperatorComposition(BaseLinearOperator):
     """LinearOperatorComposition class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorDiag")
 class LinearOperatorDiag(BaseLinearOperator):
     """LinearOperatorDiag class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorFullMatrix")
 class LinearOperatorFullMatrix(BaseLinearOperator):
     """LinearOperatorFullMatrix class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorHouseholder")
 class LinearOperatorHouseholder(BaseLinearOperator):
     """LinearOperatorHouseholder class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorIdentity")
 class LinearOperatorIdentity(BaseLinearOperator):
     """LinearOperatorIdentity class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorInversion")
 class LinearOperatorInversion(BaseLinearOperator):
     """LinearOperatorInversion class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorKronecker")
 class LinearOperatorKronecker(BaseLinearOperator):
     """LinearOperatorKronecker class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorLowRankUpdate")
 class LinearOperatorLowRankUpdate(BaseLinearOperator):
     """LinearOperatorLowRankUpdate class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorLowerTriangular")
 class LinearOperatorLowerTriangular(BaseLinearOperator):
     """LinearOperatorLowerTriangular class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorPermutation")
 class LinearOperatorPermutation(BaseLinearOperator):
     """LinearOperatorPermutation class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorScaledIdentity")
 class LinearOperatorScaledIdentity(BaseLinearOperator):
     """LinearOperatorScaledIdentity class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
 
 
 @register_op("LinearOperatorToeplitz")
 class LinearOperatorToeplitz(BaseLinearOperator):
     """LinearOperatorToeplitz class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorTridiag")
 class LinearOperatorTridiag(BaseLinearOperator):
     """LinearOperatorTridiag class."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass
-
 
 @register_op("LinearOperatorZeros")
 class LinearOperatorZeros(BaseLinearOperator):
     """LinearOperatorZeros class."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """__init__ function.
-
-        Args:
-            args: Positional args.
-            kwargs: Keyword args.
-
-        Args:
-            message (str): The message.
-            input_vars (list): The input vars.
-            node (Any): The node.
-            **kwargs (Any): Keyword arguments.
-        self (Any): The self parameter.
-
-        Returns:
-        Any: Result.
-        """
-        pass

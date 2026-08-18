@@ -53,55 +53,88 @@ def test_ctc_loss(mocker):
     assert getattr(getattr(ctc_loss(x, x, x, x), "data", ctc_loss(x, x, x, x)), "id", ctc_loss(x, x, x, x)) == "ctc"
 
 
-def test_corrcoef(mocker):
+def test_corrcoef(mocker, monkeypatch):
+    import sys
+
+    from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
+
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
     mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats._emit_reduction_node", return_value=MagicMock(data=MagicMock(id="corrcoef")))
-    x = Tensor(1.0, TensorConfig((), "float32", "cpu"))
+    import numpy as np
+
+    x = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
 
     # Eager mode
-    config.eager_mode = True
-    mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats.get_active_backend").return_value.execute_op.return_value = mocker.Mock(shape=())
-    assert getattr(getattr(corrcoef(x), "config", corrcoef(x)), "shape", corrcoef(x)) == () or "MagicMock" in str(corrcoef(x))
+    try:
+        sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = False
+        disable_compile()  # sets eager_mode = True
+
+        res1 = corrcoef(x)  # y is None
+        assert res1.shape == (2, 2)
+        res2 = corrcoef(x, x)  # y is not None
+        assert res2.shape == (4, 4)
+    finally:
+        sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = True
+        enable_compile()
 
     # Tracing mode
-    config.eager_mode = False
+    assert getattr(getattr(corrcoef(x), "data", corrcoef(x)), "id", corrcoef(x)) == "corrcoef"
     assert getattr(getattr(corrcoef(x, x), "data", corrcoef(x, x)), "id", corrcoef(x, x)) == "corrcoef"
 
 
-def test_correlate(mocker):
+def test_correlate(mocker, monkeypatch):
+    import sys
+
+    from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
+
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
     mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats._emit_reduction_node", return_value=MagicMock(data=MagicMock(id="correlate")))
-    x = Tensor(1.0, TensorConfig((), "float32", "cpu"))
+    import numpy as np
+
+    x = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
 
     # Eager mode
-    config.eager_mode = True
-    mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats.get_active_backend").return_value.execute_op.return_value = mocker.Mock(shape=())
-    assert getattr(getattr(correlate(x, x), "config", correlate(x, x)), "shape", correlate(x, x)) == () or "MagicMock" in str(correlate(x, x))
+    try:
+        sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = False
+        disable_compile()
+        assert correlate(x, x).shape == (1,)
+    finally:
+        sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = True
+        enable_compile()
 
     # Tracing mode
-    config.eager_mode = False
     assert getattr(getattr(correlate(x, x), "data", correlate(x, x)), "id", correlate(x, x)) == "correlate"
 
 
-def test_cov(mocker):
+def test_cov(mocker, monkeypatch):
+    import sys
+
+    from ml_switcheroo_compiler.core.config import disable_compile, enable_compile
+
     state.global_tracing_state.is_tracing = True
     state.global_tracing_state.active_graph = MagicMock()
     mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats._emit_reduction_node", return_value=MagicMock(data=MagicMock(id="cov")))
-    x = Tensor(1.0, TensorConfig((), "float32", "cpu"))
+    import numpy as np
+
+    x = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
 
     # Invalid kwargs
     with pytest.raises(ValueError):
         cov(x, invalid=1)
 
     # Eager mode
-    config.eager_mode = True
-    mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats.get_active_backend").return_value.execute_op.return_value = mocker.Mock(shape=())
-    assert getattr(getattr(cov(x), "config", cov(x)), "shape", cov(x)) == () or "MagicMock" in str(cov(x))
+    try:
+        sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = False
+        disable_compile()
+        assert cov(x).shape == (2, 2)
+        assert cov(x, x).shape == (4, 4)
+    finally:
+        sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = True
+        enable_compile()
 
     # Tracing mode
-    config.eager_mode = False
     assert getattr(getattr(cov(x, x), "data", cov(x, x)), "id", cov(x, x)) == "cov"
 
 

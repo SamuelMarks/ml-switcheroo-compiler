@@ -154,6 +154,11 @@ def test_operator_fusion_extra_coverage():
     with patch("os.path.exists", return_value=False):
         cfg2 = _load_pass_config()
         assert cfg2.fusion_patterns == {}
+        # Hit 298->302 (config.fusion_patterns is empty)
+        # Also hits 303->305 (engine.apply_passes returns False since no rules)
+        g_empty = IRGraph()
+        g_empty.nodes["x"] = IRNode(id="x", op_type="UnmatchedOp", inputs=[])
+        apply_operator_fusion(g_empty)
 
     # test _build_pattern with inputs
     strat4 = YamlFusionRule("test4", {"pattern": {"op_type": "A", "inputs": [{"op_type": "B"}]}, "replacement": {"op_type": "x", "inputs": [], "capture_to_replace": "x"}})

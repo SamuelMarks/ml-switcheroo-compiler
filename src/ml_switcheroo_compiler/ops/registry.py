@@ -23,7 +23,7 @@ def _load_yaml_registry(force: bool = False) -> None:
     global _YAML_REGISTRY
     if force or not _YAML_REGISTRY:
         yaml_path = os.path.join(os.path.dirname(__file__), "ops_registry.yaml")
-        if os.path.exists(yaml_path):  # pragma: no branch
+        if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 from ml_switcheroo_compiler.ops.config_models import OpsRegistry
 

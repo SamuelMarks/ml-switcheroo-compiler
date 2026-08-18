@@ -221,3 +221,64 @@ def test_webgpu_fused_ops():
     code = gen.generate()
     assert "max(0.0" in code
     assert "log(exp(" in code
+
+
+def test_webgpu_visit_methods():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="n1", op_type="Input")
+    n1.shape_metadata = (2, 2)
+
+    n_while = LogicalNode(id="while_loop", op_type="WhileLoop", inputs=["n1"])
+    n_while.shape_metadata = (2, 2)
+
+    n_cond = LogicalNode(id="cond", op_type="Cond", inputs=["n1"])
+    n_cond.shape_metadata = (2, 2)
+
+    n_scan = LogicalNode(id="scan", op_type="Scan", inputs=["n1"])
+    n_scan.shape_metadata = (2, 2)
+
+    g.nodes = {"n1": n1, "while_loop": n_while, "cond": n_cond, "scan": n_scan}
+    gen = WebGPUCodeGenerator(g)
+    code = gen.generate()
+    assert "loop" in code or "while" in code or "buf_out_f32" in code
+
+
+def test_webgpu_unimplemented_op():
+
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="n1", op_type="Input")
+    n1.shape_metadata = (2, 2)
+    n2 = LogicalNode(id="n2", op_type="UnknownOp", inputs=["n1"])
+    n2.shape_metadata = (2, 2)
+    g.nodes = {"n1": n1, "n2": n2}
+
+    with pytest.raises(UnimplementedMathError):
+        gen = WebGPUCodeGenerator(g)
+        gen.generate()
+
+
+from unittest.mock import patch
+
+import pytest
+
+
+def test_webgpu_no_body_template():
+    g = IRGraph()
+    n1 = LogicalNode(id="n1", op_type="Input")
+    n1.shape_metadata = (2, 2)
+    n2 = LogicalNode(id="out", op_type="Add", inputs=["n1", "n1"])
+    n2.shape_metadata = (2, 2)
+    g.nodes = {"n1": n1, "out": n2}
+
+    with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template") as mock_get:
+        mock_get.return_value = {"global_code": "fn custom() {{ return 0.0; }}"}
+        gen = WebGPUCodeGenerator(g)
+        code = gen.generate()
+        assert "fn custom() { return 0.0; }" in code

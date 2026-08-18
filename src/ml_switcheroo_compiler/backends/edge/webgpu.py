@@ -139,7 +139,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         in1_shape, in1_strides = self._get_shape_and_strides(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else ([], [])
         _, out_strides = self._get_shape_and_strides(node)
 
-        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
         op_def = OPS_REGISTRY.get(op_type, {})
@@ -201,13 +201,72 @@ class WebGPUCodeGenerator(BaseGenerator):
         wgsl_str = global_code_list + self.emitter.emit(func).split("\n\n")
         return wgsl_str, dispatch_x, dispatch_y, dispatch_z
 
+    def visit_Conv2D(self, node: Any, input_vars: list[str], **kwargs: Any) -> tuple[list[str], str, str, str]:
+        """Generate Conv2D WGSL."""
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
+
+        shape = kwargs.get("shape", [])
+        nelem = kwargs.get("nelem", 1)
+        clean_id = kwargs.get("clean_id", "")
+
+        template = get_wgsl_template("conv2d")
+
+        # input shape: [B, in_channels, in_height, in_width]
+        # output shape: [B, out_channels, out_height, out_width]
+        # weight shape: [out_channels, in_channels, filter_h, filter_w]
+        inputs = getattr(node, "inputs", [])
+        input_nodes = [next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None) for inp in inputs]
+        in0_shape, _ = self._get_shape_and_strides(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else ([1, 1, 1, 1], [])
+        w_shape, _ = self._get_shape_and_strides(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else ([1, 1, 1, 1], [])
+
+        if len(in0_shape) < 4:
+            in0_shape = [1] * (4 - len(in0_shape)) + in0_shape
+        if len(w_shape) < 4:
+            w_shape = [1] * (4 - len(w_shape)) + w_shape
+        if len(shape) < 4:
+            shape = [1] * (4 - len(shape)) + shape
+
+        attrs = getattr(node, "attributes", {})
+        stride = attrs.get("stride", 1)
+        stride_h = stride[0] if isinstance(stride, (tuple, list)) else stride
+        stride_w = stride[1] if isinstance(stride, (tuple, list)) else stride
+
+        expr_args = {
+            "out_width": shape[3],
+            "out_height": shape[2],
+            "in_channels": in0_shape[1],
+            "out_channels": shape[1],
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "filter_h": w_shape[2],
+            "filter_w": w_shape[3],
+            "in_width": in0_shape[3],
+        }
+        body = template["body"].format(**expr_args)
+
+        wg_size = template.get("workgroup_size", [16, 16, 1])
+        wg_x, wg_y, wg_z = wg_size[0], wg_size[1] if len(wg_size) > 1 else 1, wg_size[2] if len(wg_size) > 2 else 1
+
+        dispatch_x = f"Math.ceil({shape[3]} / {wg_x})"
+        dispatch_y = f"Math.ceil({shape[2]} / {wg_y})"
+        dispatch_z = "1"
+
+        out_offset_words = attrs.get("buffer_offset", 0) // 4
+
+        wgsl = []
+        wgsl.append(f"@compute @workgroup_size({wg_x}, {wg_y}, {wg_z})")
+        wgsl.append(f"fn compute_{clean_id}(@builtin(global_invocation_id) global_id: vec3<u32>) {{")
+        wgsl.append(body)
+        wgsl.append("}")
+        return wgsl, dispatch_x, dispatch_y, dispatch_z
+
     def visit_WhileLoop(self, node: Any, input_vars: list[str], **kwargs: Any) -> tuple[list[str], str, str, str]:
         """Generate WGSL loop constructs via YAML templates."""
         shape = kwargs.get("shape", [])
         nelem = kwargs.get("nelem", 1)
         clean_id = kwargs.get("clean_id", "")
 
-        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template
 
         template = get_wgsl_template("while_loop")
 
@@ -229,7 +288,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         nelem = kwargs.get("nelem", 1)
         clean_id = kwargs.get("clean_id", "")
 
-        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template
 
         template = get_wgsl_template("cond")
 
@@ -248,7 +307,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         nelem = kwargs.get("nelem", 1)
         clean_id = kwargs.get("clean_id", "")
 
-        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template
 
         template = get_wgsl_template("scan")
 
@@ -262,11 +321,13 @@ class WebGPUCodeGenerator(BaseGenerator):
         return wgsl_str, f"Math.ceil({nelem} / 64)", "1", "1"
 
     def generate(self) -> str:
-        """Generate WebGPU WGSL compute shader module code enclosed in a JavaScript orchestrator.
+        r"""Generate WebGPU WGSL compute shader module code enclosed in a JavaScript orchestrator.
 
         Returns:
             str: Complete, executable JavaScript orchestration code wrapper around WGSL compute shader.
         """
+        from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template
+
         output_ids = getattr(self.graph, "outputs", []) or []
 
         wgsl = []
@@ -284,12 +345,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         # Removed static helper function because N-dimensional offsetting is dynamically generated via AST per-node
         wgsl.append("")
 
-        js.append("// WebGPU JavaScript Orchestrator Code Generated by ml-switcheroo-compiler")
-        js.append("async function run(inputs) {")
-        js.append("  if (!navigator.gpu) throw new Error('WebGPU is not supported on this browser.');")
-        js.append("  const adapter = await navigator.gpu.requestAdapter();")
-        js.append("  if (!adapter) throw new Error('No appropriate GPUAdapter found.');")
-        js.append("  const device = await adapter.requestDevice();")
+        js.append(get_js_orchestration_template("init"))
 
         # Group nodes by arena
         arenas = {}
@@ -304,7 +360,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         js.append("  // Allocate shared storage arenas")
         for arena_id, total_size in arenas.items():
-            js.append(f"  const buf_arena_{arena_id} = device.createBuffer({{ size: {total_size}, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC }});")
+            js.append(get_js_orchestration_template("allocate_arena").format(arena_id=arena_id, total_size=total_size))
 
         js.append("  // Write inputs to arenas")
         for node in self.sorted_nodes:
@@ -312,7 +368,7 @@ class WebGPUCodeGenerator(BaseGenerator):
                 nid = getattr(node, "id", "")
                 arena_id = getattr(node, "attributes", {}).get("buffer_id", 0)
                 offset = getattr(node, "attributes", {}).get("buffer_offset", 0)
-                js.append(f"  if (inputs.{nid}) device.queue.writeBuffer(buf_arena_{arena_id}, {offset}, inputs.{nid});")
+                js.append(get_js_orchestration_template("write_input").format(nid=nid, arena_id=arena_id, offset=offset))
 
         js.append("")
 
@@ -321,7 +377,7 @@ class WebGPUCodeGenerator(BaseGenerator):
             out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
             shape, _ = self._get_shape_and_strides(out_node) if out_node else ([], [])
             nelem = self._num_elements(shape) if shape else 1
-            js.append(f"  const out_{i}_staging = device.createBuffer({{ size: {nelem * 4}, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }});")
+            js.append(get_js_orchestration_template("create_staging").format(i=i, size=nelem * 4))
 
         # Generate WGSL Compute passes and JS orchestration per node
         js.append("  const commandEncoder = device.createCommandEncoder();")
@@ -344,8 +400,6 @@ class WebGPUCodeGenerator(BaseGenerator):
                 op_wgsl, dispatch_x, dispatch_y, dispatch_z = self._get_wgsl_for_op(node, shape, nelem, clean_id)
             wgsl.extend(op_wgsl)
 
-            js.append(f"  const pipe_{clean_id} = device.createComputePipeline({{ layout: 'auto', compute: {{ module: shaderModule, entryPoint: 'compute_{clean_id}' }} }});")
-
             entries = []
             for j, inp in enumerate(inputs):
                 if j < 3:
@@ -355,12 +409,7 @@ class WebGPUCodeGenerator(BaseGenerator):
             out_arena_id = getattr(node, "attributes", {}).get("buffer_id", 0)
             entries.append(f"{{ binding: 3, resource: {{ buffer: buf_arena_{out_arena_id} }} }}")
 
-            js.append(f"  const bg_{clean_id} = device.createBindGroup({{ layout: pipe_{clean_id}.getBindGroupLayout(0), entries: [{', '.join(entries)}] }});")
-            js.append(f"  const pass_{clean_id} = commandEncoder.beginComputePass();")
-            js.append(f"  pass_{clean_id}.setPipeline(pipe_{clean_id});")
-            js.append(f"  pass_{clean_id}.setBindGroup(0, bg_{clean_id});")
-            js.append(f"  pass_{clean_id}.dispatchWorkgroups({dispatch_x}, {dispatch_y}, {dispatch_z});")
-            js.append(f"  pass_{clean_id}.end();")
+            js.append(get_js_orchestration_template("compute_pass").format(clean_id=clean_id, entries=", ".join(entries), dispatch_x=dispatch_x, dispatch_y=dispatch_y, dispatch_z=dispatch_z))
             js.append("")
 
         js.append("  // Copy outputs to staging")
@@ -370,28 +419,18 @@ class WebGPUCodeGenerator(BaseGenerator):
             offset = getattr(out_node, "attributes", {}).get("buffer_offset", 0) if out_node else 0
             shape, _ = self._get_shape_and_strides(out_node) if out_node else ([], [])
             nelem = self._num_elements(shape) if shape else 1
-            js.append(f"  commandEncoder.copyBufferToBuffer(buf_arena_{arena_id}, {offset}, out_{i}_staging, 0, {nelem * 4});")
+            js.append(get_js_orchestration_template("copy_output").format(arena_id=arena_id, offset=offset, i=i, size=nelem * 4))
 
         js.append("  device.queue.submit([commandEncoder.finish()]);")
 
         ret_entries = []
         for i, out_id in enumerate(output_ids):
-            js.append(f"  await out_{i}_staging.mapAsync(GPUMapMode.READ);")
-            js.append(f"  const out_{i}_array = new Float32Array(out_{i}_staging.getMappedRange().slice());")
-            js.append(f"  out_{i}_staging.unmap();")
+            js.append(get_js_orchestration_template("read_output").format(i=i))
             ret_entries.append(f"    {out_id}: out_{i}_array,")
 
-        js.append("  return {")
-        for entry in ret_entries:
-            js.append(entry)
-        js.append("  };")
+        js.append(get_js_orchestration_template("return_dict").format(returns="\n".join(ret_entries)))
         js.append("}")
 
-        full_code = []
-        full_code.append(js[0])
-        full_code.append("const shaderCode = `")
-        full_code.extend(wgsl)
-        full_code.append("`;")
-        full_code.append("")
-        full_code.extend(js[1:])
-        return "\n".join(full_code)
+        js_str = "\n".join(js)
+        wgsl_str = "\n".join(wgsl)
+        return f"const shaderCode = `{wgsl_str}`;\n{js_str}"

@@ -591,7 +591,7 @@ def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
             # Ensure operations have both defined to guarantee higher-order composition
             if not has_vjp(node.op_type) or not has_jvp(node.op_type):
                 missing_ops.append(node.op_type)
-            pass  # Subgraph control flow ops are now handled recursively
+            _ = None  # Subgraph control flow ops are now handled recursively
 
     if missing_ops:
         unique_missing = ", ".join(sorted(set(missing_ops)))

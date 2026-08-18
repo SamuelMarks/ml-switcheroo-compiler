@@ -26,7 +26,7 @@ def test_frontend_sequence():
 
     config.eager_mode = False
 
-    with patch("ml_switcheroo_compiler.ops.creation.frontend_sequence._emit_creation_node", return_value="emitted"):
+    with patch.object(ml_switcheroo_compiler.ops.creation.frontend_sequence, "_emit_creation_node", return_value="emitted"):
         assert arange(10) == "emitted"
         assert arange(0, 10) == "emitted"
         assert linspace(1, 10, 50) == "emitted"

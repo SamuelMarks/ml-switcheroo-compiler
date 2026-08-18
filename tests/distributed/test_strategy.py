@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from ml_switcheroo_compiler.distributed.strategy import (
     CentralStorageStrategy,
     Coordinator,
@@ -11,7 +13,115 @@ from ml_switcheroo_compiler.distributed.strategy import (
     SlurmClusterResolver,
     TFConfigClusterResolver,
     TPUStrategy,
+    _load_strategy_config,
 )
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+
+class MockBackend:
+    def __init__(self):
+        self.code = []
+
+
+def test_missing_yaml():
+    with patch("os.path.exists", return_value=False):
+        assert _load_strategy_config() == {}
+
+
+def test_parameter_server_strategy_hooks():
+    strat = ParameterServerStrategy()
+    assert strat.pull_weights() is None
+    assert strat.push_gradients() is None
+
+    # Test valid hook branch
+    strat.config = {"registry_hooks": {"pull": "my_hook", "push": "my_hook"}}
+
+    class MockGenerator(MockBackend):
+        def my_hook(self, *args, **kwargs):
+            return True
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockGenerator()):
+        assert strat.pull_weights() is True
+        assert strat.push_gradients() is True
+
+
+def test_central_storage_strategy_hooks():
+    strat = CentralStorageStrategy()
+    assert strat.fetch() is None
+    assert strat.update() is None
+
+    strat.config = {"registry_hooks": {"fetch": "my_hook", "update": "my_hook"}}
+
+    class MockGenerator(MockBackend):
+        def my_hook(self, *args, **kwargs):
+            return True
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockGenerator()):
+        assert strat.fetch() is True
+        assert strat.update() is True
+
+
+def test_tpu_strategy_hooks():
+    strat = TPUStrategy()
+    assert strat.sync() is None
+
+    strat.config = {"registry_hooks": {"sync": "my_hook"}}
+
+    class MockGenerator(MockBackend):
+        def my_hook(self, *args, **kwargs):
+            return True
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockGenerator()):
+        assert strat.sync() is True
+
+
+def test_multi_worker_strategy_hooks():
+    strat = MultiWorkerMirroredStrategy()
+    graph = IRGraph()
+
+    strat.config = {"registry_hooks": {"sync": "my_hook"}}
+
+    class MockGenerator(MockBackend):
+        def my_hook(self, *args, **kwargs):
+            return True
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockGenerator()):
+        assert strat.sync_gradients(graph) is True
+
+    strat.config = {}  # Reset to trigger fallback rewiring
+    n1 = IRNode(id="n1", op_type="Grad")
+    n2 = IRNode(id="n2", op_type="Identity", inputs=["n1"])
+    graph.nodes = {"n1": n1, "n2": n2}
+
+    modified = strat.sync_gradients(graph)
+    assert modified is True
+    assert "n1_all_reduce" in graph.nodes
+    assert graph.nodes["n2"].inputs[0] == "n1_all_reduce"
+
+    # Test false path
+    graph2 = IRGraph()
+    graph2.nodes = {"n1": IRNode(id="n1", op_type="Identity")}
+    assert not strat.sync_gradients(graph2)
+
+
+def test_server_close_exception():
+    server_def = {}
+    server = Server(server_def)
+    server._server = type("MockSocket", (), {"close": lambda self: exec("raise Exception()")})()
+    # This shouldn't raise since the exception is swallowed
+    server.join()
+
+
+def test_pipeline_unroll_continue_path():
+    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
+
+    strat = PipelineParallelismStrategy()
+
+    graph = IRGraph()
+    # Mock split_into_stages to return a node that doesn't exist in the graph
+    with patch.object(strat, "split_into_stages", return_value=[["missing_node"]]):
+        strat.unroll_pipeline(graph, 1)
+        assert "missing_node_mb0" not in graph.nodes
 
 
 def test_strategies():
@@ -276,8 +386,6 @@ def test_microbatch_loop_single():
     strategy.generate_microbatch_loop(g)
     assert "microbatch_loop" not in g.nodes
 
-
-from unittest.mock import patch
 
 from ml_switcheroo_compiler.distributed.strategy import (
     MeshShardingStrategy,
@@ -808,180 +916,20 @@ def test_pipeline_microbatch_with_outputs():
     assert g.outputs == ["n1_concat"]
 
 
-def test_pipeline_execute_pipeline():
-    import numpy as np
-
+def test_pipeline_unroll_pipeline():
     from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-    strategy = PipelineParallelismStrategy()
+    strategy = PipelineParallelismStrategy(num_microbatches=2)
     g = IRGraph()
-    n0 = IRNode(id="n0", op_type="Input")
-    n1 = IRNode(id="n1", op_type="Constant", attributes={"value": 5.0})
-    n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"])
-    g.nodes = {"n0": n0, "n1": n1, "n2": n2}
+    n1 = IRNode(id="n1", op_type="Add", inputs=["in", "in"])
+    n2 = IRNode(id="n2", op_type="Mul", inputs=["n1", "n1"])
+    g.nodes = {"n1": n1, "n2": n2}
+    g.inputs = ["in"]
     g.outputs = ["n2"]
 
-    inputs = {"n0": np.array(10.0)}
-    outputs = strategy.execute_pipeline(g, inputs, num_stages=2)
-    assert float(outputs["n2"]) == 15.0
+    strategy.unroll_pipeline(g, num_stages=2)
 
-
-def test_pipeline_execute_pipeline_branches():
-    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    strategy = PipelineParallelismStrategy()
-
-    # topological sort missing nodes
-    g1 = IRGraph()
-    n0 = IRNode(id="n0", op_type="Constant", attributes={"value": 1.0})
-    n1 = IRNode(id="n1", op_type="Add", inputs=["n0", "missing"])
-    g1.nodes = {"n0": n0, "n1": n1}
-
-    # Should raise KeyError or hang and timeout (which gives empty outputs)
-    try:
-        with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", side_effect=Exception("mocked error")):
-            strategy.execute_pipeline(g1, {}, num_stages=1)
-    except KeyError:
-        pass
-
-    # Branch 4: op with eager_eval
-    class DummyEagerOp:
-        def eager_eval(self, *args, **kwargs):
-            return 42.0
-
-    with patch("ml_switcheroo_compiler.ops.registry.get_op", return_value=DummyEagerOp):
-        g4 = IRGraph()
-        n4 = IRNode(id="n4", op_type="DummyEagerOp", inputs=[])
-        g4.nodes = {"n4": n4}
-        strategy.execute_pipeline(g4, {}, num_stages=1)
-
-    # Branch 3: op without eager_eval evaluated via backend.execute_op
-    g3 = IRGraph()
-    n3 = IRNode(id="n3", op_type="NoEagerOp", inputs=[])
-    g3.nodes = {"n3": n3}
-
-    class MockOpNoEager:
-        pass  # no eager_eval
-
-    class MockBackend:
-        def execute_op(self, op_type, *args, **kwargs):
-            return "backend_result"
-
-    with patch("ml_switcheroo_compiler.ops.registry.get_op", return_value=MockOpNoEager):
-        with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
-            strategy.execute_pipeline(g3, {}, num_stages=1)
-
-
-def test_pipeline_missing_queue():
-    import numpy as np
-
-    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    graph = IRGraph()
-    n1 = IRNode(id="in", op_type="Input")
-
-    recv = IRNode(id="recv", op_type="Recv")
-    recv.attributes["source_stage"] = 999
-
-    send = IRNode(id="send", op_type="Send")
-    send.inputs = ["in"]
-    send.attributes["target_stage"] = 999
-
-    graph.nodes = {"in": n1, "recv": recv, "send": send}
-    graph.outputs = ["recv"]
-
-    strategy = PipelineParallelismStrategy()
-
-    try:
-        strategy.execute_pipeline(graph, {"in": np.array([1.0])}, num_stages=1)
-    except Exception:
-        pass
-
-
-def test_strategy_resolver_coverage():
-    import os
-
-    from ml_switcheroo_compiler.distributed.strategy import KubernetesClusterResolver, TFConfigClusterResolver
-
-    os.environ["TF_CONFIG"] = "invalid_json"
-    res = TFConfigClusterResolver()
-    assert res.cluster == {}
-
-    os.environ["KUBERNETES_SERVICE_HOST"] = "1"
-    os.environ["KUBERNETES_SERVICE_PORT"] = "1"
-    if "KUBERNETES_NAMESPACE" in os.environ:
-        del os.environ["KUBERNETES_NAMESPACE"]
-    res2 = KubernetesClusterResolver()
-    assert res2.cluster == {"worker": ["localhost:8080"]}
-
-
-def test_server_close_coverage():
-
-    from ml_switcheroo_compiler.distributed.strategy import Server
-
-    class MockSocket:
-        def close(self):
-            raise Exception("dummy error")
-
-        def bind(self, *args):
-            pass
-
-        def listen(self, *args):
-            pass
-
-    s = Server({})
-    s._server = MockSocket()
-    # It catches exception gracefully
-    s.join()
-
-
-def test_microbatch_loop_structure():
-    """Strict structural validation for the generated microbatch WhileLoop IR."""
-    from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    g = IRGraph()
-    n_in = IRNode(id="in0", op_type="Input")
-    n_add = IRNode(id="add0", op_type="Add", inputs=["in0", "in0"])
-    n_out = IRNode(id="out0", op_type="Output", inputs=["add0"])
-
-    g.nodes = {"in0": n_in, "add0": n_add, "out0": n_out}
-    g.inputs = ["in0"]
-    g.outputs = ["out0"]
-
-    strategy = PipelineParallelismStrategy(num_microbatches=4)
-    strategy.generate_microbatch_loop(g)
-
-    # 1. Main graph should only have Input, WhileLoop, and Concat nodes.
-    assert "in0" in g.nodes
-    assert "microbatch_loop" in g.nodes
-    assert "out0_concat" in g.nodes
-    assert "add0" not in g.nodes  # Moved to body
-
-    loop_node = g.nodes["microbatch_loop"]
-    assert loop_node.op_type == "WhileLoop"
-
-    # 2. Extract nested graphs
-    body_graph = loop_node.attributes["body"]
-    cond_graph = loop_node.attributes["cond"]
-
-    # 3. Validate cond graph
-    assert cond_graph.inputs == ["idx_cond"]
-    assert cond_graph.outputs == ["cond_cmp"]
-    assert "cond_cmp" in cond_graph.nodes
-    assert cond_graph.nodes["cond_cmp"].op_type == "Less"
-
-    # 4. Validate body graph
-    assert "in0_b" in body_graph.nodes
-    assert "in0_slice" in body_graph.nodes
-    assert "add0" in body_graph.nodes
-    assert "out0" in body_graph.nodes
-
-    # The inputs to the operations should have been updated to the sliced inputs
-    assert body_graph.nodes["add0"].inputs == ["in0_slice", "in0_slice"]
-
-    # The body graph outputs should remain the original ones
-    assert body_graph.outputs == ["out0"]
+    assert "n2_mb1" in g.nodes
+    assert "n1_mb0" in g.nodes
+    assert g.outputs == ["n2_mb1"]

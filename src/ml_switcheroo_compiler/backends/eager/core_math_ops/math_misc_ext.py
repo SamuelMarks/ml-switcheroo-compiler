@@ -463,7 +463,9 @@ def _adjoint(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     if hasattr(backend_module, "conj") and hasattr(backend_module, "transpose"):
         return backend_module.conj(backend_module.transpose(x))
     x_np = backend_module.asarray(x)
-    return backend_module.conj(backend_module.transpose(x_np))
+    import numpy as np
+
+    return np.conj(np.transpose(x_np))
 
 
 @global_eager_registry.register("Bincount")

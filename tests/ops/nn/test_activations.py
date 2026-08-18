@@ -1,3 +1,5 @@
+"""Module test_activations.py."""
+
 from ml_switcheroo_compiler.core.dtype import DType
 
 """Test nn activations coverage."""
@@ -21,3 +23,25 @@ def test_isotonic_regression_tracing():
     finally:
         global_tracing_state.stop_tracing()
         config.eager_mode = True
+
+
+def test_activations_dispatcher():
+    """test_activations_dispatcher."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.ops.nn.activations import hard_silu, hard_swish, mish, squareplus
+
+    with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op") as mock_dispatch:
+        mock_dispatch.return_value = "mock_result"
+
+        assert hard_silu(1, kw=2) == "mock_result"
+        mock_dispatch.assert_called_with("HardSilu", 1, kw=2)
+
+        assert hard_swish(1, kw=2) == "mock_result"
+        mock_dispatch.assert_called_with("HardSwish", 1, kw=2)
+
+        assert mish(1, kw=2) == "mock_result"
+        mock_dispatch.assert_called_with("Mish", 1, kw=2)
+
+        assert squareplus(1, kw=2) == "mock_result"
+        mock_dispatch.assert_called_with("Squareplus", 1, kw=2)

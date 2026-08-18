@@ -220,3 +220,90 @@ def test_get_memory_info_success(monkeypatch):
         # Test exception block
         mock_backend.get_memory_info.side_effect = Exception("test error")
         assert get_memory_info("gpu") == {"current": 0, "peak": 0}
+
+
+def test_ops_device_eval():
+    """test_ops_device_eval."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.ops.device import eval as ops_eval
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
+        mock_backend = MagicMock()
+        mock_backend.eval = MagicMock()
+        mock_get.return_value = mock_backend
+
+        ops_eval(1, 2)
+        mock_backend.eval.assert_called_once_with(1, 2)
+
+        del mock_backend.eval
+
+        class Dummy:
+            data = "dummy_data"
+
+        d = Dummy()
+        ops_eval(d)
+        assert d.data == "dummy_data"
+
+
+def test_ops_device_synchronize():
+    """test_ops_device_synchronize."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.ops.device import synchronize
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
+        mock_backend = MagicMock()
+        mock_backend.synchronize = MagicMock()
+        mock_get.return_value = mock_backend
+
+        synchronize()
+        mock_backend.synchronize.assert_called_once()
+
+        del mock_backend.synchronize
+        synchronize()
+
+
+def test_ops_device_get_peak_memory():
+    """test_ops_device_get_peak_memory."""
+    from unittest.mock import MagicMock, patch
+
+    from ml_switcheroo_compiler.ops.device import get_peak_memory
+
+    with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
+        mock_backend = MagicMock()
+        mock_backend.get_peak_memory.return_value = 100
+        mock_get.return_value = mock_backend
+
+        assert get_peak_memory() == 100
+
+        del mock_backend.get_peak_memory
+        assert get_peak_memory() == 0
+
+
+def test_ops_device_infer_shapes():
+    """test_ops_device_infer_shapes."""
+    from ml_switcheroo_compiler.ops.device import DeviceContextOp, DeviceTransferOp
+
+    class Dummy:
+        shape = (1, 2)
+
+    assert DeviceContextOp().infer_shape(Dummy()) == (1, 2)
+    assert DeviceTransferOp().infer_shape(Dummy()) == (1, 2)
+
+
+def test_ops_device_device_transfer():
+    """test_ops_device_device_transfer."""
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.ops.device import device_transfer
+
+    class DummyTensor:
+        shape = (1, 2)
+        dtype = "float32"
+
+    with patch("ml_switcheroo_compiler.ops.device._emit_shape_node") as mock_emit:
+        mock_emit.return_value = "emitted"
+        t = DummyTensor()
+        assert device_transfer(t, "cuda:0") == "emitted"
+        mock_emit.assert_called_once_with("DeviceTransfer", [t], {"target_device": "cuda:0", "stream": None}, (1, 2), "float32")

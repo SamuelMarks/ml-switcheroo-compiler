@@ -1,34 +1,66 @@
 types:
-  float32: 1  # TensorProto.FLOAT
-  float64: 11 # TensorProto.DOUBLE
-  float16: 10 # TensorProto.FLOAT16
-  bfloat16: 16 # TensorProto.BFLOAT16
-  int64: 7    # TensorProto.INT64
-  int32: 6    # TensorProto.INT32
-  int16: 5    # TensorProto.INT16
-  int8: 3     # TensorProto.INT8
-  uint64: 17  # TensorProto.UINT64
-  uint32: 13  # TensorProto.UINT32
-  uint16: 14  # TensorProto.UINT16
-  uint8: 2    # TensorProto.UINT8
-  bool: 9     # TensorProto.BOOL
-
+  float32: 1
+  float64: 11
+  float16: 10
+  bfloat16: 16
+  int64: 7
+  int32: 6
+  int16: 5
+  int8: 3
+  uint64: 17
+  uint32: 13
+  uint16: 14
+  uint8: 2
+  bool: 9
 operations:
-  fallback: "CustomOp"
-
+  fallback: CustomOp
+  BatchNormalization:
+    op_type: BatchNormalization
+    domain: ''
+    inputs:
+    - X
+    - scale
+    - B
+    - input_mean
+    - input_var
+    attributes:
+    - epsilon
+    - momentum
+  LayerNormalization:
+    op_type: LayerNormalization
+    domain: ''
+    inputs:
+    - X
+    - Scale
+    - B
+    attributes:
+    - axis
+    - epsilon
+    - stash_type
 control_flow:
   If:
-    op_type: "If"
-    domain: ""
-    inputs: ["cond"]
-    attributes: ["then_branch", "else_branch"]
+    op_type: If
+    domain: ''
+    inputs:
+    - cond
+    attributes:
+    - then_branch
+    - else_branch
   Loop:
-    op_type: "Loop"
-    domain: ""
-    inputs: ["M", "cond", "v_initial"]
-    attributes: ["body"]
+    op_type: Loop
+    domain: ''
+    inputs:
+    - M
+    - cond
+    - v_initial
+    attributes:
+    - body
   Scan:
-    op_type: "Scan"
-    domain: ""
-    inputs: ["sequence_lens", "initial_state_and_scan_inputs"]
-    attributes: ["body", "num_scan_inputs"]
+    op_type: Scan
+    domain: ''
+    inputs:
+    - sequence_lens
+    - initial_state_and_scan_inputs
+    attributes:
+    - body
+    - num_scan_inputs

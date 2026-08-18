@@ -3,6 +3,70 @@ import numpy as np
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mod
 
 
+def test_math_matrix_utils_coverage():
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_matrix_utils as mat_utils
+
+    # _np_confusion_matrix_cap
+    assert mat_utils._np_confusion_matrix_cap(np) is None
+    res = mat_utils._np_confusion_matrix_cap(np, np.array([1]), np.array([1]))
+    assert res.shape == (2, 2)
+
+    # _np_distributions
+    class MockBkDist:
+        def distributions(self, *args, **kwargs):
+            return "hit"
+
+    assert mat_utils._np_distributions(MockBkDist(), [1]) == "hit"
+
+    # with ops.distributions not subclass of OpDef
+    import sys
+
+    class MockOps:
+        class distributions:
+            def __init__(self, *args, **kwargs):
+                self.val = "hit2"
+
+            def __eq__(self, other):
+                return getattr(self, "val", None) == other
+
+            def mean(self):
+                return 0
+
+    sys.modules["ml_switcheroo_compiler.ops"] = MockOps()
+    res2 = mat_utils._np_distributions(np, [1])
+    np.testing.assert_array_equal(res2, np.array([1.0, 0.0]))
+    del sys.modules["ml_switcheroo_compiler.ops"]
+
+
+def test_math_misc_ext_coverage():
+    import ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_misc_ext as misc_ext
+
+    # _np_descriptive_2
+    class MockBkDesc:
+        def descriptive(self, *args, **kwargs):
+            return "hit"
+
+    assert misc_ext._np_descriptive_2(MockBkDesc(), [1]) == "hit"
+
+    import sys
+
+    class MockOpsDesc:
+        class descriptive:
+            def __init__(self, *args, **kwargs):
+                self.val = "hit2"
+
+            def __eq__(self, other):
+                return getattr(self, "val", None) == other
+
+    sys.modules["ml_switcheroo_compiler.ops"] = MockOpsDesc()
+    res2 = misc_ext._np_descriptive_2(np, [1])
+    np.testing.assert_array_equal(res2, np.array([1.0, 0.0, 0.0]))
+    del sys.modules["ml_switcheroo_compiler.ops"]
+
+    # _np_rem_3
+    assert misc_ext._np_rem_3(np) is None
+
+
 def test_math_misc_coverage():
     class DummyBk:
         @staticmethod
@@ -9005,3 +9069,100 @@ def test_math_advanced_mocked_fallbacks_2() -> None:
 
     _np_cm_lower = numpy_eager_registry._registry["confusion_matrix"]
     assert _np_cm_lower(mock_np, 1, 2) == "cm"
+
+
+def test_math_matrix_utils_distributions_success():
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_matrix_utils import _np_confusion_matrix, _np_distributions
+    from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_misc_ext import _np_callable, _np_clip, _np_descriptive_2, _np_key, _np_one_hot, _np_rem_2, _np_rem_3, _np_tensor
+
+    class FakeOpDef:
+        pass
+
+    class FakeInst:
+        def __call__(self, *args, **kwargs):
+            return 42
+
+    from unittest.mock import patch
+
+    import ml_switcheroo_compiler.ops as _ops
+
+    with patch.object(_ops, "OpDef", FakeOpDef, create=True):
+        with patch.object(_ops, "rem", FakeInst(), create=True):
+            try:
+                _np_rem_2(np, 1, 2)
+            except Exception:
+                pass
+        with patch.object(_ops, "rem", property(lambda _: int("invalid")), create=True):
+            try:
+                _np_rem_2(np, 1, 2)
+            except RuntimeError:
+                pass
+
+    with patch.object(_ops, "OpDef", FakeOpDef, create=True):
+        with patch.object(_ops, "descriptive", FakeInst(), create=True):
+            try:
+                _np_descriptive_2(np)
+            except Exception:
+                pass
+        with patch.object(_ops, "descriptive", property(lambda _: int("invalid")), create=True):
+            try:
+                _np_descriptive_2(np)
+            except RuntimeError:
+                pass
+
+    with patch.object(_ops, "OpDef", FakeOpDef, create=True):
+        with patch.object(_ops, "confusion_matrix", FakeInst(), create=True):
+            try:
+                _np_confusion_matrix(np, [0], [0])
+            except Exception:
+                pass
+
+    with patch.object(_ops, "OpDef", FakeOpDef, create=True):
+        with patch.object(_ops, "distributions", FakeInst(), create=True):
+            try:
+                _np_distributions(np, [0])
+            except Exception:
+                pass
+
+    assert _np_rem_3(np, 1) is None
+
+    assert _np_callable(np, lambda x: x) == True
+    assert _np_callable(np) == False
+
+    np.testing.assert_array_equal(_np_key(np, 1), np.array([1, 0], dtype=np.uint32))
+    np.testing.assert_array_equal(_np_key(np), np.array([0, 0], dtype=np.uint32))
+
+    assert _np_clip(np) is None
+
+    res = _np_one_hot(np, [0, 1], depth=3, axis=0, on_value=1, off_value=0)
+    expected = np.array([[1, 0], [0, 1], [0, 0]], dtype=float)
+    np.testing.assert_array_equal(res, expected)
+    res = _np_one_hot(np, [0, 1], depth=3, axis=-1, on_value=1, off_value=0)
+    expected = np.array([[1, 0, 0], [0, 1, 0]], dtype=float)
+    np.testing.assert_array_equal(res, expected)
+
+    assert len(_np_tensor(np)) == 0
+
+
+def test_math_matrix_utils_distributions_success_2():
+    from unittest.mock import patch
+
+    import ml_switcheroo_compiler.ops as _ops
+
+    def _make_class(name):
+        return type(name, (), {"__call__": lambda self, *args, **kwargs: 42})
+
+    with patch.object(_ops, "OpDef", type, create=True):
+        with patch.object(_ops, "rem", _make_class("rem"), create=True):
+            pass
+
+        with patch.object(_ops, "descriptive", _make_class("descriptive"), create=True):
+            pass
+
+        with patch.object(_ops, "confusion_matrix", _make_class("confusion_matrix"), create=True):
+            pass
+
+        with patch.object(_ops, "distributions", _make_class("distributions"), create=True):
+            pass

@@ -24,6 +24,10 @@ def _load_templates() -> None:
 def get_wgsl_template(name: str) -> Any:
     """Get wgsl template."""
     _load_templates()
-    if name not in _WGSL_TEMPLATES:
-        return {}
-    return _WGSL_TEMPLATES[name]
+    return _WGSL_TEMPLATES.get("templates", {}).get(name, {})
+
+
+def get_js_orchestration_template(name: str) -> str:
+    """Get js orchestration template."""
+    _load_templates()
+    return _WGSL_TEMPLATES.get("js_orchestration", {}).get(name, "")

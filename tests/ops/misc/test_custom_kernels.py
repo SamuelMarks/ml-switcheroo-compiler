@@ -41,7 +41,9 @@ def test_cuda_kernel_tracing(mock_emit: object) -> None:
             )
             assert len(outs) == 1
             assert mock_emit.called
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass
 
 
@@ -69,7 +71,9 @@ def test_metal_kernel_tracing(mock_emit: object) -> None:
             )
             assert len(outs) == 1
             assert mock_emit.called
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass
 
 
@@ -97,7 +101,9 @@ def test_precompiled_cuda_kernel_tracing(mock_emit: object) -> None:
             )
             assert len(outs) == 1
             assert mock_emit.called
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass
 
 
@@ -125,7 +131,9 @@ def test_cuda_kernel_eager(mock_execute_op: object) -> None:
             )
             assert len(outs) == 1
             assert mock_execute_op.called
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass
 
 
@@ -153,7 +161,9 @@ def test_metal_kernel_eager(mock_execute_op: object) -> None:
             )
             assert len(outs) == 1
             assert mock_execute_op.called
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass
 
 
@@ -181,7 +191,9 @@ def test_precompiled_cuda_kernel_eager(mock_execute_op: object) -> None:
             )
             assert len(outs) == 1
             assert mock_execute_op.called
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass
 
 
@@ -199,5 +211,7 @@ def test_op_defs() -> None:
         assert op2.infer_shape() == ()
         op3 = PrecompiledCudaKernelOp()
         assert op3.infer_shape() == ()
-    except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
+    except Exception as e:
+        raise e
+    except BaseException:
         pass

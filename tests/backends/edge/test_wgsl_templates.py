@@ -84,3 +84,18 @@ def test_unknown_wgsl_template():
     from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
 
     assert get_wgsl_template("nonexistent_template") == {}
+
+
+def test_wgsl_provider_no_file():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.backends.edge.wgsl import wgsl_provider
+
+    # Reset cache to force reload
+    wgsl_provider._WGSL_TEMPLATES = {}
+
+    with patch("os.path.exists", return_value=False):
+        assert wgsl_provider.get_wgsl_template("any") == {}
+
+    # Reset cache again to not affect other tests
+    wgsl_provider._WGSL_TEMPLATES = {}

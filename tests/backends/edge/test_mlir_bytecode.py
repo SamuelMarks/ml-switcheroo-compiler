@@ -6,16 +6,16 @@ from ml_switcheroo_compiler.backends.edge.mlir_bytecode import MLIRBytecodeEncod
 def test_mlir_bytecode_encoder():
     """Test MLIRBytecodeEncoder."""
     encoder = MLIRBytecodeEncoder()
-    assert encoder.strings == []
+    assert encoder.strings == ["builtin", "func", "stablehlo"]
 
     # Test adding strings
     idx1 = encoder._add_string("hello")
     idx2 = encoder._add_string("world")
     idx3 = encoder._add_string("hello")
-    assert idx1 == 0
-    assert idx2 == 1
-    assert idx3 == 0
-    assert encoder.strings == ["hello", "world"]
+    assert idx1 == 3
+    assert idx2 == 4
+    assert idx3 == 3
+    assert encoder.strings == ["builtin", "func", "stablehlo", "hello", "world"]
 
     # Test add dialect
     encoder.add_dialect("func")

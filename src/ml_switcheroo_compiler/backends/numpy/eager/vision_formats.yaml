@@ -1,0 +1,16 @@
+# Eager Vision Format Configuration for Pillow
+
+formats:
+  DecodeImage:
+    default_channels: 3
+    supported: ["jpeg", "png", "bmp", "gif", "webp"]
+  DecodeJpeg:
+    default_channels: 3
+    supported: ["jpeg"]
+  DecodePng:
+    default_channels: 4
+    supported: ["png"]
+  EncodeJpeg:
+    format: "JPEG"
+  EncodePng:
+    format: "PNG"

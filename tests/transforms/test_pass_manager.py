@@ -21,9 +21,10 @@ def test_load_from_config():
 
     pm = PassManager()
     with patch("os.path.exists", return_value=True):
-        with patch("builtins.open", mock_open(read_data=yaml.dump({"execution_order": ["dead_code_elimination"], "cost_model": {"memory_costs": {}, "compute_costs": {}, "default_memory_cost": 0, "default_compute_cost": 0}, "fusion_patterns": {}}))):
+        with patch("builtins.open", mock_open(read_data=yaml.dump({"execution_order": ["dead_code_elimination", "invalid_pass_name"], "cost_model": {"memory_costs": {}, "compute_costs": {}, "default_memory_cost": 0, "default_compute_cost": 0}, "fusion_patterns": {}}))):
             pm.load_from_config()
             assert "dead_code_elimination" in pm.pass_names
+            assert "invalid_pass_name" not in pm.pass_names
 
     with patch("os.path.exists", return_value=False):
         pm2 = PassManager()

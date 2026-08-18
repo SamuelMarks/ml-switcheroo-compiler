@@ -1,12 +1,12 @@
-"""Test WebGL backend edge cases coverage."""
-
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
-
+# ruff: noqa
+import pytest
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
 def test_webgl_compilation_and_orchestration():
     """Test webgl compilation and orchestration."""
+
     g = LogicalGraph(outputs=["out"])
 
     n_multi = LogicalNode(id="in1", op_type="Input", shape_metadata=(2, 3, 4))
@@ -37,12 +37,14 @@ def test_webgl_compilation_1d():
 
     n_exp = LogicalNode(id="out", op_type="Exp", inputs=["in1"], shape_metadata=(4,))
     g.nodes["out"] = n_exp
+
     gen = WebGLCodeGenerator(g)
     assert "exp(" in gen.generate()
 
     # Also test empty shape
     n_empty = LogicalNode(id="out2", op_type="Input", shape_metadata=())
     g.nodes["out2"] = n_empty
+
     gen = WebGLCodeGenerator(g)
     # _get_shape_and_strides
     assert gen._get_shape_and_strides(n_empty) == ([], [])
@@ -52,6 +54,7 @@ def test_webgl_no_inputs():
     """Test webgl without inputs."""
     g = LogicalGraph(outputs=["n1"])
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Constant", attributes={"value": 1.0}, shape_metadata=(5, 5))
+
     gen = WebGLCodeGenerator(g)
     code = gen.generate()
 
@@ -64,6 +67,7 @@ def test_webgl_input_missing_shape():
     g = LogicalGraph(outputs=["n1"])
     n1 = LogicalNode(id="n1", op_type="Input")
     g.nodes["n1"] = n1
+
     gen = WebGLCodeGenerator(g)
     shape, strides = gen._get_shape_and_strides(n1)
     assert shape == []
@@ -98,6 +102,7 @@ def test_webgl_orchestration_branches():
     # Make a non-input node have shape > 1!
     g = LogicalGraph(outputs=[])
     g.nodes["const1"] = LogicalNode(id="const1", op_type="Constant", shape_metadata=(2, 2))
+
     gen = WebGLCodeGenerator(g)
     code = gen.generate()
     assert "int idx = 0;" in code  # has_ndim_gt_1 is True, no inputs
@@ -108,3 +113,114 @@ def test_webgl_orchestration_branches():
     gen2 = WebGLCodeGenerator(g2)
     code2 = gen2.generate()
     assert "vec4(fake_id" in code2
+
+
+def test_webgl_templates_coverage():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph
+
+    g = LogicalGraph()
+    gen = WebGLCodeGenerator(g)
+    templates = gen._get_templates()
+    assert hasattr(templates, "js_shader_compiler")
+
+
+def test_webgl_texture_helpers():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph()
+    n_multi = LogicalNode(id="in1", op_type="Input", shape_metadata=(2, 3, 4))
+    g.nodes = {"in1": n_multi}
+    g.outputs = ["in1"]
+    gen = WebGLCodeGenerator(g)
+    code = gen.generate()
+    assert "float get_val_in_0(int idx)" in code
+
+
+def test_webgl_generic_visit_unhandled():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph()
+    gen = WebGLCodeGenerator(g)
+    n = LogicalNode(id="unhandled", op_type="UnknownOp", shape_metadata=(2,))
+    res = gen.generic_visit(n, [])
+    assert res == "v_unhandled"
+
+
+def test_webgl_output_id_fallback():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph()
+    # Output id that is not in nodes
+    g.outputs = ["not_in_graph"]
+    gen = WebGLCodeGenerator(g)
+    code = gen.generate()
+    assert "vec4(not_in_graph" in code
+
+
+def test_webgl_num_elements_fallback():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph()
+    n_multi = LogicalNode(id="in1", op_type="Input")
+    g.nodes = {"in1": n_multi}
+    g.outputs = ["in1"]
+    gen = WebGLCodeGenerator(g)
+    code = gen.generate()
+    assert "input_data_0.length" in code
+
+
+def test_webgl_compilation_0d_input():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph(outputs=["out"])
+
+    n_multi = LogicalNode(id="in1", op_type="Input", shape_metadata=())
+    n_generic = LogicalNode(id="out", op_type="Tan", inputs=["in1"], shape_metadata=())
+
+    g.nodes = {"in1": n_multi, "out": n_generic}
+
+    gen = WebGLCodeGenerator(g)
+    code = gen.generate()
+
+    assert "tan" in code
+
+
+def test_webgl_compilation_zero_elements():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph(outputs=["out"])
+
+    n_multi = LogicalNode(id="in1", op_type="Input", shape_metadata=(0, 2))
+    n_generic = LogicalNode(id="out", op_type="Tan", inputs=["in1"], shape_metadata=(0, 2))
+
+    g.nodes = {"in1": n_multi, "out": n_generic}
+
+    gen = WebGLCodeGenerator(g)
+    code = gen.generate()
+
+    assert "float get_val_in_0(int idx)" in code
+    assert "tan" in code
+
+
+def test_webgl_compilation_1d_gt_1():
+    from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+    from ml_switcheroo_ir import LogicalGraph, LogicalNode
+
+    g = LogicalGraph(outputs=["out"])
+
+    n_multi = LogicalNode(id="in1", op_type="Input", shape_metadata=(1,))
+    n_generic = LogicalNode(id="out", op_type="Tan", inputs=["in1"], shape_metadata=(1,))
+
+    g.nodes = {"in1": n_multi, "out": n_generic}
+
+    gen = WebGLCodeGenerator(g)
+    code = gen.generate()
+
+    assert "tan" in code

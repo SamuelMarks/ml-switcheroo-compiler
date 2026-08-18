@@ -1,123 +1,93 @@
 templates:
   unary:
-    body: |
-      // SIMD Unary: {op_type}
-      int limit_{clean_id} = {nelem} - ({nelem} % 4);
-      for (int i = 0; i < limit_{clean_id}; i += 4) {{
-          v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);
-          v128_t res = {simd_expr};
-          wasm_v128_store(&buf_{clean_id}[i], res);
-      }}
-      for (int j = limit_{clean_id}; j < {nelem}; ++j) {{
-          float in0_val = buf_{in0}[j];
-          buf_{clean_id}[j] = {scalar_expr};
-      }}
-
+    body: "// SIMD Unary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);\n\
+      \    v128_t res = {simd_expr};\n    wasm_v128_store(&buf_{clean_id}[i], res);\n\
+      }}\nfor (int j = limit_{clean_id}; j < {nelem}; ++j) {{\n    float in0_val =\
+      \ buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"
   binary:
-    body: |
-      // SIMD Binary: {op_type}
-      int limit_{clean_id} = {nelem} - ({nelem} % 4);
-      for (int i = 0; i < limit_{clean_id}; i += 4) {{
-          v128_t in0_val = wasm_v128_load(&buf_{in0}[i]);
-          v128_t in1_val = wasm_v128_load(&buf_{in1}[i]);
-          v128_t res = {simd_expr};
-          wasm_v128_store(&buf_{clean_id}[i], res);
-      }}
-      for (int j = limit_{clean_id}; j < {nelem}; ++j) {{
-          float in0_val = buf_{in0}[j];
-          float in1_val = buf_{in1}[j];
-          buf_{clean_id}[j] = {scalar_expr};
-      }}
-
+    body: "// SIMD Binary: {op_type}\nint limit_{clean_id} = {nelem} - ({nelem} %\
+      \ 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t in0_val\
+      \ = wasm_v128_load(&buf_{in0}[i]);\n    v128_t in1_val = wasm_v128_load(&buf_{in1}[i]);\n\
+      \    v128_t res = {simd_expr};\n    wasm_v128_store(&buf_{clean_id}[i], res);\n\
+      }}\nfor (int j = limit_{clean_id}; j < {nelem}; ++j) {{\n    float in0_val =\
+      \ buf_{in0}[j];\n    float in1_val = buf_{in1}[j];\n    buf_{clean_id}[j] =\
+      \ {scalar_expr};\n}}\n"
   matmul:
-    body: |
-      // MatMul / DotGeneral Fallback
-      for (int m = 0; m < {M}; ++m) {{
-          for (int n = 0; n < {N}; ++n) {{
-              float sum = 0.0f;
-              for (int k = 0; k < {K}; ++k) {{
-                  sum += buf_{in0}[m * {K} + k] * buf_{in1}[k * {N} + n];
-              }}
-              buf_{clean_id}[m * {N} + n] = sum;
-          }}
-      }}
-
+    body: "// SIMD MatMul\nfor (int i = 0; i < {M}; ++i) {{\n    for (int j = 0; j\
+      \ < {N}; ++j) {{\n        float sum = 0.0f;\n        // naive matmul for now\
+      \ in wasm\n        for (int k = 0; k < {K}; ++k) {{\n            sum += buf_{in0}[i\
+      \ * {K} + k] * buf_{in1}[k * {N} + j];\n        }}\n        buf_{clean_id}[i\
+      \ * {N} + j] = sum;\n    }}\n}}\n"
   reduction:
-    body: |
-      // SIMD Reduction: {op_type}
-      v128_t sum_{clean_id} = wasm_f32x4_splat({init_val}f);
-      float scalar_sum_{clean_id} = {init_val}f;
-      int limit_{clean_id} = {nelem_in} - ({nelem_in} % 4);
-      for (int i = 0; i < limit_{clean_id}; i += 4) {{
-          v128_t val = wasm_v128_load(&buf_{in0}[i]);
-          sum_{clean_id} = {simd_expr};
-      }}
-      for (int j = limit_{clean_id}; j < {nelem_in}; ++j) {{
-          float val = buf_{in0}[j];
-          scalar_sum_{clean_id} = {scalar_expr};
-      }}
-      // Final combine across lanes
-      buf_{clean_id}[0] = {final_combine};
-
+    body: "// SIMD Reduction: {op_type}\nv128_t sum_{clean_id} = wasm_f32x4_splat({init_val}f);\n\
+      float scalar_sum_{clean_id} = {init_val}f;\nint limit_{clean_id} = {nelem_in}\
+      \ - ({nelem_in} % 4);\nfor (int i = 0; i < limit_{clean_id}; i += 4) {{\n  \
+      \  v128_t val = wasm_v128_load(&buf_{in0}[i]);\n    sum_{clean_id} = {simd_expr};\n\
+      }}\nfor (int j = limit_{clean_id}; j < {nelem_in}; ++j) {{\n    float val =\
+      \ buf_{in0}[j];\n    scalar_sum_{clean_id} = {scalar_expr};\n}}\n// Final combine\
+      \ across lanes\nbuf_{clean_id}[0] = {final_combine};\n"
   fallback_copy:
-    body: |
-      // SIMD Fallback Copy
-      int limit_{clean_id} = {nelem} - ({nelem} % 4);
-      for (int i = 0; i < limit_{clean_id}; i += 4) {{
-          v128_t val = wasm_v128_load(&buf_{in0}[i]);
-          wasm_v128_store(&buf_{clean_id}[i], val);
-      }}
-      for (int j = limit_{clean_id}; j < {nelem}; ++j) {{
-          buf_{clean_id}[j] = buf_{in0}[j];
-      }}
-
+    body: "// SIMD Fallback Copy\nint limit_{clean_id} = {nelem} - ({nelem} % 4);\n\
+      for (int i = 0; i < limit_{clean_id}; i += 4) {{\n    v128_t val = wasm_v128_load(&buf_{in0}[i]);\n\
+      \    wasm_v128_store(&buf_{clean_id}[i], val);\n}}\nfor (int j = limit_{clean_id};\
+      \ j < {nelem}; ++j) {{\n    buf_{clean_id}[j] = buf_{in0}[j];\n}}\n"
   conv_pool_1d_flat:
-    body: |
-      // Dummy Pool/Conv (identity) placeholder
-      for (int i = 0; i < {nelem}; ++i) {{
-          buf_{clean_id}[i] = buf_{in0}[0] {math_op};
-      }}
-
+    body: "// Dummy Pool/Conv (identity) placeholder\nfor (int i = 0; i < {nelem};\
+      \ ++i) {{\n    buf_{clean_id}[i] = buf_{in0}[0] {math_op};\n}}\n"
   unary_scalar:
-    body: |
-      // Scalar Unary: {op_type}
-      for (int j = 0; j < {nelem}; ++j) {{
-          float in0_val = buf_{in0}[j];
-          buf_{clean_id}[j] = {scalar_expr};
-      }}
-
+    body: "// Scalar Unary: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n    float\
+      \ in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n}}\n"
   binary_scalar:
-    body: |
-      // Scalar Binary: {op_type}
-      for (int j = 0; j < {nelem}; ++j) {{
-          float in0_val = buf_{in0}[j];
-          float in1_val = buf_{in1}[j];
-          buf_{clean_id}[j] = {scalar_expr};
-      }}
-
+    body: "// Scalar Binary: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n   \
+      \ float in0_val = buf_{in0}[j];\n    float in1_val = buf_{in1}[j];\n    buf_{clean_id}[j]\
+      \ = {scalar_expr};\n}}\n"
   while_loop:
-    body: |
-      // While Loop
-      int i_{clean_id} = 0;
-      while ({condition_expr} && i_{clean_id} < {max_iters}) {{
-          {loop_body}
-          i_{clean_id}++;
-      }}
-
+    body: "// WhileLoop\nfloat current_state = buf_{in0}[0]; // init state (mock)\n\
+      for (int i = 0; i < {max_iters}; ++i) {{\n    if (!({condition_expr})) break;\n\
+      \    {loop_body}\n}}\nbuf_{clean_id}[0] = current_state;\n"
   cond:
-    body: |
-      // Conditional
-      if ({condition_expr}) {{
-          {true_body}
-      }} else {{
-          {false_body}
-      }}
-
+    body: "// Cond\nif ({condition_expr}) {{\n    {true_body}\n}} else {{\n    {false_body}\n\
+      }}\n"
   scan:
-    body: |
-      // Scan
-      float acc_{clean_id} = {init_val};
-      for (int i = 0; i < {nelem}; ++i) {{
-          acc_{clean_id} = {scan_op_expr};
-          buf_{clean_id}[i] = acc_{clean_id};
-      }}
+    body: "// Scan\nfloat acc = {init_val};\nfor (int i = 0; i < {nelem}; ++i) {{\n\
+      \    acc = {scan_op_expr};\n}}\nbuf_{clean_id}[0] = acc;\n"
+  kernel_headers:
+    body: '#include <wasm_simd128.h>
+
+      #include <cmath>
+
+      #include <cstdlib>
+
+      #include <algorithm>
+
+      '
+  kernel_main_start:
+    body: 'extern "C" {{
+
+      void main_kernel({params_str}) {{
+
+      '
+  send:
+    body: '// Send primitive: No-op in WASM, handled by JS orchestrator
+
+      '
+  recv:
+    body: '// Recv primitive: No-op in WASM, handled by JS orchestrator
+
+      '
+  conv2d:
+    body: "// Naive Conv2D for WASM\nint out_idx = 0;\nfor (int b = 0; b < {B}; ++b)\
+      \ {{\n    for (int oc = 0; oc < {out_channels}; ++oc) {{\n        for (int oy\
+      \ = 0; oy < {out_height}; ++oy) {{\n            for (int ox = 0; ox < {out_width};\
+      \ ++ox) {{\n                float sum = 0.0f;\n                for (int ic =\
+      \ 0; ic < {in_channels}; ++ic) {{\n                    for (int fy = 0; fy <\
+      \ {filter_h}; ++fy) {{\n                        for (int fx = 0; fx < {filter_w};\
+      \ ++fx) {{\n                            int in_y = oy * {stride_h} + fy;\n \
+      \                           int in_x = ox * {stride_w} + fx;\n             \
+      \               int in_idx = ((b * {in_channels} + ic) * {in_height} + in_y)\
+      \ * {in_width} + in_x;\n                            int w_idx = ((oc * {in_channels}\
+      \ + ic) * {filter_h} + fy) * {filter_w} + fx;\n                            sum\
+      \ += buf_{in0}[in_idx] * buf_{in1}[w_idx];\n                        }}\n   \
+      \                 }}\n                }}\n                buf_{clean_id}[out_idx++]\
+      \ = sum;\n            }}\n        }}\n    }}\n}}\n"

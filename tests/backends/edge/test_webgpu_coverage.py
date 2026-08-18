@@ -241,4 +241,4 @@ def test_webgpu_conv2d_fallback_coverage():
     gen.sorted_nodes = [in1, in2, n_conv]
 
     code = gen.generate()
-    assert "buf_out_f32[idx] = buf_in0_f32[0] * buf_in1_f32[0]" in code
+    assert "let out_width = 16u;" in code

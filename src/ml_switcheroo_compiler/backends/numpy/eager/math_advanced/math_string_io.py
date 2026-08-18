@@ -292,7 +292,26 @@ def _np_decode_csv_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     return tuple([np.stack([r[i] for r in out]) for i in range(len(record_defaults))])
 
 
+def _load_vision_formats() -> dict:
+    """Load vision formats from YAML.
+
+    Returns:
+        dict: A dictionary of vision formats.
+    """
+    import os
+
+    import yaml
+
+    yaml_path = os.path.join(os.path.dirname(__file__), "..", "vision_formats.yaml")
+    if os.path.exists(yaml_path):
+        with open(yaml_path) as f:
+            return yaml.safe_load(f).get("formats", {})
+    return {}
+
+
 @numpy_eager_registry.register("DecodeImage")
+@numpy_eager_registry.register("DecodeJpeg")
+@numpy_eager_registry.register("DecodePng")
 def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """Evaluate _np_decode_image_camel operation.
 
@@ -306,13 +325,84 @@ def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
     Raises:
         RuntimeError: An exception.
     """
+    import io
+
     import numpy as np
+    from PIL import Image
 
     if len(args) == 0:
         return np.array([])
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
+
     try:
-        raise NotImplementedError("Image decoding requires PIL, which is not permitted.")
+        if not isinstance(data, (bytes, bytearray)):
+            raise ValueError("Expected bytes for image decoding.")
+
+        image = Image.open(io.BytesIO(data))
+
+        # Read channels config if needed, default to RGB
+        channels = kwargs.get("channels", 0)
+        if channels == 1:
+            image = image.convert("L")
+            arr = np.array(image, dtype=np.uint8)[..., np.newaxis]
+        elif channels == 3:
+            image = image.convert("RGB")
+            arr = np.array(image, dtype=np.uint8)
+        elif channels == 4:
+            image = image.convert("RGBA")
+            arr = np.array(image, dtype=np.uint8)
+        else:
+            arr = np.array(image, dtype=np.uint8)
+            if arr.ndim == 2:
+                arr = arr[..., np.newaxis]
+
+        return arr
+    except Exception as e:
+        raise RuntimeError(f"Eager execution failed: {e}") from e
+
+
+@numpy_eager_registry.register("EncodeJpeg")
+@numpy_eager_registry.register("EncodePng")
+def _np_encode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
+    """Evaluate encode operation.
+
+    Args:
+        backend_module (object): The backend_module parameter.
+        *args (object): Positional args.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: Result.
+
+    Raises:
+        RuntimeError: An exception.
+    """
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    if len(args) == 0:
+        return np.array(b"")
+
+    arr = np.asarray(args[0])
+
+    formats = _load_vision_formats()
+
+    # We cheat to get the op name from kwargs or assume JPEG
+    op_name = kwargs.get("op_name", "EncodeJpeg")
+    fmt = formats.get(op_name, {}).get("format", "JPEG")
+
+    try:
+        if arr.ndim == 3 and arr.shape[-1] == 1:
+            arr = arr.squeeze(-1)
+
+        if arr.dtype != np.uint8:
+            arr = arr.astype(np.uint8)
+
+        image = Image.fromarray(arr)
+        bio = io.BytesIO()
+        image.save(bio, format=fmt)
+        return np.array(bio.getvalue())
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 

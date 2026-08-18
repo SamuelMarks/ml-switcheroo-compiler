@@ -18,22 +18,16 @@ def _get_dtype_size(dtype_str: str) -> int:
     Returns:
         int: The size in bytes.
     """
-    sizes = {
-        "float64": 8,
-        "float32": 4,
-        "float16": 2,
-        "bfloat16": 2,
-        "int64": 8,
-        "int32": 4,
-        "int16": 2,
-        "int8": 1,
-        "uint64": 8,
-        "uint32": 4,
-        "uint16": 2,
-        "uint8": 1,
-        "bool": 1,
-    }
-    return sizes.get(dtype_str, 4)
+    import os
+
+    import yaml
+
+    yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+    if os.path.exists(yaml_path):
+        with open(yaml_path) as f:
+            data = yaml.safe_load(f)
+            return data.get("memory_sizes", {}).get(dtype_str, 4)
+    return 4
 
 
 def _get_node_byte_size(node: IRNode) -> int:

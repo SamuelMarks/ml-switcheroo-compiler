@@ -44,6 +44,23 @@ def test_op_formatter_edge_cases_extended():
     ctx = FormatterContext("np", "Cast", ["a"], {"dtype": "float32"})
     assert OpFormatter.format_generic_fallback(ctx) == "np.cast(a, dtype='float32')"
 
+    ctx_tuple = FormatterContext("np", "Reshape", ["a"], {"shape": "(2, 2)"})
+    assert OpFormatter.format_generic_fallback(ctx_tuple) == "np.reshape(a, shape=(2, 2))"
+
+    ctx_int = FormatterContext("np", "Add", ["a"], {"val": 1})
+    assert OpFormatter.format_generic_fallback(ctx_int) == "np.add(a, val=1)"
+
+
+def test_op_formatter_inputs_placeholder():
+    assert OpFormatter.format_backend_string("func({__inputs__})", ["a", "b"], {}) == "func(a, b)"
+
+
+def test_fallback_handler_missing_op_type():
+    class DummyNodeNoOp:
+        pass
+
+    assert FallbackHandler.generate_fallback_code(DummyNodeNoOp(), ["a"], "np") == "np.unknown(a)"
+
 
 def test_op_formatter_edge_cases_continue():
     ctx = FormatterContext("np", "Cast", ["a"], {"node_id": "n1", "shape_metadata": ()})

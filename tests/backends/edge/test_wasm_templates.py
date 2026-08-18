@@ -21,6 +21,17 @@ def test_wasm_templates_validity():
         "in1": "in1_id",
         "K": 32,
         "N": 32,
+        "B": 1,
+        "out_channels": 1,
+        "out_height": 1,
+        "out_width": 1,
+        "in_channels": 1,
+        "in_height": 1,
+        "in_width": 1,
+        "filter_h": 1,
+        "filter_w": 1,
+        "stride_h": 1,
+        "stride_w": 1,
         "M": 32,
         "nelem_in": 10,
         "simd_expr": "wasm_f32x4_add(in0_val, in1_val)",
@@ -35,6 +46,7 @@ def test_wasm_templates_validity():
         "true_body": "true_body()",
         "false_body": "false_body()",
         "scan_op_expr": "scan_op()",
+        "params_str": "int a, float b",
     }
 
     for name, tpl in templates.items():

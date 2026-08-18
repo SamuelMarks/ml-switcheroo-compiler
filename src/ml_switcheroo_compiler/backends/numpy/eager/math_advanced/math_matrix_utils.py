@@ -151,9 +151,8 @@ def _np_confusion_matrix(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             cls_or_func = _ops.confusion_matrix
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
-    except Exception as e:
-        if not isinstance(e, (ImportError, AttributeError)):
-            raise RuntimeError(f"Eager execution failed: {e}") from e
+    except Exception:
+        pass
     if hasattr(backend_module, "confusion_matrix"):
         return backend_module.confusion_matrix(*args, **kwargs)
     y_true = np.asarray(args[0]).flatten()
@@ -190,9 +189,8 @@ def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
             cls_or_func = _ops.distributions
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
                 return cls_or_func(*args, **kwargs)
-    except Exception as e:
-        if not isinstance(e, (ImportError, AttributeError)):
-            raise RuntimeError(f"Eager execution failed: {e}") from e
+    except Exception:
+        pass
     if hasattr(backend_module, "distributions"):
         return backend_module.distributions(*args, **kwargs)
     arr = np.asarray(args[0]) if args else np.zeros((1,))

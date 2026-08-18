@@ -1,0 +1,11 @@
+safetensors:
+  dtype_map:
+    float32: "F32"
+    float64: "F64"
+    float16: "F16"
+    int32: "I32"
+    int64: "I64"
+    int16: "I16"
+    int8: "I8"
+    uint8: "U8"
+    bool: "BOOL"

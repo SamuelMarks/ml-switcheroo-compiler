@@ -4,6 +4,8 @@
 import os
 from typing import Any, Callable, Optional
 
+import yaml
+
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
 
 
@@ -15,6 +17,13 @@ class ExportArchive:
         self.trackables: dict[int, Any] = {}
         self.endpoints: dict[str, Callable[..., Any]] = {}
         self.collections: dict[str, Any] = {}
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                self.schema = yaml.safe_load(f)
+        else:
+            self.schema = {"types": {}, "operations": {}}
 
     def track(self, resource: Any) -> None:
         """Track a resource.
@@ -34,77 +43,139 @@ class ExportArchive:
         """
         self.endpoints[name] = fn
 
-    def _build_signature_def(self, name: str) -> ProtobufWriter:
+    def _get_tf_dtype(self, dtype_str: str) -> int:
+        """Map IR dtype string to TF DT_* enum."""
+        return self.schema.get("types", {}).get(str(dtype_str).lower(), 1)  # Default DT_FLOAT
+
+    def _get_tf_op(self, op_type: str) -> str:
+        """Map IR op_type to TF NodeDef op."""
+        return self.schema.get("operations", {}).get(op_type, self.schema.get("operations", {}).get("fallback", "Placeholder"))
+
+    def _build_signature_def(self, name: str, graph: Any = None) -> ProtobufWriter:
         """Build a SignatureDef protobuf message.
 
         Args:
-        name (str): The name parameter.
+            name (str): The name parameter.
+            graph (Any, optional): The IR graph to inspect.
 
         Returns:
-        ProtobufWriter: Result.
+            ProtobufWriter: Result.
         """
         sig = ProtobufWriter()
         sig.add_string(3, name)  # method_name
 
-        # Add dummy input
-        inp_tensor = ProtobufWriter()
-        inp_tensor.add_string(1, "input")  # name
-        inp_tensor.add_varint(2, 1)  # dtype (DT_FLOAT)
+        if graph is not None:
+            # Dynamically build inputs
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
+            for i, node in enumerate(input_nodes):
+                inp_tensor = ProtobufWriter()
+                inp_tensor.add_string(1, node.id)  # name
+                inp_tensor.add_varint(2, self._get_tf_dtype(getattr(node, "dtype", "float32")))  # dtype
+                # Note: Adding shape TensorShapeProto would go here (field 3)
 
-        inp_map = ProtobufWriter()
-        inp_map.add_string(1, "x")
-        inp_map.add_message(2, inp_tensor)
+                inp_map = ProtobufWriter()
+                inp_map.add_string(1, f"input_{i}")  # Logical name
+                inp_map.add_message(2, inp_tensor)
+                sig.add_message(1, inp_map)  # inputs
 
-        sig.add_message(1, inp_map)  # inputs
+            # Dynamically build outputs
+            if hasattr(graph, "outputs") and graph.outputs:
+                for i, out_id in enumerate(graph.outputs):
+                    out_node = graph.nodes.get(out_id)
+                    dtype = getattr(out_node, "dtype", "float32") if out_node else "float32"
+
+                    out_tensor = ProtobufWriter()
+                    out_tensor.add_string(1, out_id)  # name
+                    out_tensor.add_varint(2, self._get_tf_dtype(dtype))  # dtype
+
+                    out_map = ProtobufWriter()
+                    out_map.add_string(1, f"output_{i}")  # Logical name
+                    out_map.add_message(2, out_tensor)
+                    sig.add_message(2, out_map)  # outputs
+        else:
+            # Dummy fallback if no graph provided
+            inp_tensor = ProtobufWriter()
+            inp_tensor.add_string(1, "input")
+            inp_tensor.add_varint(2, 1)  # DT_FLOAT
+
+            inp_map = ProtobufWriter()
+            inp_map.add_string(1, "x")
+            inp_map.add_message(2, inp_tensor)
+
+            sig.add_message(1, inp_map)
 
         return sig
 
-    def _build_graph_def(self) -> ProtobufWriter:
+    def _build_graph_def(self, graph: Any = None) -> ProtobufWriter:
         """Build a GraphDef protobuf message.
 
+        Args:
+            graph (Any, optional): The IR graph to serialize.
+
         Returns:
-        ProtobufWriter: Result.
+            ProtobufWriter: Result.
         """
-        graph = ProtobufWriter()
-        # Add a dummy node just to be compliant
-        node = ProtobufWriter()
-        node.add_string(1, "dummy_node")
-        node.add_string(2, "Placeholder")
-        graph.add_message(1, node)
+        graph_def = ProtobufWriter()
+
+        if graph is not None:
+            from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
+
+            sorted_nodes = DAGTopologicalSorter.sort(graph)
+
+            for node in sorted_nodes:
+                node_def = ProtobufWriter()
+                node_def.add_string(1, node.id)  # name
+                node_def.add_string(2, self._get_tf_op(node.op_type))  # op
+
+                for inp in node.inputs:
+                    node_def.add_string(3, inp)  # input
+
+                # Attributes (field 5, map<string, AttrValue>) would go here for completeness
+                graph_def.add_message(1, node_def)
+        else:
+            # Dummy node just to be compliant
+            dummy_node = ProtobufWriter()
+            dummy_node.add_string(1, "dummy_node")
+            dummy_node.add_string(2, "Placeholder")
+            graph_def.add_message(1, dummy_node)
 
         # versions
         versions = ProtobufWriter()
         versions.add_varint(1, 1)  # producer
-        graph.add_message(4, versions)
-        return graph
+        graph_def.add_message(4, versions)
+        return graph_def
 
-    def _build_saved_model(self) -> bytes:
+    def _build_saved_model(self, graph: Any = None) -> bytes:
         """Build the SavedModel protobuf bytes.
 
+        Args:
+            graph (Any, optional): The IR graph.
+
         Returns:
-        bytes: Result.
+            bytes: Result.
         """
         saved_model = ProtobufWriter()
         saved_model.add_varint(1, 1)  # saved_model_schema_version
 
         meta_graph = ProtobufWriter()
-        meta_graph.add_message(2, self._build_graph_def())  # graph_def
+        meta_graph.add_message(2, self._build_graph_def(graph))  # graph_def
 
         for name in self.endpoints:
             sig_map = ProtobufWriter()
             sig_map.add_string(1, name)
-            sig_map.add_message(2, self._build_signature_def(name))
+            sig_map.add_message(2, self._build_signature_def(name, graph))
             meta_graph.add_message(5, sig_map)  # signature_def
 
         saved_model.add_message(2, meta_graph)  # meta_graphs
         return saved_model.get_bytes()
 
-    def write_out(self, filepath: str, options: Optional[Any] = None) -> None:
+    def write_out(self, filepath: str, options: Optional[Any] = None, graph: Any = None) -> None:
         """Write the archive to a directory.
 
         Args:
             filepath: Target path.
             options: Save options.
+            graph: The IR graph to serialize.
         """
         os.makedirs(filepath, exist_ok=True)
 
@@ -125,7 +196,7 @@ class ExportArchive:
 
         # Save the SavedModel protobuf
         with open(os.path.join(filepath, "saved_model.pb"), "wb") as f:
-            f.write(self._build_saved_model())
+            f.write(self._build_saved_model(graph))
 
     def add_variable_collection(self, name: str, variables: Any) -> None:
         """Add a variable collection.

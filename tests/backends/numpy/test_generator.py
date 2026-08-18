@@ -28,8 +28,41 @@ def test_numpy_generator_generic_visit_dimension():
     assert res == "np.sum(x, axis=1)"
 
 
+def test_numpy_generator_save_load(tmp_path):
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
+
+    gen = NumpyGenerator(IRGraph())
+    arr = np.array([1, 2, 3])
+
+    # save/load
+    file1 = tmp_path / "test.npy"
+    gen.save(file1, arr)
+    res1 = gen.load(file1)
+    np.testing.assert_array_equal(res1, arr)
+
+    # savez
+    file2 = tmp_path / "test2.npz"
+    gen.savez(file2, a=arr)
+    res2 = gen.load(file2)
+    np.testing.assert_array_equal(res2["a"], arr)
+
+    # savez_compressed
+    file3 = tmp_path / "test3.npz"
+    gen.savez_compressed(file3, a=arr)
+    res3 = gen.load(file3)
+    np.testing.assert_array_equal(res3["a"], arr)
+
+
 def test_numpy_generator_get_rng():
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph
 
     rng = NumpyGenerator.get_numpy_rng(42)
     assert rng is not None
+
+    gen = NumpyGenerator(IRGraph())
+    assert gen._get_backend_prefix() == "np"
+    assert gen.get_helper_functions() == []

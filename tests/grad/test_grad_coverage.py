@@ -258,3 +258,48 @@ def test_grad_tensor_id_not_in_graph():
 
     res_wrt = _find_wrt_tensors(g)
     assert isinstance(res_wrt, tuple)
+
+
+def test_checkpoint_dtype_branches():
+
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.grad.checkpointing import checkpoint
+
+    def custom_fn_with_dtype(x):
+        import uuid
+
+        from ml_switcheroo_compiler.ir.core import LogicalNode
+        from ml_switcheroo_compiler.tracing.tracer import global_tracing_state
+
+        node = LogicalNode(id=str(uuid.uuid4()), op_type="Cast", inputs=[getattr(x.data, "id", "dummy")], attributes={"dtype": "float64"}, shape_metadata=x.shape)
+        if global_tracing_state.is_tracing and global_tracing_state.active_graph:
+            global_tracing_state.add_node(node)
+        return Tensor(node, TensorConfig(x.shape, "float64", x.device))
+
+    class DummyData:
+        id = "test_id"
+
+    t = Tensor(DummyData(), TensorConfig((), "float32", "cpu"))
+
+    from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+
+    def run():
+        return checkpoint(custom_fn_with_dtype)(t)
+
+    _trace_function(run, (), "test_chk")
+
+    def no_args_fn():
+        import uuid
+
+        from ml_switcheroo_compiler.ir.core import LogicalNode
+        from ml_switcheroo_compiler.tracing.tracer import global_tracing_state
+
+        node = LogicalNode(id=str(uuid.uuid4()), op_type="Identity", inputs=[], shape_metadata=())
+        if global_tracing_state.is_tracing and global_tracing_state.active_graph:
+            global_tracing_state.add_node(node)
+        return Tensor(node, TensorConfig((), "float32", "cpu"))
+
+    def run2():
+        return checkpoint(no_args_fn)()
+
+    _trace_function(run2, (), "test_chk2")

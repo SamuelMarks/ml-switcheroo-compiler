@@ -171,7 +171,7 @@ class ONNXCodeGenerator(BaseGenerator):
             variants = op_def.get("variants", {})
             if "edge_onnx" in variants:
                 gen = variants["edge_onnx"].get("generator")
-                if gen:  # pragma: no branch
+                if gen:
                     return gen  # type: ignore
             return self.schema.get("operations", {}).get("fallback", op_type)  # type: ignore
 

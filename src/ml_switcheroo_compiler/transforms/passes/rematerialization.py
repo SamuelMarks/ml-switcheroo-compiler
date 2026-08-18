@@ -87,7 +87,7 @@ def _find_target_nodes(nodes: list[IRNode], consumers: dict[str, list[str]], nod
             comp = _estimate_compute(n, rules)
             if mem > min_mem and comp / mem < max_ratio and consumers[n.id]:
                 max_dist = max(node_indices[c] for c in consumers[n.id]) - node_indices[n.id]
-                if max_dist > 10:  # pragma: no branch
+                if max_dist > 10:
                     to_remat.append(n)
     return to_remat
 

@@ -182,3 +182,19 @@ def test_spmd_insert_communications_not_inp_sharded_node_sharded_not_grad():
     # So if is_grad is False, it returns None.
     res = inject_spmd_communication_pass(g)
     assert res is False
+
+
+def test_spmd_empty_conditions(mocker):
+    from ml_switcheroo_compiler.transforms.passes.spmd import _process_spmd_input
+
+    # Create dummy rule with empty conditions
+    mock_rules = {"reductions": [], "communication_matrix": [{"state": [True, True], "conditions": []}]}
+    mocker.patch("ml_switcheroo_compiler.transforms.passes.spmd._get_spmd_rules", return_value=mock_rules)
+
+    graph = IRGraph()
+    in_node1 = IRNode(id="in1", op_type="Input", inputs=[], sharding=DummySharding(["x"]))
+    graph.nodes["in1"] = in_node1
+
+    node1 = IRNode(id="n1", op_type="Add", inputs=["in1"], sharding=DummySharding(["y"]))
+    res = _process_spmd_input(node1, 0, "in1", graph, DummySharding(["y"]))
+    assert res is None

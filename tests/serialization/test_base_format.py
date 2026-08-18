@@ -1,5 +1,7 @@
 """Test base serialization format."""
 
+import pytest
+
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
 
@@ -14,12 +16,14 @@ def test_base_format():
         def save(self, weights_np, filepath):
             return super().save(weights_np, filepath)
 
-    assert DummyLoader().load("dummy") is None
-    assert DummySaver().save({}, "dummy") is None
+    with pytest.raises(NotImplementedError):
+        DummyLoader().load("dummy")
+    with pytest.raises(NotImplementedError):
+        DummySaver().save({}, "dummy")
 
 
 def test_base_format_coverage():
-    from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
+    """Test base format coverage."""
 
     class DummyLoader(WeightLoader):
         def load(self, filepath):
@@ -29,5 +33,7 @@ def test_base_format_coverage():
         def save(self, weights_np, filepath):
             return super().save(weights_np, filepath)
 
-    assert DummySaver().save({}, "test.txt") is None
-    assert DummyLoader().load("test.txt") is None
+    with pytest.raises(NotImplementedError):
+        DummySaver().save({}, "test.txt")
+    with pytest.raises(NotImplementedError):
+        DummyLoader().load("test.txt")

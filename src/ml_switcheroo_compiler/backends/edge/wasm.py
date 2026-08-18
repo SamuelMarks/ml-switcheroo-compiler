@@ -128,23 +128,28 @@ class WasmCodeGenerator(BaseGenerator):
             "inline float _scalar_silu(float a, float dummy) { return a / (1.0f + std::exp(-a)); }",
             "inline float _scalar_sigmoid(float a, float dummy) { return 1.0f / (1.0f + std::exp(-a)); }",
             "inline float _scalar_cast(float a, float dummy) { return a; }",
-            "// --- SIMD Fast Math Approximations ---",
-            "inline v128_t _wasm_tanh(v128_t x) {",
-            "    v128_t one = wasm_f32x4_splat(1.0f);",
-            "    v128_t abs_x = wasm_f32x4_abs(x);",
-            "    v128_t den = wasm_f32x4_add(one, abs_x);",
-            "    return wasm_f32x4_div(x, den);",
-            "}",
-            "inline v128_t _wasm_sigmoid(v128_t x) {",
-            "    v128_t one = wasm_f32x4_splat(1.0f);",
-            "    v128_t half = wasm_f32x4_splat(0.5f);",
-            "    v128_t abs_x = wasm_f32x4_abs(x);",
-            "    v128_t den = wasm_f32x4_add(one, abs_x);",
-            "    v128_t div = wasm_f32x4_div(x, den);",
-            "    v128_t mul = wasm_f32x4_mul(div, half);",
-            "    return wasm_f32x4_add(mul, half);",
-            "}",
+            "// --- SIMD Fast Math Approximations from YAML ---",
         ]
+
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                intrinsics = yaml.safe_load(f).get("intrinsics", {})
+                for _op, data in intrinsics.items():
+                    if "macro_name" in data and "simd_expr" in data:
+                        helpers.append(f"inline v128_t {data['macro_name']}(v128_t x) {{")
+                        for line in data["simd_expr"].split("\n"):
+                            if line.strip():
+                                helpers.append(f"    {line}")
+                        helpers.append("}")
+
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers
+
+        helpers.extend(get_cpp_helpers())
         return helpers
 
     def generic_visit(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
@@ -160,19 +165,84 @@ class WasmCodeGenerator(BaseGenerator):
         """
         return getattr(node, "id", "")
 
+    def visit_Conv2D(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate Conv2D WASM."""
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+
+        template = get_wasm_template("conv2d")
+
+        inputs_list = getattr(node, "inputs", [])
+        input_nodes = [next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None) for inp in inputs_list]
+        in0_shape = getattr(input_nodes[0], "shape_metadata", [1, 1, 1, 1]) if len(input_nodes) > 0 and input_nodes[0] else [1, 1, 1, 1]
+        w_shape = getattr(input_nodes[1], "shape_metadata", [1, 1, 1, 1]) if len(input_nodes) > 1 and input_nodes[1] else [1, 1, 1, 1]
+
+        if not in0_shape:
+            in0_shape = [1, 1, 1, 1]
+        elif isinstance(in0_shape, (int, float)):
+            in0_shape = [1, 1, 1, int(in0_shape)]
+        else:
+            in0_shape = list(in0_shape)
+        if len(in0_shape) < 4:
+            in0_shape = [1] * (4 - len(in0_shape)) + in0_shape
+        if not w_shape:
+            w_shape = [1, 1, 1, 1]
+        elif isinstance(w_shape, (int, float)):
+            w_shape = [1, 1, 1, int(w_shape)]
+        else:
+            w_shape = list(w_shape)
+        if len(w_shape) < 4:
+            w_shape = [1] * (4 - len(w_shape)) + w_shape
+        if not shape:
+            shape = [1, 1, 1, 1]
+        elif isinstance(shape, (int, float)):
+            shape = [1, 1, 1, int(shape)]
+        else:
+            shape = list(shape)
+        if len(shape) < 4:
+            shape = [1] * (4 - len(shape)) + shape
+
+        attrs = getattr(node, "attributes", {})
+        stride = attrs.get("stride", 1)
+        stride_h = stride[0] if isinstance(stride, (tuple, list)) else stride
+        stride_w = stride[1] if isinstance(stride, (tuple, list)) else stride
+
+        expr_args = {
+            "B": shape[0],
+            "out_channels": shape[1],
+            "out_height": shape[2],
+            "out_width": shape[3],
+            "in_channels": in0_shape[1],
+            "in_height": in0_shape[2],
+            "in_width": in0_shape[3],
+            "filter_h": w_shape[2],
+            "filter_w": w_shape[3],
+            "stride_h": stride_h,
+            "stride_w": stride_w,
+            "clean_id": clean_id,
+            "in0": inputs[0] if len(inputs) > 0 else "dummy",
+            "in1": inputs[1] if len(inputs) > 1 else "dummy",
+        }
+        body = template["body"].format(**expr_args)
+
+        lines = []
+        for line in body.split("\n"):
+            lines.append(f"    {line}")
+        for line in lines:
+            self.add_line(line)
+
     def visit_WhileLoop(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate WhileLoop."""
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
 
         template = get_wasm_template("while_loop")
         attrs = getattr(node, "attributes", {})
-        body = template["body"].format(clean_id=clean_id, condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", max_iters=attrs.get("max_iters", 10), loop_body=f"// dummy loop body\nbuf_{clean_id}[0] = buf_{inputs[0]}[0];" if inputs else "")
+        body = template["body"].format(in0=inputs[0] if inputs else "dummy", clean_id=clean_id, condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", max_iters=attrs.get("max_iters", 10), loop_body=f"// dummy loop body\nbuf_{clean_id}[0] = buf_{inputs[0]}[0];" if inputs else "")
         for line in body.split("\n"):
             self.add_line(line)
 
     def visit_Cond(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate Cond."""
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
 
         template = get_wasm_template("cond")
         body = template["body"].format(clean_id=clean_id, condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", true_body=f"// true body\nbuf_{clean_id}[0] = 1.0;", false_body=f"// false body\nbuf_{clean_id}[0] = 0.0;")
@@ -181,7 +251,7 @@ class WasmCodeGenerator(BaseGenerator):
 
     def visit_Scan(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate Scan."""
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
 
         template = get_wasm_template("scan")
         body = template["body"].format(clean_id=clean_id, nelem=nelem, init_val="0.0", scan_op_expr=f"acc_{clean_id} + buf_{inputs[0]}[i]" if inputs else "1.0")
@@ -207,7 +277,7 @@ class WasmCodeGenerator(BaseGenerator):
             getattr(self, f"visit_{op_type}")(node, op_type, clean_id, inputs, shape, nelem)
             return
 
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
         op_def = OPS_REGISTRY.get(op_type, {})
@@ -240,7 +310,7 @@ class WasmCodeGenerator(BaseGenerator):
                 raise UnimplementedMathError(f"MISSING BODY FOR: {op_type} template: {template}")
             body = template["body"].format(**expr_format_args)
             for line in body.split("\n"):
-                if line.strip():  # pragma: no branch
+                if line.strip():
                     self.add_line(f"  {line}")
 
     def generate(self) -> str:
@@ -266,17 +336,20 @@ class WasmCodeGenerator(BaseGenerator):
         func_params.append("int size")
         params_str = ", ".join(func_params)
 
-        self.add_line("#include <wasm_simd128.h>")
-        self.add_line("#include <cmath>")
-        self.add_line("#include <cstdlib>")
-        self.add_line("#include <algorithm>")
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
+
+        headers_tpl = get_wasm_template("kernel_headers").get("body", "")
+        for line in headers_tpl.strip().split("\n"):
+            self.add_line(line)
         self.add_line("")
         for helper in self.get_helper_functions():
             self.add_line(helper)
         self.add_line("")
 
-        self.add_line('extern "C" {')
-        self.add_line(f"void main_kernel({params_str}) {{")
+        main_start_tpl = get_wasm_template("kernel_main_start").get("body", "")
+        formatted_start = main_start_tpl.format(params_str=params_str)
+        for line in formatted_start.strip().split("\n"):
+            self.add_line(line)
 
         self.add_line("  // Buffer arenas")
         arenas = {}
@@ -384,10 +457,19 @@ class WasmCodeGenerator(BaseGenerator):
                 subprocess.run(cmd, check=True, capture_output=True)
                 return "", wasm_out
 
-        except Exception:
-            pass
+            from ml_switcheroo_compiler.core.errors import CompilationError
+
+            raise CompilationError("Neither emcc nor clang found for WASM compilation.")
+
+        except subprocess.CalledProcessError as e:
+            from ml_switcheroo_compiler.core.errors import CompilationError
+
+            err_msg = e.stderr.decode("utf-8") if e.stderr else str(e)
+            raise CompilationError(f"WASM compilation failed: {err_msg}") from e
+        except Exception as e:
+            from ml_switcheroo_compiler.core.errors import CompilationError
+
+            raise CompilationError(f"WASM compilation failed with unknown error: {e}") from e
         finally:
             if os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
-
-        return None

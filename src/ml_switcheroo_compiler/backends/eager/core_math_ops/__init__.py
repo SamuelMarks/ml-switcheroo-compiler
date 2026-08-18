@@ -247,7 +247,7 @@ from .math_nn import (
     _adaptive_avg_pool2d,
     _adaptive_avg_pool3d,
     _alpha_dropout,
-    _global_adaptive_pool_mock,
+    _global_adaptive_pool,
     _np_fractionalavgpool,
 )
 from .math_polynomial import (
@@ -486,7 +486,7 @@ __all__ = [
     "_geometric",
     "_geomspace",
     "_getprintoptions",
-    "_global_adaptive_pool_mock",
+    "_global_adaptive_pool",
     "_gradient",
     "_hardsilu",
     "_hardswish",

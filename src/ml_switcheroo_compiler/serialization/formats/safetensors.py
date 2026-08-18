@@ -67,17 +67,17 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
             if not hasattr(v, "dtype") or not hasattr(v, "shape") or not hasattr(v, "tobytes"):
                 continue
 
-            dtype_map = {
-                "float32": "F32",
-                "float64": "F64",
-                "float16": "F16",
-                "int32": "I32",
-                "int64": "I64",
-                "int16": "I16",
-                "int8": "I8",
-                "uint8": "U8",
-                "bool": "BOOL",
-            }
+            import os
+
+            import yaml
+
+            from ml_switcheroo_compiler.serialization.formats.config_models import SerializationSchemaConfig
+
+            path = os.path.join(os.path.dirname(__file__), "serialization_schema.yaml")
+            with open(path) as f:
+                data = yaml.safe_load(f)
+                schema = SerializationSchemaConfig(**data)
+            dtype_map = schema.safetensors.dtype_map
 
             dtype_str = str(v.dtype)
             st_dtype = dtype_map.get(dtype_str, "F32")

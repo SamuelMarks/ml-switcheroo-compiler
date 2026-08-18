@@ -216,7 +216,7 @@ def _execute_cumlogsumexp(*args: Any, **kwargs: Any) -> Any:
 
 
 def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
-    """Evaluate _execute_ragged_tensor_to_dense operation.
+    """Evaluate _execute_ragged_tensor_to_dense operation with proper padding and index tracking.
 
     Args:
         *args (object): Positional args.
@@ -224,16 +224,50 @@ def _execute_ragged_tensor_to_dense(*args: Any, **kwargs: Any) -> Any:
 
     Returns: Any: Result.
     """
-    # Dummy mock returning dense tensor with proper shape padding or just the tensor itself for testing fallback.
-    # In PyTorch, ragged tensors might be list of tensors, converting to dense means padding.
     import torch
 
     rt = args[0]
+    default_value = kwargs.get("default_value") if kwargs.get("default_value") is not None else (args[1] if len(args) > 1 and args[1] is not None else 0.0)
+
+    # 1. If it's a NestedTensor
+    if getattr(rt, "is_nested", False):
+        # Nested tensors have a built-in to_padded_tensor
+        return rt.to_padded_tensor(padding=default_value)
+
+    # 2. If it's a list of tensors (e.g., from unbind or raw input)
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], torch.Tensor):
-        # simple pad
         from torch.nn.utils.rnn import pad_sequence
 
-        return pad_sequence(rt, batch_first=True)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
+        return pad_sequence(list(rt), batch_first=True, padding_value=float(default_value if default_value is not None else 0.0))  # type: ignore
+
+    # 3. If it's a dictionary or namedtuple with 'values' and 'row_splits' (standard ragged encoding)
+    values = None
+    row_splits = None
+    if isinstance(rt, dict) and "values" in rt and "row_splits" in rt:
+        values = rt["values"]
+        row_splits = rt["row_splits"]
+    elif hasattr(rt, "values") and hasattr(rt, "row_splits"):
+        values = rt.values
+        row_splits = rt.row_splits
+
+    if values is not None and row_splits is not None:
+        # Proper index tracking and shape padding
+        num_rows = len(row_splits) - 1
+        max_len = int(torch.max(row_splits[1:] - row_splits[:-1]).item())
+
+        # Calculate padding
+        dense_shape = [num_rows, max_len] + list(values.shape[1:])
+        dense_tensor = torch.full(dense_shape, float(default_value if default_value is not None else 0.0), dtype=values.dtype, device=values.device)  # type: ignore
+
+        for i in range(num_rows):
+            start = int(row_splits[i].item())
+            end = int(row_splits[i + 1].item())
+            length = end - start
+            if length > 0:
+                dense_tensor[i, :length] = values[start:end]
+
+        return dense_tensor
+
     return rt
 
 

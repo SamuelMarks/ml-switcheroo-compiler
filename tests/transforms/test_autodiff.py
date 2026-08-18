@@ -24,7 +24,7 @@ def test_add_nodes():
 
 def test_copy_graph():
     g = LogicalGraph(name="test")
-    g.nodes["a"] = LogicalNode(id="a", op_type="Input")
+    g.nodes["a"] = LogicalNode(id="a", op_type="Input", shape_metadata=())
     new_g = _copy_graph(g)
     assert new_g.name == "test_grad"
     assert "a" in new_g.nodes
@@ -615,6 +615,42 @@ def test_process_jvp_node_output():
     assert graph.nodes[graph.nodes[out_t].inputs[1]].op_type == "Constant"
 
 
+def test_process_jvp_node_output_none():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.transforms.autodiff import _process_jvp_node
+
+    g = LogicalGraph()
+    g.nodes["x"] = LogicalNode(id="x", op_type="Input", shape_metadata=())
+    n = LogicalNode(id="n", op_type="CustomOpNone", inputs=["x"], shape_metadata=())
+    g.nodes["n"] = n
+
+    tangents = {"x": "t_x", "n": "existing"}
+
+    with patch("ml_switcheroo_compiler.transforms.autodiff._invoke_jvp_rule", return_value=None):
+        with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp", return_value=lambda g, n, t: None):
+            _process_jvp_node(g, n, tangents)
+
+    assert tangents["n"] == "existing"  # Not modified since out_tangent is None
+
+
+def test_hvp_no_missing_rules():
+    from ml_switcheroo_compiler.transforms.autodiff import hvp
+    from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import has_jvp
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
+
+    assert has_vjp("Add")
+    assert has_jvp("Add")
+
+    g2 = LogicalGraph()
+    g2.nodes["x"] = LogicalNode(id="x", op_type="Input", shape_metadata=())
+    g2.nodes["n"] = LogicalNode(id="n", op_type="Add", inputs=["x", "x"], shape_metadata=())
+    g2.nodes["y"] = LogicalNode(id="y", op_type="Output", inputs=["n"], shape_metadata=())
+    g2.nodes["t_x"] = LogicalNode(id="t_x", op_type="Input", shape_metadata=())
+
+    hvp(g2, ["x"], ["t_x"], ["y"])
+
+
 def test_jvp_invoke_rule_exc():
     from ml_switcheroo_compiler.transforms.autodiff import _invoke_jvp_rule
 
@@ -666,6 +702,15 @@ def test_autodiff_provider_parser():
     res2 = _parse_expression(g, "Multiply(Constant(2.0), $tangent[1])", n, tangents=["t0", "t1"])
     assert res2 is not None
     assert "t1" in g.nodes[res2].inputs
+
+    # Run Constant(2.0) again to hit cache
+    res_c2 = _parse_expression(g, "Constant(2.0)", n)
+    assert g.nodes[res_c2].op_type == "Constant"
+
+    # Run empty args
+    res_empty = _parse_expression(g, "EmptyOp()", n)
+    assert g.nodes[res_empty].op_type == "EmptyOp"
+    assert g.nodes[res_empty].inputs == []
 
     # Test fallback with more inputs than tangents
     n3 = LogicalNode(id="n3", op_type="Add", inputs=["x", "y", "z"])

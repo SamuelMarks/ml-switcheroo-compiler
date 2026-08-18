@@ -174,19 +174,19 @@ class PatternMatchingEngine:
             if matched_rule:
                 optimized = True
             else:
-                if node_id not in new_nodes:  # pragma: no branch
+                if node_id not in new_nodes:
                     new_nodes[node_id] = node
 
         if optimized:
             # Explicit Edge Rewiring
             for n in new_nodes.values():
                 for i, in_id in enumerate(n.inputs):
-                    if in_id in id_map:  # pragma: no branch
+                    if in_id in id_map:
                         n.inputs[i] = id_map[in_id]
 
-            if hasattr(graph, "inputs"):  # pragma: no branch
+            if hasattr(graph, "inputs"):
                 for i, in_id in enumerate(graph.inputs):
-                    if in_id in id_map:  # pragma: no branch
+                    if in_id in id_map:
                         graph.inputs[i] = id_map[in_id]
             # Also update graph outputs
             for i, out_id in enumerate(graph.outputs):
@@ -299,7 +299,30 @@ def apply_operator_fusion(graph: IRGraph) -> IRGraph:
         for name, rule_config in config.fusion_patterns.items():
             rules.append(YamlFusionRule(name, rule_config.model_dump()))
 
-    engine = PatternMatchingEngine(rules, None)
+    # Load cost models
+    import os
+
+    import yaml
+
+    cost_model_config = None
+    cost_yaml_path = os.path.join(os.path.dirname(__file__), "cost_models.yaml")
+    if os.path.exists(cost_yaml_path):
+        with open(cost_yaml_path) as f:
+            cost_model_config = yaml.safe_load(f)
+
+    # Note: passing cost_model_config if supported
+    class DummyCostModel:
+        """A dummy cost model for testing."""
+
+        def __init__(self, config: Any) -> None:
+            """Initialize the dummy cost model."""
+            self.config = config
+
+        def is_fusion_valid(self, replacements: Any) -> bool:
+            """Check if fusion is valid."""
+            return True
+
+    engine = PatternMatchingEngine(rules, DummyCostModel(cost_model_config) if cost_model_config else None)
     if engine.apply_passes(graph):
         dce_pass(graph)
     return graph

@@ -1,0 +1,13 @@
+magic: "ML\xefR"
+version: 1
+producer: "ml_switcheroo_compiler"
+sections:
+  STRING: 0
+  DIALECT: 1
+  ATTR_TYPE: 2
+  IR: 3
+  RESOURCE: 4
+default_dialects:
+  - builtin
+  - func
+  - stablehlo

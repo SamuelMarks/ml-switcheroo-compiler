@@ -139,9 +139,19 @@ def test_jax_eager_execute_op_lambdas():
     _OP_DISPATCH["Adjoint"](jnp.ones((2, 2)))
     from unittest import mock
 
-    with mock.patch("jax.lax.all_gather", lambda x, **kw: x), mock.patch("jax.lax.all_to_all", lambda x, *args, **kw: x):
+    with (
+        mock.patch("jax.lax.all_gather", lambda x, **kw: x, create=True),
+        mock.patch("jax.lax.all_to_all", lambda x, *args, **kw: x, create=True),
+        mock.patch("jax.lax.psum", lambda x, **kw: x, create=True),
+        mock.patch("jax.lax.pmax", lambda x, **kw: x, create=True),
+        mock.patch("jax.lax.reduce_scatter", lambda x, *args, **kw: x, create=True),
+    ):
         _OP_DISPATCH["AllGather"](jnp.ones((2,)))
         _OP_DISPATCH["AllToAll"](jnp.ones((2,)))
+        _OP_DISPATCH["AllReduce"](jnp.ones((2,)), op_type="sum")
+        _OP_DISPATCH["AllReduce"](jnp.ones((2,)), op_type="max")
+        _OP_DISPATCH["ReduceScatter"](jnp.ones((2,)), op_type="sum")
+        _OP_DISPATCH["ReduceScatter"](jnp.ones((2,)), op_type="max")
 
     _OP_DISPATCH["AlphaDropout"](jnp.ones((2,)))
     _OP_DISPATCH["AsString"](jnp.ones((2,)))
@@ -183,6 +193,16 @@ def test_jax_eager_execute_op_lambdas():
     _OP_DISPATCH["Irfft2"](jnp.ones((2, 2)))
     _OP_DISPATCH["Irfftn"](jnp.ones((2, 2)))
     _OP_DISPATCH["Irfftnd"](jnp.ones((2, 2)))
+    with mock.patch("jax.nn.mish", create=True, new=None), mock.patch("jax.nn.squareplus", create=True, new=None):
+        import jax.nn
+
+        if hasattr(jax.nn, "mish"):
+            del jax.nn.mish
+        if hasattr(jax.nn, "squareplus"):
+            del jax.nn.squareplus
+        _OP_DISPATCH["Mish"](jnp.ones((2,)))
+        _OP_DISPATCH["Squareplus"](jnp.ones((2,)))
+
     _OP_DISPATCH["LogSoftmax"](jnp.ones((2,)))
     _OP_DISPATCH["Mish"](jnp.ones((2,)))
     _OP_DISPATCH["OneHot"](jnp.array([0, 1]), 2)
@@ -227,3 +247,13 @@ def test_jax_eager_extra():
     # AccumulateN empty
     with pytest.raises(ValueError):
         _execute_accumulate_n([])
+
+
+def test_jax_adaptive_max_pool_tuple_size():
+    import jax.numpy as jnp
+
+    from ml_switcheroo_compiler.backends.jax.eager import _execute_adaptive_max_pool
+
+    operand = jnp.ones((1, 1, 4, 4))
+    res = _execute_adaptive_max_pool(operand, (2, 2))
+    assert res.shape == (1, 1, 2, 2)

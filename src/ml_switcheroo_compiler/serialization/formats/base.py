@@ -21,7 +21,7 @@ class WeightLoader(ABC):
         Returns:
             dict: The loaded weights.
         """
-        pass
+        raise NotImplementedError("Method must be implemented by subclasses.")
 
 
 class WeightSaver(ABC):
@@ -35,4 +35,4 @@ class WeightSaver(ABC):
             weights_np (dict): The weights to save.
             filepath (str): Path to the file.
         """
-        pass
+        raise NotImplementedError("Method must be implemented by subclasses.")

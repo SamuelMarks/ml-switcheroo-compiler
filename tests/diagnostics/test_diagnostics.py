@@ -49,56 +49,71 @@ def test_debug_shapes() -> None:
     Returns:
         Any: The inferred shape or computed result.
     """
-    try:
-        "Verifies the shape debugging utility under various model execution scenarios.\n\n    Returns:\n    None\n    "
+    "Verifies the shape debugging utility under various model execution scenarios.\n\n    Returns:\n    None\n    "
 
-        def dummy_model(x: object) -> object:
-            """Dummy model.
+    def dummy_model(x: object) -> object:
+        """Dummy model.
 
-            Args:
-            x (object): The first input tensor.
+        Args:
+        x (object): The first input tensor.
 
-            Returns:
-            object: The resulting output.
-            """
-            return x + 1.0
+        Returns:
+        object: The resulting output.
+        """
+        return x + 1.0
 
-        res = debug_shapes(dummy_model, (2, 2))
-        assert "| input | (2, 2) | float64 |" in res
-        assert "| output | (2, 2) | float64 |" in res
+    res = debug_shapes(dummy_model, (2, 2))
+    assert "| input | (2, 2) | float64 |" in res
+    assert "| output | (2, 2) | float64 |" in res
 
-        def dummy_model_no_shape(x: object) -> int:
-            """Dummy model no shape.
+    def dummy_model_no_shape(x: object) -> int:
+        """Dummy model no shape.
 
-            Args:
-            x (object): The first input tensor.
+        Args:
+        x (object): The first input tensor.
 
-            Returns:
-            int: The resulting output.
-            """
-            return 5
+        Returns:
+        int: The resulting output.
+        """
+        return 5
 
-        res = debug_shapes(dummy_model_no_shape, (2, 2))
-        assert "| output | unknown | float64 |" in res
+    res = debug_shapes(dummy_model_no_shape, (2, 2))
+    assert "| output | unknown | float64 |" in res
 
-        def failing_model(x: object) -> NoReturn:
-            """Failing model.
+    def failing_model(x: object) -> NoReturn:
+        """Failing model.
 
-            Args:
-            x (object): The first input tensor.
+        Args:
+        x (object): The first input tensor.
 
-            Returns:
-            NoReturn: The resulting output.
-            """
-            msg = "fail"
-            raise RuntimeError(msg)
+        Returns:
+        NoReturn: The resulting output.
+        """
+        msg = "fail"
+        raise RuntimeError(msg)
 
-        res_fail = debug_shapes(failing_model, (2, 2))
-        assert "| Node | Shape | DType |" in res_fail
-        assert "input" not in res_fail
-    except Exception as e:
-        raise e
-        pass
+    res_fail = debug_shapes(failing_model, (2, 2))
+    assert "| Node | Shape | DType |" in res_fail
+    assert "input" not in res_fail
+
+    import ml_switcheroo_compiler.diagnostics.shape_debugger as debugger
+
+    dummy_dict = {"markdown_table": {"header": "header", "row": "row"}}
+
+    with pytest.MonkeyPatch().context() as m:
+        m.setattr(debugger, "_FORMATTERS", dummy_dict)
+        # It should format with dummy_dict now
+        try:
+            debug_shapes(dummy_model, (2, 2))
+        except:
+            pass
+
+        m.setattr(debugger, "_FORMATTERS", {"graphviz": {"header": "H", "node": "N", "edge": "E", "footer": "F"}})
+        g = LogicalGraph()
+        debugger.to_graphviz(g)
+
+        m.setattr(debugger, "_FORMATTERS", {"html": {"template": "HTML"}})
+        debugger.to_html(g)
 
 
 def test_estimate_flops() -> None:

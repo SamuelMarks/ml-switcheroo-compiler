@@ -22,8 +22,8 @@ def _activity_regularization(backend_module: Any, x: Any, **kwargs: Any) -> Any:
     return x
 
 
-def _global_adaptive_pool_mock(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
-    """Evaluate _global_adaptive_pool_mock operation.
+def _global_adaptive_pool(backend_module: Any, operand: Any, output_size: Any, **kwargs: Any) -> Any:
+    """Evaluate _global_adaptive_pool operation rigorously over spatial dimensions.
 
     Args:
         backend_module (object): The backend_module parameter.
@@ -33,19 +33,67 @@ def _global_adaptive_pool_mock(backend_module: Any, operand: Any, output_size: A
 
     Returns: Any: Result.
     """
-    if hasattr(operand, "shape") and hasattr(backend_module, "zeros"):
-        s = list(operand.shape)
-        if isinstance(output_size, int):
-            out_s = [output_size]
-            s[-1] = output_size
-        else:
-            out_s = list(output_size)
-            s[-len(output_size) :] = out_s
-        if hasattr(backend_module, "broadcast_to") and hasattr(backend_module, "mean"):
-            axes = tuple(range(-len(out_s), 0))
-            return backend_module.broadcast_to(backend_module.mean(operand, axis=axes, keepdims=True), s)
-        dtype = getattr(operand, "dtype", None)
-        return backend_module.zeros(s, dtype=dtype) if dtype is not None else backend_module.zeros(s)
+    import math
+
+    if not hasattr(operand, "shape"):
+        return operand
+
+    if isinstance(output_size, int):
+        out_spatial = [output_size]
+    else:
+        out_spatial = list(output_size)
+
+    spatial_dims = len(out_spatial)
+    in_shape = operand.shape
+    if len(in_shape) < spatial_dims:
+        return operand
+    in_spatial = in_shape[-spatial_dims:]
+
+    if spatial_dims == 1:
+        O_w = out_spatial[0]
+        I_w = in_spatial[0]
+        bins = []
+        for j in range(O_w):
+            start = math.floor(j * I_w / O_w)
+            end = math.ceil((j + 1) * I_w / O_w)
+            bins.append(backend_module.mean(operand[..., start:end], axis=-1))
+        return backend_module.stack(bins, axis=-1)
+
+    if spatial_dims == 2:
+        O_h, O_w = out_spatial
+        I_h, I_w = in_spatial
+        rows = []
+        for i in range(O_h):
+            h_start = math.floor(i * I_h / O_h)
+            h_end = math.ceil((i + 1) * I_h / O_h)
+            cols = []
+            for j in range(O_w):
+                w_start = math.floor(j * I_w / O_w)
+                w_end = math.ceil((j + 1) * I_w / O_w)
+                cols.append(backend_module.mean(operand[..., h_start:h_end, w_start:w_end], axis=(-2, -1)))
+            rows.append(backend_module.stack(cols, axis=-1))
+        return backend_module.stack(rows, axis=-2)
+
+    if spatial_dims == 3:
+        O_d, O_h, O_w = out_spatial
+        I_d, I_h, I_w = in_spatial
+        depths = []
+        for k in range(O_d):
+            d_start = math.floor(k * I_d / O_d)
+            d_end = math.ceil((k + 1) * I_d / O_d)
+            rows = []
+            for i in range(O_h):
+                h_start = math.floor(i * I_h / O_h)
+                h_end = math.ceil((i + 1) * I_h / O_h)
+                cols = []
+                for j in range(O_w):
+                    w_start = math.floor(j * I_w / O_w)
+                    w_end = math.ceil((j + 1) * I_w / O_w)
+                    cols.append(backend_module.mean(operand[..., d_start:d_end, h_start:h_end, w_start:w_end], axis=(-3, -2, -1)))
+                rows.append(backend_module.stack(cols, axis=-1))
+            depths.append(backend_module.stack(rows, axis=-2))
+        return backend_module.stack(depths, axis=-3)
+
     return operand
 
 
@@ -61,7 +109,7 @@ def _adaptive_avg_pool2d(backend_module: Any, operand: Any, output_size: Any, **
 
     Returns: Any: Result.
     """
-    return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
+    return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveAvgPool3D")
@@ -76,7 +124,7 @@ def _adaptive_avg_pool3d(backend_module: Any, operand: Any, output_size: Any, **
 
     Returns: Any: Result.
     """
-    return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
+    return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AlphaDropout")

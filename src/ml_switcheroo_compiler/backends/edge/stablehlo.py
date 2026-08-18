@@ -279,17 +279,18 @@ class StableHLOCodeGenerator(BaseGenerator):
             if op_type == "Input":
                 continue
 
-            # Simple conversion for the encoder mock
-            from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
+            import os
 
-            op_def = OPS_REGISTRY.get(op_type, {})
-            variants = op_def.get("variants", {})
-            hlo_op = "stablehlo.custom_call"
-            if "edge_stablehlo" in variants:
-                mapping = variants["edge_stablehlo"]
-                gen = mapping.get("opcode") or mapping.get("generator")
-                if gen:
-                    hlo_op = gen
+            import yaml
+
+            from ml_switcheroo_compiler.backends.edge.config_models import StablehloSchemaConfig
+
+            path = os.path.join(os.path.dirname(__file__), "stablehlo_schema.yaml")
+            with open(path) as f:
+                data = yaml.safe_load(f)
+                schema = StablehloSchemaConfig(**data)
+
+            hlo_op = schema.op_mapping.get(op_type, schema.operations["fallback"])
 
             in_vars = getattr(node, "inputs", [])
             out_vars = [getattr(node, "id", "")]

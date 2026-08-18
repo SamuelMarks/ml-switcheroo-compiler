@@ -7,7 +7,7 @@ from typing import Any
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
-from .math_nn import _global_adaptive_pool_mock
+from .math_nn import _global_adaptive_pool
 
 
 @global_eager_registry.register("Psum")
@@ -121,7 +121,7 @@ def _adaptive_max_pool2d(backend_module: Any, operand: Any, output_size: Any, **
 
     Returns: Any: Result.
     """
-    return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
+    return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D")
@@ -136,7 +136,7 @@ def _adaptive_max_pool3d(backend_module: Any, operand: Any, output_size: Any, **
 
     Returns: Any: Result.
     """
-    return _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
+    return _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D_Indices")
@@ -151,7 +151,7 @@ def _adaptive_max_pool3d_indices(backend_module: Any, operand: Any, output_size:
 
     Returns: Any: Result.
     """
-    res = _global_adaptive_pool_mock(backend_module, operand, output_size, **kwargs)
+    res = _global_adaptive_pool(backend_module, operand, output_size, **kwargs)
     return (res, res)
 
 

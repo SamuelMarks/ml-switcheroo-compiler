@@ -4,7 +4,46 @@ from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_np_distr
 
 
 def test_np_all_reduce_threads():
-    pass
+    import threading
+
+    from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_axis_index
+
+    assert _np_axis_index(np) == 0
+
+    ctx1 = TCPDistributedContext(world_size=2, rank=0, addr="127.0.0.1", port=41000)
+    ctx2 = TCPDistributedContext(world_size=2, rank=1, addr="127.0.0.1", port=41000)
+
+    def init_ctx(ctx):
+        ctx.initialize()
+
+    t1 = threading.Thread(target=init_ctx, args=(ctx1,))
+    t2 = threading.Thread(target=init_ctx, args=(ctx2,))
+
+    t1.start()
+    t2.start()
+
+    t1.join(timeout=5)
+    t2.join(timeout=5)
+
+    arr = np.array([1, 2])
+
+    # Run AllReduce over ring
+    def run_all_reduce(ctx, tensor, op):
+        return ctx.all_reduce_ring(tensor, op, np)
+
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        f1 = executor.submit(run_all_reduce, ctx1, arr, "sum")
+        f2 = executor.submit(run_all_reduce, ctx2, arr, "sum")
+        res1 = f1.result()
+        res2 = f2.result()
+
+    np.testing.assert_array_equal(res1, np.array([2, 4]))
+    np.testing.assert_array_equal(res2, np.array([2, 4]))
+
+    ctx1.shutdown()
+    ctx2.shutdown()
 
 
 def test_all_gather_np_coverage9():

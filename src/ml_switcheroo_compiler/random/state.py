@@ -40,9 +40,9 @@ def _emit_random_node(
     """
     if config.eager_mode:
         attrs = dict(attributes) if attributes is not None else {}
-        if "shape" not in attrs:  # pragma: no branch
+        if "shape" not in attrs:
             attrs["shape"] = shape
-        if "dtype" not in attrs:  # pragma: no branch
+        if "dtype" not in attrs:
             attrs["dtype"] = getattr(dtype, "value", dtype)
         res = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **attrs)
         return Tensor(res, TensorConfig(shape, dtype, config.default_device))
