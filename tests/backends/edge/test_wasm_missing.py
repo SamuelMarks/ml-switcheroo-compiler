@@ -69,13 +69,14 @@ def test_wasm_provider_templates():
     assert provider.get_cpp_helpers() == ["help"]
 
     # Hit False branch
-    provider._WASM_TEMPLATES = None
+    provider._WASM_TEMPLATES = {}
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.load_yaml", return_value={"js_orchestration": {"test": "val"}, "cpp_helpers": ["help"]}):
         assert provider.get_js_orchestration_template("test") == "val"
 
-    provider._WASM_TEMPLATES = None
+    provider._WASM_TEMPLATES = {}
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.load_yaml", return_value={"js_orchestration": {"test": "val"}, "cpp_helpers": ["help"]}):
         assert provider.get_cpp_helpers() == ["help"]
+    provider._WASM_TEMPLATES = {}
 
 
 def test_llvm_cpp_generator_shapes():

@@ -328,3 +328,47 @@ def recompute_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
     vjp_func = get_vjp(orig_op)
     res: tuple[Any, ...] = vjp_func(graph, dummy, cotangent)
     return res  # type: ignore
+
+
+@register_vjp("CustomVJP")
+def custom_vjp_vjp(graph: Any, node: Any, cotangent: str) -> tuple[Any, ...]:
+    """VJP for CustomVJP operation.
+
+    Args:
+        graph (Any): The graph parameter.
+        node (Any): The node parameter.
+        cotangent (str): The cotangent parameter.
+
+    Returns:
+        tuple: Result.
+    """
+    import uuid
+
+    from ml_switcheroo_ir import LogicalNode
+
+    bwd_fn = node.attributes["bwd_fn"]
+
+    bwd_node_id = f"cvjp_bwd_{uuid.uuid4().hex[:6]}"
+    bwd_node = LogicalNode(
+        id=bwd_node_id,
+        op_type="ProcessCustomVJPCall",
+        inputs=[cotangent],
+        attributes={"bwd_fn": bwd_fn},
+        shape_metadata=node.shape_metadata,
+    )
+    graph.nodes[bwd_node_id] = bwd_node
+
+    adjoints = []
+    for i in range(len(node.inputs)):
+        ext_id = f"cvjp_ext_{i}_{uuid.uuid4().hex[:6]}"
+        ext_node = LogicalNode(
+            id=ext_id,
+            op_type="TupleGetItem",
+            inputs=[bwd_node_id],
+            attributes={"index": i},
+            shape_metadata=node.shape_metadata,
+        )
+        graph.nodes[ext_id] = ext_node
+        adjoints.append(ext_id)
+
+    return tuple(adjoints)

@@ -8,6 +8,7 @@ from typing import Any
 
 from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d
 
+from .attention import scaled_dot_product_attention as scaled_dot_product_attention
 from .conv_lstm import conv1d_lstm_cell as conv1d_lstm_cell
 from .conv_lstm import conv2d_lstm_cell as conv2d_lstm_cell
 from .conv_lstm import conv3d_lstm_cell as conv3d_lstm_cell

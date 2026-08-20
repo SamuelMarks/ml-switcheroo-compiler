@@ -16,11 +16,18 @@ def reset_global_tracing_state():
     had_active_backend = hasattr(reg, "_ACTIVE_BACKEND")
     old_active_backend = getattr(reg, "_ACTIVE_BACKEND", None)
 
+    import copy
+
+    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+
+    orig_yaml_registry = copy.deepcopy(_YAML_REGISTRY)
     config.eager_mode = False
     config.backend = "numpy"
 
     yield
 
+    _YAML_REGISTRY.clear()
+    _YAML_REGISTRY.update(orig_yaml_registry)
     state.global_tracing_state.is_tracing = old_is_tracing
     state.global_tracing_state.active_graph = old_graph
     state.global_tracing_state.add_node = old_add_node

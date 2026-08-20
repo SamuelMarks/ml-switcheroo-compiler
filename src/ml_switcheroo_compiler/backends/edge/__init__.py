@@ -8,13 +8,11 @@ from typing import Any
 from .onnx import ONNXCodeGenerator
 from .stablehlo import StableHLOCodeGenerator
 from .wasm import WasmCodeGenerator
-from .webgl import WebGLCodeGenerator
 from .webgpu import WebGPUCodeGenerator
 
 __all__ = [
+    "WebGPUCodeGenerator",
+    "WasmCodeGenerator",
     "ONNXCodeGenerator",
     "StableHLOCodeGenerator",
-    "WasmCodeGenerator",
-    "WebGLCodeGenerator",
-    "WebGPUCodeGenerator",
 ]

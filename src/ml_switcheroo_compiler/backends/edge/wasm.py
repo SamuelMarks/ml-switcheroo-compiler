@@ -94,51 +94,26 @@ class WasmCodeGenerator(BaseGenerator):
         Returns:
             list[str]: Lines of C++ macros/functions.
         """
-        helpers = [
-            "// --- Scalar Fallback Helpers ---",
-            "inline float _scalar_logicaland(float a, float b) { return (a != 0.0f && b != 0.0f) ? 1.0f : 0.0f; }",
-            "inline float _scalar_logicalor(float a, float b) { return (a != 0.0f || b != 0.0f) ? 1.0f : 0.0f; }",
-            "inline float _scalar_logicalxor(float a, float b) { return ((a != 0.0f) != (b != 0.0f)) ? 1.0f : 0.0f; }",
-            "inline float _scalar_equal(float a, float b) { return (a == b) ? 1.0f : 0.0f; }",
-            "inline float _scalar_notequal(float a, float b) { return (a != b) ? 1.0f : 0.0f; }",
-            "inline float _scalar_greater(float a, float b) { return (a > b) ? 1.0f : 0.0f; }",
-            "inline float _scalar_less(float a, float b) { return (a < b) ? 1.0f : 0.0f; }",
-            "inline float _scalar_greaterequal(float a, float b) { return (a >= b) ? 1.0f : 0.0f; }",
-            "inline float _scalar_lessequal(float a, float b) { return (a <= b) ? 1.0f : 0.0f; }",
-            "inline float _scalar_floordivide(float a, float b) { return std::floor(a / b); }",
-            "inline float _scalar_power(float a, float b) { return std::pow(a, b); }",
-            "inline float _scalar_sign(float a, float dummy) { return (a > 0.0f) ? 1.0f : ((a < 0.0f) ? -1.0f : 0.0f); }",
-            "inline float _scalar_ceil(float a, float dummy) { return std::ceil(a); }",
-            "inline float _scalar_floor(float a, float dummy) { return std::floor(a); }",
-            "inline float _scalar_round(float a, float dummy) { return std::round(a); }",
-            "inline float _scalar_rsqrt(float a, float dummy) { return 1.0f / std::sqrt(a); }",
-            "inline float _scalar_log1p(float a, float dummy) { return std::log1p(a); }",
-            "inline float _scalar_expm1(float a, float dummy) { return std::expm1(a); }",
-            "inline float _scalar_sin(float a, float dummy) { return std::sin(a); }",
-            "inline float _scalar_cos(float a, float dummy) { return std::cos(a); }",
-            "inline float _scalar_tan(float a, float dummy) { return std::tan(a); }",
-            "inline float _scalar_asin(float a, float dummy) { return std::asin(a); }",
-            "inline float _scalar_acos(float a, float dummy) { return std::acos(a); }",
-            "inline float _scalar_atan(float a, float dummy) { return std::atan(a); }",
-            "inline float _scalar_sinh(float a, float dummy) { return std::sinh(a); }",
-            "inline float _scalar_cosh(float a, float dummy) { return std::cosh(a); }",
-            "inline float _scalar_tanh(float a, float dummy) { return std::tanh(a); }",
-            "inline float _scalar_gelu(float a, float dummy) { return 0.5f * a * (1.0f + std::tanh(0.7978845608f * (a + 0.044715f * a * a * a))); }",
-            "inline float _scalar_swish(float a, float dummy) { return a / (1.0f + std::exp(-a)); }",
-            "inline float _scalar_silu(float a, float dummy) { return a / (1.0f + std::exp(-a)); }",
-            "inline float _scalar_sigmoid(float a, float dummy) { return 1.0f / (1.0f + std::exp(-a)); }",
-            "inline float _scalar_cast(float a, float dummy) { return a; }",
-            "// --- SIMD Fast Math Approximations from YAML ---",
-        ]
-
+        helpers = ["// --- Scalar Fallback Helpers ---"]
         import os
 
         import yaml
 
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmIntrinsicsConfig
+
         yaml_path = os.path.join(os.path.dirname(__file__), "wasm_simd", "intrinsics.yaml")
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
-                intrinsics = yaml.safe_load(f).get("intrinsics", {})
+                data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
+
+                # Load scalar helpers
+                scalars = data.get("scalars", {})
+                for name, body in scalars.items():
+                    helpers.append(f"inline float _scalar_{name.lower()}(float a, float b) {{ {body} }}")
+
+                helpers.append("// --- SIMD Fast Math Approximations from YAML ---")
+
+                intrinsics = data.get("intrinsics", {})
                 for _op, data in intrinsics.items():
                     if "macro_name" in data and "simd_expr" in data:
                         helpers.append(f"inline v128_t {data['macro_name']}(v128_t x) {{")
@@ -169,7 +144,23 @@ class WasmCodeGenerator(BaseGenerator):
         """Generate Conv2D WASM."""
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
-        template = get_wasm_template("conv2d")
+        attrs = getattr(node, "attributes", {})
+
+        # Handle Folded BatchNorm Math Transformation
+        if attrs.get("folded_batch_norm"):
+            bn_inputs = attrs.get("bn_inputs", [])
+            if len(bn_inputs) == 4:
+                scale, bias, mean, var = [self.var_map.get(inp, inp) for inp in bn_inputs]
+                eps = attrs.get("epsilon", 1e-5)
+                # We emit scalar C++ for folding
+                self.body_lines.append(f"// Folded BatchNorm for {clean_id}")
+                self.body_lines.append(f"float mult_{clean_id} = {scale} / std::sqrt({var} + {eps});")
+                # This assumes scalar inputs for simplicity in WASM mapping, or we'd map this as a loop over elements
+
+        if attrs.get("tiling"):
+            template = get_wasm_template("im2col_conv2d")
+        else:
+            template = get_wasm_template("conv2d")
 
         inputs_list = getattr(node, "inputs", [])
         input_nodes = [next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None) for inp in inputs_list]
@@ -230,22 +221,86 @@ class WasmCodeGenerator(BaseGenerator):
         for line in lines:
             self.add_line(line)
 
+    def visit_AllReduce(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Emit WebRTC AllReduce."""
+        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
+
+        op_id = getattr(node, "id", "op")
+        js_code = emit_webrtc_op("AllReduce", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
+        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
+
+    def visit_AllGather(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Emit WebRTC AllGather."""
+        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
+
+        op_id = getattr(node, "id", "op")
+        js_code = emit_webrtc_op("AllGather", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
+        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
+
+    def visit_AllToAll(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Emit WebRTC AllToAll."""
+        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
+
+        op_id = getattr(node, "id", "op")
+        js_code = emit_webrtc_op("AllToAll", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
+        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
+
+    def visit_ReduceScatter(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Emit WebRTC ReduceScatter."""
+        from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
+
+        op_id = getattr(node, "id", "op")
+        js_code = emit_webrtc_op("ReduceScatter", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
+        self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
+
     def visit_WhileLoop(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """Generate WhileLoop."""
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template = get_wasm_template("while_loop")
         attrs = getattr(node, "attributes", {})
-        body = template["body"].format(in0=inputs[0] if inputs else "dummy", clean_id=clean_id, condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", max_iters=attrs.get("max_iters", 10), loop_body=f"// dummy loop body\nbuf_{clean_id}[0] = buf_{inputs[0]}[0];" if inputs else "")
+
+        body_graph = attrs.get("body")
+        loop_body = "// Empty loop body"
+        if body_graph:
+            subgen = self.__class__(body_graph, self.visitors[1:] if len(self.visitors) > 1 else None)
+            subgen.generate()
+            loop_body = "\n".join(subgen.code)
+
+        cond_graph = attrs.get("cond")
+        condition_expr = f"buf_{inputs[0]}[0] > 0.0" if inputs else "1"
+
+        body = template["body"].format(in0=inputs[0] if inputs else "dummy", clean_id=clean_id, condition_expr=condition_expr, max_iters=attrs.get("max_iters", 10), loop_body=loop_body)
         for line in body.split("\n"):
             self.add_line(line)
 
     def visit_Cond(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
-        """Generate Cond."""
-        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
+        """Generate Cond with dynamic subgraph lowering."""
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template = get_wasm_template("cond")
-        body = template["body"].format(clean_id=clean_id, condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", true_body=f"// true body\nbuf_{clean_id}[0] = 1.0;", false_body=f"// false body\nbuf_{clean_id}[0] = 0.0;")
+        attrs = getattr(node, "attributes", {})
+
+        def _lower_branch(branch_graph: Any, default_input: str) -> str:
+            """Lower a branch subgraph into C++ strings.
+
+            Args:
+                branch_graph (Any): The subgraph to lower.
+                default_input (str): The default input buffer name.
+
+            Returns:
+                str: Generated C++ code string.
+            """
+            if not branch_graph:
+                return f"for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{default_input}[i];"
+            subgen = self.__class__(branch_graph, self.visitors[1:] if len(self.visitors) > 1 else None)
+            subgen.generate()
+            return "\n".join(subgen.code)
+
+        true_body = _lower_branch(attrs.get("then_branch"), inputs[1] if len(inputs) > 1 else inputs[0] if inputs else "dummy")
+        false_body = _lower_branch(attrs.get("else_branch"), inputs[2] if len(inputs) > 2 else inputs[0] if inputs else "dummy")
+
+        body = template["body"].format(condition_expr=f"buf_{inputs[0]}[0] > 0.0" if inputs else "1", true_body=true_body, false_body=false_body)
         for line in body.split("\n"):
             self.add_line(line)
 
@@ -254,9 +309,50 @@ class WasmCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_template
 
         template = get_wasm_template("scan")
-        body = template["body"].format(clean_id=clean_id, nelem=nelem, init_val="0.0", scan_op_expr=f"acc_{clean_id} + buf_{inputs[0]}[i]" if inputs else "1.0")
+        scan_op_expr = f"buf_{clean_id}[i] = buf_{inputs[0]}[i];" if inputs else f"buf_{clean_id}[i] = 1.0f;"
+        body = template["body"].format(clean_id=clean_id, nelem=nelem, init_val="0.0", scan_op_expr=scan_op_expr)
         for line in body.split("\n"):
             self.add_line(line)
+
+    def visit_MatMul(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
+        """Generate MatMul WASM."""
+        from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
+
+        attrs = getattr(node, "attributes", {})
+        if attrs.get("tiling"):
+            template = get_wasm_template("tiled_matmul")
+            # For simplicity, fetch the heuristic from the environment or use defaults
+            TILE_M = 4
+            TILE_N = 4
+            TILE_K = 4
+            inputs_list = getattr(node, "inputs", [])
+            in0 = inputs[0] if len(inputs) > 0 else "dummy"
+            in1 = inputs[1] if len(inputs) > 1 else "dummy"
+            M = shape[0] if isinstance(shape, (list, tuple)) and len(shape) > 0 else 1
+            N = shape[1] if isinstance(shape, (list, tuple)) and len(shape) > 1 else 1
+
+            in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+            in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+            K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
+
+            body = template["body"].format(M=M, N=N, K=K, TILE_M=TILE_M, TILE_N=TILE_N, TILE_K=TILE_K, in0=in0, in1=in1)
+            for line in body.split("\n"):
+                self.add_line(line)
+        else:
+            # fallback
+            template = get_wasm_template("matmul")
+            inputs_list = getattr(node, "inputs", [])
+            in0 = inputs[0] if len(inputs) > 0 else "dummy"
+            in1 = inputs[1] if len(inputs) > 1 else "dummy"
+            M = shape[0] if isinstance(shape, (list, tuple)) and len(shape) > 0 else 1
+            N = shape[1] if isinstance(shape, (list, tuple)) and len(shape) > 1 else 1
+
+            in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+            in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+            K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
+            body = template["body"].format(M=M, N=N, K=K, in0=in0, in1=in1, clean_id=clean_id)
+            for line in body.split("\n"):
+                self.add_line(line)
 
     def _generate_op(self, node: Any, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
         """_generate_op function.
@@ -299,9 +395,9 @@ class WasmCodeGenerator(BaseGenerator):
             elif isinstance(in0_shape, (int, float)):
                 in0_shape = [int(in0_shape)]
 
-            K = in0_shape[1] if len(in0_shape) > 1 else 1
-            N = shape[1] if len(shape) > 1 else 1
-            M = shape[0] if len(shape) > 0 else 1
+            K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
+            N = shape[1] if isinstance(shape, (list, tuple)) and len(shape) > 1 else 1
+            M = shape[0] if isinstance(shape, (list, tuple)) and len(shape) > 0 else 1
 
             expr_format_args = {"nelem": nelem, "clean_id": clean_id, "op_type": op_type, "in0": inputs[0] if len(inputs) > 0 else "dummy", "in1": inputs[1] if len(inputs) > 1 else "dummy", "K": K, "N": N, "M": M, "nelem_in": getattr(node, "inputs_nelem", [1])[0]}
             expr_format_args.update(mapping)

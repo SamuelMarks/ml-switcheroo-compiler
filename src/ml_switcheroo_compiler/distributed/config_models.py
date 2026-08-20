@@ -24,12 +24,21 @@ class StageCommunicationConfig(BaseModel):
     protocol: str
 
 
+class DependencyConfig(BaseModel):
+    """Configuration for synchronization dependencies."""
+
+    source_stage: str
+    target_stage: str
+    offset_mb: int
+
+
 class TopologyConfig(BaseModel):
     """Configuration for a specific pipeline topology."""
 
     microbatch_splitting: MicrobatchSplittingConfig
     mesh_mapping: MeshMappingConfig
     stage_communication: StageCommunicationConfig
+    dependencies: list[DependencyConfig] = []
 
 
 class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):

@@ -138,3 +138,17 @@ def test_get_numpy_rng() -> None:
         assert result == "mocked_rng"
         mock_get.assert_called_once_with("numpy")
         mock_backend_cls.get_numpy_rng.assert_called_once_with("arg1", kwarg1="val1")
+
+
+def test_emit_random_node_eager_with_shape_dtype() -> None:
+    """Test _emit_random_node in eager mode with shape and dtype in attrs."""
+    config.eager_mode = True
+    with patch.object(sys.modules["ml_switcheroo_compiler.random.state"], "_dispatch_random_eager") as mock_dispatch:
+        mock_dispatch.return_value = 42
+
+        inp = MagicMock(spec=Tensor)
+        result = _emit_random_node("RandomOp", [inp], (2,), dtypes.DType.Float32, {"shape": (2,), "dtype": "float32"})
+
+        assert isinstance(result, Tensor)
+        assert result.data == 42
+        mock_dispatch.assert_called_once_with("randomop", "RandomOp", inp, shape=(2,), dtype="float32")

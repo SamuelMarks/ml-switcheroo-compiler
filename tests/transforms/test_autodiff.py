@@ -134,7 +134,7 @@ def test_recompute_subgraph():
 
 
 def test_hvp_missing_rules():
-    import warnings
+    import pytest
 
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
     from ml_switcheroo_compiler.transforms.autodiff import hvp
@@ -146,14 +146,8 @@ def test_hvp_missing_rules():
     g.inputs = ["inp"]
     g.outputs = ["out"]
 
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        try:
-            hvp(g, ["inp"], ["v"], ["out"])
-        except Exception:
-            pass  # we expect it to fail eventually because of missing rules
-
-        assert any("Computing HVP with missing second-order derivative rules" in str(warn.message) for warn in w)
+    with pytest.raises(ValueError, match="Missing.*rule for operation"):
+        hvp(g, ["inp"], ["v"], ["out"])
 
 
 def test_add_nodes_extra():

@@ -30,24 +30,38 @@ def _get_dtype_size(dtype_str: str) -> int:
     return 4
 
 
-def _get_node_byte_size(node: IRNode) -> int:
-    """Calculate the byte size of a node's output tensor.
+def _get_node_byte_size(node: IRNode) -> Any:
+    """Calculate the byte size of a node's output tensor, supporting symbolic shapes.
 
     Args:
         node (IRNode): The IR node.
 
     Returns:
-        int: The size in bytes.
+        int | str: The size in bytes (int) or a symbolic expression (str).
     """
     dtype = node.attributes.get("dtype", "float32")
     dtype_size = _get_dtype_size(dtype)
-    if node.shape_metadata is None or node.is_dynamic_shape:
-        return dtype_size
 
-    elements = 1
-    for dim in node.static_shape:
-        elements *= max(1, int(dim))
-    return elements * dtype_size
+    shape = getattr(node, "shape_metadata", None)
+    if shape is None:
+        return str(dtype_size)
+
+    is_dynamic = getattr(node, "is_dynamic_shape", False)
+    # Check if any dim is a string (symbolic)
+    has_symbolic_dim = any(isinstance(d, str) for d in shape)
+
+    if not is_dynamic and not has_symbolic_dim:
+        elements = 1
+        for dim in shape:
+            elements *= max(1, int(dim))
+        return elements * dtype_size
+
+    # Build symbolic math string
+    dims = [str(d) for d in shape]
+    if dims:
+        symbolic_math = " * ".join(dims) + f" * {dtype_size}"
+        return symbolic_math
+    return str(dtype_size)
 
 
 IN_PLACE_SAFE_OPS: set[str] = {
@@ -72,45 +86,41 @@ IN_PLACE_SAFE_OPS: set[str] = {
 
 
 class GreedyOffsetAllocator:
-    """Provide a simple offset allocator using linear scan over active intervals."""
+    """Greedy offset allocator supporting dynamic symbolic shapes."""
 
     def __init__(self) -> None:
-        """Initialize the allocator."""
-        self.active_allocations: list[tuple[int, int, int]] = []
+        """Initialize allocator."""
+        self.current_static_offset = 0
+        self.active_blocks: list[tuple[int, int, int]] = []
+        self.dynamic_blocks: list[tuple[str, str, int]] = []
 
-    def allocate(self, size: int, current_time: int, end_time: int) -> int:
-        """Allocate a contiguous block of size `size`.
+    def allocate_static(self, size: int, current_time: int, expire_time: int) -> int:
+        """Allocate static size."""
+        self.active_blocks = [b for b in self.active_blocks if b[2] >= current_time]
+        self.active_blocks.sort(key=lambda x: x[0])
 
-        Args:
-            size (int): The size of the allocation.
-            current_time (int): The current timestep.
-            end_time (int): The timestep when the allocation expires.
-
-        Returns:
-            int: The allocated offset.
-        """
-        self.active_allocations = [alloc for alloc in self.active_allocations if alloc[2] > current_time]
-
-        self.active_allocations.sort(key=lambda x: x[0])
-
-        current_offset = 0
-        for offset, alloc_size, _ in self.active_allocations:
-            if current_offset + size <= offset:
+        offset = 0
+        for block in self.active_blocks:
+            if block[0] - offset >= size:
                 break
-            current_offset = max(current_offset, offset + alloc_size)
+            offset = max(offset, block[1])
 
-        self.active_allocations.append((current_offset, size, end_time))
-        return current_offset
+        self.active_blocks.append((offset, offset + size, expire_time))
+        return offset
 
-    def allocate_at(self, offset: int, size: int, end_time: int) -> None:
-        """Force allocation at a specific offset (e.g. for in-place).
+    def allocate(self, size: int, current_time: int, expire_time: int) -> int:
+        """Allocate static size compat."""
+        return self.allocate_static(size, current_time, expire_time)
 
-        Args:
-            offset (int): The offset to allocate at.
-            size (int): The size of the allocation.
-            end_time (int): The timestep when the allocation expires.
-        """
-        self.active_allocations.append((offset, size, end_time))
+    def allocate_dynamic(self, symbolic_math: str, current_time: int, expire_time: int, var_name: str) -> str:
+        """Allocate dynamic size."""
+        self.dynamic_blocks = [b for b in self.dynamic_blocks if b[2] >= current_time]
+        self.dynamic_blocks.append((var_name, symbolic_math, expire_time))
+        return f"offset_{var_name}"
+
+    def allocate_at(self, offset: int, size: int, expire_time: int) -> None:
+        """Allocate at specific static offset."""
+        self.active_blocks.append((offset, offset + size, expire_time))
 
 
 def _compute_liveness(graph: IRGraph, sorted_nodes: list[IRNode]) -> dict[str, int]:
@@ -168,17 +178,7 @@ def _try_reuse_buffer(node: IRNode, graph: IRGraph, size: int, i: int, last_use:
 
 
 def buffer_allocation_pass(graph: IRGraph) -> bool:
-    """In-place Buffer Allocation pass.
-
-    Assigns memory buffers (offsets and sizes) to nodes for lower-level execution
-    targets like WASM and WebGPU, implementing liveness analysis and memory pooling.
-
-    Args:
-        graph (IRGraph): The input graph to mutate.
-
-    Returns:
-        bool: True if the graph was modified, False otherwise.
-    """
+    """In-place Buffer Allocation pass with dynamic shape support."""
     sorted_nodes = DAGTopologicalSorter.sort(graph)
     if not sorted_nodes:
         return False
@@ -187,20 +187,37 @@ def buffer_allocation_pass(graph: IRGraph) -> bool:
     allocator = GreedyOffsetAllocator()
     modified = False
 
+    # Store dynamic schema configuration
+    graph.attributes = getattr(graph, "attributes", {})
+    graph.attributes["dynamic_memory_schema"] = {"dynamic_offsets": []}
+
     for i, node in enumerate(sorted_nodes):
         size = _get_node_byte_size(node)
-        reused_offset = _try_reuse_buffer(node, graph, size, i, last_use)
 
-        if reused_offset >= 0:
-            assigned_offset = reused_offset
-            allocator.allocate_at(assigned_offset, size, last_use[node.id])
-        else:
-            assigned_offset = allocator.allocate(size, i, last_use[node.id])
+        if isinstance(size, str):  # Dynamic
+            var_name = getattr(node, "id", f"node_{i}")
+            assigned_offset = allocator.allocate_dynamic(size, i, last_use.get(node.id, i), var_name)
 
-        if node.attributes.get("buffer_offset") != assigned_offset:
-            node.attributes["buffer_offset"] = assigned_offset
-            node.attributes["buffer_id"] = 0
-            node.attributes["buffer_size"] = size
-            modified = True
+            # Record the dynamic offset computation request in the graph attributes
+            graph.attributes["dynamic_memory_schema"]["dynamic_offsets"].append({"var_name": var_name, "symbolic_math": size, "node_id": node.id})
+
+            if node.attributes.get("buffer_offset_symbolic") != assigned_offset:
+                node.attributes["buffer_offset_symbolic"] = assigned_offset
+                node.attributes["buffer_size_symbolic"] = size
+                node.attributes["buffer_id"] = 0
+                modified = True
+        else:  # Static
+            reused_offset = _try_reuse_buffer(node, graph, size, i, last_use)
+            if reused_offset >= 0:
+                static_assigned_offset = reused_offset
+                allocator.allocate_at(static_assigned_offset, size, last_use.get(node.id, i))
+            else:
+                static_assigned_offset = allocator.allocate_static(size, i, last_use.get(node.id, i))
+
+            if node.attributes.get("buffer_offset") != static_assigned_offset:
+                node.attributes["buffer_offset"] = static_assigned_offset
+                node.attributes["buffer_size"] = size
+                node.attributes["buffer_id"] = 0
+                modified = True
 
     return modified

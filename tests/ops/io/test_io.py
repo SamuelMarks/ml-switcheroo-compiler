@@ -263,3 +263,67 @@ def test_io_encoding():
             assert isinstance(encoded, Tensor)
             decoded = decode_base64(encoded)
             assert isinstance(decoded, Tensor)
+
+
+def test_numpy_io_tracing():
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.io.numpy_io import Load, Save, SaveGguf, Savez, SavezCompressed, load, save, save_gguf, savez, savez_compressed
+    from ml_switcheroo_compiler.tracing.state import global_tracing_state
+
+    config.eager_mode = False
+    global_tracing_state.start_tracing()
+    try:
+        assert load("test") is not None
+        assert save("test", [1, 2]) is not None
+        assert savez("test", [1, 2]) is not None
+        assert savez_compressed("test", [1, 2]) is not None
+        assert save_gguf("test", {"t": [1]}) is not None
+
+        # testing infer_shape
+        assert Load().infer_shape() is not None
+        assert Save().infer_shape() is not None
+        assert Savez().infer_shape() is not None
+        assert SavezCompressed().infer_shape() is not None
+        assert SaveGguf().infer_shape() is not None
+    finally:
+        global_tracing_state.stop_tracing()
+
+
+def test_numpy_io_eager_and_format_fallback():
+    import unittest.mock as mock
+
+    from ml_switcheroo_compiler.core.config import config
+    from ml_switcheroo_compiler.ops.io.numpy_io import _fallback_load, load, save, save_gguf, savez, savez_compressed
+
+    config.eager_mode = True
+
+    class MockBackend:
+        def execute_op(self, name, *args, **kwargs):
+            return "executed"
+
+    with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
+        assert load("x") == "executed"
+        assert save("x", [1]) == "executed"
+        assert savez("x", [1]) == "executed"
+        assert savez_compressed("x", [1]) == "executed"
+        assert save_gguf("x", {"t": [1]}) == "executed"
+
+    assert _fallback_load(123) is None
+    assert _fallback_load("test.bin") is None
+
+    with mock.patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5load"):
+        assert _fallback_load("test.h5") == "h5load"
+
+
+def test_numpy_io_infer_shape_args():
+    from ml_switcheroo_compiler.ops.io.numpy_io import Load, Save, SaveGguf, Savez, SavezCompressed
+
+    class DummyNode:
+        def __init__(self, shape):
+            self.shape = shape
+
+    assert Load().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
+    assert Save().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
+    assert Savez().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
+    assert SavezCompressed().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)
+    assert SaveGguf().infer_shape(DummyNode((2, 2)), DummyNode((2, 2))) == (2, 2)

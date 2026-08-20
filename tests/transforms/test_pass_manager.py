@@ -223,3 +223,21 @@ def test_pass_manager_run_until_converged_max_iters() -> None:
         assert counter == 3
     except (ValueError, AttributeError, TypeError, AssertionError, ImportError):
         pass
+
+
+def test_pass_manager_nodes_list():
+    from ml_switcheroo_compiler.ir.core import IRNode
+    from ml_switcheroo_compiler.transforms.pass_manager import IRValidator, _graph_hash
+
+    class MockGraph:
+        def __init__(self):
+            n = IRNode(id="n1", op_type="Exp")
+            n.shape_metadata = ()
+            self.nodes = [n]
+
+    validator = IRValidator()
+    mock_g = MockGraph()
+    IRValidator.check_shapes(mock_g)
+
+    h = _graph_hash(mock_g)
+    assert isinstance(h, str)

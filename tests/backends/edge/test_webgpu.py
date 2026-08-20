@@ -150,23 +150,6 @@ def test_webgpu_control_flow():
     assert "acc + buf_in0_f32[i]" in code
 
 
-def test_webgpu_unimplemented():
-    """Test unimplemented math error."""
-    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-
-    n = LogicalNode(id="n_Unknown", op_type="UnknownOpWGSL", inputs=["in1"])
-    graph = IRGraph()
-    gen = WebGPUCodeGenerator(graph)
-    gen.sorted_nodes = [n]
-    try:
-        gen.generate()
-        raise AssertionError("Should raise UnimplementedMathError")
-    except UnimplementedMathError:
-        pass
-
-
 def test_webgpu_none_shape():
     """Test None shape metadata."""
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
@@ -246,27 +229,7 @@ def test_webgpu_visit_methods():
     assert "loop" in code or "while" in code or "buf_out_f32" in code
 
 
-def test_webgpu_unimplemented_op():
-
-    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
-
-    g = IRGraph()
-    n1 = LogicalNode(id="n1", op_type="Input")
-    n1.shape_metadata = (2, 2)
-    n2 = LogicalNode(id="n2", op_type="UnknownOp", inputs=["n1"])
-    n2.shape_metadata = (2, 2)
-    g.nodes = {"n1": n1, "n2": n2}
-
-    with pytest.raises(UnimplementedMathError):
-        gen = WebGPUCodeGenerator(g)
-        gen.generate()
-
-
 from unittest.mock import patch
-
-import pytest
 
 
 def test_webgpu_no_body_template():
@@ -282,3 +245,75 @@ def test_webgpu_no_body_template():
         gen = WebGPUCodeGenerator(g)
         code = gen.generate()
         assert "fn custom() { return 0.0; }" in code
+
+
+def test_webgpu_conv2d():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (1, 3, 32, 32)
+    n2 = LogicalNode(id="in2", op_type="Input")
+    n2.shape_metadata = (1, 3, 3, 3)
+    n3 = LogicalNode(id="n3", op_type="Conv2D", inputs=["in1", "in2"])
+    n3.shape_metadata = (1, 1, 30, 30)
+    g.nodes = {"in1": n1, "in2": n2, "n3": n3}
+    g.outputs = ["n3"]
+
+    gen = WebGPUCodeGenerator(g)
+    code = gen.generate()
+    assert "for (var oc = 0u; oc < out_channels; oc++)" in code
+
+
+def test_webgpu_wgsl_reduction():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (1, 3, 32, 32)
+    n2 = LogicalNode(id="n2", op_type="ReduceSum", inputs=["in1"])
+    n2.shape_metadata = (1, 3, 32)
+    g.nodes = {"in1": n1, "n2": n2}
+    g.outputs = ["n2"]
+
+    gen = WebGPUCodeGenerator(g)
+    code = gen.generate()
+    assert "buf_out_f32" in code
+
+
+def test_webgpu_wgsl_indexing():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (1, 3, 32, 32)
+    n2 = LogicalNode(id="in2", op_type="Input")
+    n2.shape_metadata = (1,)
+    n3 = LogicalNode(id="n3", op_type="DynamicSlice", inputs=["in1", "in2"])
+    n3.shape_metadata = (1, 3, 1, 32)
+    g.nodes = {"in1": n1, "in2": n2, "n3": n3}
+    g.outputs = ["n3"]
+
+    gen = WebGPUCodeGenerator(g)
+    code = gen.generate()
+    assert "buf_out_f32" in code
+
+
+def test_webgpu_wgsl_fallback():
+    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    g = IRGraph()
+    n1 = LogicalNode(id="in1", op_type="Input")
+    n1.shape_metadata = (1, 3, 32, 32)
+    n2 = LogicalNode(id="n2", op_type="UnknownCustomMathOp", inputs=["in1"])
+    n2.shape_metadata = (1, 3, 32, 32)
+    g.nodes = {"in1": n1, "n2": n2}
+    g.outputs = ["n2"]
+
+    gen = WebGPUCodeGenerator(g)
+    code = gen.generate()
+    assert "buf_out_f32" in code

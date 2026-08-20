@@ -5,9 +5,11 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def global_wasm_mock():
+    import copy
+
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
-    saved_registry = dict(OPS_REGISTRY)
+    saved_registry = copy.deepcopy(OPS_REGISTRY)
 
     ops_to_mock = ["UnknownOp", "Conv2D", "MaxPool2D", "BatchNorm", "LayerNorm", "AvgPool2D", "Add", "Constant", "DotGeneral", "Transpose", "MatMul", "ReduceSum", "ReduceMax", "Tanh", "BroadcastTo", "DummyOp", "Dummy", "Exp", "Input"]
     for op in ops_to_mock:

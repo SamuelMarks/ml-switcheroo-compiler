@@ -54,3 +54,17 @@ def test_vjp_registry_coverage() -> None:
         assert has_vjp("NonExistentOp") is False
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="something"):
         assert has_vjp("fake_op") is True
+
+
+def test_vjp_registry_lazy_load():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
+
+    def mock_get_data(name):
+        _VJP_REGISTRY[name] = "lazy_loaded_vjp"
+        return None
+
+    with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):
+        res = get_vjp("test_lazy_op")
+        assert res == "lazy_loaded_vjp"

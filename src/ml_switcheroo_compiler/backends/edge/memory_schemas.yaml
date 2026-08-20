@@ -1,0 +1,51 @@
+# memory_schemas.yaml
+# Declarative schemas for dynamic edge memory allocation
+
+schemas:
+  default:
+    # Growth multiplier when arena exceeds capacity
+    growth_multiplier: 1.5
+    # Minimum arena size in bytes
+    min_arena_size: 65536
+    # Fallback types for offset calculations
+    pointer_dtype: "i32"
+    byte_alignment: 4
+
+  nd_tensor_state:
+    shape_layout: "flat_array"
+    strides_layout: "flat_array"
+    offset_layout: "scalar"
+    struct_template: |
+      struct NDTensorState {{
+          shape: array<u32, 8>,
+          strides: array<u32, 8>,
+          offset: u32,
+          rank: u32,
+      }};
+
+  js_orchestration_templates:
+    dynamic_resize: |
+      // Dynamic Memory Resize Logic
+      let required_bytes = {computed_size};
+      if (required_bytes > arena_capacity_{arena_id}) {{
+          let new_cap = Math.max(required_bytes, Math.floor(arena_capacity_{arena_id} * {growth_multiplier}));
+          // Handle resize logic for GPUBuffer / WebAssembly.Memory
+          {resize_logic}
+          arena_capacity_{arena_id} = new_cap;
+      }}
+
+    runtime_offset_calc: |
+      // Runtime Offset Calculation
+      let {var_name}_size = {symbolic_math};
+      let {var_name}_offset = current_offset;
+      current_offset += {var_name}_size * {byte_alignment};
+
+    cond_branch_alloc: |
+      // Cond Branch Allocation
+      let branch_mem_size_{branch_id} = {branch_bytes};
+      let branch_offset_{branch_id} = current_offset;
+      current_offset += branch_mem_size_{branch_id};
+
+    cond_branch_dealloc: |
+      // Cond Branch Deallocation (Bump allocator rewind)
+      current_offset -= branch_mem_size_{branch_id};

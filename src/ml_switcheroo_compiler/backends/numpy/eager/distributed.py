@@ -27,16 +27,28 @@ def _np_axis_index(backend_module: Any, **kwargs: Any) -> Any:
 class TCPDistributedContext:
     """Real standard-library IPC Context for Collectives (Ring Topology)."""
 
-    def __init__(self, world_size: int = 1, rank: int = 0, addr: str = "localhost", port: int = 29500) -> None:
+    def __init__(self, world_size: int = 1, rank: int = 0, addr: str = "localhost", port: int = 29500, topology: str = "ring") -> None:
         """Init."""
         self.world_size = world_size
         self.rank = rank
         self.addr = addr
         self.port = port
+        self.topology = topology
         self.authkey = b"ml_switcheroo"
         self.listener: Optional[Listener] = None
-        self.recv_conn: Optional[Any] = None
-        self.send_conn: Optional[Any] = None
+        self.recv_conns: list[Any] = []
+        self.send_conns: list[Any] = []
+
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "../../../distributed/rpc_topology.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                self.config = yaml.safe_load(f).get("topologies", {}).get(topology, {})
+        else:
+            self.config = {}
 
     def initialize(self) -> None:
         """Initialize the collective communication ring topology."""
@@ -46,21 +58,31 @@ class TCPDistributedContext:
         import threading
 
         my_port = self.port + self.rank
-        next_port = self.port + ((self.rank + 1) % self.world_size)
+
+        # Determine next port from config based on topology
+        if self.topology == "ring":
+            next_rank = (self.rank + 1) % self.world_size
+        elif self.topology == "tree":
+            next_rank = (self.rank - 1) // 2 if self.rank > 0 else 0
+        else:
+            next_rank = (self.rank + 1) % self.world_size
+
+        next_port = self.port + next_rank
 
         self.listener = Listener((self.addr, my_port), authkey=self.authkey)
 
         def accept_conn() -> None:
             """Accept connection."""
             if self.listener:
-                self.recv_conn = self.listener.accept()
+                self.recv_conns.append(self.listener.accept())
 
         t = threading.Thread(target=accept_conn)
         t.start()
 
         for _ in range(50):
             try:
-                self.send_conn = Client((self.addr, next_port), authkey=self.authkey)
+                if next_rank != self.rank:
+                    self.send_conns.append(Client((self.addr, next_port), authkey=self.authkey))
                 break
             except ConnectionRefusedError:
                 time.sleep(0.1)
@@ -79,9 +101,9 @@ class TCPDistributedContext:
             send_chunk_idx = (self.rank - step) % self.world_size
             recv_chunk_idx = (self.rank - step - 1) % self.world_size
 
-            if self.send_conn:
-                self.send_conn.send(chunks[send_chunk_idx])
-            recv_data = self.recv_conn.recv() if self.recv_conn else None
+            if self.send_conns:
+                self.send_conns[0].send(chunks[send_chunk_idx])
+            recv_data = self.recv_conns[0].recv() if self.recv_conns[0] else None
 
             if op_type == "sum":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data
@@ -97,9 +119,9 @@ class TCPDistributedContext:
             send_chunk_idx = (self.rank - step + 1) % self.world_size
             recv_chunk_idx = (self.rank - step) % self.world_size
 
-            if self.send_conn:
-                self.send_conn.send(chunks[send_chunk_idx])
-            chunks[recv_chunk_idx] = self.recv_conn.recv() if self.recv_conn else None
+            if self.send_conns:
+                self.send_conns[0].send(chunks[send_chunk_idx])
+            chunks[recv_chunk_idx] = self.recv_conns[0].recv() if self.recv_conns[0] else None
 
         return backend_module.concatenate(chunks)
 
@@ -115,19 +137,19 @@ class TCPDistributedContext:
             send_idx = (self.rank - step) % self.world_size
             recv_idx = (self.rank - step - 1) % self.world_size
 
-            if self.send_conn:
-                self.send_conn.send(all_tensors[send_idx])
-            all_tensors[recv_idx] = self.recv_conn.recv() if self.recv_conn else None
+            if self.send_conns:
+                self.send_conns[0].send(all_tensors[send_idx])
+            all_tensors[recv_idx] = self.recv_conns[0].recv() if self.recv_conns[0] else None
 
         return all_tensors
 
     def shutdown(self) -> None:
         """Shutdown connections."""
         if self.world_size > 1:
-            if self.recv_conn:
-                self.recv_conn.close()
-            if self.send_conn:
-                self.send_conn.close()
+            if self.recv_conns:
+                self.recv_conns[0].close()
+            if self.send_conns:
+                self.send_conns[0].close()
             if self.listener:
                 self.listener.close()
 

@@ -30,7 +30,7 @@ def _get_exports_from_submodule(modname: str) -> list[str]:
 
     if hasattr(mod, "__all__"):
         return sorted(list(set(mod.__all__)))
-    return sorted(list(set([n for n in dir(mod) if not n.startswith("_")])))
+    return sorted(list(set([n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType)])))
 
 
 def _append_import_lines(
@@ -115,7 +115,7 @@ def generate_init(
     except SyntaxError:
         pass
 
-    new_source = '# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
+    new_source = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
     new_source += "# pylint: disable=duplicate-code\n"
     new_source += "__all__ = [\n"
     for e in all_exports:

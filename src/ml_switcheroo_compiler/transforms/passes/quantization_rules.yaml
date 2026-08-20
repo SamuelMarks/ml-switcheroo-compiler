@@ -1,0 +1,29 @@
+# Quantization definitions and lowering rules
+
+PTQ:
+  default_q_scale: 0.1
+  symmetric:
+    q_zero_point: 0
+    bits: 8
+  asymmetric:
+    q_zero_point: 128
+    bits: 8
+
+QAT:
+  default_q_scale: 0.1
+  symmetric:
+    q_zero_point: 0
+    bits: 8
+  asymmetric:
+    q_zero_point: 128
+    bits: 8
+
+lowering_map:
+  MatMul: "QuantizedMatMul"
+  Dot: "QuantizedMatMul"
+  Conv2D: "QuantizedConv2D"
+  ConvGeneralDilated: "QuantizedConv2D"
+
+pass_through_nodes:
+  - "FusedMovingAvgObsFakeQuant"
+  - "FakeQuantize"

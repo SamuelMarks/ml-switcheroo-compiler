@@ -1,0 +1,56 @@
+# webrtc_topology.yaml
+# Declarative schemas for WebRTC-based distributed collectives running in browser environments
+
+webrtc_config:
+  ice_servers:
+    - urls: "stun:stun.l.google.com:19302"
+    - urls: "stun:stun1.l.google.com:19302"
+  signaling:
+    timeout_ms: 5000
+
+templates:
+  init_peer_connection: |
+    const peerConnection = new RTCPeerConnection({config});
+    const dataChannel = peerConnection.createDataChannel("ml_switcheroo_collective");
+
+    // Setup message handler for distributed ops
+    dataChannel.onmessage = async (event) => {{
+        const message = JSON.parse(event.data);
+        if (message.type === 'ALLREDUCE') {{
+            // Handle AllReduce reduction logic
+            {allreduce_handler}
+        }} else if (message.type === 'ALLGATHER') {{
+            // Handle AllGather concatenation logic
+            {allgather_handler}
+        }} else if (message.type === 'ALLTOALL') {{
+            // Handle AllToAll split/concat logic
+            {alltoall_handler}
+        }} else if (message.type === 'REDUCESCATTER') {{
+            // Handle ReduceScatter logic
+            {reducescatter_handler}
+        }}
+    }};
+
+  allreduce_emit: |
+    // Trigger WebRTC AllReduce
+    const localData = {local_tensor_data};
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+    await waitForReduction('{op_id}');
+
+  allgather_emit: |
+    // Trigger WebRTC AllGather
+    const localData = {local_tensor_data};
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+    await waitForGather('{op_id}');
+
+  alltoall_emit: |
+    // Trigger WebRTC AllToAll
+    const localData = {local_tensor_data};
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+    await waitForAllToAll('{op_id}');
+
+  reducescatter_emit: |
+    // Trigger WebRTC ReduceScatter
+    const localData = {local_tensor_data};
+    dataChannel.send(localData.buffer); // Binary send chunk_size: {chunk_size}
+    await waitForReduceScatter('{op_id}');

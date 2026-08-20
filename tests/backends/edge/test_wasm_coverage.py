@@ -327,3 +327,41 @@ def test_wasm_missing_attributes_and_strides():
 
     code = gen.generate()
     assert True
+
+
+def test_wasm_matmul_and_conv_tiling_and_webrtc():
+    from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    g = IRGraph()
+    # MatMul with tiling
+    n_matmul_tiled = IRNode("matmul_tiled", "MatMul", inputs=["in1", "in2"], attributes={"tiling": True})
+    n_matmul_tiled.shape_metadata = (16, 16)
+
+    # Conv2D with tiling
+    n_conv_tiled = IRNode("conv_tiled", "Conv2D", inputs=["in_img", "in_w"], attributes={"tiling": True, "stride": (1, 1)})
+    n_conv_tiled.shape_metadata = (1, 16, 16, 16)
+
+    # WebRTC ops
+    n_allreduce = IRNode("allreduce", "AllReduce", inputs=["in1"])
+    n_allgather = IRNode("allgather", "AllGather", inputs=["in1"])
+    n_alltoall = IRNode("alltoall", "AllToAll", inputs=["in1"])
+
+    in1 = IRNode("in1", "Input")
+    in1.shape_metadata = (16, 16)
+    in2 = IRNode("in2", "Input")
+    in2.shape_metadata = (16, 16)
+    in_img = IRNode("in_img", "Input")
+    in_img.shape_metadata = (1, 3, 16, 16)
+    in_w = IRNode("in_w", "Input")
+    in_w.shape_metadata = (16, 3, 3, 3)
+
+    g.nodes = {"in1": in1, "in2": in2, "in_img": in_img, "in_w": in_w, "matmul_tiled": n_matmul_tiled, "conv_tiled": n_conv_tiled, "allreduce": n_allreduce, "allgather": n_allgather, "alltoall": n_alltoall}
+    g.inputs = ["in1", "in2", "in_img", "in_w"]
+    g.outputs = ["matmul_tiled", "conv_tiled", "allreduce", "allgather", "alltoall"]
+
+    gen = WasmCodeGenerator(g)
+    gen.sorted_nodes = [in1, in2, in_img, in_w, n_matmul_tiled, n_conv_tiled, n_allreduce, n_allgather, n_alltoall]
+
+    code = gen.generate()
+    assert code is not None

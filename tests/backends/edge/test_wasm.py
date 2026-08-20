@@ -390,7 +390,7 @@ def test_wasm_control_flow():
     assert "for (int i = 0; i < 5; ++i)" in code
     assert "if (!(buf_in1[0] > 0.0)) break;" in code
     assert "if (buf_in1[0] > 0.0)" in code
-    assert "acc_n_scan + buf_in1[i]" in code
+    assert "buf_n_scan[i] = buf_in1[i];" in code
 
 
 def test_wasm_control_flow_no_inputs():
@@ -413,7 +413,7 @@ def test_wasm_control_flow_no_inputs():
     assert "for (int i = 0; i < 10; ++i)" in code
     assert "if (!(1)) break;" in code
     assert "if (1)" in code
-    assert "acc = 1.0;" in code
+    assert "buf_n_scan[i] = 1.0f;" in code
 
 
 def test_missing_body_error():

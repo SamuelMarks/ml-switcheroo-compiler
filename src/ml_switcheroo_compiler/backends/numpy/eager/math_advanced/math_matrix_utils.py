@@ -187,9 +187,10 @@ def _np_distributions(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
 
         if hasattr(_ops, "distributions"):
             cls_or_func = _ops.distributions
-            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _ops.OpDef)):
+            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", object))):
                 return cls_or_func(*args, **kwargs)
-    except Exception:
+    except Exception as e:
+        print("EXCEPTION IN _np_distributions:", repr(e))
         pass
     if hasattr(backend_module, "distributions"):
         return backend_module.distributions(*args, **kwargs)

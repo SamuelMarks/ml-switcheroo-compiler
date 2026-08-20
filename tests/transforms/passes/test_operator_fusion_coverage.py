@@ -38,7 +38,7 @@ def test_operator_fusion_extra_coverage():
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import YamlFusionRule
 
     cfg = FusionPatternConfig(pattern=NodePatternConfig(), replacement=ReplacementConfig(op_type="x", inputs=[], capture_to_replace="x"))
-    strat = YamlFusionRule("test", {"pattern": {"op_type": "y"}, "replacement": {"op_type": "x", "inputs": [], "capture_to_replace": "x"}})
+    strat = YamlFusionRule("test", cfg)
     strat.apply(graph, {"x": "n1"})
 
     # _match_inputs tests
@@ -114,7 +114,7 @@ def test_operator_fusion_extra_coverage():
 
     # YamlFusionRule coverage
     cfg = FusionPatternConfig(pattern=NodePatternConfig(), replacement=ReplacementConfig(op_type="B", inputs=["val1", "val2"], capture_to_replace="target"))
-    strat3 = YamlFusionRule("test3", cfg.model_dump())
+    strat3 = YamlFusionRule("test3", cfg)
 
     match_dict = {"target": IRNode(id="n_a", op_type="A", inputs=[]), "val1": IRNode(id="n_1", op_type="In", inputs=[]), "val2": "val2_id"}
     res = strat3.apply(IRGraph(), match_dict)
@@ -161,5 +161,5 @@ def test_operator_fusion_extra_coverage():
         apply_operator_fusion(g_empty)
 
     # test _build_pattern with inputs
-    strat4 = YamlFusionRule("test4", {"pattern": {"op_type": "A", "inputs": [{"op_type": "B"}]}, "replacement": {"op_type": "x", "inputs": [], "capture_to_replace": "x"}})
+    strat4 = YamlFusionRule("test4", FusionPatternConfig(pattern=NodePatternConfig(op_type="A", inputs=[NodePatternConfig(op_type="B")]), replacement=ReplacementConfig(op_type="x", inputs=[], capture_to_replace="x")))
     assert strat4.pattern.inputs is not None

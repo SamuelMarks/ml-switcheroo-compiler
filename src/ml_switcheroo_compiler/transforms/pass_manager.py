@@ -43,9 +43,12 @@ class IRValidator:
             CompilationError: If a node is missing shape metadata.
         """
         # Simple validator: ensure every node has shape metadata
-        for node_id, node in graph.nodes.items():
+        nodes_iterable = graph.nodes
+        if isinstance(nodes_iterable, dict):
+            nodes_iterable = nodes_iterable.values()
+        for node in nodes_iterable:
             if getattr(node, "shape_metadata", None) is None:
-                msg = f"Node {node_id} is missing shape_metadata."
+                msg = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
                 raise CompilationError(msg)
 
 
@@ -59,8 +62,11 @@ def _graph_hash(graph: IRGraph) -> str:
         str: Result.
     """
     state = {}
-    for node_id, node in graph.nodes.items():
-        state[node_id] = {
+    nodes_iterable = graph.nodes
+    if isinstance(nodes_iterable, dict):
+        nodes_iterable = nodes_iterable.values()
+    for node in nodes_iterable:
+        state[getattr(node, "id", "")] = {
             "op": node.op_type,
             "inputs": node.inputs,
             # Ignore attributes that might not be easily serializable for basic hash

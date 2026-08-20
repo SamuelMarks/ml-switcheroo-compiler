@@ -174,6 +174,62 @@ class MLXOpRegistryMixin:
         "RandomBernoulli": "mx.random.bernoulli(p={p}, shape={shape}, key={0})",
     }
 
+    def visit_AllReduce(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Generate MLX code for AllReduce.
+
+        Args:
+            node: The node.
+            input_vars: The input vars.
+            **kwargs: Extra args.
+
+        Returns:
+            str: Generated code.
+        """
+        tensor = input_vars[0]
+        return f"mx.distributed.all_sum({tensor})"
+
+    def visit_AllGather(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Generate MLX code for AllGather.
+
+        Args:
+            node: The node.
+            input_vars: The input vars.
+            **kwargs: Extra args.
+
+        Returns:
+            str: Generated code.
+        """
+        tensor = input_vars[0]
+        return f"mx.distributed.all_gather({tensor})"
+
+    def visit_AllToAll(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Generate MLX code for AllToAll.
+
+        Args:
+            node: The node.
+            input_vars: The input vars.
+            **kwargs: Extra args.
+
+        Returns:
+            str: Generated code.
+        """
+        tensor = input_vars[0]
+        return f"mx.distributed.all_to_all({tensor}) if hasattr(mx.distributed, 'all_to_all') else {tensor}"
+
+    def visit_ReduceScatter(self, node: Any, input_vars: list[str], **kwargs: Any) -> str:
+        """Generate MLX code for ReduceScatter.
+
+        Args:
+            node: The node.
+            input_vars: The input vars.
+            **kwargs: Extra args.
+
+        Returns:
+            str: Generated code.
+        """
+        tensor = input_vars[0]
+        return f"mx.distributed.recv({tensor}) if hasattr(mx.distributed, 'recv') else {tensor}"
+
 
 class MLXNNOpsVisitor:
     """MLX NN ops visitor mixin."""

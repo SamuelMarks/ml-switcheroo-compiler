@@ -100,7 +100,7 @@ _LOADERS = {
     "edge_wasm_simd": _load_edge_wasm_simd,
 }
 
-BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd"]
+BackendName = Literal["jax", "torch", "pytorch", "mlx", "keras", "tensorflow", "numpy", "cupy", "dask", "pure_python", "llvm_cpp", "edge_onnx", "edge_stablehlo", "edge_wgsl", "edge_wasm_simd", "edge_webgl", "metal", "cuda", "rocm"]
 
 
 class BackendRegistry:

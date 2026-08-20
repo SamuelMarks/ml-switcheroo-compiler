@@ -137,7 +137,7 @@ def overwrite_with_gradient(tensor: Any, gradient: Any) -> Any:
         """
         return t, g
 
-    def _overwrite_bwd(g: Any, g_in: Any) -> tuple[Any, None]:
+    def _overwrite_bwd(g: Any, g_in: Any) -> tuple[Any, Any]:
         """Backward pass for overwriting a gradient.
 
         Args:
@@ -145,7 +145,7 @@ def overwrite_with_gradient(tensor: Any, gradient: Any) -> Any:
             g_in (object): The incoming upstream gradient.
 
         Returns:
-            tuple[Any, None]: The overwritten gradient and None for the second argument.
+            tuple[Any, Any]: The overwritten gradient and None for the second argument.
         """
         return g, None
 
@@ -236,3 +236,60 @@ def value_and_grad(fun: Callable[..., Any], options: Any = None) -> Callable[...
         return val, grads
 
     return wrapped
+
+
+def hook_gradient(tensor: Any, hook: Callable[[Any], Any]) -> Any:
+    """Register a custom gradient hook on a tensor.
+
+    During the forward pass, this returns the `tensor` unchanged.
+    During the backward pass, the `hook` function is called with the upstream gradient,
+    and its return value (if not None) replaces the gradient.
+
+    Args:
+        tensor (object): The input tensor.
+        hook (Callable): The hook function applied to the gradient.
+
+    Returns:
+        Any: The tensor with the gradient hook attached.
+    """
+
+    @custom_vjp
+    def _hook_op(t: Any) -> Any:
+        """Apply the hook op.
+
+        Args:
+            t (object): The input tensor.
+
+        Returns:
+            Any: The unchanged tensor.
+        """
+        return t
+
+    def _hook_fwd(t: Any) -> tuple[Any, Any]:
+        """Forward pass for the hook.
+
+        Args:
+            t (object): The input tensor.
+
+        Returns:
+            tuple[Any, Any]: The primal and None.
+        """
+        return t, t
+
+    def _hook_bwd(res: Any, g_in: Any) -> tuple[Any]:
+        """Backward pass for the hook.
+
+        Args:
+            res (object): The stored result.
+            g_in (object): The incoming upstream gradient.
+
+        Returns:
+            tuple[Any]: The processed gradient.
+        """
+        out_g = hook(g_in)
+        if out_g is None:
+            out_g = g_in
+        return (out_g,)
+
+    _hook_op.defvjp(_hook_fwd, _hook_bwd)  # type: ignore
+    return _hook_op(tensor)

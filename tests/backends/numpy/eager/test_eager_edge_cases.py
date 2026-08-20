@@ -3472,74 +3472,82 @@ def test_math_misc_np_ops():
         def __init__(self, *args, **kwargs):
             pass
 
-    original_rawmatmul = getattr(ops, "RawMatMul", None)
-    ops.RawMatMul = FakeThrowingClass
-    ops.SparseDenseMatMul = FakeThrowingClass
-    ops.DecodeImage = FakeThrowingClass
-    ops.ParseExample = FakeThrowingClass
-    ops.ParseTensor = FakeThrowingClass
-    ops.ReadFile = FakeThrowingClass
-    ops.Rem = FakeThrowingClass
-    ops.SerializeTensor = FakeThrowingClass
-    ops.WriteFile = FakeThrowingClass
-    ops.ConfusionMatrix = FakeThrowingClass
-    ops.DecodeCsv = FakeThrowingClass
-    b = math_misc.DummyBackend() if hasattr(math_misc, "DummyBackend") else None
+    original_rawmatmul = None
+    orig_attrs = {attr: getattr(ops, attr, None) for attr in ["RawMatMul", "SparseDenseMatMul", "DecodeImage", "ParseExample", "ParseTensor", "ReadFile", "Rem", "SerializeTensor", "WriteFile", "ConfusionMatrix", "DecodeCsv"]}
     try:
-        math_misc._np_rawmatmul(b, np.ones((2, 2)), np.ones((2, 2)))
-    except Exception:
-        pass
-    try:
-        math_misc._np_sparsedensematmul(b, np.ones((2, 2)), np.ones((2, 2)))
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("decode_image")(b, b"img")
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("parse_example")(b, b"example")
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("parse_tensor")(b, b"tensor")
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("rem")(b, np.array([5]), np.array([2]))
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("serialize_tensor")(b, np.array([1]))
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("confusion_matrix")(b, np.array([0]), np.array([0]))
-    except Exception:
-        pass
-    try:
-        numpy_eager_registry.get("decode_csv")(b, ["1,2"])
-    except Exception:
-        pass
-    ops.RawMatMul = FakeWorkingClass
-    ops.SparseDenseMatMul = FakeWorkingClass
-    ops.DecodeImage = FakeWorkingClass
-    ops.ParseExample = FakeWorkingClass
-    ops.ParseTensor = FakeWorkingClass
-    ops.ReadFile = FakeWorkingClass
-    ops.Rem = FakeWorkingClass
-    ops.SerializeTensor = FakeWorkingClass
-    ops.WriteFile = FakeWorkingClass
-    ops.ConfusionMatrix = FakeWorkingClass
-    ops.DecodeCsv = FakeWorkingClass
+        ops.RawMatMul = FakeThrowingClass
+        ops.SparseDenseMatMul = FakeThrowingClass
+        ops.DecodeImage = FakeThrowingClass
+        ops.ParseExample = FakeThrowingClass
+        ops.ParseTensor = FakeThrowingClass
+        ops.ReadFile = FakeThrowingClass
+        ops.Rem = FakeThrowingClass
+        ops.SerializeTensor = FakeThrowingClass
+        ops.WriteFile = FakeThrowingClass
+        ops.ConfusionMatrix = FakeThrowingClass
+        ops.DecodeCsv = FakeThrowingClass
+        b = math_misc.DummyBackend() if hasattr(math_misc, "DummyBackend") else None
+        try:
+            math_misc._np_rawmatmul(b, np.ones((2, 2)), np.ones((2, 2)))
+        except Exception:
+            pass
+        try:
+            math_misc._np_sparsedensematmul(b, np.ones((2, 2)), np.ones((2, 2)))
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("decode_image")(b, b"img")
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("parse_example")(b, b"example")
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("parse_tensor")(b, b"tensor")
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("read_file")(b, "/tmp/ml_switcheroo_test_file.txt")
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("rem")(b, np.array([5]), np.array([2]))
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("serialize_tensor")(b, np.array([1]))
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("confusion_matrix")(b, np.array([0]), np.array([0]))
+        except Exception:
+            pass
+        try:
+            numpy_eager_registry.get("decode_csv")(b, ["1,2"])
+        except Exception:
+            pass
+        ops.RawMatMul = FakeWorkingClass
+        ops.SparseDenseMatMul = FakeWorkingClass
+        ops.DecodeImage = FakeWorkingClass
+        ops.ParseExample = FakeWorkingClass
+        ops.ParseTensor = FakeWorkingClass
+        ops.ReadFile = FakeWorkingClass
+        ops.Rem = FakeWorkingClass
+        ops.SerializeTensor = FakeWorkingClass
+        ops.WriteFile = FakeWorkingClass
+        ops.ConfusionMatrix = FakeWorkingClass
+        ops.DecodeCsv = FakeWorkingClass
+    finally:
+        for attr, val in orig_attrs.items():
+            if val is not None:
+                setattr(ops, attr, val)
+            elif hasattr(ops, attr):
+                delattr(ops, attr)
     try:
         math_misc._np_rawmatmul(b, np.ones((2, 2)), np.ones((2, 2)))
     except Exception:

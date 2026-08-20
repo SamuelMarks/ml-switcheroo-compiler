@@ -2102,7 +2102,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             {"default": 0, "is_variadic": False, "kind": "positional_or_keyword", "name": "padding", "type": "Union[int, Tuple[int, int]]"},
         ],
         "type": "class",
-        "variants": {"edge_onnx": {"generator": "AveragePool"}, "edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "edge_wgsl": {"expr": "buf_in0_f32[idx]", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
+        "variants": {"edge_onnx": {"generator": "AveragePool"}, "edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "edge_wgsl": {"template": "AvgPool2D"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "AvgPool3D": {
         "description": "Applies 3D average pooling.",
@@ -3977,13 +3977,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             {"default": 1, "is_variadic": False, "kind": "positional_or_keyword", "name": "groups", "type": "int"},
         ],
         "type": "attribute",
-        "variants": {
-            "edge_onnx": {"generator": "Conv"},
-            "edge_stablehlo": {"generator": "stablehlo.convolution"},
-            "edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"},
-            "edge_wgsl": {"expr": "buf_in0_f32[0] * buf_in1_f32[0]", "template": "conv_pool_1d_flat"},
-            "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"},
-        },
+        "variants": {"edge_onnx": {"generator": "Conv"}, "edge_stablehlo": {"generator": "stablehlo.convolution"}, "edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "edge_wgsl": {"template": "im2col_conv2d"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "Conv2DTranspose": {
         "description": "2D transposed convolution layer.",
@@ -7906,7 +7900,7 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
         "operation": "MaxPool2D",
         "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "kernel_size", "type": "Union[int, Tuple[int, int]]"}, {"is_variadic": False, "kind": "positional_or_keyword", "name": "stride", "type": "Union[int, Tuple[int, int]]"}],
         "type": "class",
-        "variants": {"edge_onnx": {"generator": "MaxPool"}, "edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "edge_wgsl": {"expr": "buf_in0_f32[idx]", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
+        "variants": {"edge_onnx": {"generator": "MaxPool"}, "edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "edge_wgsl": {"template": "MaxPool2D"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
     },
     "MaxPool3D": {
         "description": "Applies a 3D max pooling over an input signal.",
@@ -12156,6 +12150,14 @@ OPS_REGISTRY: dict[str, dict[str, Any]] = {
             {"default": True, "is_variadic": False, "kind": "positional_or_keyword", "name": "upper", "type": "bool"},
         ],
         "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}},
+    },
+    "Sync": {
+        "autodiff": {"jvp": "Sync($tangent[0])", "vjp": []},
+        "description": "Pipeline synchronization barrier node.",
+        "operation": "Sync",
+        "std_args": [{"is_variadic": True, "kind": "positional_or_keyword", "name": "dependencies", "type": "Tensor"}],
+        "type": "attribute",
+        "variants": {"edge_onnx": {"generator": "Identity"}, "edge_stablehlo": {"generator": "stablehlo.custom_call"}, "edge_wasm_simd": {"template": "sync"}, "edge_wgsl": {"template": "sync"}, "llvm_cpp": {"template": "sync"}},
     },
     "SyncBatchNorm": {"description": "Auto-generated mapping for SyncBatchNorm.", "operation": "SyncBatchNorm", "std_args": [], "type": "class", "variants": {"edge_wasm_simd": {"math_op": "* 1.0f", "template": "conv_pool_1d_flat"}, "llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},
     "Synchronize": {"description": "Synchronize with the given stream.", "operation": "Synchronize", "std_args": [{"is_variadic": False, "kind": "positional_or_keyword", "name": "stream", "type": "Optional[Any]"}], "variants": {"llvm_cpp": {"scalar_expr": "in0_val", "template": "unary"}}},

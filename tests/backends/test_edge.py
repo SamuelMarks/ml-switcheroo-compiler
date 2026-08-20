@@ -74,9 +74,9 @@ from ml_switcheroo_compiler.backends import edge
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 import contextlib
 from ml_switcheroo_ir import LogicalGraph
-from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, WasmCodeGenerator, WebGLCodeGenerator, WebGPUCodeGenerator, StableHLOCodeGenerator
+from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, WasmCodeGenerator, WebGPUCodeGenerator, StableHLOCodeGenerator
 
-"Unit tests for the edge-device code generators.\n\nThis module contains test cases to verify the functionality of WebGPU, WebGL, WASM, and\nONNX code generators using a logical graph.\n"
+"Unit tests for the edge-device code generators.\n\nThis module contains test cases to verify the functionality of WebGPU, WASM, and\nONNX code generators using a logical graph.\n"
 
 
 def test_edge_generators() -> None:
@@ -85,16 +85,11 @@ def test_edge_generators() -> None:
     Returns:
         Any: The inferred shape or computed result.
     """
-    "Verifies the code generation and node visitation of various edge backends.\n\n    This test ensures that WebGL and ONNX code generators\n    correctly initialize with a logical graph, produce the expected boilerplate\n    code, and return the correct operation identifiers during graph traversal\n\n    Args:\n    None\n\n    Returns:\n    None\n\n    Raises:\n    AssertionError: If any of the generated code or visited operation\n        strings do not match the expected output.\n    "
+    "Verifies the code generation and node visitation of various edge backends.\n\n    This test ensures that WebGPU and ONNX code generators\n    correctly initialize with a logical graph, produce the expected boilerplate\n    code, and return the correct operation identifiers during graph traversal\n\n    Args:\n    None\n\n    Returns:\n    None\n\n    Raises:\n    AssertionError: If any of the generated code or visited operation\n        strings do not match the expected output.\n    "
     graph = LogicalGraph()
-    gl = WebGLCodeGenerator(graph)
-    assert "fragmentShaderSource =" in gl.generate()
-    assert "#version 300 es" in gl.generate()
-    assert "fragColor = vec4(0.0, 0.0, 0.0, 1.0);" in gl.generate()
-    assert gl.visit(None, []) == "glsl_op"
 
-
-def test_onnx_generator() -> None:
+    onnx = ONNXCodeGenerator(graph)
+    assert "ml_switcheroo_graph" in onnx.generate()
     """Test the ONNX code generator to verify correctness of generated ONNX schema graph representation."""
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(1, 64))
@@ -122,34 +117,6 @@ def test_onnx_generator() -> None:
         assert "Exp" in onnx_code
     if "PrintableGraph" not in str(onnx_code) and "MagicMock" not in str(onnx_code):
         assert "n3" in onnx_code
-
-
-def test_webgl_generator() -> None:
-    """Test the WebGL GLSL code generator to verify correctness of generated GLSL fragment shader code."""
-    g = IRGraph()
-    n0 = IRNode(id="n0", op_type="Input", inputs=[], attributes={"dtype": "float32"}, shape_metadata=(64,))
-    n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": 3.0, "dtype": "float32"}, shape_metadata=(64,))
-    n2 = IRNode(id="n2", op_type="Add", inputs=["n0", "n1"], attributes={"dtype": "float32"}, shape_metadata=(64,))
-    n3 = IRNode(id="n3", op_type="Exp", inputs=["n2"], attributes={"dtype": "float32"}, shape_metadata=(64,))
-
-    for n in [n0, n1, n2, n3]:
-        g.nodes[n.id] = n
-    g.inputs = ["n0"]
-    g.outputs = ["n3"]
-
-    generator = WebGLCodeGenerator(g)
-    glsl_code = generator.generate()
-
-    assert "#version 300 es" in glsl_code
-    assert "precision highp float;" in glsl_code
-    assert "out vec4 fragColor;" in glsl_code
-    assert "uniform sampler2D in_0;" in glsl_code
-    assert "void main() {" in glsl_code
-    assert "vec2 uv = gl_FragCoord.xy / vec2(textureSize(in_0, 0));" in glsl_code
-    assert "float v_n1 = 3.0;" in glsl_code
-    assert "float v_n2 = texture(in_0, uv).r + v_n1;" in glsl_code
-    assert "float v_n3 = exp(v_n2);" in glsl_code
-    assert "fragColor = vec4(v_n3, 0.0, 0.0, 1.0);" in glsl_code
 
 
 def test_wasm_generator() -> None:
@@ -246,7 +213,7 @@ def test_edge_coverage2() -> None:
         Any: The inferred shape or computed result.
     """
     "Docstring."
-    classes = [edge.WebGPUCodeGenerator, edge.WebGLCodeGenerator, edge.WasmCodeGenerator, edge.ONNXCodeGenerator, edge.StableHLOCodeGenerator]
+    classes = [edge.WebGPUCodeGenerator, edge.WasmCodeGenerator, edge.ONNXCodeGenerator, edge.StableHLOCodeGenerator]
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Constant", inputs=[], attributes={"value": [1.0]}, shape_metadata=None)
     g.nodes["n1"] = n1

@@ -556,3 +556,78 @@ def _mlx_variance(backend_module: Any, *args: Any, **kwargs: Any) -> Any:
     """
     kwargs.setdefault("ddof", 0)
     return backend_module.var(*args, **kwargs)
+
+
+@mlx_eager_registry.register("AllReduce")
+def _mlx_all_reduce(backend_module: Any, tensor: Any, **kwargs: Any) -> Any:
+    """Implement AllReduce for MLX eager mode.
+
+    Args:
+        backend_module (object): The MLX backend module.
+        tensor (object): The input tensor.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: The reduced tensor.
+    """
+    import mlx.core as mx
+
+    if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
+        return mx.distributed.all_sum(tensor)
+    return tensor
+
+
+@mlx_eager_registry.register("AllGather")
+def _mlx_all_gather(backend_module: Any, tensor: Any, **kwargs: Any) -> Any:
+    """Implement AllGather for MLX eager mode.
+
+    Args:
+        backend_module (object): The MLX backend module.
+        tensor (object): The input tensor.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: The gathered tensor.
+    """
+    import mlx.core as mx
+
+    if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_gather"):
+        return mx.distributed.all_gather(tensor)
+    return mx.expand_dims(tensor, axis=0)
+
+
+@mlx_eager_registry.register("AllToAll")
+def _mlx_all_to_all(backend_module: Any, tensor: Any, **kwargs: Any) -> Any:
+    """Implement AllToAll for MLX eager mode.
+
+    Args:
+        backend_module (object): The MLX backend module.
+        tensor (object): The input tensor.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: The distributed tensor.
+    """
+    import mlx.core as mx
+
+    if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_to_all"):
+        return mx.distributed.all_to_all(tensor)
+    return tensor
+
+
+@mlx_eager_registry.register("ReduceScatter")
+def _mlx_reduce_scatter(backend_module: Any, tensor: Any, **kwargs: Any) -> Any:
+    """Implement ReduceScatter for MLX eager mode.
+
+    Args:
+        backend_module (object): The MLX backend module.
+        tensor (object): The input tensor.
+        **kwargs (object): Keyword args.
+
+    Returns: Any: The scattered tensor.
+    """
+    import mlx.core as mx
+
+    if hasattr(mx, "distributed") and hasattr(mx.distributed, "recv"):
+        # Not natively supported in early MLX, we fallback
+        import warnings
+
+        warnings.warn("MLX distributed recv not fully implemented yet; returning tensor unmodified as mock.", stacklevel=2)
+    return tensor

@@ -1,4 +1,5 @@
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.transforms.passes.config_models import FusionPatternConfig
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     NodePattern,
     PatternMatchingEngine,
@@ -17,7 +18,7 @@ def test_operator_fusion_extra_coverage():
     # 2. rule apply returns {}
     class EmptyRule(YamlFusionRule):
         def __init__(self):
-            super().__init__("EmptyRule", {"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None"}})
+            super().__init__("EmptyRule", FusionPatternConfig(**{"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
         def apply(self, graph, capture_map):
             return {}
@@ -30,7 +31,7 @@ def test_operator_fusion_extra_coverage():
     # 3. downstream node replaced
     class DownstreamRule(YamlFusionRule):
         def __init__(self):
-            super().__init__("Downstream", {"pattern": {"op_type": "A"}, "replacement": {"op_type": "None"}})
+            super().__init__("Downstream", FusionPatternConfig(**{"pattern": {"op_type": "A"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
         def apply(self, graph, capture_map):
             # when matching A, we replace B as well, putting B in new_nodes
@@ -59,7 +60,7 @@ def test_operator_fusion_extra_coverage():
     # 4. Fused estimate cost
     class CostRule(YamlFusionRule):
         def __init__(self):
-            super().__init__("Cost", {"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None"}})
+            super().__init__("Cost", FusionPatternConfig(**{"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
         def apply(self, graph, capture_map):
             return {"e": IRNode("e", "NewExp")}
@@ -75,7 +76,7 @@ def test_operator_fusion_extra_coverage():
 
 
 def test_yaml_rule_apply_returns_none():
-    rule = YamlFusionRule("Test", {"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}})
+    rule = YamlFusionRule("Test", FusionPatternConfig(**{"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}}))
     assert rule.apply(IRGraph(), {"val": 1.0}) is None
 
     n1 = IRNode("n1", "OldOp")

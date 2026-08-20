@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.transforms.passes.dce import dce_pass as dead_code_e
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import dtype_inference_pass
 from ml_switcheroo_compiler.transforms.passes.graph_scheduling import graph_scheduling_pass
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
+from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 from ml_switcheroo_compiler.transforms.passes.mixed_precision import mixed_precision_pass
 from ml_switcheroo_compiler.transforms.passes.rematerialization import rematerialization_pass
@@ -31,6 +32,7 @@ __all__ = [
     "dtype_inference_pass",
     "inject_spmd_communication_pass",
     "lift_state_pass",
+    "loop_tiling_pass",
     "shape_inference_pass",
     "rematerialization_pass",
     "type_promotion_explicitizer_pass",
@@ -42,3 +44,4 @@ __all__ = [
     "mixed_precision_pass",
     "state_lowering_pass",
 ]
+from .poly_lower import polyfill_lowering_pass

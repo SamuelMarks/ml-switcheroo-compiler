@@ -1,0 +1,30 @@
+# optimization_heuristics.yaml
+profiles:
+  default_wasm:
+    tiling:
+      matmul:
+        threshold_M: 64
+        threshold_N: 64
+        threshold_K: 64
+        TILE_M: 4
+        TILE_N: 4
+        TILE_K: 4
+      conv2d:
+        threshold_HW: 16
+        TILE_M: 4
+        TILE_N: 4
+        TILE_K: 4
+  default_wgsl:
+    tiling:
+      matmul:
+        threshold_M: 256
+        threshold_N: 256
+        threshold_K: 256
+        TILE_M: 16
+        TILE_N: 16
+        TILE_K: 16
+      conv2d:
+        threshold_HW: 32
+        TILE_M: 16
+        TILE_N: 16
+        TILE_K: 16

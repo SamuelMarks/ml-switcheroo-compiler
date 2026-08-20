@@ -37,7 +37,14 @@ class _TopologicalSorter:
             return
 
         self.temp_mark.add(node_id)
-        node = self.graph.nodes.get(node_id)
+        node = None
+        if isinstance(self.graph.nodes, dict):
+            node = self.graph.nodes.get(node_id)
+        elif isinstance(self.graph.nodes, list):
+            for n in self.graph.nodes:
+                if getattr(n, "id", "") == node_id:
+                    node = n
+                    break
 
         if node is not None:
             for in_id in node.inputs:
@@ -55,7 +62,11 @@ class _TopologicalSorter:
         Returns:
             list[Any]: The sorted nodes.
         """
-        for node_id in self.graph.nodes:
+        nodes_iterable = self.graph.nodes
+        if isinstance(nodes_iterable, dict):
+            nodes_iterable = list(nodes_iterable.keys())
+        for n in nodes_iterable:
+            node_id = getattr(n, "id", n) if not isinstance(n, str) else n
             if node_id not in self.visited:
                 self.visit(node_id)
         return self.sorted_nodes

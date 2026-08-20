@@ -32,10 +32,11 @@ def test_math_matrix_utils_coverage():
             def mean(self):
                 return 0
 
-    sys.modules["ml_switcheroo_compiler.ops"] = MockOps()
-    res2 = mat_utils._np_distributions(np, [1])
-    np.testing.assert_array_equal(res2, np.array([1.0, 0.0]))
-    del sys.modules["ml_switcheroo_compiler.ops"]
+    from unittest.mock import patch
+
+    with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOps()}):
+        res2 = mat_utils._np_distributions(np, [1])
+        np.testing.assert_array_equal(res2, np.array([1.0, 0.0]))
 
 
 def test_math_misc_ext_coverage():
@@ -58,10 +59,11 @@ def test_math_misc_ext_coverage():
             def __eq__(self, other):
                 return getattr(self, "val", None) == other
 
-    sys.modules["ml_switcheroo_compiler.ops"] = MockOpsDesc()
-    res2 = misc_ext._np_descriptive_2(np, [1])
-    np.testing.assert_array_equal(res2, np.array([1.0, 0.0, 0.0]))
-    del sys.modules["ml_switcheroo_compiler.ops"]
+    from unittest.mock import patch
+
+    with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOpsDesc()}):
+        res2 = misc_ext._np_descriptive_2(np, [1])
+        np.testing.assert_array_equal(res2, np.array([1.0, 0.0, 0.0]))
 
     # _np_rem_3
     assert misc_ext._np_rem_3(np) is None

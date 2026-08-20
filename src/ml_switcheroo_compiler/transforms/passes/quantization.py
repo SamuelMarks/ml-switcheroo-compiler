@@ -37,6 +37,16 @@ class PTQPass:
         """
         self.config = config
         self.dataset = representative_dataset
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                self.rules = yaml.safe_load(f)
+        else:
+            self.rules = {}
 
     def __call__(self, graph: IRGraph) -> IRGraph:
         """Lower ops to their integer quantized equivalents.
@@ -49,21 +59,19 @@ class PTQPass:
         """
         optimized = False
         new_nodes = {}
+
+        q_scale = self.rules.get("PTQ", {}).get("default_q_scale", 0.1)
+        sym_rules = self.rules.get("PTQ", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
+        q_zp = sym_rules.get("q_zero_point", 0)
+        lowering_map = self.rules.get("lowering_map", {})
+
         for node_id, node in graph.nodes.items():
-            if node.op_type in ["Dot", "MatMul"]:
+            if node.op_type in lowering_map:
                 new_attrs = dict(node.attributes)
                 new_attrs["dtype"] = self.config.target_dtype.name
-                new_attrs["q_scale"] = 0.1
-                new_attrs["q_zero_point"] = 0 if self.config.symmetric else 128
-                new_node = clone_logical_node(node, op_type="QuantizedMatMul", attributes=new_attrs)
-                new_nodes[node_id] = new_node
-                optimized = True
-            elif node.op_type in ["Conv2D", "ConvGeneralDilated"]:
-                new_attrs = dict(node.attributes)
-                new_attrs["dtype"] = self.config.target_dtype.name
-                new_attrs["q_scale"] = 0.1
-                new_attrs["q_zero_point"] = 0 if self.config.symmetric else 128
-                new_node = clone_logical_node(node, op_type="QuantizedConv2D", attributes=new_attrs)
+                new_attrs["q_scale"] = q_scale
+                new_attrs["q_zero_point"] = q_zp
+                new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], attributes=new_attrs)
                 new_nodes[node_id] = new_node
                 optimized = True
             else:
@@ -130,6 +138,16 @@ class QATFakeQuantizePass:
             config (QuantizationConfig): The quantization config.
         """
         self.config = config
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                self.rules = yaml.safe_load(f)
+        else:
+            self.rules = {}
 
     def __call__(self, graph: IRGraph) -> bool:
         """Insert FakeQuantize nodes for Quantization-Aware Training.
@@ -144,6 +162,11 @@ class QATFakeQuantizePass:
         sorted_nodes = DAGTopologicalSorter.sort(graph)
         new_nodes = dict(graph.nodes)
 
+        q_scale = self.rules.get("QAT", {}).get("default_q_scale", 0.1)
+        sym_rules = self.rules.get("QAT", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
+        q_zp = sym_rules.get("q_zero_point", 0)
+        bits = sym_rules.get("bits", 8)
+
         for node in sorted_nodes:
             if node.op_type in ["MatMul", "Conv2D", "Dot", "ConvGeneralDilated"]:
                 new_inputs = []
@@ -155,10 +178,10 @@ class QATFakeQuantizePass:
                             op_type="FakeQuantize",
                             inputs=[inp_id],
                             attributes={
-                                "bits": 8 if self.config.target_dtype.name == "Int8" else 4,
+                                "bits": bits,
                                 "symmetric": self.config.symmetric,
-                                "q_scale": 0.1,  # Injected logic
-                                "q_zero_point": 0 if self.config.symmetric else 128,
+                                "q_scale": q_scale,
+                                "q_zero_point": q_zp,
                             },
                         )
                         new_nodes[fq_id] = fq_node
@@ -185,6 +208,16 @@ class IntegerQuantizationLoweringPass:
             config (QuantizationConfig): The quantization config.
         """
         self.config = config
+        import os
+
+        import yaml
+
+        yaml_path = os.path.join(os.path.dirname(__file__), "quantization_rules.yaml")
+        if os.path.exists(yaml_path):
+            with open(yaml_path) as f:
+                self.rules = yaml.safe_load(f)
+        else:
+            self.rules = {}
 
     def __call__(self, graph: IRGraph) -> bool:
         """Lower ops to their integer quantized equivalents.
@@ -196,27 +229,48 @@ class IntegerQuantizationLoweringPass:
             bool: Result.
         """
         modified = False
-        new_nodes = dict(graph.nodes)
+        new_nodes = {}
+        lowering_map = self.rules.get("lowering_map", {})
+        pass_through = self.rules.get("pass_through_nodes", [])
+
+        # First pass: identify fake quant nodes to drop
+        fq_replacements = {}
+        for node_id, node in graph.nodes.items():
+            if node.op_type in pass_through:
+                fq_replacements[node_id] = node.inputs[0] if node.inputs else None
+
+        q_scale = self.rules.get("PTQ", {}).get("default_q_scale", 0.1)
+        sym_rules = self.rules.get("PTQ", {}).get("symmetric" if self.config.symmetric else "asymmetric", {})
+        q_zp = sym_rules.get("q_zero_point", 0)
 
         for node_id, node in graph.nodes.items():
-            if node.op_type in ["MatMul", "Dot"] and "calibration_min" in node.attributes:
-                new_attrs = dict(node.attributes)
-                new_attrs["dtype"] = self.config.target_dtype.name
-                new_attrs["q_scale"] = 0.1
-                new_attrs["q_zero_point"] = 0 if self.config.symmetric else 128
-                new_node = clone_logical_node(node, op_type="QuantizedMatMul", attributes=new_attrs)
-                new_nodes[node_id] = new_node
+            if node_id in fq_replacements:
                 modified = True
-            elif node.op_type in ["Conv2D", "ConvGeneralDilated"] and "calibration_min" in node.attributes:
-                new_attrs = dict(node.attributes)
-                new_attrs["dtype"] = self.config.target_dtype.name
-                new_attrs["q_scale"] = 0.1
-                new_attrs["q_zero_point"] = 0 if self.config.symmetric else 128
-                new_node = clone_logical_node(node, op_type="QuantizedConv2D", attributes=new_attrs)
-                new_nodes[node_id] = new_node
+                continue
+
+            # Update inputs if they point to dropped fake quant nodes
+            new_inputs = [fq_replacements.get(inp, inp) for inp in node.inputs]
+            if new_inputs != node.inputs:
                 modified = True
 
+            if node.op_type in lowering_map and ("calibration_min" in node.attributes or any(inp in fq_replacements for inp in node.inputs)):
+                new_attrs = dict(node.attributes)
+                new_attrs["dtype"] = self.config.target_dtype.name
+                new_attrs["q_scale"] = q_scale
+                new_attrs["q_zero_point"] = q_zp
+                new_node = clone_logical_node(node, op_type=lowering_map[node.op_type], inputs=new_inputs, attributes=new_attrs)
+                new_nodes[node_id] = new_node
+                modified = True
+            else:
+                if new_inputs != node.inputs:
+                    new_nodes[node_id] = clone_logical_node(node, inputs=new_inputs)
+                else:
+                    new_nodes[node_id] = node
+
         if modified:
+            # Re-map graph outputs if they were dropped
+            new_outputs = [fq_replacements.get(out, out) for out in graph.outputs]
+            graph.outputs = [o for o in new_outputs if o is not None]
             graph.nodes.clear()
             graph.nodes.update(new_nodes)
         return modified

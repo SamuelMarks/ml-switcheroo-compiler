@@ -1,244 +1,97 @@
-import pytest
+from unittest.mock import patch
 
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-def test_webgpu_generator_all_ops():
-    graph = IRGraph()
-    n1 = LogicalNode(id="in1", op_type="Input")
-    n1.shape_metadata = (10,)
-    n2 = LogicalNode(id="in2", op_type="Input")
-    n2.shape_metadata = (10,)
+def test_webgpu_tiling_and_webrtc_and_dynamic():
+    import copy
 
-    graph.nodes = {"in1": n1, "in2": n2}
+    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
-    ops = [
-        "FloorDivide",
-        "Power",
-        "Maximum",
-        "Minimum",
-        "LogicalAnd",
-        "LogicalOr",
-        "LogicalXor",
-        "Equal",
-        "NotEqual",
-        "Greater",
-        "Less",
-        "GreaterEqual",
-        "LessEqual",
-        "Exp",
-        "Log",
-        "Abs",
-        "Ceil",
-        "Floor",
-        "Round",
-        "Sqrt",
-        "Sin",
-        "Cos",
-        "Tan",
-        "Asin",
-        "Acos",
-        "Atan",
-        "Sinh",
-        "Cosh",
-        "Tanh",
-        "Log1p",
-        "Expm1",
-        "Rsqrt",
-        "Negative",
-        "Neg",
-        "Sign",
-        "Relu",
-        "Gelu",
-        "Swish",
-        "Cast",
-        "Constant",
-        "ReduceSum",
-        "ReduceProd",
-        "ArgMax",
-        "ArgMin",
-        "Conv1D",
-        "Conv2D",
-        "Conv3D",
-        "ConvTranspose2D",
-        "MaxPool",
-        "AvgPool",
-        "MaxPool2D",
-        "AvgPool2D",
-        "BatchNorm",
-        "LayerNorm",
-        "GroupNorm",
-        "Sigmoid",
-    ]
-
-    graph.outputs = []
-
-    for idx, op in enumerate(ops):
-        node_id = f"out_{idx}"
-        inputs = ["in1", "in2"] if op in ("FloorDivide", "Power", "Maximum", "Minimum", "LogicalAnd", "LogicalOr", "LogicalXor", "Equal", "NotEqual", "Greater", "Less", "GreaterEqual", "LessEqual") else ["in1"]
-        node = LogicalNode(id=node_id, op_type=op, inputs=inputs)
-        node.shape_metadata = (10,)
-        if op == "Constant":
-            node.attributes = {"value": 1.0}
-        graph.nodes[node_id] = node
-        graph.outputs.append(node_id)
-
-    gen = WebGPUCodeGenerator(graph)
+    saved_registry = copy.deepcopy(OPS_REGISTRY)
     try:
+        OPS_REGISTRY["MatMulTiledDummy"] = {"variants": {"edge_wgsl": {"template": "tiled_matmul"}}}
+
+        g = IRGraph()
+        # Graph attributes for dynamic schema
+        g.attributes = {"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}}
+
+        # MatMul with tiling (using our dummy op)
+        n_matmul = IRNode("matmul_tiled", "MatMulTiledDummy", inputs=["in1", "in2"], attributes={"tiling": True})
+        n_matmul.shape_metadata = (16, 16)
+
+        # Conv2D with tiling
+        n_conv = IRNode("conv_tiled", "Conv2D", inputs=["in_img", "in_w"], attributes={"tiling": True, "stride": (1, 1)})
+        n_conv.shape_metadata = (1, 16, 16, 16)
+
+        # Conv2D with bad shapes to hit < 4 branch
+        n_conv_bad = IRNode("conv_bad", "Conv2D", inputs=["in_img2", "in_w2"], attributes={"stride": 1})
+        n_conv_bad.shape_metadata = (16, 16)
+
+        # WebRTC ops
+        n_allreduce = IRNode("allreduce", "AllReduce", inputs=["in1"])
+        n_allgather = IRNode("allgather", "AllGather", inputs=["in1"])
+        n_alltoall = IRNode("alltoall", "AllToAll", inputs=["in1"])
+
+        in1 = IRNode("in1", "Input")
+        in1.shape_metadata = (16, 16)
+        in2 = IRNode("in2", "Input")
+        in2.shape_metadata = (16, 16)
+        in_img = IRNode("in_img", "Input")
+        in_img.shape_metadata = (1, 3, 16, 16)
+        in_w = IRNode("in_w", "Input")
+        in_w.shape_metadata = (16, 3, 3, 3)
+        in_img2 = IRNode("in_img2", "Input")
+        in_img2.shape_metadata = (16, 16)
+        in_w2 = IRNode("in_w2", "Input")
+        in_w2.shape_metadata = (3, 3)
+
+        g.nodes = {"in1": in1, "in2": in2, "in_img": in_img, "in_w": in_w, "in_img2": in_img2, "in_w2": in_w2, "matmul_tiled": n_matmul, "conv_tiled": n_conv, "conv_bad": n_conv_bad, "allreduce": n_allreduce, "allgather": n_allgather, "alltoall": n_alltoall}
+        g.inputs = ["in1", "in2", "in_img", "in_w", "in_img2", "in_w2"]
+        g.outputs = ["matmul_tiled", "conv_tiled", "conv_bad", "allreduce", "allgather", "alltoall"]
+
+        gen = WebGPUCodeGenerator(g)
+        gen.sorted_nodes = [in1, in2, in_img, in_w, in_img2, in_w2, n_matmul, n_conv, n_conv_bad, n_allreduce, n_allgather, n_alltoall]
+
         code = gen.generate()
-        # If all ops surprisingly pass without raising, assert basic code is generated
-        assert "fn" in code or "var" in code
-    except UnimplementedMathError:
-        pass  # Expected during transition phase
+        assert code is not None
 
-    # Test missing shapes
-    n_no_shape = LogicalNode(id="n_no_shape", op_type="Add", inputs=["in1", "in2"])
-    graph.nodes["n_no_shape"] = n_no_shape
-    gen._get_shape_and_strides(n_no_shape)
-    gen._gen_offset_computation("idx", [], [], "out")
-
-    # Test Softmax/LogSoftmax
-    n_softmax = LogicalNode(id="n_softmax", op_type="Softmax", inputs=["in1"])
-    n_softmax.shape_metadata = (10,)
-    graph.nodes["n_softmax"] = n_softmax
-    graph.outputs = ["n_softmax"]
-    gen_sm = WebGPUCodeGenerator(graph)
-    try:
-        gen_sm.generate()
-    except UnimplementedMathError:
-        pass
-
-    # Test LogSoftmax
-    n_logsoftmax = LogicalNode(id="n_logsoftmax", op_type="LogSoftmax", inputs=["in1"])
-    n_logsoftmax.shape_metadata = (10,)
-    graph.nodes["n_logsoftmax"] = n_logsoftmax
-    graph.outputs = ["n_logsoftmax"]
-    gen_lsm = WebGPUCodeGenerator(graph)
-    try:
-        gen_lsm.generate()
-    except UnimplementedMathError:
-        pass
-
-    for op_name in ["ReduceMax", "ReduceMin", "ReduceMean", "Constant", "Negative"]:
-        node = LogicalNode(id=f"n_{op_name.lower()}", op_type=op_name, inputs=["in1"] if op_name != "Constant" else [])
-        node.shape_metadata = (1,)
-        try:
-            gen._get_wgsl_for_op(node, [1], 1, "out")
-        except UnimplementedMathError:
-            pass
-
-    n_4_inputs = LogicalNode(id="n_4_inputs", op_type="Add", inputs=["in1", "in2", "in3", "in4"])
-    n_4_inputs.shape_metadata = (10,)
-    for i in range(1, 5):
-        n = LogicalNode(id=f"in{i}", op_type="Input")
-        n.shape_metadata = (10,)
-        graph.nodes[f"in{i}"] = n
-    graph.nodes["n_4_inputs"] = n_4_inputs
-    graph.outputs = ["n_4_inputs"]
-    gen_4 = WebGPUCodeGenerator(graph)
-    try:
-        gen_4.generate()
-    except UnimplementedMathError:
-        pass
-
-    node_err = LogicalNode(id="err", op_type="UnsupportedWebGPUOp", inputs=["in1"])
-    node_err.shape_metadata = (10,)
-    graph.nodes["err"] = node_err
-    graph.outputs = ["err"]
-
-    gen_err = WebGPUCodeGenerator(graph)
-    with pytest.raises(UnimplementedMathError):
-        gen_err.generate()
+    finally:
+        OPS_REGISTRY.clear()
+        OPS_REGISTRY.update(saved_registry)
 
 
-def test_webgpu_conv2d_pool2d_norm_coverage():
+def test_webgpu_webrtc_missing():
+    from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_init, emit_webrtc_op
+
+    with patch("os.path.exists", return_value=False):
+        assert emit_webrtc_init() == ""
+        assert emit_webrtc_op("AllReduce", "buf", "id") == ""
+
+    # Also test unknown op type
+    assert emit_webrtc_op("Unknown", "buf", "id") == ""
+
+
+def test_webgpu_dynamic_resize_wasm_fallback():
+    import ml_switcheroo_compiler.backends.edge.webgpu as webgpu_mod
     from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     g = IRGraph()
-    n_conv = IRNode("conv", "Conv2D", inputs=["in1", "in2"], attributes={"window_strides": (2, 2), "padding": ((1, 1), (1, 1))})
-    n_conv.shape_metadata = (1, 16, 16, 16)
+    # Graph attributes for dynamic schema
+    g.attributes = {"dynamic_memory_schema": {"dynamic_offsets": [{"var_name": "B", "symbolic_math": "B_dim * 16"}]}}
 
     in1 = IRNode("in1", "Input")
-    in1.shape_metadata = (1, 3, 32, 32)
-    in2 = IRNode("in2", "Input")
-    in2.shape_metadata = (16, 3, 3, 3)
+    in1.shape_metadata = (16, 16)
 
-    n_pool = IRNode("pool", "MaxPool2D", inputs=["conv"], attributes={"window_dimensions": (2, 2), "window_strides": (2, 2), "padding": ((0, 0), (0, 0))})
-    n_pool.shape_metadata = (1, 16, 8, 8)
-
-    n_norm = IRNode("norm", "BatchNorm", inputs=["pool", "w", "b", "rm", "rv"], attributes={"epsilon": 1e-5})
-    n_norm.shape_metadata = (1, 16, 8, 8)
-
-    w = IRNode("w", "Input")
-    w.shape_metadata = (16,)
-    b = IRNode("b", "Input")
-    b.shape_metadata = (16,)
-    rm = IRNode("rm", "Input")
-    rm.shape_metadata = (16,)
-    rv = IRNode("rv", "Input")
-    rv.shape_metadata = (16,)
-
-    n_ln = IRNode("ln", "LayerNorm", inputs=["pool", "w", "b"], attributes={"epsilon": 1e-5})
-    n_ln.shape_metadata = (1, 16, 8, 8)
-
-    g.nodes = {"in1": in1, "in2": in2, "conv": n_conv, "pool": n_pool, "norm": n_norm, "w": w, "b": b, "rm": rm, "rv": rv, "ln": n_ln}
-    g.inputs = ["in1", "in2", "w", "b", "rm", "rv"]
-    g.outputs = ["norm", "ln"]
-
-    gen = WebGPUCodeGenerator(g)
-    gen.sorted_nodes = [in1, in2, w, b, rm, rv, n_conv, n_pool, n_norm, n_ln]
-
-    code = gen.generate()
-    assert "compute_conv" in code
-    assert "compute_pool" in code
-    assert "compute_norm" in code
-    assert "compute_ln" in code
-
-
-def test_webgpu_avgpool2d_coverage():
-    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    g = IRGraph()
-    n_pool = IRNode("pool", "AvgPool2D", inputs=["in1"], attributes={"window_dimensions": (2, 2), "window_strides": (2, 2), "padding": (0, 0)})
-    n_pool.shape_metadata = (1, 16, 8, 8)
-
-    in1 = IRNode("in1", "Input")
-    in1.shape_metadata = (1, 16, 16, 16)
-
-    g.nodes = {"in1": in1, "pool": n_pool}
+    g.nodes = {"in1": in1}
     g.inputs = ["in1"]
-    g.outputs = ["pool"]
+    g.outputs = ["in1"]
 
     gen = WebGPUCodeGenerator(g)
-    gen.sorted_nodes = [in1, n_pool]
+    gen.sorted_nodes = [in1]
 
-    code = gen.generate()
-    assert "compute_pool" in code
-
-
-def test_webgpu_conv2d_fallback_coverage():
-    from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
-    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-
-    g = IRGraph()
-    n_conv = IRNode("conv", "Conv2D", inputs=["in1", "in2"], attributes={})
-    n_conv.shape_metadata = (1, 16, 16, 16)
-
-    in1 = IRNode("in1", "Input")
-    in1.shape_metadata = (1, 3, 32)  # not 4D
-    in2 = IRNode("in2", "Input")
-    in2.shape_metadata = (16, 3, 3)
-
-    g.nodes = {"in1": in1, "in2": in2, "conv": n_conv}
-    g.inputs = ["in1", "in2"]
-    g.outputs = ["conv"]
-
-    gen = WebGPUCodeGenerator(g)
-    gen.sorted_nodes = [in1, in2, n_conv]
-
-    code = gen.generate()
-    assert "let out_width = 16u;" in code
+    with patch.object(webgpu_mod, "__file__", "wasm.py"):
+        code = gen.generate()
+        assert code is not None

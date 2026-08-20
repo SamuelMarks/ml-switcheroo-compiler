@@ -47,6 +47,9 @@ def test_wasm_templates_validity():
         "false_body": "false_body()",
         "scan_op_expr": "scan_op()",
         "params_str": "int a, float b",
+        "TILE_M": 16,
+        "TILE_N": 16,
+        "TILE_K": 16,
     }
 
     for name, tpl in templates.items():

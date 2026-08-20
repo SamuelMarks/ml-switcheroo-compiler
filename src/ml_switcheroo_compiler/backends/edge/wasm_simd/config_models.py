@@ -23,6 +23,26 @@ class WasmTemplatesConfig(BaseModel):
     cpp_helpers: list[str] = []
 
     def model_dump(self, *args: Any, **kwargs: Any) -> Any:
+        """Dump the model."""
         """Return dict representation."""
         res = super().model_dump(*args, **kwargs)
         return res
+
+
+class WasmIntrinsicConfig(BaseModel):
+    """Configuration for a WASM intrinsic."""
+
+    macro_name: str
+    simd_expr: str
+    scalar_fallback: str
+
+
+class WasmIntrinsicsConfig(BaseModel):
+    """Configuration for all WASM intrinsics."""
+
+    intrinsics: dict[str, WasmIntrinsicConfig]
+    scalars: dict[str, str]
+
+    def model_dump(self, *args: Any, **kwargs: Any) -> Any:
+        """Dump the model."""
+        return super().model_dump(*args, **kwargs)

@@ -582,23 +582,6 @@ def hvp(graph: LogicalGraph, primals: list[str], tangents: list[str], outputs: l
     Returns:
         LogicalGraph: Result.
     """
-    from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import has_jvp
-    from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
-
-    missing_ops = []
-    for node in graph.nodes.values():
-        if node.op_type not in ("Input", "Output", "Constant"):
-            # Ensure operations have both defined to guarantee higher-order composition
-            if not has_vjp(node.op_type) or not has_jvp(node.op_type):
-                missing_ops.append(node.op_type)
-            _ = None  # Subgraph control flow ops are now handled recursively
-
-    if missing_ops:
-        unique_missing = ", ".join(sorted(set(missing_ops)))
-        import warnings
-
-        warnings.warn(f"Computing HVP with missing second-order derivative rules (vjp/jvp) for operations: {unique_missing}. Will rely on finite-difference fallbacks.", stacklevel=2)
-
     # First get the gradient (VJP) graph
     grad_graph = grad(graph, primals, outputs[0])
 

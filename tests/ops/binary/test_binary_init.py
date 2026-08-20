@@ -19,24 +19,12 @@ def test_binary_init_funcs():
 
 def test_binary_init_missing():
     import importlib
-    import sys
+    from unittest.mock import patch
 
-    # Get the real ops.base module
-    ops_base = sys.modules["ml_switcheroo_compiler.ops.base"]
-    old_get_op = ops_base.get_op
-
-    def mock_get_op(*args, **kwargs):
-        raise KeyError("mock")
-
-    ops_base.get_op = mock_get_op
-
-    # Re-evaluate binary.__init__.py
-    if "ml_switcheroo_compiler.ops.binary" in sys.modules:
-        del sys.modules["ml_switcheroo_compiler.ops.binary"]
     import ml_switcheroo_compiler.ops.binary
 
-    try:
-        assert ml_switcheroo_compiler.ops.binary.add is None
-    finally:
-        ops_base.get_op = old_get_op
+    with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.binary)
+        assert ml_switcheroo_compiler.ops.binary.add is None
+
+    importlib.reload(ml_switcheroo_compiler.ops.binary)

@@ -86,3 +86,11 @@ repos:
   - id: interrogate
     args: [-c, pyproject.toml, src/]
     pass_filenames: false
+- repo: local
+  hooks:
+  - id: validate-backend-mappings
+    name: Validate Backend Mappings
+    entry: python scripts/validate_backend_mappings.py
+    language: python
+    files: ^src/ml_switcheroo_compiler/backends/.*\.py$
+    pass_filenames: false

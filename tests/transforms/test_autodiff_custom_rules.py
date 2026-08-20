@@ -156,3 +156,17 @@ def test_if_jvp():
         n_empty = IRNode(id="n2", op_type="If", inputs=["c"])
         res_empty = _if_jvp(g, n_empty, ["t_c"])
         assert res_empty == "mock_tangent"
+
+
+def test_custom_vjp_vjp():
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+    from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_vjp_vjp
+
+    graph = IRGraph()
+    node = IRNode(id="test_node", op_type="CustomVJP", inputs=["a", "b"], attributes={"bwd_fn": "fake_bwd_fn"})
+    node.shape_metadata = ()
+
+    res = custom_vjp_vjp(graph, node, "cot")
+    assert len(res) == 2
+    assert "ProcessCustomVJPCall" in [n.op_type for n in graph.nodes.values()]
+    assert "TupleGetItem" in [n.op_type for n in graph.nodes.values()]

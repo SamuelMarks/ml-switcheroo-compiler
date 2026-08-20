@@ -6,22 +6,12 @@ def test_reductions_init():
 
 def test_reductions_init_missing():
     import importlib
-    import sys
+    from unittest.mock import patch
 
-    ops_base = sys.modules["ml_switcheroo_compiler.ops.base"]
-    old_get_op = ops_base.get_op
-
-    def mock_get_op(*args, **kwargs):
-        raise KeyError("mock")
-
-    ops_base.get_op = mock_get_op
-
-    if "ml_switcheroo_compiler.ops.reductions" in sys.modules:
-        del sys.modules["ml_switcheroo_compiler.ops.reductions"]
     import ml_switcheroo_compiler.ops.reductions
 
-    try:
-        assert getattr(ml_switcheroo_compiler.ops.reductions, "sum", None) is None
-    finally:
-        ops_base.get_op = old_get_op
+    with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.reductions)
+        assert getattr(ml_switcheroo_compiler.ops.reductions, "sum", None) is None
+
+    importlib.reload(ml_switcheroo_compiler.ops.reductions)

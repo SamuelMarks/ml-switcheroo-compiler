@@ -30,8 +30,19 @@ def test_missing_yaml():
 
 def test_parameter_server_strategy_hooks():
     strat = ParameterServerStrategy()
-    assert strat.pull_weights() is None
-    assert strat.push_gradients() is None
+
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+
+    graph = IRGraph()
+    graph.nodes = {"c1": LogicalNode(id="c1", op_type="Constant"), "g1": LogicalNode(id="g1", op_type="Grad"), "add1": LogicalNode(id="add1", op_type="Add", inputs=["c1", "g1"])}
+
+    # In absence of active backend hooking, these will mutate the graph
+    assert strat.pull_weights(graph) is True
+    assert strat.push_gradients(graph) is True
+
+    # Verify the IR node injection
+    assert "c1_recv" in graph.nodes
+    assert "g1_send" in graph.nodes
 
     # Test valid hook branch
     strat.config = {"registry_hooks": {"pull": "my_hook", "push": "my_hook"}}
@@ -41,8 +52,8 @@ def test_parameter_server_strategy_hooks():
             return True
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockGenerator()):
-        assert strat.pull_weights() is True
-        assert strat.push_gradients() is True
+        assert strat.pull_weights(graph) is True
+        assert strat.push_gradients(graph) is True
 
 
 def test_central_storage_strategy_hooks():
@@ -933,3 +944,66 @@ def test_pipeline_unroll_pipeline():
     assert "n2_mb1" in g.nodes
     assert "n1_mb0" in g.nodes
     assert g.outputs == ["n2_mb1"]
+
+    strategy_1f1b = PipelineParallelismStrategy(num_microbatches=2)
+    strategy_1f1b.strategy = "1f1b"
+    g2 = IRGraph()
+    n1_2 = IRNode(id="n1", op_type="Add", inputs=["in", "in"])
+    n2_2 = IRNode(id="n2", op_type="Mul", inputs=["n1", "n1"])
+    g2.nodes = {"n1": n1_2, "n2": n2_2}
+    g2.inputs = ["in"]
+    g2.outputs = ["n2"]
+
+    strategy_1f1b.unroll_pipeline(g2, num_stages=2)
+    assert "sync_0_mb1" in g2.nodes
+    assert "sync_1_mb1" in g2.nodes
+
+
+def test_webrtc_protocols():
+    from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy, PipelineParallelismStrategy
+
+    mws = MultiWorkerMirroredStrategy(target_env="browser")
+    assert mws.get_communication_protocol() == "webrtc"
+
+    pps = PipelineParallelismStrategy(target_env="browser")
+    assert pps.get_communication_protocol() == "webrtc"
+
+
+def test_webrtc_topology_missing_and_protocols():
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy, PipelineParallelismStrategy, _load_webrtc_topology
+
+    with patch("os.path.exists", return_value=False):
+        assert _load_webrtc_topology() == {}
+
+    ps = MultiWorkerMirroredStrategy()
+    ps.target_env = "browser"
+    assert ps.get_communication_protocol() == "webrtc"
+
+    pls = PipelineParallelismStrategy()
+    pls.target_env = "browser"
+    assert pls.get_communication_protocol() == "webrtc"
+
+
+def test_webrtc_topology_valid_file(tmp_path):
+    from unittest.mock import patch
+
+    from ml_switcheroo_compiler.distributed.strategy import _load_webrtc_topology
+
+    yaml_file = tmp_path / "webrtc_topology.yaml"
+    yaml_file.write_text("key: value")
+
+    with patch("os.path.dirname", return_value=str(tmp_path)):
+        res = _load_webrtc_topology()
+        assert res == {"key": "value"}
+
+
+def test_communication_protocol_tcp():
+    from ml_switcheroo_compiler.distributed.strategy import MultiWorkerMirroredStrategy, PipelineParallelismStrategy
+
+    ps = MultiWorkerMirroredStrategy()
+    assert ps.get_communication_protocol() == "tcp"
+
+    pls = PipelineParallelismStrategy()
+    assert pls.get_communication_protocol() == "tcp"

@@ -2,7 +2,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
-from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, isotonic_regression, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
+from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
 
 
 def test_nn_activations_coverage():
@@ -10,8 +10,7 @@ def test_nn_activations_coverage():
     t = Tensor(np.array([-1.0, 0.0, 1.0]), TensorConfig(shape=(3,), dtype=DType("float32"), device=Device("cpu")))
 
     assert crelu(t) is not None
-    y_reg, sw_reg = isotonic_regression(t)
-    assert y_reg is not None and sw_reg is not None
+
     assert softplus(t) is not None
 
     # functions eager

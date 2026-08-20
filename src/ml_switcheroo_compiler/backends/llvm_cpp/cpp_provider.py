@@ -12,7 +12,10 @@ def load_yaml(file_name: str) -> dict[str, Any]:
     """Load YAML file."""
     file_path = Path(__file__).parent / file_name
     with open(file_path) as f:
-        return yaml.safe_load(f)  # type: ignore
+        from ml_switcheroo_compiler.backends.llvm_cpp.config_models import CppTemplatesConfig
+
+        raw = yaml.safe_load(f)
+        return CppTemplatesConfig(**raw).model_dump()
 
 
 def get_cpp_template(template_name: str) -> dict[str, Any]:

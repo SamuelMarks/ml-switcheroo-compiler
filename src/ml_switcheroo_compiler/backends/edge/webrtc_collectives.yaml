@@ -1,0 +1,51 @@
+# Declarative schemas for WebRTC-based distributed collectives
+schema_def:
+  chunk_size_bytes: 65536
+  message_format: "binary" # DataChannel binaryType = 'arraybuffer'
+
+handlers:
+  allreduce_handler: |
+    // Strict ArrayBuffer parsing for AllReduce
+    const view = new Float32Array(message.data);
+    let currentData = window.collectiveBuffers[message.op_id];
+    if (!currentData) {
+        currentData = new Float32Array(view.length);
+        currentData.set(view);
+    } else {
+        for(let i=0; i<currentData.length; i++) {
+            currentData[i] += view[i];
+        }
+    }
+    window.collectiveBuffers[message.op_id] = currentData;
+    window.collectiveState[message.op_id].push(message.peer_id);
+
+  allgather_handler: |
+    // Strict ArrayBuffer parsing for AllGather
+    const view = new Float32Array(message.data);
+    if (!window.collectiveBuffers[message.op_id]) {
+        window.collectiveBuffers[message.op_id] = [];
+    }
+    window.collectiveBuffers[message.op_id].push(view);
+    window.collectiveState[message.op_id].push(message.peer_id);
+
+  alltoall_handler: |
+    const view = new Float32Array(message.data);
+    if (!window.collectiveBuffers[message.op_id]) {
+        window.collectiveBuffers[message.op_id] = {};
+    }
+    window.collectiveBuffers[message.op_id][message.peer_id] = view;
+    window.collectiveState[message.op_id].push(message.peer_id);
+
+  reducescatter_handler: |
+    const view = new Float32Array(message.data);
+    let currentData = window.collectiveBuffers[message.op_id];
+    if (!currentData) {
+        currentData = new Float32Array(view.length);
+        currentData.set(view);
+    } else {
+        for(let i=0; i<currentData.length; i++) {
+            currentData[i] += view[i];
+        }
+    }
+    window.collectiveBuffers[message.op_id] = currentData;
+    window.collectiveState[message.op_id].push(message.peer_id);

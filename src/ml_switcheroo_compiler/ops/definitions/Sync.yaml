@@ -1,0 +1,22 @@
+operation: Sync
+description: Pipeline synchronization barrier node.
+std_args:
+- is_variadic: true
+  kind: positional_or_keyword
+  name: dependencies
+  type: Tensor
+type: attribute
+variants:
+  edge_onnx:
+    generator: Identity
+  edge_stablehlo:
+    generator: stablehlo.custom_call
+  edge_wgsl:
+    template: sync
+  edge_wasm_simd:
+    template: sync
+  llvm_cpp:
+    template: sync
+autodiff:
+  vjp: []
+  jvp: Sync($tangent[0])

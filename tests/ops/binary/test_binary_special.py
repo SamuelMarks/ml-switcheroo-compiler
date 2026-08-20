@@ -44,12 +44,10 @@ def test_binary_special():
             return "r"
 
     import sys
+    from unittest.mock import patch
 
-    sys.modules["ml_switcheroo_compiler.ops.binary"] = DummyBinary()
-
-    assert d(1, 2) == ("fd", "r")
-
-    del sys.modules["ml_switcheroo_compiler.ops.binary"]
+    with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops.binary": DummyBinary()}):
+        assert d(1, 2) == ("fd", "r")
     config.eager_mode = True
 
 

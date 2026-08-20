@@ -343,14 +343,14 @@ def _np_decode_image_camel(backend_module: Any, *args: Any, **kwargs: Any) -> An
         # Read channels config if needed, default to RGB
         channels = kwargs.get("channels", 0)
         if channels == 1:
-            image = image.convert("L")
-            arr = np.array(image, dtype=np.uint8)[..., np.newaxis]
+            conv_img = image.convert("L")
+            arr = np.array(conv_img, dtype=np.uint8)[..., np.newaxis]
         elif channels == 3:
-            image = image.convert("RGB")
-            arr = np.array(image, dtype=np.uint8)
+            conv_img = image.convert("RGB")
+            arr = np.array(conv_img, dtype=np.uint8)
         elif channels == 4:
-            image = image.convert("RGBA")
-            arr = np.array(image, dtype=np.uint8)
+            conv_img = image.convert("RGBA")
+            arr = np.array(conv_img, dtype=np.uint8)
         else:
             arr = np.array(image, dtype=np.uint8)
             if arr.ndim == 2:

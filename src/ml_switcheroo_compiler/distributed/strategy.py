@@ -19,6 +19,15 @@ def _load_strategy_config() -> dict[str, Any]:
     return {}
 
 
+def _load_webrtc_topology() -> dict[str, Any]:
+    """Load the WebRTC topology configuration for browser edge targets."""
+    yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
+    if os.path.exists(yaml_path):
+        with open(yaml_path) as f:
+            return yaml.safe_load(f)
+    return {}
+
+
 class ParameterServerStrategy(Distribution):
     """Parameter server strategy."""
 
@@ -32,35 +41,96 @@ class ParameterServerStrategy(Distribution):
         self.cluster_resolver = cluster_resolver
         self.config = _load_strategy_config().get("ParameterServerStrategy", {})
 
-    def pull_weights(self, *args: Any, **kwargs: Any) -> Any:
-        """Asynchronously pull weights from parameter servers."""
+    def pull_weights(self, graph: Any) -> bool:
+        """Asynchronously pull weights from parameter servers by injecting Recv ops.
+
+        Args:
+            graph (Any): The IR graph to mutate.
+
+        Returns:
+            bool: True if mutated.
+        """
         backend = registry.get_active_backend()
         hook_name = self.config.get("registry_hooks", {}).get("pull")
         if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(self.cluster_resolver, *args, **kwargs)
-        return None
+            return getattr(backend, hook_name)(graph, self.cluster_resolver)
 
-    def push_gradients(self, *args: Any, **kwargs: Any) -> Any:
-        """Asynchronously push gradients to parameter servers."""
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        modified = False
+        new_nodes = dict(graph.nodes)
+
+        for node in list(graph.nodes.values()):
+            if node.op_type == "Constant":
+                # Inject a Recv node for weights
+                recv_id = f"{node.id}_recv"
+                recv_node = IRNode(id=recv_id, op_type="Recv", inputs=[], attributes={"src_rank": 0, "tag": 0, "async_pull": self.config.get("async_pull", True)})
+                new_nodes[recv_id] = recv_node
+
+                # Rewire consumers
+                for consumer in list(graph.nodes.values()):
+                    if node.id in consumer.inputs:
+                        consumer.inputs = [recv_id if inp == node.id else inp for inp in consumer.inputs]
+
+                modified = True
+
+        if modified:
+            graph.nodes = new_nodes
+
+        return modified
+
+    def push_gradients(self, graph: Any) -> bool:
+        """Asynchronously push gradients to parameter servers by injecting Send ops.
+
+        Args:
+            graph (Any): The IR graph to mutate.
+
+        Returns:
+            bool: True if mutated.
+        """
         backend = registry.get_active_backend()
         hook_name = self.config.get("registry_hooks", {}).get("push")
         if hook_name and hasattr(backend, hook_name):
-            return getattr(backend, hook_name)(self.cluster_resolver, *args, **kwargs)
-        return None
+            return getattr(backend, hook_name)(graph, self.cluster_resolver)
+
+        from ml_switcheroo_compiler.ir.core import IRNode
+
+        modified = False
+        new_nodes = dict(graph.nodes)
+
+        for node in list(graph.nodes.values()):
+            if node.op_type == "Grad":
+                send_id = f"{node.id}_send"
+                send_node = IRNode(id=send_id, op_type="Send", inputs=[node.id], attributes={"dst_rank": 0, "tag": 0, "method": self.config.get("gradient_push_method", "async")})
+                new_nodes[send_id] = send_node
+                modified = True
+
+        if modified:
+            graph.nodes = new_nodes
+
+        return modified
 
 
 class MultiWorkerMirroredStrategy(Distribution):
     """Multi-worker mirrored strategy."""
 
-    def __init__(self, cluster_resolver: Any = None) -> None:
+    def __init__(self, cluster_resolver: Any = None, target_env: str = "host") -> None:
         """Initialize MultiWorkerMirroredStrategy.
 
         Args:
             cluster_resolver (Any): The cluster_resolver parameter.
+            target_env (str): The deployment environment ("host" or "browser").
         """
         super().__init__()
         self.cluster_resolver = cluster_resolver
+        self.target_env = target_env
         self.config = _load_strategy_config().get("MultiWorkerMirroredStrategy", {})
+
+    def get_communication_protocol(self) -> str:
+        """Get the communication protocol based on the target environment."""
+        if self.target_env == "browser":
+            return "webrtc"
+        return "tcp"
 
     def sync_gradients(self, graph: Any) -> bool:
         """Inject AllReduce nodes or synchronize gradients across workers.
@@ -193,8 +263,10 @@ class Server:
             if hasattr(backend, "start_server"):
                 backend.start_server(self)
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            import warnings
+
+            warnings.warn(f"Backend failed to start custom server: {e}", stacklevel=2)
 
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
         self._server.bind(("0.0.0.0", 0))  # type: ignore  # Justification: Polymorphic / Duck Typing for Framework Agnosticism
@@ -232,8 +304,10 @@ class Server:
                         bio = io.BytesIO(data)
                         arr = np.load(bio, allow_pickle=False)
                         self.inbox.put((tensor_id, arr))
-            except Exception:
-                pass
+            except Exception as e:
+                import warnings
+
+                warnings.warn(f"Server loop error: {e}", stacklevel=2)
 
     def join(self) -> None:
         """Block until the server terminates."""
@@ -244,15 +318,19 @@ class Server:
             if hasattr(backend, "join_server"):
                 backend.join_server(self)
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            import warnings
+
+            warnings.warn(f"Backend failed to start custom server: {e}", stacklevel=2)
 
         self._running = False
         if self._server:
             try:
                 self._server.close()
-            except Exception:
-                pass
+            except Exception as e:
+                import warnings
+
+                warnings.warn(f"Server loop error: {e}", stacklevel=2)
         if self._thread:
             self._thread.join(timeout=1.0)
 
@@ -285,7 +363,7 @@ class TFConfigClusterResolver:
             except json.JSONDecodeError as e:
                 import warnings
 
-                pass
+                warnings.warn(f"TF_CONFIG parsing failed: {e}", stacklevel=2)
 
 
 class KubernetesClusterResolver:
@@ -368,13 +446,14 @@ class RemoteValue:
 class PipelineParallelismStrategy(Distribution):
     """Pipeline parallelism strategy for large models."""
 
-    def __init__(self, topology_name: str = "default", num_microbatches: Optional[int] = None, devices_per_stage: Optional[int] = None) -> None:
+    def __init__(self, topology_name: str = "default", num_microbatches: Optional[int] = None, devices_per_stage: Optional[int] = None, target_env: str = "host") -> None:
         """Initialize pipeline parallelism strategy.
 
         Args:
             topology_name (str): Name of the topology configuration in YAML.
             num_microbatches (int, optional): Number of microbatches.
             devices_per_stage (int, optional): Number of devices per stage.
+            target_env (str): Deployment environment.
         """
         super().__init__()
         import os
@@ -394,10 +473,11 @@ class PipelineParallelismStrategy(Distribution):
         self.num_microbatches = num_microbatches if num_microbatches is not None else config.microbatch_splitting.num_microbatches
         self.devices_per_stage = devices_per_stage if devices_per_stage is not None else config.mesh_mapping.devices_per_stage
         self.strategy = config.microbatch_splitting.strategy
+        self.target_env = target_env
         self.protocol = config.stage_communication.protocol
 
     def unroll_pipeline(self, graph: Any, num_stages: int) -> None:
-        """Unroll the pipeline using 1F1B (One-Forward-One-Backward) schedule.
+        """Unroll the pipeline using 1F1B schedule.
 
         Args:
             graph (Any): The partitioned IR graph with Send/Recv nodes.
@@ -406,17 +486,11 @@ class PipelineParallelismStrategy(Distribution):
         stages_nodes = self.split_into_stages(graph, num_stages)
         self.insert_send_recv(graph, stages_nodes)
 
-        # 1F1B scheduling transformation goes here
-        # We unroll the graph for self.num_microbatches
-        # 1F1B emits Forward passes followed by Backward passes interleaved.
-        # This is a purely symbolic transformation.
-
         from copy import deepcopy
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
         microbatches = self.num_microbatches
-
         new_nodes = {}
         for mb in range(microbatches):
             for stage_idx in range(num_stages):
@@ -427,10 +501,21 @@ class PipelineParallelismStrategy(Distribution):
                     new_n = deepcopy(n)
                     new_n.id = f"{n.id}_mb{mb}"
                     new_n.inputs = [f"{inp}_mb{mb}" if inp in graph.nodes else inp for inp in n.inputs]
+
+                    # Ensure true dependency cross microbatches for 1F1B schedules
+                    if mb > 0 and self.strategy == "1f1b":
+                        # Insert a Sync node to force F_mb -> F_{mb-1} sync and B_mb -> F_mb sync.
+                        # As a simplified topology, we just enforce the sequential mb dependency for the first node of each stage
+                        if node_id == stages_nodes[stage_idx][0]:
+                            sync_id = f"sync_{stage_idx}_mb{mb}"
+                            prev_node = f"{stages_nodes[stage_idx][-1]}_mb{mb - 1}"
+                            if sync_id not in new_nodes:
+                                sync_node = IRNode(id=sync_id, op_type="Sync", inputs=[prev_node], attributes={})
+                                new_nodes[sync_id] = sync_node
+                            new_n.inputs.append(sync_id)
+
                     new_nodes[new_n.id] = new_n
 
-        # Connect Send/Recv across microbatches for 1F1B ordering
-        # ... logic ...
         graph.nodes = new_nodes
         graph.outputs = [f"{out}_mb{microbatches - 1}" for out in graph.outputs]
 
@@ -581,6 +666,12 @@ class PipelineParallelismStrategy(Distribution):
                     schedule.append(("backward", j))
 
         return schedule
+
+    def get_communication_protocol(self) -> str:
+        """Get the communication protocol based on the target environment."""
+        if getattr(self, "target_env", "host") == "browser":
+            return "webrtc"
+        return "tcp"
 
     def track_gradient_accumulation(self, graph: Any) -> None:
         """Implement gradient accumulation tracking across pipeline stages.

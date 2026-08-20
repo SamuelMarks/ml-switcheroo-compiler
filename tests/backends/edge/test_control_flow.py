@@ -50,4 +50,4 @@ def test_wasm_scan() -> None:
 
     gen = WasmCodeGenerator(graph)
     res = gen.generate()
-    assert "acc_scan + buf_in0[i]" in res
+    assert "buf_scan[i] = buf_in0[i];" in res

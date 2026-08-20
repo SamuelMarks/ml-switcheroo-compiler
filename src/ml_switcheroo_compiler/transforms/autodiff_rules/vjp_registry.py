@@ -58,6 +58,8 @@ def get_vjp(op_name: str) -> Callable[..., Any]:
     Raises:
         ValueError: An exception.
     """
+    if op_name in _VJP_REGISTRY:
+        return _VJP_REGISTRY[op_name]
     data_vjp = get_vjp_from_data(op_name)
     if data_vjp:
         return data_vjp  # type: ignore
@@ -75,6 +77,8 @@ def has_vjp(op_name: str) -> bool:
     Returns:
         bool: Result.
     """
+    if op_name in _VJP_REGISTRY:
+        return True
     if get_vjp_from_data(op_name) is not None:
         return True
     return op_name in _VJP_REGISTRY
